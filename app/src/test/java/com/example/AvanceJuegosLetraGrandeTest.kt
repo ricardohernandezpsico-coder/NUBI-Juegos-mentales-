@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -83,6 +84,11 @@ class AvanceJuegosLetraGrandeTest {
       }
     }
     rule.onNodeWithTag("area_razonamiento").assertIsDisplayed()
+    // Tarea 143, ítem 7: con letra grande las dos filas van arriba, con 24 dp entre ellas, y la segunda (Razonamiento y Lenguaje) entra en pantalla
+    for (area in listOf("area_razonamiento", "area_lenguaje")) {
+      val b = rule.onNodeWithTag(area).fetchSemanticsNode().boundsInRoot
+      org.junit.Assert.assertTrue("«$area» entra entero en 393 × 873 con letra 1,3: $b", b.top >= 0f && b.bottom <= 873f * rule.density.density)
+    }
     rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/juegos-areas-letra13.png")
   }
 
@@ -95,12 +101,61 @@ class AvanceJuegosLetraGrandeTest {
       Box(Modifier.width(393.dp).height(873.dp).background(Color(0xFF050823))) {
         AreaWindow(
           DomainType.MEMORIA, "Memoria", statuses[0], cards, focusGameId = null, onClose = {}, onGame = {},
-          sections = listOf("En tu ruta de hoy" to cards.take(1), "Hace días que no juegas" to cards.drop(1).take(2), "Nuevo para ti" to cards.drop(3))
+          sections = listOf("En tu ruta de hoy" to cards.take(1), "Para volver a jugar" to cards.drop(1).take(2), "Nuevo para ti" to cards.drop(3))
         )
       }
     }
     rule.onNodeWithTag("area_window").assertIsDisplayed()
     rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/library-letra13.png")
+  }
+
+  /** El detalle de un área (Tarea 143, ítems 1, 2 y A1): la pregunta va en el globo de Nubi, abajo solo el botón «Jugar <juego>», la escala de etapas no se corta y la flecha dice «Avance». */
+  private fun detalle(fontScale: Float) {
+    rule.setContent {
+      CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
+        NeuroVidaTheme {
+          Box(Modifier.width(393.dp).height(873.dp).background(Color(0xFF050823))) {
+            com.example.ui.screens.AreaDetail(
+              areaKey = "MEMORIA", statuses = statuses, names = names, history = emptyList(), measures = emptyList(), now = now, lang = AppLanguage.SPANISH,
+              onArea = {}, onPlay = {}, onGame = {}, onClose = {}
+            )
+          }
+        }
+      }
+    }
+    rule.waitForIdle()
+  }
+
+  @Test
+  fun detalle_de_un_area_con_letra_1_3_deja_ver_un_juego_y_el_boton() {
+    detalle(1.3f)
+    val games = GameRegistry.allGames.filter { it.domain == DomainType.MEMORIA }
+    rule.onNodeWithTag("area_play").assertIsDisplayed()
+    rule.onNodeWithTag("area_game_${games.first().id}").assertIsDisplayed()            // antes, con la letra grande no cabía ninguno
+    rule.onNodeWithTag("area_play_why").assertIsDisplayed()
+    rule.onNodeWithText("Etapas:", substring = true).assertIsDisplayed()               // la escala pasa a la frase: ni «Aprendi / z» ni rótulos de 13 sp
+    rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/avance-area-letra13.png")
+  }
+
+  @Test
+  fun detalle_de_un_area_con_letra_normal_deja_ver_al_menos_dos_juegos() {
+    detalle(1f)
+    val games = GameRegistry.allGames.filter { it.domain == DomainType.MEMORIA }
+    rule.onNodeWithTag("area_game_${games[0].id}").assertIsDisplayed()
+    rule.onNodeWithTag("area_game_${games[1].id}").assertIsDisplayed()
+    rule.onNodeWithTag("area_play").assertIsDisplayed()
+  }
+
+  @Test
+  fun la_pregunta_va_en_el_globo_de_nubi_el_boton_dice_el_juego_y_la_flecha_dice_avance() {
+    detalle(1f)
+    val first = GameRegistry.allGames.first { it.domain == DomainType.MEMORIA }
+    rule.onNodeWithText("¿Le damos un empujón a tu memoria?", substring = true).assertIsDisplayed()
+    rule.onNodeWithText("Jugar " + com.example.ui.i18n.getGameTitle(first.id, AppLanguage.SPANISH, first.title)).assertIsDisplayed()
+    org.junit.Assert.assertEquals("la pregunta ya no va suelta sobre el botón", 0, rule.onAllNodes(androidx.compose.ui.test.hasText("¡Sí, vamos!")).fetchSemanticsNodes().size)
+    rule.onNodeWithText("Avance").assertExists()
+    org.junit.Assert.assertEquals("la cabecera ya no dice «Hoy» aunque se abra desde Avance", 0, rule.onAllNodes(androidx.compose.ui.test.hasText("Hoy")).fetchSemanticsNodes().size)
+    rule.onNodeWithTag("area_back").assertExists()
   }
 
   @Test

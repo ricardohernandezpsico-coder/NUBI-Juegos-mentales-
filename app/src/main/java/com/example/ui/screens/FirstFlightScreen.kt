@@ -87,7 +87,6 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.BaselinePlan
-import com.example.data.ColorVision
 import com.example.data.FirstFlight
 import com.example.data.FlightCopy
 import com.example.data.FlightMode
@@ -119,7 +118,6 @@ class FlightActions(
   val onName: (String) -> Unit,
   val onAge: (AgeBand) -> Unit,
   val onGoal: (DomainType) -> Unit,
-  val onColor: (ColorVision) -> Unit,
   val onDays: (Int) -> Unit,
   val onHour: (Int) -> Unit,
   val onPlay: (Int) -> Unit,
@@ -128,7 +126,7 @@ class FlightActions(
 ) {
   companion object {
     /** Acciones vacías (capturas y pruebas de la pantalla). */
-    val None = FlightActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})
+    val None = FlightActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {})
   }
 }
 
@@ -253,16 +251,6 @@ private fun FlightPage(step: FlightStep, s: FlightState, todayGames: List<String
       onPick = { v -> DomainType.entries.firstOrNull { it.name == v }?.let(a.onGoal) },
       hint = "Elige hasta 3. Tu camino de cada día les dará prioridad.",
       canContinue = s.goals.isNotEmpty(),
-      onContinue = a.onContinue
-    )
-    FlightStep.COLOR -> QuestionPage(
-      eyebrow = "Para cuidar tus juegos",
-      title = "¿Te cuesta distinguir algunos colores?",
-      options = ColorVision.entries.map { Opt(it.name, it.label) },
-      selected = setOf(s.color?.name),
-      onPick = { v -> ColorVision.fromStored(v)?.let(a.onColor) },
-      hint = "Lo guardamos para ajustar los juegos que dependen del color. Lo puedes cambiar en Ajustes.",
-      canContinue = s.color != null,
       onContinue = a.onContinue
     )
     FlightStep.DIAS -> QuestionPage(
@@ -537,12 +525,8 @@ private fun AreaLine(r: FirstFlight.AreaRow) {
   }
   Column(Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = "${r.domain.displayName}: $label" }, verticalArrangement = Arrangement.spacedBy(4.dp)) {
     Text(r.domain.displayName, color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
-    Box(Modifier.fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp)).background(TrackColor)) {
-      Box(
-        Modifier.fillMaxHeight().fillMaxWidth(r.progress.coerceIn(0.04f, 1f)).clip(RoundedCornerShape(6.dp))
-          .background(if (r.strong) Clay.Sun else if (r.measured) Clay.Grape else Clay.Grape.copy(alpha = 0.45f))
-      )
-    }
+    // La barra del kit (canal y churro), la misma de Juegos y Avance (Tarea 143, ítem 13); un área estimada (sin medir) se ve más tenue
+    com.example.ui.components.KitBar(r.progress.coerceIn(0.04f, 1f), change = 0f, modifier = Modifier.alpha(if (r.measured) 1f else 0.55f), onCard = false)
     Text(label, color = OnNightDim, fontFamily = AppFamily, fontSize = 18.sp, lineHeight = 23.sp)
   }
 }

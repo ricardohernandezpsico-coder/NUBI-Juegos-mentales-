@@ -15,7 +15,10 @@ import kotlin.math.roundToInt
  * («Hacer la evaluación» desde Avance: solo la parte de juegos, sin preguntas).
  */
 
-/** Si cuesta distinguir algunos colores. Por ahora solo se guarda (los juegos lo usarán después: paletas seguras). */
+/**
+ * Si cuesta distinguir algunos colores. Solo se guarda (hoy no cambia nada en los juegos) y se elige en Ajustes: desde la Tarea 143 (R4, decisión de Ricardo del 19-oct) el Primer vuelo ya NO lo pregunta, porque una pregunta que no cambia nada
+ * es una promesa a medias (y un paso menos para una persona de 60+). El paso `COLOR` se quitó de [FlightStep]; un recorrido guardado con él se sigue leyendo ([FlightStore.decode]).
+ */
 enum class ColorVision(val label: String) {
   NORMAL("No, veo bien los colores"),
   DIFICULTAD("Sí, a veces me cuesta"),
@@ -39,7 +42,6 @@ enum class FlightStep(val game: Int? = null) {
   JUEGO_1(0), TARJETA_1(0),
   EDAD, METAS, DATO,
   JUEGO_2(1), TARJETA_2(1),
-  COLOR,
   JUEGO_3(2), TARJETA_3(2),
   DIAS,
   JUEGO_4(3), TARJETA_4(3),
@@ -61,7 +63,6 @@ data class FlightState(
   val name: String = "",
   val age: AgeBand? = null,
   val goals: Set<DomainType> = emptySet(),
-  val color: ColorVision? = null,
   val days: Int? = null,
   /** Hora del aviso diario; [NO_REMINDER] = sin aviso; null = todavía no respondió. */
   val hour: Int? = null,
@@ -92,7 +93,7 @@ object FirstFlight {
   private val full = listOf(
     FlightStep.HOLA, FlightStep.NOMBRE,
     FlightStep.JUEGO_1, FlightStep.TARJETA_1, FlightStep.EDAD, FlightStep.METAS, FlightStep.DATO,
-    FlightStep.JUEGO_2, FlightStep.TARJETA_2, FlightStep.COLOR,
+    FlightStep.JUEGO_2, FlightStep.TARJETA_2,
     FlightStep.JUEGO_3, FlightStep.TARJETA_3, FlightStep.DIAS,
     FlightStep.JUEGO_4, FlightStep.TARJETA_4, FlightStep.PUNTO, FlightStep.AVISO, FlightStep.CAMINO
   )
@@ -173,7 +174,7 @@ object FirstFlight {
     else -> when (step) {
       FlightStep.HOLA -> 5
       FlightStep.NOMBRE -> 8
-      FlightStep.EDAD, FlightStep.COLOR, FlightStep.DIAS, FlightStep.METAS -> 6
+      FlightStep.EDAD, FlightStep.DIAS, FlightStep.METAS -> 6
       FlightStep.DATO -> 5
       FlightStep.PUNTO -> 12
       FlightStep.AVISO -> 8
@@ -229,7 +230,7 @@ object FirstFlight {
     var i = when (s.step) {
       FlightStep.HOLA, FlightStep.NOMBRE -> 0
       FlightStep.JUEGO_1, FlightStep.TARJETA_1, FlightStep.EDAD, FlightStep.METAS, FlightStep.DATO -> 1
-      FlightStep.JUEGO_2, FlightStep.TARJETA_2, FlightStep.COLOR -> 2
+      FlightStep.JUEGO_2, FlightStep.TARJETA_2 -> 2
       FlightStep.JUEGO_3, FlightStep.TARJETA_3, FlightStep.DIAS -> 3
       FlightStep.JUEGO_4, FlightStep.TARJETA_4 -> 4
       FlightStep.PUNTO, FlightStep.AVISO, FlightStep.CAMINO -> 5
@@ -266,7 +267,9 @@ object FirstFlight {
     val st = stations(s)
     return if (s.mode == FlightMode.GAMES) {
       if (i >= BaselinePlan.steps.size) "Listo · tu punto de partida" else "Juego ${i + 1} de ${BaselinePlan.steps.size} · ${st[i].label}"
-    } else if (i == 0) "Ya diste el primer paso" else "Paso ${i + 1} de ${st.size} · ${st[i].label}"
+    } else if (i == 0) "Ya diste el primer paso"
+    else if (s.step.game != null) "Paso ${i + 1} de ${st.size} · ${st[i].label}"      // un juego o su tarjeta: la etapa lleva el nombre del área
+    else "Paso ${i + 1} de ${st.size}"                                                   // una pregunta, el punto de partida, el aviso o el camino: «Paso 2 de 6» a secas (Tarea 143, A2: antes «Paso 2 de 6 · Memoria» sobre la pregunta de la edad)
   }
 
   // ------------------------------------------------------------------ el punto de partida
@@ -371,7 +374,6 @@ object FlightStore {
     put("name", s.name)
     s.age?.let { put("age", it.name) }
     put("goals", encodeGoals(s.goals))
-    s.color?.let { put("color", it.name) }
     s.days?.let { put("days", it) }
     s.hour?.let { put("hour", it) }
     put("measured", JSONObject().also { o -> s.measured.forEach { (k, v) -> o.put(k, v.toDouble()) } })
@@ -386,19 +388,22 @@ object FlightStore {
     return try {
       val o = JSONObject(raw)
       val mode = FlightMode.valueOf(o.getString("mode"))
-      // «ENFOQUE» (la pregunta «¿qué te sirve más ver primero?», quitada el 10-oct) ya no es un paso: quien quedó guardado ahí sigue en el paso que venía, COLOR. La clave «focus» guardada se ignora.
-      val step = FlightStep.valueOf(o.getString("step").let { if (it == "ENFOQUE") "COLOR" else it })
+      // «ENFOQUE» (la pregunta «¿qué te sirve más ver primero?», quitada el 10-oct) y «COLOR» (la pregunta de los colores, quitada el 19-oct) ya no son pasos: quien quedó guardado ahí sigue en el paso que venía después de la tarjeta del segundo juego
+      // (JUEGO_3, o el que siga si ese ya se jugó o se dejó para después). Las claves «focus» y «color» guardadas se ignoran: lo guardado se lee por NOMBRE.
+      val rawStep = o.getString("step")
+      val legacy = rawStep == "ENFOQUE" || rawStep == "COLOR"
+      if (legacy && mode != FlightMode.FULL) return null
+      val step = if (legacy) FlightStep.TARJETA_2 else FlightStep.valueOf(rawStep)
       if (step !in FirstFlight.steps(mode)) return null
       val measured = o.optJSONObject("measured")?.let { m -> m.keys().asSequence().associateWith { m.getDouble(it).toFloat() } }.orEmpty()
       val phrases = o.optJSONObject("phrases")?.let { m -> m.keys().asSequence().associateWith { m.getString(it) } }.orEmpty()
       val skipped = o.optJSONArray("skipped")?.let { a -> (0 until a.length()).map { a.getString(it) }.toSet() }.orEmpty()
-      FlightState(
+      val decoded = FlightState(
         mode = mode,
         step = step,
         name = o.optString("name"),
         age = AgeBand.entries.firstOrNull { it.name == o.optString("age") },
         goals = decodeGoals(o.optString("goals")),
-        color = ColorVision.fromStored(o.optString("color")),
         days = if (o.has("days")) o.getInt("days") else null,
         hour = if (o.has("hour")) o.getInt("hour") else null,
         measured = measured,
@@ -406,6 +411,7 @@ object FlightStore {
         skipped = skipped,
         applied = o.optBoolean("applied")
       )
+      if (legacy) FirstFlight.next(decoded) ?: decoded else decoded
     } catch (e: Exception) {
       com.example.diag.ErrorLog.record("DATOS", "No se pudo leer el inicio guardado; se vuelve a empezar.", e)
       null

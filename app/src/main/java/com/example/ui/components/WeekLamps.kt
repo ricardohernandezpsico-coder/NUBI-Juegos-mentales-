@@ -39,12 +39,13 @@ private val WeekLampCream = Color(0xFFF6EBD3)
  * renderizada del kit): antes vivía dentro de `HomeScreen` (Tarea 124). [streakNote] = la línea de debajo: «Descansaste el martes: tu racha sigue.» (el día perdonado, si lo hubo) o, por defecto, «Un día de descanso por semana no la corta.».
  */
 @Composable
-fun HoyWeek(lamps: Week.Lamps, streak: Int, streakNote: String? = null, lampSize: Dp = 22.dp, modifier: Modifier = Modifier) {
+fun HoyWeek(lamps: Week.Lamps, streak: Int, streakNote: String? = null, lampSize: Dp = 24.dp, modifier: Modifier = Modifier) {
   Column(modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 4.dp, bottom = 2.dp)) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       val spoken = Week.lampsSpoken(lamps.daysPlayed)
       Row(Modifier.testTag("home_week").semantics { contentDescription = spoken }, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        lamps.played.forEachIndexed { i, on -> WeekLamp(on = on, today = i == lamps.todayIndex, size = lampSize) }
+        // las farolas del kit (Tarea 143, ítem 11: antes Hoy dibujaba discos y Avance, Ajustes y el Primer vuelo farolas); el aro lima de «hoy» se queda
+        lamps.played.forEachIndexed { i, on -> WeekLampRendered(on = on, today = i == lamps.todayIndex, size = lampSize) }
       }
       Spacer(Modifier.width(12.dp))
       Row(verticalAlignment = Alignment.CenterVertically) {
@@ -83,9 +84,9 @@ fun WeekLamp(on: Boolean, today: Boolean, size: Dp = 22.dp) {
  * Una farola de «Tu semana» de Avance (Tarea 125): la del kit (la de la isla y del ícono de Avance), apagada o encendida, de 28 dp de alto; «hoy» es un aro lima de 2,5 dp dibujado acá (forma, no solo color). La caja mide 36 dp para el aro.
  */
 @Composable
-fun WeekLampRendered(on: Boolean, today: Boolean, modifier: Modifier = Modifier) {
+fun WeekLampRendered(on: Boolean, today: Boolean, modifier: Modifier = Modifier, size: Dp = 36.dp) {
   Box(
-    modifier.size(36.dp).drawBehind { if (today) drawCircle(Clay.Lime, size.minDimension / 2f - 1.5.dp.toPx(), center, style = Stroke(2.5.dp.toPx())) },
+    modifier.size(size).drawBehind { if (today) drawCircle(Clay.Lime, this.size.minDimension / 2f - 1.5.dp.toPx(), center, style = Stroke(2.5.dp.toPx())) },
     contentAlignment = Alignment.Center
-  ) { FarolaImage(on, 28.dp) }
+  ) { FarolaImage(on, size * 28f / 36f) }
 }

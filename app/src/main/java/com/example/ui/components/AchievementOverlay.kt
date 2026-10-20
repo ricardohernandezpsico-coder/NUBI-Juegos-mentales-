@@ -152,11 +152,10 @@ fun AchievementOverlay(
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       Text(
-        text = "¡LOGRO!",
+        text = "Medalla nueva",              // (Tarea 143, B3) antes «¡LOGRO!» en mayúsculas sostenidas con espaciado: DESIGN §1 no usa mayúsculas sostenidas, y la app las llama medallas
         fontFamily = AppFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 16.sp,
-        letterSpacing = 3.sp,
         color = Clay.Sun
       )
       Box(modifier = Modifier.size(270.dp), contentAlignment = Alignment.Center) {
@@ -221,7 +220,7 @@ fun AchievementOverlay(
           modifier = Modifier.padding(top = 4.dp)
         )
         Text(
-          text = "$unlockedCount de $totalCount logros",
+          text = "$unlockedCount de $totalCount medallas",
           fontFamily = AppFamily,
           fontSize = 15.sp,
           color = com.example.ui.theme.NubiTokens.OnNightDim,
@@ -262,11 +261,11 @@ fun AchievementOverlay(
                     subtitle = def.description,
                     achievement = def,
                     stats = buildList {
-                      add("$unlockedCount" to "logros")
+                      add("$unlockedCount" to "medallas")
                       if (streak > 0) add("$streak" to if (streak == 1) "día de racha" else "días de racha")
                     }
                   ),
-                  "¡Conseguí el logro \"${def.title}\" en Nubi!"
+                  "¡Conseguí la medalla \"${def.title}\" en Nubi!"
                 )
               } catch (e: Exception) {
                 android.util.Log.e("AchievementOverlay", "No se pudo compartir el logro", e)

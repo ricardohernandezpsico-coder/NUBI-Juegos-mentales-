@@ -125,10 +125,8 @@ class FirstFlightFlowTest {
     assertEquals(FlightStep.JUEGO_2, vm.flight.value!!.step)
     play(vm, 1)
     assertEquals("Frenaste a tiempo 6 de 8 veces.", vm.flight.value!!.phrases["freno"])
-    vm.flightContinue() // TARJETA_2 -> COLOR (ya no hay pregunta de qué ver primero)
-    assertEquals(FlightStep.COLOR, vm.flight.value!!.step)
-    vm.flightSetColorVision(ColorVision.DIFICULTAD)
-    vm.flightContinue() // -> JUEGO_3
+    vm.flightContinue() // TARJETA_2 -> JUEGO_3 (ya no hay pregunta de qué ver primero ni de los colores: Tarea 143, R4)
+    assertEquals(FlightStep.JUEGO_3, vm.flight.value!!.step)
     play(vm, 2)
     assertEquals("En promedio, aterrizaste a un 4 % de distancia del lugar justo.", vm.flight.value!!.phrases["aterrizaje"])
     vm.flightContinue() // -> DIAS
@@ -146,7 +144,7 @@ class FirstFlightFlowTest {
     assertEquals("Ana", vm.userSettings.value.name)
     assertEquals(5, vm.userSettings.value.weeklyGoal)
     assertEquals(setOf(DomainType.LENGUAJE, DomainType.MEMORIA), vm.goals.value)
-    assertEquals(ColorVision.DIFICULTAD, vm.colorVision.value)
+    assertEquals("el recorrido ya no toca los colores: queda el valor por defecto (se cambia en Ajustes)", ColorVision.NO_SE, vm.colorVision.value)
 
     vm.flightConfirmReminder(9)
     TestSupport.awaitUntil { vm.flight.value?.step == FlightStep.CAMINO }
@@ -181,8 +179,7 @@ class FirstFlightFlowTest {
     val s = vm.flight.value!!
     assertEquals(setOf("freno", "aterrizaje", "meteoros"), s.skipped)
     assertEquals(setOf("secuencia"), s.measured.keys)
-    assertEquals("sigue por la pregunta que falta, sin juegos", FlightStep.COLOR, s.step)
-    vm.flightSetColorVision(ColorVision.NORMAL); vm.flightContinue() // DIAS
+    assertEquals("sigue por la pregunta que falta, sin juegos", FlightStep.DIAS, s.step)
     vm.flightSetDays(3); vm.flightContinue()
     assertEquals(FlightStep.PUNTO, vm.flight.value!!.step)
     vm.flightContinue()
@@ -223,8 +220,7 @@ class FirstFlightFlowTest {
     play(first, 0)
     answerAgeAfterFirstCard(first); first.flightToggleGoal(DomainType.MEMORIA); first.flightContinue(); first.flightContinue()
     play(first, 1)
-    first.flightContinue() // TARJETA_2 -> COLOR
-    first.flightSetColorVision(ColorVision.NO_SE); first.flightContinue()
+    first.flightContinue() // TARJETA_2 -> JUEGO_3
     assertEquals(FlightStep.JUEGO_3, first.flight.value!!.step)
     first.flightPlay(2)
     first.onUnityLaunched("L2") // Unity al frente; la app muere
@@ -451,7 +447,7 @@ class FirstFlightFlowTest {
   fun `el recorrido guardado se codifica y se lee de vuelta, y lo ilegible se descarta`() {
     val s = FlightState(
       mode = FlightMode.FULL, step = FlightStep.JUEGO_3, name = "Ana", age = AgeBand.SENIOR,
-      goals = setOf(DomainType.MEMORIA, DomainType.LENGUAJE), color = ColorVision.DIFICULTAD, days = 4, hour = FirstFlight.NO_REMINDER,
+      goals = setOf(DomainType.MEMORIA, DomainType.LENGUAJE), days = 4, hour = FirstFlight.NO_REMINDER,
       measured = mapOf("secuencia" to 0.5f, "freno" to 0.25f), phrases = mapOf("freno" to "Frenaste a tiempo 6 de 8 veces."),
       skipped = setOf("meteoros"), applied = false
     )
@@ -479,12 +475,27 @@ class FirstFlightFlowTest {
   }
 
   @Test
-  fun `quien quedo guardado en la pregunta que se quito sigue en la que venia, sin reiniciar el recorrido`() {
-    // Un recorrido guardado con la versión anterior (con el paso ENFOQUE y la clave focus): no se descarta, sigue en COLOR y la respuesta vieja se ignora.
-    val s = FlightState(mode = FlightMode.FULL, step = FlightStep.COLOR, name = "Ana", age = AgeBand.SENIOR, measured = mapOf("secuencia" to 0.5f, "freno" to 0.25f))
-    val old = FlightStore.encode(s).replace("\"step\":\"COLOR\"", "\"step\":\"ENFOQUE\"").replaceFirst("{", "{\"focus\":\"CONSEJO\",")
-    assertTrue("el JSON viejo trae el paso que ya no existe", old.contains("ENFOQUE") && old.contains("focus"))
-    assertEquals(s, FlightStore.decode(old))
+  fun `quien quedo guardado en una pregunta que se quito sigue en la que venia, sin reiniciar el recorrido`() {
+    // Un recorrido guardado con una versión anterior (con el paso ENFOQUE y la clave focus, o con el paso COLOR de la pregunta de los colores, quitada el 19-oct): no se descarta; sigue donde venía y la respuesta vieja se ignora.
+    val s = FlightState(mode = FlightMode.FULL, step = FlightStep.TARJETA_2, name = "Ana", age = AgeBand.SENIOR, measured = mapOf("secuencia" to 0.5f, "freno" to 0.25f))
+    val expected = s.copy(step = FlightStep.JUEGO_3)
+    val enfoque = FlightStore.encode(s).replace("\"step\":\"TARJETA_2\"", "\"step\":\"ENFOQUE\"").replaceFirst("{", "{\"focus\":\"CONSEJO\",")
+    assertTrue("el JSON viejo trae el paso que ya no existe", enfoque.contains("ENFOQUE") && enfoque.contains("focus"))
+    assertEquals(expected, FlightStore.decode(enfoque))
+    val color = FlightStore.encode(s).replace("\"step\":\"TARJETA_2\"", "\"step\":\"COLOR\"").replaceFirst("{", "{\"color\":\"DIFICULTAD\",")
+    assertTrue(color.contains("\"COLOR\"") && color.contains("DIFICULTAD"))
+    assertEquals("el paso de los colores sigue en el juego 3 y la respuesta guardada se ignora", expected, FlightStore.decode(color))
+    // si ese juego ya se midió pasa directo a su tarjeta; si se dejó para después, al paso que sigue; y la clave «color» guardada se ignora
+    fun saved(state: FlightState) = FlightStore.encode(state).replace("\"step\":\"TARJETA_2\"", "\"step\":\"COLOR\"").replaceFirst("{", "{\"color\":\"DIFICULTAD\",")
+    assertEquals(FlightStep.TARJETA_3, FlightStore.decode(saved(s.copy(measured = s.measured + ("aterrizaje" to 0.3f))))!!.step)
+    assertEquals("con el juego 3 para después sigue en la pregunta de los días", FlightStep.DIAS, FlightStore.decode(saved(s.copy(skipped = setOf("aterrizaje"))))!!.step)
+    assertFalse("y lo que se guarda ya no lleva el color", FlightStore.encode(s).contains("color"))
+    // y con ese recorrido guardado en el teléfono, al abrir la app sigue en el juego 3
+    FlightStore.save(app, expected.copy(step = FlightStep.TARJETA_2))
+    val vm = newViewModel()
+    assertEquals(FlightStep.TARJETA_2, vm.flight.value!!.step)
+    vm.flightContinue()
+    assertEquals(FlightStep.JUEGO_3, vm.flight.value!!.step)
   }
 
   @Test

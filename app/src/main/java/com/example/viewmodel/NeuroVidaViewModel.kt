@@ -140,11 +140,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     repository.saveGoals(goals)
   }
 
-  fun flightSetColorVision(vision: com.example.data.ColorVision) {
-    updateFlight { it.copy(color = vision) }
-    repository.saveColorVision(vision)
-  }
-
   fun flightSetDays(days: Int) = updateFlight { it.copy(days = days) }
 
   fun flightSetHour(hour: Int) = updateFlight { it.copy(hour = hour) }

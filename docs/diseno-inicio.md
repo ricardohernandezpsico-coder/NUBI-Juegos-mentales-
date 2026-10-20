@@ -24,8 +24,8 @@ copiado: nombres, textos, arte y juegos propios.
 5. **¿Qué te gustaría entrenar?** (hasta 3 áreas).
 6. **Nubi: un dato** («poco y seguido rinde más»: práctica distribuida; sin promesas de mejora).
 7. **Juego 2 · Atención**: Freno de Emergencia.
-8. **(nuevo) ¿Te cuesta distinguir algunos colores?** Sí / No / No sé. Con «sí», los juegos que dependen del color usan su
-   paleta segura y Tinta o Palabra se marca para revisar (ver «Accesibilidad»). Se cambia en Ajustes.
+8. ~~**¿Te cuesta distinguir algunos colores?**~~ **QUITADA el 19-oct (Tarea 143, decisión de Ricardo R4):** se guardaba y no cambiaba nada en los juegos; una pregunta que no hace nada es una promesa a medias y un paso más para una persona de 60+.
+   El ajuste sigue en Ajustes («¿Te cuesta distinguir algunos colores?», con la nota «Solo se guarda: hoy no cambia nada en los juegos»). Ver «Accesibilidad de color».
 9. **Juego 3 · Razonamiento**: Aterrizaje Lunar.
 10. **¿Cuántos días por semana?** (3 / 4 recomendado / 5 / todos).
 11. **Juego 4 · Lenguaje**: Lluvia de meteoros.
@@ -83,11 +83,11 @@ Elegidos por ser los más pulidos y fáciles de entender en segundos:
 Depende de: (1) Secuencia y Parejas con la dificultad común; (2) Secuencia reestructurada (mundo propio, símbolos
 neutros, medida al final). El inicio nuevo se programa después de esas dos tareas.
 
-## Accesibilidad de color (nuevo)
+## Accesibilidad de color
 
-La pregunta 9 guarda una preferencia (`color_vision`: normal / dificultad / no sé). Con «dificultad»: paletas seguras
-para daltonismo donde existan y, en el futuro, la opción de ocultar juegos (idea de Peak/Lumosity, `docs/analisis-competencia.md` §9).
-Nueva preferencia = decidir su respaldo en `BackupRulesTest` (es progreso de configuración: va al respaldo).
+**Desde el 19-oct (Tarea 143, R4) el Primer vuelo ya no pregunta por los colores** (el paso `COLOR` se quitó de `FlightStep`; el recorrido tiene 17 pasos). La preferencia `color_vision` (normal / dificultad / no sé) se elige en Ajustes y SOLO se guarda:
+hoy no cambia nada en los juegos (los que dependen del color se distinguen por forma, lugar o texto; las tintas de Tinta o Palabra están verificadas para daltonismo para todos). Si algún día hace algo (paletas seguras donde existan, la opción de ocultar juegos,
+idea de Peak/Lumosity, `docs/analisis-competencia.md` §9), la pregunta puede volver al recorrido. Nueva preferencia = decidir su respaldo en `BackupRulesTest` (es progreso de configuración: va al respaldo).
 
 ## Ficha técnica (programado el 3-oct, tarea 21b)
 
@@ -106,11 +106,11 @@ Nueva preferencia = decidir su respaldo en `BackupRulesTest` (es progreso de con
 
 **Preferencias**
 - `first_flight` (nueva, `FlightStore`): el recorrido en curso como JSON. Estado PASAJERO: va a `transient` en `BackupRulesTest` (no al respaldo).
-- `color_vision`: dentro de `profile_extra`, que YA va al respaldo (es configuración de la persona). Valor por defecto: «no sé». Editable en Ajustes. Por ahora solo se guarda.
+- `color_vision`: dentro de `profile_extra`, que YA va al respaldo (es configuración de la persona). Valor por defecto: «no sé». Editable en Ajustes; ya no la fija el Primer vuelo. Solo se guarda.
   `result_focus` (avance / consejo; reemplazó a `coach_tone` el 3-oct, tarea 21c) **se quitó el 10-oct (Tarea 78)**: el ajuste de Opciones, la pregunta del inicio, `ResultFocus` y el bloque
   «Un consejo para la próxima» de `GameResultScreen` ya no existen. Lo que haya quedado guardado en `profile_extra` (`result_focus` o el viejo `coach_tone`) no se borra: simplemente ya no se lee ni se
   migra. De `data/ResultAdvice.kt` queda solo lo que usan los finales con sentido: separar el «Truco: …» de una frase de medida (`body` y `tipOf`). Un recorrido guardado en el paso viejo
-  (`ENFOQUE`) sigue en el paso siguiente (`COLOR`) al leerlo (`FlightStore.decode`).
+  (`ENFOQUE`, o `COLOR` desde el 19-oct) sigue en el paso que viene después de la tarjeta del segundo juego (`JUEGO_3`, o el que siga si ese ya se jugó o se dejó para después) al leerlo (`FlightStore.decode`); la clave `color` guardada se ignora.
   Nubi vuelve a UN solo tono, cálido y sin culpa, en veredictos (`ResultPhrases.feedback`) y recordatorios (`buildReminder`): se quitaron las variantes de tono.
 - `education`: ya no se pregunta; se edita en Perfil (opcional) y conserva el valor de quien ya lo tenía.
 
@@ -134,13 +134,13 @@ pendiente, evaluación repetida), `BaselineTest`, `FirstDataTest`, `ResultPhrase
 
 Pedido de Ricardo (18-oct; spec `auditoria-fable/spec-adopcion-A1-A7.md` §A2 y §A4): jugar antes de contestar y no prometer minutos.
 
-- **Orden nuevo** (`FlightStep`, 18 pasos, los mismos): Hola · Nombre · **Juego 1 · Tarjeta 1 · Edad** · Metas · Dato · Juego 2 … `FlightStore` guarda y lee el paso por NOMBRE, así que un recorrido guardado con el orden viejo sigue leyéndose. `next()` y `back()` se saltan `EDAD` cuando
+- **Orden nuevo** (`FlightStep`, 18 pasos hasta el 18-oct; 17 desde el 19-oct, sin la pregunta de los colores): Hola · Nombre · **Juego 1 · Tarjeta 1 · Edad** · Metas · Dato · Juego 2 … `FlightStore` guarda y lee el paso por NOMBRE, así que un recorrido guardado con el orden viejo sigue leyéndose. `next()` y `back()` se saltan `EDAD` cuando
   `age != null` (la edad se pregunta una sola vez; después se cambia en Ajustes, «Rango de edad»).
 - **El juego 1 sin edad:** corre con la edad que haya en el perfil (`FirstFlightHost`: `state.age ?: settings.ageBand ?: ADULT`), o sea como adulto (objetivo 80 %), con el arranque suave: `BaselinePlan.startLevel(null) = 2` (empezar fácil no daña a nadie; el DDA sube en 2-3 ensayos).
   Al saberse la edad no hay nada que recalcular: lo medido es el rating propio del juego y la edad entra al leer (`Skill.progress`, `FirstFlight.startingPoint`). Nota de serie: `docs/medidas-juegos-estrella.md`, § «Rastro de luz».
 - **Si la persona sale a mitad:** de Unity sin terminar el juego 1, sigue en `JUEGO_1` con «Jugar»; si Android cierra la app en el juego 1, el resultado vuelve por `GameSessionStore` → tarjeta 1 → edad; si la cierra en la edad, vuelve en la edad (con el juego 1 ya medido).
 - **Farolas** (`FirstFlight.stations` / `stationText`, `FlightStations` en `FirstFlightScreen.kt`): seis de 40 dp (las cajas se achican en pantallas angostas), un fundido de `NubiMotion.STATE_MS` al encender (un salto con «quitar animaciones»), sin sonido ni vibración. Una farola de área se enciende cuando su juego se dio
-  (se jugó o se dejó «para después»: la etapa se pasó y nada se castiga). **La etapa que se muestra es la primera que aún no se dio**: con «Terminar después» en el juego 1 (los 4 juegos para después), la edad, las metas, el dato, el color y los días ya dicen «Paso 6 de 6 · Tu punto de partida», y la etapa nunca salta de la 4 a la 6 mientras queda una por dar, la última cuando el punto de partida se guardó: como todo sale de lo ya medido, volver atrás nunca apaga una. La evaluación repetida («Hacer la evaluación» desde Avance) lleva cinco: los cuatro juegos y «Listo»
-  («Juego 2 de 4 · Atención»). Para el lector de pantalla son un grupo: «Paso 2 de 6 · Memoria. 2 de 6 farolas encendidas». `minutesLeft` y `progress` quedan en `FirstFlight.kt` (las usan las pruebas) pero ya no se muestran.
+  (se jugó o se dejó «para después»: la etapa se pasó y nada se castiga). **La etapa que se muestra es la primera que aún no se dio**: con «Terminar después» en el juego 1 (los 4 juegos para después), la edad, las metas, el dato y los días ya dicen «Paso 6 de 6» (a secas: las pantallas que no son de juego no nombran un área, Tarea 143, A2; antes «Paso 6 de 6 · Tu punto de partida»), y la etapa nunca salta de la 4 a la 6 mientras queda una por dar, la última cuando el punto de partida se guardó: como todo sale de lo ya medido, volver atrás nunca apaga una. La evaluación repetida («Hacer la evaluación» desde Avance) lleva cinco: los cuatro juegos y «Listo»
+  («Juego 2 de 4 · Atención»). Para el lector de pantalla son un grupo: «Paso 2 de 6 · Memoria. 2 de 6 farolas encendidas» (en un juego o su tarjeta; en una pregunta, «Paso 2 de 6. 2 de 6 farolas encendidas»). `minutesLeft` y `progress` quedan en `FirstFlight.kt` (las usan las pruebas) pero ya no se muestran.
 - **Pruebas:** `FirstFlightTest` (orden, edad una sola vez, orden viejo, farolas, textos), `BaselineTest` (arranque suave), `FirstFlightFlowTest` (los recorridos con el ViewModel, también la app cerrada en el juego 1 y en la edad), `FirstFlightLampsTest` (360 dp con letra 2,0, sin «minutos») y la hoja
   `docs/previews/primer-vuelo-orden.png` (`FirstFlightOrdenScreenshotTest`, `tools/previews/primer_vuelo_orden.py`).

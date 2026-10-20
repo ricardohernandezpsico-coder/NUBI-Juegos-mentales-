@@ -61,6 +61,16 @@ class DesignMdTest {
   private val hexCell = Regex("^#[0-9A-Fa-f]{6}$")
 
   @Test
+  fun `la semana de Hoy dibuja la farola del kit y DESIGN lo dice`() {
+    // Tarea 143, ítem 11 (revisión de Fable del 19-oct): DESIGN §9 decía que Hoy usa la farola y Hoy dibujaba discos; ahora Hoy, Avance, Ajustes y el Primer vuelo dibujan la misma farola
+    val weekLamps = File("src/main/java/com/example/ui/components/WeekLamps.kt").readText().replace("\r\n", "\n")
+    val hoyWeek = weekLamps.substring(weekLamps.indexOf("fun HoyWeek("), weekLamps.indexOf("/** Un farolito:"))
+    assertTrue("HoyWeek dibuja WeekLampRendered", hoyWeek.contains("WeekLampRendered("))
+    assertTrue("y ya no los discos de WeekLamp", !hoyWeek.contains("WeekLamp(on"))
+    assertTrue("§9 dice que la farola va en la semana de Hoy y de Avance", section(9).contains("`WeekLampRendered`") && section(9).contains("la semana de Hoy y de Avance"))
+  }
+
+  @Test
   fun `el documento trae sus trece secciones en orden`() {
     var last = -1
     for (n in 0..12) {

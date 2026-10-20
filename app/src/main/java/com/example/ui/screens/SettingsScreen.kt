@@ -124,12 +124,7 @@ fun SettingsScreen(
   ) {
     Spacer(modifier = Modifier.height(16.dp))
 
-    com.example.ui.components.OnBoardText(
-      text = strings.settingsTitle,
-      style = MaterialTheme.typography.headlineMedium,
-      fontWeight = FontWeight.Black,
-      color = MaterialTheme.colorScheme.onBackground
-    )
+    // (Tarea 143, A3) El título grande «Ajustes y Preferencias» se quitó: la cabecera del panel ya dice «Ajustes» (antes eran dos títulos seguidos, «Opciones» y este).
 
     // El selector de idioma: solo se muestra si hay más de un idioma TRADUCIDO (`AppLanguage.translated`). Hoy solo el español lo está: la app no se traduce al resto, así que elegirlos dejaba una app a medias.
     if (AppLanguage.selectable.size > 1) ClayPanel(modifier = Modifier.fillMaxWidth().testTag("card_language_selector"), verticalSpacing = 14.dp) {
@@ -197,7 +192,7 @@ fun SettingsScreen(
           KitGlyph(Glyph.PERSON)
           Spacer(modifier = Modifier.width(8.dp))
           Text(
-            text = "Tu perfil",
+            text = "Tu nombre",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
           )
@@ -205,8 +200,6 @@ fun SettingsScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Text(text = "Tu nombre", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Spacer(modifier = Modifier.height(4.dp))
         ClayTextField(
           value = nameInput,
           onValueChange = { nameInput = it },
@@ -286,7 +279,7 @@ fun SettingsScreen(
     ClayPanel(modifier = Modifier.fillMaxWidth(), verticalSpacing = 16.dp) {
       run {
         Text(
-          text = "Experiencia de Juego",
+          text = "Cómo juegas",
           style = MaterialTheme.typography.titleMedium,
           fontWeight = FontWeight.Bold
         )
@@ -323,9 +316,9 @@ fun SettingsScreen(
             }
           }
           Text(
-            text = "Por ahora ajusta la dificultad de Constelaciones.",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            text = "Cambia el ritmo y el tamaño de los juegos, no lo difícil: eso lo decide cómo juegas.",
+            fontSize = 16.sp, lineHeight = 21.sp,
+            color = com.example.ui.theme.Clay.InkMuted
           )
         }
 
@@ -344,9 +337,9 @@ fun SettingsScreen(
             }
           }
           Text(
-            text = "Por ahora solo se guarda: los juegos que dependen del color lo usarán más adelante.",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            text = "Solo se guarda: hoy no cambia nada en los juegos.",
+            fontSize = 16.sp, lineHeight = 21.sp,
+            color = com.example.ui.theme.Clay.InkMuted
           )
         }
 
@@ -399,7 +392,7 @@ fun SettingsScreen(
             KitGlyph(Glyph.VIBRATION)
             Spacer(modifier = Modifier.width(10.dp))
             Text(
-              text = "Vibración y respuesta háptica",
+              text = "Vibración",
               style = MaterialTheme.typography.bodyMedium,
               fontWeight = FontWeight.SemiBold
             )
@@ -420,7 +413,7 @@ fun SettingsScreen(
               )
             },
             modifier = Modifier.testTag("switch_haptics"),
-            label = "Vibración y respuesta háptica"
+            label = "Vibración"
           )
         }
       }
@@ -513,7 +506,7 @@ fun SettingsScreen(
               Triple("Mañana", 9, 0),
               Triple("Tarde", 15, 0),
               Triple("Noche", 19, 0),
-              Triple("21:00", 21, 0)
+              Triple("Más tarde", 21, 0)
             )
 
             times.chunked(2).forEach { pair -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { pair.forEach { (label, h, m) ->

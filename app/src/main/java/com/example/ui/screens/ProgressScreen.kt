@@ -115,7 +115,7 @@ fun ProgressScreen(
       lang = currentLang, onArea = { openArea = it },
       onPlay = { id -> openArea = null; viewModel.launchGame(id) },
       onGame = { id -> GameRegistry.getById(id)?.let { sheetFor = it } },
-      onClose = { openArea = null }, modifier = modifier
+      onClose = { openArea = null }, modifier = modifier, backLabel = "Avance"
     )
     // La ficha del juego tocado, encima del detalle del área. Jugar desde ella no recuerda casilla de Juegos y, al volver de la partida, la persona sigue en Avance.
     sheetFor?.let { g ->
@@ -179,7 +179,7 @@ fun ProgressScreen(
       Column {
         SpaceSectionTitle(
           "Tu punto de partida",
-          hint = if (baseline == null) "3 juegos cortos para que cada juego empiece a tu medida" else "Puedes repetirlo cuando quieras"
+          hint = if (baseline == null) "4 juegos cortos para que cada juego empiece a tu medida" else "Puedes repetirlo cuando quieras"
         )
         Spacer(Modifier.height(12.dp))
         ClayButton(

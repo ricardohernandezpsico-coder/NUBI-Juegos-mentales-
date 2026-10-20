@@ -38,7 +38,6 @@ fun FirstFlightHost(viewModel: NeuroVidaViewModel) {
       onName = viewModel::flightSetName,
       onAge = viewModel::flightSetAge,
       onGoal = viewModel::flightToggleGoal,
-      onColor = viewModel::flightSetColorVision,
       onDays = viewModel::flightSetDays,
       onHour = viewModel::flightSetHour,
       onPlay = viewModel::flightPlay,

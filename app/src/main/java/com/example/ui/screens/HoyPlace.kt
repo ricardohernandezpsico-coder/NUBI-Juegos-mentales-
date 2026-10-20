@@ -375,8 +375,12 @@ internal fun PlaceSheetContent(place: PlaceSheetUi, headerStart: Dp, nubiDrop: D
     // Encabezado fijo: el lugar, su área y la X.
     PlaceHeader(place, color, headerStart, nubiDrop, titleFocus, onClose)
 
-    // Lo que se desliza: tu avance y tus juegos.
-    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 18.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    // Lo que se desliza: tu avance y tus juegos. Con letra grande (≥ 1,3) la cuadrícula de las 4 semanas se omite (está en el detalle del área, en Avance): sin ella «Tus juegos aquí» entra en pantalla (Tarea 143, ítem 4).
+    // Un desvanecido de 24 dp al pie avisa que la lista sigue cuando se puede deslizar más.
+    val scroll = rememberScrollState()
+    val bigLetters = LocalDensity.current.fontScale >= 1.3f
+    Box(Modifier.weight(1f)) {
+    Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(horizontal = 18.dp, vertical = 8.dp).testTag("place_scroll"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
       Text("Tu avance aquí", color = SheetMuted, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 4.dp))
       if (place.measured) {
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -386,17 +390,17 @@ internal fun PlaceSheetContent(place: PlaceSheetUi, headerStart: Dp, nubiDrop: D
       } else {
         Text("Aún sin medir", color = Clay.Ink, fontSize = 26.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("place_stage"))
       }
-      StageBar(place)
+      com.example.ui.components.StageScale(if (place.measured) place.fill else null, onCard = true, barTag = "place_bar", namesTag = "place_stages")
       Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(place.changeLine, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("place_change"))
         place.toNextLine?.let { Text(it, color = SheetMuted, fontSize = 15.sp, modifier = Modifier.testTag("place_next")) }
       }
-      WeeksRow(place)
+      if (!bigLetters) WeeksRow(place)
       Box(Modifier.fillMaxWidth().height(2.dp).background(Color(0x26211C45)))
       Text("Tus juegos aquí", color = SheetMuted, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-      Column {
-        place.games.forEach { g -> GameRow(g, color, onClick = { onGame(g.gameId) }) }
-      }
+      PlaceGamesGrid(place, onGame)
+    }
+    if (scroll.canScrollForward) Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(24.dp).background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.Transparent, SheetCream))).testTag("place_fade"))
     }
 
     // Pie fijo: Jugar, sobre la barra del teléfono, y lo que eligió Nubi. [footerBottom] lo deja por encima de la franja donde la caja de Hoy se desvanece (`pageFooterBottom`): la leyenda se lee entera.
@@ -407,7 +411,6 @@ internal fun PlaceSheetContent(place: PlaceSheetUi, headerStart: Dp, nubiDrop: D
         glyph = Glyph.PLAY, fontSize = 19.sp,
         modifier = Modifier.testTag("place_play")
       )
-      place.chosenLine?.let { Text(it, color = SheetMuted, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp).testTag("place_chosen")) }
     }
   }
 }
@@ -485,34 +488,6 @@ private fun PlaceHeader(place: PlaceSheetUi, color: Color, headerStart: Dp, nubi
   }
 }
 
-/** La barra de 5 tramos con las etapas nombradas debajo (la tuya, en negrita). Con letra grande los nombres no caben en cinco columnas y pasan a una línea. */
-@Composable
-private fun StageBar(place: PlaceSheetUi) {
-  Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-    Box(
-      Modifier.fillMaxWidth().height(16.dp).clip(RoundedCornerShape(50)).background(SheetTrack).border(2.dp, Clay.Ink, RoundedCornerShape(50)).testTag("place_bar")
-    ) {
-      Box(Modifier.fillMaxWidth(place.fill.coerceIn(0f, 1f)).fillMaxSize().background(SheetFill))
-      Row(Modifier.fillMaxSize()) {
-        repeat(5) { i -> Box(Modifier.weight(1f).fillMaxSize().then(if (i < 4) Modifier.drawBehind { drawLine(Color(0x59211C45), Offset(size.width, 0f), Offset(size.width, size.height), 2.dp.toPx()) } else Modifier)) }
-      }
-    }
-    if (LocalDensity.current.fontScale > 1.15f) {
-      Text(
-        "Etapas: " + Skill.STAGES.joinToString(" · ") + (place.stageName?.let { ". Vas en $it" } ?: ""), color = SheetMuted, fontSize = 14.sp,      // la escala de las 5 etapas: rótulo de gráfico, 14 sp
-        modifier = Modifier.testTag("place_stages")
-      )
-    } else {
-      Row(Modifier.fillMaxWidth().testTag("place_stages")) {
-        Skill.STAGES.forEachIndexed { i, name ->
-          val here = place.stageIndex == i
-          Text(name, color = if (here) Clay.Ink else SheetMuted, fontSize = 14.sp, fontWeight = if (here) FontWeight.ExtraBold else FontWeight.Normal, textAlign = TextAlign.Center, maxLines = 1, modifier = Modifier.weight(1f))
-        }
-      }
-    }
-  }
-}
-
 /** Las últimas 4 semanas: cuatro casillas con el número y su rótulo; la de esta semana, destacada. Sin dato, «—». Con letra grande, dos y dos. */
 @Composable
 private fun WeeksRow(place: PlaceSheetUi) {
@@ -541,23 +516,62 @@ private fun WeeksRow(place: PlaceSheetUi) {
   }
 }
 
-/** Una fila de «Tus juegos aquí»: el punto del área, el nombre del juego y su dato; tocarla abre la FICHA de ese juego encima de la lámina (solo el botón grande «Jugar en…» juega directo; Tarea 87). */
+/**
+ * «Tus juegos aquí» como CUADRÍCULA de fichas con emblema (Tarea 143, decisión de Ricardo del 19-oct; antes una lista de filas con una cifra distinta en su idioma por juego, el texto partido en 2-3 líneas y «Nubi elige…» suelto abajo).
+ * Cada ficha ([PlaceGameTile]): el emblema de plasticina del juego (60 dp, el mismo de Juegos), su nombre (hasta 2 líneas, 16 sp) y cuándo se jugó («hoy», «ayer», «hace 3 días», «nuevo»). SIN las cifras de medida: esas se quedan en la ficha del juego,
+ * con su explicación. El juego que sugiere Nubi lleva un chip sol dentro de SU ficha. Tocar la ficha entera abre la ficha del juego (mide mucho más que 48 dp).
+ * Las columnas: tres con letra normal, dos con letra ≥ 1,3, y una si la palabra más larga de los nombres («Constelaciones») no cabe entera en una ficha (nunca se parte una palabra); la última fila, si queda incompleta, va centrada.
+ */
 @Composable
-private fun GameRow(row: PlaceGameRow, color: Color, onClick: () -> Unit) {
-  Row(
-    Modifier
-      .fillMaxWidth()
-      .heightIn(min = 44.dp)
-      .clip(RoundedCornerShape(12.dp))
-      .clickable(onClickLabel = "Ver su ficha", role = Role.Button, onClick = onClick)
-      .semantics(mergeDescendants = true) { contentDescription = "${row.title}, ${row.detail}" }
-      .padding(vertical = 4.dp)
-      .testTag("place_game_${row.gameId}"),
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(10.dp)
+private fun PlaceGamesGrid(place: PlaceSheetUi, onGame: (String) -> Unit) {
+  val density = LocalDensity.current
+  val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+  val base = androidx.compose.material3.LocalTextStyle.current
+  val gap = 8.dp
+  BoxWithConstraints(Modifier.fillMaxWidth().testTag("place_games_grid")) {
+    val bold = base.merge(androidx.compose.ui.text.TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold))
+    val widthPx = with(density) { maxWidth.toPx() }
+    val gapPx = with(density) { gap.toPx() }
+    val padPx = with(density) { PLACE_TILE_PAD.toPx() }
+    fun tilePx(cols: Int) = (widthPx - gapPx * (cols - 1)) / cols
+    val longestWordPx = place.games.flatMap { it.title.split(' ') }.maxOfOrNull { measurer.measure(it, bold, softWrap = false, maxLines = 1).size.width } ?: 0
+    val cols = listOf(3, 2, 1).first { c -> c == 1 || ((c < 3 || density.fontScale < 1.3f) && tilePx(c) - 2 * padPx >= longestWordPx) }
+    // el chip: «Nubi sugiere» si cabe entero en la ficha (dos columnas o una); en tres columnas, «Sugerido»
+    val chipFullPx = measurer.measure("Nubi sugiere", bold, softWrap = false, maxLines = 1).size.width + with(density) { 20.dp.toPx() }
+    val chipText = if (tilePx(cols) - 2 * padPx >= chipFullPx) "Nubi sugiere" else "Sugerido"
+    val tileWidth = with(density) { tilePx(cols).toDp() }
+    Column(verticalArrangement = Arrangement.spacedBy(gap)) {
+      place.games.chunked(cols).forEach { rowGames ->
+        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally)) {
+          rowGames.forEach { g -> PlaceGameTile(g, suggested = g.gameId == place.chosenGameId, chipText = chipText, modifier = Modifier.width(tileWidth).fillMaxHeight(), onClick = { onGame(g.gameId) }) }
+        }
+      }
+    }
+  }
+}
+
+/** El aire de lado de una ficha de juego en la lámina (a cada lado): con él se mide si la palabra más larga cabe. */
+private val PLACE_TILE_PAD = 6.dp
+
+/** Una ficha de la cuadrícula: losa crema del kit con su estado presionado, el emblema, el nombre y cuándo se jugó; la sugerida por Nubi lleva el chip sol. Se lee «Satélites, jugado ayer, Nubi lo sugiere». */
+@Composable
+private fun PlaceGameTile(row: PlaceGameRow, suggested: Boolean, chipText: String, modifier: Modifier, onClick: () -> Unit) {
+  com.example.ui.components.ClaySlab(
+    color = com.example.ui.components.SlabColor.CREAM,
+    size = com.example.ui.components.SlabSize.SMALL,
+    onClick = onClick,
+    role = Role.Button,
+    onClickLabel = "Ver su ficha",
+    contentAlignment = Alignment.TopCenter,
+    modifier = modifier
+      .semantics(mergeDescendants = true) { contentDescription = row.title + ", " + row.spoken + if (suggested) ", Nubi lo sugiere" else "" }
+      .testTag("place_game_${row.gameId}")
   ) {
-    Box(Modifier.size(12.dp).clip(CircleShape).background(color).border(2.dp, Clay.Ink, CircleShape))
-    Text(row.title, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-    Text(row.detail, color = SheetMuted, fontSize = 16.sp, textAlign = TextAlign.End, modifier = Modifier.widthIn(max = 150.dp))
+    Column(Modifier.fillMaxWidth().padding(horizontal = PLACE_TILE_PAD, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+      com.example.ui.components.GameEmblem(row.gameId, 60.dp, done = row.daysAgo == 0)
+      Text(row.title, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 20.sp, textAlign = TextAlign.Center, maxLines = 2, modifier = Modifier.padding(top = 4.dp).testTag("place_game_name_${row.gameId}"))
+      Text(row.whenShort, color = SheetMuted, fontSize = 16.sp, lineHeight = 20.sp, textAlign = TextAlign.Center, maxLines = 2, modifier = Modifier.testTag("place_game_when_${row.gameId}"))
+      if (suggested) com.example.ui.theme.ClayPill(chipText, Modifier.padding(top = 6.dp).testTag("place_game_chip"), color = Clay.Sun, compact = true)
+    }
   }
 }

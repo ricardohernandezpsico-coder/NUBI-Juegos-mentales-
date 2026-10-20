@@ -139,6 +139,29 @@ class HoyIslaScreenshotTest {
   }
 
   @Test
+  fun hoy_con_letra_1_3_el_boton_principal_entra_en_pantalla_sin_deslizar_y_va_antes_de_la_lista() {
+    // Tarea 143, ítem 3: con letra grande lo principal va primero («Seguir la ruta» antes de las paradas, que son la explicación y pueden quedar bajo el pliegue)
+    show(ui(), fontScale = 1.3f)
+    val viewportBottom = (873 - 163) * composeTestRule.density.density            // el alto de la pantalla menos la barra de pestañas y la del sistema
+    val button = bounds("btn_home_play")
+    assertTrue("«Seguir la ruta» se ve entero sin deslizar: $button (la pantalla acaba en $viewportBottom)", button.bottom <= viewportBottom + 1f)
+    assertTrue("y va antes de la lista de paradas", button.top < bounds("home_stop_1").top)
+  }
+
+  @Test
+  fun hoy_con_letra_normal_las_paradas_van_antes_del_boton() {
+    show(ui())
+    assertTrue("con letra normal el orden de siempre", bounds("home_stop_1").top < bounds("btn_home_play").top)
+  }
+
+  @Test
+  fun la_tercera_parada_dice_despues_y_no_el_lugar() {
+    show(ui(completed = 1))
+    composeTestRule.onNodeWithText("Después").assertExists()
+    assertEquals("el lugar ya no se repite en la piedrita (está en la isla)", 0, composeTestRule.onAllNodes(androidx.compose.ui.test.hasText("Biblioteca")).fetchSemanticsNodes().size)
+  }
+
+  @Test
   fun hoy_con_letra_2_0_se_desliza_y_nada_se_corta_ni_se_superpone() {
     show(ui(hasBaseline = false), fontScale = 2f)
     composeTestRule.onNodeWithTag("home_isla").assertHeightIsAtLeast(ISLAND_MIN_HEIGHT)
@@ -182,7 +205,7 @@ class HoyIslaScreenshotTest {
   @Test
   fun a_360_dp_ningun_texto_de_las_piedritas_se_corta() {
     show(ui(completed = 1), widthDp = 360, heightDp = 780)
-    assertNoTextCut("Bodega de carga", "Carga exacta", "La estrella intrusa", "Biblioteca", "Sigue", "Hecho")
+    assertNoTextCut("Bodega de carga", "Carga exacta", "La estrella intrusa", "Después", "Sigue", "Hecho")
   }
 
   /** Cada pieza de Hoy que se mide va dentro del ancho de la pantalla (nada se corta) y ninguna pisa a otra (cajas que no se cruzan). */
@@ -254,7 +277,7 @@ class HoyIslaScreenshotTest {
     composeTestRule.onNodeWithContentDescription("La estrella intrusa, Biblioteca, después").assertExists()
     composeTestRule.onNodeWithText("Hecho").assertIsDisplayed()          // la hecha: visto + «Hecho»
     composeTestRule.onNodeWithText("Sigue").assertIsDisplayed()          // la que sigue: «Sigue» en lugar del lugar
-    composeTestRule.onNodeWithText("Biblioteca").assertIsDisplayed()     // la que viene después: su lugar
+    composeTestRule.onNodeWithText("Después").assertIsDisplayed()        // la que viene después: «Después» (Tarea 143, ítem 18; antes su lugar, «Biblioteca», que ya se ve en la isla)
   }
 
   @Test
@@ -333,7 +356,7 @@ class HoyIslaScreenshotTest {
   fun sin_punto_de_partida_la_invitacion_sigue_a_mano() {
     show(ui(hasBaseline = false))
     composeTestRule.onNodeWithTag("btn_home_baseline").assertExists()
-    composeTestRule.onNodeWithText("Encuentra tu punto de partida · 5 min").assertExists()
+    composeTestRule.onNodeWithText("Encuentra tu punto de partida · 4 juegos cortos").assertExists()
   }
 
   // ---- Las piezas de la isla por medallas (Tarea 136, «Tu isla crece»): 0, 3 (arbustos, banderines y muelle: las primeras) y las 10, a 393 × 873 y a 360 × 780. Que no pisen edificios, zonas tocables, farolas ni a Nubi lo mide `IslaPiezasImagesTest` sobre los píxeles.

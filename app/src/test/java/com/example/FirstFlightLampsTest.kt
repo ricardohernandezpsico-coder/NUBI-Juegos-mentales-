@@ -58,6 +58,14 @@ class FirstFlightLampsTest {
   }
 
   @Test
+  fun las_pantallas_que_no_son_de_juego_dicen_el_paso_a_secas() {
+    // Tarea 143 (A2): la pregunta de la edad no nombra el área del juego anterior («Paso 2 de 6 · Memoria»); el renglón sol ya dice «Para ajustar el ritmo»
+    frame(FlightState(FlightMode.FULL, FlightStep.EDAD, name = "Ana", measured = mapOf("secuencia" to 0.5f)))
+    rule.onNodeWithTag("flight_step_text").assertTextEquals("Paso 2 de 6")
+    rule.onNodeWithTag("flight_lamps").assertContentDescriptionEquals("Paso 2 de 6. 2 de 6 farolas encendidas")
+  }
+
+  @Test
   fun en_hola_la_primera_ya_esta_encendida() {
     frame(FlightState(FlightMode.FULL, FlightStep.HOLA))
     rule.onNodeWithTag("flight_step_text").assertTextEquals("Ya diste el primer paso")
@@ -87,8 +95,8 @@ class FirstFlightLampsTest {
     // las seis cajas miden lo mismo y no se pisan
     val widths = (0..5).map { rule.onNodeWithTag("flight_lamp_$it", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot.width }
     assertEquals(1, widths.map { Math.round(it) }.toSet().size)
-    rule.onNodeWithTag("flight_step_text").assertIsDisplayed().assertTextEquals("Paso 6 de 6 · Tu punto de partida")
-    rule.onNodeWithTag("flight_lamps").assertContentDescriptionEquals("Paso 6 de 6 · Tu punto de partida. 5 de 6 farolas encendidas")
+    rule.onNodeWithTag("flight_step_text").assertIsDisplayed().assertTextEquals("Paso 6 de 6")
+    rule.onNodeWithTag("flight_lamps").assertContentDescriptionEquals("Paso 6 de 6. 5 de 6 farolas encendidas")
   }
 
   @Test

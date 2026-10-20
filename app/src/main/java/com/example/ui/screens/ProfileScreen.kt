@@ -89,7 +89,7 @@ fun SettingsPanel(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
   }
   BackHandler(onBack = onClose)
   Column(modifier = modifier.fillMaxSize()) {
-    PanelHeader("Opciones", onClose)
+    PanelHeader("Ajustes", onClose)
     SettingsScreen(viewModel = viewModel, modifier = Modifier.weight(1f), onOpenLicenses = { showLicenses = true })
   }
 }
@@ -130,22 +130,19 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
     contentPadding = PaddingValues(top = 4.dp, bottom = 28.dp),
     verticalArrangement = Arrangement.spacedBy(22.dp)
   ) {
-    // Tu escudo y tu nombre, sin recuadros
+    // Nubi y tu nombre, sin recuadros (Tarea 143, R2 b: mientras las ligas esperan la decisión de negocio, el héroe del perfil es Nubi y el escudo, un dibujo «de antes», queda chico en «Tu liga»)
     item {
       Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(contentAlignment = Alignment.BottomEnd) {
-          LeagueShield(tier = tier, size = 160.dp, pips = ((prog * 5).toInt() + 1).coerceIn(1, 5), glow = true)
-          // La misma inicial del botón de arriba a la derecha, en el mismo disco de plasticina celeste (sin emojis como íconos); aquí solo adorna.
-          com.example.ui.components.ClayDisc(com.example.ui.components.DiscStyle.SKY, null, "") {
-            Text(userSettings.name.trim().firstOrNull()?.uppercase() ?: "", color = Clay.Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-          }
-        }
+        com.example.ui.components.NubiClay(width = 150.dp, modifier = Modifier.testTag("profile_nubi"))
         com.example.ui.components.OnBoardText(userSettings.name.ifBlank { "Tu perfil" }, color = Color(0xFFEAF0FF), fontSize = 30.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
-        com.example.ui.components.OnBoardText(
-          text = "Liga ${tier.tierName}" + (index?.let { "  ·  nivel ${levelWord(it / 100f).lowercase()}" } ?: ""),
-          color = com.example.ui.theme.NubiTokens.OnNightDim,
-          fontSize = 15.sp
-        )
+        index?.let {
+          com.example.ui.components.OnBoardText(
+            text = "Etapa ${levelWord(it / 100f)}",                 // (ítem 17) «etapa», como en la lámina, el detalle y el resultado; antes «nivel hábil»
+            color = com.example.ui.theme.NubiTokens.OnNightDim,
+            fontSize = 16.sp,
+            modifier = Modifier.testTag("profile_stage")
+          )
+        }
       }
     }
 
@@ -163,10 +160,26 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
       com.example.ui.components.OnBoardText(streakNote, color = com.example.ui.theme.NubiTokens.OnNightDim, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().testTag("streak_note"))
     }
 
-    // Logros: las tres familias de medallas por conducta (Constancia, Variedad y Volver), con su último nivel y lo que falta; tocar una abre sus niveles.
+    // Tu liga: el escudo chico y la liga (el escudo grande queda para cuando se decidan las ligas).
+    item {
+      Column(Modifier.testTag("profile_league")) {
+        SpaceSectionTitle("Tu liga")
+        Spacer(Modifier.height(10.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          com.example.ui.components.ShieldImage(tier, 40.dp)
+          Spacer(Modifier.width(12.dp))
+          Column {
+            com.example.ui.components.OnBoardText("Liga ${tier.tierName}", color = Color(0xFFEAF0FF), fontSize = 17.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp)
+            com.example.ui.components.OnBoardText("Cada partida suma", color = com.example.ui.theme.NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 21.sp)
+          }
+        }
+      }
+    }
+
+    // Tus medallas: las tres familias por conducta (Constancia, Variedad y Volver), con su último nivel y lo que falta; tocar una abre sus niveles. (Ítem 17: «medallas», como en Avance; antes «Logros».)
     item {
       Column {
-        SpaceSectionTitle("Logros", hint = "Por lo que haces, no por el puntaje")
+        SpaceSectionTitle("Tus medallas", hint = "Por lo que haces, no por el puntaje")
         Spacer(Modifier.height(14.dp))
         FamilyMedalCards(medals) { familyOpen = it }
       }
@@ -176,7 +189,7 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
     val oldMedals = Achievements.legacyEarned(unlocks.keys)
     if (oldMedals.isNotEmpty()) item {
       Column {
-        SpaceSectionTitle("Medallas anteriores", hint = "Las que ganaste antes de que cambiaran los logros")
+        SpaceSectionTitle("Medallas anteriores", hint = "Las que ganaste antes de que cambiaran las medallas")
         Spacer(Modifier.height(14.dp))
         AchievementGrid(oldMedals, unlocks.keys, achStats) { achievementDetail = it }
       }

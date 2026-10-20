@@ -20,6 +20,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.data.Week
@@ -96,6 +97,12 @@ class HoyPlaceSheetTest {
 
   private fun bounds(tag: String): Rect = rule.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
 
+  /** Caja SIN recortar por el desplazamiento (`boundsInRoot` da cero para lo que quedó fuera de la vista): la de una ficha que está más abajo de la pantalla. */
+  private fun rawBounds(tag: String, unmerged: Boolean = false): Rect {
+    val n = rule.onNodeWithTag(tag, useUnmergedTree = unmerged).fetchSemanticsNode()
+    return Rect(n.positionInRoot.x, n.positionInRoot.y, n.positionInRoot.x + n.size.width, n.positionInRoot.y + n.size.height)
+  }
+
   private fun pressBack() { rule.runOnUiThread { rule.activity.onBackPressedDispatcher.onBackPressed() }; rule.waitForIdle() }
 
   // ---- Contenido de los cuatro lugares
@@ -119,7 +126,6 @@ class HoyPlaceSheetTest {
     rule.onNodeWithText("Tus juegos aquí").assertExists()
     for (g in ui.places.getValue("MEMORIA").games) rule.onNodeWithTag("place_game_${g.gameId}").assertExists()
     rule.onNodeWithText("Jugar en el Observatorio").assertIsDisplayed()
-    rule.onNodeWithTag("place_chosen").assertIsDisplayed()
     rule.onNodeWithText("En el Observatorio vas en Aprendiz. Aquí tienes tu avance y sus juegos.").assertIsDisplayed()
   }
 
@@ -160,23 +166,20 @@ class HoyPlaceSheetTest {
     return 0.2126 * ch(c.red) + 0.7152 * ch(c.green) + 0.0722 * ch(c.blue)
   }
 
-  /** La caja de las pestañas mide alto − 24 (estado) − 48 (navegación); la lámina deja `PAGE_FOOTER_BOTTOM` (32 dp) de aire abajo, sobre la barra del teléfono. */
-  private fun assertLegendAboveTheFooterMargin(heightDp: Int) {
+  /** La caja de las pestañas mide alto − 24 (estado) − 48 (navegación); la lámina deja `PAGE_FOOTER_BOTTOM` (32 dp) de aire abajo, sobre la barra del teléfono. Desde la Tarea 143 ya no hay leyenda «Nubi elige…» suelta: el pie es solo «Jugar en …». */
+  private fun assertPlayAboveTheFooterMargin(heightDp: Int) {
     val density = rule.density.density
     val pageBottom = (heightDp - 48) * density
     val limit = pageBottom - com.example.ui.screens.PAGE_FOOTER_BOTTOM.value * density
-    val legend = bounds("place_chosen")
-    assertTrue("la leyenda «Nubi elige…» termina en ${legend.bottom} y el aire de abajo empieza en $limit", legend.bottom <= limit + 1f)
     val play = bounds("place_play")
-    assertTrue("«Jugar» también queda sobre el aire de abajo", play.bottom <= limit + 1f)
-    rule.onNodeWithTag("place_chosen").assertIsDisplayed()
+    assertTrue("«Jugar» termina en ${play.bottom} y el aire de abajo empieza en $limit", play.bottom <= limit + 1f)
+    assertEquals("la línea suelta «Nubi elige…» ya no está", 0, rule.onAllNodes(hasTestTag("place_chosen")).fetchSemanticsNodes().size)
   }
 
-  @Test fun la_leyenda_de_nubi_queda_con_aire_abajo_a_393() { show(393, 873); open("observatorio"); assertLegendAboveTheFooterMargin(873) }
-  @Test fun la_leyenda_de_nubi_queda_con_aire_abajo_a_360() { show(360, 780); open("antena"); assertLegendAboveTheFooterMargin(780) }
-  @Test fun la_leyenda_de_nubi_queda_con_aire_abajo_con_letra_1_3() { show(393, 873, 1.3f); open("hangar"); assertLegendAboveTheFooterMargin(873) }
-  @Test fun la_leyenda_de_nubi_queda_con_aire_abajo_con_letra_2_0() { show(393, 873, 2f); open("observatorio"); assertLegendAboveTheFooterMargin(873) }
-
+  @Test fun jugar_queda_con_aire_abajo_a_393() { show(393, 873); open("observatorio"); assertPlayAboveTheFooterMargin(873) }
+  @Test fun jugar_queda_con_aire_abajo_a_360() { show(360, 780); open("antena"); assertPlayAboveTheFooterMargin(780) }
+  @Test fun jugar_queda_con_aire_abajo_con_letra_1_3() { show(393, 873, 1.3f); open("hangar"); assertPlayAboveTheFooterMargin(873) }
+  @Test fun jugar_queda_con_aire_abajo_con_letra_2_0() { show(393, 873, 2f); open("observatorio"); assertPlayAboveTheFooterMargin(873) }
   @Test
   fun la_leyenda_de_nubi_sobre_la_lamina_tiene_contraste_de_al_menos_4_5() {
     val a = luminance(com.example.ui.screens.SheetMuted)
@@ -200,7 +203,6 @@ class HoyPlaceSheetTest {
     val navBar = 48 * density
     assertTrue("«Jugar» queda dentro de la pantalla y sobre la barra de navegación: $play (alto ${heightDp * density}, barra $navBar)", play.bottom <= heightDp * density - navBar + 1f && play.top >= 0f && play.left >= 0f && play.right <= widthDp * density + 1f)
     rule.onNodeWithTag("place_play").assertIsDisplayed()
-    rule.onNodeWithTag("place_chosen").assertIsDisplayed()
   }
 
   @Test fun jugar_se_ve_a_393_por_873() { show(393, 873); open("observatorio"); assertPlayInside(393, 873) }
@@ -220,6 +222,143 @@ class HoyPlaceSheetTest {
   @Test fun el_nombre_cabe_en_una_linea_a_360_dp() { show(360, 780); open("observatorio"); assertTitleOneLine(1f) }
   @Test fun el_nombre_cabe_en_una_linea_con_letra_1_3() { show(393, 873, 1.3f); open("observatorio"); assertTitleOneLine(1.3f) }
   @Test fun el_nombre_cabe_en_una_linea_con_letra_2_0() { show(393, 873, 2f); open("observatorio"); assertTitleOneLine(2f) }
+
+  // ---- «Tus juegos aquí» como cuadrícula de fichas con emblema (Tarea 143, decisión de Ricardo del 19-oct)
+
+  private fun tileBounds(area: String) = ui.places.getValue(area).games.associate { it.gameId to rawBounds("place_game_${it.gameId}") }
+
+  private fun nameLayouts(area: String): List<Pair<String, androidx.compose.ui.text.TextLayoutResult>> = ui.places.getValue(area).games.map { g ->
+    val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+    rule.onNodeWithTag("place_game_name_${g.gameId}", useUnmergedTree = true).fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+    g.title to (results.firstOrNull() ?: throw AssertionError("«${g.title}» no dio su diseño de texto"))
+  }
+
+  /**
+   * El nombre de una ficha cabe sin cortarse: a lo sumo 2 líneas (el texto no se recorta por la altura), ninguna línea más ancha que la ficha y ninguna palabra partida (cada línea son palabras enteras del nombre).
+   * (`didOverflowWidth` no sirve: compara con el ancho del párrafo, no con la ficha.)
+   */
+  private fun assertNameFits(title: String, layout: androidx.compose.ui.text.TextLayoutResult, note: String) {
+    assertTrue("«$title» cabe en 2 líneas $note (${layout.lineCount})", layout.lineCount <= 2)
+    assertFalse("«$title» se corta a lo alto $note", layout.didOverflowHeight)
+    val inner = layout.layoutInput.constraints.maxWidth
+    val words = title.split(' ')
+    for (line in 0 until layout.lineCount) {
+      assertTrue("«$title» $note: la línea ${line + 1} mide ${layout.getLineRight(line) - layout.getLineLeft(line)} y la ficha deja $inner", layout.getLineRight(line) - layout.getLineLeft(line) <= inner + 0.5f)
+      val text = layout.layoutInput.text.text.substring(layout.getLineStart(line), layout.getLineEnd(line)).trim()
+      for (w in text.split(' ').filter { it.isNotEmpty() }) assertTrue("«$w» (de «$title») $note es una palabra entera", w in words)
+    }
+  }
+
+  @Test
+  fun los_juegos_van_en_una_cuadricula_de_fichas_sin_cifras_de_medida() {
+    show(); open("observatorio")
+    rule.onNodeWithTag("place_games_grid").assertExists()
+    for (g in ui.places.getValue("MEMORIA").games) {
+      rule.onNodeWithTag("place_game_${g.gameId}").assertExists()
+      rule.onNodeWithTag("place_game_name_${g.gameId}", useUnmergedTree = true).assertExists()
+      rule.onNodeWithTag("place_game_when_${g.gameId}", useUnmergedTree = true).assertExists()
+    }
+    // sin las cifras de medida (esas se quedan en la ficha del juego, con su explicación)
+    for (text in listOf("promedio reciente", "tu última", " ms", "a la vez", "señales", "casi nada")) assertEquals("«$text» ya no va en la lámina", 0, rule.onAllNodes(androidx.compose.ui.test.hasText(text, substring = true)).fetchSemanticsNodes().size)
+    assertEquals("y sin la leyenda suelta «Nubi elige…»", 0, rule.onAllNodes(androidx.compose.ui.test.hasText("Nubi elige", substring = true)).fetchSemanticsNodes().size)
+  }
+
+  @Test
+  fun cada_ficha_dice_cuando_se_jugo_y_se_lee_completa() {
+    show(); open("observatorio")
+    for (g in ui.places.getValue("MEMORIA").games) {
+      val said = rule.onNodeWithTag("place_game_when_${g.gameId}", useUnmergedTree = true).fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.Text].joinToString("") { it.text }
+      assertEquals(g.whenShort, said)
+      assertTrue("«$said» es hoy, ayer, hace N días o nuevo", said == "hoy" || said == "ayer" || said == "nuevo" || Regex("hace \\d+ días").matches(said))
+      val description = rule.onNodeWithTag("place_game_${g.gameId}").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].joinToString(", ")
+      assertTrue("«$description» dice el nombre y cuándo", description.startsWith(g.title + ", " + g.spoken))
+    }
+  }
+
+  @Test
+  fun el_juego_que_sugiere_nubi_lleva_el_chip_dentro_de_su_ficha_y_se_lee_asi() {
+    show(); open("observatorio")
+    val chosen = ui.places.getValue("MEMORIA").chosenGameId!!
+    assertEquals("un solo chip en toda la lámina", 1, rule.onAllNodes(hasTestTag("place_game_chip"), useUnmergedTree = true).fetchSemanticsNodes().size)
+    val chip = rawBounds("place_game_chip", unmerged = true); val tile = rawBounds("place_game_$chosen")
+    assertTrue("el chip está DENTRO de la ficha del sugerido: $chip en $tile", chip.left >= tile.left - 1f && chip.right <= tile.right + 1f && chip.top >= tile.top - 1f && chip.bottom <= tile.bottom + 1f)
+    val description = rule.onNodeWithTag("place_game_$chosen").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].joinToString(", ")
+    assertTrue("«$description» termina en «Nubi lo sugiere»", description.endsWith(", Nubi lo sugiere"))
+    for (g in ui.places.getValue("MEMORIA").games.filter { it.gameId != chosen }) {
+      val other = rule.onNodeWithTag("place_game_${g.gameId}").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].joinToString(", ")
+      assertFalse("solo el sugerido dice que Nubi lo sugiere: $other", other.contains("Nubi lo sugiere"))
+    }
+  }
+
+  @Test
+  fun las_fichas_miden_lo_mismo_dentro_de_una_fila_y_se_tocan_de_sobra() {
+    show(); open("observatorio")
+    val density = rule.density.density
+    val tiles = tileBounds("MEMORIA").values.toList()
+    for (t in tiles) assertTrue("la ficha mide ≥ 48 dp en los dos sentidos: $t", t.width >= 48f * density && t.height >= 48f * density)
+    val rowsOf = tiles.groupBy { Math.round(it.top) }
+    for ((_, row) in rowsOf) assertTrue("las fichas de una fila miden lo mismo de alto: $row", row.all { Math.abs(it.height - row[0].height) < 1f })
+  }
+
+  @Test
+  fun a_393_con_letra_normal_las_fichas_no_cortan_palabras_y_la_ultima_fila_va_centrada() {
+    show(); open("observatorio")
+    for ((title, layout) in nameLayouts("MEMORIA")) assertNameFits(title, layout, "con letra normal")
+    val tiles = tileBounds("MEMORIA").values.toList()
+    val perRow = tiles.groupBy { Math.round(it.top) }.values.map { it.size }
+    if (perRow.size > 1 && perRow.last() < perRow.first()) {
+      val grid = rawBounds("place_games_grid")
+      val last = tiles.groupBy { Math.round(it.top) }.entries.maxByOrNull { it.key }!!.value
+      val centre = (last.minOf { it.left } + last.maxOf { it.right }) / 2f
+      assertEquals("la última fila (incompleta) va centrada", (grid.left + grid.right) / 2f, centre, 2f * rule.density.density)
+    }
+  }
+
+  @Test
+  fun con_letra_1_3_las_fichas_van_en_dos_columnas_y_con_2_0_no_cortan_nada() {
+    show(393, 873, 1.3f); open("observatorio")
+    val cols13 = tileBounds("MEMORIA").values.groupBy { Math.round(it.top) }.values.maxOf { it.size }
+    assertTrue("con letra 1,3 como mucho dos columnas: $cols13", cols13 <= 2)
+    for ((title, layout) in nameLayouts("MEMORIA")) assertNameFits(title, layout, "con letra 1,3")
+  }
+
+  @Test
+  fun con_letra_2_0_las_fichas_entran_sin_cortar_ningun_nombre() {
+    show(393, 873, 2f); open("observatorio")
+    for ((title, layout) in nameLayouts("MEMORIA")) {
+      assertNameFits(title, layout, "con letra 2,0")
+    }
+  }
+
+  @Test
+  fun con_letra_1_3_la_lamina_omite_la_cuadricula_de_semanas_y_los_juegos_entran_en_pantalla() {
+    // Tarea 143, ítem 4: a 1,3 la 2.ª fila de semanas quedaba a medias bajo el botón fijo y «Tus juegos aquí» no se veía; la cuadrícula ya está en el detalle de Avance
+    show(393, 873, 1.3f); open("observatorio")
+    for (i in 0..3) assertEquals("sin cuadrícula de semanas", 0, rule.onAllNodes(hasTestTag("place_week_$i")).fetchSemanticsNodes().size)
+    rule.onNodeWithText("Esta semana avanzó de 18 a 22").assertIsDisplayed()
+    rule.onNodeWithText("Tus juegos aquí").assertIsDisplayed()
+  }
+
+  @Test
+  fun con_letra_normal_las_cuatro_semanas_se_quedan() {
+    show(); open("observatorio")
+    for (i in 0..3) rule.onNodeWithTag("place_week_$i").assertIsDisplayed()
+  }
+
+  @Test
+  fun un_desvanecido_al_pie_avisa_que_la_lista_sigue_solo_cuando_se_puede_deslizar() {
+    show(393, 873, 1.3f); open("observatorio")
+    rule.onNodeWithTag("place_fade").assertExists()                       // la lista sigue más abajo
+  }
+
+  @Test
+  fun al_llegar_al_final_de_la_lista_el_desvanecido_se_quita() {
+    show(393, 873, 1.3f); open("observatorio")
+    rule.onNodeWithTag("place_fade").assertExists()
+    rule.onNodeWithTag("place_scroll").performTouchInput { repeat(4) { swipeUp() } }          // se baja hasta el final de la lista
+    rule.waitForIdle()
+    assertEquals("ya no sigue nada más abajo: no hay nada que avisar", 0, rule.onAllNodes(hasTestTag("place_fade")).fetchSemanticsNodes().size)
+  }
 
   @Test
   fun las_cuatro_semanas_miden_lo_mismo_de_alto() {

@@ -8,7 +8,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
-import com.example.data.ColorVision
 import com.example.data.FlightMode
 import com.example.data.FlightState
 import com.example.data.FlightStep
@@ -71,9 +70,6 @@ class FirstFlightScreenshotTest {
     "metas",
     FlightState(FlightMode.FULL, FlightStep.METAS, name = "Ana", age = AgeBand.ADULT, goals = setOf(DomainType.MEMORIA, DomainType.RAZONAMIENTO), measured = mapOf("secuencia" to 0.62f))
   )
-
-  @Test
-  fun pregunta_de_color() = shot("color", FlightState(FlightMode.FULL, FlightStep.COLOR, color = ColorVision.DIFICULTAD))
 
   /** El juego 1, sin edad todavía (Tarea 132): antes del primer juego solo el nombre. */
   @Test

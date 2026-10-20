@@ -9,7 +9,7 @@ import java.io.File
  * Los luceros del fondo van SIEMPRE detrás del contenido y los textos y tarjetas los tapan (Tarea 123; Fable lo vio en Avance y en Licencias). Se mira el código:
  * - el fondo es la PRIMERA capa de `NeuroVidaApp`, antes de las pestañas, la barra y todo lo demás;
  * - la barra de pestañas es una capa fija encima de las páginas (no el `bottomBar` de un `Scaffold`) y ya no hay desvanecido de página;
- * - los textos que van directo sobre el fondo, sin tarjeta (Licencias y créditos, la cabecera de los paneles, el nombre del perfil, el título de Ajustes) usan `OnBoardText`, que les pinta una orilla densa del color de la lámina.
+ * - los textos que van directo sobre el fondo, sin tarjeta (Licencias y créditos, la cabecera de los paneles, el nombre del perfil; el título grande de Ajustes se quitó en la Tarea 143) usan `OnBoardText`, que les pinta una orilla densa del color de la lámina.
  */
 class BoardLayersTest {
   /** El código sin los comentarios (los comentarios hablan del Scaffold y del desvanecido que se quitaron). */
@@ -36,6 +36,7 @@ class BoardLayersTest {
     assertFalse("Licencias y créditos va directo sobre el fondo: todo su texto es OnBoardText", plainText.containsMatchIn(src("ui/screens/LicensesScreen.kt")))
     val profile = src("ui/screens/ProfileScreen.kt")
     assertTrue("el título de los paneles y el nombre del perfil", profile.contains("OnBoardText(title,") && profile.contains("OnBoardText(userSettings.name.ifBlank"))
-    assertTrue("el título de Ajustes", src("ui/screens/SettingsScreen.kt").contains("OnBoardText(\n      text = strings.settingsTitle") || src("ui/screens/SettingsScreen.kt").contains("OnBoardText(\r\n      text = strings.settingsTitle"))
+    // Tarea 143 (A3): Ajustes ya no trae su título grande suelto; la cabecera del panel («Ajustes») es el `PanelHeader` de arriba, que ya es OnBoardText
+    assertFalse("Ajustes ya no tiene un segundo título suelto sobre el fondo", src("ui/screens/SettingsScreen.kt").contains("strings.settingsTitle"))
   }
 }

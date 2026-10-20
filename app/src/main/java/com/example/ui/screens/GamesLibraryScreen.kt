@@ -219,7 +219,7 @@ fun GamesLibraryScreen(
     BackHandler { viewModel.closeLibraryArea() }
     val daily by viewModel.dailySession.collectAsState()
     val games = remember(open) { GameRegistry.allGames.filter { it.domain == open } }
-    // «En tu ruta de hoy / Hace días que no juegas / Nuevo para ti» (`LibraryOrder`); el último que abriste ya no reordena, solo se pinta en sol.
+    // «En tu ruta de hoy / Para volver a jugar / Nuevo para ti» (`LibraryOrder`); el último que abriste ya no reordena, solo se pinta en sol.
     val sections = remember(open, daily, lastPlayed, now) {
       LibraryOrder.sort(games.map { it.id }, daily.gameIds, daily.completedCount, lastPlayed.mapValues { dayIndex(it.value) }, dayIndex(now), GameRegistry.allGames.map { it.id })
     }
@@ -267,7 +267,7 @@ fun GamesLibraryScreen(
 
 /**
  * La ficha de [game] con sus datos ya leídos del ViewModel: la usan Hoy (la piedrita de «Tu ruta de hoy» y las filas de la lámina de un lugar) y Avance (las filas del detalle de un área), igual que Juegos. Tocar el nombre de un juego abre SIEMPRE esta ficha;
- * solo los botones grandes («Empezar la ruta», «Jugar en el …», «¡Sí, vamos!» y el «Jugar» de la propia ficha) juegan directo (Tarea 87).
+ * solo los botones grandes («Empezar la ruta», «Jugar en el …», «Jugar <juego>» del detalle de un área y el «Jugar · …» de la propia ficha) juegan directo (Tarea 87).
  */
 @Composable
 internal fun GameSheetHost(game: GameDefinition, viewModel: NeuroVidaViewModel, onDismiss: () -> Unit, onPlay: (PlayMode, Boolean) -> Unit) {
@@ -389,7 +389,7 @@ internal fun GameTile(data: GameCardData, highlighted: Boolean, onClick: () -> U
       Column(Modifier.weight(1f)) {
         Text(data.title, color = Clay.Ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
         Text(
-          if (data.progress != null) "${Skill.stageName(data.progress)} · ${Skill.percent(data.progress)}%" else "Sin medir aún",
+          if (data.progress != null) "${Skill.stageName(data.progress)} · ${Skill.percent(data.progress)} de 100" else "Sin medir aún",
           color = if (data.progress != null) ring else CardMuted, fontSize = Body, fontWeight = FontWeight.Medium,
           modifier = Modifier.padding(top = 2.dp)
         )
@@ -535,7 +535,10 @@ internal fun GameSheetContent(
       HorizontalLine()
       if (data.progress != null) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-          Text("${Skill.percent(data.progress)}%", color = Clay.Ink, fontSize = 30.sp, fontWeight = FontWeight.Bold)
+          Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("${Skill.percent(data.progress)}", color = Clay.Ink, fontSize = 30.sp, fontWeight = FontWeight.Bold, lineHeight = 32.sp)
+            Text("de 100", color = CardMuted, fontSize = Small, lineHeight = 16.sp)           // la escala se dice «de 100» en todos lados (Tarea 143, ítem 16)
+          }
           Spacer(Modifier.width(12.dp))
           Column {
             Text(Skill.stageName(data.progress), color = onCream(g.domain), fontSize = 17.sp, fontWeight = FontWeight.Bold)
@@ -546,7 +549,7 @@ internal fun GameSheetContent(
             )
           }
         }
-        StageLine(data.progress, g.domain)
+        com.example.ui.components.StageScale(data.progress, onCard = true, modifier = Modifier.padding(top = 6.dp))
       } else {
         Text("Sin medir aún", color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Text("Juega a tu medida una vez y verás dónde estás.", color = CardMuted, fontSize = Small)
@@ -827,16 +830,18 @@ internal fun AreaGrid(
 ) {
   BoxWithConstraints(modifier.fillMaxWidth().testTag("area_grid")) {
     val fontScale = androidx.compose.ui.platform.LocalDensity.current.fontScale
+    // Con letra normal las dos filas llenan la pantalla (aprobado por Ricardo); con letra grande (> 1,15) cada fila mide lo que su contenido, van arriba con 24 dp entre ellas y el aire que sobra queda abajo (Tarea 143, ítem 7)
+    val bigLetters = fontScale > 1.15f
     val rowHeight = maxOf(maxHeight / 2, 262.dp * maxOf(1f, fontScale))
-    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 12.dp)) {
+    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 12.dp), verticalArrangement = if (bigLetters) Arrangement.spacedBy(24.dp) else Arrangement.Top) {
       statuses.chunked(2).forEach { row ->
-        Row(Modifier.fillMaxWidth().height(rowHeight)) {
+        Row(Modifier.fillMaxWidth().then(if (bigLetters) Modifier.height(IntrinsicSize.Max) else Modifier.height(rowHeight))) {
           row.forEach { s ->
             val domain = DomainType.fromStored(s.area) ?: DomainType.MEMORIA
             val name = getDomainName(domain, lang)
             val count = GameRegistry.allGames.count { it.domain == domain }
             val isSuggested = s.area == suggested
-            val pedestal = if (isSuggested) 140.dp else if (fontScale > 1.15f) 96.dp else 104.dp
+            val pedestal = if (isSuggested) 140.dp else if (fontScale >= 1.3f) 92.dp else 104.dp
             Column(
               horizontalAlignment = Alignment.CenterHorizontally,
               verticalArrangement = Arrangement.Center,
@@ -907,7 +912,7 @@ internal fun AreaWindow(
   onClose: () -> Unit,
   onGame: (GameDefinition) -> Unit,
   modifier: Modifier = Modifier,
-  /** Los juegos en grupos con su rótulo («En tu ruta de hoy», «Hace días que no juegas», «Nuevo para ti»); null = una sola lista en el orden de [cards]. */
+  /** Los juegos en grupos con su rótulo («En tu ruta de hoy», «Para volver a jugar», «Nuevo para ti»); null = una sola lista en el orden de [cards]. */
   sections: List<Pair<String, List<GameCardData>>>? = null
 ) {
   Column(modifier.fillMaxSize().testTag("area_window")) {
@@ -952,72 +957,6 @@ internal fun AreaWindow(
           GameTile(data, highlighted = data.game.id == focusGameId) { onGame(data.game) }
         }
       }
-    }
-  }
-}
-
-/** Las 5 etapas en una línea; la actual con su nombre fuerte y una marquita de "estás aquí". */
-@Composable
-private fun StageLine(progress: Float, domain: DomainType) {
-  val current = Skill.stage(progress)
-  Column(Modifier.fillMaxWidth().padding(top = 6.dp)) {
-    Canvas(Modifier.fillMaxWidth().height(22.dp).padding(horizontal = 16.dp)) {
-      val y = size.height * 0.62f
-      val w = size.width
-      drawLine(CardTrack, Offset(0f, y), Offset(w, y), 4.dp.toPx(), StrokeCap.Round)
-      drawLine(domain.color, Offset(0f, y), Offset(w * progress.coerceIn(0f, 1f), y), 4.dp.toPx(), StrokeCap.Round)
-      for (i in 0..4) {
-        val x = w * i / 4f
-        val r = (if (i == current) 7 else 5).dp.toPx()
-        drawCircle(if (i <= current) domain.color else CardTrack, r, Offset(x, y))
-        drawCircle(Clay.Ink, r, Offset(x, y), style = Stroke(1.5.dp.toPx()))
-      }
-      val xm = w * progress.coerceIn(0f, 1f)
-      drawPath(Path().apply { moveTo(xm - 5.dp.toPx(), 0f); lineTo(xm + 5.dp.toPx(), 0f); lineTo(xm, 6.dp.toPx()); close() }, Clay.Ink)
-    }
-    StageNames(current, domain)
-  }
-}
-
-/**
- * Los nombres de las 5 etapas bajo la línea. NUNCA se corta una palabra (ni «Aprendi / z»): si los 5 caben, cada uno en su casilla y en UNA línea; si no caben (pantalla angosta o letra grande), se muestra SOLO el nombre de
- * la etapa actual, centrado bajo su punto y sin salirse de la tarjeta.
- */
-@Composable
-private fun StageNames(current: Int, domain: DomainType) {
-  val measurer = androidx.compose.ui.text.rememberTextMeasurer()
-  val base = androidx.compose.material3.LocalTextStyle.current.merge(androidx.compose.ui.text.TextStyle(fontSize = 14.sp))      // la escala de las 5 etapas es un rótulo de gráfico (como los de ProgressTrendChart): 14 sp, no 16
-  val density = androidx.compose.ui.platform.LocalDensity.current
-  BoxWithConstraints(Modifier.fillMaxWidth()) {
-    val totalPx = constraints.maxWidth
-    val cellPx = totalPx / Skill.STAGES.size
-    val allFit = Skill.STAGES.withIndex().all { (i, name) ->
-      val style = base.merge(androidx.compose.ui.text.TextStyle(fontWeight = if (i == current) FontWeight.Bold else FontWeight.Normal))
-      measurer.measure(name, style, softWrap = false, maxLines = 1).size.width <= cellPx * 0.96f
-    }
-    if (allFit) {
-      Row(Modifier.fillMaxWidth()) {
-        Skill.STAGES.forEachIndexed { i, name ->
-          Text(
-            name, textAlign = TextAlign.Center, softWrap = false, maxLines = 1, modifier = Modifier.weight(1f),
-            color = if (i == current) onCream(domain) else CardMuted,
-            fontSize = 14.sp, fontWeight = if (i == current) FontWeight.Bold else FontWeight.Normal
-          )
-        }
-      }
-    } else {
-      val padPx = with(density) { 16.dp.toPx() }
-      Text(
-        Skill.STAGES[current], softWrap = false, maxLines = 1, color = onCream(domain), fontSize = 14.sp, fontWeight = FontWeight.Bold,
-        modifier = Modifier.layout { measurable, c ->
-          val placeable = measurable.measure(c.copy(minWidth = 0, maxWidth = androidx.compose.ui.unit.Constraints.Infinity))
-          layout(c.maxWidth, placeable.height) {
-            val centre = padPx + (c.maxWidth - 2 * padPx) * current / 4f                         // bajo su punto de la línea
-            val x = (centre - placeable.width / 2f).coerceIn(0f, (c.maxWidth - placeable.width).toFloat().coerceAtLeast(0f))
-            placeable.placeRelative(x.toInt(), 0)
-          }
-        }
-      )
     }
   }
 }

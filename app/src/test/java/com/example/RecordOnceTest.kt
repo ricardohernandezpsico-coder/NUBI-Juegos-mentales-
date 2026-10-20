@@ -60,7 +60,8 @@ class RecordOnceTest {
     composeTestRule.onAllNodesWithTag("result_record").assertCountEquals(0)
     composeTestRule.onAllNodesWithText("récord", substring = true, ignoreCase = true).assertCountEquals(0)
     composeTestRule.onAllNodesWithText("Tu mejor partida hasta ahora", substring = true).assertCountEquals(0)
-    composeTestRule.onAllNodesWithText("Juega otra vez para ver tu avance.").assertCountEquals(1)
+    // Tarea 143 (ítem 24): sin partidas anteriores «Tu promedio» y «Tu mejor» no se dibujan vacíos; la frase dice que juegues otra vez para comparar
+    composeTestRule.onAllNodesWithText("Primera partida: juega otra vez y comparas.").assertCountEquals(1)
   }
 
   @Test

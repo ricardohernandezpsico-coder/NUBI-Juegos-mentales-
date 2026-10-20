@@ -96,7 +96,8 @@ internal fun AvanceWeek(summary: WeekSummary, lamps: Week.Lamps, streakNote: Str
     if (summary.streakPill != null) {
       Spacer(Modifier.height(10.dp))
       ClayPill(summary.streakPill, Modifier.testTag("avance_streak_pill"), color = Clay.Sun, icon = Icons.Default.Whatshot)
-      OnBoardText(streakNote, color = OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 4.dp).testTag("streak_note"))
+      // Si Nubi ya comenta el descanso («Descansaste el viernes y seguiste: eso es constancia.»), la línea suelta con lo mismo sobra (Tarea 143, B2)
+      if (!nubiLine.startsWith("Descansaste")) OnBoardText(streakNote, color = OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 4.dp).testTag("streak_note"))
     }
     OnBoardText(summary.areasLine, color = OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 8.dp).testTag("avance_areas_week"))
     NubiWeekComment(nubiLine)

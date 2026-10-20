@@ -86,6 +86,9 @@ data class MeaningfulResultModel(
 // Las piezas de este final son losas de plasticina CLARAS (Tarea 90): crema para lo que hiciste y los números, lima para el truco, sol para el número de hoy; su texto va en tinta.
 // `Soft`, `Muted` y `Faint` quedan para el texto que va suelto sobre el cielo de la pantalla.
 private val Soft = Color(0xFFD6D1F2)
+
+/** Los valores con que un cuadro de «Tu avance» dice que no hay dato («—» en cada juego; «–» por si acaso). */
+private val EMPTY_CHIP = setOf("—", "–", "")
 private val Muted = Color(0xFFABA5D2)
 private val Faint = Color(0xFF8F8AC0)
 
@@ -180,11 +183,17 @@ fun YourProgress(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
   Column(modifier = modifier.fillMaxWidth().padding(top = 18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
     Text(model.progressTitle, color = Soft, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 15.sp)
     Spacer(Modifier.height(8.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).testTag("progress_chips")) {
-      for (chip in model.chips) {
+    // En la primera partida de un juego (sin partidas anteriores) «Tu promedio» y «Tu mejor» irían vacíos («—»): se muestra solo «Hoy» y la frase dice que juegues otra vez para comparar (Tarea 143, ítem 24)
+    val first = model.progressPhrase == FinalesConSentido.PHRASE_FIRST && model.chips.size >= 2 && model.chips[0].value !in EMPTY_CHIP && model.chips.drop(1).all { it.value in EMPTY_CHIP }
+    val shownChips = if (first) model.chips.take(1) else model.chips
+    Row(
+      horizontalArrangement = if (first) Arrangement.Center else Arrangement.spacedBy(10.dp),
+      modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).testTag("progress_chips")
+    ) {
+      for (chip in shownChips) {
         val spoken = chip.label + ": " + chip.value
         ClayCard(
-          modifier = Modifier.weight(1f).fillMaxHeight().semantics(mergeDescendants = true) { contentDescription = spoken },
+          modifier = (if (first) Modifier.width(150.dp) else Modifier.weight(1f)).fillMaxHeight().semantics(mergeDescendants = true) { contentDescription = spoken },
           color = if (chip.highlight) Clay.Sun else Clay.Cream,
           size = SlabSize.SMALL,
           contentPadding = 8.dp
@@ -198,7 +207,7 @@ fun YourProgress(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
       }
     }
     Text(
-      text = model.progressPhrase,
+      text = if (first) "Primera partida: juega otra vez y comparas." else model.progressPhrase,
       color = Color(0xFFF4F2FF),
       fontWeight = FontWeight.SemiBold,
       fontSize = 15.sp,

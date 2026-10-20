@@ -22,12 +22,12 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.Achievements
 import com.example.data.AreaStatus
-import com.example.data.ColorVision
 import com.example.data.FlightMode
 import com.example.data.FlightState
 import com.example.data.FlightStep
@@ -273,6 +273,15 @@ class AppActualScreenshotTest {
       }
     }
 
+    /** Baja la lámina hasta su cuadrícula de juegos (con el reloj corriendo solo: el desplazamiento de las pruebas necesita cuadros para terminar). */
+    fun scrollToGrid() {
+      composeTestRule.mainClock.autoAdvance = true
+      composeTestRule.onNodeWithTag("place_games_grid").performScrollTo()
+      composeTestRule.waitForIdle()
+      composeTestRule.mainClock.autoAdvance = false
+      settle()
+    }
+
     fun go(s: Scene, height: Int, scale: Float = 1f) {
       composeTestRule.runOnIdle { scene = s; frameH = height; fontScale = scale }
       settle()
@@ -307,6 +316,20 @@ class AppActualScreenshotTest {
     r.settle()
     r.shot("hoy-lamina", 873)
     r.shot("hoy-lamina-letra13", 873, 1.3f)
+  }
+
+  /** La cuadrícula de «Tus juegos aquí» entera (Tarea 143): se baja la lámina hasta ella, con letra normal y con letra 1,3 (un test aparte: cada uno junta pocas capturas para no agotar la memoria). */
+  @Test
+  fun hoy_lamina_juegos() {
+    val r = Rig(viewModel(), Scene.HOY)
+    r.settle()
+    composeTestRule.runOnIdle { r.sheetOpen = true }
+    composeTestRule.onNodeWithTag("isla_observatorio").performClick()
+    r.settle()
+    r.go(Scene.HOY, 873, 1f)
+    r.scrollToGrid(); r.shot("hoy-lamina-juegos", 873, 1f)
+    r.go(Scene.HOY, 873, 1.3f)
+    r.scrollToGrid(); r.shot("hoy-lamina-juegos-letra13", 873, 1.3f)
   }
 
   /** La isla sin piezas y con las diez («Tu isla crece», Tarea 136): se fijan con el mismo gancho que los botones «[Debug]» de Ajustes. */

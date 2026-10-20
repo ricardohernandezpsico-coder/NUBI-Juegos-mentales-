@@ -446,8 +446,14 @@ internal fun HomeContent(
         },
         bottom = {
           Column(Modifier.fillMaxWidth()) {
-            HoyRoute(ui, onStop)
-            HoyAction(ui, onPlay = onPlay, onResume = onResume, onBaseline = onBaseline)
+            // Con letra grande (> 1,15) lo principal va primero (Tarea 143, ítem 3): el botón «Seguir la ruta» antes de la lista de paradas, que es la explicación y puede quedar bajo el pliegue
+            if (LocalDensity.current.fontScale > 1.15f) {
+              HoyAction(ui, onPlay = onPlay, onResume = onResume, onBaseline = onBaseline)
+              HoyRoute(ui, onStop)
+            } else {
+              HoyRoute(ui, onStop)
+              HoyAction(ui, onPlay = onPlay, onResume = onResume, onBaseline = onBaseline)
+            }
           }
         }
       )
@@ -586,7 +592,7 @@ private fun StopNumber(stop: HomeStop, number: Int) {
 @Composable
 private fun HoyStone(stop: HomeStop, number: Int, fit: StoneFit, onClick: () -> Unit, modifier: Modifier = Modifier) {
   val color = when (stop.state) { StopState.DONE -> Clay.Lime; StopState.NEXT -> Clay.Sun; StopState.LATER -> HoyCream }
-  val tag = when (stop.state) { StopState.DONE -> "Hecho"; StopState.NEXT -> "Sigue"; StopState.LATER -> stop.place }
+  val tag = when (stop.state) { StopState.DONE -> "Hecho"; StopState.NEXT -> "Sigue"; StopState.LATER -> "Después" }      // (Tarea 143, ítem 18) antes la tercera decía el lugar y las otras dos el estado; el lugar ya se ve en la isla
   ClayCard(
     modifier = modifier.heightIn(min = 90.dp).semantics(mergeDescendants = true) { contentDescription = stopDescription(stop) }.testTag("home_stop_$number"),   // 84 dp de losa + 6 de arranque de sombra
     color = color, size = SlabSize.MEDIUM, onClick = onClick, contentPadding = 0.dp
@@ -666,7 +672,7 @@ private fun HoyAction(ui: HomeUi, onPlay: () -> Unit, onResume: () -> Unit, onBa
     }
     if (!ui.hasBaseline) {
       OnBoardText(
-        text = "Encuentra tu punto de partida · 5 min",
+        text = "Encuentra tu punto de partida · 4 juegos cortos",
         color = Clay.Sun,
         fontSize = 15.sp,
         fontWeight = FontWeight.SemiBold,
@@ -674,7 +680,9 @@ private fun HoyAction(ui: HomeUi, onPlay: () -> Unit, onResume: () -> Unit, onBa
           .padding(top = 4.dp)
           .clip(RoundedCornerShape(10.dp))
           .clickable(onClick = onBaseline)
-          .padding(horizontal = 4.dp, vertical = 6.dp)
+          .heightIn(min = 48.dp)
+          .padding(horizontal = 4.dp)
+          .wrapContentHeight(Alignment.CenterVertically)
           .testTag("btn_home_baseline")
       )
     }
@@ -692,7 +700,7 @@ private fun detailLine(name: String, s: AreaStatus): String = when {
 /**
  * Detalle de un área (vista "C" aprobada por Ricardo): Nubi explica, la barra grande con las 5 etapas nombradas, de
  * dónde a dónde avanzó en la semana y cuánto falta para la siguiente, las últimas 4 semanas y sus juegos. Abajo, en
- * vez de "Jugar Memoria", la pregunta de Nubi con el estilo del botón y "¡Sí, vamos!" (Nubi elige el juego del área
+ * vez de "Jugar Memoria", la pregunta de Nubi va en su globo (Tarea 143) y abajo el botón "Jugar <juego>" (Nubi elige el juego del área
  * sin jugar o el más olvidado y dice por qué). Flechas (o deslizar sobre Nubi) para pasar a otra área.
  */
 @Composable
@@ -705,12 +713,14 @@ internal fun AreaDetail(
   now: Long,
   lang: com.example.model.AppLanguage,
   onArea: (String) -> Unit,
-  /** «¡Sí, vamos!»: juega directo el juego que Nubi elige. */
+  /** «Jugar <juego>»: juega directo el juego que Nubi elige. */
   onPlay: (String) -> Unit,
   /** Tocar el nombre (la fila) de un juego: abre su ficha (Tarea 87). */
   onGame: (String) -> Unit,
   onClose: () -> Unit,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  /** A dónde vuelve la flecha: «Avance» (de donde se abre hoy); antes la cabecera decía «Hoy» aunque se abriera desde Avance (Tarea 143, A1). */
+  backLabel: String = "Avance"
 ) {
   val idx = AREA_ORDER.indexOf(areaKey).coerceAtLeast(0)
   val s = statuses.getOrNull(idx) ?: AreaStatus(areaKey, null, 0f, emptyList())
@@ -723,15 +733,16 @@ internal fun AreaDetail(
 
   Column(modifier.fillMaxSize().testTag("area_detail")) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 12.dp, top = 4.dp)) {
-      com.example.ui.components.KitBackButton(onClose, Modifier.testTag("area_back"), label = "Volver a Hoy")
+      com.example.ui.components.KitBackButton(onClose, Modifier.testTag("area_back"), label = "Volver a $backLabel")
       Spacer(Modifier.width(10.dp))
-      OnBoardText("Hoy", color = OnNight, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+      OnBoardText(backLabel, color = OnNight, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
     }
     Column(
       Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      NubiBubble("Nubi", detailLine(name, s))
+      // La pregunta vive en el globo de Nubi (Tarea 143, ítem 2): abajo solo queda el botón y así la lista de juegos gana ~90 dp (a letra 1,3 antes no cabía ninguno)
+      NubiBubble("Nubi", detailLine(name, s) + if (suggested != null) ". ¿Le damos un empujón a ${AreaProgress.your(name)}?" else "")
       var drag by remember(areaKey) { mutableStateOf(0f) }
       Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -754,17 +765,7 @@ internal fun AreaDetail(
         color = OnNightDim, fontSize = 16.sp
       )
       Spacer(Modifier.height(12.dp))
-      AreaBar(s.value, s.change, height = 14.dp, modifier = Modifier.semantics { contentDescription = areaDescription(name, s) })
-      Row(Modifier.fillMaxWidth().padding(top = 6.dp)) {
-        Skill.STAGES.forEachIndexed { i, st ->
-          val here = s.value != null && Skill.stage(s.value) == i
-          OnBoardText(
-            st, fontSize = 13.sp, textAlign = TextAlign.Center, maxLines = 1,
-            color = if (here) Color.White else OnNightSoft, fontWeight = if (here) FontWeight.Bold else FontWeight.Normal,
-            modifier = Modifier.weight(1f)
-          )
-        }
-      }
+      com.example.ui.components.StageScale(s.value, onCard = false, change = s.change, barModifier = Modifier.semantics { contentDescription = areaDescription(name, s) })
       Spacer(Modifier.height(8.dp))
       OnBoardText(AreaProgress.changeLine(s), color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
       AreaProgress.toNextLine(s)?.let { OnBoardText(it, color = OnNightDim, fontSize = 15.sp) }
@@ -804,21 +805,13 @@ internal fun AreaDetail(
       Spacer(Modifier.height(8.dp))
     }
     if (suggested != null) {
-      // La invitación: la pregunta con el mismo estilo que el botón, para que se lean juntas.
+      // La invitación: el botón «Jugar <juego>» (la pregunta ya la hizo Nubi en su globo) y por qué lo eligió, sin repetir lo que ya dice la tarjeta del juego.
       Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        OnBoardText(
-          "¿Le damos un empujón a ${AreaProgress.your(name)}?", color = Clay.Sun, fontSize = 20.sp,
-          fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.padding(bottom = 8.dp)
-        )
-        ClayButton(text = "¡Sí, vamos!", onClick = { onPlay(suggested.id) }, modifier = Modifier.testTag("area_play"))
         val title = getGameTitle(suggested.id, lang, suggested.title)
-        val last = lastPlayed[suggested.id]
+        ClayButton(text = "Jugar $title", onClick = { onPlay(suggested.id) }, modifier = Modifier.testTag("area_play"))
         OnBoardText(
-          when {
-            last == null -> "Nubi eligió $title: aún no la juegas"
-            else -> "Nubi eligió $title: ${playedAgo(now, last).replaceFirstChar { it.lowercase() }}"
-          },
-          color = OnNightDim, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp)
+          if (lastPlayed[suggested.id] == null) "Nubi lo eligió: aún no lo has jugado" else "Nubi lo eligió: es el que más tiempo lleva sin jugarse",
+          color = OnNightDim, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp).testTag("area_play_why")
         )
       }
     }

@@ -46,14 +46,14 @@ object Library {
 /**
  * El orden de los juegos dentro de un área (Tarea 124; Fable, `spec-avance-juegos.md` §2.4): tres grupos con rótulo, los vacíos no se muestran. Lógica pura (`LibraryOrderTest`).
  * 1. **En tu ruta de hoy:** los juegos de la ruta del día que son de esta área, en el orden de la ruta; los ya hechos (los primeros [completedCount] de la ruta) quedan en el grupo, marcados.
- * 2. **Hace días que no juegas:** los jugados alguna vez, de MÁS días sin jugar a menos (decisión: la spec decía «lastPlayedDay desc» y «de más días a menos»; se toma el segundo, que es el que tiene sentido para quien vuelve); empate por orden del catálogo.
+ * 2. **Para volver a jugar** (antes «Hace días que no juegas», título que no era cierto con «Jugaste hoy»; Tarea 143, A6): los jugados alguna vez, de MÁS días sin jugar a menos (decisión: la spec decía «lastPlayedDay desc» y «de más días a menos»; se toma el segundo, que es el que tiene sentido para quien vuelve); empate por orden del catálogo.
  * 3. **Nuevo para ti:** los nunca jugados, en orden del catálogo.
  * `focusGameId` (la última ficha abierta) ya NO reordena: solo pinta la losa en sol.
  */
 object LibraryOrder {
   enum class Group(val title: String) {
     RUTA("En tu ruta de hoy"),
-    HACE_DIAS("Hace días que no juegas"),
+    HACE_DIAS("Para volver a jugar"),
     NUEVO("Nuevo para ti")
   }
 

@@ -102,6 +102,22 @@ class PlaceSheetsTest {
   }
 
   @Test
+  fun la_ficha_de_cada_juego_dice_cuando_se_jugo_sin_cifras() {
+    // Tarea 143: la lámina muestra una cuadrícula de fichas; cada una dice solo «hoy», «ayer», «hace N días» o «nuevo» (y el lector de pantalla, «jugado …» / «sin jugar aún»)
+    assertEquals("hoy", PlaceSheets.whenShort(0)); assertEquals("ayer", PlaceSheets.whenShort(1))
+    assertEquals("hace 3 días", PlaceSheets.whenShort(3)); assertEquals("hace 22 días", PlaceSheets.whenShort(22)); assertEquals("nuevo", PlaceSheets.whenShort(null))
+    assertEquals("jugado hoy", PlaceSheets.whenSpoken(0)); assertEquals("jugado ayer", PlaceSheets.whenSpoken(1))
+    assertEquals("jugado hace 3 días", PlaceSheets.whenSpoken(3)); assertEquals("sin jugar aún", PlaceSheets.whenSpoken(null))
+    val g = games("MEMORIA")
+    val history = listOf(result(g[0].id, now), result(g[1].id, now - day), result(g[3].id, now - 3 * day))      // el 3.º (g[2]) nunca se jugó
+    val p = build("MEMORIA", AreaStatus("MEMORIA", 0.22f, 0f, listOf(null, null, null, 0.22f)), history)
+    assertEquals(listOf<Int?>(0, 1, null, 3), p.games.map { it.daysAgo })
+    assertEquals(listOf("hoy", "ayer", "nuevo", "hace 3 días"), p.games.map { it.whenShort })
+    assertEquals(listOf("jugado hoy", "jugado ayer", "sin jugar aún", "jugado hace 3 días"), p.games.map { it.spoken })
+    assertTrue("ninguna ficha lleva una cifra", p.games.none { row -> row.whenShort.any { it.isDigit() && row.daysAgo !in 2..99 } })
+  }
+
+  @Test
   fun los_rotulos_de_las_semanas_son_los_del_boceto() {
     assertEquals(listOf("Hace 3 sem.", "Hace 2 sem.", "Sem. pasada", "Esta semana"), PlaceSheets.WEEK_LABELS)
   }

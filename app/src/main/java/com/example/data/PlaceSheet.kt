@@ -5,8 +5,17 @@ import com.example.model.GamePlayResult
 import java.util.TimeZone
 import kotlin.math.roundToInt
 
-/** Una fila de «Tus juegos aquí» en la lámina de un lugar: el juego y lo que se sabe de él («Jugado ayer», «Sin jugar aún», su marca…). */
-data class PlaceGameRow(val gameId: String, val title: String, val detail: String)
+/**
+ * Una ficha de «Tus juegos aquí» en la lámina de un lugar: el juego y cuándo se jugó. [daysAgo] = días desde su última partida (null = nunca se jugó); la lámina solo dice eso ([whenShort], [spoken]) y NO la cifra de la medida del juego
+ * (esa vive en la ficha del juego, con su explicación: Tarea 143). [detail] = el dato de siempre («Jugado ayer», «Sin jugar aún», su marca…), que ya no se dibuja pero se conserva para las pruebas y los lectores de la lógica.
+ */
+data class PlaceGameRow(val gameId: String, val title: String, val detail: String, val daysAgo: Int? = null) {
+  /** «hoy», «ayer», «hace 3 días» o «nuevo» (nunca se jugó): la línea corta de la ficha. */
+  val whenShort: String get() = PlaceSheets.whenShort(daysAgo)
+
+  /** Lo mismo para el lector de pantalla: «jugado hoy», «jugado ayer», «jugado hace 3 días» o «sin jugar aún». */
+  val spoken: String get() = PlaceSheets.whenSpoken(daysAgo)
+}
 
 /**
  * Todo lo que dice la lámina que se abre al tocar un edificio de la isla (Tarea 85; boceto «A» de Hoy, aprobado por Ricardo el 12-oct): el AVANCE de esa área y sus juegos. Es solo texto y números (ya calculados), así que la lámina se prueba y se captura con datos fijos.
@@ -52,6 +61,22 @@ object PlaceSheets {
     else -> "Hace $days días que no lo juegas"
   }
 
+  /** La línea corta de una ficha de juego en la lámina: «hoy», «ayer», «hace N días»; «nuevo» si nunca se jugó ([daysAgo] nulo). */
+  fun whenShort(daysAgo: Int?): String = when (daysAgo) {
+    null -> "nuevo"
+    0 -> "hoy"
+    1 -> "ayer"
+    else -> "hace $daysAgo días"
+  }
+
+  /** Lo que dice el lector de pantalla de esa línea: «jugado hoy», «jugado ayer», «jugado hace N días», «sin jugar aún». */
+  fun whenSpoken(daysAgo: Int?): String = when (daysAgo) {
+    null -> "sin jugar aún"
+    0 -> "jugado hoy"
+    1 -> "jugado ayer"
+    else -> "jugado hace $daysAgo días"
+  }
+
   /** El dato corto de una fila de juego: «Jugado hoy», «Jugado ayer» o «Hace N días» (la fila es angosta y la frase larga se partía; la leyenda de abajo conserva la larga). */
   fun playedAgoShort(now: Long, last: Long): String = when (val days = (dayIndex(now) - dayIndex(last)).toInt()) {
     0 -> "Jugado hoy"
@@ -84,7 +109,7 @@ object PlaceSheets {
         last == null -> "Sin jugar aún"
         else -> playedAgoShort(now, last)
       }
-      PlaceGameRow(g.id, titleOf(g), detail)
+      PlaceGameRow(g.id, titleOf(g), detail, daysAgo = last?.let { (dayIndex(now) - dayIndex(it)).toInt() })
     }
     val chosen = games.minByOrNull { lastPlayed[it.id] ?: Long.MIN_VALUE }
     val chosenLine = chosen?.let { g ->
