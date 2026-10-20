@@ -315,6 +315,21 @@ namespace NeuroVida.Bridge.EditorTools
 
         // ------------------------------------------------------------------ por tiempo
 
+        /// <summary>
+        /// Punta (Tarea 144): después de la primera pantalla (bandeja tenue, la palabra todavía en la punta de la lengua), pulsa «¡La tengo!» cuando la definición ya se escribió y saca la toma «fichas» con las fichas ya caídas en la bandeja (que pasa a firme).
+        /// </summary>
+        private static IEnumerator PuntaHaveShot()
+        {
+            var controller = UnityEngine.Object.FindObjectOfType<NeuroVida.Games.Anagramas.PuntaGameController>();
+            if (controller == null) { GameNotes.Add("Punta: no se encontró el controlador para pulsar «¡La tengo!»"); yield break; }
+            double typed = Now + 4.0;
+            yield return Wait.Until(() => Now >= typed, 10);
+            controller.EditorHave();
+            double landed = Now + 1.6;
+            yield return Wait.Until(() => Now >= landed, 5);
+            Shot("fichas");
+        }
+
         /// <summary>La partida real: primera pantalla jugable, 8, 20 y 40 s de juego, la pausa, y el momento del objeto, la cortina «¡Listo!» y la escena final si la partida llega a su fin.</summary>
         // ------------------------------------------------------------------ juice (Tarea 130): antes · durante · después
 
@@ -471,6 +486,7 @@ namespace NeuroVida.Bridge.EditorTools
             yield return WaitPlayable();
             double playable = Now;
             Shot("primera");
+            if (id == "anagramas") yield return PuntaHaveShot();
             bool ended = false;
             foreach (var step in new[] { ("t08", 8.0), ("t20", 20.0), ("pausa", 21.0), ("aviso", 30.0), ("t40", 40.0) })
             {

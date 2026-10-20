@@ -288,6 +288,21 @@ namespace NeuroVida.Games.Acoplamiento
         public static string RoundChip(int module, int total) => total > 0 ? "Módulo " + Math.Min(module, total) + " de " + total : "Módulo " + module;
         public static string StreakChip(int streak) => streak + " seguidos";
 
+        /// <summary>
+        /// El chip de avance del marcador común (Tarea 144, ítem 5 de la revisión del 19-oct): el módulo y cuántos van a bordo, de lo más completo a lo más corto (<c>GameHud.SetInfoFit</c> pone el primero que cabe junto al título).
+        /// Con total (la precisión): «Módulo 3 de 24 · 8 a bordo» → «3 de 24 · 8 a bordo» → «Módulo 3 · 8 a bordo»; sin total (el Reto): «Módulo 7 · 5 a bordo». Antes el contador era un módulo celeste con un número, dibujado por el juego encima del chip «Módulo N».
+        /// </summary>
+        public static string[] InfoChips(int module, int total, int docked)
+        {
+            string aboard = " · " + docked + " a bordo";
+            if (total > 0)
+            {
+                int m = Math.Min(module, total);
+                return new[] { "Módulo " + m + " de " + total + aboard, m + " de " + total + aboard, "Módulo " + m + aboard };
+            }
+            return new[] { "Módulo " + module + aboard, module + aboard };
+        }
+
         /// <summary>Qué se contestó: 0 = «Encaja», 1 = «Espejo», −1 = no hubo tiempo.</summary>
         public const int AnswerFits = 0, AnswerMirror = 1, AnswerTimeout = -1;
 

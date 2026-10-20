@@ -1013,7 +1013,7 @@ namespace NeuroVida.Games.Disparate
                 while (ok && !_answerGiven)
                 {
 #if UNITY_EDITOR
-                    StartCoroutine(ProbeTap(coach, _btnTrue, "VERDAD"));
+                    StartCoroutine(ProbeTap(coach, _btnTrue, "Verdad"));
 #endif
                     yield return StartCoroutine(coach.Touch(() => coach.RectOf(_btnTrue), CoachTexts.Disparate.Truth, keep: plate));
                     ok = !t.Skipped;
@@ -1035,7 +1035,7 @@ namespace NeuroVida.Games.Disparate
                 while (ok && !_answerGiven)
                 {
 #if UNITY_EDITOR
-                    StartCoroutine(ProbeTap(coach, _btnFalse, "DISPARATE"));
+                    StartCoroutine(ProbeTap(coach, _btnFalse, "Disparate"));
 #endif
                     yield return StartCoroutine(coach.Touch(() => coach.RectOf(_btnFalse), CoachTexts.Disparate.Nonsense, keep: plate));
                     ok = !t.Skipped;
@@ -1367,8 +1367,8 @@ namespace NeuroVida.Games.Disparate
             }
 
             // rótulos del deslizar
-            _swipeTrue = SwipeLabel("VERDAD", GoodColor);
-            _swipeFalse = SwipeLabel("DISPARATE", BadColor);
+            _swipeTrue = SwipeLabel("Verdad", GoodColor);                    // sin mayúsculas sostenidas (Tarea 144, B3; DESIGN §1): son botones, no un estímulo
+            _swipeFalse = SwipeLabel("Disparate", BadColor);
         }
 
         private Text SwipeLabel(string text, Color color)
@@ -1429,8 +1429,8 @@ namespace NeuroVida.Games.Disparate
 
         private void BuildButtons()
         {
-            _btnTrue = MakeButton("VERDAD", GoodColor, DisparateSprites.CheckIcon(), 120f);
-            _btnFalse = MakeButton("DISPARATE", BadColor, DisparateSprites.BrokenWaveIcon(), 150f);       // la onda cortada ocupa menos alto que el ✓: con 150 u se ve del mismo tamaño que él
+            _btnTrue = MakeButton("Verdad", GoodColor, DisparateSprites.CheckIcon(), 120f);
+            _btnFalse = MakeButton("Disparate", BadColor, DisparateSprites.BrokenWaveIcon(), 150f);       // la onda cortada ocupa menos alto que el ✓: con 150 u se ve del mismo tamaño que él
         }
 
         private RectTransform MakeButton(string label, Color color, Sprite icon, float iconSize)
@@ -1555,14 +1555,7 @@ namespace NeuroVida.Games.Disparate
             for (int i = 0; i < _meter.Count; i++)
                 _meter[i].rectTransform.anchoredPosition = new Vector2(antCenter.x + 150f + i * 46f, floorY + 70f - DisparateSprites.MeterMargin);
 
-            // la placa va al medio; la barra de señal, el aviso y los botones, abajo
-            _plateY = antCenter.y - antSize * 0.5f - 130f;
-            _sigY = _plateY - 270f;
-            _sigBar.anchoredPosition = new Vector2(80f, _sigY);
-            _sigLabel.rectTransform.anchoredPosition = new Vector2(-300f, _sigY);
-            _hint.rectTransform.sizeDelta = new Vector2(_playW - MarginU * 2f, 160f);
-            _hint.rectTransform.anchoredPosition = new Vector2(0f, _sigY - 190f);
-
+            // los botones, abajo
             float btnH = Mathf.Max(280f, DisparateContract.MinButtonDp * UnitsPerDp * 1.6f);
             float btnW = (_playW - MarginU * 2f - 36f) * 0.5f;
             _btnSize = new Vector2(btnW, btnH);
@@ -1572,6 +1565,18 @@ namespace NeuroVida.Games.Disparate
             _btnTrue.sizeDelta = _btnFalse.sizeDelta = _btnSize;
             _btnTrue.anchoredPosition = _btnTrueCenter;
             _btnFalse.anchoredPosition = _btnFalseCenter;
+
+            // la placa va CENTRADA entre el borde de abajo de la antena y el de arriba de los botones (Tarea 144, ítem 22 de la revisión del 19-oct: antes colgaba 130 unidades bajo la antena y el 60 % del medio quedaba vacío hasta los botones);
+            // la barra de señal y el aviso van debajo de ella (270 y 460 unidades) y tienen que seguir entrando sobre los botones: en una pantalla bajita la placa no baja más de lo que lo permiten (y nunca queda más arriba que antes)
+            float antBottom = antCenter.y - antSize * 0.5f, btnTop = by + btnH * 0.5f;
+            float hung = antBottom - 130f;
+            float lowest = btnTop + 560f;                                  // el aviso mide 160 y está 460 bajo la placa: su borde de abajo queda 20 sobre los botones
+            _plateY = Mathf.Min(hung, Mathf.Max((antBottom + btnTop) * 0.5f, lowest));
+            _sigY = _plateY - 270f;
+            _sigBar.anchoredPosition = new Vector2(80f, _sigY);
+            _sigLabel.rectTransform.anchoredPosition = new Vector2(-300f, _sigY);
+            _hint.rectTransform.sizeDelta = new Vector2(_playW - MarginU * 2f, 160f);
+            _hint.rectTransform.anchoredPosition = new Vector2(0f, _sigY - 190f);
 
             _plate.anchoredPosition = new Vector2(0f, _plateY);
             _ribbon.rectTransform.anchoredPosition = _dishPos;

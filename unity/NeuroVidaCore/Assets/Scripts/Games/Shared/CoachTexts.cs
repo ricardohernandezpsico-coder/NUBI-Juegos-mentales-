@@ -179,8 +179,8 @@ namespace NeuroVida.Games.Shared
         /// <summary>¿Verdad o disparate? (pantalla: la placa con la frase, la barra de señal y los botones VERDAD y DISPARATE abajo).</summary>
         public static class Disparate
         {
-            public const string Truth = "Si es verdad, toca VERDAD";
-            public const string Nonsense = "Si no tiene sentido, toca DISPARATE";
+            public const string Truth = "Si es verdad, toca Verdad";
+            public const string Nonsense = "Si no tiene sentido, toca Disparate";
             public const string Rhythm = "Responde rápido, pero lo que cuenta es acertar";
             public const string Unclear = "Si una frase no está clara, mantenla presionada";
         }

@@ -646,7 +646,7 @@ namespace NeuroVida.Games.Freno
             var free = _stars.Find(s => !s.gameObject.activeSelf);
             if (free == null) return;
             var r = free.rectTransform;
-            float top = _laneTop - 40f, bottom = -_playH * 0.5f + 660f; // cielo: entre las plataformas y el medidor
+            float top = _laneTop - 40f, bottom = Mathf.Max(-_playH * 0.5f + 660f, GroupTop(2) + 30f); // cielo: entre las plataformas y el medidor
             r.anchoredPosition = new Vector2(((float)_rng.NextDouble() - 0.5f) * (_playW - 80f), Mathf.Lerp(bottom, top, (float)_rng.NextDouble()));
             float s = 30f + (float)_rng.NextDouble() * 26f;
             r.sizeDelta = new Vector2(s, s);
@@ -1023,11 +1023,50 @@ namespace NeuroVida.Games.Freno
             _laneTop = _playH * 0.5f - (GameHud.Height + 150f);
             _gaugeW = Mathf.Min(960f, _playW - MarginU * 2f);
             _prompt.rectTransform.sizeDelta = new Vector2(_playW - MarginU * 2f, 110f);
-            // el letrero («¡FRENO PERFECTO!», «Lanza el cohete…») va DEBAJO del aro que se abre alrededor de la señal ALTO (radio 260 sobre la señal, que está en bottom+1180): su borde de arriba queda en bottom+905 < 920
-            _prompt.rectTransform.anchoredPosition = new Vector2(0f, bottom + 850f);
-            _stopRect.anchoredPosition = new Vector2(0f, bottom + 1180f);
+            // el letrero («¡FRENO PERFECTO!», «Lanza el cohete…») va DEBAJO del aro que se abre alrededor de la señal ALTO (radio 260 sobre la señal): su borde de arriba queda 15 unidades bajo el aro.
+            // Tarea 144: el conjunto botón-plataforma-cohete subió (0,22 del alto) y creció; la señal ALTO (el estímulo: cambia de LUGAR, no de tamaño, momento ni sonido) y el letrero suben con él, lo justo para no pisarlo: el centro de la señal queda a máx(1180, tope del conjunto + StopClearance)
+            // sobre el borde de abajo y el del letrero 330 más abajo. En 20:9 (alto 2400): señal de 1180 a ≈1361 (+181 u, ≈ +60 dp) y letrero de 850 a ≈1031; en 16:9 (alto 1920): señal a ≈1256 (+76 u, ≈ +25 dp) y letrero a ≈926. Anotado con la fecha en docs/medidas-juegos-estrella.md
+            float stopY = Mathf.Max(1180f, GroupTop(2) - bottom + StopClearance);
+            _prompt.rectTransform.anchoredPosition = new Vector2(0f, bottom + stopY - 330f);
+            _stopRect.anchoredPosition = new Vector2(0f, bottom + stopY);
             _stopRect.sizeDelta = new Vector2(480f, 480f);                  // 160 dp (Tarea 128: eran 400 unidades, ~133 dp)
         }
+
+        // ---- el conjunto botón-plataforma-cohete (Tarea 144, ítem 20 de la revisión del 19-oct; Ricardo: «subir y agrandar»)
+
+        /// <summary>Cohete y plataforma, ×1,3 donde el carril lo permite (antes 230 y 300 unidades); el botón de 210 a 240 unidades (de 70 a 80 dp de caja: el disco que se ve pasa de unos 56 a unos 64 dp).</summary>
+        private const float GroupScale = 1.3f, ButtonMax = 240f;
+
+        /// <summary>El centro del botón, a esta fracción del alto de la zona de juego medida desde abajo (antes estaba pegado al borde: 60 unidades de aire).</summary>
+        private const float ButtonHeightFraction = 0.22f;
+
+        /// <summary>
+        /// Aire entre lo más alto del conjunto (la baliza del cohete) y el centro de la señal ALTO: radio 260 del aro + letrero de 110 + 15 de aire por lado. Es lo justo (no más): en 16:9 la señal queda a 425 unidades del borde de arriba y entre ella y el medidor
+        /// («Tu freno», hasta ~340) todavía cabe el chip «×N seguidos» (72); con 430 la señal subía 25 unidades más y el chip bajaba debajo de ella, sobre el letrero (smoke «SeguidosFreno», intermitente solo en 1080x1920).
+        /// </summary>
+        private const float StopClearance = 400f;
+
+        private struct LaneMetrics { public float Button, Rocket, Pad, ButtonY, PadY, RocketY, BeaconY, Top; }
+
+        /// <summary>Las medidas del conjunto de un carril cuando hay <paramref name="n"/> carriles (y desde el centro de la zona de juego hacia arriba).</summary>
+        private LaneMetrics Metrics(int n)
+        {
+            float bottom = -_playH * 0.5f;
+            float laneW = (_playW - 20f) / n;
+            var m = new LaneMetrics();
+            m.Rocket = Mathf.Min(230f * GroupScale, laneW * 0.8f);
+            m.Button = Mathf.Min(ButtonMax, laneW * 0.78f);
+            m.Pad = Mathf.Min(300f * GroupScale, laneW * 0.98f);
+            m.ButtonY = bottom + _playH * ButtonHeightFraction;
+            m.PadY = m.ButtonY + m.Button * 0.5f + 90f;
+            m.RocketY = m.PadY + m.Rocket * 0.05f;                         // la cola apoyada en la losa, entre las torres
+            m.BeaconY = m.RocketY + m.Rocket * 0.62f;
+            m.Top = m.BeaconY + 23f;                                       // la baliza mide 46
+            return m;
+        }
+
+        /// <summary>Lo más alto del conjunto con <paramref name="n"/> carriles (en el espacio de la zona de juego).</summary>
+        private float GroupTop(int n) => Metrics(n).Top;
 
         /// <summary>Muestra <paramref name="n"/> carriles repartidos a lo ancho (plataforma, cohete, baliza, botón).</summary>
         private void SetupLanes(int n)
@@ -1035,8 +1074,8 @@ namespace NeuroVida.Games.Freno
             _lanesShown = n;
             float bottom = -_playH * 0.5f;
             float laneW = (_playW - 20f) / n;
-            float rocket = Mathf.Min(230f, laneW * 0.8f);
-            float button = Mathf.Min(210f, laneW * 0.78f);
+            var m = Metrics(n);
+            float rocket = m.Rocket, button = m.Button;
             for (int i = 0; i < _lanes.Count; i++)
             {
                 var L = _lanes[i];
@@ -1046,7 +1085,7 @@ namespace NeuroVida.Games.Freno
                 L.Root.anchoredPosition = new Vector2(-(_playW - 20f) * 0.5f + laneW * (i + 0.5f), 0f);
                 L.Root.sizeDelta = new Vector2(laneW, _playH);
 
-                float buttonY = bottom + 60f + button * 0.5f;
+                float buttonY = m.ButtonY;
                 L.Button.rectTransform.sizeDelta = new Vector2(button, button);
                 L.Button.rectTransform.anchoredPosition = new Vector2(0f, buttonY);
                 L.Button.rectTransform.localScale = Vector3.one;
@@ -1054,11 +1093,11 @@ namespace NeuroVida.Games.Freno
                 L.Hint.rectTransform.anchoredPosition = new Vector2(0f, buttonY);
                 L.Hint.gameObject.SetActive(false);
 
-                float padY = buttonY + button * 0.5f + 90f;
-                L.Pad.rectTransform.sizeDelta = new Vector2(Mathf.Min(300f, laneW * 0.98f), Mathf.Min(300f, laneW * 0.98f));
+                float padY = m.PadY;
+                L.Pad.rectTransform.sizeDelta = new Vector2(m.Pad, m.Pad);
                 L.Pad.rectTransform.anchoredPosition = new Vector2(0f, padY);
 
-                float rocketY = padY + rocket * 0.05f; // la cola apoyada en la losa, entre las torres
+                float rocketY = m.RocketY; // la cola apoyada en la losa, entre las torres
                 L.RocketRect.sizeDelta = new Vector2(rocket, rocket);
                 L.RocketRect.anchoredPosition = new Vector2(0f, rocketY);
                 L.RocketRect.localScale = Vector3.one;
@@ -1067,7 +1106,7 @@ namespace NeuroVida.Games.Freno
                 L.Glow.rectTransform.anchoredPosition = new Vector2(0f, rocketY);
                 L.Glow.gameObject.SetActive(false);
                 L.Beacon.rectTransform.sizeDelta = new Vector2(46f, 46f);
-                L.Beacon.rectTransform.anchoredPosition = new Vector2(0f, rocketY + rocket * 0.62f);
+                L.Beacon.rectTransform.anchoredPosition = new Vector2(0f, m.BeaconY);
                 L.Beacon.color = new Color(1f, 1f, 1f, 0.18f);
                 L.Mark.rectTransform.sizeDelta = new Vector2(rocket * 0.45f, rocket * 0.45f);
                 L.Mark.gameObject.SetActive(false);

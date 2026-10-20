@@ -198,6 +198,7 @@ namespace NeuroVida.Games.Bodega
             _cardGroup.blocksRaycasts = false;
             _cardRim = MakeImage(_cardLayer, "Rim", RoundedRectSprite.Get(24));
             _cardBg = MakeImage(_cardLayer, "Bg", RoundedRectSprite.Get(24));
+            _hud.AvoidForStreak(_cardRim.rectTransform);                    // Tarea 144: «¡Pedido perfecto!» cae en la tarjeta y el chip «×N seguidos» nunca la cruza (la capa `_cardLayer` ocupa toda el área: se registra el rectángulo de la tarjeta)
             _cardSlab = PlasticSlab.TryStyle(_cardBg, SlabSize.Button, SlabTone.Cream);          // plasticina (Tarea 129): la tarjeta es una losa CREMA del kit (sin el borde de color: «Pedido» sigue en el texto), con el objeto en su disco oscuro como ventanilla; sin ella, el recuadro de siempre
             if (_cardSlab != null) _cardRim.enabled = false;
             else _cardBg.color = PanelFill;

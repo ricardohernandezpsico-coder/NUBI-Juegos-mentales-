@@ -209,7 +209,7 @@ namespace NeuroVida.Bridge.EditorTools
 
         /// <summary>
         /// Una corrida «Seguidos*» por juego (Tarea 127): a los 5,5 s de partida, en forma de teléfono (20:9 y 16:9), el smoke enciende el chip «×4 seguidos» del marcador del juego y la guardia <see cref="ScanStreakChip"/> comprueba que no tapa ningún texto, botón ni estímulo
-        /// (las mismas reglas que el aviso: <see cref="NeuroVida.Games.Shared.ToastPlacement"/>, 800 unidades cuadradas). Los juegos sin chip (Rescate, Acoplamiento, Aterrizaje, Correo y Rastro no lo usan) solo lo registran.
+        /// (las mismas reglas que el aviso: <see cref="NeuroVida.Games.Shared.ToastPlacement"/>, 800 unidades cuadradas). Los juegos sin chip (Rescate, Aterrizaje, Correo y Rastro no lo usan) solo lo registran; Acoplamiento lo usa desde la Tarea 144 (antes dibujaba el suyo). Las zonas que un juego registra con <c>GameHud.AvoidForStreak</c> (la tarjeta de Bodega) el chip no las cruza nunca.
         /// </summary>
         private static readonly (string Name, string Id, float Seconds)[] SeguidosCatalog =
         {
@@ -270,10 +270,24 @@ namespace NeuroVida.Bridge.EditorTools
                 float o = NeuroVida.Games.Shared.ToastPlacement.Overlap(mine, boxes[i]);
                 if (o < 800f) continue;
                 string key = names[i];
+                // la pieza de Acoplamiento gira: su caja medida es el rectángulo del cuadrado girado (hasta 1,4 veces más grande que lo que se ve; la figura nunca sube de 600 unidades del borde de arriba y el chip termina en 543: a ojo, en las capturas, no se tocan)
+                if (_current.Id == "acoplamiento" && key.EndsWith("ModuleRoot/Body")) continue;
                 _streakNow.Add(key);
                 if (!_streakPrev.Contains(key) || !_streakSeen.Add(key)) continue;
                 _errorCount++;
                 Debug.Log($"[SmokeTest] Error capturado: guardia de «seguidos»: {_current.Name} ({_current.Id}), 1080x{_currentHeight}: el chip (de {Mathf.RoundToInt(mine.yMin)} a {Mathf.RoundToInt(mine.yMax)} desde arriba) tapa [{key}] ({Mathf.RoundToInt(o)} u²)");
+            }
+            // las zonas que el juego registró con GameHud.AvoidForStreak (Tarea 144: la tarjeta del pedido de Bodega, donde cae «¡Pedido perfecto!»): el chip NO las cruza nunca, ni por poco, aunque en este momento no tengan nada dibujado
+            foreach (var zone in hud.StreakAvoidZones)
+            {
+                if (zone == null) continue;
+                float o = NeuroVida.Games.Shared.ToastPlacement.Overlap(mine, NeuroVida.Games.Shared.ToastPlacement.LocalRectOf(space, zone));
+                if (o <= 0f) continue;
+                string key = "zona registrada: " + zone.name;
+                _streakNow.Add(key);
+                if (!_streakPrev.Contains(key) || !_streakSeen.Add(key)) continue;
+                _errorCount++;
+                Debug.Log($"[SmokeTest] Error capturado: guardia de «seguidos»: {_current.Name} ({_current.Id}), 1080x{_currentHeight}: el chip (de {Mathf.RoundToInt(mine.yMin)} a {Mathf.RoundToInt(mine.yMax)} desde arriba) cruza la zona registrada [{zone.name}] ({Mathf.RoundToInt(o)} u²)");
             }
             _streakPrev.Clear();
             foreach (var k in _streakNow) _streakPrev.Add(k);

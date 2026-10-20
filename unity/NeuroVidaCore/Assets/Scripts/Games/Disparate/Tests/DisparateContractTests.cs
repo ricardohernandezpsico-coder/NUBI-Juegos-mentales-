@@ -79,8 +79,8 @@ namespace NeuroVida.Games.Disparate.Tests
             Assert.AreEqual(0f, DisparateContract.BurstSeconds(true, false));
             Assert.AreEqual(9f * 1.3f, DisparateContract.SignalSeconds(1, false, true), 1e-4f);
             Assert.AreEqual(4f * 1.3f, DisparateContract.BurstSeconds(false, true), 1e-4f);
-            Assert.AreEqual(28, DisparateContract.PhraseSizeSp(true));
-            Assert.AreEqual(24, DisparateContract.PhraseSizeSp(false));
+            Assert.AreEqual(32, DisparateContract.PhraseSizeSp(true));
+            Assert.AreEqual(28, DisparateContract.PhraseSizeSp(false));
         }
 
         [Test]

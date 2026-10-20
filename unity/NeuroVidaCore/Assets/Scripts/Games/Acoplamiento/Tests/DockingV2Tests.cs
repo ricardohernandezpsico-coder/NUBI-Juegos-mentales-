@@ -128,6 +128,10 @@ namespace NeuroVida.Games.Acoplamiento.Tests
             Assert.AreEqual("—", DockingContract.CurveValue(-1));
             Assert.AreEqual("Módulo 3 de 24", DockingContract.RoundChip(3, 24));
             Assert.AreEqual("Módulo 30", DockingContract.RoundChip(30, 0));
+            // el chip de avance del marcador común lleva el contador (Tarea 144): de lo más completo a lo más corto
+            Assert.AreEqual(new[] { "Módulo 3 de 24 · 8 a bordo", "3 de 24 · 8 a bordo", "Módulo 3 · 8 a bordo" }, DockingContract.InfoChips(3, 24, 8));
+            Assert.AreEqual(new[] { "Módulo 7 · 5 a bordo", "7 · 5 a bordo" }, DockingContract.InfoChips(7, 0, 5));
+            Assert.AreEqual("Módulo 24 de 24 · 0 a bordo", DockingContract.InfoChips(30, 24, 0)[0], "el módulo nunca pasa del total");
             Assert.AreEqual("Tu récord: 1 módulo", DockingContract.RecordLine(1));
             Assert.AreEqual("Tu récord: 31 módulos", DockingContract.RecordLine(31));
         }

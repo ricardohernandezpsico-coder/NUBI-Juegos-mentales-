@@ -232,6 +232,41 @@ namespace NeuroVida.Games.Shared
         }
 
         /// <summary>
+        /// Como <see cref="SetInfo"/> con varias versiones del texto, de la más completa a la más corta: pone la primera cuyo chip deja al título su ancho a la letra más chica (16 dp); si ninguna cabe, la última. Acoplamiento (Tarea 144):
+        /// «Módulo 3 de 24 · 8 a bordo» → «3 de 24 · 8 a bordo» → «Módulo 3 · 8 a bordo». Nada se parte ni se corta: el título y el chip comparten la fila 1.
+        /// </summary>
+        public void SetInfoFit(params string[] candidates)
+        {
+            if (candidates == null || candidates.Length == 0) return;
+            string chosen = candidates[candidates.Length - 1];
+            foreach (var c in candidates) if (!string.IsNullOrEmpty(c) && InfoFits(c)) { chosen = c; break; }
+            SetInfo(chosen);
+        }
+
+        /// <summary>¿Cabe el chip de avance con <paramref name="text"/> sin quitarle al título más de lo que necesita a 16 dp (la letra más chica que permite)?</summary>
+        private bool InfoFits(string text)
+        {
+            bool best = _titleText.resizeTextForBestFit;
+            int size = _titleText.fontSize;
+            var wrap = _titleText.horizontalOverflow;
+            _titleText.resizeTextForBestFit = false;
+            _titleText.fontSize = 48;
+            _titleText.horizontalOverflow = HorizontalWrapMode.Overflow;
+            float titleW = Mathf.Ceil(_titleText.preferredWidth);
+            _titleText.horizontalOverflow = wrap;
+            _titleText.fontSize = size;
+            _titleText.resizeTextForBestFit = best;
+            string old = _infoText.text;
+            _infoText.text = text;
+            float chipW = Mathf.Ceil(_infoText.preferredWidth) + ChipPad * 2f;
+            _infoText.text = old;
+            return titleW + 20f + chipW <= 1080f - 2f * _margin;
+        }
+
+        /// <summary>El texto que muestra el chip de avance ahora (para las pruebas).</summary>
+        public string InfoText => _infoText.text;
+
+        /// <summary>
         /// La fila de consigna (fila 2): <paramref name="text"/> a la izquierda (admite <c>&lt;color&gt;</c>: la regla de Tinta va con el color de su orilla Y su palabra) y un <paramref name="icon"/> opcional (la gota o el libro: la forma además del color).
         /// <paramref name="sizeU"/> = tamaño de la letra en unidades (51 = 17 dp por defecto; 54 = 18 dp para Tinta). Una sola línea.
         /// </summary>
@@ -310,6 +345,29 @@ namespace NeuroVida.Games.Shared
         /// <summary>El chip de «seguidos» (null en los juegos sin racha): su caja, para que la guardia del smoke mida que no tapa nada.</summary>
         public RectTransform StreakRect => _streakChip;
         public bool HasStreakChip => _streakChip != null;
+
+        private float _streakFirst = Height + 36f;
+
+        /// <summary>
+        /// Desde dónde (unidades bajo el borde de arriba del contenedor) se empieza a buscar el lugar del chip «×N seguidos»: por omisión <c>Height + 36</c>, debajo de la franja fina que muchos juegos ponen pegada al marcador. Un juego con una pieza grande justo debajo (la tarjeta
+        /// de Punta empieza en 312) lo sube para que el chip quepa antes de ella (Tarea 144).
+        /// </summary>
+        public void SetStreakTop(float topU) => _streakFirst = Mathf.Max(Height + 8f, topU);
+
+        private readonly System.Collections.Generic.List<RectTransform> _avoidForStreak = new System.Collections.Generic.List<RectTransform>();
+
+        /// <summary>
+        /// Una zona propia del juego que el chip «×N seguidos» NUNCA cruza (Tarea 144, ítem 6 de la revisión del 19-oct), aunque en ese momento no tenga nada dibujado o esté a medio fundido: la tarjeta del pedido de Bodega, donde cae «¡Pedido perfecto!».
+        /// Es como <see cref="Toast.KeepOut"/> pero para el chip: el chip se coloca en la franja libre más cercana de debajo del marcador, de preferencia justo debajo de la zona. Sin esto el chip se medía contra lo que estaba dibujado al aparecer
+        /// y la tarjeta, que entra con un fundido, todavía no contaba. Hay que registrar el RECTÁNGULO de la pieza (no una capa que ocupe toda el área).
+        /// </summary>
+        public void AvoidForStreak(RectTransform zone)
+        {
+            if (zone != null && !_avoidForStreak.Contains(zone)) _avoidForStreak.Add(zone);
+        }
+
+        /// <summary>Las zonas que el juego declaró con <see cref="AvoidForStreak"/> (para la guardia del smoke y las pruebas).</summary>
+        public System.Collections.Generic.IReadOnlyList<RectTransform> StreakAvoidZones => _avoidForStreak;
         public string PhaseText => _phaseText.gameObject.activeSelf ? _phaseText.text : "";
         public bool StreakVisible => _streakChip != null && _streakChip.gameObject.activeSelf;
         public string StreakText => _streakText != null ? _streakText.text : "";
@@ -343,23 +401,55 @@ namespace NeuroVida.Games.Shared
         /// <summary>
         /// El chip de «seguidos» no debe tapar nada del juego (Tarea 127): busca su lugar como los avisos (<see cref="ToastPlacement"/>): de abajo del marcador hacia abajo, el primer lugar a la derecha donde no pisa ningún texto, botón ni estímulo (menos de 800 unidades cuadradas
         /// de choque); si no hay, el de menos choque. La guardia del smoke (<c>Seguidos*</c>) mide lo mismo en los juegos con racha.
+        /// Desde la Tarea 144 las zonas que el juego registró con <see cref="AvoidForStreak"/> mandan sobre todo lo demás: un lugar que las pisa nunca gana a uno que no, y los lugares que se prueban incluyen «justo debajo de cada zona» (la franja libre más cercana).
         /// </summary>
         private void PlaceStreakChip()
         {
             var space = _streakChip.parent as RectTransform;
             if (space == null) return;
-            float first = Height + 36f, best = float.MaxValue, bestY = first;
-            for (float y = first; y <= first + 700f; y += 44f)
+            float first = _streakFirst;
+            var tops = new System.Collections.Generic.List<float>();
+            var zones = new System.Collections.Generic.List<Rect>();
+            // en orden de preferencia: justo debajo de cada zona registrada (12 unidades; si ahí no cabe sin pisar otra cosa, 4 y, por último, pegado), y después de arriba hacia abajo cada 44
+            foreach (float gap in StreakZoneGaps)
+                foreach (var z in _avoidForStreak)
+                {
+                    if (z == null) continue;
+                    var zr = ToastPlacement.LocalRectOf(space, z);
+                    if (gap == StreakZoneGaps[0]) zones.Add(zr);
+                    if (zr.yMax + gap >= first) tops.Add(zr.yMax + gap);                      // la franja libre más cercana: justo debajo de la zona
+                }
+            for (float y = first; y <= first + 700f; y += 44f) tops.Add(y);
+            float best = float.MaxValue, bestY = first;
+            foreach (float y in tops)
             {
                 _streakChip.anchoredPosition = new Vector2(-_margin, -y);
                 var mine = ToastPlacement.LocalRectOf(space, _streakChip);
-                float overlap = 0f;
+                float overlap = 0f, inZone = 0f;
                 foreach (var box in ToastPlacement.Collect(space, _streakChip)) overlap += ToastPlacement.Overlap(mine, box);
-                if (overlap < best) { best = overlap; bestY = y; }
-                if (overlap < 800f) break;
+                foreach (var zr in zones) inZone += ToastPlacement.Overlap(mine, zr);
+                float score = inZone * 1000f + overlap;                                                  // pisar una zona registrada pesa mucho más que cualquier otro choque
+                if (score < best) { best = score; bestY = y; }
+                if (inZone <= 0f && overlap < 800f) break;
             }
+
             _streakChip.anchoredPosition = new Vector2(-_margin, -bestY);
+#if UNITY_EDITOR
+            if (best >= 800f)
+            {
+                // sin franja libre (lo que lo tapa, para entender al smoke: Tarea 144)
+                var names = new System.Collections.Generic.List<string>();
+                var boxes = ToastPlacement.Collect(space, _streakChip, names);
+                var mine = ToastPlacement.LocalRectOf(space, _streakChip);
+                var sb = new System.Text.StringBuilder();
+                for (int i = 0; i < boxes.Count; i++) { float o = ToastPlacement.Overlap(mine, boxes[i]); if (o > 0f) sb.Append(names[i]).Append(" (").Append(Mathf.RoundToInt(o)).Append(" u²) "); }
+                Debug.Log("[SmokeTest] seguidos: sin franja libre, el chip queda en " + Mathf.RoundToInt(bestY) + " (peor choque " + Mathf.RoundToInt(best) + "): " + sb);
+            }
+#endif
         }
+
+        /// <summary>Aire entre una zona registrada con <see cref="AvoidForStreak"/> y el chip que se coloca justo debajo de ella (unidades), de lo preferido a lo mínimo.</summary>
+        private static readonly float[] StreakZoneGaps = { 12f, 4f, 0f };
 
         // ------------------------------------------------------------------ animaciones
 

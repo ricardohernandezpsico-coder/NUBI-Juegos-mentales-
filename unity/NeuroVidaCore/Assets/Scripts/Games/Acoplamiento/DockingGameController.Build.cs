@@ -38,7 +38,7 @@ namespace NeuroVida.Games.Acoplamiento
         private readonly Image[] _lights = new Image[Lights];
         private Image _lightGlow, _medal;
         private Text _medalText;
-        private RectTransform _lightsZone;
+        private RectTransform _lightsZone, _noticeZone;
 
         // puerto: el panel (losa «noche» del kit), su rótulo, los chevrones, la cavidad del hueco, el cordón (tinta el estado) y la marca de visto
         private Image _portPanel, _portSlab, _portEdge, _portHole, _portMark;
@@ -66,10 +66,6 @@ namespace NeuroVida.Games.Acoplamiento
         // barra de tiempo, pista y avisos (la losa chica del kit)
         private Image _fuelBorder, _fuelTrack, _fuelFill, _noticeShadow, _noticeBorder, _noticePill, _noticeSlab;
         private Text _fuelLabel, _hint, _noticeText;
-
-        // marcador de la derecha
-        private Image _hudIcon, _hudIconInk, _streakBg;
-        private Text _hudCount, _streakText;
 
         // pantalla final
         private Image _endShade, _endCard, _endRecordBg;
@@ -111,7 +107,7 @@ namespace NeuroVida.Games.Acoplamiento
             _safe = safeGo.AddComponent<RectTransform>();
             ApplySafeArea(_safe);
 
-            _hud = new GameHud(_safe, DockingContract.Title, MarginU, this, withStreak: false, rightReserve: 170f);
+            _hud = new GameHud(_safe, DockingContract.Title, MarginU, this);                 // el marcador común ENTERO (Tarea 144): el contador va en el chip de avance y «×N seguidos» es el chip común
 
             var playGo = new GameObject("Play");
             playGo.transform.SetParent(_safe, false);
@@ -155,6 +151,12 @@ namespace NeuroVida.Games.Acoplamiento
             zone.transform.SetParent(_hudLayer, false);
             _lightsZone = zone.AddComponent<RectTransform>();
             _lightsZone.anchorMin = _lightsZone.anchorMax = _lightsZone.pivot = new Vector2(0.5f, 0.5f);
+            var noticeZone = new GameObject("NoticeZone");
+            noticeZone.transform.SetParent(_hudLayer, false);
+            _noticeZone = noticeZone.AddComponent<RectTransform>();
+            _noticeZone.anchorMin = _noticeZone.anchorMax = _noticeZone.pivot = new Vector2(0.5f, 0.5f);
+            _hud.AvoidForStreak(_noticeZone);                               // la franja del aviso («¡Anillo completo!» aparece con el 8.º módulo, a la vez que el chip, y entra con un fundido): el chip tampoco la cruza
+            _hud.AvoidForStreak(_lightsZone);                               // Tarea 144: las luces de avance miden menos de 80 unidades y la guardia no las ve como estímulo: el chip «×N seguidos» no las cruza nunca
             for (int i = 0; i < Lights; i++) _lights[i] = MakeImage(_hudLayer, "Light" + i, null);
             _lightGlow = MakeImage(_hudLayer, "LightGlow", RadialGlowSprite.Get());
             _lightGlow.color = new Color(1f, 0.82f, 0.34f, 0f);
@@ -261,13 +263,6 @@ namespace NeuroVida.Games.Acoplamiento
 
         private void BuildHud()
         {
-            _hudIconInk = Rr(_hudLayer, "ScoreIconInk", Ink, 5f);                          // el módulo chico del marcador: celeste con borde de tinta
-            _hudIcon = Rr(_hudLayer, "ScoreIcon", DockingSprites.ModuleColor, 3.5f);
-            _hudCount = MakeLabel(_hudLayer, "ScoreCount", 22f, UiFonts.Bold, TextColor, TextAnchor.MiddleRight);
-            _hudCount.horizontalOverflow = HorizontalWrapMode.Overflow;
-            _streakBg = Rr(_hudLayer, "StreakBg", Gold, 13f);
-            _streakText = MakeLabel(_hudLayer, "StreakText", 16f, UiFonts.Bold, Ink, TextAnchor.MiddleCenter);
-            _streakText.horizontalOverflow = HorizontalWrapMode.Overflow;
             // la barra de tiempo del Reto (los 120 s), fina y bajo el marcador
             _timerTrack = Rr(_hudLayer, "TimerTrack", new Color(Lavender.r, Lavender.g, Lavender.b, 0.25f), 2.5f);
             _timerFill = Rr(_hudLayer, "TimerFill", Lime, 2.5f);
@@ -552,12 +547,8 @@ namespace NeuroVida.Games.Acoplamiento
 
         private void LayoutHud()
         {
-            SetRect(_hudIconInk.rectTransform, DockingPlan.Width - 26f, 26f, 27f, 21f);
-            SetRect(_hudIcon.rectTransform, DockingPlan.Width - 26f, 26f, 22f, 16f);
-            SetRect(_hudCount.rectTransform, DockingPlan.Width - 44f - 36f, 26f, 72f, 28f);
-            SetRect(_streakBg.rectTransform, DockingPlan.Width - 16f - 56f, 53f, 112f, 26f);
-            SetRect(_streakText.rectTransform, DockingPlan.Width - 16f - 56f, 53f, 112f, 22f);
             SetRect(_timerTrack.rectTransform, DockingPlan.Width * 0.5f, 71f, DockingPlan.Width - 24f, 5f);
+            SetRect(_noticeZone, DockingPlan.Width * 0.5f, _plan.StripCy, DockingPlan.Width - 56f, 38f);
             SetTimer(_timerFraction);
         }
 

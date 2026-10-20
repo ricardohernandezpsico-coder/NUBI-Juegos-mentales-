@@ -33,10 +33,10 @@ disparate?": frase común, sin registro conocido; va a la lista del abogado como
 
 - **Escena**: una sala de radio en el espacio (`GameWorld` nuevo "Radio"): antena arriba que emite ondas, cielo fondo C.
 - **La frase** llega como transmisión: una cinta de luz entra desde la derecha y se despliega en una placa crema con la
-  frase completa (Atkinson Hyperlegible Bold, la misma letra de los meteoros; 24 sp, 28 sp mayores; hasta 2 líneas).
+  frase completa (Atkinson Hyperlegible Bold, la misma letra de los meteoros; **28 sp, 32 sp mayores desde el 20-oct (Tarea 144; antes 24 y 28)**; hasta 2 líneas). La placa va **centrada entre la antena y los botones** (antes colgaba bajo la antena y el 60 % del medio quedaba vacío).
   Debajo, una barra fina de **señal** que se va apagando = el tiempo para responder.
-- **Dos botones grandes** abajo, de lado a lado: **VERDAD** (lima, ícono ✓) y **DISPARATE** (coral, ícono de onda
-  rota/zigzag), con texto; mínimo 64 dp de alto; cuentan al PRESIONAR. También se puede deslizar la placa a izquierda
+- **Dos botones grandes** abajo, de lado a lado: **Verdad** (lima, ícono ✓) y **Disparate** (coral, ícono de onda
+  rota/zigzag), con texto SIN mayúsculas sostenidas desde el 20-oct (Tarea 144, B3: son botones, no un estímulo; las mayúsculas de Tinta o Palabra se quedan); mínimo 64 dp de alto; cuentan al PRESIONAR. También se puede deslizar la placa a izquierda
   (disparate) o derecha (verdad), opcional.
 - **Acierto**: la placa se ilumina, ✓, y la antena suma una barra de señal (racha). Nota de la pentatónica.
   **Error**: ✗ y la frase muestra brevemente por qué ("Las sillas no ríen"). **Se agotó la señal**: "Se perdió la

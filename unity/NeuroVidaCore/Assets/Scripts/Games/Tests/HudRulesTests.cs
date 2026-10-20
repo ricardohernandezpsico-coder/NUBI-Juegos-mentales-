@@ -96,6 +96,89 @@ namespace NeuroVida.Games.Tests
             Assert.IsEmpty(missing, "estos juegos crean un Toast y no lo ponen debajo del marcador (SetBelowHud): " + string.Join(", ", missing));
         }
 
+        // ------------------------------------------------------------------ el chip de «seguidos» y las zonas del juego
+
+        private RectTransform NewZone(RectTransform area, float topU, float heightU, float widthU = 1000f)
+        {
+            var go = new GameObject("zona", typeof(RectTransform));
+            _made.Add(go);
+            var zone = (RectTransform)go.transform;
+            zone.SetParent(area, false);
+            zone.anchorMin = zone.anchorMax = new Vector2(0.5f, 1f);
+            zone.pivot = new Vector2(0.5f, 1f);
+            zone.sizeDelta = new Vector2(widthU, heightU);
+            zone.anchoredPosition = new Vector2(0f, -topU);
+            return zone;
+        }
+
+        [Test]
+        public void StreakChip_NeverCrossesARegisteredZone_AndSitsInTheNearestFreeStripBelowIt()
+        {
+            // la tarjeta del pedido de Bodega: de 200 a 380 desde arriba, casi todo el ancho. Sin registrarla, el chip caería en 226 (Height + 36), encima de ella.
+            var area = NewArea();
+            var plain = new GameHud(area, "Un título", 48f, NewHost());
+            plain.SetStreak(4);
+            var zoneForPlain = NewZone(area, 200f, 180f);
+            Assert.Greater(ToastPlacement.Overlap(ToastPlacement.LocalRectOf(area, plain.StreakRect), ToastPlacement.LocalRectOf(area, zoneForPlain)), 0f,
+                "(control) sin registrar la zona el chip SÍ la cruza: la prueba mide algo");
+
+            var area2 = NewArea();
+            var hud = new GameHud(area2, "Un título", 48f, NewHost());
+            var zone = NewZone(area2, 200f, 180f);
+            hud.AvoidForStreak(zone);
+            hud.AvoidForStreak(zone);                                                                              // registrar dos veces no la duplica
+            Assert.AreEqual(1, hud.StreakAvoidZones.Count);
+            for (int streak = 2; streak <= 12; streak++)
+            {
+                hud.SetStreak(streak);
+                var chip = ToastPlacement.LocalRectOf(area2, hud.StreakRect);
+                var z = ToastPlacement.LocalRectOf(area2, zone);
+                Assert.AreEqual(0f, ToastPlacement.Overlap(chip, z), 0.01f, "×" + streak + ": el chip cruza la zona registrada (chip " + chip + ", zona " + z + ")");
+                Assert.GreaterOrEqual(chip.yMin, z.yMax - 0.01f, "×" + streak + ": el chip va DEBAJO de la tarjeta, en la franja libre más cercana");
+                Assert.LessOrEqual(chip.yMin - z.yMax, 60f, "×" + streak + ": y pegado a ella, no lejos");
+            }
+
+            // una zona apagada (la tarjeta entre pedidos) cuenta igual
+            zone.gameObject.SetActive(false);
+            hud.SetStreak(13);
+            Assert.AreEqual(0f, ToastPlacement.Overlap(ToastPlacement.LocalRectOf(area2, hud.StreakRect), ToastPlacement.LocalRectOf(area2, zone)), 0.01f, "una zona apagada se evita igual");
+
+            // y varias zonas: el chip no cruza ninguna
+            var area3 = NewArea();
+            var hud3 = new GameHud(area3, "Un título", 48f, NewHost());
+            var a = NewZone(area3, 200f, 120f); var b = NewZone(area3, 340f, 150f);
+            hud3.AvoidForStreak(a); hud3.AvoidForStreak(b);
+            hud3.SetStreak(5);
+            var chip3 = ToastPlacement.LocalRectOf(area3, hud3.StreakRect);
+            Assert.AreEqual(0f, ToastPlacement.Overlap(chip3, ToastPlacement.LocalRectOf(area3, a)) + ToastPlacement.Overlap(chip3, ToastPlacement.LocalRectOf(area3, b)), 0.01f, "con dos zonas, el chip no cruza ninguna");
+        }
+
+        [Test]
+        public void InfoChip_PicksTheFirstVersionThatFitsNextToTheTitle()
+        {
+            var hud = new GameHud(NewArea(), "Acoplamiento", 48f, NewHost());
+            hud.SetInfoFit("Módulo 3 de 24 · 8 a bordo");
+            Assert.AreEqual("Módulo 3 de 24 · 8 a bordo", hud.InfoText, "una sola versión: es la que se pone");
+            hud.SetInfoFit("3 · 8", "Módulo 3 · 8 a bordo");
+            Assert.AreEqual("3 · 8", hud.InfoText, "la primera que cabe");
+            string absurd = new string('M', 120);                                                     // no cabe en ninguna fila de 1080 unidades
+            hud.SetInfoFit(absurd, "Módulo 3 · 8 a bordo");
+            Assert.AreEqual("Módulo 3 · 8 a bordo", hud.InfoText, "si la más completa no cabe junto al título, pasa a la siguiente");
+            hud.SetInfoFit(absurd, absurd + "N");
+            Assert.AreEqual(absurd + "N", hud.InfoText, "si ninguna cabe, la última");
+        }
+
+        [Test]
+        public void StreakChip_WithoutZones_KeepsItsPlaceBelowTheHud()
+        {
+            var area = NewArea();
+            var hud = new GameHud(area, "Un título", 48f, NewHost());
+            hud.SetStreak(3);
+            var chip = ToastPlacement.LocalRectOf(area, hud.StreakRect);
+            Assert.AreEqual(GameHud.Height + 36f, chip.yMin, 0.01f, "sin zonas registradas el chip queda donde siempre: debajo del marcador, a la derecha");
+            Assert.AreEqual(0, hud.StreakAvoidZones.Count);
+        }
+
         // ------------------------------------------------------------------ letra de 14 dp
 
         [Test]

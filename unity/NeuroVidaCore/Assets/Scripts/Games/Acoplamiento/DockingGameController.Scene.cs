@@ -484,18 +484,15 @@ namespace NeuroVida.Games.Acoplamiento
         {
             if (_guided) return;
             _hud.SetLevel(_dda.PresentedLevel);
-            _hud.SetInfo(DockingContract.RoundChip(_moduleNo, Endless ? 0 : _trialsTotal));
             if (!_guided) _hud.SetPromptFit(null, DockingContract.Rule, DockingContract.RuleShort);
             UpdateHudExtras();
         }
 
+        /// <summary>El chip de avance (módulo + cuántos van a bordo) y el chip común de «seguidos» (Tarea 144: ya no hay contador ni chip propios).</summary>
         private void UpdateHudExtras()
         {
-            _hudCount.text = _docked.ToString();
-            bool hot = !_guided && _streak >= 2;
-            _streakBg.gameObject.SetActive(hot);
-            _streakText.gameObject.SetActive(hot);
-            if (hot) _streakText.text = DockingContract.StreakChip(_streak);
+            if (!_guided && _moduleNo > 0) _hud.SetInfoFit(DockingContract.InfoChips(_moduleNo, Endless ? 0 : _trialsTotal, _docked));
+            _hud.SetStreak(_guided ? 0 : _streak);
         }
 
         // ------------------------------------------------------------------ la fila de luces de avance

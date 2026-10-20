@@ -42,7 +42,7 @@ Estás armando una estación espacial. Llegan módulos girados. Si es la misma p
 
 | Pieza | Valor |
 |---|---|
-| Marcador | arriba, con `GameHud`: «Acoplamiento», «Módulo N de 24» (Reto: «Módulo N» + barra), «Nivel N»; a la derecha, un módulo chico y el número acoplado, y «Racha ×N» desde 2 |
+| Marcador | arriba, con `GameHud`: «Acoplamiento» y, a la derecha, el chip de avance con el contador (**Tarea 144, 20-oct: marcador común entero**): «Módulo 3 de 24 · 8 a bordo» (Reto: «Módulo 7 · 5 a bordo» + barra), que se acorta («3 de 24 · 8 a bordo», «Módulo 3 · 8 a bordo») si no cabe junto al título; y «×N seguidos» (el chip común) desde 2. Antes dibujaba su propio contador (un módulo celeste y un número) y su propia pegatina de racha, que se montaban sobre el chip «Módulo N» y sobre la consigna |
 | Fila de luces | (v3) 8 luces redondas de plasticina de 22 dp cada 30 dp, centradas, en y 100; la medalla lima de los anillos a la derecha (x 321) |
 | Avisos | franja en y 118-150 (v3; la v2 iba en y 246-278): NUNCA sobre el módulo, el puerto ni los botones |
 | Módulo | centro (180, 265); bloque de **38 dp** (31 en 16:9; la v2, 26); gira en un círculo de 215 dp |

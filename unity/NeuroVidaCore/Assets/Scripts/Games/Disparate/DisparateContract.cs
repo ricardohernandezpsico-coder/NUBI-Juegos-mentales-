@@ -93,8 +93,8 @@ namespace NeuroVida.Games.Disparate
             }
         }
 
-        /// <summary>Tamaño de la letra de la frase, en sp: 24 y, en mayores, 28 (Atkinson Hyperlegible Bold).</summary>
-        public static int PhraseSizeSp(bool senior) => senior ? 28 : 24;
+        /// <summary>Tamaño de la letra de la frase, en sp: 28 y, en mayores, 32 (Atkinson Hyperlegible Bold). Era 24 y 28: con la placa en el medio de la pantalla (Tarea 144, ítem 22) la frase es lo que se lee y cabe más grande.</summary>
+        public static int PhraseSizeSp(bool senior) => senior ? 32 : 28;
 
         /// <summary>Alto mínimo de los botones, en dp.</summary>
         public const float MinButtonDp = 64f;

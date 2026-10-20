@@ -169,6 +169,14 @@ namespace NeuroVida.Games.Anagramas
         private int _typedCount = -1;
         private readonly List<Tile> _tiles = new List<Tile>();
         private Tile[] _slots = new Tile[0];
+
+        // la bandeja del banco (Tarea 144): una losa «noche» del kit con casillas vacías (un hundido de plasticina cada una) que se ve desde el primer cuadro de la palabra; las fichas llegan y caen en ellas
+        private RectTransform _trayRect;
+        private Image _traySlabHost;
+        private CanvasGroup _trayGroup;
+        private readonly List<Image> _pocketLips = new List<Image>(), _pocketHoles = new List<Image>();
+        private bool _trayShown;
+        private float _trayRowsF = PuntaLayout.TrayMaxRows, _unusedAlpha = 1f, _trayFirm, _trayFade = 1f;
         private Tile _ghost;
         private PuntaLayout.Metrics _m;
         private float _reserve, _guidedGap;
@@ -1140,6 +1148,7 @@ namespace NeuroVida.Games.Anagramas
 
         private void AnimateSlots()
         {
+            AnimateTray();
             bool inWord = _phase == Phase.Think || _phase == Phase.Build || _phase == Phase.Solved;
             bool showSlots = inWord && (_helps >= 1 || _built);
             bool showAsk = inWord && !showSlots;
@@ -1152,7 +1161,7 @@ namespace NeuroVida.Games.Anagramas
                 if (b.gameObject.activeSelf != nebula) b.gameObject.SetActive(nebula);
                 if (!nebula) continue;
                 float x = PuntaLayout.W / 2f + Mathf.Sin(now / 1.3f + j * 1.7f) * 70f;
-                float y = _m.SlotY + Mathf.Cos(now / 1.7f + j) * 10f;
+                float y = _m.AskY + Mathf.Cos(now / 1.7f + j) * 10f;
                 b.rectTransform.anchoredPosition = P(x, y);
             }
             int n = _word != null ? _word.Tiles.Length : 0;
@@ -1685,6 +1694,8 @@ namespace NeuroVida.Games.Anagramas
 
         private void BuildSlots()
         {
+            _hud.SetStreakTop(GameHud.Height + 24f);                       // Tarea 144: el chip «×N seguidos» cabe entre el marcador y la tarjeta (que empieza en 312): antes de ella, no sobre su borde
+            BuildTray();
             for (int k = 0; k < 10; k++)
             {
                 var border = MakeImage(_slotLayer, "SlotBorder" + k, DiscSprite.Get());
@@ -1697,6 +1708,114 @@ namespace NeuroVida.Games.Anagramas
             _askText.text = "¿Cuál es la palabra?";
             _askText.gameObject.SetActive(false);
         }
+
+        /// <summary>
+        /// La bandeja del banco (Tarea 144, ítem 21 de la revisión del 19-oct; Ricardo: «casillas vacías desde el inicio»; Opus: pozos FIJOS): una losa «noche» del kit (la misma del puerto de Acoplamiento) con <see cref="PuntaLayout.TrayPockets"/> pozos hundidos, los
+        /// mismos para toda palabra y suficientes para el banco más grande. No dice cuántas letras tiene la palabra (eso es la ayuda 1 de «Una ayuda»).
+        /// </summary>
+        private void BuildTray()
+        {
+            var go = new GameObject("Tray");
+            go.transform.SetParent(_slotLayer, false);
+            _trayRect = go.AddComponent<RectTransform>();
+            _trayRect.anchorMin = _trayRect.anchorMax = _trayRect.pivot = new Vector2(0.5f, 0.5f);
+            _traySlabHost = go.AddComponent<Image>();
+            var slab = PlasticSlab.TryStyle(_traySlabHost, SlabSize.Button, SlabTone.Night);
+            if (slab == null)
+            {
+                _traySlabHost.sprite = RoundedRectSprite.Get(26);
+                _traySlabHost.type = Image.Type.Sliced;
+                _traySlabHost.color = new Color(0.18f, 0.153f, 0.373f, 0.92f);
+                _traySlabHost.raycastTarget = false;
+            }
+            _trayGroup = go.AddComponent<CanvasGroup>();
+            _trayGroup.blocksRaycasts = false;                                      // los pozos se leen como hundidos, no como algo que se toca: sin toque y sin estado presionado
+            for (int k = 0; k < PuntaLayout.TrayPockets; k++)
+            {
+                var lip = MakeImage(_trayRect, "PocketLip" + k, DiscSprite.Get());
+                lip.color = PocketLip;
+                var hole = MakeImage(_trayRect, "Pocket" + k, DiscSprite.Get());
+                hole.color = PocketHole;
+                _pocketLips.Add(lip);
+                _pocketHoles.Add(hole);
+            }
+            go.SetActive(false);
+        }
+
+        /// <summary>El canto de una casilla de la bandeja (el borde de abajo del hundido recoge luz) y su fondo (oscuro: las fichas claras resaltan al caer).</summary>
+        private static readonly Color PocketLip = new Color(0.62f, 0.57f, 0.92f, 0.62f), PocketHole = new Color(0.025f, 0.02f, 0.10f, 0.92f);
+
+        /// <summary>
+        /// La bandeja (Tarea 144, ítem 21): desde el primer cuadro de la palabra se ven SIEMPRE los mismos pozos (<see cref="PuntaLayout.TrayPockets"/>, los que alcanzan para el banco más grande): no dicen cuántas letras tiene. TENUES (~45 %) mientras se piensa (un lugar que
+        /// espera: así no compiten con lo que se mide, el tiempo hasta «¡La tengo!»), FIRMES en 200 ms cuando llegan las fichas; los pozos que quedan sin ficha se desvanecen (~200 ms; con «quitar animaciones», de golpe) y la bandeja se achica a las filas que usa;
+        /// al resolverse la palabra se desvanece entera. Sin estado presionado y sin toque: son hundidos, no botones.
+        /// </summary>
+        private void AnimateTray()
+        {
+            bool show = _m.FixedGrid && _word != null && (_phase == Phase.Think || _phase == Phase.Build || _phase == Phase.Solved);
+            if (!show)
+            {
+                if (_trayShown) { _trayShown = false; _trayRect.gameObject.SetActive(false); }
+                return;
+            }
+            if (!_trayShown)
+            {
+                _trayShown = true;
+                _trayRowsF = PuntaLayout.TrayMaxRows;
+                _unusedAlpha = 1f;
+                _trayFirm = 0f;                                                       // tenue mientras se piensa
+                _trayFade = 1f;
+                _trayGroup.alpha = PuntaLayout.TrayAlpha(0f);
+                _trayRect.gameObject.SetActive(true);
+            }
+            float dt = GameClock.DeltaTime;
+            bool smooth = Motion.Decorative;
+            int used = _built ? _tiles.Count : PuntaLayout.TrayPockets;           // antes de «¡La tengo!» todos los pozos cuentan igual
+            float targetRows = _built ? PuntaLayout.TrayRowsFor(used) : PuntaLayout.TrayMaxRows;
+            float targetUnused = _built ? 0f : 1f;
+            _trayRowsF = smooth ? Mathf.MoveTowards(_trayRowsF, targetRows, 10f * dt) : targetRows;                  // dos filas en 200 ms
+            _unusedAlpha = smooth ? Mathf.MoveTowards(_unusedAlpha, targetUnused, dt / 0.2f) : targetUnused;
+            // tenue (~45 %) mientras se piensa; firme en 200 ms con «¡La tengo!», a la vez que caen las fichas (con «quitar animaciones», de golpe); al resolverse la palabra se desvanece
+            float firmTarget = PuntaLayout.TrayFirmTarget(_built);
+            _trayFirm = smooth ? Mathf.MoveTowards(_trayFirm, firmTarget, dt / PuntaLayout.TrayFirmSeconds) : firmTarget;
+            float fadeTarget = _phase == Phase.Solved ? 0f : 1f;
+            _trayFade = smooth ? Mathf.MoveTowards(_trayFade, fadeTarget, dt / 0.2f) : fadeTarget;
+            _trayGroup.alpha = PuntaLayout.TrayAlpha(_trayFirm) * _trayFade;
+#if UNITY_EDITOR
+            // el smoke lo mide (Tarea 144): tenue mientras se piensa y firme una vez que llegaron las fichas
+            if (!_built && _phase == Phase.Think && GameClock.Time - _cardAt > 0.8f && _trayGroup.alpha > PuntaLayout.TrayDimAlpha + 0.02f)
+                Debug.LogError("[SmokeTest] Punta: la bandeja tiene que estar tenue mientras se piensa la palabra (opacidad " + _trayGroup.alpha.ToString("0.00") + ")");
+            if (_built && _phase == Phase.Build && GameClock.Time - _haveAt > 0.6f && _trayGroup.alpha < 0.98f)
+                Debug.LogError("[SmokeTest] Punta: la bandeja tiene que estar firme con las fichas (opacidad " + _trayGroup.alpha.ToString("0.00") + ")");
+#endif
+            float cy = PuntaLayout.TrayCenterY(_m, _trayRowsF);
+            _trayRect.anchoredPosition = P(PuntaLayout.W / 2f, cy);
+            _trayRect.sizeDelta = new Vector2(PuntaLayout.TrayWidth(_m), PuntaLayout.TrayHeight(_m, _trayRowsF)) * _s;
+            float d = _m.TileD * 0.94f;
+            for (int k = 0; k < _pocketHoles.Count; k++)
+            {
+                float a = k < used ? 1f : _unusedAlpha;
+                bool on = a > 0.01f;
+                if (_pocketHoles[k].gameObject.activeSelf != on) { _pocketHoles[k].gameObject.SetActive(on); _pocketLips[k].gameObject.SetActive(on); }
+                if (!on) continue;
+                var home = PuntaLayout.BankHome(_m, k, PuntaLayout.TrayPockets);
+                var local = new Vector2(home.x - PuntaLayout.W / 2f, -(home.y - cy)) * _s;
+                _pocketLips[k].rectTransform.sizeDelta = Vector2.one * ((d + 5f) * _s);
+                _pocketLips[k].rectTransform.anchoredPosition = local + new Vector2(0f, -2.5f * _s);
+                _pocketLips[k].color = new Color(PocketLip.r, PocketLip.g, PocketLip.b, PocketLip.a * a);
+                _pocketHoles[k].rectTransform.sizeDelta = Vector2.one * (d * _s);
+                _pocketHoles[k].rectTransform.anchoredPosition = local;
+                _pocketHoles[k].color = new Color(PocketHole.r, PocketHole.g, PocketHole.b, PocketHole.a * a);
+            }
+        }
+
+#if UNITY_EDITOR
+        /// <summary>Para las capturas reales (<c>ScreenshotRunner</c>): pulsa «¡La tengo!» como lo haría un dedo.</summary>
+        public void EditorHave()
+        {
+            if (_phase == Phase.Think) StartCoroutine(Act(new Intent { Kind = IntentKind.Have }));
+        }
+#endif
 
         private void BuildFx()
         {
@@ -1909,7 +2028,7 @@ namespace NeuroVida.Games.Anagramas
             foreach (var wv in _waves) wv.rectTransform.anchoredPosition = P(46f, _m.CardTop + 30f);
             SetRect(_cardLabel.rectTransform, 64f + 125f, _m.CardTop + 31f, 250f, 22f);
             SetRect(_defText.rectTransform, cx, _m.CardTop + 54f + (PuntaLayout.CardH - 54f - 12f) / 2f, cardW - 40f, PuntaLayout.CardH - 54f - 12f);
-            SetRect(_askText.rectTransform, cx, _m.SlotY, 300f, 28f);
+            SetRect(_askText.rectTransform, cx, _m.AskY, 300f, 28f);            // pegada bajo la tarjeta (Tarea 144; en la ronda guiada, donde estaba)
             foreach (var b in _nebulaBlobs) b.rectTransform.sizeDelta = new Vector2(120f * _s, 80f * _s);
             SetRect(_sayText.rectTransform, cx, _m.SayY, 336f, 28f);
             SetRect(_ladderLabel.rectTransform, w / 2f - 40f, _m.LadderY, 80f, 22f);

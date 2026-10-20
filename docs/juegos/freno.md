@@ -27,6 +27,7 @@ en ~30% aparece la señal ¡ALTO! (octágono coral con texto + sirena) un instan
   pantalla (tampoco en Juegos y Hoy: ahí dice «zona firme»). Debajo: «Frenaste N de M altos · récord» (igual que antes) y la nota «Una sola partida trae pocos altos: por eso
   mostramos el promedio de varias». Si esta vez no se pudo estimar, el final lo explica y pide lanzar sin esperar al ALTO (y, si hay partidas anteriores, muestra su promedio).
   El «Límite del freno» (récord de SSD) y lo demás del juego no cambian.
+- **Lugar y tamaño (Tarea 144, 20-oct; Ricardo: «subir y agrandar»):** el conjunto botón-plataforma-cohete ya no va pegado al borde de abajo: el centro del botón queda a 0,22 del alto de la zona de juego, cohete y plataforma ×1,3 (donde el carril lo permite) y el botón de 210 a 240 unidades; la señal ALTO (el estímulo) y el letrero suben con el conjunto para no pisarlo (`GroupTop`, `StopClearance`): su centro queda a `máx(1180, tope del conjunto + 400)` unidades sobre el borde de abajo (en 20:9, de 1180 a ≈1361; en 16:9, a ≈1256). La luna de fondo sube de 0,20 a 0,30 del alto para que las plataformas apoyen en ella. Sin cambio de reglas ni tiempos, pero puede mover unos milisegundos el tiempo de lanzar: nota con la fecha en `medidas-juegos-estrella.md`.
 - Arte: `BrakeSprites` (alto, plataforma, botón, cohete; de **plasticina** desde la Tarea 96, ver abajo), `GameWorld.LaunchBase`. Vista previa:
   `python3 tools/art-preview/freno.py <raw>` → `docs/previews/freno.png`. Probado por Ricardo (27-sep): "me gustó,
   funciona muy bien".

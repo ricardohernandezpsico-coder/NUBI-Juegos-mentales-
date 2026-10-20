@@ -138,7 +138,7 @@ namespace NeuroVida.Games.Shared
         /// (hacia donde despegan los cohetes).</summary>
         public static GameWorld LaunchBase => new GameWorld
         {
-            Name = "Base de lanzamiento", SurfaceHeight = 0.2f, Stars = 50, VanishingPoint = new Vector2(0.5f, 0.35f),
+            Name = "Base de lanzamiento", SurfaceHeight = 0.3f, Stars = 50, VanishingPoint = new Vector2(0.5f, 0.35f),
             NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Coral, 0.16f), NebulaAPos = new Vector2(0.5f, 0.95f),
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.14f), NebulaBPos = new Vector2(0.1f, 0.4f),
         };

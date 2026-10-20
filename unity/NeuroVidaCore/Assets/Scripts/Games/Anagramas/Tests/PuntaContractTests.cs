@@ -558,18 +558,133 @@ namespace NeuroVida.Games.Anagramas.Tests
         }
 
         [Test]
+        public void TheQuestionSticksUnderTheCard_AndTheTrayDoesNotDependOnTheWord()
+        {
+            foreach (float h in new[] { 700f, 780f, 860f, 960f })
+            {
+                string at = "alto " + h;
+                var m = PuntaLayout.Compute(h, 8);
+                Assert.IsTrue(m.FixedGrid, at);
+                Assert.AreEqual(PuntaLayout.AskGap, m.AskY - 14f - m.CardBottom, 0.01f, at + ": la pregunta va a 16 dp bajo la tarjeta");
+                Assert.Less(m.AskY + 14f, m.SlotY - 23f, at + ": y sobre las casillas de la palabra (que aparecen con la ayuda 1)");
+                // la bandeja es igual para toda palabra, de las fichas que traiga (5 a 14): no dice cuántas letras tiene
+                for (int count = 5; count <= PuntaLayout.MaxBankTiles; count++)
+                {
+                    var c = PuntaLayout.Compute(h, count);
+                    Assert.AreEqual(m.BankFirstY, c.BankFirstY, 0.01f, at + ", " + count + " fichas: la bandeja no se mueve con la palabra");
+                    Assert.AreEqual(m.SlotY, c.SlotY, 0.01f, at + ", " + count + " fichas");
+                    Assert.AreEqual(m.RowGap, c.RowGap, 0.01f, at + ", " + count + " fichas: ni cambia la separación de las filas");
+                }
+                // las tres filas de pozos siempre caben entre la pregunta y las ayudas, sin pisar nada
+                float trayTop = m.BankFirstY - m.TileD / 2f - PuntaLayout.TrayPad;
+                float trayBottom = trayTop + PuntaLayout.TrayHeight(m, PuntaLayout.TrayMaxRows);
+                Assert.Less(m.SlotY + 23f, trayTop, at + ": las casillas de la palabra quedan sobre la bandeja");
+                Assert.LessOrEqual(trayBottom, m.LadderY - 16f + PuntaLayout.TrayPad + 0.01f, at + ": la bandeja queda sobre las ayudas");
+            }
+        }
+
+        [Test]
+        public void TheTrayPockets_AreTheSameForEveryWord_AndEnoughForTheBiggestBank()
+        {
+            // Opus (20-oct): «los pozos fijos no regalan la ayuda 1»: la cantidad no depende del largo de la palabra y alcanza para el banco más grande que el juego puede armar
+            var bank = PuntaBank.Load();
+            Assert.Greater(bank.Count, 100, "el banco de palabras de verdad, no el mínimo de respaldo");
+            int longest = 0;
+            foreach (var w in bank.All) longest = Math.Max(longest, w.Tiles.Length);
+            int biggestExtra = 0;
+            for (int level = 1; level <= PuntaContract.MaxLevel; level++) biggestExtra = Math.Max(biggestExtra, Math.Max(PuntaContract.ExtraLetters(level, false), PuntaContract.ExtraLetters(level, true)));
+            int biggest = longest + biggestExtra;
+            Assert.LessOrEqual(biggest, PuntaLayout.TrayPockets, "nunca falta un pozo: la palabra más larga (" + longest + ") más el relleno más grande (" + biggestExtra + ") = " + biggest);
+            Assert.AreEqual(PuntaLayout.MaxBankTiles, biggest, "MaxBankTiles dice lo mismo que los datos reales: si el banco de palabras o el relleno cambian, hay que revisar los pozos");
+            Assert.AreEqual(PuntaLayout.BankCols * PuntaLayout.TrayMaxRows, PuntaLayout.TrayPockets);
+            Assert.GreaterOrEqual(PuntaLayout.TrayMaxRows * PuntaLayout.BankCols, PuntaLayout.MaxBankTiles);
+            // y todo lo que se ve antes de «¡La tengo!» (los pozos, su bandeja y el lugar de las casillas de la palabra) sale igual con CUALQUIER largo de palabra y de relleno
+            foreach (float h in new[] { 640f, 700f, 780f, 860f, 960f })
+            {
+                var reference = PuntaLayout.Compute(h, 5);
+                for (int tiles = 5; tiles <= biggest; tiles++)
+                {
+                    var c = PuntaLayout.Compute(h, tiles);
+                    Assert.AreEqual(reference.BankFirstY, c.BankFirstY, 0.01f, "alto " + h + ", " + tiles + " fichas: el primer pozo");
+                    Assert.AreEqual(reference.RowGap, c.RowGap, 0.01f, "alto " + h + ", " + tiles + " fichas: la separación de las filas");
+                    Assert.AreEqual(reference.TileD, c.TileD, 0.01f, "alto " + h + ", " + tiles + " fichas: el tamaño del pozo");
+                    Assert.AreEqual(PuntaLayout.TrayHeight(reference, PuntaLayout.TrayMaxRows), PuntaLayout.TrayHeight(c, PuntaLayout.TrayMaxRows), 0.01f, "alto " + h + ", " + tiles + " fichas: la bandeja");
+                    // y cada ficha del banco cae en un pozo que existe
+                    for (int k = 0; k < tiles; k++)
+                        Assert.Less(k, PuntaLayout.TrayPockets, "alto " + h + ", " + tiles + " fichas: la ficha " + k + " tiene su pozo");
+                }
+            }
+        }
+
+        [Test]
+        public void TheTray_IsDimWhileThinking_AndFirmOnceTheTilesCome()
+        {
+            // Ricardo (20-oct): «tenues hasta ¡La tengo!»: mientras se piensa (lo que mide punta_ms) la bandeja es un lugar que espera; con «¡La tengo!» pasa a firme a la vez que caen las fichas
+            Assert.AreEqual(0f, PuntaLayout.TrayFirmTarget(false));
+            Assert.AreEqual(1f, PuntaLayout.TrayFirmTarget(true));
+            float thinking = PuntaLayout.TrayAlpha(PuntaLayout.TrayFirmTarget(false)), firm = PuntaLayout.TrayAlpha(PuntaLayout.TrayFirmTarget(true));
+            Assert.GreaterOrEqual(thinking, 0.40f, "tenue: entre 40 y 50 %");
+            Assert.LessOrEqual(thinking, 0.50f, "tenue: entre 40 y 50 %");
+            Assert.AreEqual(1f, firm, 1e-6f, "firme con las fichas");
+            for (int i = 0; i < 10; i++) Assert.LessOrEqual(PuntaLayout.TrayAlpha(i / 10f), PuntaLayout.TrayAlpha((i + 1) / 10f) + 1e-6f, "el paso de tenue a firme sube sin saltos hacia atrás");
+            Assert.AreEqual(PuntaLayout.TrayDimAlpha, PuntaLayout.TrayAlpha(-3f), 1e-6f);
+            Assert.AreEqual(1f, PuntaLayout.TrayAlpha(7f), 1e-6f);
+            Assert.AreEqual(0.2f, PuntaLayout.TrayFirmSeconds, 1e-6f, "firme en 200 ms");
+            // y el controlador usa estas funciones (no un número suelto): tenue/firme según «¡La tengo!» (_built), con «quitar animaciones» de golpe
+            string path = System.IO.Path.Combine(UnityEngine.Application.dataPath, "Scripts/Games/Anagramas/PuntaGameController.cs");
+            string source = System.IO.File.ReadAllText(path);
+            StringAssert.Contains("PuntaLayout.TrayFirmTarget(_built)", source);
+            StringAssert.Contains("PuntaLayout.TrayAlpha(_trayFirm)", source);
+            StringAssert.Contains("smooth ? Mathf.MoveTowards(_trayFirm, firmTarget", source);
+            StringAssert.Contains(": firmTarget;", source, "con «quitar animaciones» el cambio es de golpe");
+        }
+
+        [Test]
+        public void TheTrayShrinksToTheRowsTheBankUses()
+        {
+            Assert.AreEqual(1, PuntaLayout.TrayRowsFor(4));
+            Assert.AreEqual(1, PuntaLayout.TrayRowsFor(5));
+            Assert.AreEqual(2, PuntaLayout.TrayRowsFor(6));
+            Assert.AreEqual(2, PuntaLayout.TrayRowsFor(10));
+            Assert.AreEqual(3, PuntaLayout.TrayRowsFor(11));
+            Assert.AreEqual(3, PuntaLayout.TrayRowsFor(14));
+            var m = PuntaLayout.Compute(860f, 8);
+            Assert.AreEqual(m.BankFirstY - m.TileD / 2f - PuntaLayout.TrayPad, PuntaLayout.TrayCenterY(m, 3) - PuntaLayout.TrayHeight(m, 3) / 2f, 0.01f, "la bandeja se achica por abajo: el borde de arriba no se mueve");
+            Assert.AreEqual(PuntaLayout.TrayCenterY(m, 1) - PuntaLayout.TrayHeight(m, 1) / 2f, PuntaLayout.TrayCenterY(m, 3) - PuntaLayout.TrayHeight(m, 3) / 2f, 0.01f);
+        }
+
+        [Test]
+        public void TheBankFillsTheTrayLeftToRight_FivePerRow()
+        {
+            var m = PuntaLayout.Compute(860f, 9);
+            for (int k = 0; k < 9; k++)
+            {
+                var p = PuntaLayout.BankHome(m, k, 9);
+                Assert.AreEqual(m.BankFirstY + (k / 5) * m.RowGap, p.y, 0.01f, "ficha " + k + ": fila");
+                Assert.AreEqual(PuntaLayout.W / 2f + ((k % 5) - 2f) * m.TileSpacing, p.x, 0.01f, "ficha " + k + ": columna");
+            }
+            // la ronda guiada conserva su fila centrada
+            var g = PuntaLayout.Compute(860f, 5, 0f, PuntaLayout.GuidedReserve, GuidedTutorial.RowBottomDp + 2f);
+            Assert.IsFalse(g.FixedGrid);
+            Assert.AreEqual(g.SlotY, g.AskY, 0.01f, "en la ronda guiada la pregunta queda donde estaba");
+            Assert.AreEqual(PuntaLayout.W / 2f, PuntaLayout.BankHome(g, 2, 5).x, 0.01f, "5 fichas centradas: la del medio");
+        }
+
+        [Test]
         public void GuidedSkip_TheOldRuleOf19PercentOfTheHeight_DidHitTheBottomRowOfASevenTileBank()
         {
             // la regla vieja: «Saltar tutorial» a 0,19 de la altura desde abajo y una palabra de 5 letras + 2 de relleno = 7 fichas = dos filas
             float h = 640f;
-            var m = PuntaLayout.Compute(h, 7);
+            // el banco de ANTES de la bandeja (Tarea 144: ahora el banco normal es una cuadrícula fija de 5 columnas dentro de una bandeja de 3 filas): lo da la disposición de la ronda guiada (minCardTop > 0), que lo conserva
+            var m = PuntaLayout.Compute(h, 7, 0f, 0f, 1f);
+            Assert.IsFalse(m.FixedGrid);
             Assert.AreEqual(2, m.Rows);
             float skipTop = (h - h * 0.19f) - PuntaLayout.SkipH / 2f;
             bool hit = false;
             for (int k = 0; k < 7; k++) hit |= HoleBottom(m, PuntaLayout.BankHome(m, k, 7).y) > skipTop;
             Assert.IsTrue(hit, "con la regla vieja y dos filas, el hueco de una ficha de abajo pisaba «Saltar tutorial» (5105 u² en el smoke del 9-oct)");
             // con seis fichas (una fila) la regla vieja pasaba por apenas 4 dp: por eso falló "a veces" y solo en la pantalla más corta
-            var one = PuntaLayout.Compute(h, 6);
+            var one = PuntaLayout.Compute(h, 6, 0f, 0f, 1f);
             Assert.Less(HoleBottom(one, one.BankFirstY), skipTop);
             Assert.Less(skipTop - HoleBottom(one, one.BankFirstY), 5f);
         }
