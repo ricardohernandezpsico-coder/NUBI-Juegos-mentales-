@@ -10,7 +10,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
-import com.example.ui.components.CosmosBackground
 import com.example.ui.components.LocalReduceMotion
 import com.example.ui.components.systemReduceMotion
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
@@ -31,8 +30,7 @@ import org.robolectric.annotation.GraphicsMode
 /**
  * "Quitar animaciones" en la app (Compose): con [LocalReduceMotion] activo (en el telefono sale de la escala de animacion
  * del sistema en 0, `ANIMATOR_DURATION_SCALE`), las animaciones INFINITAS
- * (`rememberInfiniteTransition`) tienen que quedarse quietas. El fondo `CosmosBackground` es el caso: lo usan
- * todas las pantallas y solo se mueve con una transicion infinita.
+ * (`rememberInfiniteTransition`) tienen que quedarse quietas. Desde la Tarea 147 el fondo de la app es el tablero (`BoardBackground`, quieto): la animacion infinita que queda es la de la pantalla de espera de un juego (`GameLoadingScreen`: la luna que orbita, el planeta que respira y los puntos) y ese es el caso.
  *
  * Se dibuja el fondo dos veces (a los 0,5 s y a los 6 s del reloj de animacion) y se comparan los bytes de las
  * dos imagenes. El control con escala 1 comprueba que la prueba SI detecta movimiento (si no, "queda quieto" no
@@ -67,7 +65,9 @@ class ReduceMotionComposeTest {
   private fun backgroundAt(reduce: Boolean): Pair<ByteArray, ByteArray> {
     composeTestRule.mainClock.autoAdvance = false
     composeTestRule.setContent {
-      CompositionLocalProvider(LocalReduceMotion provides reduce) { Box(Modifier.width(200.dp).height(400.dp)) { CosmosBackground() } }
+      CompositionLocalProvider(LocalReduceMotion provides reduce) {
+        Box(Modifier.width(200.dp).height(400.dp)) { com.example.ui.components.GameLoadingScreen(game = com.example.model.GameRegistry.allGames.first(), level = 3, timed = false) }
+      }
     }
     composeTestRule.mainClock.advanceTimeBy(500)
     val a = File(dir, "reduce-$reduce-a.png")

@@ -37,7 +37,7 @@ import com.example.model.RankTier
 import com.example.ui.theme.Clay
 
 /**
- * Las piezas del kit para Avance y Juegos (Tarea 125; renders de Blender de la Tarea 124, `tools/isla/kit_avance.py`; `res/raw/kit_avance.json` dice cómo dibujarlas): el canal y el churro de las barras, la bolita del cambio, el emblema de cada juego,
+ * Las piezas del kit para Avance y Juegos (Tarea 125; renders de Blender de la Tarea 124, `tools/isla/kit_avance.py`; `res/raw/kit_avance.json` dice cómo dibujarlas): el canal y el churro de las barras (la bolita del cambio se quitó en la Tarea 147, P6), el emblema de cada juego,
  * la farola, el pedestal de un lugar, la cola del globo de Nubi, las medallas de las tres familias y el escudo de cada liga. El texto nunca va horneado: el número de la medalla y todo lo demás se escriben en Compose.
  */
 private object KitAvanceCache { @Volatile var spec: KitAvanceSpec? = null }
@@ -111,16 +111,16 @@ internal fun GameEmblem(gameId: String, size: Dp, modifier: Modifier = Modifier,
 }
 
 /**
- * La barra de avance de un área con el canal y el churro del kit: el churro (sol sobre la tarjeta crema, lima sobre el cielo) llega hasta [value] y la bolita lima marca dónde estabas hace una semana cuando hubo [change]:
- * dentro del churro si subió y más allá de su punta si bajó (una forma, no solo un color). Sin medir ([value] nulo) solo se ve el canal.
+ * La barra de avance de un área con el canal y el churro del kit: el churro (sol sobre la tarjeta crema, lima sobre el cielo) llega hasta [value]. UNA sola barra, sin pomo (Tarea 147, P6: la bolita se leía como el pomo de un control deslizante, y en una app para 60+ todo lo que
+ * parece control invita a arrastrar): lo que cambió esta semana se dibuja como un TRAMO del mismo churro, más claro, «lo que se sumó» —el churro de hace una semana va a todo color y el tramo nuevo, a media tinta— y lo que bajó, como un tramo punteado más allá de la punta
+ * (una forma distinta para cada caso, no solo un color). Sin medir ([value] nulo) solo se ve el canal.
  */
 @Composable
 internal fun KitBar(value: Float?, change: Float, modifier: Modifier = Modifier, onCard: Boolean = true) {
   val spec = rememberKitAvanceSpec()
-  val canal = spec.piece(if (onCard) "canal_crema" else "canal_cielo"); val churro = spec.piece(if (onCard) "churro_sol" else "churro_lima"); val bolita = spec.piece("bolita")
+  val canal = spec.piece(if (onCard) "canal_crema" else "canal_cielo"); val churro = spec.piece(if (onCard) "churro_sol" else "churro_lima")
   val canalImg = ImageBitmap.imageResource(if (onCard) R.drawable.kit_canal_crema else R.drawable.kit_canal_cielo)
   val churroImg = ImageBitmap.imageResource(if (onCard) R.drawable.kit_churro_sol else R.drawable.kit_churro_lima)
-  val bolitaImg = ImageBitmap.imageResource(R.drawable.kit_bolita)
   Box(
     modifier.fillMaxWidth().height(canal.bodyHeight.dp).drawBehind {
       val d = density
@@ -130,12 +130,24 @@ internal fun KitBar(value: Float?, change: Float, modifier: Modifier = Modifier,
       val x0 = 2.5.dp.toPx(); val inner = size.width - 2 * x0
       val w = maxOf(churro.bodyHeight * d, inner * v)                                          // al menos una cápsula entera
       val top = (size.height - churro.bodyHeight * d) / 2f - 0.5.dp.toPx()
-      drawNineSlice(churroImg, churro.asStrip(), spec.pxPerDp, Rect(x0, top, x0 + w, top + churro.bodyHeight * d))
-      if (change != 0f) {
-        val before = (v - change).coerceIn(0f, 1f)
-        val cx = x0 + inner * before
-        val bw = bolita.bodyWidth * d
-        drawKitPiece(bolitaImg, bolita.asPiece(), Rect(cx - bw / 2f, (size.height - bolita.bodyHeight * d) / 2f - 0.5.dp.toPx(), cx + bw / 2f, (size.height + bolita.bodyHeight * d) / 2f - 0.5.dp.toPx()))
+      val capsule = churro.bodyHeight * d
+      val before = (v - change).coerceIn(0f, 1f)
+      val wBefore = inner * before
+      if (change > 0f && wBefore >= capsule && wBefore < w - 0.5f) {
+        // lo que se sumó esta semana: el tramo nuevo, a media tinta; el churro de hace una semana, a todo color por encima
+        drawNineSlice(churroImg, churro.asStrip(), spec.pxPerDp, Rect(x0, top, x0 + w, top + capsule), alpha = 0.5f)
+        drawNineSlice(churroImg, churro.asStrip(), spec.pxPerDp, Rect(x0, top, x0 + wBefore, top + capsule))
+      } else {
+        drawNineSlice(churroImg, churro.asStrip(), spec.pxPerDp, Rect(x0, top, x0 + w, top + capsule))
+      }
+      if (change < 0f && before > v) {
+        // lo que bajó: un tramo punteado de la punta hasta donde estabas (lila suave; nunca rojo)
+        val dot = if (onCard) androidx.compose.ui.graphics.Color(0xFF7B6BD6) else androidx.compose.ui.graphics.Color(0xFFC4BAFF)
+        val cy = top + capsule / 2f
+        var x = x0 + w + capsule / 2f
+        val end = x0 + inner * before
+        val step = 6.dp.toPx()
+        while (x <= end) { drawCircle(dot, 1.6.dp.toPx(), Offset(x, cy)); x += step }
       }
     }
   )

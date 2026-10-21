@@ -20,7 +20,7 @@ import com.example.data.FlightMode
 import com.example.data.FlightState
 import com.example.data.FlightStep
 import com.example.data.familyState
-import com.example.ui.components.CosmosBackground
+import com.example.ui.components.BoardBackground
 import com.example.ui.screens.FirstFlightScreen
 import com.example.ui.screens.FlightActions
 import com.example.ui.theme.NeuroVidaTheme
@@ -104,7 +104,7 @@ class CosturasDeAntesTest {
       CompositionLocalProvider(LocalDensity provides Density(d.density, fontScale)) {
         NeuroVidaTheme {
           Box(Modifier.width(widthDp.dp).height(heightDp.dp)) {
-            CosmosBackground()
+            BoardBackground()
             FirstFlightScreen(FlightState(FlightMode.FULL, FlightStep.CAMINO), listOf("bodega", "calculo", "intrusa"), FlightActions.None)
           }
         }

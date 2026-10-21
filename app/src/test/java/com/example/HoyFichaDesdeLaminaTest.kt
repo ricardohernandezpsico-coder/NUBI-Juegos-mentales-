@@ -103,7 +103,7 @@ class HoyFichaDesdeLaminaTest {
 
     // la fila de Constelaciones (id `parejas`, área Memoria) en la lámina del Observatorio
     val row = "place_game_parejas"
-    rule.onNodeWithTag(row).performScrollTo().performClick()
+    rule.onNodeWithTag(row).performClick()
     rule.waitForIdle()
     assertTrue("la ficha del juego se abre encima", rule.onAllNodes(hasTestTag("sheet_play")).fetchSemanticsNodes().isNotEmpty())
     assertEquals("la partida NO se lanzó: el ViewModel sigue sin juego activo", null, vm.activeGame.value)

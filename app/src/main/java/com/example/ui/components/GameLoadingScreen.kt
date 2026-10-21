@@ -95,7 +95,7 @@ fun GameLoadingScreen(
   val pulse = if (reduceMotion) 0.5f else breathe
 
   Box(modifier = modifier.fillMaxSize()) {
-    if (withSky) CosmosBackground()
+    if (withSky) BoardBackground()          // un solo cielo (Tarea 147, P2): el tablero de la app
     Column(
       modifier = Modifier
         .fillMaxSize()

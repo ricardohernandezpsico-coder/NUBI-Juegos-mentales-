@@ -23,7 +23,7 @@ data class KitAvancePiece(
 }
 
 /**
- * `res/raw/kit_avance.json` (Tarea 125): lo que Compose necesita para dibujar las piezas nuevas del kit (canal, churro, bolita, emblemas de los 17 juegos, farolas, pedestal, colas del globo, medallas y escudos), renderizadas en Blender
+ * `res/raw/kit_avance.json` (Tarea 125): lo que Compose necesita para dibujar las piezas nuevas del kit (canal, churro, emblemas de los 17 juegos, farolas, pedestal, colas del globo, medallas y escudos), renderizadas en Blender
  * (`tools/isla/isla.py --kit --kit-solo avance`) y llevadas a la app por `tools/isla/kit_avance_app.py`. `AvanceKitTest` falla si el JSON y los WebP quedan desparejados.
  */
 data class KitAvanceSpec(val pxPerDp: Float, val pieces: Map<String, KitAvancePiece>) {

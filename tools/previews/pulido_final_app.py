@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Hoja «antes | después» de la ronda final de pulido de la app (Tarea 143, 19-oct; revisión de Fable `auditoria-fable/revision-pulido-19-oct.md`, «Tarea A»): las tomas que cambian, lado a lado.
 «ANTES» sale del commit `c9dff5e` (las capturas de la Tarea 141, `git show`) y «DESPUÉS» de `docs/previews/app-actual/` ya regenerado (`AppActualScreenshotTest` + `tools/previews/app_actual.py`): capturas REALES de Roborazzi a 393 dp.
+Hoja de una sola vez: su «DESPUÉS» sale de la carpeta viva, que cambió en la Tarea 147 (la lámina ya no es una cuadrícula ni se desliza; `hoy-lamina-juegos*` se borró): no volver a correrla; la hoja ya hecha queda como registro.
 Uso:  python -I tools/previews/pulido_final_app.py      → docs/previews/pulido-final-app.png
 """
 import io, os, subprocess, sys

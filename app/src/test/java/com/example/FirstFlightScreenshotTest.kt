@@ -13,7 +13,7 @@ import com.example.data.FlightState
 import com.example.data.FlightStep
 import com.example.model.AgeBand
 import com.example.model.DomainType
-import com.example.ui.components.CosmosBackground
+import com.example.ui.components.BoardBackground
 import com.example.ui.screens.FirstFlightScreen
 import com.example.ui.screens.FlightActions
 import com.example.ui.theme.NeuroVidaTheme
@@ -49,7 +49,7 @@ class FirstFlightScreenshotTest {
   private fun Frame(content: @Composable () -> Unit) {
     NeuroVidaTheme {
       Box(Modifier.width(412.dp).height(915.dp)) {
-        CosmosBackground()
+        BoardBackground()
         content()
       }
     }

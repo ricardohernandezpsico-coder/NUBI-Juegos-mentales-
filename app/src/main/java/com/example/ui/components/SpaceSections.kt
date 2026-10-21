@@ -104,7 +104,7 @@ fun GameLevelsList(levels: GameLevels, ranks: Map<String, GameRankInfo>, modifie
           Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             OnBoardText(g.title, color = OnNight, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
             OnBoardText(
-              text = if (v == null) "Sin medir" else levelWord(v),
+              text = if (v == null) "Aún sin medir" else levelWord(v),
               color = if (v == null) OnNightDim else g.domain.color,
               fontSize = 16.sp, fontWeight = FontWeight.Bold
             )

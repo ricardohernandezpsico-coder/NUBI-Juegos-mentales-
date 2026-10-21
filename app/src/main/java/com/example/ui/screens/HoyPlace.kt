@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,6 +40,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -57,6 +59,9 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -95,9 +100,6 @@ import kotlin.math.min
 
 internal val SheetCream = Color(0xFFF5EBDB)
 internal val SheetMuted = Color(0xFF4A4470)
-private val SheetTrack = Color(0xFFE2D6C2)
-private val SheetFill = Color(0xFF8E7BD6)
-private val SheetNow = Color(0xFFE4DCF7)
 private val GlobeFill = Color(0xFFFFF8EC)
 
 /** El color de cada área (los del boceto): el punto junto al nombre del área y de cada juego. */
@@ -208,8 +210,11 @@ private fun nubiRest(island: Rect, layout: IslaLayout): Rect {
 }
 
 /**
- * Lo que va ENCIMA de Hoy mientras la lámina está abierta o abriéndose: el velo, la lámina, Nubi volando (o posada) y su globo. Va dentro de la caja de Hoy (no es un `Dialog`), que ocupa toda la pestaña: con la lámina abierta la barra de pestañas se retira y esa
- * caja llega hasta la barra del teléfono, así que el botón «Jugar» queda sobre ella. [top] = dónde empieza la lámina (px desde arriba de la caja); [island] = la caja de la isla en esta misma caja (px).
+ * Lo que va ENCIMA de Hoy mientras la lámina está abierta o abriéndose: el velo, la lámina y Nubi volando (o posada en ella). Va dentro de la caja de Hoy (no es un `Dialog`), que ocupa toda la pestaña: con la lámina abierta la barra de pestañas se retira y esa
+ * caja llega hasta la barra del teléfono, así que el botón «Jugar» queda sobre ella. [island] = la caja de la isla en esta misma caja (px).
+ *
+ * La lámina MIDE LO QUE NECESITA (Tarea 147; `auditoria-fable/spec-lamina-lugar.md`): ya no empieza al 22 % fijo. Abre desde abajo con el alto de su contenido y como mucho `página − 56 dp` (siempre queda un poco de cielo arriba); si no cabe, cede lo secundario
+ * en este orden: el globo, los nombres de las etapas, el rótulo «Tus juegos aquí» y, solo si aun así no cabe, el medio se desliza. Nubi se posa DENTRO de la lámina, en el hueco que ella le deja ([PlaceSheetContent]).
  */
 @Composable
 internal fun PlaceLayer(
@@ -217,7 +222,6 @@ internal fun PlaceLayer(
   place: PlaceSheetUi?,
   layout: IslaLayout,
   island: Rect,
-  top: Float,
   onClose: () -> Unit,
   onPlay: (String) -> Unit,
   onGame: (String) -> Unit,
@@ -225,12 +229,11 @@ internal fun PlaceLayer(
 ) {
   if (!fx.active || place == null) return
   val density = LocalDensity.current
-  // Nubi posada: 0,8 de su tamaño en la isla, a 12 dp del borde izquierdo y asomando 0,26 de su alto por encima de la lámina (como en el boceto).
   val rest = nubiRest(island, layout)
-  val perchW = rest.width * 0.8f
-  val perchH = rest.height * 0.8f
-  val perch = Rect(with(density) { 12.dp.toPx() }, top - perchH * 0.26f, with(density) { 12.dp.toPx() } + perchW, top - perchH * 0.26f + perchH)
-  val headerStart = with(density) { perch.right.toDp() } + 6.dp                    // el nombre empieza a la derecha de Nubi
+  val nubiAspect = if (rest.width > 0f) rest.height / rest.width else 0.675f
+  // dónde queda el hueco de Nubi dentro de la lámina (px, desde su esquina de arriba a la izquierda) y cuánto mide la lámina: con eso se sabe dónde se posa Nubi aunque la lámina cambie de alto
+  var hole by remember(place.key) { mutableStateOf(Offset.Zero) }
+  var sheetHeightPx by remember(place.key) { mutableIntStateOf(0) }
 
   Box(modifier.fillMaxSize()) {
     // El velo (casi negro al 45 %, `PlaceMotion.VEIL`): tocarlo cierra la lámina.
@@ -243,34 +246,38 @@ internal fun PlaceLayer(
         .testTag("place_veil")
     )
 
-    // La lámina sube desde abajo (con «quitar animaciones» aparece en su sitio con un fundido).
     BoxWithConstraints(Modifier.fillMaxSize()) {
       val pageHeight = maxHeight
-      val sheetHeight = pageHeight - with(density) { top.toDp() }
+      val pageHeightPx = with(density) { pageHeight.toPx() }
+      val perchW = with(density) { PLACE_NUBI_WIDTH.toPx() }
+      val perch = Rect(hole.x, pageHeightPx - sheetHeightPx + hole.y, hole.x + perchW, pageHeightPx - sheetHeightPx + hole.y + perchW * nubiAspect)
+      // La lámina sube desde abajo (con «quitar animaciones» aparece en su sitio con un fundido).
       Box(
         Modifier
           .align(Alignment.BottomCenter)
           .fillMaxWidth()
-          .height(sheetHeight.coerceAtLeast(0.dp))
+          .onSizeChanged { sheetHeightPx = it.height }
           .graphicsLayer {
             val p = fx.sheet.value
             if (fx.moves) translationY = (1f - p) * size.height else alpha = p
           }
       ) {
         PlaceSheetContent(
-          place, headerStart = headerStart, nubiDrop = with(density) { (perchH * 0.74f).toDp() }, onClose = onClose, onPlay = onPlay, onGame = onGame,
-          footerBottom = pageFooterBottom(pageHeight)
+          place, nubiAspect = nubiAspect, maxHeight = (pageHeight - PLACE_MIN_SKY).coerceAtLeast(0.dp), onClose = onClose, onPlay = onPlay, onGame = onGame,
+          globe = { fx.globe.value }, globeMoves = fx.moves, onHole = { hole = it }
         )
       }
+      // Nubi: en vuelo (de la isla a la lámina o de vuelta) o ya posada en su hueco. Mientras no vuela, la dibuja la isla.
+      NubiFlight(fx, layout, island, perch)
     }
-
-    // Nubi: en vuelo (de la isla a la lámina o de vuelta) o ya posada. Mientras no vuela, la dibuja la isla.
-    NubiFlight(fx, layout, island, perch)
-
-    // Su globo, a la derecha de Nubi y apoyado sobre la lámina.
-    PlaceGlobe(fx, place.bubble, perch, top)
   }
 }
+
+/** Cuánto cielo queda como mínimo sobre la lámina: nunca llega al borde de arriba, así sigue leyéndose como una lámina que sube y no como otra pantalla. */
+internal val PLACE_MIN_SKY = 56.dp
+
+/** El ancho de Nubi posada en la lámina: el tamaño S de Nubi (P3: 72 dp), la misma imagen que vuela. */
+internal val PLACE_NUBI_WIDTH = 72.dp
 
 /** Nubi `hola` entre su sitio en la isla y su sitio en la lámina, con el arco y el balanceo del boceto. Solo se dibuja mientras `flight` > 0. */
 @Composable
@@ -312,122 +319,180 @@ private fun NubiFlight(fx: PlaceFx, layout: IslaLayout, island: Rect, perch: Rec
   }
 }
 
-/** El globo de Nubi: aparece (320 ms) cuando aterriza y dice dónde estás y qué hay en la lámina. */
-@Composable
-private fun PlaceGlobe(fx: PlaceFx, text: String, perch: Rect, top: Float) {
-  val density = LocalDensity.current
-  val gap = with(density) { 6.dp.roundToPx() }
-  val lift = with(density) { 7.dp.roundToPx() }
-  val edge = with(density) { 14.dp.roundToPx() }
-  val minW = with(density) { 120.dp.roundToPx() }
-  val maxGlobe = with(density) { 211.dp.roundToPx() }
-  androidx.compose.ui.layout.Layout(
-    content = {
-      Box(
-        Modifier
-          .graphicsLayer {
-            val g = fx.globe.value
-            alpha = g
-            if (fx.moves) { val sc = 0.8f + 0.2f * g; scaleX = sc; scaleY = sc; transformOrigin = TransformOrigin(0f, 1f) }
-          }
-          .semantics { liveRegion = LiveRegionMode.Polite }
-          .testTag("place_globe")
-          .background(GlobeFill, RoundedCornerShape(18.dp))
-          .border(3.dp, Clay.Ink, RoundedCornerShape(18.dp))
-          .padding(horizontal = 14.dp, vertical = 10.dp)
-      ) {
-        Text(text, color = Clay.Ink, fontSize = 15.sp, fontWeight = FontWeight.Medium, lineHeight = 20.sp)
-      }
-    },
-    modifier = Modifier.fillMaxSize()
-  ) { measurables, constraints ->
-    val left = perch.right.toInt() + gap
-    val maxW = min(maxGlobe, (constraints.maxWidth - left - edge).coerceAtLeast(minW))
-    val p = measurables[0].measure(androidx.compose.ui.unit.Constraints(0, maxW, 0, androidx.compose.ui.unit.Constraints.Infinity))
-    // si el globo no cabe entre el borde de arriba y la lámina (letra grande), no se pone: lo que dice ya está en la lámina
-    val y = (top - p.height - lift).toInt()
-    layout(constraints.maxWidth, constraints.maxHeight) { if (y >= edge / 2) p.place(left, y) else p.place(-100_000, -100_000) }
-  }
+/** Lo que cede la lámina cuando el contenido no cabe en `página − 56 dp`, en este orden (cada nivel suma al anterior). */
+internal object PlaceLevels {
+  /** Todo a la vista: Nubi con su globo. */
+  const val FULL = 0
+  /** Cede el globo: Nubi se queda, muda, junto a la línea de avance. */
+  const val NO_GLOBE = 1
+  /** Ceden también los nombres de las 5 etapas (queda la barra). */
+  const val NO_STAGE_NAMES = 2
+  /** Cede también el rótulo «Tus juegos aquí». */
+  const val NO_LABEL = 3
+  /** Ni así cabe (letra 2,0 con 5 juegos en una pantalla chica): el medio se desliza y el botón queda fijo. */
+  const val SCROLL = 4
 }
 
 /**
- * La lámina de plasticina: arriba el lugar (con espacio a la izquierda para Nubi) y la X; en el medio, que se desliza si no cabe, el AVANCE del área (etapa, barra de cinco etapas, cómo cambió, las últimas 4 semanas) y sus juegos; abajo, FIJO, el botón
- * «Jugar en …» con lo que eligió Nubi. [headerStart] = lo que ocupa Nubi a la izquierda del encabezado y [nubiDrop] cuánto baja Nubi por debajo del borde de la lámina (si el nombre no cabe
- * entre Nubi y la X, ni achicándolo hasta 20 sp, pasa a una línea propia debajo de Nubi).
+ * La lámina de plasticina en UNA sola vista (Tarea 147; `auditoria-fable/spec-lamina-lugar.md`). De arriba abajo: el lugar con su área y la X; Nubi (S, 72 dp) con su globo, que dice lo que cambió esta semana y lo que falta; el avance en UNA línea
+ * («Hábil · 47 de 100») sobre la barra del kit con sus 5 etapas; «Tus juegos aquí» y los juegos en filas compactas (emblema, nombre, cuándo y, en el que sugiere Nubi, el chip «Nubi sugiere»); y, fijo abajo, «Jugar <el que sugiere Nubi>» con su emblema.
+ * Mide lo que necesita (hasta [maxHeight]): si no cabe, sube un nivel de [PlaceLevels] hasta que cabe. [nubiAspect] = alto / ancho de Nubi; [onHole] avisa dónde queda su hueco dentro de la lámina (px).
  */
 @Composable
-internal fun PlaceSheetContent(place: PlaceSheetUi, headerStart: Dp, nubiDrop: Dp, onClose: () -> Unit, onPlay: (String) -> Unit, onGame: (String) -> Unit, modifier: Modifier = Modifier, footerBottom: Dp = 48.dp) {
+internal fun PlaceSheetContent(
+  place: PlaceSheetUi,
+  nubiAspect: Float,
+  maxHeight: Dp,
+  onClose: () -> Unit,
+  onPlay: (String) -> Unit,
+  onGame: (String) -> Unit,
+  modifier: Modifier = Modifier,
+  globe: () -> Float = { 1f },
+  globeMoves: Boolean = false,
+  onHole: (Offset) -> Unit = {}
+) {
   val titleFocus = remember { FocusRequester() }
   LaunchedEffect(place.key) { runCatching { titleFocus.requestFocus() } }
+  val density = LocalDensity.current
   val color = placeColor(place.area)
   val shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
-  Column(
+  val maxPx = with(density) { maxHeight.roundToPx() }
+
+  // Cuánto cede: se mide el alto NATURAL del contenido (sin tope) y, si pasa del máximo, se sube un nivel hasta que cabe.
+  var level by remember(place.key, density.fontScale, maxPx) { mutableIntStateOf(PlaceLevels.FULL) }
+  var natural by remember(place.key, density.fontScale, maxPx) { mutableIntStateOf(0) }
+  var measuredLevel by remember(place.key, density.fontScale, maxPx) { mutableIntStateOf(-1) }       // con qué nivel se midió `natural`: así no se sube dos veces por una medida vieja
+  LaunchedEffect(natural, measuredLevel, level, maxPx) { if (measuredLevel == level && natural > maxPx && level < PlaceLevels.SCROLL) level += 1 }
+  val scrollMode = level >= PlaceLevels.SCROLL
+
+  var sheetCoords by remember { mutableStateOf<androidx.compose.ui.layout.LayoutCoordinates?>(null) }
+
+  @Composable
+  fun Hole() {
+    Spacer(
+      Modifier
+        .size(PLACE_NUBI_WIDTH, PLACE_NUBI_WIDTH * nubiAspect)
+        .onGloballyPositioned { c -> sheetCoords?.takeIf { it.isAttached }?.let { sheet -> onHole(c.positionInRoot() - sheet.positionInRoot()) } }
+        .testTag("place_nubi_hole")
+    )
+  }
+
+  Box(
     modifier
-      .fillMaxSize()
+      .fillMaxWidth()
+      .then(if (scrollMode) Modifier.height(maxHeight) else Modifier.heightIn(max = maxHeight))
       .drawBehind { drawRoundRect(Color(0x59211C45), topLeft = Offset(0f, -4.dp.toPx()), size = size, cornerRadius = androidx.compose.ui.geometry.CornerRadius(30.dp.toPx())) }
       .clip(shape)
       .background(SheetCream, shape)
       .border(3.dp, Clay.Ink, shape)
       .pointerInput(Unit) { detectTapGestures { } }       // los toques sobre la lámina no llegan al velo
+      .onGloballyPositioned { sheetCoords = it }
       .semantics { paneTitle = place.name }
       .testTag("place_sheet")
   ) {
-    // Encabezado fijo: el lugar, su área y la X.
-    PlaceHeader(place, color, headerStart, nubiDrop, titleFocus, onClose)
+    Column(
+      Modifier
+        .fillMaxWidth()
+        .then(if (scrollMode) Modifier.fillMaxHeight() else Modifier.wrapContentHeight(align = Alignment.Top, unbounded = true))
+        .onGloballyPositioned { natural = it.size.height; measuredLevel = level }
+        .padding(horizontal = 18.dp)
+    ) {
+      Spacer(Modifier.height(14.dp))
+      PlaceHeader(place, color, titleFocus, onClose)
 
-    // Lo que se desliza: tu avance y tus juegos. Con letra grande (≥ 1,3) la cuadrícula de las 4 semanas se omite (está en el detalle del área, en Avance): sin ella «Tus juegos aquí» entra en pantalla (Tarea 143, ítem 4).
-    // Un desvanecido de 24 dp al pie avisa que la lista sigue cuando se puede deslizar más.
-    val scroll = rememberScrollState()
-    val bigLetters = LocalDensity.current.fontScale >= 1.3f
-    Box(Modifier.weight(1f)) {
-    Column(Modifier.fillMaxSize().verticalScroll(scroll).padding(horizontal = 18.dp, vertical = 8.dp).testTag("place_scroll"), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-      Text("Tu avance aquí", color = SheetMuted, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 4.dp))
-      if (place.measured) {
-        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-          Text(place.stageName.orEmpty(), color = Clay.Ink, fontSize = 30.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("place_stage"))
-          Text("${place.points} de 100", color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 4.dp).testTag("place_points"))
+      // Con el rótulo ya cedido (los niveles de abajo) todo se junta un poco más: así los 5 juegos de la Antena caben a 360 × 780 con letra 1,3 sin deslizar
+      val compact = level >= PlaceLevels.NO_LABEL
+      val middle: @Composable () -> Unit = {
+        Spacer(Modifier.height(if (compact) 6.dp else 10.dp))
+        if (level == PlaceLevels.FULL) {
+          // Nubi S a la izquierda y su globo a la derecha, centrados entre sí a lo alto
+          Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Hole()
+            Spacer(Modifier.width(8.dp))
+            PlaceGlobe(place.bubble, globe, globeMoves, Modifier.weight(1f))
+          }
+        }
+        Spacer(Modifier.height(12.dp))
+        // El avance en UNA línea; si cedió el globo, Nubi (muda) queda a la izquierda de ella
+        Row(Modifier.fillMaxWidth().heightIn(min = if (level > PlaceLevels.FULL) PLACE_NUBI_WIDTH * nubiAspect else 0.dp), verticalAlignment = Alignment.CenterVertically) {
+          if (level > PlaceLevels.FULL) { Hole(); Spacer(Modifier.width(8.dp)) }
+          Text(
+            if (place.measured) "${place.stageName} · ${place.points} de 100" else "Aún sin medir",
+            color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("place_stage")
+          )
+        }
+        Spacer(Modifier.height(6.dp))
+        com.example.ui.components.StageScale(
+          if (place.measured) place.fill else null, onCard = true, change = place.change, barTag = "place_bar", namesTag = "place_stages", showNames = level < PlaceLevels.NO_STAGE_NAMES
+        )
+        if (level < PlaceLevels.NO_LABEL) {
+          Spacer(Modifier.height(12.dp))
+          Text("Tus juegos aquí", color = SheetMuted, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.testTag("place_games_label"))
+        }
+        Spacer(Modifier.height(if (compact) 4.dp else 6.dp))
+        PlaceGamesList(place, onGame, gap = if (compact) 4.dp else 6.dp)
+      }
+      if (scrollMode) {
+        // Red de seguridad (letra 2,0 con 5 juegos en una pantalla chica): el medio se desliza, con un desvanecido al pie mientras haya más; el botón queda fijo
+        val scroll = rememberScrollState()
+        Box(Modifier.weight(1f)) {
+          Column(Modifier.fillMaxSize().verticalScroll(scroll).testTag("place_scroll")) { middle() }
+          if (scroll.canScrollForward) Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(24.dp).background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.Transparent, SheetCream))).testTag("place_fade"))
         }
       } else {
-        Text("Aún sin medir", color = Clay.Ink, fontSize = 26.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("place_stage"))
+        middle()
       }
-      com.example.ui.components.StageScale(if (place.measured) place.fill else null, onCard = true, barTag = "place_bar", namesTag = "place_stages")
-      Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(place.changeLine, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("place_change"))
-        place.toNextLine?.let { Text(it, color = SheetMuted, fontSize = 15.sp, modifier = Modifier.testTag("place_next")) }
-      }
-      if (!bigLetters) WeeksRow(place)
-      Box(Modifier.fillMaxWidth().height(2.dp).background(Color(0x26211C45)))
-      Text("Tus juegos aquí", color = SheetMuted, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-      PlaceGamesGrid(place, onGame)
-    }
-    if (scroll.canScrollForward) Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(24.dp).background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(Color.Transparent, SheetCream))).testTag("place_fade"))
-    }
 
-    // Pie fijo: Jugar, sobre la barra del teléfono, y lo que eligió Nubi. [footerBottom] lo deja por encima de la franja donde la caja de Hoy se desvanece (`pageFooterBottom`): la leyenda se lee entera.
-    Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(start = 18.dp, end = 18.dp, top = 6.dp, bottom = footerBottom), horizontalAlignment = Alignment.CenterHorizontally) {
-      ClayButton(
-        text = "Jugar en ${place.article}",
-        onClick = { place.chosenGameId?.let(onPlay) },
-        glyph = Glyph.PLAY, fontSize = 19.sp,
-        modifier = Modifier.testTag("place_play")
-      )
+      // Pie fijo: «Jugar <el que sugiere Nubi>» con su emblema, sobre la barra del teléfono (12 dp de aire + la barra de navegación).
+      val chosen = place.games.firstOrNull { it.gameId == place.chosenGameId }
+      Column(Modifier.fillMaxWidth().navigationBarsPadding().padding(top = 12.dp, bottom = 12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        ClayButton(
+          text = "Jugar " + (chosen?.title ?: place.article),
+          onClick = { place.chosenGameId?.let(onPlay) },
+          glyph = if (chosen == null) Glyph.PLAY else null,
+          leading = chosen?.let { g -> { com.example.ui.components.GameEmblem(g.gameId, 32.dp) } },
+          fontSize = 19.sp,
+          modifier = Modifier.testTag("place_play")
+        )
+      }
     }
   }
 }
 
-/** Margen de abajo del pie de la lámina: la franja que se desvanece (`PAGE_BOTTOM_FADE` del alto de la página) más 12 dp de aire, y nunca menos de 32. */
-internal fun pageFooterBottom(@Suppress("UNUSED_PARAMETER") pageHeight: Dp): Dp = PAGE_FOOTER_BOTTOM
+/**
+ * El globo de Nubi dentro de la lámina (Tarea 147): la losa crema con borde de tinta y su cola hacia Nubi; aparece (fundido y escala de 0,8 a 1) cuando Nubi aterriza. Dice lo que cambió esta semana y lo que falta (`PlaceSheets.build`), en primera persona.
+ * [progress] = 0..1 (se lee al dibujar: no recompone cuadro a cuadro).
+ */
+@Composable
+private fun PlaceGlobe(text: String, progress: () -> Float, moves: Boolean, modifier: Modifier = Modifier) {
+  Box(modifier.padding(bottom = 8.dp)) {
+    Box(
+      Modifier
+        .fillMaxWidth()
+        .graphicsLayer {
+          val g = progress()
+          alpha = g
+          if (moves) { val sc = 0.8f + 0.2f * g; scaleX = sc; scaleY = sc; transformOrigin = TransformOrigin(0f, 1f) }
+        }
+        .semantics { liveRegion = LiveRegionMode.Polite }
+        .testTag("place_globe")
+        .background(GlobeFill, RoundedCornerShape(22.dp))
+        .border(3.dp, Clay.Ink, RoundedCornerShape(22.dp))
+        .padding(horizontal = 14.dp, vertical = 10.dp)
+    ) {
+      Text(text, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Medium, lineHeight = 21.sp)
+    }
+    com.example.ui.components.BubbleTail(left = true, Modifier.align(Alignment.BottomStart).offset(x = 26.dp, y = 2.dp).graphicsLayer { alpha = progress() })
+  }
+}
 
-/** El aire de abajo de la lámina de un lugar: la lámina cubre la barra de pestañas (capa fija) y termina sobre la barra del sistema; ya no hay franja que se desvanezca (Tarea 123). */
-internal val PAGE_FOOTER_BOTTOM = 32.dp
-
-/** El tamaño (en sp, de 26 a 20) con el que [text] cabe en una línea de [availablePx]; null si ni a 20 sp cabe. */
+/** El tamaño (en sp, de 24 a 20) con el que [text] cabe en una línea de [availablePx]; null si ni a 20 sp cabe. */
 @Composable
 private fun rememberTitleSize(text: String, availablePx: Float): Int? {
   val measurer = androidx.compose.ui.text.rememberTextMeasurer()
   val base = androidx.compose.material3.LocalTextStyle.current
   return remember(text, availablePx, base) {
-    (26 downTo 20).firstOrNull { sp ->
+    (24 downTo 20).firstOrNull { sp ->
       measurer.measure(text, base.merge(androidx.compose.ui.text.TextStyle(fontSize = sp.sp, fontWeight = FontWeight.Bold)), softWrap = false, maxLines = 1).size.width <= availablePx
     }
   }
@@ -438,140 +503,106 @@ private fun CloseButton(onClose: () -> Unit) {
   KitCloseButton(onClose, Modifier.testTag("place_close"))
 }
 
-/** El nombre del lugar y su área (con un punto del color del área). */
+/** El nombre del lugar y su área (con un punto del color del área, a 16 sp). */
 @Composable
 private fun PlaceTitle(place: PlaceSheetUi, color: Color, sizeSp: Int, titleFocus: FocusRequester, modifier: Modifier = Modifier) {
   Column(modifier) {
     Text(
-      place.name, color = Clay.Ink, fontSize = sizeSp.sp, fontWeight = FontWeight.Bold, lineHeight = (sizeSp + 3).sp, maxLines = 1, softWrap = false,
+      place.name, color = Clay.Ink, fontSize = sizeSp.sp, fontWeight = FontWeight.Bold, lineHeight = (sizeSp + 4).sp, maxLines = 1, softWrap = false,
       modifier = Modifier.focusRequester(titleFocus).focusTarget().semantics { heading() }.testTag("place_title")
     )
     Row(verticalAlignment = Alignment.CenterVertically) {
       Box(Modifier.size(10.dp).clip(CircleShape).background(color).border(2.dp, Clay.Ink, CircleShape))
       Spacer(Modifier.width(6.dp))
-      Text(place.areaName, color = SheetMuted, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("place_area"))
+      Text(place.areaName, color = SheetMuted, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("place_area"))
     }
   }
 }
 
 /**
- * El encabezado: a la derecha de Nubi el nombre (de 26 sp, o más chico hasta 20 si no cabe entre Nubi y la X) y, a la derecha, la X. Si ni a 20 sp cabe (pantalla chica o letra grande), la X queda en la primera línea y el nombre baja a una línea propia,
- * debajo de Nubi, con todo el ancho: nunca se parte a media palabra.
+ * El encabezado: el nombre (de 24 sp, o más chico hasta 20 si no cabe junto a la X) con su área debajo y, a la derecha, la X arriba. Si ni a 20 sp cabe (letra muy grande), la X queda sola en la primera línea y el nombre baja a una línea propia con todo el ancho:
+ * nunca se parte a media palabra.
  */
 @Composable
-private fun PlaceHeader(place: PlaceSheetUi, color: Color, headerStart: Dp, nubiDrop: Dp, titleFocus: FocusRequester, onClose: () -> Unit) {
+private fun PlaceHeader(place: PlaceSheetUi, color: Color, titleFocus: FocusRequester, onClose: () -> Unit) {
   BoxWithConstraints(Modifier.fillMaxWidth()) {
     val density = LocalDensity.current
-    val availablePx = with(density) { (maxWidth - headerStart.coerceAtLeast(18.dp) - 18.dp - 48.dp - 8.dp).toPx() }
+    val availablePx = with(density) { (maxWidth - 48.dp - 8.dp).toPx() }
     val size = rememberTitleSize(place.name, availablePx)
     if (size != null) {
-      Row(Modifier.fillMaxWidth().padding(start = headerStart.coerceAtLeast(18.dp), end = 18.dp, top = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+      Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
         PlaceTitle(place, color, size, titleFocus, Modifier.weight(1f))
         CloseButton(onClose)
       }
     } else {
-      Column(Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 20.dp)) {
+      Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) { CloseButton(onClose) }
-        // debajo de Nubi, que asoma [nubiDrop] por debajo del borde de la lámina
-        Spacer(Modifier.height((nubiDrop - 68.dp).coerceAtLeast(0.dp) + 4.dp))
         Text(
-          place.name, color = Clay.Ink, fontSize = 26.sp, fontWeight = FontWeight.Bold, lineHeight = 29.sp,
+          place.name, color = Clay.Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp,
           modifier = Modifier.focusRequester(titleFocus).focusTarget().semantics { heading() }.testTag("place_title")
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
           Box(Modifier.size(10.dp).clip(CircleShape).background(color).border(2.dp, Clay.Ink, CircleShape))
           Spacer(Modifier.width(6.dp))
-          Text(place.areaName, color = SheetMuted, fontSize = 15.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("place_area"))
+          Text(place.areaName, color = SheetMuted, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("place_area"))
         }
       }
     }
-  }
-}
-
-/** Las últimas 4 semanas: cuatro casillas con el número y su rótulo; la de esta semana, destacada. Sin dato, «—». Con letra grande, dos y dos. */
-@Composable
-private fun WeeksRow(place: PlaceSheetUi) {
-  @Composable
-  fun Cell(i: Int, modifier: Modifier) {
-    val now = i == 3
-    Column(
-      modifier
-        .clip(RoundedCornerShape(14.dp))
-        .background(if (now) SheetNow else Color.Transparent)
-        .border(2.dp, if (now) Clay.Ink else Color(0x40211C45), RoundedCornerShape(14.dp))
-        .padding(horizontal = 1.dp, vertical = 6.dp)
-        .testTag("place_week_$i"),
-      horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-      Text(place.weeks.getOrNull(i)?.toString() ?: "—", color = Clay.Ink, fontSize = 19.sp, fontWeight = FontWeight.Bold)
-      Text(PlaceSheets.WEEK_LABELS[i], color = SheetMuted, fontSize = 16.sp, textAlign = TextAlign.Center, fontWeight = if (now) FontWeight.Bold else FontWeight.Normal)
-    }
-  }
-  if (LocalDensity.current.fontScale > 1.15f) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-      for (r in 0..1) Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { for (c in 0..1) Cell(r * 2 + c, Modifier.weight(1f)) }
-    }
-  } else {
-    Row(Modifier.fillMaxWidth().height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(6.dp)) { for (i in 0..3) Cell(i, Modifier.weight(1f).fillMaxHeight()) }
   }
 }
 
 /**
- * «Tus juegos aquí» como CUADRÍCULA de fichas con emblema (Tarea 143, decisión de Ricardo del 19-oct; antes una lista de filas con una cifra distinta en su idioma por juego, el texto partido en 2-3 líneas y «Nubi elige…» suelto abajo).
- * Cada ficha ([PlaceGameTile]): el emblema de plasticina del juego (60 dp, el mismo de Juegos), su nombre (hasta 2 líneas, 16 sp) y cuándo se jugó («hoy», «ayer», «hace 3 días», «nuevo»). SIN las cifras de medida: esas se quedan en la ficha del juego,
- * con su explicación. El juego que sugiere Nubi lleva un chip sol dentro de SU ficha. Tocar la ficha entera abre la ficha del juego (mide mucho más que 48 dp).
- * Las columnas: tres con letra normal, dos con letra ≥ 1,3, y una si la palabra más larga de los nombres («Constelaciones») no cabe entera en una ficha (nunca se parte una palabra); la última fila, si queda incompleta, va centrada.
+ * «Tus juegos aquí» como FILAS compactas (Tarea 147; antes una cuadrícula de fichas, Tarea 143, que con 5 juegos y con letra grande no cabía en una vista): el mismo contenido que Ricardo eligió el 19-oct —emblema, nombre, cuándo se jugó y, en el que sugiere Nubi, el chip
+ * «Nubi sugiere»; SIN cifras de medida— con otra disposición. Cada fila ([PlaceGameRowItem]) mide 60 dp (emblema de 48) y se toca entera para abrir la ficha del juego.
  */
 @Composable
-private fun PlaceGamesGrid(place: PlaceSheetUi, onGame: (String) -> Unit) {
-  val density = LocalDensity.current
-  val measurer = androidx.compose.ui.text.rememberTextMeasurer()
-  val base = androidx.compose.material3.LocalTextStyle.current
-  val gap = 8.dp
-  BoxWithConstraints(Modifier.fillMaxWidth().testTag("place_games_grid")) {
-    val bold = base.merge(androidx.compose.ui.text.TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold))
-    val widthPx = with(density) { maxWidth.toPx() }
-    val gapPx = with(density) { gap.toPx() }
-    val padPx = with(density) { PLACE_TILE_PAD.toPx() }
-    fun tilePx(cols: Int) = (widthPx - gapPx * (cols - 1)) / cols
-    val longestWordPx = place.games.flatMap { it.title.split(' ') }.maxOfOrNull { measurer.measure(it, bold, softWrap = false, maxLines = 1).size.width } ?: 0
-    val cols = listOf(3, 2, 1).first { c -> c == 1 || ((c < 3 || density.fontScale < 1.3f) && tilePx(c) - 2 * padPx >= longestWordPx) }
-    // el chip: «Nubi sugiere» si cabe entero en la ficha (dos columnas o una); en tres columnas, «Sugerido»
-    val chipFullPx = measurer.measure("Nubi sugiere", bold, softWrap = false, maxLines = 1).size.width + with(density) { 20.dp.toPx() }
-    val chipText = if (tilePx(cols) - 2 * padPx >= chipFullPx) "Nubi sugiere" else "Sugerido"
-    val tileWidth = with(density) { tilePx(cols).toDp() }
-    Column(verticalArrangement = Arrangement.spacedBy(gap)) {
-      place.games.chunked(cols).forEach { rowGames ->
-        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally)) {
-          rowGames.forEach { g -> PlaceGameTile(g, suggested = g.gameId == place.chosenGameId, chipText = chipText, modifier = Modifier.width(tileWidth).fillMaxHeight(), onClick = { onGame(g.gameId) }) }
-        }
-      }
-    }
+private fun PlaceGamesList(place: PlaceSheetUi, onGame: (String) -> Unit, gap: Dp = 6.dp) {
+  Column(Modifier.fillMaxWidth().testTag("place_games_list"), verticalArrangement = Arrangement.spacedBy(gap)) {
+    place.games.forEach { g -> PlaceGameRowItem(g, suggested = g.gameId == place.chosenGameId, onClick = { onGame(g.gameId) }) }
   }
 }
 
-/** El aire de lado de una ficha de juego en la lámina (a cada lado): con él se mide si la palabra más larga cabe. */
-private val PLACE_TILE_PAD = 6.dp
-
-/** Una ficha de la cuadrícula: losa crema del kit con su estado presionado, el emblema, el nombre y cuándo se jugó; la sugerida por Nubi lleva el chip sol. Se lee «Satélites, jugado ayer, Nubi lo sugiere». */
+/**
+ * Una fila de juego: losa crema del kit con su estado presionado; a la izquierda el emblema (48 dp, con el sello «jugado hoy»), a su derecha el nombre (16 sp Bold) y cuándo se jugó (16 sp); el sugerido por Nubi lleva el chip sol «Nubi sugiere» pegado al borde derecho.
+ * Si la palabra más larga del nombre no cabe junto al chip (letra grande), el chip baja DENTRO de la columna de texto, bajo el «cuándo» (la fila crece). Se lee «Satélites, sin jugar aún, Nubi lo sugiere».
+ */
 @Composable
-private fun PlaceGameTile(row: PlaceGameRow, suggested: Boolean, chipText: String, modifier: Modifier, onClick: () -> Unit) {
+private fun PlaceGameRowItem(row: PlaceGameRow, suggested: Boolean, onClick: () -> Unit) {
+  val density = LocalDensity.current
+  val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+  val base = androidx.compose.material3.LocalTextStyle.current
   com.example.ui.components.ClaySlab(
     color = com.example.ui.components.SlabColor.CREAM,
     size = com.example.ui.components.SlabSize.SMALL,
     onClick = onClick,
     role = Role.Button,
     onClickLabel = "Ver su ficha",
-    contentAlignment = Alignment.TopCenter,
-    modifier = modifier
+    contentAlignment = Alignment.CenterStart,
+    modifier = Modifier
+      .fillMaxWidth()
+      .heightIn(min = 60.dp)
       .semantics(mergeDescendants = true) { contentDescription = row.title + ", " + row.spoken + if (suggested) ", Nubi lo sugiere" else "" }
       .testTag("place_game_${row.gameId}")
   ) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = PLACE_TILE_PAD, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-      com.example.ui.components.GameEmblem(row.gameId, 60.dp, done = row.daysAgo == 0)
-      Text(row.title, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 20.sp, textAlign = TextAlign.Center, maxLines = 2, modifier = Modifier.padding(top = 4.dp).testTag("place_game_name_${row.gameId}"))
-      Text(row.whenShort, color = SheetMuted, fontSize = 16.sp, lineHeight = 20.sp, textAlign = TextAlign.Center, maxLines = 2, modifier = Modifier.testTag("place_game_when_${row.gameId}"))
-      if (suggested) com.example.ui.theme.ClayPill(chipText, Modifier.padding(top = 6.dp).testTag("place_game_chip"), color = Clay.Sun, compact = true)
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+      val bold = base.merge(androidx.compose.ui.text.TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold))
+      val longestWordPx = row.title.split(' ').maxOfOrNull { measurer.measure(it, bold, softWrap = false, maxLines = 1).size.width } ?: 0
+      val chipPx = measurer.measure("Nubi sugiere", bold, softWrap = false, maxLines = 1).size.width + with(density) { 20.dp.toPx() }
+      val sidePx = with(density) { (20.dp + 48.dp + 10.dp + 8.dp).toPx() }                      // padding de la fila + emblema + aire + aire del chip
+      val chipBeside = suggested && constraints.maxWidth - sidePx - chipPx >= longestWordPx
+      Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        com.example.ui.components.GameEmblem(row.gameId, 48.dp, done = row.daysAgo == 0)
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+          Text(row.title, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 20.sp, modifier = Modifier.testTag("place_game_name_${row.gameId}"))
+          Text(row.whenShort, color = SheetMuted, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.testTag("place_game_when_${row.gameId}"))
+          if (suggested && !chipBeside) com.example.ui.theme.ClayPill("Nubi sugiere", Modifier.padding(top = 4.dp).testTag("place_game_chip"), color = Clay.Sun, compact = true)
+        }
+        if (suggested && chipBeside) {
+          Spacer(Modifier.width(8.dp))
+          com.example.ui.theme.ClayPill("Nubi sugiere", Modifier.testTag("place_game_chip"), color = Clay.Sun, compact = true)
+        }
+      }
     }
   }
 }

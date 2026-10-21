@@ -137,16 +137,21 @@ fun ProgressScreen(
     contentPadding = PaddingValues(top = 8.dp, bottom = 28.dp),
     verticalArrangement = Arrangement.spacedBy(26.dp)
   ) {
-    item { AvanceWeek(summary, lamps, streakNote, nubiLine) }
+    item { AvanceWeek(summary, lamps, streakNote, if (shownHistory.isEmpty()) "" else nubiLine) }       // sin partidas habla UNA sola Nubi (la línea de abajo), no dos con lo mismo
 
-    item { AvanceAreas(statuses, names) { openArea = it } }
+    if (shownHistory.isEmpty()) {
+      // Sin ninguna partida (Tarea 147, P8): en vez de cuatro tarjetas de áreas vacías y «Lo que descubriste» sin nada, Nubi con UNA línea
+      item { com.example.ui.components.NubiEmptyLine(com.example.ui.components.EMPTY_AVANCE_LINE) }
+    } else {
+      item { AvanceAreas(statuses, names) { openArea = it } }
 
-    item {
-      AvanceDiscoveries(
-        cards = cards, nudge = nudge, measures = measures,
-        onGame = { id -> GameRegistry.getById(id)?.let { sheetFor = it } },
-        onPlay = { id -> viewModel.playFromHome(id, PlayMode.A_TU_MEDIDA, viewModel.retoFor(id)) }
-      )
+      item {
+        AvanceDiscoveries(
+          cards = cards, nudge = nudge, measures = measures,
+          onGame = { id -> GameRegistry.getById(id)?.let { sheetFor = it } },
+          onPlay = { id -> viewModel.playFromHome(id, PlayMode.A_TU_MEDIDA, viewModel.retoFor(id)) }
+        )
+      }
     }
 
     item { AvanceMedals(medals) { familyOpen = it } }

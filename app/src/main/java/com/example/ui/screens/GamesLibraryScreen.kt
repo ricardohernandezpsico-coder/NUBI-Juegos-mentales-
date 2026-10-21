@@ -814,12 +814,13 @@ internal fun SuggestionHeader(s: AreaSuggestionUi) {
     verticalAlignment = Alignment.CenterVertically,
     modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp).testTag("suggestion_header")
   ) {
-    com.example.ui.components.NubiClay(width = 100.dp, modifier = Modifier.padding(start = 2.dp, end = 6.dp))
+    com.example.ui.components.NubiClay(com.example.ui.components.NubiSize.M, modifier = Modifier.padding(start = 2.dp, end = 6.dp))
     Column(Modifier.weight(1f)) {
       OnBoardText("¿Qué jugamos hoy?", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
-      OnBoardText(
-        "Te sugiero ${s.name}: ${s.reason.replaceFirstChar { it.lowercase() }}",
-        color = OnNightDim, fontSize = 15.sp, lineHeight = 20.sp, modifier = Modifier.padding(top = 2.dp).testTag("suggestion_text")
+      // Una voz (Tarea 147, P3): lo que sugiere Nubi lo dice Nubi, en primera persona y en SU globo; nunca texto suelto atribuido a ella
+      NubiBubble(
+        text = "Te sugiero ${s.name}: ${s.reason.replaceFirstChar { it.lowercase() }}",
+        tailLeft = true, modifier = Modifier.padding(top = 4.dp).testTag("suggestion_text")
       )
     }
   }
@@ -951,9 +952,8 @@ internal fun AreaWindow(
     ) {
       item(key = "nubi") {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
-          com.example.ui.components.NubiClay(width = 132.dp, modifier = Modifier.padding(end = 4.dp))
+          com.example.ui.components.NubiClay(com.example.ui.components.NubiSize.M, modifier = Modifier.padding(end = 4.dp))
           NubiBubble(
-            title = "Nubi",
             text = "¿Qué juego de $title jugamos?",
             tailLeft = true,
             modifier = Modifier.weight(1f)

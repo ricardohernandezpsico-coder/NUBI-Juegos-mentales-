@@ -132,7 +132,7 @@ class AvanceJuegosLetraGrandeTest {
     val games = GameRegistry.allGames.filter { it.domain == DomainType.MEMORIA }
     rule.onNodeWithTag("area_play").assertIsDisplayed()
     rule.onNodeWithTag("area_game_${games.first().id}").assertIsDisplayed()            // antes, con la letra grande no cabía ninguno
-    rule.onNodeWithTag("area_play_why").assertIsDisplayed()
+    rule.onNodeWithTag("area_nubi_globe").assertIsDisplayed()                          // Tarea 147 (P3): el porqué del juego elegido ya va en el globo de Nubi, no suelto bajo el botón
     rule.onNodeWithText("Etapas:", substring = true).assertIsDisplayed()               // la escala pasa a la frase: ni «Aprendi / z» ni rótulos de 13 sp
     rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/avance-area-letra13.png")
   }

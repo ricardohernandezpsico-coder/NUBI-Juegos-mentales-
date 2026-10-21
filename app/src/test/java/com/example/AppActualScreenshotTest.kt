@@ -22,7 +22,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
@@ -47,7 +46,6 @@ import com.example.model.UserSettings
 import com.example.ui.components.AREA_ORDER
 import com.example.ui.components.AchievementOverlay
 import com.example.ui.components.BoardBackground
-import com.example.ui.components.CosmosBackground
 import com.example.ui.components.LocalBarInset
 import com.example.ui.components.LocalReduceMotion
 import com.example.ui.components.LocalTabSwipeLock
@@ -189,10 +187,7 @@ class AppActualScreenshotTest {
         CompositionLocalProvider(LocalDensity provides Density(base.density, fontScale)) {
           NeuroVidaTheme {
             Box(Modifier.width(393.dp).height(frameH.dp).testTag("frame")) {
-              when (scene) {
-                Scene.VUELO_1, Scene.VUELO_JUEGO, Scene.VUELO_EDAD, Scene.VUELO_2, Scene.VUELO_PUNTO, Scene.VUELO_3 -> CosmosBackground()
-                else -> BoardBackground()
-              }
+              BoardBackground()                       // un solo cielo, también en el Primer vuelo (Tarea 147, P2)
               CompositionLocalProvider(LocalTabSwipeLock provides remember { mutableIntStateOf(0) }) {
                 // el margen de las barras del sistema: 24 dp arriba y 48 abajo (y la barra de pestañas en las tres pantallas principales)
                 val top = Modifier.padding(top = 24.dp)
@@ -273,15 +268,6 @@ class AppActualScreenshotTest {
       }
     }
 
-    /** Baja la lámina hasta su cuadrícula de juegos (con el reloj corriendo solo: el desplazamiento de las pruebas necesita cuadros para terminar). */
-    fun scrollToGrid() {
-      composeTestRule.mainClock.autoAdvance = true
-      composeTestRule.onNodeWithTag("place_games_grid").performScrollTo()
-      composeTestRule.waitForIdle()
-      composeTestRule.mainClock.autoAdvance = false
-      settle()
-    }
-
     fun go(s: Scene, height: Int, scale: Float = 1f) {
       composeTestRule.runOnIdle { scene = s; frameH = height; fontScale = scale }
       settle()
@@ -316,20 +302,6 @@ class AppActualScreenshotTest {
     r.settle()
     r.shot("hoy-lamina", 873)
     r.shot("hoy-lamina-letra13", 873, 1.3f)
-  }
-
-  /** La cuadrícula de «Tus juegos aquí» entera (Tarea 143): se baja la lámina hasta ella, con letra normal y con letra 1,3 (un test aparte: cada uno junta pocas capturas para no agotar la memoria). */
-  @Test
-  fun hoy_lamina_juegos() {
-    val r = Rig(viewModel(), Scene.HOY)
-    r.settle()
-    composeTestRule.runOnIdle { r.sheetOpen = true }
-    composeTestRule.onNodeWithTag("isla_observatorio").performClick()
-    r.settle()
-    r.go(Scene.HOY, 873, 1f)
-    r.scrollToGrid(); r.shot("hoy-lamina-juegos", 873, 1f)
-    r.go(Scene.HOY, 873, 1.3f)
-    r.scrollToGrid(); r.shot("hoy-lamina-juegos-letra13", 873, 1.3f)
   }
 
   /** La isla sin piezas y con las diez («Tu isla crece», Tarea 136): se fijan con el mismo gancho que los botones «[Debug]» de Ajustes. */
@@ -377,6 +349,14 @@ class AppActualScreenshotTest {
     r.settle(); r.shot("juegos-ficha-desplegada-letra13", 873)
   }
 
+  /** Juegos recién instalada la app (sin ninguna partida): la toma que faltaba (Tarea 147, P8): con todo en «Inicio». */
+  @Test
+  fun juegos_sin_partidas() {
+    val r = Rig(NeuroVidaViewModel(app).also { viewModels.add(it) }, Scene.JUEGOS)
+    r.settle(); r.shot("juegos-vacio", 873)
+    r.shot("juegos-vacio-letra13", 873, 1.3f)
+  }
+
   // ---------------------------------------------------------------- Avance, perfil y ajustes
 
   @Test
@@ -392,6 +372,14 @@ class AppActualScreenshotTest {
     val r = Rig(viewModel(), Scene.AREA_DETALLE)
     r.settle(); r.shot("avance-area", 873)
     r.shot("avance-area-letra13", 873, 1.3f)
+  }
+
+  /** Avance recién instalada la app (sin ninguna partida): Nubi con UNA línea y nada más (Tarea 147, P8), no las secciones vacías de siempre. */
+  @Test
+  fun avance_sin_partidas() {
+    val r = Rig(NeuroVidaViewModel(app).also { viewModels.add(it) }, Scene.AVANCE)
+    r.settle(); r.shot("avance-vacio", 873)
+    r.shot("avance-vacio-letra13", 873, 1.3f)
   }
 
   @Test

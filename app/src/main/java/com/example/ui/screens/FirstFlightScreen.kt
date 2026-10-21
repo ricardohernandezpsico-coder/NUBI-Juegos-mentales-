@@ -303,14 +303,14 @@ private fun PageFrame(
 
 @Composable
 private fun Eyebrow(text: String, center: Boolean = false) =
-  Text(
+  com.example.ui.components.OnBoardText(
     text, color = Clay.Sun, fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 18.sp,
     textAlign = if (center) TextAlign.Center else TextAlign.Start, modifier = if (center) Modifier.fillMaxWidth() else Modifier
   )
 
 @Composable
 private fun Title(text: String, center: Boolean = false, size: Int = 28) =
-  Text(
+  com.example.ui.components.OnBoardText(
     text, color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = size.sp, lineHeight = (size + 5).sp,
     textAlign = if (center) TextAlign.Center else TextAlign.Start, modifier = if (center) Modifier.fillMaxWidth() else Modifier
   )
@@ -326,7 +326,7 @@ private fun Say(text: String, highlight: String? = null, center: Boolean = false
       append(text.substring(at + highlight.length))
     }
   }
-  Text(
+  com.example.ui.components.OnBoardText(
     annotated, color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 20.sp, lineHeight = 28.sp,
     textAlign = if (center) TextAlign.Center else TextAlign.Start, modifier = if (center) Modifier.fillMaxWidth() else Modifier
   )
@@ -334,7 +334,7 @@ private fun Say(text: String, highlight: String? = null, center: Boolean = false
 
 @Composable
 private fun Sub(text: String, center: Boolean = false) =
-  Text(
+  com.example.ui.components.OnBoardText(
     text, color = OnNightDim, fontFamily = AppFamily, fontSize = 18.sp, lineHeight = 25.sp,
     textAlign = if (center) TextAlign.Center else TextAlign.Start, modifier = if (center) Modifier.fillMaxWidth() else Modifier
   )
@@ -392,7 +392,7 @@ private fun HolaPage(a: FlightActions) {
     centered = true,
     footer = { MainButton("¡Vamos!", onClick = a.onContinue) }
   ) {
-    NubiClay(width = 210.dp)
+    NubiClay(com.example.ui.components.NubiSize.L)
     Title("Hola, soy Nubi", center = true, size = 34)
     Say("Vamos a encontrar tu punto de partida jugando. Son 4 juegos cortos.", highlight = "jugando", center = true)
   }
@@ -446,7 +446,7 @@ private fun QuestionPage(
 @Composable
 private fun DatoPage(a: FlightActions) {
   PageFrame(centered = true, footer = { MainButton("Continuar", onClick = a.onContinue) }) {
-    NubiClay(width = 190.dp)
+    NubiClay(com.example.ui.components.NubiSize.M)
     Eyebrow("¿Sabías que…?", center = true)
     Say("Practicar poco y seguido rinde más que mucho de una vez: es de lo más comprobado sobre cómo aprendemos.", highlight = "poco y seguido", center = true)
   }
@@ -465,7 +465,7 @@ private fun GameIntroPage(index: Int, s: FlightState, a: FlightActions) {
   ) {
     Eyebrow(step.domain.displayName, center = true)
     Title(game?.title ?: step.gameId, center = true)
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { NubiClay(width = 150.dp) }
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { NubiClay(com.example.ui.components.NubiSize.M) }
     Say(FlightCopy.of(step.gameId).how, center = true)
     Sub("Empieza con una ronda de práctica que no cuenta. Dura alrededor de un minuto.", center = true)
   }
@@ -478,7 +478,7 @@ private fun GameCardPage(index: Int, s: FlightState, a: FlightActions) {
   val game = GameRegistry.getById(step.gameId)
   val copy = FlightCopy.of(step.gameId)
   PageFrame(footer = { MainButton("Continuar", onClick = a.onContinue) }) {
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { NubiClay(width = 150.dp) }
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { NubiClay(com.example.ui.components.NubiSize.M) }
     Title("Acabas de usar tu ${copy.short}", center = true, size = 26)
     Say(s.phrases[step.gameId] ?: FlightCopy.NO_DATA_LINE, center = true)
     Sub(copy.why, center = true)
@@ -551,7 +551,7 @@ private fun FirstStar() {
   }
   Column(Modifier.fillMaxWidth().testTag("flight_first_star"), horizontalAlignment = Alignment.CenterHorizontally) {
     Box(contentAlignment = Alignment.Center) {
-      NubiClay(width = 100.dp, celebrate = true)
+      NubiClay(com.example.ui.components.NubiSize.M, celebrate = true)
       Canvas(
         Modifier
           .align(Alignment.TopEnd)

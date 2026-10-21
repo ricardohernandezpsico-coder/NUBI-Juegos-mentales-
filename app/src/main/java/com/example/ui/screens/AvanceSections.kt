@@ -109,8 +109,8 @@ internal fun AvanceWeek(summary: WeekSummary, lamps: Week.Lamps, streakNote: Str
 private fun NubiWeekComment(line: String) {
   if (line.isBlank()) return                                                   // sin frase no hay globo (la hoja «hoy» de la Tarea 131 lo usa)
   Row(Modifier.fillMaxWidth().padding(top = 14.dp).testTag("avance_nubi"), verticalAlignment = Alignment.CenterVertically) {
-    com.example.ui.components.NubiClay(width = 56.dp, modifier = Modifier.padding(end = 6.dp))
-    NubiBubble(title = "Nubi", text = line, tailLeft = true, modifier = Modifier.weight(1f).testTag("avance_nubi_line"))
+    com.example.ui.components.NubiClay(com.example.ui.components.NubiSize.S, modifier = Modifier.padding(end = 6.dp))
+    NubiBubble(text = line, tailLeft = true, modifier = Modifier.weight(1f).testTag("avance_nubi_line"))
   }
 }
 
@@ -131,7 +131,7 @@ internal fun AvanceAreas(statuses: List<AreaStatus>, names: Map<String, String>,
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
               Text(name, color = Clay.Ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp, modifier = Modifier.weight(1f))
               Spacer(Modifier.width(8.dp))
-              Text(s.value?.let { Skill.stageName(it) } ?: "Sin medir", color = Clay.InkMuted, fontSize = 16.sp)
+              Text(s.value?.let { Skill.stageName(it) } ?: "Aún sin medir", color = Clay.InkMuted, fontSize = 16.sp)
             }
             KitBar(s.value, s.change, Modifier.padding(top = 8.dp, bottom = 2.dp), onCard = true)
             val line = if (s.value == null) "Juega un juego de $name y aquí verás tu avance" else AreaProgress.cardLine(s)

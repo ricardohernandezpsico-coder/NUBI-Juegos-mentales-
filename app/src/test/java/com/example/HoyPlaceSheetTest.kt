@@ -20,7 +20,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.swipeUp
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.data.Week
@@ -50,8 +49,10 @@ import org.robolectric.annotation.GraphicsMode
 import java.util.Calendar
 
 /**
- * La lámina del lugar de Hoy (Tarea 85; boceto «A»): se abre al tocar un edificio, con el AVANCE del área, sus juegos y «Jugar en …» fijo abajo. Aquí: contenido de los cuatro lugares (uno sin medir), que el botón quede dentro de la pantalla y sobre el inset de navegación,
- * Atrás / X / velo la cierran, el pager se bloquea mientras está abierta, la línea de tiempo (mirando → vuelo → posada) y «quitar animaciones». Capturas con Roborazzi: los cuatro lugares a 393 dp, y uno a 360, con letra 1,3 y con letra 2,0.
+ * La lámina del lugar de Hoy, en UNA sola vista (Tarea 147; `auditoria-fable/spec-lamina-lugar.md`, que reemplaza al boceto «A» de la Tarea 85): se abre al tocar un edificio y mide lo que necesita (hasta `página − 56 dp`): el lugar, Nubi (S, 72 dp) con su globo,
+ * el avance en UNA línea sobre la barra del kit, los juegos en filas compactas y «Jugar <el que sugiere Nubi>» fijo abajo. Aquí: el contenido de los cuatro lugares (uno sin medir); que TODO quepa sin deslizar a 360, 393 y 411 dp con letra normal y con 1,3 (cediendo lo
+ * secundario en orden: el globo, los nombres de las etapas, el rótulo); que el botón quede dentro de la pantalla; Atrás / X / velo la cierran; el pager se bloquea mientras está abierta; la línea de tiempo (mirando → vuelo → posada en su hueco) y «quitar animaciones».
+ * Capturas con Roborazzi: los cuatro lugares a 393 dp, el Observatorio (4 juegos) y la Antena (5) a 360 con letra 1,0, 1,3 y 2,0.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -97,13 +98,19 @@ class HoyPlaceSheetTest {
 
   private fun bounds(tag: String): Rect = rule.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
 
-  /** Caja SIN recortar por el desplazamiento (`boundsInRoot` da cero para lo que quedó fuera de la vista): la de una ficha que está más abajo de la pantalla. */
+  /** Caja SIN recortar por el desplazamiento (`boundsInRoot` da cero para lo que quedó fuera de la vista): la de una fila que está más abajo de la pantalla. */
   private fun rawBounds(tag: String, unmerged: Boolean = false): Rect {
     val n = rule.onNodeWithTag(tag, useUnmergedTree = unmerged).fetchSemanticsNode()
     return Rect(n.positionInRoot.x, n.positionInRoot.y, n.positionInRoot.x + n.size.width, n.positionInRoot.y + n.size.height)
   }
 
+  private fun count(tag: String) = rule.onAllNodes(hasTestTag(tag)).fetchSemanticsNodes().size
+
+  private fun textOf(tag: String): String = rule.onNodeWithTag(tag).fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.Text].joinToString("") { it.text }
+
   private fun pressBack() { rule.runOnUiThread { rule.activity.onBackPressedDispatcher.onBackPressed() }; rule.waitForIdle() }
+
+  private fun firstTitle(area: String) = ui.places.getValue(area).games.first().title
 
   // ---- Contenido de los cuatro lugares
 
@@ -114,88 +121,148 @@ class HoyPlaceSheetTest {
     rule.onNodeWithTag("place_title").assertIsDisplayed()
     rule.onNodeWithText("Observatorio").assertExists()
     rule.onNodeWithTag("place_area").assertIsDisplayed()
-    rule.onNodeWithText("Tu avance aquí").assertIsDisplayed()
-    rule.onNodeWithTag("place_stage").assertIsDisplayed()
-    assertEquals("[Aprendiz]", rule.onNodeWithTag("place_stage").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.Text].toString())
-    rule.onNodeWithText("22 de 100").assertIsDisplayed()
-    rule.onNodeWithText("Esta semana avanzó de 18 a 22").assertIsDisplayed()
-    rule.onNodeWithText("Te faltan 18 para Hábil").assertIsDisplayed()
-    for (i in 0..3) rule.onNodeWithTag("place_week_$i").assertIsDisplayed()
-    for (v in listOf("12", "15", "18")) rule.onNodeWithText(v).assertExists()
-    rule.onNodeWithText("Hace 3 sem.").assertExists(); rule.onNodeWithText("Hace 2 sem.").assertExists(); rule.onNodeWithText("Sem. pasada").assertExists(); rule.onNodeWithText("Esta semana").assertExists()
+    assertEquals("el avance en UNA línea", "Aprendiz · 22 de 100", textOf("place_stage"))
+    rule.onNodeWithTag("place_bar").assertIsDisplayed()
+    rule.onNodeWithTag("place_stages").assertIsDisplayed()
+    rule.onNodeWithText("Esta semana avanzaste de 18 a 22. Te faltan 18 para Hábil.").assertIsDisplayed()
     rule.onNodeWithText("Tus juegos aquí").assertExists()
     for (g in ui.places.getValue("MEMORIA").games) rule.onNodeWithTag("place_game_${g.gameId}").assertExists()
-    rule.onNodeWithText("Jugar en el Observatorio").assertIsDisplayed()
-    rule.onNodeWithText("En el Observatorio vas en Aprendiz. Aquí tienes tu avance y sus juegos.").assertIsDisplayed()
+    rule.onNodeWithText("Jugar ${firstTitle("MEMORIA")}").assertIsDisplayed()
   }
 
   @Test
   fun la_antena_muestra_la_atencion_que_se_mantiene() {
     show(); open("antena")
-    rule.onNodeWithText("Esta semana se mantuvo en 31").assertIsDisplayed()
-    rule.onNodeWithText("31 de 100").assertIsDisplayed()
-    rule.onNodeWithText("Jugar en la Antena").assertIsDisplayed()
-    rule.onNodeWithText("En la Antena vas en Aprendiz. Aquí tienes tu avance y sus juegos.").assertExists()
+    assertEquals("Aprendiz · 31 de 100", textOf("place_stage"))
+    rule.onNodeWithText("Esta semana te mantuviste en 31. Te faltan 9 para Hábil.").assertIsDisplayed()
+    rule.onNodeWithText("Jugar ${firstTitle("ATENCION")}").assertIsDisplayed()
   }
 
   @Test
-  fun el_hangar_muestra_el_razonamiento_que_recien_empieza_y_las_semanas_sin_dato() {
+  fun el_hangar_muestra_el_razonamiento_que_recien_empieza() {
     show(); open("hangar")
-    rule.onNodeWithText("9 de 100").assertIsDisplayed()
-    assertEquals("[Inicio]", rule.onNodeWithTag("place_stage").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.Text].toString())
-    rule.onNodeWithText("—").assertExists()                         // la semana de hace 3 no tiene dato
-    rule.onNodeWithText("Jugar en el Hangar").assertIsDisplayed()
+    assertEquals("Inicio · 9 de 100", textOf("place_stage"))
+    rule.onNodeWithText("Esta semana avanzaste de 6 a 9. Te faltan 11 para Aprendiz.").assertIsDisplayed()
+    rule.onNodeWithText("Jugar ${firstTitle("RAZONAMIENTO")}").assertIsDisplayed()
   }
 
   @Test
   fun un_area_sin_medir_lo_dice_y_no_inventa_numeros() {
     show(); open("biblioteca")
-    rule.onNodeWithText("Aún sin medir").assertIsDisplayed()
-    rule.onNodeWithText("Aún sin medir: tu primera partida lo muestra").assertIsDisplayed()
-    rule.onNodeWithText("En la Biblioteca aún no hay avance: juega uno y lo verás.").assertIsDisplayed()
-    rule.onNodeWithText("Jugar en la Biblioteca").assertIsDisplayed()
-    assertEquals("las cuatro semanas sin dato", 4, rule.onAllNodesWithTextCount("—"))
+    assertEquals("Aún sin medir", textOf("place_stage"))
+    rule.onNodeWithText("Aún no hay avance aquí: juega uno y lo verás.").assertIsDisplayed()
+    rule.onNodeWithText("Jugar ${firstTitle("LENGUAJE")}").assertIsDisplayed()
+  }
+
+  @Test
+  fun ya_no_hay_cuatro_semanas_ni_titulo_de_tu_avance_ni_las_dos_frases_sueltas() {
+    show(); open("observatorio")
+    for (tag in listOf("place_week_0", "place_week_1", "place_week_2", "place_week_3", "place_points", "place_change", "place_next", "place_games_grid")) assertEquals("«$tag» ya no existe", 0, count(tag))
+    for (text in listOf("Tu avance aquí", "Hace 3 sem.", "Sem. pasada", "Esta semana avanzó de")) assertEquals("«$text» ya no va en la lámina", 0, rule.onAllNodes(androidx.compose.ui.test.hasText(text, substring = true)).fetchSemanticsNodes().size)
+  }
+
+  @Test
+  fun el_boton_dice_el_juego_que_sugiere_nubi_con_su_emblema() {
+    show(); open("observatorio")
+    val chosen = ui.places.getValue("MEMORIA").chosenGameId!!
+    val title = ui.places.getValue("MEMORIA").games.first { it.gameId == chosen }.title
+    rule.onNodeWithText("Jugar $title").assertIsDisplayed()
+    assertEquals("ya no dice «Jugar en el Observatorio»", 0, rule.onAllNodes(androidx.compose.ui.test.hasText("Jugar en el", substring = true)).fetchSemanticsNodes().size)
   }
 
   private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.onAllNodesWithTextCount(text: String) = onAllNodes(androidx.compose.ui.test.hasText(text)).fetchSemanticsNodes().size
 
-  // ---- La leyenda de Nubi y «Jugar» quedan con aire sobre la barra del teléfono (Tarea 86; desde la Tarea 123 ya no hay franja que se desvanezca: la lámina cubre la barra de pestañas y deja 32 dp de aire abajo)
+  // ---- Contraste
 
   private fun luminance(c: androidx.compose.ui.graphics.Color): Double {
     fun ch(v: Float): Double = v.toDouble().let { if (it <= 0.03928) it / 12.92 else Math.pow((it + 0.055) / 1.055, 2.4) }
     return 0.2126 * ch(c.red) + 0.7152 * ch(c.green) + 0.0722 * ch(c.blue)
   }
 
-  /** La caja de las pestañas mide alto − 24 (estado) − 48 (navegación); la lámina deja `PAGE_FOOTER_BOTTOM` (32 dp) de aire abajo, sobre la barra del teléfono. Desde la Tarea 143 ya no hay leyenda «Nubi elige…» suelta: el pie es solo «Jugar en …». */
-  private fun assertPlayAboveTheFooterMargin(heightDp: Int) {
+  private fun contrast(a: androidx.compose.ui.graphics.Color, b: androidx.compose.ui.graphics.Color): Double = luminance(a).let { la -> luminance(b).let { lb -> (maxOf(la, lb) + 0.05) / (minOf(la, lb) + 0.05) } }
+
+  @Test
+  fun el_globo_dentro_de_la_lamina_y_los_textos_secundarios_tienen_contraste_de_al_menos_4_5() {
+    assertTrue("texto secundario sobre la lámina: ${contrast(com.example.ui.screens.SheetMuted, com.example.ui.screens.SheetCream)}", contrast(com.example.ui.screens.SheetMuted, com.example.ui.screens.SheetCream) >= 4.5)
+    // el globo: tinta sobre #FFF8EC
+    assertTrue("tinta sobre el globo: ${contrast(com.example.ui.theme.Clay.Ink, androidx.compose.ui.graphics.Color(0xFFFFF8EC))}", contrast(com.example.ui.theme.Clay.Ink, androidx.compose.ui.graphics.Color(0xFFFFF8EC)) >= 4.5)
+  }
+
+  // ---- TODO cabe en una vista (la queja de Ricardo: «debo bajar para ver todos los juegos»)
+
+  private val places = listOf("observatorio" to "MEMORIA", "antena" to "ATENCION", "hangar" to "RAZONAMIENTO", "biblioteca" to "LENGUAJE")
+
+  /** Los juegos y el botón enteros dentro de la pantalla, sin ningún deslizamiento: `place_scroll` ni existe, y cada fila queda entre la parte de arriba de la página y la barra del teléfono. */
+  private fun assertEverythingInside(widthDp: Int, heightDp: Int, area: String, label: String) {
     val density = rule.density.density
+    val pageTop = 24 * density
     val pageBottom = (heightDp - 48) * density
-    val limit = pageBottom - com.example.ui.screens.PAGE_FOOTER_BOTTOM.value * density
-    val play = bounds("place_play")
-    assertTrue("«Jugar» termina en ${play.bottom} y el aire de abajo empieza en $limit", play.bottom <= limit + 1f)
-    assertEquals("la línea suelta «Nubi elige…» ya no está", 0, rule.onAllNodes(hasTestTag("place_chosen")).fetchSemanticsNodes().size)
+    assertEquals("$label: la lámina no se desliza", 0, count("place_scroll"))
+    for (g in ui.places.getValue(area).games) {
+      val r = rawBounds("place_game_${g.gameId}")
+      assertTrue("$label: la fila de ${g.title} ($r) cabe en la pantalla (${pageTop}..$pageBottom)", r.top >= pageTop && r.bottom <= pageBottom + 1f && r.left >= 0f && r.right <= widthDp * density + 1f)
+    }
+    val play = rawBounds("place_play")
+    assertTrue("$label: el botón $play cabe en la pantalla", play.top >= pageTop && play.bottom <= pageBottom + 1f)
+    val sheet = rawBounds("place_sheet")
+    assertTrue("$label: queda al menos 56 dp de cielo sobre la lámina: ${sheet.top} contra ${pageTop + 56 * density}", sheet.top >= pageTop + 56 * density - 1f)
   }
 
-  @Test fun jugar_queda_con_aire_abajo_a_393() { show(393, 873); open("observatorio"); assertPlayAboveTheFooterMargin(873) }
-  @Test fun jugar_queda_con_aire_abajo_a_360() { show(360, 780); open("antena"); assertPlayAboveTheFooterMargin(780) }
-  @Test fun jugar_queda_con_aire_abajo_con_letra_1_3() { show(393, 873, 1.3f); open("hangar"); assertPlayAboveTheFooterMargin(873) }
-  @Test fun jugar_queda_con_aire_abajo_con_letra_2_0() { show(393, 873, 2f); open("observatorio"); assertPlayAboveTheFooterMargin(873) }
+  private fun fitsAt(widthDp: Int, heightDp: Int, fontScale: Float, key: String, area: String, globeExpected: Boolean?) {
+    show(widthDp, heightDp, fontScale); open(key)
+    val label = "$key a ${widthDp}x$heightDp con letra $fontScale"
+    assertEverythingInside(widthDp, heightDp, area, label)
+    if (globeExpected != null) assertEquals("$label: el globo ${if (globeExpected) "se ve" else "cede"}", if (globeExpected) 1 else 0, count("place_globe"))
+  }
+
+  // a 360 × 780 la página mide 708 dp (sin las barras del sistema): con el globo en 3 líneas algunas no caben y el globo cede; lo que importa es que NADA se deslice
+  @Test fun el_observatorio_cabe_a_360_por_780() = fitsAt(360, 780, 1f, "observatorio", "MEMORIA", null)
+  @Test fun el_observatorio_cabe_a_393_por_873() = fitsAt(393, 873, 1f, "observatorio", "MEMORIA", true)
+  @Test fun el_observatorio_cabe_a_411_por_915() = fitsAt(411, 915, 1f, "observatorio", "MEMORIA", true)
+  @Test fun la_antena_con_cinco_juegos_cabe_a_360_por_780() = fitsAt(360, 780, 1f, "antena", "ATENCION", null)
+  @Test fun la_antena_con_cinco_juegos_cabe_a_393_por_873() = fitsAt(393, 873, 1f, "antena", "ATENCION", true)
+  @Test fun la_antena_con_cinco_juegos_cabe_a_411_por_915() = fitsAt(411, 915, 1f, "antena", "ATENCION", true)
+  @Test fun el_hangar_cabe_a_360_por_780() = fitsAt(360, 780, 1f, "hangar", "RAZONAMIENTO", null)
+  @Test fun el_hangar_cabe_a_393_por_873() = fitsAt(393, 873, 1f, "hangar", "RAZONAMIENTO", true)
+  @Test fun la_biblioteca_sin_medir_cabe_a_360_por_780() = fitsAt(360, 780, 1f, "biblioteca", "LENGUAJE", null)
+  @Test fun la_biblioteca_sin_medir_cabe_a_393_por_873() = fitsAt(393, 873, 1f, "biblioteca", "LENGUAJE", true)
+
+  // ---- Con letra 1,3 cede lo secundario, en orden, pero nunca los juegos ni el botón
+
+  @Test fun con_letra_1_3_el_observatorio_cabe_a_393_por_873() = fitsAt(393, 873, 1.3f, "observatorio", "MEMORIA", null)
+  @Test fun con_letra_1_3_el_observatorio_cabe_a_411_por_915() = fitsAt(411, 915, 1.3f, "observatorio", "MEMORIA", null)
+  @Test fun con_letra_1_3_el_observatorio_cabe_a_360_por_780() = fitsAt(360, 780, 1.3f, "observatorio", "MEMORIA", null)
+  @Test fun con_letra_1_3_la_antena_cabe_a_393_por_873() = fitsAt(393, 873, 1.3f, "antena", "ATENCION", null)
+  @Test fun con_letra_1_3_la_antena_cabe_a_360_por_780() = fitsAt(360, 780, 1.3f, "antena", "ATENCION", null)
+  @Test fun con_letra_1_3_la_antena_cabe_a_411_por_915() = fitsAt(411, 915, 1.3f, "antena", "ATENCION", null)
+
   @Test
-  fun la_leyenda_de_nubi_sobre_la_lamina_tiene_contraste_de_al_menos_4_5() {
-    val a = luminance(com.example.ui.screens.SheetMuted)
-    val b = luminance(com.example.ui.screens.SheetCream)
-    val ratio = (maxOf(a, b) + 0.05) / (minOf(a, b) + 0.05)
-    assertTrue("contraste de la leyenda: $ratio", ratio >= 4.5)
+  fun con_letra_1_3_lo_que_cede_es_siempre_lo_secundario_y_en_ese_orden() {
+    // el globo cede antes que los nombres de las etapas, y los nombres de las etapas antes que el rótulo «Tus juegos aquí»
+    show(360, 780, 1.3f); open("antena")
+    if (count("place_globe") == 0) assertTrue("cede el globo: Nubi sigue ahí, muda, junto a la línea de avance", count("place_nubi_hole") == 1)
+    if (count("place_stages") == 1) assertEquals("si los nombres de las etapas se ven, el rótulo también", 1, count("place_games_label"))
+    assertEquals("la línea de avance nunca cede", 1, count("place_stage"))
+    assertEquals("ni la barra", 1, count("place_bar"))
   }
 
   @Test
-  fun el_margen_del_pie_es_de_32_dp_sin_franja_que_se_desvanezca() {
-    assertEquals("la lámina cubre la barra de pestañas y deja 32 dp de aire abajo, a cualquier alto", 32f, com.example.ui.screens.pageFooterBottom(801.dp).value, 0.01f)
-    assertEquals(32f, com.example.ui.screens.pageFooterBottom(300.dp).value, 0.01f)
-    assertEquals(32f, com.example.ui.screens.pageFooterBottom(900.dp).value, 0.01f)
+  fun con_letra_2_0_los_juegos_y_el_boton_siguen_a_la_vista_o_el_medio_se_desliza_con_el_boton_fijo() {
+    show(360, 780, 2f); open("antena")
+    val density = rule.density.density
+    val pageBottom = (780 - 48) * density
+    val play = rawBounds("place_play")
+    assertTrue("el botón queda entero y fijo a la vista: $play contra $pageBottom", play.bottom <= pageBottom + 1f && play.top >= 24 * density)
+    if (count("place_scroll") == 1) {
+      // lo que no cabe se desliza por el medio, con el desvanecido que avisa que sigue
+      rule.onNodeWithTag("place_fade").assertExists()
+    }
   }
 
-  // ---- «Jugar» siempre a la vista
+  @Test
+  fun con_letra_2_0_el_observatorio_a_393_deja_el_boton_a_la_vista() { show(393, 873, 2f); open("observatorio"); assertPlayInside(393, 873) }
+
+  // ---- «Jugar» siempre a la vista, sobre la barra del teléfono
 
   private fun assertPlayInside(widthDp: Int, heightDp: Int) {
     val density = rule.density.density
@@ -208,14 +275,46 @@ class HoyPlaceSheetTest {
   @Test fun jugar_se_ve_a_393_por_873() { show(393, 873); open("observatorio"); assertPlayInside(393, 873) }
   @Test fun jugar_se_ve_a_360_dp() { show(360, 780); open("antena"); assertPlayInside(360, 780) }
   @Test fun jugar_se_ve_con_letra_1_3() { show(393, 873, 1.3f); open("hangar"); assertPlayInside(393, 873) }
-  @Test fun jugar_se_ve_con_letra_2_0() { show(393, 873, 2f); open("observatorio"); assertPlayInside(393, 873) }
+
+  /** El pie de la lámina deja 12 dp de aire bajo el botón (más la barra de navegación del teléfono, que en la prueba es la franja de 48 dp de afuera). */
+  private fun assertPlayHasAirBelow(heightDp: Int) {
+    val density = rule.density.density
+    val pageBottom = (heightDp - 48) * density
+    val play = bounds("place_play")
+    assertTrue("«Jugar» termina en ${play.bottom} y deja 12 dp de aire sobre $pageBottom", play.bottom <= pageBottom - 12 * density + 1f)
+  }
+
+  @Test fun jugar_queda_con_12_dp_de_aire_abajo_a_393() { show(393, 873); open("observatorio"); assertPlayHasAirBelow(873) }
+  @Test fun jugar_queda_con_12_dp_de_aire_abajo_a_360() { show(360, 780); open("antena"); assertPlayHasAirBelow(780) }
+
+  // ---- La lámina mide lo que necesita y deja cielo arriba
+
+  @Test
+  fun la_lamina_abre_mas_alta_cuando_falta_espacio_y_deja_56_dp_de_cielo() {
+    val density = rule.density.density
+    // sobra espacio (393 × 873, Observatorio): abre a su alto natural y la isla asoma por encima
+    show(); open("observatorio")
+    val sheet = bounds("place_sheet")
+    assertTrue("a 393 × 873 queda cielo de sobra sobre la lámina (la isla asoma): ${sheet.top / density} dp desde arriba de la ventana", sheet.top - 24 * density >= 150 * density)
+    assertTrue("llega hasta abajo (sobre la barra del teléfono)", sheet.bottom >= (873 - 48) * density - 1f)
+    val island = bounds("home_isla")
+    assertTrue("tapa solo una parte de la isla: isla $island, lámina $sheet", sheet.top > island.top)
+  }
+
+  @Test
+  fun la_lamina_con_cinco_juegos_en_una_pantalla_chica_sube_mas_pero_nunca_pasa_de_56_dp_del_borde() {
+    show(360, 780); open("antena")
+    val density = rule.density.density
+    val sheet = bounds("place_sheet")
+    assertTrue("deja al menos 56 dp de cielo: ${sheet.top - 24 * density}", sheet.top - 24 * density >= 56 * density - 1f)
+  }
 
   // ---- El nombre del lugar nunca se parte a media palabra
 
   private fun assertTitleOneLine(fontScale: Float) {
     val title = bounds("place_title")
     val density = rule.density.density
-    assertTrue("«Observatorio» cabe en una línea: $title", title.height <= 29f * fontScale * density * 1.3f)
+    assertTrue("«Observatorio» cabe en una línea: $title", title.height <= 28f * fontScale * density * 1.3f)
     assertTrue("y dentro de la pantalla: $title", title.left >= 0f && title.right <= rule.onRoot().fetchSemanticsNode().boundsInRoot.right + 1f)
   }
 
@@ -223,9 +322,9 @@ class HoyPlaceSheetTest {
   @Test fun el_nombre_cabe_en_una_linea_con_letra_1_3() { show(393, 873, 1.3f); open("observatorio"); assertTitleOneLine(1.3f) }
   @Test fun el_nombre_cabe_en_una_linea_con_letra_2_0() { show(393, 873, 2f); open("observatorio"); assertTitleOneLine(2f) }
 
-  // ---- «Tus juegos aquí» como cuadrícula de fichas con emblema (Tarea 143, decisión de Ricardo del 19-oct)
+  // ---- Los juegos en filas compactas, sin cifras de medida (el contenido que Ricardo eligió el 19-oct; cambia solo la disposición)
 
-  private fun tileBounds(area: String) = ui.places.getValue(area).games.associate { it.gameId to rawBounds("place_game_${it.gameId}") }
+  private fun rowBounds(area: String) = ui.places.getValue(area).games.associate { it.gameId to rawBounds("place_game_${it.gameId}") }
 
   private fun nameLayouts(area: String): List<Pair<String, androidx.compose.ui.text.TextLayoutResult>> = ui.places.getValue(area).games.map { g ->
     val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
@@ -233,26 +332,23 @@ class HoyPlaceSheetTest {
     g.title to (results.firstOrNull() ?: throw AssertionError("«${g.title}» no dio su diseño de texto"))
   }
 
-  /**
-   * El nombre de una ficha cabe sin cortarse: a lo sumo 2 líneas (el texto no se recorta por la altura), ninguna línea más ancha que la ficha y ninguna palabra partida (cada línea son palabras enteras del nombre).
-   * (`didOverflowWidth` no sirve: compara con el ancho del párrafo, no con la ficha.)
-   */
-  private fun assertNameFits(title: String, layout: androidx.compose.ui.text.TextLayoutResult, note: String) {
-    assertTrue("«$title» cabe en 2 líneas $note (${layout.lineCount})", layout.lineCount <= 2)
+  /** El nombre de una fila cabe sin cortarse: ninguna línea más ancha que su columna y ninguna palabra partida (cada línea son palabras enteras del nombre). */
+  private fun assertNameFits(title: String, layout: androidx.compose.ui.text.TextLayoutResult, note: String, maxLines: Int = 3) {
+    assertTrue("«$title» cabe en $maxLines líneas $note (${layout.lineCount})", layout.lineCount <= maxLines)
     assertFalse("«$title» se corta a lo alto $note", layout.didOverflowHeight)
     val inner = layout.layoutInput.constraints.maxWidth
     val words = title.split(' ')
     for (line in 0 until layout.lineCount) {
-      assertTrue("«$title» $note: la línea ${line + 1} mide ${layout.getLineRight(line) - layout.getLineLeft(line)} y la ficha deja $inner", layout.getLineRight(line) - layout.getLineLeft(line) <= inner + 0.5f)
+      assertTrue("«$title» $note: la línea ${line + 1} mide ${layout.getLineRight(line) - layout.getLineLeft(line)} y la columna deja $inner", layout.getLineRight(line) - layout.getLineLeft(line) <= inner + 0.5f)
       val text = layout.layoutInput.text.text.substring(layout.getLineStart(line), layout.getLineEnd(line)).trim()
       for (w in text.split(' ').filter { it.isNotEmpty() }) assertTrue("«$w» (de «$title») $note es una palabra entera", w in words)
     }
   }
 
   @Test
-  fun los_juegos_van_en_una_cuadricula_de_fichas_sin_cifras_de_medida() {
+  fun los_juegos_van_en_filas_sin_cifras_de_medida() {
     show(); open("observatorio")
-    rule.onNodeWithTag("place_games_grid").assertExists()
+    rule.onNodeWithTag("place_games_list").assertExists()
     for (g in ui.places.getValue("MEMORIA").games) {
       rule.onNodeWithTag("place_game_${g.gameId}").assertExists()
       rule.onNodeWithTag("place_game_name_${g.gameId}", useUnmergedTree = true).assertExists()
@@ -264,7 +360,7 @@ class HoyPlaceSheetTest {
   }
 
   @Test
-  fun cada_ficha_dice_cuando_se_jugo_y_se_lee_completa() {
+  fun cada_fila_dice_cuando_se_jugo_y_se_lee_completa() {
     show(); open("observatorio")
     for (g in ui.places.getValue("MEMORIA").games) {
       val said = rule.onNodeWithTag("place_game_when_${g.gameId}", useUnmergedTree = true).fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.Text].joinToString("") { it.text }
@@ -276,12 +372,14 @@ class HoyPlaceSheetTest {
   }
 
   @Test
-  fun el_juego_que_sugiere_nubi_lleva_el_chip_dentro_de_su_ficha_y_se_lee_asi() {
+  fun el_juego_que_sugiere_nubi_lleva_el_chip_nubi_sugiere_dentro_de_su_fila_y_se_lee_asi() {
     show(); open("observatorio")
     val chosen = ui.places.getValue("MEMORIA").chosenGameId!!
     assertEquals("un solo chip en toda la lámina", 1, rule.onAllNodes(hasTestTag("place_game_chip"), useUnmergedTree = true).fetchSemanticsNodes().size)
-    val chip = rawBounds("place_game_chip", unmerged = true); val tile = rawBounds("place_game_$chosen")
-    assertTrue("el chip está DENTRO de la ficha del sugerido: $chip en $tile", chip.left >= tile.left - 1f && chip.right <= tile.right + 1f && chip.top >= tile.top - 1f && chip.bottom <= tile.bottom + 1f)
+    val chip = rawBounds("place_game_chip", unmerged = true); val row = rawBounds("place_game_$chosen")
+    assertTrue("el chip está DENTRO de la fila del sugerido: $chip en $row", chip.left >= row.left - 1f && chip.right <= row.right + 1f && chip.top >= row.top - 1f && chip.bottom <= row.bottom + 1f)
+    rule.onNodeWithTag("place_game_chip", useUnmergedTree = true).assertIsDisplayed()
+    assertEquals("el chip dice siempre «Nubi sugiere»", 1, rule.onAllNodes(androidx.compose.ui.test.hasText("Nubi sugiere"), useUnmergedTree = true).fetchSemanticsNodes().size)
     val description = rule.onNodeWithTag("place_game_$chosen").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].joinToString(", ")
     assertTrue("«$description» termina en «Nubi lo sugiere»", description.endsWith(", Nubi lo sugiere"))
     for (g in ui.places.getValue("MEMORIA").games.filter { it.gameId != chosen }) {
@@ -291,80 +389,43 @@ class HoyPlaceSheetTest {
   }
 
   @Test
-  fun las_fichas_miden_lo_mismo_dentro_de_una_fila_y_se_tocan_de_sobra() {
+  fun las_filas_miden_60_dp_de_alto_y_todo_el_ancho_y_se_tocan_de_sobra() {
     show(); open("observatorio")
     val density = rule.density.density
-    val tiles = tileBounds("MEMORIA").values.toList()
-    for (t in tiles) assertTrue("la ficha mide ≥ 48 dp en los dos sentidos: $t", t.width >= 48f * density && t.height >= 48f * density)
-    val rowsOf = tiles.groupBy { Math.round(it.top) }
-    for ((_, row) in rowsOf) assertTrue("las fichas de una fila miden lo mismo de alto: $row", row.all { Math.abs(it.height - row[0].height) < 1f })
-  }
-
-  @Test
-  fun a_393_con_letra_normal_las_fichas_no_cortan_palabras_y_la_ultima_fila_va_centrada() {
-    show(); open("observatorio")
-    for ((title, layout) in nameLayouts("MEMORIA")) assertNameFits(title, layout, "con letra normal")
-    val tiles = tileBounds("MEMORIA").values.toList()
-    val perRow = tiles.groupBy { Math.round(it.top) }.values.map { it.size }
-    if (perRow.size > 1 && perRow.last() < perRow.first()) {
-      val grid = rawBounds("place_games_grid")
-      val last = tiles.groupBy { Math.round(it.top) }.entries.maxByOrNull { it.key }!!.value
-      val centre = (last.minOf { it.left } + last.maxOf { it.right }) / 2f
-      assertEquals("la última fila (incompleta) va centrada", (grid.left + grid.right) / 2f, centre, 2f * rule.density.density)
+    val inner = (393 - 36) * density
+    for ((id, r) in rowBounds("MEMORIA")) {
+      assertTrue("la fila de $id mide ≥ 48 dp de alto y ≥ 48 de ancho: $r", r.width >= 48f * density && r.height >= 48f * density)
+      assertTrue("la fila de $id mide ≥ 60 dp de alto: ${r.height / density}", r.height >= 60f * density - 1f)
+      assertEquals("la fila de $id ocupa todo el ancho: ${r.width}", inner, r.width, 2f * density)
     }
+    val rows = rowBounds("MEMORIA").values.sortedBy { it.top }
+    for (i in 1 until rows.size) assertTrue("las filas van una debajo de la otra: ${rows[i - 1]} y ${rows[i]}", rows[i].top >= rows[i - 1].bottom - 1f)
   }
 
   @Test
-  fun con_letra_1_3_las_fichas_van_en_dos_columnas_y_con_2_0_no_cortan_nada() {
-    show(393, 873, 1.3f); open("observatorio")
-    val cols13 = tileBounds("MEMORIA").values.groupBy { Math.round(it.top) }.values.maxOf { it.size }
-    assertTrue("con letra 1,3 como mucho dos columnas: $cols13", cols13 <= 2)
-    for ((title, layout) in nameLayouts("MEMORIA")) assertNameFits(title, layout, "con letra 1,3")
-  }
-
-  @Test
-  fun con_letra_2_0_las_fichas_entran_sin_cortar_ningun_nombre() {
-    show(393, 873, 2f); open("observatorio")
-    for ((title, layout) in nameLayouts("MEMORIA")) {
-      assertNameFits(title, layout, "con letra 2,0")
-    }
-  }
-
-  @Test
-  fun con_letra_1_3_la_lamina_omite_la_cuadricula_de_semanas_y_los_juegos_entran_en_pantalla() {
-    // Tarea 143, ítem 4: a 1,3 la 2.ª fila de semanas quedaba a medias bajo el botón fijo y «Tus juegos aquí» no se veía; la cuadrícula ya está en el detalle de Avance
-    show(393, 873, 1.3f); open("observatorio")
-    for (i in 0..3) assertEquals("sin cuadrícula de semanas", 0, rule.onAllNodes(hasTestTag("place_week_$i")).fetchSemanticsNodes().size)
-    rule.onNodeWithText("Esta semana avanzó de 18 a 22").assertIsDisplayed()
-    rule.onNodeWithText("Tus juegos aquí").assertIsDisplayed()
-  }
-
-  @Test
-  fun con_letra_normal_las_cuatro_semanas_se_quedan() {
+  fun a_393_con_letra_normal_los_nombres_no_se_cortan() {
     show(); open("observatorio")
-    for (i in 0..3) rule.onNodeWithTag("place_week_$i").assertIsDisplayed()
+    for ((title, layout) in nameLayouts("MEMORIA")) assertNameFits(title, layout, "con letra normal", maxLines = 1)
   }
 
-  @Test
-  fun un_desvanecido_al_pie_avisa_que_la_lista_sigue_solo_cuando_se_puede_deslizar() {
-    show(393, 873, 1.3f); open("observatorio")
-    rule.onNodeWithTag("place_fade").assertExists()                       // la lista sigue más abajo
+  private fun assertNamesFitAt(widthDp: Int, heightDp: Int, fontScale: Float, key: String, area: String, maxLines: Int) {
+    show(widthDp, heightDp, fontScale); open(key)
+    for ((title, layout) in nameLayouts(area)) assertNameFits(title, layout, "a $widthDp con letra $fontScale", maxLines)
   }
 
-  @Test
-  fun al_llegar_al_final_de_la_lista_el_desvanecido_se_quita() {
-    show(393, 873, 1.3f); open("observatorio")
-    rule.onNodeWithTag("place_fade").assertExists()
-    rule.onNodeWithTag("place_scroll").performTouchInput { repeat(4) { swipeUp() } }          // se baja hasta el final de la lista
-    rule.waitForIdle()
-    assertEquals("ya no sigue nada más abajo: no hay nada que avisar", 0, rule.onAllNodes(hasTestTag("place_fade")).fetchSemanticsNodes().size)
-  }
+  @Test fun a_360_con_letra_normal_la_antena_no_corta_ningun_nombre() = assertNamesFitAt(360, 780, 1f, "antena", "ATENCION", 2)
+  @Test fun con_letra_1_3_la_antena_no_corta_ningun_nombre() = assertNamesFitAt(393, 873, 1.3f, "antena", "ATENCION", 3)
+  @Test fun con_letra_1_3_el_observatorio_no_corta_ningun_nombre_y_el_chip_baja_si_no_cabe_al_lado() = assertNamesFitAt(393, 873, 1.3f, "observatorio", "MEMORIA", 3)
+  @Test fun con_letra_2_0_el_observatorio_no_corta_ningun_nombre() = assertNamesFitAt(393, 873, 2f, "observatorio", "MEMORIA", 4)
 
   @Test
-  fun las_cuatro_semanas_miden_lo_mismo_de_alto() {
-    show(); open("observatorio")
-    val heights = (0..3).map { bounds("place_week_$it").height }
-    assertTrue("alturas iguales: $heights", heights.all { kotlin.math.abs(it - heights[0]) < 1f })
+  fun con_letra_grande_el_chip_baja_dentro_de_la_columna_del_texto_si_no_cabe_junto_al_nombre() {
+    show(360, 780, 1.3f); open("observatorio")
+    val chosen = ui.places.getValue("MEMORIA").chosenGameId!!
+    val chip = rawBounds("place_game_chip", unmerged = true); val row = rawBounds("place_game_$chosen"); val name = rawBounds("place_game_name_$chosen", unmerged = true)
+    assertTrue("el chip sigue dentro de su fila: $chip en $row", chip.left >= row.left - 1f && chip.right <= row.right + 1f && chip.top >= row.top - 1f && chip.bottom <= row.bottom + 1f)
+    assertEquals("un solo chip", 1, rule.onAllNodes(hasTestTag("place_game_chip"), useUnmergedTree = true).fetchSemanticsNodes().size)
+    assertTrue("el chip no tapa el nombre: ${name.bottom} contra ${chip.top} o a su derecha", chip.left >= name.right - 1f || chip.top >= name.bottom - 1f)
   }
 
   // ---- Cerrar
@@ -375,7 +436,7 @@ class HoyPlaceSheetTest {
     assertEquals("observatorio", fx.key)
     pressBack()
     assertNull("sin lugar abierto", fx.key)
-    assertEquals(0, rule.onAllNodes(hasTestTag("place_sheet")).fetchSemanticsNodes().size)
+    assertEquals(0, count("place_sheet"))
     rule.onNodeWithTag("home_isla").assertIsDisplayed()
   }
 
@@ -384,13 +445,13 @@ class HoyPlaceSheetTest {
     show(); open("antena")
     rule.onNodeWithTag("place_close").performClick(); rule.waitForIdle()
     assertNull(fx.key)
-    assertEquals(0, rule.onAllNodes(hasTestTag("place_sheet")).fetchSemanticsNodes().size)
+    assertEquals(0, count("place_sheet"))
   }
 
   @Test
   fun tocar_el_velo_cierra_la_lamina() {
     show(); open("hangar")
-    // el velo se toca por donde se ve: arriba de la lámina (la lámina empieza al 22 % del alto)
+    // el velo se toca por donde se ve: arriba de la lámina (siempre hay al menos 56 dp de cielo)
     rule.onNodeWithTag("place_veil").performTouchInput { click(androidx.compose.ui.geometry.Offset(width / 2f, 40f)) }
     rule.waitForIdle()
     assertNull(fx.key)
@@ -401,7 +462,7 @@ class HoyPlaceSheetTest {
     show(); open("observatorio"); rule.onNodeWithTag("place_close").performClick(); rule.waitForIdle()
     open("biblioteca")
     assertEquals("biblioteca", fx.key)
-    rule.onNodeWithText("Jugar en la Biblioteca").assertIsDisplayed()
+    rule.onNodeWithText("Jugar ${firstTitle("LENGUAJE")}").assertIsDisplayed()
   }
 
   // ---- El pager y los juegos
@@ -429,7 +490,7 @@ class HoyPlaceSheetTest {
     show(); open(key)
     for (g in ui.places.getValue(area).games) {
       cardOpened = null
-      rule.onNodeWithTag("place_game_${g.gameId}").performScrollTo().performClick()
+      rule.onNodeWithTag("place_game_${g.gameId}").performClick()
       assertEquals("$key: la fila de ${g.gameId} abre su ficha", g.gameId, cardOpened)
     }
     assertNull("$key: ninguna fila juega directo", played)
@@ -484,28 +545,26 @@ class HoyPlaceSheetTest {
   }
 
   @Test
-  fun nubi_posada_no_tapa_el_nombre_del_lugar_y_su_globo_cabe_en_la_pantalla() {
+  fun nubi_se_posa_dentro_de_la_lamina_a_la_izquierda_de_su_globo() {
     show(); open("observatorio")
-    val nubiBox = bounds("place_nubi"); val title = bounds("place_title"); val globe = bounds("place_globe"); val sheet = bounds("place_sheet")
     val density = rule.density.density
-    // `boundsInRoot` no cuenta la escala de la capa gráfica: Nubi posada mide 0,8 de su caja
-    val nubiRight = nubiBox.left + nubiBox.width * 0.8f
-    val nubiBottom = nubiBox.top + nubiBox.height * 0.8f
-    assertTrue("el nombre empieza a la derecha de Nubi: nubi hasta $nubiRight, título $title", title.left >= nubiRight - 2 * density)
-    assertTrue("Nubi se posa sobre el borde de la lámina: nubi ${nubiBox.top}-$nubiBottom, lámina ${sheet.top}", nubiBox.top < sheet.top && nubiBottom > sheet.top)
-    assertTrue("el globo cabe en la pantalla: $globe", globe.right <= 393 * density && globe.left >= 0f)
-    assertTrue("el globo se apoya sobre la lámina: $globe contra ${sheet.top}", globe.bottom <= sheet.top + 1f)
+    val nubi = bounds("place_nubi"); val hole = bounds("place_nubi_hole"); val globe = bounds("place_globe"); val sheet = bounds("place_sheet")
+    // al terminar el vuelo Nubi queda exactamente en el hueco que le deja la lámina (± 1 dp)
+    assertEquals("Nubi se posa en el hueco: izquierda", hole.left, nubi.left, 1f * density)
+    assertEquals("Nubi se posa en el hueco: arriba", hole.top, nubi.top, 1f * density)
+    assertEquals("el hueco mide 72 dp de ancho", 72f * density, hole.width, 1f * density)
+    assertTrue("el hueco está DENTRO de la lámina: $hole en $sheet", hole.top >= sheet.top && hole.bottom <= sheet.bottom && hole.left >= sheet.left)
+    assertTrue("el globo está a la derecha de Nubi, dentro de la lámina: $globe", globe.left >= hole.right - 1f && globe.right <= sheet.right + 1f && globe.top >= sheet.top && globe.bottom <= sheet.bottom)
+    assertTrue("el globo y Nubi quedan centrados entre sí a lo alto: ${(globe.top + globe.bottom) / 2f} y ${(hole.top + hole.bottom) / 2f}", Math.abs((globe.top + globe.bottom) / 2f - (hole.top + hole.bottom) / 2f) <= 12f * density)
+    // y no tapa el nombre del lugar: va más abajo que el título
+    assertTrue("Nubi no tapa el nombre: ${bounds("place_title")} contra $hole", hole.top >= bounds("place_title").bottom - 1f)
   }
 
   @Test
-  fun la_lamina_empieza_en_el_22_por_ciento_y_tapa_la_isla() {
+  fun el_globo_va_dentro_de_la_lamina_y_no_flota_sobre_hoy() {
     show(); open("observatorio")
-    val sheet = bounds("place_sheet"); val island = bounds("home_isla")
-    val density = rule.density.density
-    val viewport = (873 - 24 - 48) * density
-    assertEquals("empieza al 22 % del alto de la pestaña", 24 * density + 0.22f * viewport, sheet.top, 3f)
-    assertTrue("llega hasta abajo (sobre la barra del teléfono)", sheet.bottom >= (873 - 48) * density - 1f)
-    assertTrue("tapa buena parte de la isla: isla $island, lámina $sheet", sheet.top < island.top + island.height * 0.5f)
+    val globe = bounds("place_globe"); val sheet = bounds("place_sheet")
+    assertTrue("el globo está dentro de la lámina (no sobre el saludo de Hoy): $globe en $sheet", globe.top >= sheet.top && globe.bottom <= sheet.bottom)
   }
 
   // ---- «Quitar animaciones»
@@ -535,6 +594,8 @@ class HoyPlaceSheetTest {
   @Test fun captura_hangar_393() { show(); open("hangar"); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/lamina-hangar-393.png") }
   @Test fun captura_biblioteca_sin_medir_393() { show(); open("biblioteca"); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/lamina-biblioteca-393.png") }
   @Test fun captura_observatorio_360() { show(360, 780); open("observatorio"); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/lamina-observatorio-360.png") }
+  @Test fun captura_antena_360() { show(360, 780); open("antena"); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/lamina-antena-360.png") }
+  @Test fun captura_antena_360_letra_1_3() { show(360, 780, 1.3f); open("antena"); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/lamina-antena-360-letra13.png") }
   @Test fun captura_observatorio_letra_1_3() { show(fontScale = 1.3f); open("observatorio"); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/lamina-observatorio-letra13.png") }
   @Test fun captura_observatorio_letra_2_0() { show(fontScale = 2f); open("observatorio"); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/lamina-observatorio-letra20.png") }
 }

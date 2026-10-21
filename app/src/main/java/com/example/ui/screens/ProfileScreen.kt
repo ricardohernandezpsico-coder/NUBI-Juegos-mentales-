@@ -133,7 +133,12 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
     // Nubi y tu nombre, sin recuadros (Tarea 143, R2 b: mientras las ligas esperan la decisión de negocio, el héroe del perfil es Nubi y el escudo, un dibujo «de antes», queda chico en «Tu liga»)
     item {
       Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        com.example.ui.components.NubiClay(width = 150.dp, modifier = Modifier.testTag("profile_nubi"))
+        // La isla en miniatura con las piezas que la persona ya ganó (Tarea 147, P3: antes Nubi sobre el nombre, que parecía su avatar)
+        com.example.ui.components.Island(
+          description = "Tu isla" + com.example.data.IslaPiezas.description(com.example.data.IslaPiezas.earned(unlocks.keys)),
+          modifier = Modifier.fillMaxWidth().height(150.dp).testTag("profile_island"),
+          pieces = com.example.data.IslaPiezas.earned(unlocks.keys)
+        )
         com.example.ui.components.OnBoardText(userSettings.name.ifBlank { "Tu perfil" }, color = Color(0xFFEAF0FF), fontSize = 30.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
         index?.let {
           com.example.ui.components.OnBoardText(

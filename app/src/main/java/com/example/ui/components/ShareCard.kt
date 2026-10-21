@@ -83,14 +83,23 @@ object ShareCard {
     return MedalArt(image, loadKitAvanceSpec(context).piece("med_" + family.name.lowercase()), def.number ?: 1)
   }
 
+  /** El tablero «Espacio profundo» de la app (la lámina y los luceros, los mismos recursos de `BoardBackground`; Tarea 147, P2): el mismo cielo de Hoy detrás de la tarjeta. null si algún recurso no se puede leer: ahí queda el degradado de siempre. */
+  private fun boardArt(context: Context): Pair<ImageBitmap, ImageBitmap>? {
+    fun load(res: Int) = android.graphics.BitmapFactory.decodeResource(context.resources, res)?.asImageBitmap()
+    val base = load(com.example.R.drawable.fondo_lamina) ?: return null
+    val stars = load(com.example.R.drawable.fondo_luceros) ?: return null
+    return base to stars
+  }
+
   /** Dibuja la tarjeta. Puede correr fuera del hilo principal. */
   fun render(context: Context, content: Content): Bitmap {
     val image = ImageBitmap(W, H)
     val density = Density(1f) // 1 unidad = 1 px de la imagen
     val measurer = TextMeasurer(createFontFamilyResolver(context), density, LayoutDirection.Ltr)
     val medal = medalArt(context, content.achievement)
+    val board = boardArt(context)
     CanvasDrawScope().draw(density, LayoutDirection.Ltr, Canvas(image), Size(W.toFloat(), H.toFloat())) {
-      drawCard(content, measurer, medal)
+      drawCard(content, measurer, medal, board)
     }
     return image.asAndroidBitmap()
   }
@@ -113,25 +122,35 @@ object ShareCard {
     context.startActivity(Intent.createChooser(send, "Compartir").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
   }
 
-  private fun DrawScope.drawCard(content: Content, measurer: TextMeasurer, medal: MedalArt? = null) {
+  /** Una imagen del tablero llenando la tarjeta, recortada al centro (lo mismo que `ContentScale.Crop` en `BoardBackground`). */
+  private fun DrawScope.drawCropped(img: ImageBitmap) {
+    val k = maxOf(size.width / img.width, size.height / img.height)
+    val srcW = (size.width / k).toInt().coerceAtMost(img.width); val srcH = (size.height / k).toInt().coerceAtMost(img.height)
+    drawImage(
+      img, srcOffset = androidx.compose.ui.unit.IntOffset((img.width - srcW) / 2, (img.height - srcH) / 2), srcSize = androidx.compose.ui.unit.IntSize(srcW, srcH),
+      dstSize = androidx.compose.ui.unit.IntSize(size.width.toInt(), size.height.toInt()), filterQuality = androidx.compose.ui.graphics.FilterQuality.High
+    )
+  }
+
+  private fun DrawScope.drawCard(content: Content, measurer: TextMeasurer, medal: MedalArt? = null, board: Pair<ImageBitmap, ImageBitmap>? = null) {
     val w = size.width
     val h = size.height
     val accentLight = content.tier?.palette()?.light ?: content.achievement?.medalColor()?.let { lerp(it, Color.White, 0.45f) } ?: Color.White
     val accentGlow = content.tier?.palette()?.glow ?: content.achievement?.medalColor() ?: Clay.Sky
 
-    // Cielo nocturno de la app + nebulosas celeste y coral
-    drawRect(Brush.verticalGradient(listOf(Color(0xFF1C1B52), Color(0xFF100F3A), Color(0xFF07071F))))     // los tres tonos del fondo «Espacio profundo» (Tarea 122)
-    glow(Offset(w * 0.88f, h * 0.10f), 950f, Clay.Sky.copy(alpha = 0.30f))
-    glow(Offset(w * 0.08f, h * 0.92f), 950f, Clay.Coral.copy(alpha = 0.26f))
-    glow(Offset(w * 0.15f, h * 0.45f), 700f, Clay.Grape.copy(alpha = 0.16f))
-
-    // Estrellas (siempre las mismas: la tarjeta no cambia al volver a generarla)
-    val rnd = Random(7)
-    repeat(170) { i ->
-      val p = Offset(rnd.nextFloat() * w, rnd.nextFloat() * h)
-      val r = 1.5f + rnd.nextFloat() * 3.5f
-      val c = if (i % 6 == 0) Color(0xFFFFC38A) else Color.White
-      drawCircle(c.copy(alpha = 0.3f + rnd.nextFloat() * 0.7f), r, p)
+    // El cielo de la app (Tarea 147, P2): el tablero «Espacio profundo» con sus luceros, el mismo de Hoy, recortado a la tarjeta. Sin el tablero (no se pudo leer), el degradado de tres tonos y las estrellas de siempre.
+    if (board != null) {
+      drawCropped(board.first)
+      drawCropped(board.second)
+    } else {
+      drawRect(Brush.verticalGradient(listOf(Color(0xFF1C1B52), Color(0xFF100F3A), Color(0xFF07071F))))
+      val rnd = Random(7)
+      repeat(170) { i ->
+        val p = Offset(rnd.nextFloat() * w, rnd.nextFloat() * h)
+        val r = 1.5f + rnd.nextFloat() * 3.5f
+        val c = if (i % 6 == 0) Color(0xFFFFC38A) else Color.White
+        drawCircle(c.copy(alpha = 0.3f + rnd.nextFloat() * 0.7f), r, p)
+      }
     }
 
     // Marca arriba

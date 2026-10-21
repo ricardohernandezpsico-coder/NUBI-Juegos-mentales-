@@ -55,7 +55,7 @@ fun DomainLegend(levels: GameLevels, modifier: Modifier = Modifier) {
         Spacer(Modifier.width(8.dp))
         Text(d.displayName, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
         Text(
-          text = if (v == null) "Sin medir" else levelWord(v),
+          text = if (v == null) "Aún sin medir" else levelWord(v),
           style = MaterialTheme.typography.labelMedium,
           color = if (v == null) MaterialTheme.colorScheme.onSurfaceVariant else d.color,
           fontWeight = FontWeight.SemiBold

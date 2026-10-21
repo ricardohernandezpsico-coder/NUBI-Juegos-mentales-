@@ -107,9 +107,11 @@ class PulidoFinalTextosTest {
   }
 
   @Test
-  fun el_perfil_manda_con_nubi_el_escudo_queda_chico_y_las_palabras_son_etapa_y_medallas() {
+  fun el_perfil_manda_con_la_isla_el_escudo_queda_chico_y_las_palabras_son_etapa_y_medallas() {
     val profile = src("ui/screens/ProfileScreen.kt")
-    assertTrue("Nubi es el héroe del perfil (R2 b)", profile.contains("NubiClay(width = 150.dp, modifier = Modifier.testTag(\"profile_nubi\"))"))
+    // Tarea 147 (P3): Nubi ya no va sobre el nombre (parecía su avatar): ahí va la isla en miniatura con las piezas de la persona
+    assertTrue("la isla en miniatura va sobre el nombre", profile.contains("testTag(\"profile_island\")") && profile.contains("IslaPiezas.earned(unlocks.keys)"))
+    assertFalse("y Nubi ya no", profile.contains("NubiClay("))
     assertFalse("el escudo grande ya no está (queda chico en «Tu liga»)", profile.contains("LeagueShield(tier = tier, size = 160.dp"))
     assertTrue("«Tu liga» con el escudo chico", profile.contains("SpaceSectionTitle(\"Tu liga\")") && profile.contains("ShieldImage(tier, 40.dp)"))
     assertTrue("«etapa», no «nivel hábil» (ítem 17)", profile.contains("\"Etapa \${levelWord(it / 100f)}\"") && !profile.contains("nivel \${levelWord"))

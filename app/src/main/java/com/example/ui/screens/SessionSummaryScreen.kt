@@ -64,7 +64,7 @@ fun SessionSummaryScreen(
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       Spacer(Modifier.height(8.dp))
-      NubiClay(width = 150.dp, celebrate = true)
+      NubiClay(com.example.ui.components.NubiSize.S, celebrate = true)
       Text("¡Sesión de hoy completa!", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
       Text(
         "Trabajaste " + joinNames(names.map { it.lowercase() }),

@@ -41,7 +41,9 @@ fun StageScale(
   change: Float = 0f,
   barTag: String = "stage_bar",
   namesTag: String = "stage_names",
-  barModifier: Modifier = Modifier
+  barModifier: Modifier = Modifier,
+  /** false = solo la barra, sin los nombres de las 5 etapas (la lámina del lugar los cede cuando no cabe: Tarea 147). */
+  showNames: Boolean = true
 ) {
   val current = value?.let { Skill.stage(it) }
   val on = if (onCard) Clay.Ink else Color.White
@@ -58,6 +60,7 @@ fun StageScale(
         }
       }
     }
+    if (!showNames) return@Column
     val measurer = rememberTextMeasurer()
     val base = LocalTextStyle.current.merge(TextStyle(fontSize = 14.sp))
     val fontScale = LocalDensity.current.fontScale

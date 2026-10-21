@@ -1,0 +1,8 @@
+lamina-antena-360x780-1.0|180|552|322
+lamina-antena-360x780-1.3|180|552|502
+lamina-antena-393x873-1.0|200|625|250
+lamina-antena-393x873-1.3|200|625|404
+lamina-observatorio-360x780-1.0|180|552|279
+lamina-observatorio-360x780-1.3|180|552|590
+lamina-observatorio-393x873-1.0|200|625|208
+lamina-observatorio-393x873-1.3|200|625|205

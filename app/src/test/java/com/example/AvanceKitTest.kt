@@ -33,7 +33,7 @@ class AvanceKitTest {
   private val families = listOf("constancia", "variedad", "volver")
 
   private val expected: Set<String> = buildSet {
-    addAll(listOf("canal_crema", "canal_cielo", "churro_sol", "churro_lima", "bolita", "farola_off", "farola_on", "pedestal", "cola_izq", "cola_der"))
+    addAll(listOf("canal_crema", "canal_cielo", "churro_sol", "churro_lima", "farola_off", "farola_on", "pedestal", "cola_izq", "cola_der"))
     games.forEach { add("emb_$it") }
     families.forEach { add("med_$it"); add("med_${it}_off") }
     RankTier.entries.forEach { add("escudo_" + it.name.lowercase()) }
@@ -70,7 +70,7 @@ class AvanceKitTest {
     }
     assertEquals("el canal mide 12 dp de alto", 12.3f, spec.piece("canal_crema").bodyHeight, 1f)
     assertEquals("el churro mide 8 dp de alto (y su sombra)", 9f, spec.piece("churro_sol").bodyHeight, 1.5f)
-    assertEquals("la bolita mide 10 dp", 10f, spec.piece("bolita").bodyWidth, 0.5f)
+    assertTrue("la bolita ya no es una pieza del kit (Tarea 147, P6)", "bolita" !in spec.pieces)
   }
 
   @Test

@@ -37,11 +37,13 @@ data class PlaceSheetUi(
   val toNextLine: String?,
   /** El avance al final de las últimas 4 semanas (la última = hoy), de 0 a 100; null = sin dato. */
   val weeks: List<Int?>,
+  /** Cuánto cambió el avance esta semana (de -1 a 1, en la escala 0..1 de la barra): la barra del kit lo dibuja como un tramo más claro. */
+  val change: Float = 0f,
   val games: List<PlaceGameRow>,
   val chosenGameId: String?,
   /** «Nubi elige Bodega de carga: aún no la juegas». */
   val chosenLine: String?,
-  /** Lo que dice Nubi en su globo al llegar a la lámina. */
+  /** Lo que dice Nubi en su globo, dentro de la lámina (Tarea 147), en primera persona: lo que avanzaste esta semana y lo que te falta. */
   val bubble: String
 ) {
   val measured: Boolean get() = stageIndex != null
@@ -49,8 +51,6 @@ data class PlaceSheetUi(
 
 /** Arma [PlaceSheetUi] con la lógica que ya tenía el detalle de área de Hoy (`AreaProgress`, `Skill`, `StarMeasures`): nada nuevo que medir. */
 object PlaceSheets {
-  val WEEK_LABELS = listOf("Hace 3 sem.", "Hace 2 sem.", "Sem. pasada", "Esta semana")
-
   private const val DAY_MS = 86_400_000L
   private fun dayIndex(ts: Long): Long = (ts + TimeZone.getDefault().getOffset(ts)) / DAY_MS
 
@@ -121,9 +121,25 @@ object PlaceSheets {
       area = area, key = name.lowercase(), name = name, article = article, areaName = IslaLugar.areaName(area).orEmpty(),
       stageIndex = value?.let { Skill.stage(it) }, stageName = stageName, points = status.points, fill = value?.coerceIn(0f, 1f) ?: 0f,
       changeLine = AreaProgress.changeLine(status), toNextLine = AreaProgress.toNextLine(status),
-      weeks = status.weeks.map { w -> w?.let { (it.coerceIn(0f, 1f) * 100f).roundToInt() } },
+      weeks = status.weeks.map { w -> w?.let { (it.coerceIn(0f, 1f) * 100f).roundToInt() } }, change = status.change,
       games = rows, chosenGameId = chosen?.id, chosenLine = chosenLine,
-      bubble = if (stageName != null) "En $article vas en $stageName. Aquí tienes tu avance y sus juegos." else "En $article aún no hay avance: juega uno y lo verás."
+      bubble = bubble(status)
     )
+  }
+
+  /**
+   * Lo que dice Nubi en su globo (Tarea 147; `spec-lamina-lugar.md` §3), en primera persona y hablándole a la persona: «Esta semana avanzaste de 37 a 47. Te faltan 13 para Experto.» / «bajaste un poco, de 40 a 38: es normal que varíe» / «te mantuviste en 47»;
+   * en Maestro, la primera frase sola; sin medir, «Aún no hay avance aquí: juega uno y lo verás.».
+   */
+  fun bubble(s: AreaStatus): String {
+    val now = s.points ?: return "Aún no hay avance aquí: juega uno y lo verás."
+    val before = s.pointsBefore ?: now
+    val first = when {
+      s.change > 0f && before != now -> "Esta semana avanzaste de $before a $now."
+      s.change < 0f && before != now -> "Esta semana bajaste un poco, de $before a $now: es normal que varíe."
+      else -> "Esta semana te mantuviste en $now."
+    }
+    val next = AreaProgress.toNextLine(s)
+    return if (next == null) first else "$first $next."
   }
 }

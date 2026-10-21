@@ -82,22 +82,6 @@
     "der": 102
    }
   },
-  "bolita": {
-   "imagen_px": [
-    60,
-    60
-   ],
-   "margenes_dp": {
-    "izq": 5.0,
-    "arr": 4.0,
-    "der": 5.0,
-    "abajo": 6.0
-   },
-   "cuerpo_dp": {
-    "ancho": 10.0,
-    "alto": 10.0
-   }
-  },
   "farola_off": {
    "imagen_px": [
     108,

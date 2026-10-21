@@ -75,7 +75,7 @@ Los destellos de acierto/error de pantalla completa son de UN solo pulso por res
 
 ## La app (Compose) — qué hice (A4)
 
-- **Prueba hecha:** `ReduceMotionComposeTest` dibuja `CosmosBackground` dos veces (0,5 s y 6 s) y compara las imágenes. Con la escala del sistema
+- **Prueba hecha** (con `CosmosBackground`, que se borró en la Tarea 147: hoy la misma prueba dibuja `GameLoadingScreen`): `ReduceMotionComposeTest` dibuja el fondo dos veces (0,5 s y 6 s) y compara las imágenes. Con la escala del sistema
   en 0 puesta en `Settings.Global` **el fondo SIGUE moviéndose en el entorno de pruebas** (la prueba de control con escala normal también se
   mueve, así que la prueba sí detecta movimiento). Como no puedo comprobar en un teléfono real si Compose congela las animaciones infinitas con
   la escala en 0, no confié en eso.

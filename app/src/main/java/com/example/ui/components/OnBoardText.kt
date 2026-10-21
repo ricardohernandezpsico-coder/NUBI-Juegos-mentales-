@@ -43,6 +43,30 @@ object OnBoardHalo {
   val Tone: Color = Color(0xFF151539)
 }
 
+/** Lo mismo con un texto de varios estilos (una palabra en sol dentro de una frase): el contorno se dibuja con el mismo diseño del texto. */
+@Composable
+fun OnBoardText(
+  text: androidx.compose.ui.text.AnnotatedString,
+  modifier: Modifier = Modifier,
+  color: Color = Color.Unspecified,
+  fontSize: TextUnit = TextUnit.Unspecified,
+  fontWeight: FontWeight? = null,
+  fontFamily: FontFamily? = null,
+  textAlign: TextAlign? = null,
+  lineHeight: TextUnit = TextUnit.Unspecified
+) {
+  var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
+  val strokePx = with(LocalDensity.current) { OnBoardHalo.Outline.toPx() }
+  Text(
+    text = text,
+    modifier = modifier.drawBehind {
+      if (strokePx > 0f) layout?.let { drawText(it, color = OnBoardHalo.Tone, drawStyle = Stroke(width = strokePx, cap = StrokeCap.Round, join = StrokeJoin.Round)) }
+    },
+    color = color, fontSize = fontSize, fontWeight = fontWeight, fontFamily = fontFamily, textAlign = textAlign, lineHeight = lineHeight,
+    onTextLayout = { layout = it }
+  )
+}
+
 /**
  * `Text` con la orilla navy de [OnBoardHalo]: el estilo común de todo texto claro que va directo sobre el fondo (saludo de Hoy, títulos y cifras de Juegos y Avance, etiquetas de la barra). Mismos parámetros que `Text`.
  * El contorno se dibuja con el mismo `TextLayoutResult` del texto (`drawBehind`): el texto sigue siendo UN solo nodo, con su medida y su semántica de siempre.

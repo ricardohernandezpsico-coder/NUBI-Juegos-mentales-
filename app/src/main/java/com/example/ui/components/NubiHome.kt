@@ -68,6 +68,16 @@ private val NubiShadowInk = Color(0xFF0B0930)
  * Nubi flota apenas sobre su sombra. Con [celebrate] da el saltito de la Tarea 88 (dos saltos de 12 dp con un giro de ±5°, 900 ms, una sola vez al aparecer; la sombra se achica y aclara mientras sube): es movimiento decorativo, nunca una cara nueva y nunca según el desempeño;
  * con «quitar animaciones» no salta. Mide [width] × ([width] / [NUBI_ASPECT] + el aire de la sombra, 0,1 × [width]).
  */
+/**
+ * Los TRES tamaños de Nubi (Tarea 147, P3: antes nueve, de 56 a 210 dp): [S] acompaña una frase (Avance, el resumen de la sesión, los avisos); [M] presenta una pantalla (Juegos, la ventana y el detalle de un área, el Primer vuelo); [L] es la protagonista
+ * (el primer paso del Primer vuelo, las celebraciones). La lámina del lugar usa la S (72 dp), la misma imagen que vuela.
+ */
+enum class NubiSize(val width: Dp) { S(72.dp), M(120.dp), L(200.dp) }
+
+/** Nubi en uno de los tres tamaños fijos ([NubiSize]). */
+@Composable
+fun NubiClay(size: NubiSize, modifier: Modifier = Modifier, celebrate: Boolean = false) = NubiClay(size.width, modifier, celebrate)
+
 @Composable
 fun NubiClay(width: Dp, modifier: Modifier = Modifier, celebrate: Boolean = false) {
   val reduceMotion = rememberReduceMotion()
@@ -171,16 +181,32 @@ fun areaDescription(name: String, s: AreaStatus): String {
   return "$name: ${Skill.stageName(s.value!!)}, $v de 100, $ch"
 }
 
+/** Lo que dice Avance cuando todavía no hay ninguna partida (Tarea 147, P8): en vez de tarjetas vacías, Nubi (S) con UNA línea que dice qué va a pasar. */
+const val EMPTY_AVANCE_LINE = "Todavía no hay nada aquí. Después de tu primera ruta, esto se llena."
+
 /**
- * Globo de texto de Nubi (un diálogo de Nubi: el único recuadro de la pantalla): la losa crema del kit con su cola de plasticina (Tarea 125; `kit_cola_izq`, 16 × 12 dp) abajo: a la izquierda si Nubi está al lado ([tailLeft], como en la ventana de un área
- * de Juegos) o al centro si Nubi está debajo. El texto es de Compose.
+ * Un estado vacío con Nubi (Tarea 147, P8): Nubi S (72 dp) a la izquierda y una línea a su derecha, sobre el cielo; sin tarjetas ni cifras vacías. La línea va en `OnBoardText` (los luceros quedan detrás).
  */
 @Composable
-fun NubiBubble(title: String, text: String, modifier: Modifier = Modifier, tailLeft: Boolean = false) {
+fun NubiEmptyLine(text: String, modifier: Modifier = Modifier) {
+  androidx.compose.foundation.layout.Row(modifier.fillMaxWidth().testTag("nubi_empty"), verticalAlignment = Alignment.CenterVertically) {
+    NubiClay(width = 72.dp)
+    androidx.compose.foundation.layout.Spacer(Modifier.width(10.dp))
+    OnBoardText(text, color = com.example.ui.theme.NubiTokens.OnNight, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, lineHeight = 23.sp, modifier = Modifier.weight(1f))
+  }
+}
+
+/**
+ * Globo de texto de Nubi (un diálogo de Nubi: el único recuadro de la pantalla): la losa crema del kit con su cola de plasticina (Tarea 125; `kit_cola_izq`, 16 × 12 dp) abajo: a la izquierda si Nubi está al lado ([tailLeft], como en la ventana de un área
+ * de Juegos) o al centro si Nubi está debajo. El texto es de Compose. UNA sola forma de hablar (Tarea 147, P3): Nubi habla siempre en primera persona y siempre en su globo; el rótulo «Nubi» ([title]) solo va cuando habla SIN estar (un aviso, un correo): al lado de
+ * Nubi repetiría lo que ya se ve.
+ */
+@Composable
+fun NubiBubble(text: String, modifier: Modifier = Modifier, tailLeft: Boolean = false, title: String? = null) {
   Box(modifier.padding(bottom = 8.dp)) {
     ClaySlab(SlabColor.CREAM, Modifier.fillMaxWidth(), SlabSize.MEDIUM) {
       Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
-        Text(title, color = BubbleLabel, fontSize = 16.sp)
+        if (title != null) Text(title, color = BubbleLabel, fontSize = 16.sp)
         Text(text, color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
       }
     }

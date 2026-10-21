@@ -26,7 +26,7 @@ SUN = (255, 201, 60)
 
 # Recortes (en píxeles de la captura de 1080 de ancho; los fija mirar las imágenes, ver el README de la carpeta)
 CROPS = {
-    "avance-completa": (0, 5330),          # hasta «Ver más» (Tarea 125; antes 8250, hasta «Ver más detalles»; debajo solo la barra de pestañas del marco)
+    "avance-completa": (0, 5050),          # hasta «Ver más» (Tarea 147: sin «Tu liga» ni la bolita; antes 5330 y, en la Tarea 125, 8250 hasta «Ver más detalles»; debajo solo la barra de pestañas del marco)
     "perfil-completa": (0, 3450),          # hasta «Prefiero no decir» (Tarea 125; antes 4900: los logros ya no son una rejilla de 18 medallas)
     "resultado-completa": (0, 4380),       # hasta «Jugar de nuevo»
     "resultado-sin-record-completa": (0, 3650),   # Constelaciones sin récord, hasta «Jugar de nuevo»
@@ -81,7 +81,8 @@ def lamina():
                     ("Atención", [load("juegos-atencion")]), ("Razonamiento", [load("juegos-razonamiento")]), ("Lenguaje", [load("juegos-lenguaje")])]),
         ("La ficha del juego (Tarea 140)", [("Plegada", [load("juegos-ficha")]), ("Desplegada", [load("juegos-ficha-desplegada")]), ("Plegada, letra 1,3", [load("juegos-ficha-letra13")]), ("Desplegada, letra 1,3", [load("juegos-ficha-desplegada-letra13")])]),
         ("Avance (arriba, con letra 1,3, entera en tiras y el detalle de un área)", [("Avance", [load("avance")]), ("Con letra 1,3", [load("avance-letra13")]), ("Avance (entera, en tiras)", strips(cropped("avance-completa"), W, H_PHONE)),
-                    ("Detalle de un área", [load("avance-area")]), ("Detalle, letra 1,3", [load("avance-area-letra13")])]),
+                    ("Detalle de un área", [load("avance-area")]), ("Detalle, letra 1,3", [load("avance-area-letra13")]),
+                    ("Sin partidas (Tarea 147)", [load("avance-vacio")]), ("Sin partidas, letra 1,3", [load("avance-vacio-letra13")])]),
         ("Perfil, Ajustes y Licencias", [("Perfil", strips(cropped("perfil-completa"), W, H_PHONE)), ("Perfil, letra 1,3", [load("perfil-letra13")]),
                                          ("Ajustes", strips(cropped("ajustes-completa"), W, H_PHONE)), ("Ajustes, letra 1,3", [load("ajustes-letra13")]),
                                          ("Licencias y créditos", strips(cropped("licencias-completa") if os.path.exists(os.path.join(SRC, "licencias-completa.png")) else load("licencias"), W, H_PHONE))]),

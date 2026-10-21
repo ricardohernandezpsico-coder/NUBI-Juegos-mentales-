@@ -33,7 +33,8 @@ class PlaceSheetsTest {
     assertEquals("Te faltan 18 para Hábil", p.toNextLine)
     assertEquals(listOf<Int?>(12, 15, 18, 22), p.weeks)
     assertTrue(p.measured)
-    assertEquals("En el Observatorio vas en Aprendiz. Aquí tienes tu avance y sus juegos.", p.bubble)
+    assertEquals("el globo de Nubi (Tarea 147): primera persona, lo que avanzaste y lo que te falta", "Esta semana avanzaste de 18 a 22. Te faltan 18 para Hábil.", p.bubble)
+    assertEquals(0.04f, p.change, 1e-6f)
   }
 
   @Test
@@ -46,7 +47,21 @@ class PlaceSheetsTest {
     assertEquals(0f, p.fill, 0f)
     assertEquals(listOf<Int?>(null, null, null, null), p.weeks)
     assertEquals("Aún sin medir: tu primera partida lo muestra", p.changeLine)
-    assertEquals("En la Biblioteca aún no hay avance: juega uno y lo verás.", p.bubble)
+    assertEquals("Aún no hay avance aquí: juega uno y lo verás.", p.bubble)
+  }
+
+  @Test
+  fun el_globo_de_nubi_dice_lo_que_cambio_y_lo_que_falta_en_cinco_casos() {
+    fun bubble(value: Float?, change: Float) = PlaceSheets.bubble(AreaStatus("MEMORIA", value, change, listOf(null, null, null, value)))
+    assertEquals("avanzó", "Esta semana avanzaste de 37 a 47. Te faltan 13 para Experto.", bubble(0.47f, 0.10f))
+    assertEquals("bajó", "Esta semana bajaste un poco, de 40 a 38: es normal que varíe. Te faltan 2 para Hábil.", bubble(0.38f, -0.02f))
+    assertEquals("se mantuvo", "Esta semana te mantuviste en 47. Te faltan 13 para Experto.", bubble(0.47f, 0f))
+    assertEquals("en Maestro: la primera frase sola", "Esta semana te mantuviste en 91.", bubble(0.91f, 0f))
+    assertEquals("sin medir", "Aún no hay avance aquí: juega uno y lo verás.", bubble(null, 0f))
+    for (t in listOf(bubble(0.47f, 0.10f), bubble(0.38f, -0.02f), bubble(0.47f, 0f), bubble(null, 0f))) {
+      assertEquals(t, null, com.example.NoLossGuard.hit(t, com.example.NoLossGuard.literals))
+      assertEquals(t, null, com.example.NoLossGuard.hit(t, com.example.NoLossGuard.reminderRoots))
+    }
   }
 
   @Test
@@ -115,10 +130,5 @@ class PlaceSheetsTest {
     assertEquals(listOf("hoy", "ayer", "nuevo", "hace 3 días"), p.games.map { it.whenShort })
     assertEquals(listOf("jugado hoy", "jugado ayer", "sin jugar aún", "jugado hace 3 días"), p.games.map { it.spoken })
     assertTrue("ninguna ficha lleva una cifra", p.games.none { row -> row.whenShort.any { it.isDigit() && row.daysAgo !in 2..99 } })
-  }
-
-  @Test
-  fun los_rotulos_de_las_semanas_son_los_del_boceto() {
-    assertEquals(listOf("Hace 3 sem.", "Hace 2 sem.", "Sem. pasada", "Esta semana"), PlaceSheets.WEEK_LABELS)
   }
 }

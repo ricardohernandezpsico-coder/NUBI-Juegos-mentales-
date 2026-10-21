@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.example.data.FlightMode
 import com.example.data.FlightState
 import com.example.data.FlightStep
-import com.example.ui.components.CosmosBackground
+import com.example.ui.components.BoardBackground
 import com.example.ui.screens.FirstFlightScreen
 import com.example.ui.screens.FlightActions
 import com.example.ui.theme.NeuroVidaTheme
@@ -42,7 +42,7 @@ class FirstFlightLampsTest {
 
   private fun frame(state: FlightState, widthDp: Int = 412, fontScale: Float = 1f) = rule.setContent {
     CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
-      NeuroVidaTheme { Box(Modifier.width(widthDp.dp).height(780.dp)) { CosmosBackground(); FirstFlightScreen(state, emptyList(), FlightActions.None) } }
+      NeuroVidaTheme { Box(Modifier.width(widthDp.dp).height(780.dp)) { BoardBackground(); FirstFlightScreen(state, emptyList(), FlightActions.None) } }
     }
   }
 

@@ -14,7 +14,7 @@ import com.example.data.FlightMode
 import com.example.data.FlightState
 import com.example.model.AgeBand
 import com.example.ui.UnityGameHost
-import com.example.ui.components.CosmosBackground
+import com.example.ui.components.BoardBackground
 import com.example.viewmodel.NeuroVidaViewModel
 
 /**
@@ -47,7 +47,7 @@ fun FirstFlightHost(viewModel: NeuroVidaViewModel) {
   }
 
   Box(Modifier.fillMaxSize()) {
-    CosmosBackground()
+    BoardBackground()                       // un solo cielo también al entrar (Tarea 147, P2): el tablero de Hoy, no un fondo aparte
     val session = activeGame
     if (session != null) {
       Box(Modifier.fillMaxSize().safeDrawingPadding()) {

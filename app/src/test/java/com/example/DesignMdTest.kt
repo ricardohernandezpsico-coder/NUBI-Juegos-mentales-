@@ -105,11 +105,13 @@ class DesignMdTest {
 
   @Test
   fun `el cielo de tres tonos es el del codigo`() {
-    val src = File("src/main/java/com/example/ui/components/CosmosBackground.kt").readText()
-    for (h in listOf("07071F", "100F3A", "1C1B52")) {
-      assertTrue("DESIGN.md no dice #$h", section(2).contains("#$h"))
-      assertTrue("CosmosBackground ya no usa #$h", src.contains("0xFF$h"))
-    }
+    // Tarea 147 (P2): en la app el cielo es UNO, el tablero «Espacio profundo» (`BoardBackground`, también en el Primer vuelo, la carga y la tarjeta de compartir; `CosmosBackground` se borró). Los tres tonos siguen siendo los de Unity
+    // (`NeuroStyle.NightTop/Mid/Bottom`) y el del medio, el de la carga sobre Unity (`UnityLoadingOverlay.NIGHT`)
+    val src = File("src/main/java/com/example/bridge/UnityLoadingOverlay.kt").readText()
+    for (h in listOf("07071F", "100F3A", "1C1B52")) assertTrue("DESIGN.md no dice #$h", section(2).contains("#$h"))
+    assertTrue("UnityLoadingOverlay ya no usa #100F3A", src.contains("0xFF100F3A"))
+    assertTrue("el tablero existe", File("src/main/java/com/example/ui/components/BoardBackground.kt").exists())
+    assertTrue("CosmosBackground se borró", !File("src/main/java/com/example/ui/components/CosmosBackground.kt").exists())
   }
 
   @Test

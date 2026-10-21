@@ -16,7 +16,7 @@ import com.example.data.FlightState
 import com.example.data.FlightStep
 import com.example.model.AgeBand
 import com.example.model.DomainType
-import com.example.ui.components.CosmosBackground
+import com.example.ui.components.BoardBackground
 import com.example.ui.components.LocalReduceMotion
 import com.example.ui.screens.FirstFlightScreen
 import com.example.ui.screens.FlightActions
@@ -52,7 +52,7 @@ class FirstFlightOrdenScreenshotTest {
     rule.setContent {
       val base = LocalDensity.current
       CompositionLocalProvider(LocalDensity provides Density(base.density, fontScale), LocalReduceMotion provides true) {
-        NeuroVidaTheme { Box(Modifier.width(widthDp.dp).height(heightDp.dp).testTag("frame")) { CosmosBackground(); FirstFlightScreen(state, emptyList(), FlightActions.None) } }
+        NeuroVidaTheme { Box(Modifier.width(widthDp.dp).height(heightDp.dp).testTag("frame")) { BoardBackground(); FirstFlightScreen(state, emptyList(), FlightActions.None) } }
       }
     }
     rule.mainClock.advanceTimeBy(1_000)

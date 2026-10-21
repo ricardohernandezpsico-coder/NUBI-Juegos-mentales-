@@ -109,7 +109,6 @@ import com.example.model.RankTier
 import com.example.ui.components.AREA_ORDER
 import com.example.ui.components.AreaBar
 import com.example.ui.components.AreaBarColor
-import com.example.ui.components.CosmosScroll
 import com.example.ui.components.LeagueShield
 import com.example.ui.components.LockTabSwipe
 import com.example.ui.components.MiniPlanet
@@ -166,7 +165,6 @@ fun HomeScreen(
   // Reloj de la semana de cada área: cada 30 s.
   var clock by remember { mutableStateOf(System.currentTimeMillis()) }
   LaunchedEffect(Unit) {
-    CosmosScroll.offset = 0f
     while (true) {
       kotlinx.coroutines.delay(30_000L)
       clock = System.currentTimeMillis()
@@ -466,7 +464,6 @@ internal fun HomeContent(
       place = fx.key?.let { k -> ui.places.values.firstOrNull { it.key == k } },
       layout = layout,
       island = Rect(islandWindow.left - rootOffset.x, islandWindow.top - rootOffset.y, islandWindow.right - rootOffset.x, islandWindow.bottom - rootOffset.y),
-      top = with(density) { (viewportHeight * 0.22f).toPx() },
       onClose = { fx.close(scope, reduceMotion) },
       onPlay = onPlaceGame,
       onGame = onPlaceGameCard
@@ -671,20 +668,30 @@ private fun HoyAction(ui: HomeUi, onPlay: () -> Unit, onResume: () -> Unit, onBa
       )
     }
     if (!ui.hasBaseline) {
-      OnBoardText(
-        text = "Encuentra tu punto de partida · 4 juegos cortos",
-        color = Clay.Sun,
-        fontSize = 15.sp,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier
+      // Un solo sol en Hoy (Tarea 147, P7): el enlace sigue siendo un enlace pero en crema tenue (`OnNightDim`) con su chevrón, para que no compita con el botón grande, que lleva el único sol
+      Row(
+        Modifier
           .padding(top = 4.dp)
           .clip(RoundedCornerShape(10.dp))
-          .clickable(onClick = onBaseline)
+          .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onBaseline)
           .heightIn(min = 48.dp)
           .padding(horizontal = 4.dp)
-          .wrapContentHeight(Alignment.CenterVertically)
-          .testTag("btn_home_baseline")
-      )
+          .testTag("btn_home_baseline"),
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        OnBoardText(
+          text = "Encuentra tu punto de partida · 4 juegos cortos",
+          color = com.example.ui.theme.NubiTokens.OnNightDim,
+          fontSize = 16.sp,
+          fontWeight = FontWeight.SemiBold,
+          modifier = Modifier.weight(1f, fill = false)
+        )
+        Spacer(Modifier.width(6.dp))
+        androidx.compose.foundation.Canvas(Modifier.size(width = 10.dp, height = 16.dp)) {
+          val p = androidx.compose.ui.graphics.Path().apply { moveTo(size.width * 0.15f, size.height * 0.1f); lineTo(size.width * 0.85f, size.height * 0.5f); lineTo(size.width * 0.15f, size.height * 0.9f) }
+          drawPath(p, com.example.ui.theme.NubiTokens.OnNightDim, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+        }
+      }
     }
   }
 }
@@ -741,30 +748,39 @@ internal fun AreaDetail(
       Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      // La pregunta vive en el globo de Nubi (Tarea 143, ítem 2): abajo solo queda el botón y así la lista de juegos gana ~90 dp (a letra 1,3 antes no cabía ninguno)
-      NubiBubble("Nubi", detailLine(name, s) + if (suggested != null) ". ¿Le damos un empujón a ${AreaProgress.your(name)}?" else "")
+      // Maqueta B de la Propuesta 3 (Tarea 147): primero el ÁREA (su nombre y su etapa a la izquierda, las flechas ‹ › a la derecha: antes Nubi iba entre las flechas, como si se pasara de Nubi en Nubi) y debajo Nubi M con su globo al lado.
+      // Una voz: lo que dice Nubi va en su globo, en primera persona (la pregunta y, si hay juego elegido, por qué lo eligió; antes el porqué iba suelto como «Nubi lo eligió: …»).
       var drag by remember(areaKey) { mutableStateOf(0f) }
+      val chosenWhy = suggested?.let { g -> "Elegí ${getGameTitle(g.id, lang, g.title)}: " + if (lastPlayed[g.id] == null) "aún no lo has jugado." else "es el que más tiempo lleva sin jugarse." }
       Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().pointerInput(areaKey) {
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp).pointerInput(areaKey) {
           detectHorizontalDragGestures(
             onDragEnd = { if (drag > 60.dp.toPx()) go(-1) else if (drag < -60.dp.toPx()) go(1); drag = 0f },
             onDragCancel = { drag = 0f }
           ) { _, dx -> drag += dx }
         }
       ) {
+        Column(Modifier.weight(1f)) {
+          OnBoardText(name, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("area_name"))
+          OnBoardText(
+            s.value?.let { "Etapa ${Skill.stageName(it)} · ${s.points} de 100" } ?: "Aún sin medir",
+            color = OnNightDim, fontSize = 16.sp
+          )
+        }
         AreaArrow(left = true, onClick = { go(-1) })
-        Spacer(Modifier.weight(1f))
-        NubiClay(width = 120.dp)
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.width(8.dp))
         AreaArrow(left = false, onClick = { go(1) })
       }
-      OnBoardText(name, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-      OnBoardText(
-        s.value?.let { "Etapa ${Skill.stageName(it)} · ${s.points} de 100" } ?: "Aún sin medir",
-        color = OnNightDim, fontSize = 16.sp
-      )
-      Spacer(Modifier.height(12.dp))
+      Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        NubiClay(com.example.ui.components.NubiSize.M)
+        Spacer(Modifier.width(6.dp))
+        NubiBubble(
+          text = detailLine(name, s) + (if (suggested != null) ". ¿Le damos un empujón a ${AreaProgress.your(name)}?" else "") + (chosenWhy?.let { " $it" } ?: ""),
+          tailLeft = true, modifier = Modifier.weight(1f).testTag("area_nubi_globe")
+        )
+      }
+      Spacer(Modifier.height(4.dp))
       com.example.ui.components.StageScale(s.value, onCard = false, change = s.change, barModifier = Modifier.semantics { contentDescription = areaDescription(name, s) })
       Spacer(Modifier.height(8.dp))
       OnBoardText(AreaProgress.changeLine(s), color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
@@ -808,11 +824,7 @@ internal fun AreaDetail(
       // La invitación: el botón «Jugar <juego>» (la pregunta ya la hizo Nubi en su globo) y por qué lo eligió, sin repetir lo que ya dice la tarjeta del juego.
       Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         val title = getGameTitle(suggested.id, lang, suggested.title)
-        ClayButton(text = "Jugar $title", onClick = { onPlay(suggested.id) }, modifier = Modifier.testTag("area_play"))
-        OnBoardText(
-          if (lastPlayed[suggested.id] == null) "Nubi lo eligió: aún no lo has jugado" else "Nubi lo eligió: es el que más tiempo lleva sin jugarse",
-          color = OnNightDim, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp).testTag("area_play_why")
-        )
+        ClayButton(text = "Jugar $title", onClick = { onPlay(suggested.id) }, leading = { com.example.ui.components.GameEmblem(suggested.id, 32.dp) }, modifier = Modifier.testTag("area_play"))
       }
     }
   }
