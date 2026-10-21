@@ -15,8 +15,8 @@ class PlaceSheetsTest {
   private fun games(area: String) = GameRegistry.allGames.filter { it.domain.name == area }
   private fun result(id: String, t: Long) = GamePlayResult(gameId = id, score = 70, correctAnswers = 8, totalTrials = 10, timed = false, level = 1, timestamp = t)
 
-  private fun build(area: String, status: AreaStatus, history: List<GamePlayResult> = emptyList()) =
-    PlaceSheets.build(area, status, games(area), { it.title }, history, emptyList(), now)
+  private fun build(area: String, status: AreaStatus, history: List<GamePlayResult> = emptyList(), suggestion: Suggestion.Pick? = null) =
+    PlaceSheets.build(area, status, games(area), { it.title }, history, emptyList(), now, suggestion)
 
   @Test
   fun un_area_medida_dice_su_etapa_sus_puntos_y_como_cambio() {
@@ -33,7 +33,7 @@ class PlaceSheetsTest {
     assertEquals("Te faltan 18 para Hábil", p.toNextLine)
     assertEquals(listOf<Int?>(12, 15, 18, 22), p.weeks)
     assertTrue(p.measured)
-    assertEquals("el globo de Nubi (Tarea 147): primera persona, lo que avanzaste y lo que te falta", "Esta semana avanzaste de 18 a 22. Te faltan 18 para Hábil.", p.bubble)
+    assertEquals("el globo de Nubi (Tarea 147) con LA frase de siempre (Tarea 150, B1.8): lo que avanzó y lo que falta", "Esta semana avanzó de 18 a 22. Te faltan 18 para Hábil.", p.bubble)
     assertEquals(0.04f, p.change, 1e-6f)
   }
 
@@ -53,10 +53,10 @@ class PlaceSheetsTest {
   @Test
   fun el_globo_de_nubi_dice_lo_que_cambio_y_lo_que_falta_en_cinco_casos() {
     fun bubble(value: Float?, change: Float) = PlaceSheets.bubble(AreaStatus("MEMORIA", value, change, listOf(null, null, null, value)))
-    assertEquals("avanzó", "Esta semana avanzaste de 37 a 47. Te faltan 13 para Experto.", bubble(0.47f, 0.10f))
-    assertEquals("bajó", "Esta semana bajaste un poco, de 40 a 38: es normal que varíe. Te faltan 2 para Hábil.", bubble(0.38f, -0.02f))
-    assertEquals("se mantuvo", "Esta semana te mantuviste en 47. Te faltan 13 para Experto.", bubble(0.47f, 0f))
-    assertEquals("en Maestro: la primera frase sola", "Esta semana te mantuviste en 91.", bubble(0.91f, 0f))
+    assertEquals("avanzó", "Esta semana avanzó de 37 a 47. Te faltan 13 para Experto.", bubble(0.47f, 0.10f))
+    assertEquals("bajó", "Esta semana bajó un poco, de 40 a 38: es normal que varíe. Te faltan 2 para Hábil.", bubble(0.38f, -0.02f))
+    assertEquals("se mantuvo", "Esta semana se mantuvo en 47. Te faltan 13 para Experto.", bubble(0.47f, 0f))
+    assertEquals("en Maestro: la primera frase sola", "Esta semana se mantuvo en 91.", bubble(0.91f, 0f))
     assertEquals("sin medir", "Aún no hay avance aquí: juega uno y lo verás.", bubble(null, 0f))
     for (t in listOf(bubble(0.47f, 0.10f), bubble(0.38f, -0.02f), bubble(0.47f, 0f), bubble(null, 0f))) {
       assertEquals(t, null, com.example.NoLossGuard.hit(t, com.example.NoLossGuard.literals))
@@ -80,15 +80,22 @@ class PlaceSheetsTest {
   }
 
   @Test
-  fun nubi_elige_el_juego_que_lleva_mas_tiempo_sin_jugarse_y_dice_por_que() {
+  fun el_boton_propone_el_juego_que_lleva_mas_tiempo_sin_jugarse_y_el_chip_solo_marca_la_sugerencia_de_nubi() {
     val g = games("MEMORIA")
-    // todos jugados menos el tercero: lo elige Nubi («aún no la juegas»)
+    // todos jugados menos el tercero: el botón lo propone («aún no la juegas»)
     val history = g.filterIndexed { i, _ -> i != 2 }.mapIndexed { i, d -> result(d.id, now - (i + 1) * day) }
-    val p = build("MEMORIA", AreaStatus("MEMORIA", 0.22f, 0f, listOf(null, null, null, 0.22f)), history)
+    val st = AreaStatus("MEMORIA", 0.22f, 0f, listOf(null, null, null, 0.22f))
+    val p = build("MEMORIA", st, history)
     assertEquals(g[2].id, p.chosenGameId)
-    assertEquals("Nubi elige ${g[2].title}: aún no la juegas", p.chosenLine)
+    assertNull("sin sugerencia de Nubi en esta área no hay chip (Tarea 150, B2: Nubi sugiere UNA sola cosa)", p.suggestedGameId)
     assertEquals("Sin jugar aún", p.games[2].detail)
     assertEquals("Jugado ayer", p.games[0].detail)
+    // la sugerencia de Nubi es de esta área: ese juego, con su chip
+    val q = build("MEMORIA", st, history, Suggestion.Pick(g[0].id, "MEMORIA", Suggestion.Why.ROUTE))
+    assertEquals(g[0].id, q.chosenGameId); assertEquals(g[0].id, q.suggestedGameId)
+    // la sugerencia es de OTRA área: el botón sigue proponiendo el más olvidado de ésta y no hay chip
+    val r = build("MEMORIA", st, history, Suggestion.Pick("radar", "ATENCION", Suggestion.Why.ROUTE))
+    assertEquals(g[2].id, r.chosenGameId); assertNull(r.suggestedGameId)
   }
 
   @Test
@@ -97,7 +104,6 @@ class PlaceSheetsTest {
     val history = g.mapIndexed { i, d -> result(d.id, now - (if (i == 1) 9 else 1) * day) }
     val p = build("MEMORIA", AreaStatus("MEMORIA", 0.22f, 0f, listOf(null, null, null, 0.22f)), history)
     assertEquals(g[1].id, p.chosenGameId)
-    assertEquals("Nubi elige ${g[1].title}: hace 9 días que no lo juegas", p.chosenLine)
     assertEquals("la fila dice el dato corto, sin «que no lo juegas»", "Hace 9 días", p.games[1].detail)
   }
 
@@ -112,7 +118,7 @@ class PlaceSheetsTest {
     val history = g.mapIndexed { i, d -> result(d.id, now - (if (i == 0) 22 else 3) * day) }
     val p = build("MEMORIA", AreaStatus("MEMORIA", 0.22f, 0f, listOf(null, null, null, 0.22f)), history)
     assertEquals("Hace 22 días", p.games[0].detail)
-    assertEquals("Nubi elige ${g[0].title}: hace 22 días que no lo juegas", p.chosenLine)
+    assertEquals(g[0].id, p.chosenGameId)
     assertTrue("ninguna fila repite «que no lo juegas»", p.games.none { it.detail.contains("que no lo juegas") })
   }
 

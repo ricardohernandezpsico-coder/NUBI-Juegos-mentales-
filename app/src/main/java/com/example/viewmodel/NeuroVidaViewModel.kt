@@ -510,7 +510,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   private fun modeNote(mode: com.example.data.PlayMode, outcome: com.example.model.RecordOutcome): String? = when {
     mode == com.example.data.PlayMode.A_TU_MEDIDA -> null
-    outcome.expertUnlocked -> "¡Desafío superado! Tu avance subió y se abrió Experto"
+    outcome.expertUnlocked -> "¡Desafío superado! Tu avance subió y se abrió Al límite"
     outcome.modePassed -> "¡${mode.label} superado! Tu avance subió"
     mode == com.example.data.PlayMode.SUAVE -> "Partida suave: tu avance se mantiene"
     else -> "${mode.label}: esta vez tu avance se mantiene"

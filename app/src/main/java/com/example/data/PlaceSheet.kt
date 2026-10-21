@@ -40,10 +40,11 @@ data class PlaceSheetUi(
   /** Cuánto cambió el avance esta semana (de -1 a 1, en la escala 0..1 de la barra): la barra del kit lo dibuja como un tramo más claro. */
   val change: Float = 0f,
   val games: List<PlaceGameRow>,
+  /** El juego del botón «Jugar …» de la lámina: la sugerencia de Nubi si es de esta área; si no, el que más tiempo lleva sin jugarse en ella ([Suggestion.forArea]). */
   val chosenGameId: String?,
-  /** «Nubi elige Bodega de carga: aún no la juegas». */
-  val chosenLine: String?,
-  /** Lo que dice Nubi en su globo, dentro de la lámina (Tarea 147), en primera persona: lo que avanzaste esta semana y lo que te falta. */
+  /** El juego que lleva el chip «Nubi sugiere»: LA sugerencia de Nubi, solo en el área donde está (Tarea 150, B2); null en las demás. */
+  val suggestedGameId: String? = null,
+  /** Lo que dice Nubi en su globo, dentro de la lámina (Tarea 147): lo que avanzó el área esta semana (la misma frase que el detalle, [AreaProgress.changeLine]) y lo que le falta. */
   val bubble: String
 ) {
   val measured: Boolean get() = stageIndex != null
@@ -86,7 +87,7 @@ object PlaceSheets {
 
   /**
    * [status] = el avance del área; [games] = sus juegos; [titleOf] = el nombre visible de un juego (con idioma); [history] = las partidas guardadas; [measures] = las marcas de los juegos estrella.
-   * El juego que elige Nubi es el que lleva más tiempo sin jugarse (uno nunca jugado gana).
+   * [suggestion] = LA sugerencia de Nubi de toda la app ([Suggestion.next]): en su área marca ese juego y el botón lo juega; en las otras áreas el botón propone el que más tiempo lleva sin jugarse, sin chip.
    */
   fun build(
     area: String,
@@ -95,7 +96,8 @@ object PlaceSheets {
     titleOf: (GameDefinition) -> String,
     history: List<GamePlayResult>,
     measures: List<MeasurePoint>,
-    now: Long
+    now: Long,
+    suggestion: Suggestion.Pick? = null
   ): PlaceSheetUi {
     val name = IslaLugar.nameOfArea(area).orEmpty()
     val article = IslaLugar.withArticle(area).orEmpty()
@@ -111,34 +113,26 @@ object PlaceSheets {
       }
       PlaceGameRow(g.id, titleOf(g), detail, daysAgo = last?.let { (dayIndex(now) - dayIndex(it)).toInt() })
     }
-    val chosen = games.minByOrNull { lastPlayed[it.id] ?: Long.MIN_VALUE }
-    val chosenLine = chosen?.let { g ->
-      val last = lastPlayed[g.id]
-      "Nubi elige ${titleOf(g)}: " + if (last == null) "aún no la juegas" else playedAgo(now, last).replaceFirstChar { it.lowercase() }
-    }
+    val pick = Suggestion.forArea(area, suggestion, games, lastPlayed.mapNotNull { (id, t) -> t?.let { id to it } }.toMap(), now) { dayIndex(it) }
+    val chosen = pick?.let { p -> games.firstOrNull { it.id == p.gameId } }
     val stageName = value?.let { Skill.stageName(it) }
     return PlaceSheetUi(
       area = area, key = name.lowercase(), name = name, article = article, areaName = IslaLugar.areaName(area).orEmpty(),
       stageIndex = value?.let { Skill.stage(it) }, stageName = stageName, points = status.points, fill = value?.coerceIn(0f, 1f) ?: 0f,
       changeLine = AreaProgress.changeLine(status), toNextLine = AreaProgress.toNextLine(status),
       weeks = status.weeks.map { w -> w?.let { (it.coerceIn(0f, 1f) * 100f).roundToInt() } }, change = status.change,
-      games = rows, chosenGameId = chosen?.id, chosenLine = chosenLine,
+      games = rows, chosenGameId = chosen?.id, suggestedGameId = if (Suggestion.suggestedHere(area, suggestion)) chosen?.id else null,
       bubble = bubble(status)
     )
   }
 
   /**
-   * Lo que dice Nubi en su globo (Tarea 147; `spec-lamina-lugar.md` §3), en primera persona y hablándole a la persona: «Esta semana avanzaste de 37 a 47. Te faltan 13 para Experto.» / «bajaste un poco, de 40 a 38: es normal que varíe» / «te mantuviste en 47»;
+   * Lo que dice Nubi en su globo (Tarea 147; `spec-lamina-lugar.md` §3) con LA frase de siempre ([AreaProgress.changeLine], Tarea 150, B1.8: antes «avanzaste», que en Avance era «avanzó»): «Esta semana avanzó de 37 a 47. Te faltan 13 para Experto.» / «bajó un poco, de 40 a 38: es normal que varíe» / «se mantuvo en 47»;
    * en Maestro, la primera frase sola; sin medir, «Aún no hay avance aquí: juega uno y lo verás.».
    */
   fun bubble(s: AreaStatus): String {
-    val now = s.points ?: return "Aún no hay avance aquí: juega uno y lo verás."
-    val before = s.pointsBefore ?: now
-    val first = when {
-      s.change > 0f && before != now -> "Esta semana avanzaste de $before a $now."
-      s.change < 0f && before != now -> "Esta semana bajaste un poco, de $before a $now: es normal que varíe."
-      else -> "Esta semana te mantuviste en $now."
-    }
+    if (s.points == null) return "Aún no hay avance aquí: juega uno y lo verás."
+    val first = AreaProgress.changeLine(s) + "."
     val next = AreaProgress.toNextLine(s)
     return if (next == null) first else "$first $next."
   }

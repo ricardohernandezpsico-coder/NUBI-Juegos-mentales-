@@ -30,10 +30,10 @@ class AvanceLogicTest {
   fun `una familia bloqueada muestra cuanto lleva y la conseguida cual es la siguiente`() {
     val none = computeAchievementStats(emptyList(), emptyMap())
     val volver = Achievements.familyState(AchievementFamily.VOLVER, emptySet(), none)
-    assertFalse(volver.unlocked); assertNull(volver.number); assertEquals("Nivel 0 de 3 · siguiente: volver 1 vez", volver.caption)
+    assertFalse(volver.unlocked); assertNull(volver.number); assertEquals("0 de 3 · siguiente: volver 1 vez", volver.caption)
     val variedad = Achievements.familyState(AchievementFamily.VARIEDAD, emptySet(), none)
-    assertEquals("Nivel 0 de 4 · siguiente: 3 partidas en un día", variedad.caption)
-    assertEquals(listOf("Nivel 0 de 4", "siguiente: 3 partidas en un día"), variedad.captionLines)
+    assertEquals("0 de 4 · siguiente: 3 partidas en un día", variedad.caption)
+    assertEquals(listOf("0 de 4", "siguiente: 3 partidas en un día"), variedad.captionLines)
 
     val history = (0 until 3).map { game("secuencia", it) }
     val stats = computeAchievementStats(history, emptyMap())
@@ -41,16 +41,16 @@ class AvanceLogicTest {
     val constancia = Achievements.familyState(AchievementFamily.CONSTANCIA, got, stats)
     assertTrue(constancia.unlocked)
     assertEquals("racha_3", constancia.reached!!.id); assertEquals(3, constancia.number)
-    assertEquals("racha_3 es el segundo nivel de ocho (el primero es el primer paso)", "Nivel 2 de 8 · siguiente: 7 días", constancia.caption)
-    assertTrue(constancia.spoken.startsWith("Constancia, nivel 3 días"))
+    assertEquals("racha_3 es el segundo nivel de ocho (el primero es el primer paso)", "2 de 8 · siguiente: 7 días", constancia.caption)
+    assertTrue(constancia.spoken, constancia.spoken.startsWith("Constancia, 3 días"))
   }
 
   @Test
   fun `el nivel mas alto de una familia no tiene siguiente`() {
     val all = Achievements.all.filter { it.family == AchievementFamily.VOLVER }.map { it.id }.toSet()
     val st = Achievements.familyState(AchievementFamily.VOLVER, all, computeAchievementStats(emptyList(), emptyMap()))
-    assertNull(st.next); assertEquals("Nivel 3 de 3 · completa", st.caption); assertEquals(10, st.number)
-    assertEquals("Nivel 2 de 3 · siguiente: volver 10 veces", Achievements.familyState(AchievementFamily.VOLVER, setOf("vuelta_1", "vuelta_3"), computeAchievementStats(emptyList(), emptyMap())).caption)
+    assertNull(st.next); assertEquals("3 de 3 · completa", st.caption); assertEquals(10, st.number)
+    assertEquals("2 de 3 · siguiente: volver 10 veces", Achievements.familyState(AchievementFamily.VOLVER, setOf("vuelta_1", "vuelta_3"), computeAchievementStats(emptyList(), emptyMap())).caption)
   }
 
   // ---- liga
@@ -107,8 +107,8 @@ class AvanceLogicTest {
     assertEquals("Cuando juegues tu primera ruta, aquí te cuento cómo va tu semana.", nubiWeekLine(lampsOf(0), 4, noRest, 0, noGamesAtAll = true))
     assertEquals("la primera ruta gana a un día perdonado", "Cuando juegues tu primera ruta, aquí te cuento cómo va tu semana.", nubiWeekLine(lampsOf(5), 4, Streak.StreakInfo(5, 5L, false), 4, noGamesAtAll = true))
     // 2. día perdonado (el día 5 fue martes): gana a la meta cumplida y a las 4 áreas
-    assertEquals("Descansaste el martes y seguiste: eso es constancia.", nubiWeekLine(lampsOf(5), 4, Streak.StreakInfo(5, 5L, false), 4, noGamesAtAll = false))
-    assertEquals("Descansaste el jueves y seguiste: eso es constancia.", nubiWeekLine(lampsOf(1), 4, Streak.StreakInfo(2, 0L, false), 1, noGamesAtAll = false))
+    assertEquals("una sola frase del descanso en toda la app: la de Hoy (Tarea 150, B1.8)", "Descansaste el martes: tu racha sigue.", nubiWeekLine(lampsOf(5), 4, Streak.StreakInfo(5, 5L, false), 4, noGamesAtAll = false))
+    assertEquals("Descansaste el jueves: tu racha sigue.", nubiWeekLine(lampsOf(1), 4, Streak.StreakInfo(2, 0L, false), 1, noGamesAtAll = false))
     // 3. meta cumplida (también pasada), gana a las 4 áreas
     assertEquals("Meta cumplida esta semana. Lo que juegues de más es regalo.", nubiWeekLine(lampsOf(4), 4, noRest, 4, noGamesAtAll = false))
     assertEquals("Meta cumplida esta semana. Lo que juegues de más es regalo.", nubiWeekLine(lampsOf(6), 4, noRest, 2, noGamesAtAll = false))
@@ -138,6 +138,21 @@ class AvanceLogicTest {
     }
   }
 
+  // ---- una sola cuenta de medallas (Tarea 151, C8)
+
+  @Test
+  fun `la celebracion y el perfil cuentan las mismas medallas y los logros anteriores no suman`() {
+    val total = AchievementFamily.entries.sumOf { Achievements.levelsOf(it).size }
+    assertEquals("8 de constancia + 4 de variedad + 3 de volver", 15, total)
+    assertEquals(total, Achievements.all.size)
+    val keys = setOf("primer_paso", "racha_3", "vuelta_1", "brillante", "liga_plata")      // dos medallas de conducta de una familia, una de otra y dos logros anteriores
+    val perfil = AchievementFamily.entries.sumOf { f -> Achievements.familyState(f, keys, computeAchievementStats(emptyList(), emptyMap())).level }
+    assertEquals("la celebración dice lo mismo que el Perfil", perfil, Achievements.medalCount(keys))
+    assertEquals(3, Achievements.medalCount(keys))
+    assertEquals(0, Achievements.medalCount(emptySet()))
+    assertEquals("todas las medallas", 15, Achievements.medalCount(Achievements.all.map { it.id }.toSet()))
+  }
+
   // ---- el cambio de un área
 
   private fun status(value: Float?, change: Float, weeks: List<Float?>) = AreaStatus("MEMORIA", value, change, weeks)
@@ -145,10 +160,11 @@ class AvanceLogicTest {
   @Test
   fun `la linea del cambio de la tarjeta de un area`() {
     val weeks = listOf(0.4f, 0.45f, 0.49f, 0.52f)
-    assertEquals("Subió 3 puntos esta semana", AreaProgress.cardLine(status(0.52f, 0.03f, weeks)))
-    assertEquals("Subió 1 punto esta semana", AreaProgress.cardLine(status(0.52f, 0.01f, weeks)))
-    assertEquals("Igual que la semana pasada", AreaProgress.cardLine(status(0.52f, 0f, weeks)))
-    assertEquals("Bajó 2 puntos: es normal que varíe", AreaProgress.cardLine(status(0.52f, -0.02f, weeks)))
+    // la tarjeta dice LO MISMO que el detalle y la lámina (Tarea 150, B1.8): «Esta semana avanzó de A a B»
+    assertEquals("Esta semana avanzó de 49 a 52", AreaProgress.cardLine(status(0.52f, 0.03f, weeks)))
+    assertEquals("Esta semana avanzó de 51 a 52", AreaProgress.cardLine(status(0.52f, 0.01f, weeks)))
+    assertEquals("Esta semana se mantuvo en 52", AreaProgress.cardLine(status(0.52f, 0f, weeks)))
+    assertEquals("Esta semana bajó un poco, de 54 a 52: es normal que varíe", AreaProgress.cardLine(status(0.52f, -0.02f, weeks)))
     assertNull("la primera semana (un solo valor) no tiene con qué compararse", AreaProgress.cardLine(status(0.52f, 0f, listOf(null, null, null, 0.52f))))
     assertNull("sin medir no hay línea", AreaProgress.cardLine(status(null, 0f, listOf(null, null, null, null))))
   }

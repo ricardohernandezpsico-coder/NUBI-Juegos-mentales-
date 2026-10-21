@@ -68,9 +68,9 @@ class LibraryScreenshotTest {
           Box(Modifier.fillMaxWidth().padding(16.dp)) {
             TopActions("Ricardo", {}, {}, Modifier.align(androidx.compose.ui.Alignment.CenterEnd))
           }
-          // Razonamiento hace 4 días que no se juega: Nubi lo sugiere (las otras se jugaron ayer u hoy).
-          val plays = listOf("secuencia" to now, "stroop" to now - day, "calculo" to now - 4 * day, "anagramas" to now - day)
-          val suggestion = suggestArea(plays, statuses, now, AppLanguage.SPANISH)
+          // La ruta de hoy sigue por «Carga exacta» (Razonamiento): esa es LA sugerencia de Nubi (Tarea 150, B2).
+          val lastPlayed = mapOf("secuencia" to now, "stroop" to now - day, "calculo" to now - 4 * day, "anagramas" to now - day)
+          val suggestion = suggestArea(com.example.model.DailySessionState("2026-10-21", listOf("calculo", "secuencia", "stroop"), 0), lastPlayed, now, AppLanguage.SPANISH)
           SuggestionHeader(suggestion)
           AreaGrid(statuses, playedToday = setOf("MEMORIA"), suggested = suggestion.key, lang = AppLanguage.SPANISH, onArea = {}, modifier = Modifier.weight(1f))
           NeuroNavBar(current = AppTab.JUEGOS, onSelect = {})

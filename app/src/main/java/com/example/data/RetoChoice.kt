@@ -1,7 +1,7 @@
 package com.example.data
 
 /**
- * «Sin reloj» o «Contra el reloj» por juego (6-oct, pedido de Ricardo: la elección vive en la ficha del juego, junto a la dificultad, no escondida en Ajustes). Lógica pura con pruebas.
+ * «Sin reloj» o «Con reloj» por juego (6-oct, pedido de Ricardo: la elección vive en la ficha del juego, junto a la dificultad, no escondida en Ajustes). Lógica pura con pruebas.
  *
  * - La elección se recuerda POR JUEGO (preferencias `profile_extra`, clave `reto_<juego>`, que van en el respaldo).
  * - Mientras un juego no tenga elección propia, vale el ajuste que la persona tenía en Ajustes («Modo contra el reloj (Reto)»; `UserSettings.defaultTimed`): así nadie pierde lo que tenía. El
@@ -46,19 +46,19 @@ object RetoChoice {
     }
   }
 
-  /** Lo que dice la opción: «Contra el reloj (2 min)»; sin duración fija, solo «Contra el reloj». */
-  fun timedLabel(gameId: String): String = seconds(gameId)?.let { "Contra el reloj (${durationText(it)})" } ?: "Contra el reloj"
+  /** Lo que dice la opción: «Con reloj (2 min)»; sin duración fija, solo «Con reloj». Un solo nombre en toda la app (Tarea 150, B1.2): ya no «Contra el reloj», «Reto» ni «Precisión». */
+  fun timedLabel(gameId: String): String = seconds(gameId)?.let { "Con reloj (${durationText(it)})" } ?: "Con reloj"
 
   const val UNTIMED_LABEL = "Sin reloj"
 
   // ---- Lo elegido, dicho en palabras (Tarea 140: la ficha con UNA decisión visible; funciones puras con pruebas) ----
 
-  /** El modo como suena en el botón «Jugar · …»: «a tu medida», «suave», «en Desafío», «en Experto». */
+  /** El modo como suena en el botón «Jugar · …»: «a tu medida», «suave», «en Desafío», «al límite». */
   fun modeWords(mode: PlayMode): String = when (mode) {
     PlayMode.SUAVE -> "suave"
     PlayMode.A_TU_MEDIDA -> "a tu medida"
     PlayMode.DESAFIO -> "en Desafío"
-    PlayMode.EXPERTO -> "en Experto"
+    PlayMode.EXPERTO -> "al límite"
   }
 
   /** «con reloj» o «sin reloj»; nada en un juego sin Reto (Correo): ahí no hay nada que decir del reloj. [timed] sin valor cuenta como «sin reloj». */
@@ -68,7 +68,7 @@ object RetoChoice {
   fun playDetail(mode: PlayMode, timed: Boolean?, supportsReto: Boolean): String =
     listOfNotNull(modeWords(mode), clockWords(timed, supportsReto)).joinToString(" · ")
 
-  /** El texto del botón grande de la ficha: «Jugar · a tu medida · con reloj», «Jugar · suave · sin reloj», «Jugar · en Experto · sin reloj»; en un juego sin Reto, «Jugar · a tu medida». */
+  /** El texto del botón grande de la ficha: «Jugar · a tu medida · con reloj», «Jugar · suave · sin reloj», «Jugar · al límite · sin reloj»; en un juego sin Reto, «Jugar · a tu medida». */
   fun playLabel(mode: PlayMode, timed: Boolean?, supportsReto: Boolean): String = "Jugar · " + playDetail(mode, timed, supportsReto)
 
   /** Lo mismo para el lector de pantalla, con comas en vez de puntos medios: «a tu medida, con reloj». */

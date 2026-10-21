@@ -18,6 +18,15 @@ import com.example.model.GameRegistry
 object DailyPath {
   const val SIZE = 3
 
+  /** Cuánto se calcula que dura un juego de la ruta, en minutos: LA cifra de minutos de la app (Tarea 151, B4.2; antes Hoy decía «unos 6 minutos» y los avisos y el Primer vuelo «unos 5»). */
+  const val MINUTES_PER_GAME = 2
+
+  /** Los minutos de [games] juegos de la ruta. */
+  fun routeMinutes(games: Int): Int = games * MINUTES_PER_GAME
+
+  /** «unos 6 minutos»: lo que dicen Hoy, los avisos y el Primer vuelo. */
+  fun minutesText(games: Int): String = "unos ${routeMinutes(games)} minutos"
+
   /**
    * @param dateKey día del camino («yyyy-MM-dd»): semilla del desempate.
    * @param areaLevel avance 0..1 de cada área (lo calcula el repositorio: promedio de [Skill.progress] o el del punto de partida).

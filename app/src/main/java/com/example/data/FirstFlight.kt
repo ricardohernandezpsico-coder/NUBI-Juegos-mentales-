@@ -259,7 +259,13 @@ object FirstFlight {
   }
 
   /**
-   * El texto bajo las farolas: «Empezamos juntos» (hola y nombre; Tarea 145: antes «Ya diste el primer paso», que afirmaba algo que la persona todavía no había hecho), «Paso 2 de 6 · Memoria» … «Paso 6 de 6 · Tu punto de partida»; en la evaluación repetida, «Juego 2 de 4 · Atención» y «Listo · tu punto de partida».
+   * Las pantallas que cuentan en «Paso N de M» (Tarea 151, B4.3: UNA pantalla, UN número; antes la pregunta de la edad y la de las metas llevaban el mismo «Paso 2 de 6»): todas menos «Hola» y el nombre (la bienvenida: dicen «Empezamos juntos») y las de los juegos que se dejaron «para después»;
+   * así el número solo sube y, al dejar juegos para después, el total baja una vez y no se mueve más.
+   */
+  fun numberedSteps(s: FlightState): List<FlightStep> = steps(s.mode).filter { step -> step != FlightStep.HOLA && step != FlightStep.NOMBRE && (step.game == null || s.gameId(step.game) !in s.skipped) }
+
+  /**
+   * El texto bajo las farolas: «Empezamos juntos» (hola y nombre; Tarea 145: antes «Ya diste el primer paso», que afirmaba algo que la persona todavía no había hecho), «Paso 1 de 15 · Memoria» … «Paso 15 de 15» (cada pantalla su número: [numberedSteps]); en la evaluación repetida, «Juego 2 de 4 · Atención» y «Listo · tu punto de partida».
    * Nunca dice cuánto falta en minutos.
    */
   fun stationText(s: FlightState): String {
@@ -267,9 +273,13 @@ object FirstFlight {
     val st = stations(s)
     return if (s.mode == FlightMode.GAMES) {
       if (i >= BaselinePlan.steps.size) "Listo · tu punto de partida" else "Juego ${i + 1} de ${BaselinePlan.steps.size} · ${st[i].label}"
-    } else if (i == 0) "Empezamos juntos"                                                // la voz de Nubi, corta; no afirma nada que la persona no haya hecho (Tarea 145, antes «Ya diste el primer paso»)
-    else if (s.step.game != null) "Paso ${i + 1} de ${st.size} · ${st[i].label}"      // un juego o su tarjeta: la etapa lleva el nombre del área
-    else "Paso ${i + 1} de ${st.size}"                                                   // una pregunta, el punto de partida, el aviso o el camino: «Paso 2 de 6» a secas (Tarea 143, A2: antes «Paso 2 de 6 · Memoria» sobre la pregunta de la edad)
+    } else if (i == 0) "Empezamos juntos"                           // la voz de Nubi, corta; no afirma nada que la persona no haya hecho (Tarea 145, antes «Ya diste el primer paso»)
+    else {
+      val numbered = numberedSteps(s)
+      val n = numbered.indexOf(s.step) + 1
+      val base = "Paso $n de ${numbered.size}"                                                 // cada pantalla su número (Tarea 151, B4.3)
+      if (s.step.game != null) "$base · ${st[i].label}" else base                              // un juego o su tarjeta llevan el nombre del área; una pregunta, el punto de partida, el aviso o la ruta, no (Tarea 143, A2)
+    }
   }
 
   // ------------------------------------------------------------------ el punto de partida

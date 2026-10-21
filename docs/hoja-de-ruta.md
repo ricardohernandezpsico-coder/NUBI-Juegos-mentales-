@@ -13,7 +13,7 @@ Reemplaza a la del 30-sep. Lo que manda es `CLAUDE.md` y el código; esto ordena
 
 | Área | Juegos |
 |---|---|
-| Memoria | Constelaciones, Rastro de luz, Bodega de carga, Correo Estelar («La estación de correo») |
+| Memoria | Constelaciones, Rastro de luz, Bodega de carga, Correo Estelar |
 | Atención | Tinta o Palabra, Piloto Estelar, Freno de Emergencia, Satélites, Rescate relámpago (antes Radar) |
 | Razonamiento | Acoplamiento, Carga exacta, Aterrizaje Lunar, Engranajes («Taller de reparación») |
 | Lenguaje | En la punta de la lengua, Lluvia de meteoros, ¿Verdad o disparate?, La estrella intrusa |

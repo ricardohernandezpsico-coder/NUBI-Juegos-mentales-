@@ -124,7 +124,7 @@ class HoyPlaceSheetTest {
     assertEquals("el avance en UNA línea", "Aprendiz · 22 de 100", textOf("place_stage"))
     rule.onNodeWithTag("place_bar").assertIsDisplayed()
     rule.onNodeWithTag("place_stages").assertIsDisplayed()
-    rule.onNodeWithText("Esta semana avanzaste de 18 a 22. Te faltan 18 para Hábil.").assertIsDisplayed()
+    rule.onNodeWithText("Esta semana avanzó de 18 a 22. Te faltan 18 para Hábil.").assertIsDisplayed()
     rule.onNodeWithText("Tus juegos aquí").assertExists()
     for (g in ui.places.getValue("MEMORIA").games) rule.onNodeWithTag("place_game_${g.gameId}").assertExists()
     rule.onNodeWithText("Jugar ${firstTitle("MEMORIA")}").assertIsDisplayed()
@@ -134,7 +134,7 @@ class HoyPlaceSheetTest {
   fun la_antena_muestra_la_atencion_que_se_mantiene() {
     show(); open("antena")
     assertEquals("Aprendiz · 31 de 100", textOf("place_stage"))
-    rule.onNodeWithText("Esta semana te mantuviste en 31. Te faltan 9 para Hábil.").assertIsDisplayed()
+    rule.onNodeWithText("Esta semana se mantuvo en 31. Te faltan 9 para Hábil.").assertIsDisplayed()
     rule.onNodeWithText("Jugar ${firstTitle("ATENCION")}").assertIsDisplayed()
   }
 
@@ -142,7 +142,7 @@ class HoyPlaceSheetTest {
   fun el_hangar_muestra_el_razonamiento_que_recien_empieza() {
     show(); open("hangar")
     assertEquals("Inicio · 9 de 100", textOf("place_stage"))
-    rule.onNodeWithText("Esta semana avanzaste de 6 a 9. Te faltan 11 para Aprendiz.").assertIsDisplayed()
+    rule.onNodeWithText("Esta semana avanzó de 6 a 9. Te faltan 11 para Aprendiz.").assertIsDisplayed()
     rule.onNodeWithText("Jugar ${firstTitle("RAZONAMIENTO")}").assertIsDisplayed()
   }
 
@@ -158,7 +158,7 @@ class HoyPlaceSheetTest {
   fun ya_no_hay_cuatro_semanas_ni_titulo_de_tu_avance_ni_las_dos_frases_sueltas() {
     show(); open("observatorio")
     for (tag in listOf("place_week_0", "place_week_1", "place_week_2", "place_week_3", "place_points", "place_change", "place_next", "place_games_grid")) assertEquals("«$tag» ya no existe", 0, count(tag))
-    for (text in listOf("Tu avance aquí", "Hace 3 sem.", "Sem. pasada", "Esta semana avanzó de")) assertEquals("«$text» ya no va en la lámina", 0, rule.onAllNodes(androidx.compose.ui.test.hasText(text, substring = true)).fetchSemanticsNodes().size)
+    for (text in listOf("Tu avance aquí", "Hace 3 sem.", "Sem. pasada")) assertEquals("«$text» ya no va en la lámina", 0, rule.onAllNodes(androidx.compose.ui.test.hasText(text, substring = true)).fetchSemanticsNodes().size)
   }
 
   @Test

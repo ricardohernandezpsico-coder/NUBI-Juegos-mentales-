@@ -7,8 +7,8 @@ data class ProgressPoint(val gameId: String, val time: Long, val progress: Float
 
 /**
  * Cómo va un área en Hoy (29-sep, aprobado por Ricardo, `docs/previews/nubi-hoy.png`). [value] = avance del área hoy
- * (0..1, promedio de sus juegos medidos; null = ninguno medido); [change] = cuánto se movió en los últimos 7 días
- * (puede ser negativo); [weeks] = el avance al final de cada una de las últimas 4 semanas (la última = hoy).
+ * (0..1, promedio de sus juegos medidos; null = ninguno medido); [change] = cuánto se movió ESTA SEMANA, desde el lunes (Tarea 151, B4.1; puede ser negativo);
+ * [weeks] = el avance al final de cada una de las últimas 4 semanas de calendario (el domingo a medianoche; la última = hoy).
  */
 data class AreaStatus(
   val area: String,
@@ -17,13 +17,13 @@ data class AreaStatus(
   val weeks: List<Float?>
 ) {
   val points: Int? get() = value?.let { (it.coerceIn(0f, 1f) * 100f).roundToInt() }
-  /** El avance de hace 7 días en la misma escala 0-100 (para "avanzó de 46 a 52"). */
+  /** El avance con que empezó la semana (el lunes a las 00:00) en la misma escala 0-100 (para "avanzó de 46 a 52"). */
   val pointsBefore: Int? get() = value?.let { ((it - change).coerceIn(0f, 1f) * 100f).roundToInt() }
 }
 
 /**
  * Avance por área y su cambio de la semana (lógica pura con pruebas). Se lee en una sola escala: el avance de 0 a 100
- * de `data/Skill.kt` (cada etapa = 20). El cambio compara, juego por juego, el avance de hoy con el de hace 7 días,
+ * de `data/Skill.kt` (cada etapa = 20). El cambio compara, juego por juego, el avance de hoy con el del lunes a las 00:00 ([Week.weekStart]: «esta semana» es la misma en toda la app),
  * y solo en los juegos que ya estaban medidos entonces: explorar un juego nuevo NO se cuenta como subida ni bajada.
  */
 object AreaProgress {
@@ -37,13 +37,13 @@ object AreaProgress {
 
   /**
    * [games] = los juegos del área; [current] = el avance de hoy de cada juego medido (lo que muestran las cartas).
-   * [since] = desde cuándo se mide el cambio (por omisión, hace 7 días; el resumen de la sesión usa su comienzo).
+   * [since] = desde cuándo se mide el cambio (por omisión, el lunes de esta semana; el resumen de la sesión usa su comienzo).
    * Si un juego medido no tiene historia anotada (se midió antes de que existiera el registro), se toma su avance de
    * hoy como el de siempre: no inventa cambios.
    */
   fun status(
     area: String, games: List<String>, current: Map<String, Float>, points: List<ProgressPoint>, now: Long,
-    since: Long = now - WEEK_MS
+    since: Long = Week.weekStart(now)
   ): AreaStatus {
     val measured = games.filter { it in current }
     val value = if (measured.isEmpty()) null else measured.map { current.getValue(it) }.average().toFloat()
@@ -56,7 +56,7 @@ object AreaProgress {
     val change = if (deltas.isEmpty()) 0f else deltas.average().toFloat()
     val weeks = (3 downTo 0).map { k ->
       if (k == 0) value else {
-        val t = now - k * WEEK_MS
+        val t = Week.weekStart(now, k - 1)                      // el lunes a las 00:00 que cierra esa semana: «pasada» = el de esta semana, «hace 2» = el de la semana pasada…
         val vals = measured.mapNotNull { g -> if (points.any { it.gameId == g }) at(points, g, t) else current.getValue(g) }
         if (vals.isEmpty()) null else vals.average().toFloat()
       }
@@ -91,33 +91,22 @@ object AreaProgress {
     val before = s.pointsBefore ?: now
     return when {
       s.change > 0f && before != now -> "$period avanzó de $before a $now"
-      s.change < 0f && before != now -> "$period bajó un poco, de $before a $now"
+      s.change < 0f && before != now -> "$period bajó un poco, de $before a $now: es normal que varíe"
       else -> "$period se mantuvo en $now"
     }
   }
 
   /**
-   * La línea del cambio de la tarjeta de un área en Avance (Tarea 125): «Subió 3 puntos esta semana» / «Igual que la semana pasada» / «Bajó 2 puntos: es normal que varíe». null si todavía no hay una semana con qué comparar (menos de dos
+   * La línea del cambio de la tarjeta de un área en Avance: LA MISMA frase que el detalle y la lámina ([changeLine]: «Esta semana avanzó de 37 a 47», Tarea 150, B1.8; antes «Subió 3 puntos esta semana» / «Igual que la semana pasada»). null si todavía no hay una semana con qué comparar (menos de dos
    * valores en [AreaStatus.weeks]) o el área está sin medir.
    */
   fun cardLine(s: AreaStatus): String? {
-    val now = s.points ?: return null
-    if (s.weeks.count { it != null } < 2) return null
-    val diff = now - (s.pointsBefore ?: now)
-    fun puntos(n: Int) = if (n == 1) "1 punto" else "$n puntos"
-    return when {
-      s.change > 0f && diff > 0 -> "Subió ${puntos(diff)} esta semana"
-      s.change < 0f && diff < 0 -> "Bajó ${puntos(-diff)}: es normal que varíe"
-      else -> "Igual que la semana pasada"
-    }
+    if (s.points == null || s.weeks.count { it != null } < 2) return null
+    return changeLine(s)
   }
 
-  /** "Te faltan 8 para Experto" (null en Maestro o sin medir). */
-  fun toNextLine(s: AreaStatus): String? {
-    val v = s.value ?: return null
-    val (pts, next) = Skill.toNextStage(v) ?: return null
-    return "Te faltan $pts para $next"
-  }
+  /** "Te faltan 8 para Experto" (null en Maestro o sin medir): la misma frase en el área, la lámina y la ficha de un juego ([Skill.toNextLine]). */
+  fun toNextLine(s: AreaStatus): String? = s.value?.let { Skill.toNextLine(it) }
 
   // --- Registro (SharedPreferences `progress_log`, solo se agrega): "juego|ms|avance×1000" por línea. ---
   fun encode(points: List<ProgressPoint>): String =

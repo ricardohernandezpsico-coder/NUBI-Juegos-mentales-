@@ -107,7 +107,7 @@ class CognitiveReminderWorker(
         "Recordatorio diario",
         NotificationManager.IMPORTANCE_DEFAULT
       ).apply {
-        description = "Un aviso al día para tu camino de juegos. No llega si ya completaste la sesión de hoy."
+        description = "Un aviso al día para tu ruta de juegos. No llega si ya completaste la ruta de hoy."
         enableVibration(true)
       }
       notificationManager.createNotificationChannel(channel)

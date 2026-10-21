@@ -71,7 +71,7 @@ object GameRegistry {
       id = "secuencia",
       title = "Rastro de luz",
       domain = DomainType.MEMORIA,
-      subtitle = "Memoria de trabajo visoespacial",
+      subtitle = "Repite el camino de la chispa",
       instruction = "Mira el camino que hace la chispa entre los luceros y repítelo con el dedo, en el mismo orden. Cada lucero suena con su nota."
     ),
     GameDefinition(
@@ -92,7 +92,7 @@ object GameRegistry {
       id = "acoplamiento",
       title = "Acoplamiento",
       domain = DomainType.RAZONAMIENTO,
-      subtitle = "Razonamiento espacial: rotación mental",
+      subtitle = "Gira la pieza en tu mente",
       instruction = "Llega un módulo girado: ¿encaja en el puerto o es su reflejo en espejo? Gíralo en tu mente y decide."
     ),
     GameDefinition(
@@ -107,7 +107,7 @@ object GameRegistry {
       // «La estación de correo» (8-oct): el vuelo se rehízo; el nombre y el id se mantienen (avance, marcas e historial).
       title = "Correo Estelar",
       domain = DomainType.MEMORIA,
-      subtitle = "Memoria para lo pendiente: acordarte a tiempo",
+      subtitle = "Acuérdate a tiempo de cada encargo",
       instruction = "Trabajas en la estación de correo: toca el buzón del sello de cada carta. Cada mañana recibes encargos (una carta con sello dorado o con lazo a la caja fuerte; encender el faro a una hora) y durante el día nadie te los recuerda."
     ),
     GameDefinition(
@@ -156,14 +156,14 @@ object GameRegistry {
       id = "freno",
       title = "Freno de Emergencia",
       domain = DomainType.ATENCION,
-      subtitle = "Control inhibitorio: frenar a tiempo",
+      subtitle = "Frena cuando suena la alarma",
       instruction = "Lanza lo más rápido que puedas el cohete que se enciende. Si suena la alarma y aparece ¡ALTO!, no toques: frena a tiempo."
     ),
     GameDefinition(
       id = "satelites",
       title = "Satélites",
       domain = DomainType.ATENCION,
-      subtitle = "Seguimiento de varios objetos a la vez",
+      subtitle = "Sigue varios satélites a la vez",
       instruction = "Algunos satélites traen un mensaje: se apagan y todos giran alrededor de tu planeta. Síguelos con la vista y, cuando se detengan, toca los que lo traían: cada mensaje enciende una luz."
     ),
     GameDefinition(
@@ -177,7 +177,7 @@ object GameRegistry {
       id = "aterrizaje",
       title = "Aterrizaje Lunar",
       domain = DomainType.RAZONAMIENTO,
-      subtitle = "Sentido numérico: estimar en la línea numérica",
+      subtitle = "Posa la nave en el número",
       instruction = "Posa la nave justo en el número de la misión. La regla solo tiene marcados los extremos: arrastra para mover la nave y suelta para aterrizar."
     )
   )
@@ -418,7 +418,7 @@ data class DailySessionState(
 
 
 enum class DifficultyMode(val label: String, val description: String) {
-  ADAPTIVE("Auto-adaptativa", "Ajuste dinámico según tu desempeño en cada sesión"),
+  ADAPTIVE("Auto-adaptativa", "Ajuste dinámico según tu desempeño en cada partida"),
   PRINCIPIANTE("Principiante", "Nivel 1 con tiempos generosos y estímulos claros"),
   INTERMEDIO("Intermedio", "Nivel 3 equilibrado para mantener agilidad mental"),
   AVANZADO("Avanzado", "Nivel 5 con máxima exigencia y velocidad"),
@@ -499,7 +499,7 @@ data class WeeklyChallengeDef(
 object WeeklyChallengeRegistry {
   val all = listOf(
     WeeklyChallengeDef("dominios3", "Variedad", "Juega en 3 áreas distintas esta semana", 3),
-    WeeklyChallengeDef("reto2", "Modo Reto", "Completa 2 partidas en modo Reto esta semana", 2),
+    WeeklyChallengeDef("reto2", "Con reloj", "Completa 2 partidas con reloj esta semana", 2),
     WeeklyChallengeDef("precision3", "Racha de precisión", "Consigue 85 puntos o más en 3 partidas esta semana", 3),
     WeeklyChallengeDef("dias4", "Constancia", "Juega 4 días distintos esta semana", 4)
   )

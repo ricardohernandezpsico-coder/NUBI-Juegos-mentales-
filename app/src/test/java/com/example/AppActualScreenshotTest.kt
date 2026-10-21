@@ -151,7 +151,7 @@ class AppActualScreenshotTest {
   private val BAR_DP = 115
 
   private enum class Scene {
-    HOY, JUEGOS, FICHA, AVANCE, AREA_DETALLE, PERFIL, AJUSTES, LICENCIAS, BARRA, VUELO_1, VUELO_JUEGO, VUELO_EDAD, VUELO_2, VUELO_PUNTO, VUELO_3, RESULTADO, RESULTADO_RECORD, RESULTADO_CON, MEDALLA_PIEZA, MEDALLA_SIN
+    HOY, JUEGOS, FICHA, AVANCE, AREA_DETALLE, PERFIL, AJUSTES, LICENCIAS, BARRA, VUELO_1, VUELO_JUEGO, VUELO_EDAD, VUELO_2, VUELO_PUNTO, VUELO_3, RESULTADO, RESULTADO_RECORD, RESULTADO_CON, MEDALLA_PIEZA, MEDALLA_SIN, CARGA
   }
 
   private val rastro = GamePlayResult(
@@ -215,7 +215,8 @@ class AppActualScreenshotTest {
                   Scene.AREA_DETALLE -> Box(top) {
                     AreaDetail(
                       areaKey = AREA_ORDER[0], statuses = statuses, names = DomainType.values().associate { it.name to it.displayName }, history = vm!!.gameHistory.value, measures = vm.starMeasures.value,
-                      now = System.currentTimeMillis(), lang = AppLanguage.SPANISH, onArea = {}, onPlay = {}, onGame = {}, onClose = {}
+                      now = System.currentTimeMillis(), lang = AppLanguage.SPANISH, onArea = {}, onPlay = {}, onGame = {}, onClose = {},
+                      suggestion = com.example.data.Suggestion.Pick(GameRegistry.allGames.first { it.domain.name == AREA_ORDER[0] }.id, AREA_ORDER[0], com.example.data.Suggestion.Why.ROUTE)          // la ruta de hoy sigue por Memoria: Nubi lo dice con la misma frase de todas partes (Tarea 150, B2)
                     )
                   }
                   Scene.PERFIL -> Box(top) { ProfileScreen(viewModel = vm!!, onClose = {}) }
@@ -252,6 +253,9 @@ class AppActualScreenshotTest {
                   Scene.MEDALLA_PIEZA, Scene.MEDALLA_SIN -> CompositionLocalProvider(LocalReduceMotion provides true) {
                     val def = Achievements.byId(if (scene == Scene.MEDALLA_PIEZA) "racha_7" else "primer_paso")!!
                     AchievementOverlay(def = def, unlockedCount = 6, totalCount = Achievements.all.size, streak = 7, onDismiss = {}, delayMs = 0L, soundEnabled = false, pieceSound = {})
+                  }
+                  Scene.CARGA -> CompositionLocalProvider(LocalReduceMotion provides true) {
+                    com.example.ui.components.GameLoadingScreen(GameRegistry.getById("secuencia")!!, level = 3, timed = true, withSky = false)       // «Etapa Hábil · Con reloj» (Tarea 150, B1.2: antes «Reto»)
                   }
                 }
               }
@@ -433,5 +437,12 @@ class AppActualScreenshotTest {
     val r = Rig(null, Scene.MEDALLA_PIEZA)
     r.settle(); r.shot("medalla-con-pieza", 873)
     r.go(Scene.MEDALLA_SIN, 873); r.shot("medalla-sin-pieza", 873)
+  }
+
+  /** La pantalla de carga de un juego con reloj (Tarea 150, B1.2): «Etapa Hábil · Con reloj», no «Etapa Hábil · Reto». */
+  @Test
+  fun carga_de_un_juego() {
+    val r = Rig(null, Scene.CARGA)
+    r.settle(); r.shot("carga-juego", 873)
   }
 }

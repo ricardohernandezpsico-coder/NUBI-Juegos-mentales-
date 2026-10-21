@@ -117,12 +117,12 @@ class CosturasDeAntesTest {
   fun el_cierre_muestra_la_isla_con_las_dos_lineas_y_el_boton_sin_desplazar() {
     closing(393, 873)
     rule.onNodeWithTag("flight_island").assertIsDisplayed()
-    rule.onNodeWithText("Tu primer vuelo fue tu camino de hoy").assertIsDisplayed()
-    rule.onNodeWithText("Mañana empieza tu camino de 3 juegos", substring = true).assertIsDisplayed()
+    rule.onNodeWithText("Tu primer vuelo fue tu ruta de hoy").assertIsDisplayed()
+    rule.onNodeWithText("Mañana empieza tu ruta de 3 juegos", substring = true).assertIsDisplayed()
     rule.onNodeWithTag("btn_flight_finish").assertIsDisplayed()
     val island = rule.onNodeWithTag("flight_island").getUnclippedBoundsInRoot()
-    val title = rule.onNodeWithText("Tu primer vuelo fue tu camino de hoy").getUnclippedBoundsInRoot()
-    val sub = rule.onNodeWithText("Mañana empieza tu camino de 3 juegos", substring = true).getUnclippedBoundsInRoot()
+    val title = rule.onNodeWithText("Tu primer vuelo fue tu ruta de hoy").getUnclippedBoundsInRoot()
+    val sub = rule.onNodeWithText("Mañana empieza tu ruta de 3 juegos", substring = true).getUnclippedBoundsInRoot()
     val button = rule.onNodeWithTag("btn_flight_finish").getUnclippedBoundsInRoot()
     assertTrue("la isla va sobre las dos líneas: ${island.bottom} y ${title.top}", island.bottom <= title.top + 1.dp)
     assertTrue("y todo entra sobre el botón sin desplazar: ${sub.bottom} y ${button.top}", sub.bottom <= button.top + 1.dp)
@@ -152,11 +152,11 @@ class CosturasDeAntesTest {
     val flight = source("data/FirstFlight.kt")
     assertTrue("la bienvenida ya no dice «Ya diste el primer paso» (nadie lo hizo todavía)", !flight.contains("\"Ya diste el primer paso\""))
     assertEquals("Empezamos juntos", com.example.data.FirstFlight.stationText(FlightState(FlightMode.FULL, FlightStep.HOLA)))
-    assertEquals("Empezamos juntos", com.example.data.FirstFlight.stationText(FlightState(FlightMode.FULL, FlightStep.NOMBRE)))
+    assertEquals("el nombre sigue en la bienvenida (el primer paso numerado es el primer juego)", "Empezamos juntos", com.example.data.FirstFlight.stationText(FlightState(FlightMode.FULL, FlightStep.NOMBRE)))
     for (path in listOf("ui/screens/FirstFlightScreen.kt", "ui/screens/HomeScreen.kt"))
       assertTrue("«primer vuelo» va en minúscula en $path", !source(path).contains("Tu Primer vuelo fue"))
-    assertTrue(source("ui/screens/FirstFlightScreen.kt").contains("\"Tu primer vuelo fue tu camino de hoy\""))
-    assertTrue(source("ui/screens/HomeScreen.kt").contains("\"Tu primer vuelo fue tu camino de hoy. Mañana empieza tu camino.\""))
+    assertTrue(source("ui/screens/FirstFlightScreen.kt").contains("\"Tu primer vuelo fue tu ruta de hoy\""))
+    assertTrue(source("ui/screens/HomeScreen.kt").contains("\"Tu primer vuelo fue tu ruta de hoy. Mañana empieza tu ruta.\""))
   }
 
   @Test

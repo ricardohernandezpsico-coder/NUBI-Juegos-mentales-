@@ -31,6 +31,17 @@ object Week {
   }
 
   /**
+   * El lunes a las 00:00 (hora local) de la semana de [now], [weeksBack] semanas atrás. «Esta semana» EMPIEZA ahí en toda la app (Tarea 151, B4.1: antes las farolas y «Áreas esta semana» contaban desde el lunes y «Subió 10 puntos esta semana» los últimos 7 días).
+   */
+  fun weekStart(now: Long, weeksBack: Int = 0): Long {
+    val cal = java.util.Calendar.getInstance().apply { timeInMillis = now }
+    val mondayOffset = (cal.get(java.util.Calendar.DAY_OF_WEEK) + 5) % 7                // lunes = 0
+    cal.add(java.util.Calendar.DAY_OF_MONTH, -(mondayOffset + 7 * weeksBack))
+    cal.set(java.util.Calendar.HOUR_OF_DAY, 0); cal.set(java.util.Calendar.MINUTE, 0); cal.set(java.util.Calendar.SECOND, 0); cal.set(java.util.Calendar.MILLISECOND, 0)
+    return cal.timeInMillis
+  }
+
+  /**
    * Cuántas áreas distintas se jugaron esta semana (desde el lunes): «Áreas esta semana: 2 de 4» (Tarea 125, reemplaza al desafío «Variedad»). [entries] = (marca de tiempo, nombre del área) de cada partida; los juegos retirados
    * (sin área) no cuentan. [mondayOffset] = días desde el lunes hasta hoy (lunes = 0).
    */

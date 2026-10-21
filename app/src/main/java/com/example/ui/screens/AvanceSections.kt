@@ -156,7 +156,7 @@ internal fun AvanceDiscoveries(
   onGame: (String) -> Unit, onPlay: (String) -> Unit
 ) {
   Column {
-    SpaceSectionTitle("Lo que descubriste", hint = "Tus marcas, comparadas solo contigo")
+    SpaceSectionTitle("Tus medidas", hint = "Comparadas solo contigo")                // «Tus medidas» (Tarea 150, B1.5; antes «Lo que descubriste» y «Tus marcas»)
     Spacer(Modifier.height(8.dp))
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
       cards.forEach { d ->

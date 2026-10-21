@@ -10,11 +10,12 @@ import kotlin.math.roundToInt
  * Cómo quiere jugar la persona hoy (28-sep, aprobado por Ricardo; razonamiento completo en
  * `docs/dificultad-y-avance.md`). Cada modo se define por los aciertos que se esperan, no por niveles.
  */
-enum class PlayMode(val label: String, val what: String) {
-  SUAVE("Suave", "Un paso más fácil. Para entrar en calor o un día cansado."),
-  A_TU_MEDIDA("A tu medida", "Justo en tu nivel. Aquí se mide tu avance."),
-  DESAFIO("Desafío", "Un paso más difícil. Si lo superas, tu avance sube."),
-  EXPERTO("Experto", "Dos pasos más. Para probar tus límites.")
+enum class PlayMode(val label: String, val what: String, val short: String) {
+  SUAVE("Suave", "Un paso más fácil. Para entrar en calor o un día cansado.", "Un paso más fácil"),
+  A_TU_MEDIDA("A tu medida", "El modo donde se mide tu avance.", "Mide tu avance"),
+  DESAFIO("Desafío", "Un paso más difícil. Si lo superas, tu avance sube.", "Un paso más difícil"),
+  /** «Al límite» y no «Experto» (Tarea 150, B1.3): «Experto» ya es la 4.ª etapa del avance (Inicio · Aprendiz · Hábil · Experto · Maestro) y dos cosas con el mismo nombre en la misma ficha confundían. */
+  EXPERTO("Al límite", "Dos pasos más. Para probar tus límites.", "Dos pasos más")
 }
 
 /**
@@ -137,6 +138,17 @@ object Skill {
 
   /** Etapa 0..4 (Inicio..Maestro): quintos del avance. */
   fun stage(progress: Float): Int = (progress.coerceIn(0f, 1f) * 5f).toInt().coerceIn(0, 4)
+
+  /** El encabezado de etapa que se ve igual en la lámina, el detalle de un área y la ficha de un juego (Tarea 150, B1.6): «Hábil · 47 de 100». */
+  fun stageHeader(stageName: String, points: Int): String = "$stageName · $points de 100"
+
+  fun stageHeader(progress: Float): String = stageHeader(stageName(progress), percent(progress))
+
+  /** «Te faltan 8 para Experto» / «Te falta 1 para Experto» (null en Maestro): lo que falta para la etapa que sigue, dicho igual en toda la app (Tarea 150, B1.7; antes la ficha decía «a 5 puntos de Experto»). */
+  fun toNextLine(progress: Float): String? {
+    val (pts, next) = toNextStage(progress) ?: return null
+    return if (pts == 1) "Te falta 1 para $next" else "Te faltan $pts para $next"
+  }
 
   fun stageName(progress: Float): String = STAGES[stage(progress)]
 

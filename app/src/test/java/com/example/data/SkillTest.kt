@@ -36,6 +36,24 @@ class SkillTest {
   }
 
   @Test
+  fun `el encabezado de etapa y lo que falta se dicen igual en toda la app`() {
+    // Tarea 150 (B1.6 y B1.7): «Hábil · 47 de 100» y «Te faltan 5 para Experto» en la lámina, el detalle y la ficha
+    assertEquals("Hábil · 47 de 100", Skill.stageHeader("Hábil", 47))
+    assertEquals("Experto · 62 de 100", Skill.stageHeader(0.62f))
+    assertEquals("Te faltan 5 para Experto", Skill.toNextLine(0.55f))
+    assertEquals("Te falta 1 para Experto", Skill.toNextLine(0.5999f))
+    assertEquals("en Maestro no hay siguiente", null, Skill.toNextLine(0.95f))
+  }
+
+  @Test
+  fun `los modos tienen nombre propio, una frase corta y ningun numero de aciertos`() {
+    // Tarea 150 (B1.3, B5.4) y 151 (B4.4): «Al límite» no choca con la etapa «Experto»; la ficha no dice «9 de 10 aciertos»
+    assertEquals(listOf("Suave", "A tu medida", "Desafío", "Al límite"), PlayMode.entries.map { it.label })
+    assertEquals(listOf("Un paso más fácil", "Mide tu avance", "Un paso más difícil", "Dos pasos más"), PlayMode.entries.map { it.short })
+    for (m in PlayMode.entries) assertTrue(m.what, !m.what.contains("nivel", ignoreCase = true) && !m.what.contains("aquí", ignoreCase = true) && m.what.none { it.isDigit() })
+  }
+
+  @Test
   fun `aciertos esperados y como se dicen`() {
     assertEquals(0.70f, Skill.expectedHits("radar", PlayMode.DESAFIO, AgeBand.ADULT), eps)
     assertEquals(0.85f, Skill.expectedHits("radar", PlayMode.A_TU_MEDIDA, AgeBand.SENIOR), eps)

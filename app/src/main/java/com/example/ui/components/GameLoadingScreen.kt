@@ -118,7 +118,7 @@ fun GameLoadingScreen(
       )
       val details = if (assessmentStep > 0) listOf("Punto de partida · $assessmentStep de $assessmentTotal") else buildList {
         if (level != null) add("Etapa ${LevelTier.fromLevel(level).tierName}")
-        if (timed != null) add(if (timed) "Reto" else "Precisión")
+        if (timed != null) add(if (timed) "Con reloj" else "Sin reloj")                // el mismo nombre que en la ficha (Tarea 150, B1.2: antes «Reto» y «Precisión»)
       }
       if (details.isNotEmpty()) {
         Text(

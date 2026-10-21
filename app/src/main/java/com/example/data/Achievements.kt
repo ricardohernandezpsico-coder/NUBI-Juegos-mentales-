@@ -155,7 +155,7 @@ object Achievements {
       check = { it.bestScore >= 100 }, progress = { it.bestScore.coerceAtMost(100) to 100 }
     ),
     AchievementDef(
-      "reto_10", "Contrarreloj", "Termina 10 partidas en modo Reto", AchievementGlyph.BOLT, number = 10, legacy = true,
+      "reto_10", "Contrarreloj", "Termina 10 partidas con reloj", AchievementGlyph.BOLT, number = 10, legacy = true,
       check = { it.timedGames >= 10 }, progress = { it.timedGames.coerceAtMost(10) to 10 }
     ),
     gameTier("liga_plata", RankTier.PLATA),
@@ -176,6 +176,11 @@ object Achievements {
 
   /** Los niveles de una familia, de menor a mayor. */
   fun levelsOf(family: AchievementFamily): List<AchievementDef> = all.filter { it.family == family }.sortedBy { it.level }
+
+  /**
+   * Cuántas medallas lleva la persona: los niveles ganados en las tres familias. El MISMO número en el Perfil y en la celebración (Tarea 151, C8: la celebración contaba todo lo guardado, también los logros anteriores que ya no se otorgan, y podía decir «20 de 15 medallas»).
+   */
+  fun medalCount(unlocked: Set<String>): Int = AchievementFamily.entries.sumOf { f -> levelsOf(f).indexOfLast { it.id in unlocked } + 1 }
 
   /** El nivel más alto conseguido de una familia (null si no hay ninguno) con los [unlocked] conseguidos. */
   fun reached(family: AchievementFamily, unlocked: Set<String>): AchievementDef? = levelsOf(family).lastOrNull { it.id in unlocked }

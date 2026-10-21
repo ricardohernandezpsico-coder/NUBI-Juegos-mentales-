@@ -82,7 +82,7 @@ fun ProgressScreen(
   val currentLang = LocalAppLanguage.current
   var showMore by remember { mutableStateOf(false) }
   var openArea by rememberSaveable { mutableStateOf<String?>(null) }
-  var sheetFor by remember { mutableStateOf<com.example.model.GameDefinition?>(null) }   // la ficha de un juego tocado en el detalle de un área o en «Lo que descubriste»
+  var sheetFor by remember { mutableStateOf<com.example.model.GameDefinition?>(null) }   // la ficha de un juego tocado en el detalle de un área o en «Tus medidas»
   var familyOpen by remember { mutableStateOf<AchievementFamily?>(null) }
   val streak by viewModel.currentStreak.collectAsState()
   val context = androidx.compose.ui.platform.LocalContext.current
@@ -105,6 +105,9 @@ fun ProgressScreen(
   val nubiLine = remember(lamps, settings.weeklyGoal, streakInfo, areasPlayed, shownHistory) { nubiWeekLine(lamps, settings.weeklyGoal, streakInfo, areasPlayed, noGamesAtAll = shownHistory.isEmpty()) }
   val cards = remember(measures, now) { StarMeasures.cards(measures, now) }
   val nudge = remember(measures, cards) { if (cards.isEmpty()) StarMeasures.nudge(measures) else null }
+  val dailySession by viewModel.dailySession.collectAsState()
+  val lastPlayedByGame = remember(history) { history.groupBy { it.gameId }.mapValues { (_, l) -> l.maxOf { it.timestamp } } }
+  val suggestion = remember(dailySession, lastPlayedByGame, now) { com.example.data.Suggestion.next(dailySession.gameIds, dailySession.completedCount, lastPlayedByGame, now, com.example.data.Streak::dayOf) }
   val medals = remember(unlocks, achStats) { AchievementFamily.entries.map { Achievements.familyState(it, unlocks.keys, achStats) } }
 
   openArea?.let { key ->
@@ -115,7 +118,7 @@ fun ProgressScreen(
       lang = currentLang, onArea = { openArea = it },
       onPlay = { id -> openArea = null; viewModel.launchGame(id) },
       onGame = { id -> GameRegistry.getById(id)?.let { sheetFor = it } },
-      onClose = { openArea = null }, modifier = modifier, backLabel = "Avance"
+      onClose = { openArea = null }, modifier = modifier, backLabel = "Avance", suggestion = suggestion
     )
     // La ficha del juego tocado, encima del detalle del área. Jugar desde ella no recuerda casilla de Juegos y, al volver de la partida, la persona sigue en Avance.
     sheetFor?.let { g ->

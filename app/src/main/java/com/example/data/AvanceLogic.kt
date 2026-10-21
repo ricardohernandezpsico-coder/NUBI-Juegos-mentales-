@@ -44,17 +44,17 @@ data class FamilyMedalState(val family: AchievementFamily, val reached: Achievem
     if (family == AchievementFamily.VOLVER) { val n = def.number ?: 1; "volver $n ${if (n == 1) "vez" else "veces"}" } else def.goalText()
 
   /**
-   * Bajo el título de la familia, UN solo formato (Tarea 126, a pedido de Opus): «Nivel 2 de 8 · siguiente: 7 días», «Nivel 0 de 3 · siguiente: volver 1 vez» y, en el último, «Nivel 8 de 8 · completa». Se entiende solo, sin «0/1».
+   * Bajo el título de la familia, UN solo formato (Tarea 126, a pedido de Opus; sin la palabra «Nivel» desde la Tarea 150, B1.11: la app dice «etapa»): «2 de 8 · siguiente: 7 días», «0 de 3 · siguiente: volver 1 vez» y, en el último, «8 de 8 · completa». Se entiende solo, sin «0/1».
    */
   val caption: String
-    get() = "Nivel $level de $totalLevels · " + (next?.let { "siguiente: ${ask(it)}" } ?: "completa")
+    get() = "$level de $totalLevels · " + (next?.let { "siguiente: ${ask(it)}" } ?: "completa")
 
-  /** El texto de [caption] en dos líneas para la casilla de la medalla: «Nivel 2 de 8» y «siguiente: 7 días». */
+  /** El texto de [caption] en dos líneas para la casilla de la medalla: «2 de 8» y «siguiente: 7 días». */
   val captionLines: List<String> get() = caption.split(" · ")
 
   /** Lo que lee el lector de pantalla. */
   val spoken: String
-    get() = if (reached == null) "${family.title}, bloqueada. $caption" else "${family.title}, nivel ${reached.goalText()}. $caption"
+    get() = if (reached == null) "${family.title}, bloqueada. $caption" else "${family.title}, ${reached.goalText()}. $caption"
 }
 
 fun Achievements.familyState(family: AchievementFamily, unlocked: Set<String>, stats: AchievementStats): FamilyMedalState {
@@ -117,7 +117,7 @@ fun nubiWeekLine(lamps: Week.Lamps, goal: Int, streak: Streak.StreakInfo, areas:
   val played = lamps.daysPlayed
   return when {
     noGamesAtAll -> "Cuando juegues tu primera ruta, aquí te cuento cómo va tu semana."
-    streak.forgivenDay != null -> "Descansaste el ${Streak.weekdayName(streak.forgivenDay)} y seguiste: eso es constancia."
+    streak.forgivenDay != null -> Streak.forgivenLine(streak)!!                      // una sola frase del descanso en toda la app: la de Hoy (Tarea 150, B1.8)
     goal > 0 && played >= goal -> "Meta cumplida esta semana. Lo que juegues de más es regalo."
     areas >= com.example.model.DomainType.values().size -> "Esta semana pasaste por las ${com.example.model.DomainType.values().size} áreas."
     goal > 0 && goal - played == 1 -> "Te falta 1 día para tu meta. Cualquier ruta cuenta."

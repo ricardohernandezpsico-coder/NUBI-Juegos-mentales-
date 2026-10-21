@@ -63,4 +63,30 @@ class WeekTest {
     assertEquals(1, today.daysPlayed)
     assertTrue("la partida de hoy enciende el farolito de hoy", today.played[today.todayIndex])
   }
+
+  // ---- «esta semana» empieza el lunes a las 00:00 en TODA la app (Tarea 151, B4.1)
+
+  private fun local(y: Int, m: Int, d: Int, h: Int = 0, min: Int = 0): Long = java.util.Calendar.getInstance().apply { clear(); set(y, m, d, h, min, 0) }.timeInMillis
+
+  @Test
+  fun la_semana_empieza_el_lunes_a_las_00_00_hora_local() {
+    val oct = java.util.Calendar.OCTOBER
+    val monday = local(2026, oct, 19)
+    assertEquals("un miércoles", monday, Week.weekStart(local(2026, oct, 21, 12)))
+    assertEquals("el lunes a las 00:00 en punto", monday, Week.weekStart(monday))
+    assertEquals("el lunes a las 23:59", monday, Week.weekStart(local(2026, oct, 19, 23, 59)))
+    assertEquals("el domingo a las 23:59 todavía es de esa semana", monday, Week.weekStart(local(2026, oct, 25, 23, 59)))
+    assertEquals("el lunes siguiente empieza otra", local(2026, oct, 26), Week.weekStart(local(2026, oct, 26, 0, 1)))
+    assertEquals("la semana pasada", local(2026, oct, 12), Week.weekStart(local(2026, oct, 21, 12), weeksBack = 1))
+    assertEquals("hace dos semanas", local(2026, oct, 5), Week.weekStart(local(2026, oct, 21, 12), weeksBack = 2))
+  }
+
+  @Test
+  fun los_minutos_de_la_ruta_son_una_sola_cifra() {
+    assertEquals(2, DailyPath.MINUTES_PER_GAME)
+    assertEquals(6, DailyPath.routeMinutes(DailyPath.SIZE))
+    assertEquals("unos 6 minutos", DailyPath.minutesText(3))
+    assertEquals("unos 4 minutos", DailyPath.minutesText(2))
+  }
 }
+

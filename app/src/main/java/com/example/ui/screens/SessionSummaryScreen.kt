@@ -65,7 +65,7 @@ fun SessionSummaryScreen(
     ) {
       Spacer(Modifier.height(8.dp))
       NubiClay(com.example.ui.components.NubiSize.S, celebrate = true)
-      Text("¡Sesión de hoy completa!", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+      Text("¡Ruta de hoy completa!", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
       Text(
         "Trabajaste " + joinNames(names.map { it.lowercase() }),
         color = OnNightDim, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 4.dp)

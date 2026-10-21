@@ -45,10 +45,20 @@ class ReminderContentTest {
   @Test
   fun `meta semanal aparece si falta y sin nombre no queda coma`() {
     val m = buildReminder(input(name = "", week = 1, goal = 4, day = 0))!!
-    assertEquals("¡Tu camino de hoy está listo!", m.title)
+    assertEquals("¡Tu ruta de hoy está lista!", m.title)
     assertTrue(m.text.contains("Llevas 1 de 4 días esta semana."))
     val done = buildReminder(input(week = 4, goal = 4, day = 0))!!
     assertFalse(done.text.contains("Llevas"))
+  }
+
+  @Test
+  fun `los minutos de la ruta salen de una sola cifra`() {
+    // Tarea 151 (B4.2): Hoy dice «unos 6 minutos» (2 por juego) y los avisos decían «unos 5»: ahora los dos salen de DailyPath.MINUTES_PER_GAME
+    val six = com.example.data.DailyPath.minutesText(com.example.data.DailyPath.SIZE)
+    assertEquals("unos 6 minutos", six)
+    val invitations = (0..2).map { buildReminder(input(week = 1, goal = 4, day = it))!! } + listOf(buildReminder(input(streak = 3, day = 0))!!)
+    assertTrue("alguna invitación dice los minutos de la ruta", invitations.any { it.text.contains(six) })
+    for (m in invitations) assertFalse(m.text, m.text.contains("5 minutos"))
   }
 
   @Test
@@ -82,6 +92,6 @@ class ReminderContentTest {
     }
     // la guardia misma: atrapa lo que apura y deja pasar el tono de Nubi
     for (bad in listOf("¡No pierdas tu racha!", "Última oportunidad", "Solo hoy", "¡Apúrate!", "Hazlo rápido", "Te olvidaste de jugar")) assertTrue("no atrapa «$bad»", NoLossGuard.hit(bad, NoLossGuard.reminderRoots) != null)
-    for (good in listOf("Tu camino de hoy está listo", "Descansaste el martes: tu racha sigue.", "Un rato corto hoy también suma.")) assertTrue("atrapa «$good» sin motivo", NoLossGuard.hit(good, NoLossGuard.reminderRoots) == null)
+    for (good in listOf("Tu ruta de hoy está lista", "Descansaste el martes: tu racha sigue.", "Un rato corto hoy también suma.")) assertTrue("atrapa «$good» sin motivo", NoLossGuard.hit(good, NoLossGuard.reminderRoots) == null)
   }
 }

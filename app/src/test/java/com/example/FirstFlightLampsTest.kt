@@ -49,9 +49,9 @@ class FirstFlightLampsTest {
   @Test
   fun la_cabecera_tiene_seis_farolas_y_el_paso_sin_minutos() {
     frame(FlightState(FlightMode.FULL, FlightStep.JUEGO_1, name = "Ana"))
-    rule.onNodeWithTag("flight_lamps").assertIsDisplayed().assertContentDescriptionEquals("Paso 2 de 6 · Memoria. 1 de 6 farolas encendidas")
+    rule.onNodeWithTag("flight_lamps").assertIsDisplayed().assertContentDescriptionEquals("Paso 1 de 15 · Memoria. 1 de 6 farolas encendidas")
     for (i in 0..5) rule.onNodeWithTag("flight_lamp_$i", useUnmergedTree = true).assertIsDisplayed()
-    rule.onNodeWithTag("flight_step_text").assertTextEquals("Paso 2 de 6 · Memoria")
+    rule.onNodeWithTag("flight_step_text").assertTextEquals("Paso 1 de 15 · Memoria")
     // ya no se promete cuánto falta (la página del juego sí dice cuánto dura la ronda: eso es del juego, no del recorrido)
     rule.onAllNodesWithText("Faltan unos", substring = true).assertCountEquals(0)
     rule.onAllNodesWithText("Falta 1 minuto", substring = true).assertCountEquals(0)
@@ -61,8 +61,15 @@ class FirstFlightLampsTest {
   fun las_pantallas_que_no_son_de_juego_dicen_el_paso_a_secas() {
     // Tarea 143 (A2): la pregunta de la edad no nombra el área del juego anterior («Paso 2 de 6 · Memoria»); el renglón sol ya dice «Para ajustar el ritmo»
     frame(FlightState(FlightMode.FULL, FlightStep.EDAD, name = "Ana", measured = mapOf("secuencia" to 0.5f)))
-    rule.onNodeWithTag("flight_step_text").assertTextEquals("Paso 2 de 6")
-    rule.onNodeWithTag("flight_lamps").assertContentDescriptionEquals("Paso 2 de 6. 2 de 6 farolas encendidas")
+    rule.onNodeWithTag("flight_step_text").assertTextEquals("Paso 3 de 15")
+    rule.onNodeWithTag("flight_lamps").assertContentDescriptionEquals("Paso 3 de 15. 2 de 6 farolas encendidas")
+  }
+
+  @Test
+  fun las_metas_describen_cada_area_con_las_mismas_palabras_que_Juegos() {
+    // Tarea 150 (B1.9): una sola descripción por área (`DomainType.tagline`), no «recordar, retener» aquí y «recordar y ubicar» en Juegos
+    frame(FlightState(FlightMode.FULL, FlightStep.METAS, name = "Ana"))
+    for (d in com.example.model.DomainType.entries) rule.onAllNodesWithText(d.tagline, substring = true).assertCountEquals(1)
   }
 
   @Test
@@ -81,7 +88,7 @@ class FirstFlightLampsTest {
     frame(FlightState(FlightMode.FULL, FlightStep.TARJETA_1, name = "Ana", measured = mapOf("secuencia" to 0.5f)))
     rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Juego 1 de 4")).assertCountEquals(0)
     rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("1 de 4 juegos hechos")).assertCountEquals(0)
-    rule.onNodeWithTag("flight_step_text").assertIsDisplayed().assertTextEquals("Paso 2 de 6 · Memoria")
+    rule.onNodeWithTag("flight_step_text").assertIsDisplayed().assertTextEquals("Paso 2 de 15 · Memoria")
   }
 
   @Test
@@ -95,8 +102,8 @@ class FirstFlightLampsTest {
     // las seis cajas miden lo mismo y no se pisan
     val widths = (0..5).map { rule.onNodeWithTag("flight_lamp_$it", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot.width }
     assertEquals(1, widths.map { Math.round(it) }.toSet().size)
-    rule.onNodeWithTag("flight_step_text").assertIsDisplayed().assertTextEquals("Paso 6 de 6")
-    rule.onNodeWithTag("flight_lamps").assertContentDescriptionEquals("Paso 6 de 6. 5 de 6 farolas encendidas")
+    rule.onNodeWithTag("flight_step_text").assertIsDisplayed().assertTextEquals("Paso 13 de 15")
+    rule.onNodeWithTag("flight_lamps").assertContentDescriptionEquals("Paso 13 de 15. 5 de 6 farolas encendidas")
   }
 
   @Test

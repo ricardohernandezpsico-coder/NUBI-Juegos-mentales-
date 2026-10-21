@@ -39,7 +39,7 @@ class VisibleTextsGuardTest {
         }
       }
     }
-    assertTrue("Textos con vocabulario que no va (usar: juego, partida, camino, tu avance, áreas, mente activa):\n" + found.joinToString("\n"), found.isEmpty())
+    assertTrue("Textos con vocabulario que no va (usar: juego, partida, ruta, tu avance, áreas, mente activa):\n" + found.joinToString("\n"), found.isEmpty())
   }
 
   /**
@@ -104,7 +104,7 @@ class VisibleTextsGuardTest {
     File("src/main/res").walkTopDown().filter { it.isFile && it.name.startsWith("strings") && it.extension == "xml" }.forEach { f ->
       Regex(">([^<]+)<").findAll(f.readText()).forEach { m -> neverVisibleHit(m.groupValues[1])?.let { found += "${f.name}: «${m.groupValues[1].trim()}» (por «$it»)" } }
     }
-    assertTrue("Textos visibles con «entren…», «cerebro» o «cognitiv…» (usar: juego, partida, camino, tu avance, áreas, mente activa):\n" + found.joinToString("\n"), found.isEmpty())
+    assertTrue("Textos visibles con «entren…», «cerebro» o «cognitiv…» (usar: juego, partida, ruta, tu avance, áreas, mente activa):\n" + found.joinToString("\n"), found.isEmpty())
   }
 
   @Test
@@ -178,4 +178,66 @@ class VisibleTextsGuardTest {
     // la tabla y su DAO se quedan (sin migración)
     assertTrue(File("src/main/java/com/example/data/local/Daos.kt").readText().contains("interface UserProfileDao"))
   }
+
+  // ---- Una palabra por concepto (Tarea 150, auditoría de coherencia del 20-oct, B1): lo que ya se unificó no puede volver a dividirse
+
+  /** Los nombres que YA NO se dicen: la ruta de hoy es «ruta» (no «camino» ni «sesión»), jugar con tiempo es «Con reloj» (no «Contra el reloj», «Reto» ni «Precisión»). Cada uno con la frase que lo caza, no la palabra suelta: «camino» y «reto» tienen otros sentidos legítimos (el camino de la chispa, un reto de los textos antiguos). */
+  private val retiredNames = listOf(
+    Regex("\\b(tu|mi|su|el|la) (camino|sesión) (de hoy|de cada día|de juegos|diari[oa])", RegexOption.IGNORE_CASE), Regex("camino diario|sesión diaria|sesión de hoy|sesión completa|empezar sesión|continuar sesión|empezar mi camino|armar tu camino", RegexOption.IGNORE_CASE),
+    Regex("\\bsesion(es)?\\b|\\bsesión\\b|\\bsesiones\\b", RegexOption.IGNORE_CASE),
+    Regex("contra el reloj", RegexOption.IGNORE_CASE), Regex("\\bReto\\b"), Regex("modo reto", RegexOption.IGNORE_CASE), Regex("\\bPrecisión\\b")
+  )
+
+  @Test
+  fun `ningun texto visible usa los nombres que se unificaron ruta, con reloj y etapa de un juego`() {
+    val found = mutableListOf<String>()
+    File("src/main/java").walkTopDown().filter { it.extension == "kt" }.forEach { f ->
+      f.readLines().forEachIndexed { i, raw ->
+        for (text in visibleLiteralsOf(raw)) {
+          if (Regex("[a-z0-9_]+").matches(text)) continue
+          val low = text
+          retiredNames.firstOrNull { it.containsMatchIn(low) }?.let { found += "${f.path.removePrefix("src/main/java/")}:${i + 1} «$text» (por ${it.pattern})" }
+        }
+      }
+    }
+    assertTrue("Textos con un nombre que ya se unificó (ruta · Con reloj / Sin reloj):\n" + found.joinToString("\n"), found.isEmpty())
+  }
+
+  @Test
+  fun `la guarda de nombres unificados atrapa lo viejo y deja pasar lo permitido`() {
+    for (bad in listOf("Tu camino de hoy", "tu camino de cada día", "Empezar mi camino", "Para armar tu camino", "¡Sesión de hoy completa!", "Tu sesión de hoy", "Contra el reloj (2 min)", "Reto", "Modo Reto", "Precisión", "7 sesiones")) {
+      assertTrue("no atrapa «$bad»", retiredNames.any { it.containsMatchIn(bad) })
+    }
+    for (good in listOf("Tu ruta de hoy", "Empezar mi ruta", "Repite el camino de la chispa", "Camino corto en 3 de esas 5", "Con reloj (2 min)", "Sin reloj", "Al límite", "Ajustes")) {
+      assertTrue("atrapa «$good» sin motivo", retiredNames.none { it.containsMatchIn(good) })
+    }
+  }
+
+  @Test
+  fun `el modo mas dificil ya no se llama Experto, que es una etapa del avance`() {
+    assertEquals("Al límite", com.example.data.PlayMode.EXPERTO.label)
+    assertTrue("«Experto» queda como la 4.ª etapa (Inicio · Aprendiz · Hábil · Experto · Maestro)", "Experto" in com.example.data.Skill.STAGES)
+    assertEquals("al límite", com.example.data.RetoChoice.modeWords(com.example.data.PlayMode.EXPERTO))
+    assertTrue("ningún nombre de modo coincide con el de una etapa", com.example.data.PlayMode.entries.none { it.label in com.example.data.Skill.STAGES })
+    assertEquals("Con reloj (2 min)", com.example.data.RetoChoice.timedLabel("calculo"))
+  }
+
+  @Test
+  fun `los subtitulos de los juegos hablan como los buenos y no en jerga de laboratorio`() {
+    // Tarea 150 (B5.5): «Memoria de trabajo visoespacial», «Control inhibitorio», «rotación mental», «Sentido numérico»… no los entiende un 60+ y rozaban el vocabulario prohibido
+    val jerga = listOf("visoespacial", "inhibitorio", "rotación mental", "sentido numérico", "seguimiento de varios objetos", "memoria de trabajo", "razonamiento espacial", "memoria para lo pendiente")
+    for (g in com.example.model.GameRegistry.allGames) {
+      val low = g.subtitle.lowercase()
+      assertTrue("${g.id}: «${g.subtitle}»", jerga.none { it in low })
+      assertTrue("${g.id}: el subtítulo no pasa de ~40 letras para que entre en la ficha: «${g.subtitle}»", g.subtitle.length <= 45)
+    }
+    val bySubtitle = com.example.model.GameRegistry.allGames.associate { it.id to it.subtitle }
+    assertEquals("Repite el camino de la chispa", bySubtitle["secuencia"])
+    assertEquals("Frena cuando suena la alarma", bySubtitle["freno"])
+    assertEquals("Gira la pieza en tu mente", bySubtitle["acoplamiento"])
+    assertEquals("Posa la nave en el número", bySubtitle["aterrizaje"])
+    assertEquals("Sigue varios satélites a la vez", bySubtitle["satelites"])
+    assertEquals("Acuérdate a tiempo de cada encargo", bySubtitle["correo"])
+  }
 }
+

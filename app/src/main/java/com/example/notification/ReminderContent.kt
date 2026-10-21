@@ -1,5 +1,7 @@
 package com.example.notification
 
+import com.example.data.DailyPath
+
 /** Lo que sabe el recordatorio sobre el día del usuario (se arma en [CognitiveReminderWorker]). */
 data class ReminderInput(
   val name: String,
@@ -21,7 +23,7 @@ data class ReminderInput(
 
 data class ReminderMessage(val title: String, val text: String)
 
-/** Primera letra en mayúscula aunque el título empiece con «¡»: «¡tu camino…» → «¡Tu camino…». */
+/** Primera letra en mayúscula aunque el título empiece con «¡»: «¡tu ruta…» → «¡Tu ruta…». */
 private fun cap(s: String): String {
   val i = s.indexOfFirst { it.isLetter() }
   return if (i < 0) s else s.substring(0, i) + s[i].uppercase() + s.substring(i + 1)
@@ -48,11 +50,11 @@ fun buildReminder(input: ReminderInput): ReminderMessage? {
     val left = 3 - input.completedToday
     return ReminderMessage(
       title = cap("${hi}¡ya casi!"),
-      text = "¡Ya empezaste! Te ${if (left == 1) "falta 1 juego" else "faltan $left juegos"} para completar tu camino de hoy." +
+      text = "¡Ya empezaste! Te ${if (left == 1) "falta 1 juego" else "faltan $left juegos"} para completar tu ruta de hoy." +
         (input.nextGameTitle?.let { " Sigue $it." } ?: "")
     )
   }
-  if (input.playedToday) return null // jugó hoy fuera de la sesión: no molestar
+  if (input.playedToday) return null // jugó hoy fuera de la ruta: no molestar
 
   // 2) Racha en juego
   val streak = input.streakUntilYesterday
@@ -61,7 +63,7 @@ fun buildReminder(input: ReminderInput): ReminderMessage? {
     val milestone = next in StreakMilestones
     return ReminderMessage(
       title = if (milestone) "¡Hoy llegas a $next días seguidos!" else cap("${hi}¡tu racha de $streak días sigue viva!"),
-      text = (if (milestone) "¡Juega hoy y consigues la medalla de $next días!" else "Juega hoy y sube a $next días. ¡Son unos 5 minutos!") + weekLine
+      text = (if (milestone) "¡Juega hoy y consigues la medalla de $next días!" else "Juega hoy y sube a $next días. ¡Son ${DailyPath.minutesText(DailyPath.SIZE)}!") + weekLine
     )
   }
 
@@ -78,8 +80,8 @@ fun buildReminder(input: ReminderInput): ReminderMessage? {
   // 4) Invitación del día (varía según el día)
   val next = input.nextGameTitle
   val options = buildList {
-    add(ReminderMessage(cap("${hi}¡tu camino de hoy está listo!"), "¡3 juegos, unos 5 minutos!$weekLine"))
-    if (next != null) add(ReminderMessage("¡Hoy toca $next!", "¿Te animas? Es el primero de tu camino de hoy.$weekLine"))
+    add(ReminderMessage(cap("${hi}¡tu ruta de hoy está lista!"), "¡${DailyPath.SIZE} juegos, ${DailyPath.minutesText(DailyPath.SIZE)}!$weekLine"))
+    if (next != null) add(ReminderMessage("¡Hoy toca $next!", "¿Te animas? Es el primero de tu ruta de hoy.$weekLine"))
     add(ReminderMessage("¡Un rato corto hoy!", "Cada partida suma a tu avance.$weekLine"))
   }
   return options[input.dayOfYear.mod(options.size)]

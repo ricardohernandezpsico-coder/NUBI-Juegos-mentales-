@@ -417,7 +417,7 @@ internal fun PlaceSheetContent(
         Row(Modifier.fillMaxWidth().heightIn(min = if (level > PlaceLevels.FULL) PLACE_NUBI_WIDTH * nubiAspect else 0.dp), verticalAlignment = Alignment.CenterVertically) {
           if (level > PlaceLevels.FULL) { Hole(); Spacer(Modifier.width(8.dp)) }
           Text(
-            if (place.measured) "${place.stageName} · ${place.points} de 100" else "Aún sin medir",
+            if (place.measured) com.example.data.Skill.stageHeader(place.stageName.orEmpty(), place.points ?: 0) else "Aún sin medir",
             color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("place_stage")
           )
         }
@@ -558,7 +558,7 @@ private fun PlaceHeader(place: PlaceSheetUi, color: Color, titleFocus: FocusRequ
 @Composable
 private fun PlaceGamesList(place: PlaceSheetUi, onGame: (String) -> Unit, gap: Dp = 6.dp) {
   Column(Modifier.fillMaxWidth().testTag("place_games_list"), verticalArrangement = Arrangement.spacedBy(gap)) {
-    place.games.forEach { g -> PlaceGameRowItem(g, suggested = g.gameId == place.chosenGameId, onClick = { onGame(g.gameId) }) }
+    place.games.forEach { g -> PlaceGameRowItem(g, suggested = g.gameId == place.suggestedGameId, onClick = { onGame(g.gameId) }) }
   }
 }
 
@@ -587,7 +587,7 @@ private fun PlaceGameRowItem(row: PlaceGameRow, suggested: Boolean, onClick: () 
     BoxWithConstraints(Modifier.fillMaxWidth()) {
       val bold = base.merge(androidx.compose.ui.text.TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold))
       val longestWordPx = row.title.split(' ').maxOfOrNull { measurer.measure(it, bold, softWrap = false, maxLines = 1).size.width } ?: 0
-      val chipPx = measurer.measure("Nubi sugiere", bold, softWrap = false, maxLines = 1).size.width + with(density) { 20.dp.toPx() }
+      val chipPx = measurer.measure(com.example.data.Suggestion.CHIP, bold, softWrap = false, maxLines = 1).size.width + with(density) { 20.dp.toPx() }
       val sidePx = with(density) { (20.dp + 48.dp + 10.dp + 8.dp).toPx() }                      // padding de la fila + emblema + aire + aire del chip
       val chipBeside = suggested && constraints.maxWidth - sidePx - chipPx >= longestWordPx
       Row(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -596,11 +596,11 @@ private fun PlaceGameRowItem(row: PlaceGameRow, suggested: Boolean, onClick: () 
         Column(Modifier.weight(1f)) {
           Text(row.title, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 20.sp, modifier = Modifier.testTag("place_game_name_${row.gameId}"))
           Text(row.whenShort, color = SheetMuted, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.testTag("place_game_when_${row.gameId}"))
-          if (suggested && !chipBeside) com.example.ui.theme.ClayPill("Nubi sugiere", Modifier.padding(top = 4.dp).testTag("place_game_chip"), color = Clay.Sun, compact = true)
+          if (suggested && !chipBeside) com.example.ui.theme.ClayPill(com.example.data.Suggestion.CHIP, Modifier.padding(top = 4.dp).testTag("place_game_chip"), color = Clay.Sun, compact = true)
         }
         if (suggested && chipBeside) {
           Spacer(Modifier.width(8.dp))
-          com.example.ui.theme.ClayPill("Nubi sugiere", Modifier.testTag("place_game_chip"), color = Clay.Sun, compact = true)
+          com.example.ui.theme.ClayPill(com.example.data.Suggestion.CHIP, Modifier.testTag("place_game_chip"), color = Clay.Sun, compact = true)
         }
       }
     }

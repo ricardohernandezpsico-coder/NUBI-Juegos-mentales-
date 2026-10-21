@@ -3,6 +3,7 @@ package com.example
 import com.example.data.AreaStatus
 import com.example.data.PlaceSheetUi
 import com.example.data.PlaceSheets
+import com.example.data.Suggestion
 import com.example.model.GameRegistry
 
 /** Datos fijos para probar y capturar la lámina de cada lugar: Memoria avanzó, Atención se mantiene, Razonamiento recién empieza y Lenguaje aún no se mide. */
@@ -14,10 +15,13 @@ object PlaceTestData {
     "LENGUAJE" to AreaStatus("LENGUAJE", null, 0f, listOf(null, null, null, null))
   )
 
-  fun places(now: Long): Map<String, PlaceSheetUi> = statuses.mapValues { (area, status) ->
+  /** LA sugerencia de Nubi de estos datos (Tarea 150, B2): lo que sigue en la ruta de hoy, un juego del Observatorio; en las demás áreas no hay chip. */
+  val suggestion = Suggestion.Pick(GameRegistry.allGames.first { it.domain.name == "MEMORIA" }.id, "MEMORIA", Suggestion.Why.ROUTE)
+
+  fun places(now: Long, suggestion: Suggestion.Pick? = this.suggestion): Map<String, PlaceSheetUi> = statuses.mapValues { (area, status) ->
     PlaceSheets.build(
       area = area, status = status, games = GameRegistry.allGames.filter { it.domain.name == area }, titleOf = { it.title },
-      history = emptyList(), measures = emptyList(), now = now
+      history = emptyList(), measures = emptyList(), now = now, suggestion = suggestion
     )
   }
 }

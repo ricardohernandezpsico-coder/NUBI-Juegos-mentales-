@@ -114,7 +114,7 @@ class PulidoFinalTextosTest {
     assertFalse("y Nubi ya no", profile.contains("NubiClay("))
     assertFalse("el escudo grande ya no está (queda chico en «Tu liga»)", profile.contains("LeagueShield(tier = tier, size = 160.dp"))
     assertTrue("«Tu liga» con el escudo chico", profile.contains("SpaceSectionTitle(\"Tu liga\")") && profile.contains("ShieldImage(tier, 40.dp)"))
-    assertTrue("«etapa», no «nivel hábil» (ítem 17)", profile.contains("\"Etapa \${levelWord(it / 100f)}\"") && !profile.contains("nivel \${levelWord"))
+    assertTrue("«etapa», no «nivel hábil» (ítem 17)", profile.contains("\"Etapa general: \${levelWord(it / 100f)}\"") && !profile.contains("nivel \${levelWord"))
     assertTrue("«Tus medallas», no «Logros» (ítem 17)", profile.contains("SpaceSectionTitle(\"Tus medallas\"") && !profile.contains("SpaceSectionTitle(\"Logros\""))
   }
 

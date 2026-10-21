@@ -287,7 +287,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
           } else {
             com.example.ui.components.AchievementOverlay(
               def = def,
-              unlockedCount = achievementUnlocks.size,
+              unlockedCount = com.example.data.Achievements.medalCount(achievementUnlocks.keys),          // el mismo número que «Medallas» del Perfil (Tarea 151, C8)
               totalCount = com.example.data.Achievements.all.size,
               streak = streak,
               onDismiss = { celebratedOne = true; viewModel.dismissAchievement() },

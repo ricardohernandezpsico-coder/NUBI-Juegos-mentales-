@@ -186,14 +186,16 @@ fun HomeScreen(
     }
   }
 
+  // UNA sola sugerencia de Nubi para toda la app (Tarea 150, B2): lo que sigue en la ruta de hoy y, terminada, el juego que más tiempo lleva sin jugarse.
+  val suggestion = remember(dailySession, lastPlayed, clock) { com.example.data.Suggestion.next(dailySession.gameIds, dailySession.completedCount, lastPlayed, clock, Streak::dayOf) }
   // La lámina de cada lugar: el avance de su área y sus juegos (la lógica del antiguo detalle de área).
-  val places = remember(statuses, history, measures, clock, lang) {
+  val places = remember(statuses, history, measures, clock, lang, suggestion) {
     AREA_ORDER.mapIndexed { i, key ->
       val domain = domainOf(key)
       key to com.example.data.PlaceSheets.build(
         area = key, status = statuses.getOrNull(i) ?: AreaStatus(key, null, 0f, emptyList()),
         games = GameRegistry.allGames.filter { it.domain == domain }, titleOf = { g -> getGameTitle(g.id, lang, g.title) },
-        history = history, measures = measures, now = clock
+        history = history, measures = measures, now = clock, suggestion = suggestion
       )
     }.toMap()
   }
@@ -502,7 +504,7 @@ internal val ISLAND_MIN_HEIGHT = 220.dp
 internal fun routeMeta(ui: HomeUi): String {
   val total = ui.stops.size
   val pending = ui.stops.count { it.state != StopState.DONE }
-  return if (pending == 0) "$total de $total · completa" else "${total - pending} de $total · unos ${pending * 2} minutos"
+  return if (pending == 0) "$total de $total · completa" else "${total - pending} de $total · ${com.example.data.DailyPath.minutesText(pending)}"
 }
 
 /** «Tu ruta de hoy» y, debajo, una piedrita por juego del camino. Tocar una abre la ficha del juego. */
@@ -629,12 +631,12 @@ private fun HoyStopRow(stop: HomeStop, number: Int, onClick: () -> Unit) {
   }
 }
 
-/** Lo que Hoy dice debajo del botón cuando hay algo que decir: la partida en pausa, el camino ya cumplido o el Primer vuelo. Antes lo decía el globo de Nubi. */
+/** Lo que Hoy dice debajo del botón cuando hay algo que decir: la partida en pausa, la ruta ya cumplida o el Primer vuelo. Antes lo decía el globo de Nubi. */
 internal fun captionLine(ui: HomeUi): String? {
   val pending = ui.stops.count { it.state != StopState.DONE }
   return when {
     ui.pausedTitle != null -> "Tienes una partida en pausa: ${ui.pausedTitle}."
-    ui.flightDay -> "Tu primer vuelo fue tu camino de hoy. Mañana empieza tu camino."
+    ui.flightDay -> "Tu primer vuelo fue tu ruta de hoy. Mañana empieza tu ruta."
     ui.stops.isNotEmpty() && pending == 0 -> "Ya pasaste por la isla hoy. Mañana sigo aquí."
     else -> null
   }
@@ -727,7 +729,9 @@ internal fun AreaDetail(
   onClose: () -> Unit,
   modifier: Modifier = Modifier,
   /** A dónde vuelve la flecha: «Avance» (de donde se abre hoy); antes la cabecera decía «Hoy» aunque se abriera desde Avance (Tarea 143, A1). */
-  backLabel: String = "Avance"
+  backLabel: String = "Avance",
+  /** LA sugerencia de Nubi de toda la app ([com.example.data.Suggestion.next]): en su área, Nubi dice por qué; en las otras, el botón propone el juego que más tiempo lleva sin jugarse, sin «Te sugiero». */
+  suggestion: com.example.data.Suggestion.Pick? = null
 ) {
   val idx = AREA_ORDER.indexOf(areaKey).coerceAtLeast(0)
   val s = statuses.getOrNull(idx) ?: AreaStatus(areaKey, null, 0f, emptyList())
@@ -735,7 +739,9 @@ internal fun AreaDetail(
   val domain = domainOf(areaKey) ?: return
   val games = GameRegistry.allGames.filter { it.domain == domain }
   val lastPlayed = games.associate { g -> g.id to history.filter { it.gameId == g.id }.maxOfOrNull { it.timestamp } }
-  val suggested = games.minByOrNull { lastPlayed[it.id] ?: Long.MIN_VALUE }
+  val pick = com.example.data.Suggestion.forArea(areaKey, suggestion, games, lastPlayed.mapNotNull { (id, t) -> t?.let { id to it } }.toMap(), now, Streak::dayOf)
+  val suggested = pick?.let { p -> games.firstOrNull { it.id == p.gameId } }
+  val suggestedHere = com.example.data.Suggestion.suggestedHere(areaKey, suggestion)
   fun go(step: Int) = onArea(AREA_ORDER[(idx + step + AREA_ORDER.size) % AREA_ORDER.size])
 
   Column(modifier.fillMaxSize().testTag("area_detail")) {
@@ -751,7 +757,7 @@ internal fun AreaDetail(
       // Maqueta B de la Propuesta 3 (Tarea 147): primero el ÁREA (su nombre y su etapa a la izquierda, las flechas ‹ › a la derecha: antes Nubi iba entre las flechas, como si se pasara de Nubi en Nubi) y debajo Nubi M con su globo al lado.
       // Una voz: lo que dice Nubi va en su globo, en primera persona (la pregunta y, si hay juego elegido, por qué lo eligió; antes el porqué iba suelto como «Nubi lo eligió: …»).
       var drag by remember(areaKey) { mutableStateOf(0f) }
-      val chosenWhy = suggested?.let { g -> "Elegí ${getGameTitle(g.id, lang, g.title)}: " + if (lastPlayed[g.id] == null) "aún no lo has jugado." else "es el que más tiempo lleva sin jugarse." }
+      val chosenWhy = if (suggestedHere && suggested != null && pick != null) "Te sugiero ${getGameTitle(suggested.id, lang, suggested.title)}: ${com.example.data.Suggestion.reason(pick)}." else null      // «Nubi sugiere» dice lo mismo en todas partes (Tarea 150, B2)
       Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().padding(top = 4.dp).pointerInput(areaKey) {
@@ -764,7 +770,7 @@ internal fun AreaDetail(
         Column(Modifier.weight(1f)) {
           OnBoardText(name, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("area_name"))
           OnBoardText(
-            s.value?.let { "Etapa ${Skill.stageName(it)} · ${s.points} de 100" } ?: "Aún sin medir",
+            s.value?.let { Skill.stageHeader(Skill.stageName(it), s.points ?: 0) } ?: "Aún sin medir",         // el mismo encabezado que la lámina y la ficha (Tarea 150, B1.6)
             color = OnNightDim, fontSize = 16.sp
           )
         }

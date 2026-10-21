@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -107,6 +108,22 @@ class AvanceJuegosLetraGrandeTest {
     }
     rule.onNodeWithTag("area_window").assertIsDisplayed()
     rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/library-letra13.png")
+  }
+
+  /** Tarea 151 (B4.5): un solo visto por casilla. El sello del emblema es «jugado hoy»; la parada que ya se hizo en la ruta se dice con la palabra «Hecho» (antes, un segundo círculo con ✓ en la misma casilla). */
+  @Test
+  fun la_parada_hecha_se_dice_con_la_palabra_Hecho_y_la_pendiente_lleva_su_numero() {
+    val games = GameRegistry.allGames.filter { it.domain == DomainType.MEMORIA }
+    val cards = games.mapIndexed { i, g -> cardData(g, g.title, now - 3_600_000L, now, 0.4f, emptyList(), 3).copy(routeStop = if (i < 2) i + 1 else null, routeDone = i == 0) }
+    big {
+      Box(Modifier.width(393.dp).height(873.dp).background(Color(0xFF050823))) {
+        AreaWindow(DomainType.MEMORIA, "Memoria", statuses[0], cards, focusGameId = null, onClose = {}, onGame = {}, sections = listOf("En tu ruta de hoy" to cards.take(2), "Para volver a jugar" to cards.drop(2)))
+      }
+    }
+    rule.onAllNodes(androidx.compose.ui.test.hasText("Hecho")).assertCountEquals(1)
+    rule.onNodeWithTag("route_stop_1", useUnmergedTree = true).assertExists()
+    rule.onNodeWithTag("route_stop_2", useUnmergedTree = true).assertExists()
+    rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Hecho en tu ruta")).assertCountEquals(1)
   }
 
   /** El detalle de un área (Tarea 143, ítems 1, 2 y A1): la pregunta va en el globo de Nubi, abajo solo el botón «Jugar <juego>», la escala de etapas no se corta y la flecha dice «Avance». */

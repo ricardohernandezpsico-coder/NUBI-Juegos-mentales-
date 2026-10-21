@@ -86,7 +86,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.AreaProgress
-import com.example.data.AreaSuggestion
+import com.example.data.Suggestion
 import com.example.data.AreaStatus
 import com.example.data.DiscoveryKind
 import com.example.data.FinalesConSentido
@@ -183,6 +183,7 @@ fun GamesLibraryScreen(
   val progressLog by viewModel.progressLog.collectAsState()
   val skill by viewModel.skill.collectAsState()
   val focus by viewModel.libraryFocus.collectAsState()
+  val daily by viewModel.dailySession.collectAsState()
   val lang = LocalAppLanguage.current
   val now = remember(history) { System.currentTimeMillis() }
 
@@ -200,9 +201,7 @@ fun GamesLibraryScreen(
   val open = focus.domain?.takeIf { focus.open }
 
   if (open == null) {
-    val suggestion = remember(history, statuses, now, lang) {
-      suggestArea(history.map { it.gameId to it.timestamp }, statuses, now, lang)
-    }
+    val suggestion = remember(daily, lastPlayed, now, lang) { suggestArea(daily, lastPlayed, now, lang) }
     Column(modifier = modifier.fillMaxSize().padding(bottom = com.example.ui.components.LocalBarInset.current)) {      // la franja de la barra de pestañas queda libre; la ventana de un área, más abajo, la cubre
       TabTopBar(viewModel) {}
       SuggestionHeader(suggestion)
@@ -218,7 +217,6 @@ fun GamesLibraryScreen(
   } else {
     LockTabSwipe()
     BackHandler { viewModel.closeLibraryArea() }
-    val daily by viewModel.dailySession.collectAsState()
     val games = remember(open) { GameRegistry.allGames.filter { it.domain == open } }
     // «En tu ruta de hoy / Para volver a jugar / Nuevo para ti» (`LibraryOrder`); el último que abriste ya no reordena, solo se pinta en sol.
     val sections = remember(open, daily, lastPlayed, now) {
@@ -345,13 +343,19 @@ private fun ringPath(w: Float, h: Float, r: Float): Path = Path().apply {
   lineTo(w / 2f, 0f)
 }
 
-/** La piedrita con el número de parada de la ruta de hoy (o el ✓ si ya se hizo: forma, no solo color). */
+/**
+ * La piedrita con el número de parada de la ruta de hoy; si ya se hizo, la palabra «Hecho» (Tarea 151, B4.5: antes un círculo con ✓, y el sello del emblema —«jugado hoy»— era OTRO visto en la misma casilla; ahora el visto es uno solo, el del emblema, y la parada hecha
+ * se dice con una palabra, como en Hoy).
+ */
 @Composable
 private fun RouteStone(number: Int, done: Boolean) {
+  if (done) {
+    com.example.ui.theme.ClayPill("Hecho", Modifier.testTag("route_stop_$number").semantics { contentDescription = "Hecho en tu ruta" }, color = Clay.Lime, compact = true)
+    return
+  }
   val scale = androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceIn(1f, 1.6f)   // el círculo crece con la letra: con letra 2,0 el número no cabría en 24 dp
   Box(Modifier.size(24.dp * scale).clip(CircleShape).background(Color(0xFFFFF8EC)).border(2.dp, Clay.Ink, CircleShape).testTag("route_stop_$number"), contentAlignment = Alignment.Center) {
-    if (done) Icon(Icons.Default.Check, contentDescription = "Hecho en tu ruta", tint = Clay.Ink, modifier = Modifier.size(15.dp * scale))
-    else Text("$number", color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+    Text("$number", color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
   }
 }
 
@@ -535,21 +539,9 @@ internal fun GameSheetContent(
       // Tu avance: «34%» en 30, la etapa en 17 con el color de su área y cuánto falta en 14
       HorizontalLine()
       if (data.progress != null) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-          Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("${Skill.percent(data.progress)}", color = Clay.Ink, fontSize = 30.sp, fontWeight = FontWeight.Bold, lineHeight = 32.sp)
-            Text("de 100", color = CardMuted, fontSize = Small, lineHeight = 16.sp)           // la escala se dice «de 100» en todos lados (Tarea 143, ítem 16)
-          }
-          Spacer(Modifier.width(12.dp))
-          Column {
-            Text(Skill.stageName(data.progress), color = onCream(g.domain), fontSize = 17.sp, fontWeight = FontWeight.Bold)
-            val next = Skill.toNextStage(data.progress)
-            Text(
-              if (next != null) "a ${next.first} ${if (next.first == 1) "punto" else "puntos"} de ${next.second}" else "La etapa más alta",
-              color = CardMuted, fontSize = Small
-            )
-          }
-        }
+        // El mismo encabezado de etapa y la misma frase de «cuánto falta» que la lámina y el detalle de un área (Tarea 150, B1.6 y B1.7: antes «55 / de 100 · Hábil · a 5 puntos de Experto»)
+        Text(Skill.stageHeader(data.progress), color = onCream(g.domain), fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 24.sp, modifier = Modifier.testTag("sheet_stage"))
+        Text(Skill.toNextLine(data.progress) ?: "La etapa más alta", color = CardMuted, fontSize = Small, modifier = Modifier.testTag("sheet_to_next"))
         com.example.ui.components.StageScale(data.progress, onCard = true, modifier = Modifier.padding(top = 6.dp))
       } else {
         Text("Sin medir aún", color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold)
@@ -638,7 +630,7 @@ internal fun GameSheetContent(
                   selected = m == choice,
                   enabled = open,
                   minHeight = 64.dp,
-                  description = m.label + (if (open) ", ${Skill.hitsText(Skill.expectedHits(g.id, m, age))} aciertos" else ", bloqueado: supera un Desafío"),
+                  description = m.label + (if (open) ", ${m.short}" else ", bloqueado: supera un Desafío"),
                   tag = "mode_${m.name}",
                   onClick = { onChoose(m) },
                   modifier = Modifier.weight(1f).then(if (m == choice) Modifier.focusRequester(focusChosen) else Modifier)
@@ -651,7 +643,7 @@ internal fun GameSheetContent(
                     if (open) SelectedMark(m == choice)
                   }
                   if (open) {
-                    Text("${Skill.hitsText(Skill.expectedHits(g.id, m, age))} aciertos", color = Clay.Ink, fontSize = Small, modifier = Modifier.padding(top = 2.dp))
+                    Text(m.short, color = Clay.Ink, fontSize = Small, modifier = Modifier.padding(top = 2.dp))                  // el nombre y una frase corta; los aciertos esperados son del DDA, no de la ficha (Tarea 151, B4.4)
                   } else {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
                       KitGlyph(Glyph.LOCK, size = 20.dp)
@@ -665,7 +657,7 @@ internal fun GameSheetContent(
           }
           Text(choice.what, color = CardMuted, fontSize = Small, lineHeight = 19.sp, modifier = Modifier.padding(top = 8.dp))
 
-          // ¿Con o sin reloj? Se recuerda por juego; el camino diario de Hoy va siempre sin reloj. Dos cuadros lado a lado.
+          // ¿Con o sin reloj? Se recuerda por juego; la ruta diaria de Hoy va siempre sin reloj. Dos cuadros lado a lado.
           if (com.example.data.RetoChoice.supports(g.id)) {
             HorizontalLine()
             Text("¿Con reloj?", color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
@@ -784,24 +776,16 @@ private fun SelectedMark(on: Boolean) {
   Box(Modifier.size(22.dp), contentAlignment = Alignment.Center) { if (on) KitGlyph(Glyph.CHECK, size = 22.dp) }
 }
 
-/** El área que Nubi sugiere hoy: su clave, su nombre visible y el motivo ("Hace 4 días que no lo juegas"). */
-internal data class AreaSuggestionUi(val key: String, val name: String, val reason: String)
+/** El área de LA sugerencia de Nubi (la de [Suggestion.next]): su clave, su nombre visible y el motivo en palabras de tiempo («sigue Tinta o Palabra en tu ruta de hoy», «hace 4 días que no juegas Constelaciones»). */
+internal data class AreaSuggestionUi(val key: String, val name: String, val reason: String, val gameId: String? = null)
 
-/** Arma la sugerencia desde el historial ([plays] = juego + momento) y el avance de cada área. */
-internal fun suggestArea(plays: List<Pair<String, Long>>, statuses: List<AreaStatus>, now: Long, lang: com.example.model.AppLanguage): AreaSuggestionUi {
-  val names = AREA_ORDER.associateWith { key -> getDomainName(DomainType.fromStored(key) ?: DomainType.MEMORIA, lang) }
-  val lastByKey = AREA_ORDER.associateWith { key ->
-    plays.filter { (gameId, _) -> GameRegistry.getById(gameId)?.domain?.name == key }.maxOfOrNull { it.second }
-  }
-  val r = AreaSuggestion.pick(
-    areas = AREA_ORDER.map { names.getValue(it) },
-    lastPlayedByArea = AREA_ORDER.associate { names.getValue(it) to lastByKey[it] },
-    valueByArea = AREA_ORDER.associate { key -> names.getValue(key) to statuses.firstOrNull { it.area == key }?.value },
-    now = now,
-    dayOf = ::dayIndex
-  )
-  val key = names.entries.first { it.value == r.area }.key
-  return AreaSuggestionUi(key, r.area, r.reason)
+/** Arma la sugerencia de Nubi con la ruta de hoy ([daily]) y la última partida de cada juego ([lastPlayed]): [Suggestion.next], una sola regla para Juegos, Hoy y Avance (Tarea 150, B2). */
+internal fun suggestArea(daily: com.example.model.DailySessionState, lastPlayed: Map<String, Long>, now: Long, lang: com.example.model.AppLanguage): AreaSuggestionUi {
+  val pick = Suggestion.next(daily.gameIds, daily.completedCount, lastPlayed, now, com.example.data.Streak::dayOf)
+    ?: Suggestion.Pick(GameRegistry.allGames.first().id, GameRegistry.allGames.first().domain.name, Suggestion.Why.NEVER)
+  val game = GameRegistry.getById(pick.gameId) ?: GameRegistry.allGames.first()
+  val domain = DomainType.fromStored(pick.area) ?: game.domain
+  return AreaSuggestionUi(domain.name, getDomainName(domain, lang), Suggestion.reasonForArea(pick, getGameTitle(game.id, lang, game.title)), game.id)
 }
 
 /**
@@ -819,7 +803,7 @@ internal fun SuggestionHeader(s: AreaSuggestionUi) {
       OnBoardText("¿Qué jugamos hoy?", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
       // Una voz (Tarea 147, P3): lo que sugiere Nubi lo dice Nubi, en primera persona y en SU globo; nunca texto suelto atribuido a ella
       NubiBubble(
-        text = "Te sugiero ${s.name}: ${s.reason.replaceFirstChar { it.lowercase() }}",
+        text = "Te sugiero ${s.name}: ${s.reason}",
         tailLeft = true, modifier = Modifier.padding(top = 4.dp).testTag("suggestion_text")
       )
     }
@@ -863,7 +847,7 @@ internal fun AreaGrid(
                 .clip(RoundedCornerShape(24.dp))
                 .clickable { onArea(s.area) }
                 .semantics(mergeDescendants = true) {
-                  contentDescription = areaDescription(name, s) + (if (isSuggested) ". Sugerida por Nubi" else "") + ". Abrir sus juegos"
+                  contentDescription = areaDescription(name, s) + (if (isSuggested) ". Nubi lo sugiere" else "") + ". Abrir sus juegos"
                 }
                 .testTag("area_${s.area.lowercase()}")
             ) {
@@ -889,10 +873,10 @@ internal fun AreaGrid(
   }
 }
 
-/** Rótulo "Sugerida" (píldora de plasticina sol con letra tinta): un rótulo, no una tarjeta. */
+/** Rótulo «Nubi sugiere» (píldora de plasticina sol con letra tinta): un rótulo, no una tarjeta; la misma redacción que el chip de la lámina (Tarea 150, B2). */
 @Composable
 private fun SuggestedTag(modifier: Modifier = Modifier) {
-  com.example.ui.theme.ClayPill("Sugerida", modifier, color = Clay.Sun, compact = true)
+  com.example.ui.theme.ClayPill(Suggestion.CHIP, modifier, color = Clay.Sun, compact = true)
 }
 
 /** Sello sol con ✓: el área (o juego) ya se jugó hoy. La marca es una forma, no solo el color. */

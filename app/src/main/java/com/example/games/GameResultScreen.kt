@@ -211,7 +211,7 @@ fun GameResultScreen(
         Dot()
         Stat(LevelTier.fromLevel(result.level).tierName, "etapa")
         Dot()
-        Stat(if (result.timed) "Reto" else "Precisión", "modo")
+        Stat(if (result.timed) "Con reloj" else "Sin reloj", "modo")
       }
       ResultNotices(listOfNotNull(levelNotice, modeNotice))
       actions()
@@ -565,7 +565,7 @@ fun GameResultScreen(
           )
         }
         DetailLine(
-          if (result.rotationSpeedDps != null) "Cuanto más girada viene la pieza, más tardamos: es la huella de girarla en la mente (Cooper y Shepard, 1973). Tu giro sale de cuánto sube tu tiempo por cada grado, solo con tus aciertos. En Precisión, sin apuro de tiempo, la medida es más fiel."
+          if (result.rotationSpeedDps != null) "Cuanto más girada viene la pieza, más tardamos: es la huella de girarla en la mente (Cooper y Shepard, 1973). Tu giro sale de cuánto sube tu tiempo por cada grado, solo con tus aciertos. Sin reloj, sin apuro de tiempo, la medida es más fiel."
           else "Tu giro mental se calcula con al menos 8 aciertos en 3 ángulos distintos y 7 de cada 10 respuestas bien: con más partidas lo verás.",
           "acoplamiento_explain"
         )

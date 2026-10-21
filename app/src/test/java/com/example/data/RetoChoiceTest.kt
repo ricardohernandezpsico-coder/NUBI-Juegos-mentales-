@@ -8,7 +8,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** «Sin reloj / Contra el reloj» por juego (ficha de Juegos, 6-oct): la elección que vale, lo que se guarda y cómo se dice. Lógica pura. */
+/** «Sin reloj / Con reloj» por juego (ficha de Juegos, 6-oct): la elección que vale, lo que se guarda y cómo se dice. Lógica pura. */
 class RetoChoiceTest {
   @Test
   fun `sin eleccion propia vale el ajuste viejo de Ajustes y la eleccion propia gana`() {
@@ -39,7 +39,7 @@ class RetoChoiceTest {
       assertNotNull("${g.id} no tiene duración de Reto", RetoChoice.seconds(g.id))
     }
     assertEquals("Constelaciones dura 3 min", 180, RetoChoice.seconds("parejas"))
-    assertEquals("Contra el reloj (3 min)", RetoChoice.timedLabel("parejas"))
+    assertEquals("Con reloj (3 min)", RetoChoice.timedLabel("parejas"))
   }
 
   @Test
@@ -49,7 +49,7 @@ class RetoChoiceTest {
     assertEquals("Jugar · suave · sin reloj", RetoChoice.playLabel(PlayMode.SUAVE, false, supportsReto = true))
     assertEquals("Jugar · suave · con reloj", RetoChoice.playLabel(PlayMode.SUAVE, true, supportsReto = true))
     assertEquals("Jugar · en Desafío · con reloj", RetoChoice.playLabel(PlayMode.DESAFIO, true, supportsReto = true))
-    assertEquals("Jugar · en Experto · sin reloj", RetoChoice.playLabel(PlayMode.EXPERTO, false, supportsReto = true))
+    assertEquals("Jugar · al límite · sin reloj", RetoChoice.playLabel(PlayMode.EXPERTO, false, supportsReto = true))
   }
 
   @Test
@@ -75,7 +75,7 @@ class RetoChoiceTest {
     assertEquals("A tu medida · sin reloj", RetoChoice.summaryLabel(PlayMode.A_TU_MEDIDA, false, supportsReto = true, seconds = 120))
     assertEquals("Suave · sin reloj", RetoChoice.summaryLabel(PlayMode.SUAVE, false, supportsReto = true, seconds = 120))
     assertEquals("Desafío · con reloj (3 min)", RetoChoice.summaryLabel(PlayMode.DESAFIO, true, supportsReto = true, seconds = 180))
-    assertEquals("Experto · con reloj (1 min 30 s)", RetoChoice.summaryLabel(PlayMode.EXPERTO, true, supportsReto = true, seconds = 90))
+    assertEquals("Al límite · con reloj (1 min 30 s)", RetoChoice.summaryLabel(PlayMode.EXPERTO, true, supportsReto = true, seconds = 90))
     assertEquals("sin duración conocida, solo «con reloj»", "A tu medida · con reloj", RetoChoice.summaryLabel(PlayMode.A_TU_MEDIDA, true, supportsReto = true))
   }
 
@@ -101,7 +101,7 @@ class RetoChoiceTest {
     assertEquals("2 min", RetoChoice.durationText(120))
     assertEquals("3 min", RetoChoice.durationText(180))
     assertEquals("45 s", RetoChoice.durationText(45))
-    assertEquals("Contra el reloj (2 min)", RetoChoice.timedLabel("bodega"))
+    assertEquals("Con reloj (2 min)", RetoChoice.timedLabel("bodega"))
     assertEquals("Sin reloj", RetoChoice.UNTIMED_LABEL)
   }
 }

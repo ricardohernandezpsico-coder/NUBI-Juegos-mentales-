@@ -142,7 +142,7 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
         com.example.ui.components.OnBoardText(userSettings.name.ifBlank { "Tu perfil" }, color = Color(0xFFEAF0FF), fontSize = 30.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
         index?.let {
           com.example.ui.components.OnBoardText(
-            text = "Etapa ${levelWord(it / 100f)}",                 // (ítem 17) «etapa», como en la lámina, el detalle y el resultado; antes «nivel hábil»
+            text = "Etapa general: ${levelWord(it / 100f)}",                 // (ítem 17) «etapa», como en la lámina, el detalle y el resultado; antes «nivel hábil»
             color = com.example.ui.theme.NubiTokens.OnNightDim,
             fontSize = 16.sp,
             modifier = Modifier.testTag("profile_stage")

@@ -238,18 +238,18 @@ private fun FlightPage(step: FlightStep, s: FlightState, todayGames: List<String
       onContinue = a.onContinue
     )
     FlightStep.METAS -> QuestionPage(
-      eyebrow = "Para armar tu camino",
+      eyebrow = "Para armar tu ruta",
       title = "¿Qué te gustaría jugar más$hi?",
       options = listOf(
-        Opt(DomainType.MEMORIA.name, "Memoria", "recordar, retener"),
-        Opt(DomainType.ATENCION.name, "Atención", "concentrarme, reaccionar"),
-        Opt(DomainType.RAZONAMIENTO.name, "Razonamiento", "lógica y números"),
-        Opt(DomainType.LENGUAJE.name, "Lenguaje", "palabras y lectura")
+        Opt(DomainType.MEMORIA.name, "Memoria", DomainType.MEMORIA.tagline),                    // la misma descripción de cada área que en Juegos (Tarea 150, B1.9)
+        Opt(DomainType.ATENCION.name, "Atención", DomainType.ATENCION.tagline),
+        Opt(DomainType.RAZONAMIENTO.name, "Razonamiento", DomainType.RAZONAMIENTO.tagline),
+        Opt(DomainType.LENGUAJE.name, "Lenguaje", DomainType.LENGUAJE.tagline)
       ),
       selected = s.goals.map { it.name }.toSet(),
       multi = true,
       onPick = { v -> DomainType.entries.firstOrNull { it.name == v }?.let(a.onGoal) },
-      hint = "Elige hasta 3. Tu camino de cada día les dará prioridad.",
+      hint = "Elige hasta 3. Tu ruta de cada día les dará prioridad.",
       canContinue = s.goals.isNotEmpty(),
       onContinue = a.onContinue
     )
@@ -259,7 +259,7 @@ private fun FlightPage(step: FlightStep, s: FlightState, todayGames: List<String
       options = listOf(Opt("3", "3 días", "suave"), Opt("4", "4 días", "recomendado"), Opt("5", "5 días", "intenso"), Opt("7", "Todos los días", "sin pausa")),
       selected = setOf(s.days?.toString()),
       onPick = { v -> v.toIntOrNull()?.let(a.onDays) },
-      hint = "Unos 5 minutos cada vez.",
+      hint = "Son " + com.example.data.DailyPath.minutesText(com.example.data.DailyPath.SIZE) + " cada vez.",
       canContinue = s.days != null,
       onContinue = a.onContinue
     )
@@ -522,7 +522,7 @@ private fun StartingPointPage(s: FlightState, hi: String, a: FlightActions) {
 private fun AreaLine(r: FirstFlight.AreaRow) {
   val label = buildString {
     append(r.stage)
-    if (!r.measured) append(" · estimado")
+    if (!r.measured) append(" · calculado con lo que jugaste")
     if (r.strong) append(" · tu fuerte hoy")
     if (r.focus) append(" · donde más vamos a jugar")
   }
@@ -605,16 +605,16 @@ private fun ReminderPage(s: FlightState, a: FlightActions) {
 }
 
 /**
- * El último paso: los 3 juegos de hoy, elegidos por las metas y el punto de partida. «Empezar mi camino» entra a Hoy.
+ * El último paso: los 3 juegos de hoy, elegidos por las metas y el punto de partida. «Empezar mi ruta» entra a Hoy.
  * Tarea 145 (ítem 23 de la revisión del 19-oct): antes Nubi y dos líneas con la mitad de la pantalla vacía; ahora la ISLA, la misma que se ve mañana en Hoy (el mismo render, con Nubi encima), a un tamaño que entra sin desplazar, y las dos líneas de siempre (sin texto nuevo que prometa algo).
  * La isla se queda con lo que sobra de alto después de las dos líneas (se miden con la letra del sistema); con letra muy grande, donde ni así entra, la página se desliza como las demás.
  */
 @Composable
 private fun TodayPathPage(todayGames: List<String>, a: FlightActions) {
-  // El día del Primer vuelo, el camino de hoy ya quedó cumplido con el vuelo (repository.completeTodayWithFlight): no se juegan 7 juegos. Mañana empieza el camino de 3 juegos.
-  val title = "Tu primer vuelo fue tu camino de hoy"
-  val sub = "Mañana empieza tu camino de 3 juegos, elegido por tus metas y por lo que más conviene reforzar."
-  PageFrame(footer = { MainButton("Empezar mi camino", tag = "btn_flight_finish", onClick = a.onContinue) }, fill = true) {
+  // El día del Primer vuelo, la ruta de hoy ya quedó cumplida con el vuelo (repository.completeTodayWithFlight): no se juegan 7 juegos. Mañana empieza la ruta de 3 juegos.
+  val title = "Tu primer vuelo fue tu ruta de hoy"
+  val sub = "Mañana empieza tu ruta de 3 juegos, elegida por tus metas y por lo que más conviene reforzar."
+  PageFrame(footer = { MainButton("Empezar mi ruta", tag = "btn_flight_finish", onClick = a.onContinue) }, fill = true) {
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
       val measurer = androidx.compose.ui.text.rememberTextMeasurer()
       val density = androidx.compose.ui.platform.LocalDensity.current
