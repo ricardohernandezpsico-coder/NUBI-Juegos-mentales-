@@ -14,7 +14,7 @@ def arg(n, d): return args[args.index(n)+1] if n in args else d
 ENGINE = arg('--engine','EEVEE').upper(); SAMPLES = int(arg('--samples','48')); WIDTH = int(arg('--width','1080'))
 OUT = os.path.abspath(arg('--out', os.path.join(os.path.dirname(os.path.abspath(__file__)),'out'))); LAYERS = '--layers' in args; POSE = arg('--nubi','hola')
 JSON = '--json' in args; NORENDER = '--no-render' in args; ICONOS = '--iconos' in args; REPISA = '--repisa' in args; ALTERNATIVAS = '--alternativas' in args
-LAMINA = arg('--lamina','A').upper(); MIRADA = arg('--mirada','frente'); SOLO_NUBI = '--solo-nubi' in args; FONDO = '--fondo' in args; SOLO_EDIFICIOS = '--solo-edificios' in args; PERFIL = '--perfil' in args; TABLERO = '--tablero' in args; KIT = '--kit' in args; BARRA = '--barra' in args
+LAMINA = arg('--lamina','A').upper(); MIRADA = arg('--mirada','frente'); SOLO_NUBI = '--solo-nubi' in args; FONDO = '--fondo' in args; SOLO_EDIFICIOS = '--solo-edificios' in args; PERFIL = '--perfil' in args; TABLERO = '--tablero' in args; KIT = '--kit' in args; BARRA = '--barra' in args; BARRA_OBJ = '--barra-objetos' in args
 DECO = '--deco' in args; DECO_COMPLETA = '--deco-completa' in args; DECO_LAMINA = '--deco-lamina' in args; DECO_ZOOM = float(arg('--deco-zoom', '2')); DECO_SIN_CAPA = '--deco-sin-capa' in args; DECO_SOLO = [s for s in arg('--deco-solo', '').split(',') if s]
 os.makedirs(OUT, exist_ok=True); random.seed(5)
 
@@ -1034,6 +1034,29 @@ def render_barra():
     for o in [o for o in bpy.data.objects if o not in before]: bpy.data.objects.remove(o, do_unlink=True)
 
 
+def render_barra_objetos():
+    """Tarea 157, fila E1 «Objetos de color» de la lámina de íconos de la barra: los tres objetos de la barra de ANTES de la Tarea 156 (la isla en miniatura, el cohete y el farol de `icono_hoy3`, `icono_juegos3` e `icono_avance_farol3`) SUELTOS, sin el cubo,
+    renderizados AL TAMAÑO en que se muestran (nada se amplía): un cuadro de `--caja-dp` (48) a `--px-dp` (3) píxeles por dp, con el objeto de `--obj-dp` (40) de su lado mayor, centrado y SIN sombra (la sombra larga de la luz de la isla no cabe en la caja: se cortaría). Dos estados por objeto (apagado y encendido: ventanilla, lucero y llama con luz).
+    Uso: blender -b -P tools/isla/isla.py -- --engine CYCLES --samples 160 --barra-objetos --out <carpeta>   → obj_hoy.png, obj_hoy_on.png, obj_juegos.png … (RGBA)."""
+    px_dp = float(arg('--px-dp', '3')); caja = float(arg('--caja-dp', '48')); obj_dp = float(arg('--obj-dp', '40'))
+    n = int(round(caja * px_dp)); scene.render.resolution_x = n; scene.render.resolution_y = n; scene.render.resolution_percentage = 100
+    cam = cam_iso(target=(0, 0, 0.3), ortho=1.6); cam_o = scene.camera
+    for k, fn in (('hoy', icono_hoy3), ('juegos', icono_juegos3), ('avance', icono_avance_farol3)):
+        for on in (False, True):
+            before = set(bpy.data.objects); fn(on)
+            objs = [o for o in bpy.data.objects if o not in before and o.type in ('MESH', 'LIGHT')]
+            normaliza(objs, ICONO_H, 0.0); bpy.context.view_layer.update()
+            inv = cam_o.matrix_world.inverted(); pts = []
+            for o in objs:
+                if o.type == 'MESH' and not o.name.startswith('ic_llama'): pts += [inv @ (o.matrix_world @ Vector(c)) for c in o.bound_box]
+            x0, x1 = min(p.x for p in pts), max(p.x for p in pts); y0, y1 = min(p.y for p in pts), max(p.y for p in pts)
+            cam_o.location = cam_o.location + cam_o.matrix_world.to_3x3() @ Vector(((x0 + x1) / 2, (y0 + y1) / 2, 0))    # el objeto al centro del cuadro
+            cam.ortho_scale = max(x1 - x0, y1 - y0) * caja / obj_dp                                                      # su lado mayor mide obj_dp dentro de la caja
+            times['obj_' + k + ('_on' if on else '')] = render('obj_' + k + ('_on' if on else ''), {'iconos', 'luces'})
+            for o in [o for o in bpy.data.objects if o not in before]: bpy.data.objects.remove(o, do_unlink=True)
+            cam_o.location = cam_o.location - cam_o.matrix_world.to_3x3() @ Vector(((x0 + x1) / 2, (y0 + y1) / 2, 0))
+
+
 # ------------------------------------------------------------------ kit de plasticina (Tareas 89 y 90): losas de nine-slice en tres radios, discos redondos, íconos de churro tinta y el triángulo de «Jugar», con dos estados las losas y los discos
 # 1 unidad de Blender = 20 dp; se renderiza a 3 px por dp (KIT_PX). Cámara ortogonal, casi desde arriba (KIT_TILT grados de inclinación: se ve un poco el canto de adelante); el sol de la isla (arriba a la izquierda) deja la sombra de contacto abajo a la derecha.
 # `--kit-solo losas|discos|iconos|avatares` renderiza solo una parte (todo por defecto).
@@ -1560,12 +1583,13 @@ def render_deco(i, zoom=1.0):
 
 t_all = time.time()
 times = {}
-if ICONOS or REPISA or ALTERNATIVAS or FONDO or TABLERO or BARRA or KIT:
+if ICONOS or REPISA or ALTERNATIVAS or FONDO or TABLERO or BARRA or BARRA_OBJ or KIT:
     studio(); compositor(); setup_render(); scene.render.film_transparent = True
     if ICONOS or ALTERNATIVAS: render_iconos()
     if FONDO: render_fondo()
     if TABLERO: render_tablero()
     if BARRA: render_barra()
+    if BARRA_OBJ: render_barra_objetos()
     if KIT: render_kit()
     if REPISA: render_repisa()
     with open(os.path.join(OUT,'tiempos.txt'),'w',encoding='utf-8') as f:
