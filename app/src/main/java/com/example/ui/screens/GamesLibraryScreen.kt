@@ -394,7 +394,7 @@ internal fun GameTile(data: GameCardData, highlighted: Boolean, onClick: () -> U
       Column(Modifier.weight(1f)) {
         Text(data.title, color = Clay.Ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
         Text(
-          if (data.progress != null) "${Skill.stageName(data.progress)} · ${Skill.percent(data.progress)} de 100" else "Sin medir aún",
+          if (data.progress != null) "${Skill.stageName(data.progress)} · ${Skill.percent(data.progress)} de 100" else "Aún sin medir",
           color = if (data.progress != null) ring else CardMuted, fontSize = Body, fontWeight = FontWeight.Medium,
           modifier = Modifier.padding(top = 2.dp)
         )
@@ -544,7 +544,7 @@ internal fun GameSheetContent(
         Text(Skill.toNextLine(data.progress) ?: "La etapa más alta", color = CardMuted, fontSize = Small, modifier = Modifier.testTag("sheet_to_next"))
         com.example.ui.components.StageScale(data.progress, onCard = true, modifier = Modifier.padding(top = 6.dp))
       } else {
-        Text("Sin medir aún", color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text("Aún sin medir", color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Text("Juega a tu medida una vez y verás dónde estás.", color = CardMuted, fontSize = Small)
       }
 
@@ -855,14 +855,13 @@ internal fun AreaGrid(
               Box(Modifier.height(120.dp), contentAlignment = Alignment.BottomCenter) {
                 BuildingOnPedestal(s.area, pedestal, lamp = isSuggested, overlay = {
                   if (s.area in playedToday) TodaySeal(Modifier.align(Alignment.TopCenter).offset(x = pedestal * 0.16f, y = pedestal * 0.18f))
-                  if (isSuggested) SuggestedTag(Modifier.align(Alignment.BottomCenter).offset(y = 14.dp))      // la píldora «Sugerida» sobre el borde del pedestal
                 })
               }
               OnBoardText(name, color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold, maxLines = 2, textAlign = TextAlign.Center, lineHeight = 26.sp, modifier = Modifier.padding(top = 18.dp))
               OnBoardText(domain.tagline, color = OnNightDim, fontSize = 16.sp, maxLines = 2, textAlign = TextAlign.Center, lineHeight = 20.sp)
               KitBar(s.value, s.change, modifier = Modifier.width(140.dp).padding(vertical = 8.dp), onCard = false)
               OnBoardText(
-                (s.value?.let { Skill.stageName(it) } ?: "Sin medir") + " · " + if (count == 1) "1 juego" else "$count juegos",
+                (s.value?.let { Skill.stageName(it) } ?: "Aún sin medir") + " · " + if (count == 1) "1 juego" else "$count juegos",
                 color = OnNightDim, fontSize = 16.sp, maxLines = 2, textAlign = TextAlign.Center, lineHeight = 20.sp
               )
             }
@@ -871,12 +870,6 @@ internal fun AreaGrid(
       }
     }
   }
-}
-
-/** Rótulo «Nubi sugiere» (píldora de plasticina sol con letra tinta): un rótulo, no una tarjeta; la misma redacción que el chip de la lámina (Tarea 150, B2). */
-@Composable
-private fun SuggestedTag(modifier: Modifier = Modifier) {
-  com.example.ui.theme.ClayPill(Suggestion.CHIP, modifier, color = Clay.Sun, compact = true)
 }
 
 /** Sello sol con ✓: el área (o juego) ya se jugó hoy. La marca es una forma, no solo el color. */
@@ -920,7 +913,7 @@ internal fun AreaWindow(
       Column(Modifier.weight(1f)) {
         OnBoardText(title, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
         OnBoardText(
-          (status?.value?.let { Skill.stageName(it) } ?: "Sin medir") + " · " + if (cards.size == 1) "1 juego" else "${cards.size} juegos",
+          (status?.value?.let { Skill.stageName(it) } ?: "Aún sin medir") + " · " + if (cards.size == 1) "1 juego" else "${cards.size} juegos",
           color = OnNightDim, fontSize = 15.sp
         )
       }

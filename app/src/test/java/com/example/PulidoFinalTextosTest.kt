@@ -69,7 +69,7 @@ class PulidoFinalTextosTest {
     )
     val previous = listOf(4f, 5f, 4f, 5f, 4f).mapIndexed { i, v -> com.example.data.MeasurePoint(100L * (i + 1), "trail", v, 0.5f, false) }
     val m = com.example.games.FinalModels.forGame(rastro, previous)!!
-    assertTrue(m.progressPhrase, m.progressPhrase.contains("promedio") && m.progressPhrase.contains("mejor"))
+    assertTrue(m.progressPhrase, m.progressPhrase.contains("promedio") && m.progressPhrase.lowercase().contains("mejor"))
     show(m)
     rule.onNodeWithText(m.progressPhrase).assertIsDisplayed()
     assertEquals(0, count("progress_chips"))
@@ -134,7 +134,7 @@ class PulidoFinalTextosTest {
 
   @Test
   fun hoy_y_avance_dicen_cuatro_juegos_cortos_porque_son_cuatro() {
-    assertTrue(src("ui/screens/HomeScreen.kt").contains("Encuentra tu punto de partida · 4 juegos cortos"))
+    assertTrue(src("ui/screens/HomeScreen.kt").contains("Encuentra tu punto de partida"))
     assertTrue(src("ui/screens/ProgressScreen.kt").contains("4 juegos cortos para que cada juego empiece a tu medida"))
     assertEquals("son 4 (`BaselinePlan.steps`)", 4, com.example.data.BaselinePlan.steps.size)
   }

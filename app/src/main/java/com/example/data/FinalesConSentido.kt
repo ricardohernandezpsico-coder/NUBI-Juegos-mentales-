@@ -151,9 +151,19 @@ object FinalesConSentido {
     return Progress(today, mean, best, phrase)
   }
 
-  /** La frase de tu avance con los números adentro, en la unidad del juego («4 luces», «70 %», «zona firme», «+0,3 s»). Sin medida hoy no hay frase (la unidad ya dice por qué): vacía. */
-  fun phraseWith(progress: Progress, format: (Float?) -> String): String =
-    if (progress.today == null) "" else progress.phrase.replace("{promedio}", format(progress.average)).replace("{mejor}", format(progress.best))
+  /**
+   * La frase de tu avance con los números adentro, en la unidad del juego («4 luces», «70 %», «zona firme», «+0,3 s»). Sin medida hoy no hay frase (la unidad ya dice por qué): vacía.
+   * **Lo que repite la cifra de hoy se omite** (Opus, 21-oct): si el texto del promedio es IGUAL al de hoy, sale el «(zona firme)» del promedio; si el del mejor es igual al de hoy, sale «Tu mejor: zona firme.» (en Freno, con medidas por categorías, hoy decía
+   * «Como tu promedio (zona firme): vas parejo. Tu mejor: zona firme.»; ahora, «Como tu promedio: vas parejo.»).
+   */
+  fun phraseWith(progress: Progress, format: (Float?) -> String): String {
+    if (progress.today == null) return ""
+    val today = format(progress.today); val average = format(progress.average); val best = format(progress.best)
+    var phrase = progress.phrase
+    if (average == today) phrase = phrase.replace(" ({promedio})", "").replace(" Tu promedio: {promedio}.", "")
+    if (best == today) phrase = phrase.replace(" Tu mejor: {mejor}.", "")
+    return phrase.replace("{promedio}", average).replace("{mejor}", best)
+  }
 
   /** «78 %» (redondeado); «—» sin dato. */
   fun percentText(value: Float?): String = if (value == null || value.isNaN()) "—" else "${value.roundToInt()} %"

@@ -222,14 +222,14 @@ class FirstFlightTest {
       assertTrue("en ${s.step} el aro va en la última farola", FirstFlight.stations(s).last().current)
     }
     assertEquals(listOf(FlightStep.EDAD, FlightStep.METAS, FlightStep.DATO, FlightStep.DIAS, FlightStep.PUNTO, FlightStep.AVISO, FlightStep.CAMINO).size, shown.size)
-    assertEquals("sin los juegos que se dejaron para después el total baja y cada pantalla sigue con su número (Tarea 151, B4.3)", (1..7).map { "Paso $it de 7" }, shown)
+    assertEquals("las pantallas que siguen dicen «Paso 6 de 6»; las que preguntan, «· una pregunta»", listOf("Paso 6 de 6 · una pregunta", "Paso 6 de 6 · una pregunta", "Paso 6 de 6", "Paso 6 de 6 · una pregunta", "Paso 6 de 6", "Paso 6 de 6 · una pregunta", "Paso 6 de 6"), shown)
     // con el juego 1 medido y los demás para después: Memoria hasta el dato; desde ahí, directo a la última
     var t = FirstFlight.skipRemainingGames(full(FlightStep.JUEGO_2).copy(measured = mapOf("secuencia" to 0.5f), age = AgeBand.ADULT, goals = setOf(DomainType.MEMORIA)))
-    assertEquals("Paso 5 de 9", FirstFlight.stationText(full(FlightStep.DATO).copy(skipped = t.skipped, measured = t.measured)))
-    assertEquals("Paso 6 de 9", FirstFlight.stationText(full(FlightStep.DIAS).copy(skipped = t.skipped, measured = t.measured)))
-    assertEquals("Paso 7 de 9", FirstFlight.stationText(full(FlightStep.PUNTO).copy(skipped = t.skipped, measured = t.measured)))
+    assertEquals("Paso 2 de 6", FirstFlight.stationText(full(FlightStep.DATO).copy(skipped = t.skipped, measured = t.measured)))
+    assertEquals("Paso 6 de 6 · una pregunta", FirstFlight.stationText(full(FlightStep.DIAS).copy(skipped = t.skipped, measured = t.measured)))
+    assertEquals("Paso 6 de 6", FirstFlight.stationText(full(FlightStep.PUNTO).copy(skipped = t.skipped, measured = t.measured)))
     // sin juegos saltados nada cambia: el orden de siempre (Memoria, Atención, Razonamiento, Lenguaje)
-    assertEquals("Paso 7 de 15 · Atención", FirstFlight.stationText(full(FlightStep.TARJETA_2)))
+    assertEquals("Paso 3 de 6 · Atención", FirstFlight.stationText(full(FlightStep.TARJETA_2)))
     // los números de paso que se ven en todo el recorrido nunca bajan
     var w = FirstFlight.skipRemainingGames(full(FlightStep.JUEGO_3).copy(measured = mapOf("secuencia" to 0.5f, "freno" to 0.5f), age = AgeBand.ADULT))
     var last = -1
@@ -242,18 +242,18 @@ class FirstFlightTest {
   }
 
   @Test
-  fun `cada pantalla tiene su numero de paso y el juego o su tarjeta nombran el area`() {
+  fun `el texto dice el paso N de 6, la etapa y si la pantalla es una pregunta`() {
     assertEquals("Empezamos juntos", text(FlightStep.HOLA))
     assertEquals("Empezamos juntos", text(FlightStep.NOMBRE))
-    // Tarea 151 (B4.3): UNA pantalla, UN número (antes la edad, las metas y el dato llevaban el mismo «Paso 2 de 6»); un juego o su tarjeta nombran el área; las preguntas, el punto de partida, el aviso y la ruta, no (Tarea 143, A2)
-    val expected = listOf(
-      FlightStep.JUEGO_1 to "Paso 1 de 15 · Memoria", FlightStep.TARJETA_1 to "Paso 2 de 15 · Memoria", FlightStep.EDAD to "Paso 3 de 15", FlightStep.METAS to "Paso 4 de 15", FlightStep.DATO to "Paso 5 de 15",
-      FlightStep.JUEGO_2 to "Paso 6 de 15 · Atención", FlightStep.TARJETA_2 to "Paso 7 de 15 · Atención", FlightStep.JUEGO_3 to "Paso 8 de 15 · Razonamiento", FlightStep.TARJETA_3 to "Paso 9 de 15 · Razonamiento",
-      FlightStep.DIAS to "Paso 10 de 15", FlightStep.JUEGO_4 to "Paso 11 de 15 · Lenguaje", FlightStep.TARJETA_4 to "Paso 12 de 15 · Lenguaje", FlightStep.PUNTO to "Paso 13 de 15", FlightStep.AVISO to "Paso 14 de 15", FlightStep.CAMINO to "Paso 15 de 15"
-    )
-    for ((step, label) in expected) assertEquals(step.name, label, text(step))
-    assertEquals("todas las pantallas con paso están en la lista, en orden", FirstFlight.steps(FlightMode.FULL).drop(2).map { it.name }, expected.map { it.first.name })
-    assertEquals("el número solo sube, nunca se repite", (1..15).toList(), expected.map { it.second.removePrefix("Paso ").substringBefore(" de").toInt() })
+    // Opus, 21-oct: el mismo «de 6» que las farolas (el «de 15» asustaba a una persona de 60+). Un juego o su tarjeta nombran el área; las preguntas (la edad, las metas, los días, el aviso) dicen «una pregunta»; el dato, el punto de partida y la ruta, el paso a secas
+    for (step in listOf(FlightStep.JUEGO_1, FlightStep.TARJETA_1)) assertEquals("Paso 2 de 6 · Memoria", text(step))
+    for (step in listOf(FlightStep.EDAD, FlightStep.METAS)) assertEquals("Paso 2 de 6 · una pregunta", text(step))
+    assertEquals("Paso 2 de 6", text(FlightStep.DATO))
+    for (step in listOf(FlightStep.JUEGO_2, FlightStep.TARJETA_2)) assertEquals("Paso 3 de 6 · Atención", text(step))
+    for (step in listOf(FlightStep.JUEGO_3, FlightStep.TARJETA_3)) assertEquals("Paso 4 de 6 · Razonamiento", text(step))
+    assertEquals("Paso 4 de 6 · una pregunta", text(FlightStep.DIAS))
+    for (step in listOf(FlightStep.JUEGO_4, FlightStep.TARJETA_4)) assertEquals("Paso 5 de 6 · Lenguaje", text(step))
+    assertEquals("Paso 6 de 6", text(FlightStep.PUNTO)); assertEquals("Paso 6 de 6 · una pregunta", text(FlightStep.AVISO)); assertEquals("Paso 6 de 6", text(FlightStep.CAMINO))
     // nunca promete tiempo
     for (step in FirstFlight.steps(FlightMode.FULL)) assertFalse(text(step), text(step).lowercase().contains("minuto"))
   }

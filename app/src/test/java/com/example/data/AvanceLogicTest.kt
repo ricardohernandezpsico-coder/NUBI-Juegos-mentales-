@@ -110,18 +110,17 @@ class AvanceLogicTest {
     assertEquals("una sola frase del descanso en toda la app: la de Hoy (Tarea 150, B1.8)", "Descansaste el martes: tu racha sigue.", nubiWeekLine(lampsOf(5), 4, Streak.StreakInfo(5, 5L, false), 4, noGamesAtAll = false))
     assertEquals("Descansaste el jueves: tu racha sigue.", nubiWeekLine(lampsOf(1), 4, Streak.StreakInfo(2, 0L, false), 1, noGamesAtAll = false))
     // 3. meta cumplida (también pasada), gana a las 4 áreas
-    assertEquals("Meta cumplida esta semana. Lo que juegues de más es regalo.", nubiWeekLine(lampsOf(4), 4, noRest, 4, noGamesAtAll = false))
-    assertEquals("Meta cumplida esta semana. Lo que juegues de más es regalo.", nubiWeekLine(lampsOf(6), 4, noRest, 2, noGamesAtAll = false))
+    assertEquals("Lo que juegues de más es regalo.", nubiWeekLine(lampsOf(4), 4, noRest, 4, noGamesAtAll = false))
+    assertEquals("Lo que juegues de más es regalo.", nubiWeekLine(lampsOf(6), 4, noRest, 2, noGamesAtAll = false))
     // 4. las 4 áreas sin la meta
-    assertEquals("Esta semana pasaste por las 4 áreas.", nubiWeekLine(lampsOf(2), 4, noRest, 4, noGamesAtAll = false))
+    assertEquals("¡Qué buena variedad esta semana!", nubiWeekLine(lampsOf(2), 4, noRest, 4, noGamesAtAll = false))
     // 5. falta 1 día
-    assertEquals("Te falta 1 día para tu meta. Cualquier ruta cuenta.", nubiWeekLine(lampsOf(3), 4, noRest, 2, noGamesAtAll = false))
-    // 6. faltan más
-    assertEquals("Llevas 1 de 4. Un rato corto hoy también suma.", nubiWeekLine(lampsOf(1), 4, noRest, 1, noGamesAtAll = false))
-    assertEquals("Llevas 2 de 7. Un rato corto hoy también suma.", nubiWeekLine(lampsOf(2), 7, noRest, 2, noGamesAtAll = false))
-    // sin meta no hay frase de meta
-    assertEquals("Llevas 3 días esta semana. Un rato corto hoy también suma.", nubiWeekLine(lampsOf(3), 0, noRest, 2, noGamesAtAll = false))
-    assertEquals("Llevas 1 día esta semana. Un rato corto hoy también suma.", nubiWeekLine(lampsOf(1), 0, noRest, 1, noGamesAtAll = false))
+    assertEquals("Cualquier ruta cuenta.", nubiWeekLine(lampsOf(3), 4, noRest, 2, noGamesAtAll = false))
+    // 6. faltan más (y sin meta): el globo no repite los días que la pantalla ya dice (Opus, 21-oct)
+    assertEquals("Un rato corto hoy también suma.", nubiWeekLine(lampsOf(1), 4, noRest, 1, noGamesAtAll = false))
+    assertEquals("Un rato corto hoy también suma.", nubiWeekLine(lampsOf(2), 7, noRest, 2, noGamesAtAll = false))
+    assertEquals("Un rato corto hoy también suma.", nubiWeekLine(lampsOf(3), 0, noRest, 2, noGamesAtAll = false))
+    assertEquals("Un rato corto hoy también suma.", nubiWeekLine(lampsOf(1), 0, noRest, 1, noGamesAtAll = false))
   }
 
   @Test
@@ -129,7 +128,7 @@ class AvanceLogicTest {
     val streaks = listOf(noRest, Streak.StreakInfo(5, 5L, false), Streak.StreakInfo(2, 0L, false), Streak.StreakInfo(0, null, true))
     val lines = mutableSetOf<String>()
     for (days in 0..7) for (goal in 0..7) for (areas in 0..4) for (st in streaks) for (none in listOf(false, true)) lines += nubiWeekLine(lampsOf(days), goal, st, areas, none)
-    assertTrue("se armaron las 6 frases y sus variantes", lines.size >= 8)
+    assertTrue("se armaron las frases y sus variantes", lines.size >= 6)
     for (l in lines) {
       assertTrue("«$l» usa «${NoLossGuard.hit(l, NoLossGuard.literals)}»", NoLossGuard.hit(l, NoLossGuard.literals) == null)
       assertTrue("«$l» usa «${NoLossGuard.hit(l, NoLossGuard.reminderRoots)}»", NoLossGuard.hit(l, NoLossGuard.reminderRoots) == null)

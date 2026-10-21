@@ -358,7 +358,7 @@ class HoyIslaScreenshotTest {
   fun sin_punto_de_partida_la_invitacion_sigue_a_mano() {
     show(ui(hasBaseline = false))
     composeTestRule.onNodeWithTag("btn_home_baseline").assertExists()
-    composeTestRule.onNodeWithText("Encuentra tu punto de partida · 4 juegos cortos").assertExists()
+    composeTestRule.onNodeWithText("Encuentra tu punto de partida").assertExists()
   }
 
   // ---- Las piezas de la isla por medallas (Tarea 136, «Tu isla crece»): 0, 3 (arbustos, banderines y muelle: las primeras) y las 10, a 393 × 873 y a 360 × 780. Que no pisen edificios, zonas tocables, farolas ni a Nubi lo mide `IslaPiezasImagesTest` sobre los píxeles.

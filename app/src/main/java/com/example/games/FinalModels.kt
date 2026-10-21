@@ -254,7 +254,7 @@ object FinalModels {
       todayValue = cap,
       boxTitle = "Tu seguimiento",
       headline = cap?.let { FinalesConSentido.satellitesText(it) } ?: "—",
-      unit = if (cap != null) "a la vez, sin perderlos de vista" else "Sin rondas suficientes para medir tu seguimiento.",
+      unit = if (cap != null) "que seguiste a la vez" else "Sin rondas suficientes para medir tu seguimiento.",
       dataLine = Satelites.lightsLine(result.satLights) ?: Satelites.perfectLine(result.satPerfect, result.totalTrials, result.satBestStreak),
       conditionalTrick = null,
       recordNew = result.satNewRecord == true, recordText = record

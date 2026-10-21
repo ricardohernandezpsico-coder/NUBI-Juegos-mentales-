@@ -54,14 +54,9 @@ class SkillTest {
   }
 
   @Test
-  fun `aciertos esperados y como se dicen`() {
+  fun `aciertos esperados`() {
     assertEquals(0.70f, Skill.expectedHits("radar", PlayMode.DESAFIO, AgeBand.ADULT), eps)
     assertEquals(0.85f, Skill.expectedHits("radar", PlayMode.A_TU_MEDIDA, AgeBand.SENIOR), eps)
-    assertEquals("8 de 10", Skill.hitsText(0.80f))
-    assertEquals("8 a 9 de 10", Skill.hitsText(0.85f))
-    assertEquals("9 de 10", Skill.hitsText(0.92f))
-    assertEquals("7 a 8 de 10", Skill.hitsText(0.75f))
-    assertEquals("7 de 10", Skill.hitsText(0.70f))
   }
 
   @Test

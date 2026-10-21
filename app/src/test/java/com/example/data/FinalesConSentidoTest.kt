@@ -130,8 +130,8 @@ class FinalesConSentidoTest {
     assertEquals(FinalesConSentido.PHRASE_BELOW, FinalesConSentido.progress(3f, prev, 0.5f).phrase)
     assertEquals(FinalesConSentido.PHRASE_EVEN, FinalesConSentido.progress(5f, listOf(5f, 5f, 5f, 4f, 5f), 0.5f).phrase)   // promedio 4,8
     // con los números adentro, en luces
-    assertEquals("Mejor que tu promedio (4 luces). Tu mejor: 5 luces.", FinalesConSentido.phraseWith(FinalesConSentido.progress(5f, prev, 0.5f), FinalesConSentido::lightsText))
-    assertEquals("Como tu promedio (4 luces): vas parejo. Tu mejor: 5 luces.", FinalesConSentido.phraseWith(FinalesConSentido.progress(4f, prev, 0.5f), FinalesConSentido::lightsText))
+    assertEquals("Mejor que tu promedio (4 luces).", FinalesConSentido.phraseWith(FinalesConSentido.progress(5f, prev, 0.5f), FinalesConSentido::lightsText))
+    assertEquals("Como tu promedio: vas parejo. Tu mejor: 5 luces.", FinalesConSentido.phraseWith(FinalesConSentido.progress(4f, prev, 0.5f), FinalesConSentido::lightsText))
     assertEquals("Un poco bajo tu promedio (4 luces): es normal que varíe.", FinalesConSentido.phraseWith(FinalesConSentido.progress(3f, prev, 0.5f), FinalesConSentido::lightsText))
   }
 
@@ -189,9 +189,9 @@ class FinalesConSentidoTest {
     assertEquals("¡Tu mejor hasta ahora! Tu promedio: 75 %.", FinalesConSentido.phraseWith(FinalesConSentido.progress(95f, prev, 5f), pct))
     // la zona del freno (menos milisegundos es mejor)
     val zone: (Float?) -> String = { v -> if (v == null) "—" else "zona " + Brake.zone(v).label }
-    assertEquals("Como tu promedio (zona firme): vas parejo. Tu mejor: zona firme.", FinalesConSentido.phraseWith(FinalesConSentido.progress(245f, listOf(260f, 250f, 240f, 270f), 20f, lowerIsBetter = true), zone))
+    assertEquals("Como tu promedio: vas parejo.", FinalesConSentido.phraseWith(FinalesConSentido.progress(245f, listOf(260f, 250f, 240f, 270f), 20f, lowerIsBetter = true), zone))
     // el récord con su sello propio se dice una sola vez (arriba): la frase usa la comparación con el promedio
-    assertEquals("Mejor que tu promedio (75 %). Tu mejor: 95 %.", FinalesConSentido.phraseWith(FinalesConSentido.progress(95f, prev, 5f, avoidBest = true), pct))
+    assertEquals("Mejor que tu promedio (75 %).", FinalesConSentido.phraseWith(FinalesConSentido.progress(95f, prev, 5f, avoidBest = true), pct))
   }
 
   @Test
@@ -260,4 +260,21 @@ class FinalesConSentidoTest {
       assertTrue(t, !t.contains("percentil", true) && !t.contains("otras personas", true) && !t.contains("la mayoría", true))
     }
   }
+
+  @Test
+  fun `la frase omite lo que repite la cifra de hoy`() {
+    // Opus, 21-oct: con medidas por categorías (Freno: «zona firme») el promedio y el mejor dicen lo mismo que hoy y la frase quedaba «Como tu promedio (zona firme): vas parejo. Tu mejor: zona firme.»
+    val zona: (Float?) -> String = { v -> if (v == null) "—" else "zona firme" }
+    val parejo = FinalesConSentido.progress(260f, listOf(255f, 262f, 258f), 10f, lowerIsBetter = true)
+    assertEquals("Como tu promedio: vas parejo.", FinalesConSentido.phraseWith(parejo, zona))
+    // si solo el mejor es igual a hoy, sale solo «Tu mejor»; si solo el promedio, sale solo el paréntesis
+    val pct = FinalesConSentido::percentText
+    assertEquals("Mejor que tu promedio (75 %).", FinalesConSentido.phraseWith(FinalesConSentido.progress(90f, listOf(60f, 90f), 5f, avoidBest = true), pct))
+    assertEquals("Como tu promedio: vas parejo. Tu mejor: 90 %.", FinalesConSentido.phraseWith(FinalesConSentido.progress(75f, listOf(60f, 90f), 5f), pct))
+    // lo que NO repite se queda como estaba
+    assertEquals("Como tu promedio (75 %): vas parejo. Tu mejor: 90 %.", FinalesConSentido.phraseWith(FinalesConSentido.progress(79f, listOf(60f, 90f), 5f), pct))
+    assertEquals("¡Tu mejor hasta ahora! Tu promedio: 75 %.", FinalesConSentido.phraseWith(FinalesConSentido.progress(95f, listOf(60f, 90f), 5f), pct))
+    assertEquals("Primera partida: la próxima te comparas contigo.", FinalesConSentido.phraseWith(FinalesConSentido.progress(78f, emptyList(), 5f), pct))
+  }
 }
+

@@ -167,7 +167,7 @@ class AvanceJuegosLetraGrandeTest {
   fun la_pregunta_va_en_el_globo_de_nubi_el_boton_dice_el_juego_y_la_flecha_dice_avance() {
     detalle(1f)
     val first = GameRegistry.allGames.first { it.domain == DomainType.MEMORIA }
-    rule.onNodeWithText("¿Le damos un empujón a tu memoria?", substring = true).assertIsDisplayed()
+    rule.onNodeWithText("¿Le damos un empujón?", substring = true).assertIsDisplayed()
     rule.onNodeWithText("Jugar " + com.example.ui.i18n.getGameTitle(first.id, AppLanguage.SPANISH, first.title)).assertIsDisplayed()
     org.junit.Assert.assertEquals("la pregunta ya no va suelta sobre el botón", 0, rule.onAllNodes(androidx.compose.ui.test.hasText("¡Sí, vamos!")).fetchSemanticsNodes().size)
     rule.onNodeWithText("Avance").assertExists()

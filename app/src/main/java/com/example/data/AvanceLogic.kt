@@ -118,11 +118,11 @@ fun nubiWeekLine(lamps: Week.Lamps, goal: Int, streak: Streak.StreakInfo, areas:
   return when {
     noGamesAtAll -> "Cuando juegues tu primera ruta, aquí te cuento cómo va tu semana."
     streak.forgivenDay != null -> Streak.forgivenLine(streak)!!                      // una sola frase del descanso en toda la app: la de Hoy (Tarea 150, B1.8)
-    goal > 0 && played >= goal -> "Meta cumplida esta semana. Lo que juegues de más es regalo."
-    areas >= com.example.model.DomainType.values().size -> "Esta semana pasaste por las ${com.example.model.DomainType.values().size} áreas."
-    goal > 0 && goal - played == 1 -> "Te falta 1 día para tu meta. Cualquier ruta cuenta."
-    goal > 0 -> "Llevas $played de $goal. Un rato corto hoy también suma."
-    else -> "Llevas $played ${if (played == 1) "día" else "días"} esta semana. Un rato corto hoy también suma."
+    // Sin repetir lo que la pantalla ya dice (Opus, 21-oct: «Llevas 2 de 4», «Meta cumplida» y «Pasaste por las 4 áreas» estaban justo encima, en «2 de 4 días de tu meta» y «Áreas esta semana: 4 de 4»): el globo solo suma ánimo, sin cifras
+    goal > 0 && played >= goal -> "Lo que juegues de más es regalo."
+    areas >= com.example.model.DomainType.values().size -> "¡Qué buena variedad esta semana!"
+    goal > 0 && goal - played == 1 -> "Cualquier ruta cuenta."
+    else -> "Un rato corto hoy también suma."
   }
 }
 

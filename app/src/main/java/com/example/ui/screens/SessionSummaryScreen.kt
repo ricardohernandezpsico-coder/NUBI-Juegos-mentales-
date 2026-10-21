@@ -105,7 +105,7 @@ fun SessionSummaryScreen(
           Row(verticalAlignment = Alignment.Bottom) {
             Text(names[i], color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.weight(1f))
-            Text(a.value?.let { Skill.stageName(it) } ?: "Sin medir", color = OnNightDim, fontSize = 16.sp)
+            Text(a.value?.let { Skill.stageName(it) } ?: "Aún sin medir", color = OnNightDim, fontSize = 16.sp)
           }
           AreaBar(a.value, a.change, height = 10.dp, modifier = Modifier.padding(vertical = 8.dp))
           Text(

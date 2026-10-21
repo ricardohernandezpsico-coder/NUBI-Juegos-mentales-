@@ -4,7 +4,6 @@ import com.example.model.AgeBand
 import kotlin.math.ceil
 import kotlin.math.exp
 import kotlin.math.ln
-import kotlin.math.roundToInt
 
 /**
  * Cómo quiere jugar la persona hoy (28-sep, aprobado por Ricardo; razonamiento completo en
@@ -84,13 +83,6 @@ object Skill {
   /** Aciertos esperados en ese juego y modo (0..1): la tabla por edad, corrida si el juego busca otros aciertos. */
   fun expectedHits(gameId: String, mode: PlayMode, age: AgeBand?): Float =
     sigmoid(logit(trainingTarget(gameId, age)) - modeShift(mode, age))
-
-  /** "8 de 10", "8 a 9 de 10". */
-  fun hitsText(p: Float): String {
-    val tenths = (p * 20).roundToInt() / 2f
-    val lo = tenths.toInt()
-    return if (tenths - lo > 0.01f) "$lo a ${lo + 1} de 10" else "$lo de 10"
-  }
 
   /** Rating guardado (medido con los aciertos de entrenamiento) → avance 0..1 leído a 8 de 10. */
   fun progress(gameId: String, rating: Float, age: AgeBand?): Float {

@@ -682,7 +682,7 @@ private fun HoyAction(ui: HomeUi, onPlay: () -> Unit, onResume: () -> Unit, onBa
         verticalAlignment = Alignment.CenterVertically
       ) {
         OnBoardText(
-          text = "Encuentra tu punto de partida · 4 juegos cortos",
+          text = "Encuentra tu punto de partida",                 // una línea, con su flecha (Opus, 21-oct; antes «… · 4 juegos cortos», que bajaba a 2 líneas)
           color = com.example.ui.theme.NubiTokens.OnNightDim,
           fontSize = 16.sp,
           fontWeight = FontWeight.SemiBold,
@@ -698,13 +698,6 @@ private fun HoyAction(ui: HomeUi, onPlay: () -> Unit, onResume: () -> Unit, onBa
   }
 }
 
-/** Lo que dice Nubi arriba del detalle de un área, en palabras. */
-private fun detailLine(name: String, s: AreaStatus): String = when {
-  s.value == null -> "$name aún sin medir: juega y lo verás"
-  s.change > 0f -> "Esta semana $name avanzó"
-  s.change < 0f -> "$name bajó un poco: se recupera jugando"
-  else -> "$name se mantiene esta semana"
-}
 
 /**
  * Detalle de un área (vista "C" aprobada por Ricardo): Nubi explica, la barra grande con las 5 etapas nombradas, de
@@ -757,7 +750,7 @@ internal fun AreaDetail(
       // Maqueta B de la Propuesta 3 (Tarea 147): primero el ÁREA (su nombre y su etapa a la izquierda, las flechas ‹ › a la derecha: antes Nubi iba entre las flechas, como si se pasara de Nubi en Nubi) y debajo Nubi M con su globo al lado.
       // Una voz: lo que dice Nubi va en su globo, en primera persona (la pregunta y, si hay juego elegido, por qué lo eligió; antes el porqué iba suelto como «Nubi lo eligió: …»).
       var drag by remember(areaKey) { mutableStateOf(0f) }
-      val chosenWhy = if (suggestedHere && suggested != null && pick != null) "Te sugiero ${getGameTitle(suggested.id, lang, suggested.title)}: ${com.example.data.Suggestion.reason(pick)}." else null      // «Nubi sugiere» dice lo mismo en todas partes (Tarea 150, B2)
+      val globeText = com.example.data.Suggestion.detailGlobe(suggested?.let { getGameTitle(it.id, lang, it.title) }, if (suggestedHere) pick else null)      // DOS frases como mucho y sin repetir la línea de avance de abajo (Opus, 21-oct)
       Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier.fillMaxWidth().padding(top = 4.dp).pointerInput(areaKey) {
@@ -782,7 +775,7 @@ internal fun AreaDetail(
         NubiClay(com.example.ui.components.NubiSize.M)
         Spacer(Modifier.width(6.dp))
         NubiBubble(
-          text = detailLine(name, s) + (if (suggested != null) ". ¿Le damos un empujón a ${AreaProgress.your(name)}?" else "") + (chosenWhy?.let { " $it" } ?: ""),
+          text = globeText,
           tailLeft = true, modifier = Modifier.weight(1f).testTag("area_nubi_globe")
         )
       }
