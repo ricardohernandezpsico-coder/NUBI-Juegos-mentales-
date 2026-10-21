@@ -177,3 +177,14 @@ De la auditoría de coherencia de Fable (`auditoria-fable/auditoria-coherencia-2
 - **Un solo visto** (B4.5): en la ventana de un área de Juegos el sello del emblema es «jugado hoy» y la parada hecha de la ruta se dice con la palabra **«Hecho»** (antes, un círculo con ✓ además del sello).
 - **Una sola cuenta de medallas** (C8): `Achievements.medalCount` es el número del Perfil y de la celebración («6 de 15 medallas»); la celebración contaba también los logros anteriores y podía decir «20 de 15».
 - **Se borraron** `ProgressTrendChart.kt` (nadie lo dibujaba; traía «sesiones» y «camino») y `AreaSuggestion.kt`. **Lo que falta** de la auditoría: los textos de §B6.6 y lo demás de la Tarea 152 (en la 152 también se unificó «Aún sin medir» y se borró `Skill.hitsText`).
+
+## Lo innecesario se va (Tarea 152, 21-oct)
+
+De la auditoría de coherencia de Fable (B5, B6 y C) con las decisiones de Opus. Hoja: `docs/previews/tarea-152.png` (hoy | propuesta, 7 pares). Pruebas: `AjustesDepuradosTest` (mira el código de las pantallas para que no vuelva), `BaselineTest`, `NombreFlowTest`, `HoyIslaScreenshotTest`, `GameSheetDecisionTest`. Cada cosa vive en un solo sitio: Ajustes es de cómo juega la app, el Perfil de quién eres, Avance de cómo vas.
+
+- **Ajustes:** sin «Tu nombre» ni «Guardar» (todo lo demás ya se guardaba al tocar), sin la pregunta de los colores (B5.1: no hacía nada; la preferencia `color_vision` queda guardada) y **con «Tu nivel de estudios»** bajo «Cómo juegas» y su para qué sirve («Opcional. Ayuda a calcular tu punto de partida si saltas la evaluación.»; B5.2). Las horas del aviso son «Mañana 09:00 · Tarde 15:00 · Al atardecer 19:00 · Noche 21:00» (C3: «Más tarde» no era una hora).
+- **Perfil:** el nombre se edita aquí (`ClayTextField`, `NeuroVidaViewModel.setName`) y se **guarda al salir del campo** o del Perfil, sin botón (B6.3 y B6.5); el nivel de estudios se fue a Ajustes.
+- **Avance:** las tres medallas viven solo en el Perfil (B6.1); aquí una línea, «9 medallas · ver en tu perfil ›» (`AvanceMedalsLink`), que abre el Perfil.
+- **Hoy:** «Encuentra tu punto de partida ›» solo hasta 5 partidas o 7 días desde la primera (`BaselinePlan.showHomeInvite`; B6.2); después vive en Avance («Tu punto de partida»). En el Perfil no hay invitación (no la tenía, no se agregó).
+- **Juegos:** en la ficha plegada el botón dice «Jugar» a secas (C5; con las opciones desplegadas lleva lo elegido); el chip «Nubi sugiere» ya no está en el edificio (queda el globo; Opus, 21-oct) y todo dice «Aún sin medir» (antes «Sin medir» y «Sin medir aún»).
+- **Licencias:** sin «Cosecha de palabras» (retirada; C2). **Se borró lo que nadie leía** (B6.6): los cinco textos de «sesión» de `AppStrings`, los textos de `DifficultyMode` (queda el nombre que se guarda), `MasteryTier` y `DomainMasteryInfo` (la XP de dominio, que ninguna pantalla muestra; la XP sigue guardándose en Room), `domainMasteryInfo` del ViewModel y `Skill.hitsText`.

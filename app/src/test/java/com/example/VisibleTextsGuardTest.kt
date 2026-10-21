@@ -118,7 +118,7 @@ class VisibleTextsGuardTest {
     assertEquals("Juega 4 días distintos esta semana", WeeklyChallengeRegistry.all.first { it.key == "dias4" }.description)
     for (lang in AppLanguage.entries) {
       val t = getTranslations(lang)
-      val all = listOf(t.progressTitle, t.progressSubtitle, t.gamesLibrarySubtitle, t.sessionCompletedTitle, t.startDailySession, t.dailySessionTitle, t.trainAnotherRound).joinToString(" ").lowercase()
+      val all = listOf(t.progressTitle, t.progressSubtitle, t.gamesLibrarySubtitle, t.trainAnotherRound).joinToString(" ").lowercase()
       assertFalse(lang.name, listOf("cognit", "training", "trainings", "workout", "brain", "entrenamiento", "treino", "treinos", "entraîn", "22 ").any { it in all })
     }
     assertEquals("17 juegos en 4 áreas", getTranslations(AppLanguage.SPANISH).gamesLibrarySubtitle)

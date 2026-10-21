@@ -38,7 +38,7 @@ class BoardLayersTest {
     assertTrue("el texto largo de Licencias y créditos va dentro de un ClayPanel", licenses.contains("ClayPanel("))
     assertFalse("y ya no hay OnBoardText suelto sobre el cielo en Licencias", licenses.contains("OnBoardText("))
     val profile = src("ui/screens/ProfileScreen.kt")
-    assertTrue("el título de los paneles y el nombre del perfil", profile.contains("OnBoardText(title,") && profile.contains("OnBoardText(userSettings.name.ifBlank"))
+    assertTrue("el título de los paneles (y el nombre del perfil, desde la Tarea 152, es un campo sobre su propia losa, no un texto suelto)", profile.contains("OnBoardText(title,") && profile.contains("testTag(\"input_user_name\")"))
     // Tarea 143 (A3): Ajustes ya no trae su título grande suelto; la cabecera del panel («Ajustes») es el `PanelHeader` de arriba, que ya es OnBoardText
     assertFalse("Ajustes ya no tiene un segundo título suelto sobre el fondo", src("ui/screens/SettingsScreen.kt").contains("strings.settingsTitle"))
   }

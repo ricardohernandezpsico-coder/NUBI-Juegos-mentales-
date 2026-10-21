@@ -24,6 +24,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -198,13 +201,26 @@ private fun medalColumns(maxWidth: androidx.compose.ui.unit.Dp): Int {
   return (3 downTo 1).firstOrNull { maxWidth / it - 8.dp >= needed } ?: 1
 }
 
-/** Tus medallas: las tres familias del kit (la última que conseguiste y, si hay otra, «siguiente: 14 días»; bloqueada, «1/3 días»); tocar una abre el detalle. */
+/**
+ * Las medallas en Avance: UNA línea que lleva al Perfil, donde viven (Tarea 152, B6.1: antes las tres tarjetas enteras aquí y en el Perfil, con el mismo título): «9 medallas · ver en tu perfil».
+ */
 @Composable
-internal fun AvanceMedals(states: List<FamilyMedalState>, onTap: (AchievementFamily) -> Unit) {
-  Column {
-    SpaceSectionTitle("Tus medallas", hint = "Por lo que haces, no por el puntaje")
-    Spacer(Modifier.height(10.dp))
-    FamilyMedalCards(states, onTap)
+internal fun AvanceMedalsLink(count: Int, onClick: () -> Unit) {
+  val text = when (count) {
+    0 -> "Aún sin medallas · ver en tu perfil"
+    1 -> "1 medalla · ver en tu perfil"
+    else -> "$count medallas · ver en tu perfil"
+  }
+  Row(
+    Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick).heightIn(min = 48.dp).testTag("avance_medals_link"),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    OnBoardText(text, color = OnNight, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f, fill = false))
+    Spacer(Modifier.width(8.dp))
+    androidx.compose.foundation.Canvas(Modifier.size(width = 10.dp, height = 16.dp)) {
+      val p = androidx.compose.ui.graphics.Path().apply { moveTo(size.width * 0.15f, size.height * 0.1f); lineTo(size.width * 0.85f, size.height * 0.5f); lineTo(size.width * 0.15f, size.height * 0.9f) }
+      drawPath(p, OnNight, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+    }
   }
 }
 

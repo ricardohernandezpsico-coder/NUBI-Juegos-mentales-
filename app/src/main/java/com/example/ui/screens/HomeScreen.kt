@@ -214,6 +214,7 @@ fun HomeScreen(
     pausedTitle = pausedGameId?.let { GameRegistry.getById(it) }?.let { getGameTitle(it.id, lang, it.title) },
     flightDay = dailySession.gameIds.isNotEmpty() && completed >= dailySession.gameIds.size && dailySession.scores.isEmpty(),
     hasBaseline = baseline != null,
+    baselineInvite = com.example.data.BaselinePlan.showHomeInvite(baseline != null, history.size, history.minOfOrNull { it.timestamp }, clock),
     places = places,
     islandPieces = debugPieces ?: IslaPiezas.earned(unlocks.keys)          // «Tu isla crece»: todo se deriva de las medallas (solo el botón [Debug] de Ajustes lo cambia)
   )
@@ -270,6 +271,8 @@ internal data class HomeUi(
   /** El camino de hoy quedó cumplido sin jugarlo: fue el Primer vuelo. */
   val flightDay: Boolean,
   val hasBaseline: Boolean,
+  /** Si Hoy invita a «Encuentra tu punto de partida»: por omisión, mientras no lo haya; Hoy la apaga pasadas 5 partidas o 7 días (Tarea 152, B6.2). */
+  val baselineInvite: Boolean = !hasBaseline,
   /** La lámina de cada lugar (por área: `MEMORIA`…) que se abre al tocar su edificio. */
   val places: Map<String, com.example.data.PlaceSheetUi> = emptyMap(),
   /** Las piezas de la isla que dan las medallas ganadas («Tu isla crece»; `data/IslaPiezas.kt`), en el orden de dibujo. */
@@ -669,7 +672,7 @@ private fun HoyAction(ui: HomeUi, onPlay: () -> Unit, onResume: () -> Unit, onBa
         modifier = Modifier.fillMaxWidth().padding(top = 4.dp).testTag(if (ui.flightDay) "home_flight_day" else "home_caption")
       )
     }
-    if (!ui.hasBaseline) {
+    if (ui.baselineInvite) {
       // Un solo sol en Hoy (Tarea 147, P7): el enlace sigue siendo un enlace pero en crema tenue (`OnNightDim`) con su chevrón, para que no compita con el botón grande, que lleva el único sol
       Row(
         Modifier

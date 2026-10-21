@@ -36,6 +36,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -139,7 +142,22 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
           modifier = Modifier.fillMaxWidth().height(150.dp).testTag("profile_island"),
           pieces = com.example.data.IslaPiezas.earned(unlocks.keys)
         )
-        com.example.ui.components.OnBoardText(userSettings.name.ifBlank { "Tu perfil" }, color = Color(0xFFEAF0FF), fontSize = 30.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 6.dp))
+        // El nombre se edita AQUÍ y se guarda al salir del campo (Tarea 152, B6.3 y B6.5: antes estaba en Ajustes, con un botón «Guardar», y Ajustes es de cómo juega la app)
+        val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+        var nameDraft by remember(userSettings.name) { mutableStateOf(userSettings.name) }
+        var hadFocus by remember { mutableStateOf(false) }
+        val saveName = { if (nameDraft.trim() != userSettings.name) viewModel.setName(nameDraft) }
+        val latestSave by androidx.compose.runtime.rememberUpdatedState(saveName)
+        DisposableEffect(Unit) { onDispose { latestSave() } }                                  // si se sale del perfil con el campo abierto, también se guarda
+        Box(Modifier.widthIn(max = 340.dp).padding(top = 6.dp)) {
+          com.example.ui.components.ClayTextField(
+            value = nameDraft, onValueChange = { nameDraft = it.take(30) },
+            placeholder = "Tu nombre", fontSize = 22.sp,
+            modifier = Modifier.testTag("input_user_name").onFocusChanged { st -> if (hadFocus && !st.isFocused) saveName(); hadFocus = st.isFocused },
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Words, imeAction = androidx.compose.ui.text.input.ImeAction.Done),
+            keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { focusManager.clearFocus() })
+          )
+        }
         index?.let {
           com.example.ui.components.OnBoardText(
             text = "Etapa general: ${levelWord(it / 100f)}",                 // (ítem 17) «etapa», como en la lámina, el detalle y el resultado; antes «nivel hábil»
@@ -197,25 +215,6 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
         SpaceSectionTitle("Medallas anteriores", hint = "Las que ganaste antes de que cambiaran las medallas")
         Spacer(Modifier.height(14.dp))
         AchievementGrid(oldMedals, unlocks.keys, achStats) { achievementDetail = it }
-      }
-    }
-    // Nivel de estudios: ya no se pregunta en el inicio; acá queda como dato opcional (solo ajusta el punto de partida
-    // estimado de quien no hace la evaluación; no cambia la dificultad). Conserva lo que ya se había respondido.
-    item {
-      val education by viewModel.education.collectAsState()
-      Column {
-        SpaceSectionTitle("Tu nivel de estudios", hint = "Opcional. No cambia la dificultad: eso lo decide cómo juegas.")
-        Spacer(Modifier.height(10.dp))
-        com.example.data.Education.entries.forEach { e ->
-          val on = education == e
-          // Cada nivel es una casilla de plasticina: la elegida va en lima, con su ✓ y su texto en negrita (y quieta).
-          com.example.ui.components.ClayChoice(
-            selected = on, onClick = { viewModel.setEducation(if (on) null else e) }, minHeight = 52.dp,
-            modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp).testTag("education_${e.name.lowercase()}")
-          ) {
-            Text(e.label, color = Clay.Ink, fontSize = 18.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Medium, modifier = Modifier.weight(1f))
-          }
-        }
       }
     }
 

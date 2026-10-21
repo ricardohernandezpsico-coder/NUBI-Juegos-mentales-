@@ -137,4 +137,19 @@ class BaselineTest {
     assertNull(DomainType.fromStored(null))
     assertEquals(4, DomainType.entries.size)
   }
+
+  @Test
+  fun `la invitacion de Hoy al punto de partida dura hasta 5 partidas o 7 dias`() {
+    // Tarea 152 (B6.2): en Hoy solo la primera semana (o hasta 5 partidas); después vive en Avance
+    val day = 86_400_000L
+    val now = 100 * day
+    assertTrue("recién instalada, sin partidas", BaselinePlan.showHomeInvite(hasBaseline = false, plays = 0, firstPlay = null, now = now))
+    assertTrue("4 partidas y 2 días", BaselinePlan.showHomeInvite(false, 4, now - 2 * day, now))
+    assertTrue("6 días y medio", BaselinePlan.showHomeInvite(false, 2, now - 6 * day - day / 2, now))
+    assertTrue("a la 5.ª partida ya no", !BaselinePlan.showHomeInvite(false, 5, now - day, now))
+    assertTrue("a los 7 días ya no", !BaselinePlan.showHomeInvite(false, 2, now - 7 * day, now))
+    assertTrue("con 20 días y 41 partidas, menos todavía", !BaselinePlan.showHomeInvite(false, 41, now - 20 * day, now))
+    assertTrue("con punto de partida nunca", !BaselinePlan.showHomeInvite(true, 0, null, now))
+    assertEquals(5, BaselinePlan.HOME_INVITE_MAX_PLAYS); assertEquals(7, BaselinePlan.HOME_INVITE_MAX_DAYS)
+  }
 }

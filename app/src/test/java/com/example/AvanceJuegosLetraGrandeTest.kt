@@ -41,7 +41,7 @@ import com.example.ui.screens.AreaWindow
 import com.example.ui.screens.AvanceAreas
 import com.example.ui.screens.AvanceDiscoveries
 import com.example.ui.screens.AvanceLeague
-import com.example.ui.screens.AvanceMedals
+import com.example.ui.screens.AvanceMedalsLink
 import com.example.ui.screens.AvanceWeek
 import com.example.ui.screens.cardData
 import com.example.ui.theme.NeuroVidaTheme
@@ -193,7 +193,7 @@ class AvanceJuegosLetraGrandeTest {
         AvanceWeek(summary, lamps, "Descansaste el martes: tu racha sigue.", nubiWeekLine(lamps, 4, Streak.StreakInfo(3, 5L, false), 2, noGamesAtAll = false))   // el día 5 fue martes: la frase más larga de Nubi
         AvanceAreas(statuses, names) {}
         AvanceDiscoveries(cards, null, points, onGame = {}, onPlay = {})
-        AvanceMedals(medals) {}
+        AvanceMedalsLink(medals.sumOf { it.level }) {}              // las medallas viven en el Perfil: aquí, una línea (Tarea 152, B6.1)
         AvanceLeague(leagueRow(1240)) {}
       }
     }

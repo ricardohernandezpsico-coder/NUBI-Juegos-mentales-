@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -352,6 +353,14 @@ class HoyIslaScreenshotTest {
     show(ui(completed = 3, flightDay = true))
     composeTestRule.onNodeWithTag("home_flight_day").assertIsDisplayed()
     composeTestRule.onNodeWithText("Tu primer vuelo fue tu ruta de hoy. Mañana empieza tu ruta.").assertExists()
+  }
+
+  @Test
+  fun pasadas_5_partidas_o_7_dias_Hoy_ya_no_invita_al_punto_de_partida() {
+    // Tarea 152 (B6.2): la invitación vive en Hoy solo al principio; después, en Avance («Tu punto de partida»)
+    show(ui(hasBaseline = false).copy(baselineInvite = false))
+    composeTestRule.onAllNodes(androidx.compose.ui.test.hasTestTag("btn_home_baseline")).assertCountEquals(0)
+    composeTestRule.onAllNodes(androidx.compose.ui.test.hasText("Encuentra tu punto de partida")).assertCountEquals(0)
   }
 
   @Test

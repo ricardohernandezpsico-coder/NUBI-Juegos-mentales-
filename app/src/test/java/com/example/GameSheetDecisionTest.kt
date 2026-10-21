@@ -30,6 +30,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.data.PlayMode
@@ -198,6 +199,12 @@ class GameSheetDecisionTest {
   @Test
   fun jugar_dice_lo_elegido_en_una_linea_o_en_dos_y_nunca_parte_una_palabra() {
     setSheet()
+    // plegada (Tarea 152, C5): el botón dice «Jugar» a secas; la línea de arriba ya dice lo elegido
+    assertEquals(listOf("Jugar"), textsOf("sheet_play"))
+    rule.onNodeWithTag("sheet_play").assertContentDescriptionEquals("Jugar, a tu medida, con reloj")
+    // desplegada, el botón lleva lo elegido (que cambia al tocar): «Jugar · a tu medida · con reloj» entero, o «Jugar» y debajo «a tu medida · con reloj»
+    rule.onNodeWithTag("sheet_change").performClick()
+    rule.waitForIdle()
     val normal = textsOf("sheet_play")
     assertTrue("en un teléfono común: «Jugar · a tu medida · con reloj» entero, o «Jugar» y debajo «a tu medida · con reloj»: $normal",
       normal == listOf("Jugar · a tu medida · con reloj") || normal == listOf("Jugar", "a tu medida · con reloj"))
@@ -206,18 +213,27 @@ class GameSheetDecisionTest {
   @Test
   fun con_letra_130_o_en_360_dp_jugar_pasa_a_dos_lineas_y_cada_una_va_entera() {
     setSheet(fontScale = 1.3f)
+    assertEquals("plegada: «Jugar» a secas", listOf("Jugar"), textsOf("sheet_play"))
+    rule.onNodeWithTag("sheet_change").performClick()
+    rule.waitForIdle()
     assertEquals(listOf("Jugar", "a tu medida · con reloj"), textsOf("sheet_play"))
   }
 
   @Test
   fun en_un_telefono_de_360_dp_jugar_pasa_a_dos_lineas() {
     setSheet(widthDp = 360, mode = PlayMode.DESAFIO)
+    assertEquals("plegada: «Jugar» a secas", listOf("Jugar"), textsOf("sheet_play"))
+    rule.onNodeWithTag("sheet_change").performClick()
+    rule.waitForIdle()
     assertEquals(listOf("Jugar", "en Desafío · con reloj"), textsOf("sheet_play"))
   }
 
   @Test
   fun con_letra_200_jugar_sigue_en_dos_textos_enteros() {
     setSheet(fontScale = 2f, timed = false, mode = PlayMode.SUAVE)
+    assertEquals("plegada: «Jugar» a secas", listOf("Jugar"), textsOf("sheet_play"))
+    rule.onNodeWithTag("sheet_change").performScrollTo().performClick()           // con letra 2,0 el botón queda bajo el pliegue de la ficha
+    rule.waitForIdle()
     assertEquals(listOf("Jugar", "suave · sin reloj"), textsOf("sheet_play"))
   }
 
@@ -227,10 +243,11 @@ class GameSheetDecisionTest {
     rule.onNodeWithTag("sheet_summary").assertTextEquals("A tu medida")
     rule.onNodeWithTag("sheet_change").assertContentDescriptionEquals("Cambiar cómo jugar. Ahora: a tu medida")
     rule.onNodeWithTag("sheet_play").assertContentDescriptionEquals("Jugar, a tu medida")
-    val play = textsOf("sheet_play")
-    assertTrue("Jugar · a tu medida (una línea o dos): $play", play == listOf("Jugar · a tu medida") || play == listOf("Jugar", "a tu medida"))
+    assertEquals("plegada: «Jugar» a secas (Tarea 152, C5)", listOf("Jugar"), textsOf("sheet_play"))
     rule.onNodeWithTag("sheet_change").performClick()
     rule.waitForIdle()
+    val play = textsOf("sheet_play")
+    assertTrue("desplegada, Jugar · a tu medida (una línea o dos): $play", play == listOf("Jugar · a tu medida") || play == listOf("Jugar", "a tu medida"))
     rule.onNodeWithTag("mode_A_TU_MEDIDA").assertExists()
     rule.onNodeWithTag("reto_sin").assertDoesNotExist()
     rule.onNodeWithTag("reto_con").assertDoesNotExist()

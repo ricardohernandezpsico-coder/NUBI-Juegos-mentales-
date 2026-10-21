@@ -62,7 +62,7 @@ class LicensesScreenshotTest {
     }
     fun shown(text: String) = composeTestRule.onAllNodesWithText(text, substring = true).fetchSemanticsNodes().isNotEmpty()
     for (t in listOf(
-      "Lluvia de meteoros, Cosecha de palabras y En la punta de la lengua: SPALEX",
+      "Lluvia de meteoros y En la punta de la lengua: SPALEX",
       "Aguasvivas, J. A., Carreiras, M., Brysbaert, M., Mandera, P., Keuleers, E. y Duñabeitia, J. A. (2018)",
       "CC BY 4.0",
       "En En la punta de la lengua solo entran palabras que figuran en SPALEX",

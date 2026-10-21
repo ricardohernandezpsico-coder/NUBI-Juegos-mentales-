@@ -695,7 +695,7 @@ internal fun GameSheetContent(
     }
     // «Jugar»: FUERA del scroll, fijo abajo, siempre a la vista: una línea fina arriba y el botón sol de 56 con borde de tinta, sombra dura y su play.
     Box(Modifier.fillMaxWidth().padding(horizontal = 18.dp).height(1.dp).background(CardTrack))
-    SheetPlayButton(choice, timed, supportsReto, onPlay)
+    SheetPlayButton(choice, timed, supportsReto, detailed = opciones, onPlay = onPlay)
   }
 }
 
@@ -705,7 +705,7 @@ internal fun GameSheetContent(
  * una ficha de teléfono de 360 dp o menos o si ni a 16 sp cabe en una. Nunca se parte una palabra. El lector de pantalla lo lee con comas: «Jugar, a tu medida, con reloj».
  */
 @Composable
-private fun SheetPlayButton(choice: PlayMode, timed: Boolean, supportsReto: Boolean, onPlay: () -> Unit) {
+private fun SheetPlayButton(choice: PlayMode, timed: Boolean, supportsReto: Boolean, detailed: Boolean, onPlay: () -> Unit) {
   val density = androidx.compose.ui.platform.LocalDensity.current
   val measurer = rememberTextMeasurer()
   val base = androidx.compose.material3.LocalTextStyle.current
@@ -721,7 +721,10 @@ private fun SheetPlayButton(choice: PlayMode, timed: Boolean, supportsReto: Bool
       }?.sp
     }
     val modifier = Modifier.testTag("sheet_play").semantics { contentDescription = "Jugar, " + RetoChoice.playSpoken(choice, timed, supportsReto) }
-    if (oneLine != null) {
+    if (!detailed) {
+      // Plegada (Tarea 152, C5): la línea de arriba («A tu medida · con reloj (2 min)») ya dice lo elegido; el botón dice «Jugar» a secas. Con las opciones desplegadas lleva lo elegido, que cambia al tocar.
+      KitButton(text = "Jugar", onClick = onPlay, glyph = Glyph.PLAY, fontSize = 18.sp, modifier = modifier)
+    } else if (oneLine != null) {
       KitButton(text = RetoChoice.playLabel(choice, timed, supportsReto), onClick = onPlay, glyph = Glyph.PLAY, fontSize = oneLine, modifier = modifier)
     } else {
       KitButton(text = "Jugar", secondLine = RetoChoice.playDetail(choice, timed, supportsReto), secondLineSize = 16.sp, onClick = onPlay, glyph = Glyph.PLAY, fontSize = 18.sp, modifier = modifier)

@@ -61,12 +61,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   val gameIntensity = repository.gameIntensity
   val weeklyChallengeProgress = repository.weeklyChallengeProgress
 
-  // Meta-progresión por dominio (etapa 4): DomainMasteryInfo deriva tier/label
-  // a partir de la XP cruda que guarda el repositorio.
-  val domainMasteryInfo: StateFlow<List<DomainMasteryInfo>> = repository.domainMastery.map { xpMap ->
-    DomainType.values().map { d -> DomainMasteryInfo(domain = d, xp = xpMap[d] ?: 0) }
-  }.stateIn(viewModelScope, SharingStarted.Eagerly, DomainType.values().map { DomainMasteryInfo(it, 0) })
-
   // Ranking ELO por juego (idea de Ricardo, 20-sep): GameRankInfo deriva tier/división
   // a partir del rating crudo que guarda el repositorio, uno por cada uno de los 9 juegos.
   val gameRanks: StateFlow<List<GameRankInfo>> = repository.gameRanks.map { ratingMap ->
@@ -782,6 +776,12 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       )
       triggerHapticFeedback(HapticType.SUCCESS)
     }
+  }
+
+  /** El nombre se guarda al salir del campo en el Perfil (Tarea 152, B6.3 y B6.5: antes estaba en Ajustes con un botón «Guardar»); en blanco = sin nombre (Hoy saluda sin él). */
+  fun setName(name: String) {
+    val s = userSettings.value
+    updateSettings(name = name.trim(), weeklyGoal = s.weeklyGoal, defaultTimed = s.defaultTimed, sound = s.soundEnabled, haptics = s.hapticsEnabled)
   }
 
   fun updateSettings(

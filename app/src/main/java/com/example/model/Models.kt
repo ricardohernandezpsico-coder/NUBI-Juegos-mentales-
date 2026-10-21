@@ -417,13 +417,8 @@ data class DailySessionState(
 }
 
 
-enum class DifficultyMode(val label: String, val description: String) {
-  ADAPTIVE("Auto-adaptativa", "Ajuste dinámico según tu desempeño en cada partida"),
-  PRINCIPIANTE("Principiante", "Nivel 1 con tiempos generosos y estímulos claros"),
-  INTERMEDIO("Intermedio", "Nivel 3 equilibrado para mantener agilidad mental"),
-  AVANZADO("Avanzado", "Nivel 5 con máxima exigencia y velocidad"),
-  CUSTOM("Personalizada", "Nivel asignado a medida por cada área")
-}
+/** El modo de dificultad que se guarda en los ajustes (solo se persiste: no se ve ni se elige; la dificultad se elige por juego, `PlayMode`). Sin textos desde la Tarea 152 (B6.6: nadie los leía y heredaban «sesión» y «auto-adaptativa»). */
+enum class DifficultyMode { ADAPTIVE, PRINCIPIANTE, INTERMEDIO, AVANZADO, CUSTOM }
 
 enum class ThemeMode(val label: String) {
   LIGHT("Claro"),
@@ -439,48 +434,6 @@ enum class AgeBand(val label: String) {
   UNDER_18("Menos de 18"),
   ADULT("18 a 64"),
   SENIOR("65 o más")
-}
-
-/**
- * Maestría por dominio (meta-progresión, etapa 4 de la propuesta de gamificación):
- * a diferencia del nivel de cada juego (tope visible en 5), la XP de dominio no
- * tiene techo — sigue dando sensación de avance aunque todos los juegos de ese
- * dominio ya estén en Experto. Un dominio suma XP jugando CUALQUIER juego suyo.
- */
-enum class MasteryTier(val tierName: String, val minXp: Int) {
-  BRONCE("Bronce", 0),
-  PLATA("Plata", 100),
-  ORO("Oro", 300),
-  PLATINO("Platino", 600),
-  DIAMANTE("Diamante", 1000),
-  MAESTRO("Maestro", 2000);
-
-  companion object {
-    fun fromXp(xp: Int): MasteryTier = entries.lastOrNull { xp >= it.minXp } ?: BRONCE
-  }
-}
-
-data class DomainMasteryInfo(
-  val domain: DomainType,
-  val xp: Int
-) {
-  val tier: MasteryTier get() = MasteryTier.fromXp(xp)
-  private val nextTier: MasteryTier? get() = MasteryTier.entries.firstOrNull { it.minXp > xp }
-  /** Progreso 0f..1f dentro del tramo actual (para la barra). Si ya es Maestro,
-   * sigue avanzando en tramos de 1000 XP para que la barra nunca quede "llena y
-   * quieta" — el tope real no existe, solo cambia el tamaño del próximo tramo. */
-  val progressInTier: Float get() {
-    val next = nextTier
-    return if (next != null) {
-      ((xp - tier.minXp).toFloat() / (next.minXp - tier.minXp)).coerceIn(0f, 1f)
-    } else {
-      ((xp - tier.minXp) % 1000) / 1000f
-    }
-  }
-  val xpLabel: String get() {
-    val next = nextTier
-    return if (next != null) "$xp / ${next.minXp} XP" else "$xp XP"
-  }
 }
 
 /**

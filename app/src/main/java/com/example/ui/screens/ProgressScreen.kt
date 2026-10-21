@@ -83,7 +83,6 @@ fun ProgressScreen(
   var showMore by remember { mutableStateOf(false) }
   var openArea by rememberSaveable { mutableStateOf<String?>(null) }
   var sheetFor by remember { mutableStateOf<com.example.model.GameDefinition?>(null) }   // la ficha de un juego tocado en el detalle de un área o en «Tus medidas»
-  var familyOpen by remember { mutableStateOf<AchievementFamily?>(null) }
   val streak by viewModel.currentStreak.collectAsState()
   val context = androidx.compose.ui.platform.LocalContext.current
   val shareScope = androidx.compose.runtime.rememberCoroutineScope()
@@ -157,7 +156,7 @@ fun ProgressScreen(
       }
     }
 
-    item { AvanceMedals(medals) { familyOpen = it } }
+    item { AvanceMedalsLink(medals.sumOf { it.level }) { viewModel.openTopPanel(com.example.viewmodel.TopPanel.PERFIL) } }          // las medallas viven en el Perfil (Tarea 152, B6.1)
 
     // «Tu liga» y su Compartir: fuera de la v1 (Tarea 149); se ven solo con `Features.LEAGUES`
     if (com.example.Features.LEAGUES) item {
@@ -230,9 +229,6 @@ fun ProgressScreen(
   }
   }
 
-  familyOpen?.let { f ->
-    medals.firstOrNull { it.family == f }?.let { FamilyMedalDialog(it, unlocks, achStats) { familyOpen = null } }
-  }
   // La ficha del juego tocado en «Lo que descubriste» (la del detalle de un área se arma arriba).
   sheetFor?.let { g ->
     GameSheetHost(

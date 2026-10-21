@@ -27,6 +27,13 @@ enum class Education(val label: String) {
 }
 
 object BaselinePlan {
+  /** Cuánto dura la invitación «Encuentra tu punto de partida» en Hoy (Tarea 152, B6.2): hasta 5 partidas o 7 días desde la primera, lo que pase antes. Después vive solo en Avance («Tu punto de partida»): ui-ux-pro-max, «Empty States»: el estado vacío guía una vez, no reclama a diario. */
+  const val HOME_INVITE_MAX_PLAYS = 5
+  const val HOME_INVITE_MAX_DAYS = 7
+
+  fun showHomeInvite(hasBaseline: Boolean, plays: Int, firstPlay: Long?, now: Long): Boolean =
+    !hasBaseline && plays < HOME_INVITE_MAX_PLAYS && (firstPlay == null || now - firstPlay < HOME_INVITE_MAX_DAYS * 86_400_000L)
+
   data class Step(val gameId: String, val domain: DomainType, val timed: Boolean, val measures: String)
 
   /**

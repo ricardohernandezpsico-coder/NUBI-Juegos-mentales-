@@ -59,9 +59,8 @@ fun SettingsScreen(
   onOpenLicenses: () -> Unit = {}
 ) {
   val userSettings by viewModel.userSettings.collectAsState()
-  val colorVision by viewModel.colorVision.collectAsState()
 
-  var nameInput by remember(userSettings.name) { mutableStateOf(userSettings.name) }
+  val nameInput = userSettings.name                              // el nombre se edita en el Perfil (Tarea 152): aquí solo se reenvía tal cual
   var weeklyGoal by remember(userSettings.weeklyGoal) { mutableStateOf(userSettings.weeklyGoal) }
   var defaultTimed by remember(userSettings.defaultTimed) { mutableStateOf(userSettings.defaultTimed) }
   var soundEnabled by remember(userSettings.soundEnabled) { mutableStateOf(userSettings.soundEnabled) }
@@ -185,53 +184,6 @@ fun SettingsScreen(
       }
     }
 
-    // 1. Tu perfil: el nombre propio (8-oct: se quitó la gestión de varios perfiles; la tabla user_profile se queda, sin migración). Los avatares se quitaron en la Tarea 93: el disco de perfil lleva la inicial.
-    ClayPanel(modifier = Modifier.fillMaxWidth()) {
-      run {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-          KitGlyph(Glyph.PERSON)
-          Spacer(modifier = Modifier.width(8.dp))
-          Text(
-            text = "Tu nombre",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-          )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        ClayTextField(
-          value = nameInput,
-          onValueChange = { nameInput = it },
-          modifier = Modifier.testTag("input_user_name"),
-          fontSize = 18.sp
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        ClayButton(
-          text = "Guardar", wide = false, glyph = Glyph.CHECK,
-          onClick = {
-            viewModel.updateSettings(
-              name = nameInput.trim().ifEmpty { "Usuario" },
-              weeklyGoal = weeklyGoal,
-              defaultTimed = defaultTimed,
-              sound = soundEnabled,
-              haptics = hapticsEnabled,
-              notificationsEnabled = notificationsEnabled,
-              reminderHour = reminderHour,
-              reminderMinute = reminderMinute,
-              difficultyMode = difficultyMode
-            )
-            Toast.makeText(context, "Perfil guardado", Toast.LENGTH_SHORT).show()
-          },
-          modifier = Modifier
-            .align(Alignment.End)
-            .testTag("btn_save_name")
-        )
-      }
-    }
-
     // 2. Meta semanal de juego
     ClayPanel(modifier = Modifier.fillMaxWidth()) {
       run {
@@ -324,23 +276,25 @@ fun SettingsScreen(
 
         HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 
-        // Si cuesta distinguir colores: una pregunta del inicio, editable acá.
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-          Text(text = "¿Te cuesta distinguir algunos colores?", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-          Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            com.example.data.ColorVision.entries.forEach { vision ->
-              ClayChoice(
-                selected = colorVision == vision,
-                onClick = { viewModel.setColorVision(vision) },
-                modifier = Modifier.fillMaxWidth().testTag("chip_color_vision_${vision.name.lowercase()}")
-              ) { Text(text = vision.label, fontSize = 15.sp, fontWeight = if (colorVision == vision) FontWeight.Bold else FontWeight.Medium, modifier = Modifier.weight(1f)) }
-            }
-          }
+        // Tu nivel de estudios (Tarea 152, B5.2 y B6.5: antes huérfano en el Perfil y sin decir para qué sirve): Ajustes es «cómo juega la app». Solo ayuda a calcular el punto de partida si se salta la evaluación; no cambia la dificultad.
+        val education by viewModel.education.collectAsState()
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.testTag("settings_education")) {
+          Text(text = "Tu nivel de estudios", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
           Text(
-            text = "Solo se guarda: hoy no cambia nada en los juegos.",
+            text = "Opcional. Ayuda a calcular tu punto de partida si saltas la evaluación.",
             fontSize = 16.sp, lineHeight = 21.sp,
             color = com.example.ui.theme.Clay.InkMuted
           )
+          Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            com.example.data.Education.entries.forEach { e ->
+              val on = education == e
+              ClayChoice(
+                selected = on,
+                onClick = { viewModel.setEducation(if (on) null else e) },
+                modifier = Modifier.fillMaxWidth().testTag("education_${e.name.lowercase()}")
+              ) { Text(text = e.label, fontSize = 16.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Medium, modifier = Modifier.weight(1f)) }
+            }
+          }
         }
 
         HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
@@ -505,15 +459,15 @@ fun SettingsScreen(
             val times = listOf(
               Triple("Mañana", 9, 0),
               Triple("Tarde", 15, 0),
-              Triple("Noche", 19, 0),
-              Triple("Más tarde", 21, 0)
+              Triple("Al atardecer", 19, 0),
+              Triple("Noche", 21, 0)
             )
 
             times.chunked(2).forEach { pair -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { pair.forEach { (label, h, m) ->
               val isSelected = reminderHour == h && reminderMinute == m
               ClayChoice(
                 selected = isSelected,
-                modifier = Modifier.weight(1f).testTag("btn_time_${label.lowercase()}"),
+                modifier = Modifier.weight(1f).testTag("btn_time_${label.lowercase().replace(" ", "_")}"),
                 onClick = {
                   reminderHour = h
                   reminderMinute = m

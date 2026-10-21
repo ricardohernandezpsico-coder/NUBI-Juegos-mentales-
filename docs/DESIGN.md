@@ -153,7 +153,7 @@ Unity (`Games/Shared/`): `PlasticSlab` y `PlasticTouch` (la losa y su estado pre
 - **Lector de pantalla:** cada pieza tiene su descripción; los grupos se leen como grupo («3 de 4 días de tu meta», «4 días por semana» en la farola elegida); los botones de radio llevan `Role.RadioButton`.
 - **Letra grande:** se prueba con la letra del sistema al 130 % y al 200 %, también a 360 dp de ancho (`AvanceJuegosLetraGrandeTest`, `WeeklyGoalLampsTest`).
 - **Reducir movimiento:** «quitar animaciones» deja cada cosa en su estado final (§5).
-- **Los juegos** no dependen del color para jugar (forma, lugar o texto; nunca solo color). El ajuste «¿Te cuesta distinguir algunos colores?» de Ajustes SOLO se guarda: hoy no cambia nada en los juegos, y desde el 19-oct el Primer vuelo ya no lo pregunta.
+- **Los juegos** no dependen del color para jugar (forma, lugar o texto; nunca solo color). La pregunta «¿Te cuesta distinguir algunos colores?» ya no está en Ajustes ni en el Primer vuelo (Tarea 152, B5.1: SOLO se guardaba y no cambiaba nada en los juegos, y se leía como una función rota); la preferencia `color_vision` sigue guardada por si algún juego la usa algún día, y entonces se vuelve a preguntar.
 
 ## 11 · Fuentes de verdad
 

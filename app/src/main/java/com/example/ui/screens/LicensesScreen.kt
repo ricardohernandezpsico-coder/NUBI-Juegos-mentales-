@@ -31,7 +31,7 @@ private val Body = com.example.ui.theme.Clay.InkMuted
 
 /**
  * "Licencias y créditos" (Ajustes, 1-oct): lo que hay que citar de lo que no es nuestro. Texto con títulos sobre UNA losa crema (Tarea 145: antes suelto sobre el cielo, con los luceros detrás de las palabras); los enlaces van como texto (no abren el navegador). Letra de 15 sp o más.
- * - SPALEX (datos de las palabras de Lluvia de meteoros, Cosecha de palabras y En la punta de la lengua): CC BY 4.0, con su atribución y el cambio que se le hizo en cada juego.
+ * - SPALEX (datos de las palabras de Lluvia de meteoros y En la punta de la lengua): CC BY 4.0, con su atribución y el cambio que se le hizo en cada juego.
  * - EsPal (Duchon et al., 2013): la frecuencia de uso que trae SPALEX y que En la punta de la lengua usa para el nivel de cada palabra. Se CITA por cortesía (decisión de Ricardo, Tarea 80); su licencia propia NO está confirmada y no se escribe ninguna (consulta a los autores o al abogado pendiente antes de publicar).
  * - Hunspell es_ES de LibreOffice (diccionario que sirvió para armar y filtrar esas palabras; solo al generar): GPL 3+, LGPL 3+ o MPL 1.1+, a elección (LICENSE.md del repositorio LibreOffice/dictionaries, carpeta es).
  * - Tipografías (Fredoka, Nunito, Atkinson Hyperlegible y Fraunces): SIL Open Font License 1.1, con los avisos de copyright de cada una y el texto completo de la licencia (desplegable; vive en `res/raw/ofl.txt`, no en un string).
@@ -62,7 +62,7 @@ fun LicensesContent(modifier: Modifier = Modifier) {
       color = Body, fontSize = 16.sp, lineHeight = 22.sp
     )
 
-    Section("Palabras de Lluvia de meteoros, Cosecha de palabras y En la punta de la lengua: SPALEX")
+    Section("Palabras de Lluvia de meteoros y En la punta de la lengua: SPALEX")
     Para(
       "Aguasvivas, J. A., Carreiras, M., Brysbaert, M., Mandera, P., Keuleers, E. y Duñabeitia, J. A. (2018). " +
         "SPALEX: A Spanish Lexical Decision Database From a Massive Online Data Collection. Frontiers in Psychology, 9, 2156. " +
@@ -70,7 +70,7 @@ fun LicensesContent(modifier: Modifier = Modifier) {
     )
     Para("Datos bajo licencia CC BY 4.0 (creativecommons.org/licenses/by/4.0). Fuente: figshare.com/projects/SPALEX/29722")
     Para(
-      "Cambios: en Lluvia de meteoros y en Cosecha de palabras se usaron para ordenar las palabras en bandas de dificultad. " +
+      "Cambios: en Lluvia de meteoros se usaron para ordenar las palabras en bandas de dificultad. " +
         "En En la punta de la lengua solo entran palabras que figuran en SPALEX, y su frecuencia de uso (que SPALEX incluye) decide en qué nivel va cada una."
     )
     Para(
@@ -80,8 +80,7 @@ fun LicensesContent(modifier: Modifier = Modifier) {
 
     Section("Diccionario: Hunspell es_ES de LibreOffice")
     Para(
-      "En Cosecha de palabras, las palabras de cada ronda salen de SPALEX (arriba) y sus formas verbales y plurales se generaron con este diccionario. " +
-        "En Lluvia de meteoros y En la punta de la lengua el mismo diccionario sirvió para comprobar qué es una palabra de verdad."
+      "En Lluvia de meteoros y En la punta de la lengua el diccionario sirvió para comprobar qué es una palabra de verdad."
     )
     Para(
       "Hunspell es_ES, diccionario iniciado por Santiago Bosio (github.com/LibreOffice/dictionaries). Se distribuye con tres licencias a elección: " +
@@ -89,7 +88,7 @@ fun LicensesContent(modifier: Modifier = Modifier) {
     )
 
     Section("Tipografías")
-    Para("Fredoka, de Milena Brandão y Hafontia; Nunito, de Vernon Adams y Jacques Le Bailly; y Atkinson Hyperlegible, del Braille Institute of America, usada para las palabras de Lluvia de meteoros y las letras de Cosecha de palabras; y Fraunces SemiBold Italic, de Undercase Type (Phaedra Charles y Flora Lucini), usada para el nombre de cada figura en La estrella intrusa.")
+    Para("Fredoka, de Milena Brandão y Hafontia; Nunito, de Vernon Adams y Jacques Le Bailly; y Atkinson Hyperlegible, del Braille Institute of America, usada para las palabras de Lluvia de meteoros; y Fraunces SemiBold Italic, de Undercase Type (Phaedra Charles y Flora Lucini), usada para el nombre de cada figura en La estrella intrusa.")
     Para("Las cuatro bajo la licencia SIL Open Font License 1.1 (openfontlicense.org). Avisos de copyright:")
     Para("Fredoka: Copyright 2016 The Fredoka Project Authors (github.com/hafontia/Fredoka-One).")
     Para("Nunito: Copyright 2014 The Nunito Project Authors (github.com/googlefonts/nunito).")
