@@ -12,6 +12,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -59,7 +61,7 @@ fun MiniPlanet(gameId: String, size: Dp, modifier: Modifier = Modifier, done: Bo
           .background(Clay.Lime)
           .border(2.dp, Clay.Ink, CircleShape),
         contentAlignment = Alignment.Center
-      ) { Icon(Icons.Default.Check, contentDescription = "Jugado hoy", tint = Clay.Ink, modifier = Modifier.size(size * 0.32f)) }
+      ) { KitGlyph(Glyph.CHECK, Modifier.semantics { contentDescription = "Jugado hoy" }, size = size * 0.32f) }
     }
   }
 }

@@ -46,6 +46,7 @@ namespace NeuroVida.Games.Shared
         private readonly Image[] _veil = new Image[MaxVeil];
         private readonly Image[] _corners = new Image[MaxLit * 4];
         private Image _frame, _ring, _nubi, _finger;
+        private NubiFigure _figure;                  // la Nubi 3D viva (flota, parpadea, sombra fija); null si no hay atlas «nubi» (queda la Nubi plana de siempre en `_nubi`)
         private Text _text;
         private Func<Vector2, bool> _isSkip;
         private Func<bool> _aborted;
@@ -332,6 +333,7 @@ namespace NeuroVida.Games.Shared
             _litShown.Clear();
             _text.text = text;
             if (_nubi.sprite == null) { _nubi.sprite = NubiTeacherSprite.Get(); _nubi.preserveAspect = true; }       // la Nubi 3D no es cuadrada
+            if (_figure == null) _figure = NubiFigure.Attach(_nubi);                                                    // Nubi viva (Tarea 148): flota y parpadea; sin «quitar animaciones»
             _root.gameObject.SetActive(true);
             bool veil = kind != Kind.Notice;
             foreach (var s in _veil) { s.gameObject.SetActive(false); s.raycastTarget = kind == Kind.Touch; }
@@ -645,7 +647,8 @@ namespace NeuroVida.Games.Shared
         {
             _lastReplace = Time.unscaledTime;
             bool hasHole = _kind != Kind.Notice && _target != null;
-            var p = CoachLayout.Place(_root.rect, hasHole ? _hole.center : (Vector2?)null, _hard, _soft, _text.text, MeasureLive, _prefer);
+            float ratio = NubiFigure.BoxRatio;                       // el alto del rectángulo de Nubi sobre su ancho (la 3D con su sombra es más ancha que alta)
+            var p = CoachLayout.Place(_root.rect, hasHole ? _hole.center : (Vector2?)null, _hard, _soft, _text.text, MeasureLive, _prefer, ratio);
             if (p == null) return;
             if (!first && _placement != null && PlacementOverlap(_placement) <= p.Overlap + 1f && _text.cachedTextGenerator.lineCount <= _placement.Lines) return;   // no hay nada mejor: Nubi se queda donde está
             _placement = p;
@@ -653,7 +656,7 @@ namespace NeuroVida.Games.Shared
             var u = Rect.MinMaxRect(Mathf.Min(p.Nubi.xMin, p.Bubble.xMin), Mathf.Min(p.Nubi.yMin, p.Bubble.yMin), Mathf.Max(p.Nubi.xMax, p.Bubble.xMax), Mathf.Max(p.Nubi.yMax, p.Bubble.yMax));
             _groupPos = u.center;
             _group.sizeDelta = u.size;
-            _nubi.rectTransform.sizeDelta = new Vector2(p.NubiSize, p.NubiSize);
+            _nubi.rectTransform.sizeDelta = new Vector2(p.NubiSize, p.NubiSize * ratio);
             _nubi.rectTransform.anchoredPosition = p.Nubi.center - u.center;
             _nubi.rectTransform.localScale = new Vector3(_left || NubiTeacherSprite.IsPlastic ? 1f : -1f, 1f, 1f);       // la Nubi 3D mira de frente (y su luz viene de la izquierda): no se espeja
             _bubble.sizeDelta = p.Bubble.size;

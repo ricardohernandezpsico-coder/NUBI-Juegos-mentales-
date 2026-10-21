@@ -801,7 +801,8 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Espera a que termine la cuenta regresiva (el objeto «CountdownScreen» se apaga) y deja 0,8 s para que la primera pantalla se asiente. Si nunca se ve la cuenta, a los 14 s sigue igual.</summary>
         private static IEnumerator WaitPlayable()
         {
-            bool seen = false, shotTaken = false;
+            bool seen = false, shotTaken = false, shot3 = false, shot1 = false;
+            string lastLabel = null; double labelSince = 0;
             double start = Now, lastFind = 0, seenAt = 0;
             _countdownRoot = null;
             yield return Wait.Until(() =>
@@ -817,8 +818,17 @@ namespace NeuroVida.Bridge.EditorTools
                 {
                     if (!seen) seenAt = Now;
                     seen = true;
-                    // la cuenta regresiva (el anillo, la píldora del título y el número) a los ~1,3 s: en el paso «2»
-                    if (!shotTaken && Now - seenAt > 1.3) { shotTaken = true; Shot("cuenta"); }
+                    // la cuenta regresiva (el anillo, el título, el emblema y el numeral de plasticina) en sus tres pasos (Tarea 148, P9): una toma 0,3 s después de que el número cambia (cuando ya se asentó y el anterior se fue); la de 2 pasos no tiene el «3»
+                    string label = null;
+                    var numberText = _countdownRoot.Find("Number/Text");
+                    if (numberText != null) label = numberText.GetComponent<UnityEngine.UI.Text>()?.text;
+                    if (label != lastLabel) { lastLabel = label; labelSince = Now; }
+                    if (Now - labelSince > 0.3)
+                    {
+                        if (label == "3" && !shot3) { shot3 = true; Shot("cuenta-3"); }
+                        else if (label == "2" && !shotTaken) { shotTaken = true; Shot("cuenta"); }
+                        else if (label == "1" && !shot1) { shot1 = true; Shot("cuenta-1"); }
+                    }
                 }
                 return (seen && !active) || Now - start > 14.0;
             }, 20);

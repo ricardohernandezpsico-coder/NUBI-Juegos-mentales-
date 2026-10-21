@@ -97,7 +97,10 @@ namespace NeuroVida.Games.Shared
         public const float MinBubbleWidth = 330f;
         public const float MaxBubbleWidth = 720f;
         public const float Step = 10f;
-        public static readonly float[] NubiSizes = { 300f, 240f, 180f, 150f };
+        /// <summary>El ANCHO de Nubi que prueba la colocación, del preferido al mínimo (Tarea 148, P3): 120 dp preferido y 60 dp mínimo, a 3 unidades por dp (antes 100 a 50 dp: la cara se lee hasta unos 56 dp y por debajo ya es una mancha). Es un rótulo, no el alto: la Nubi 3D es más ancha que alta (<see cref="Place"/> recibe su proporción).</summary>
+        public static readonly float[] NubiSizes = { 360f, 300f, 240f, 180f };
+        /// <summary>Lo que cuesta cada tamaño de <see cref="NubiSizes"/> (el mayor, nada): la colocación prefiere a Nubi grande y la achica solo si no cabe limpio.</summary>
+        private static readonly float[] NubiSizeCost = { 0f, 40f, 90f, 140f };
         public static readonly float[] WidthFractions = { 1f, 0.84f, 0.7f, 0.58f, 0.48f };
 
         /// <summary>Las 4 esquinas del rect pedido a <paramref name="r"/> unidades más grande por cada lado.</summary>
@@ -122,13 +125,16 @@ namespace NeuroVida.Games.Shared
         /// <param name="hard">Lo que NUNCA se debe tapar: el hueco, las zonas protegidas y el dedo (ya con su margen).</param>
         /// <param name="soft">Los textos del juego a la vista (con su margen): tampoco se tapan.</param>
         /// <param name="prefer">Lo que conviene no tapar pero no es un error taparlo (el dedo de ayuda, que solo aparece pasados 5 s y se acomoda del lado donde hay lugar): pesa poco en el costo y no cuenta como solape.</param>
-        public static CoachPlacement Place(Rect screen, Vector2? holeCenter, IList<Rect> hard, IList<Rect> soft, string text, Func<string, float, TextMeasure> measure = null, IList<Rect> prefer = null)
+        /// <param name="nubiHeight">El alto del rectángulo de Nubi sobre su ancho: 1 = cuadrado (la Nubi plana de siempre); la 3D con su sombra mide ~0,76 (<see cref="NubiFigure.BoxRatio"/>).</param>
+        public static CoachPlacement Place(Rect screen, Vector2? holeCenter, IList<Rect> hard, IList<Rect> soft, string text, Func<string, float, TextMeasure> measure = null, IList<Rect> prefer = null, float nubiHeight = 1f)
         {
             measure = measure ?? ((s, w) => CoachText.Measure(s, w));
             CoachPlacement best = null;
             float bestCost = float.MaxValue;
-            foreach (float nubi in NubiSizes)
+            for (int rank = 0; rank < NubiSizes.Length; rank++)
             {
+                float nubi = NubiSizes[rank];
+                float nh = nubi * nubiHeight;
                 float wMax = Mathf.Min(screen.width - nubi - 3f * Margin, MaxBubbleWidth);
                 foreach (float frac in WidthFractions)
                 {
@@ -137,7 +143,7 @@ namespace NeuroVida.Games.Shared
                     var m = measure(text, bw - 2f * PadX);
                     bool tooLong = m.Lines > MaxLines;
                     float bh = Mathf.Max(MinBubbleHeight, m.Height + 2f * PadY);
-                    float gh = Mathf.Max(nubi, bh);
+                    float gh = Mathf.Max(nh, bh);
                     float gw = nubi + Gap + bw;
                     float yLo = screen.yMin + BottomClear + gh / 2f;
                     float yHi = screen.yMax - HudClear - gh / 2f;
@@ -150,13 +156,13 @@ namespace NeuroVida.Games.Shared
                         float bx = left ? gx + nubi + Gap : gx;
                         for (float cy = yLo; cy <= yHi + 0.01f; cy += Step)
                         {
-                            var nr = new Rect(nx, cy - nubi / 2f, nubi, nubi);
+                            var nr = new Rect(nx, cy - nh / 2f, nubi, nh);
                             var br = new Rect(bx, cy - bh / 2f, bw, bh);
                             float ov = Total(nr, hard, 3f) + Total(br, hard, 3f) + Total(nr, soft, 1f) + Total(br, soft, 1f);
                             float cost = ov > 0f ? 1e6f + ov : 0f;
                             if (prefer != null) cost += (Total(nr, prefer, 1f) + Total(br, prefer, 1f)) * 0.02f;
                             if (tooLong) cost += 5e5f;
-                            cost += m.Lines * 18f + (wMax - bw) * 0.12f + (nubi < 300f ? (nubi < 240f ? (nubi < 180f ? 140f : 90f) : 40f) : 0f);
+                            cost += m.Lines * 18f + (wMax - bw) * 0.12f + NubiSizeCost[rank];
                             // lo esperado: abajo mejor que arriba, arriba mejor que al medio; Nubi del lado contrario al hueco
                             float fromBottom = cy - yLo, fromTop = yHi - cy;
                             cost += Mathf.Min(fromBottom * 0.04f, fromTop * 0.04f + 15f);

@@ -57,11 +57,26 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
-/** La relación ancho / alto de `nubi_3d.webp` (720 × 476 px): Nubi de plasticina de frente, recortada a su caja (render de `isla.py --solo-nubi`, ver `tools/isla/icono.py`). */
-const val NUBI_ASPECT = 720f / 476f
+/** La relación ancho / alto de `nubi_3d.webp` y de `nubi_3d_descansa.webp` (1080 × 713 px, Tarea 148): Nubi de plasticina de frente, con los ojos abiertos y con los ojos cerrados, recortadas a la MISMA caja (render de `isla.py --solo-nubi`, armado por `tools/isla/nubi_reposo.py`). */
+const val NUBI_ASPECT = 1080f / 713f
 
-/** La tinta de la sombra de Nubi: casi la del cielo de la app, para que se vea (más oscura que el fondo) y no ensucie. */
-private val NubiShadowInk = Color(0xFF0B0930)
+/** La tinta de la sombra de Nubi: la de la isla (`Island.kt`), la misma sombra en toda la app (Tarea 148, P3: antes `NubiClay` tenía una propia, más chica y más oscura). */
+internal val NubiShadowInk = Color(0xFF2B2451)
+
+/**
+ * UNA sola sombra para Nubi (Tarea 148, P3): una elipse de borde difuso con la tinta y la opacidad de la isla, la que aprobó Ricardo. La isla la dibuja sobre su losa ([drawNubiShadowEllipse] con sus medidas de `isla.json`) y `NubiClay`, con las mismas, a ras del cuerpo.
+ * [center] = el centro; [rx]/[ry] = los radios del núcleo; [soft] = media franja de desenfoque a cada lado del borde; [alpha] = la opacidad en el núcleo.
+ */
+internal fun DrawScope.drawNubiShadowEllipse(center: Offset, rx: Float, ry: Float, soft: Float, alpha: Float) {
+  if (alpha <= 0f || rx <= 0f) return
+  val outer = rx + soft
+  withTransform({ translate(center.x, center.y); scale(1f, ry / rx, Offset.Zero) }) {
+    drawCircle(
+      Brush.radialGradient(0f to NubiShadowInk.copy(alpha = alpha), (rx - soft).coerceAtLeast(0f) / outer to NubiShadowInk.copy(alpha = alpha * 0.9f), 1f to Color.Transparent, center = Offset.Zero, radius = outer),
+      radius = outer, center = Offset.Zero
+    )
+  }
+}
 
 /**
  * La Nubi de plasticina (Tarea 92, fase 4 de `docs/diseno-isla.md`): el render 3D de frente, de [width] de ancho (alto = ancho / [NUBI_ASPECT]), con una sombra elíptica suave debajo, como en la isla, en vez del halo de antes (la Nubi lila se separa bien del cielo sin él).
@@ -92,30 +107,32 @@ fun NubiClay(width: Dp, modifier: Modifier = Modifier, celebrate: Boolean = fals
   val lift = RouteMotion.jumpLiftDp(p)
   val tilt = RouteMotion.jumpTiltDeg(p)
   val body = width / NUBI_ASPECT
+  // Nubi viva (Tarea 148, P1): flota y parpadea en reposo (nunca mientras salta); con «quitar animaciones», quieta y con los ojos abiertos
+  val idle = rememberNubiIdle { !hop.isRunning }
   Box(modifier.size(width, body + width * NUBI_SHADOW_ROOM), contentAlignment = Alignment.TopCenter) {
-    Canvas(Modifier.fillMaxSize()) { drawNubiGroundShadow(body.toPx(), strength = 1f - 0.3f * (lift / RouteMotion.JUMP_DP).coerceIn(0f, 1f)) }
-    Image(
-      painter = painterResource(R.drawable.nubi_3d),
-      contentDescription = "Nubi",
-      modifier = Modifier.size(width, body).graphicsLayer { translationY = -lift * density; rotationZ = tilt }
-    )
+    Canvas(Modifier.fillMaxSize()) {
+      val h = NubiIdle.height01(idle.floatDp)
+      drawNubiGroundShadow(body.toPx(), strength = (1f - 0.3f * (lift / RouteMotion.JUMP_DP).coerceIn(0f, 1f)) * NubiIdle.shadowAlpha(h), sizeScale = NubiIdle.shadowSize(h))
+    }
+    Box(Modifier.size(width, body).graphicsLayer { translationY = -(lift + idle.floatDp) * density; rotationZ = tilt }) {
+      Image(painter = painterResource(R.drawable.nubi_3d), contentDescription = "Nubi", modifier = Modifier.fillMaxSize().testTag("nubi_ojos_abiertos"))
+      Image(painter = painterResource(R.drawable.nubi_3d_descansa), contentDescription = null, modifier = Modifier.fillMaxSize().graphicsLayer { alpha = idle.eyesClosed }.testTag("nubi_ojos_cerrados"))
+    }
   }
 }
 
 /** Cuánto aire (fracción del ancho) deja [NubiClay] debajo del cuerpo para su sombra. */
 private const val NUBI_SHADOW_ROOM = 0.1f
 
-/** La sombra elíptica bajo Nubi: 0,8 de su ancho, 0,17 de alto sobre eso, con borde suave (degradado radial), a ras de la base del cuerpo ([bodyHeightPx]). */
-private fun DrawScope.drawNubiGroundShadow(bodyHeightPx: Float, strength: Float) {
-  val rx = size.width * 0.4f * (0.85f + 0.15f * strength)
+/**
+ * La sombra de Nubi sobre su suelo: la misma de la isla ([drawNubiShadowEllipse]): una elipse ancha (1,2 de su ancho) y baja, de borde difuso, a ras de la base del cuerpo ([bodyHeightPx]); [strength] = su opacidad (1 = la de la isla, 0,5 × 0,83) y [sizeScale] = su tamaño
+ * (0,85 en el punto alto de la flotación y 1 en el bajo: la sombra se achica y se aclara cuando Nubi sube).
+ */
+private fun DrawScope.drawNubiGroundShadow(bodyHeightPx: Float, strength: Float, sizeScale: Float = 1f) {
+  val rx = size.width * 0.6f * sizeScale
   val ry = rx * 0.2f
-  val c = Offset(size.width / 2f, bodyHeightPx + size.width * NUBI_SHADOW_ROOM * 0.42f)
-  withTransform({ translate(c.x, c.y); scale(1f, ry / rx, Offset.Zero) }) {
-    drawCircle(
-      Brush.radialGradient(0f to NubiShadowInk.copy(alpha = 0.55f * strength), 0.62f to NubiShadowInk.copy(alpha = 0.45f * strength), 1f to Color.Transparent, center = Offset.Zero, radius = rx),
-      radius = rx, center = Offset.Zero
-    )
-  }
+  val c = Offset(size.width / 2f + size.width * 0.02f, bodyHeightPx + size.width * NUBI_SHADOW_ROOM * 0.42f)
+  drawNubiShadowEllipse(c, rx, ry, soft = size.width * 0.045f, alpha = 0.5f * 0.83f * strength)
 }
 
 // ------------------------------------------------------------------ Piezas de Hoy y del detalle de un área (la composición vieja «Nubi al centro con 4 áreas» salió con la isla, Tarea 82)

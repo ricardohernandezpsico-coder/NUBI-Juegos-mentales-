@@ -34,6 +34,7 @@ namespace NeuroVida.Games.Shared
         private readonly Text _title, _line, _caption;
         private readonly Text _skipPracticeLabel;
         private readonly Image _nubi;
+        private NubiFigure _nubiFigure;          // la Nubi 3D viva de la tarjeta de entrada (flota y parpadea; Tarea 148); null sin el atlas «nubi»
 
 #if UNITY_EDITOR
         /// <summary>SOLO EN EL EDITOR (smoke test): la tarjeta de entrada sigue sola al segundo, como si se hubiera tocado «Probar una ronda». Así el arranque de
@@ -183,6 +184,7 @@ namespace NeuroVida.Games.Shared
             _line.text = line;
             _startRect.GetComponentInChildren<Text>().text = startLabel;
             if (_nubi.sprite == null) { _nubi.sprite = NubiTeacherSprite.Get(); _nubi.preserveAspect = true; }       // la Nubi 3D no es cuadrada
+            if (_nubiFigure == null && (_nubiFigure = NubiFigure.Attach(_nubi)) != null) _nubi.rectTransform.sizeDelta = new Vector2(620f, 620f * NubiFigure.BoxRatio);       // Nubi viva: el portador mide cuerpo + aire para la sombra
             _intro.gameObject.SetActive(true);
             yield return Motion.Fade(_introGroup, 0f, 1f, Motion.Decorative ? 0.25f : Motion.FadeSeconds);
             bool wait = true;

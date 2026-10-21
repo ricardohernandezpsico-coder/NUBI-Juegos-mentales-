@@ -581,7 +581,7 @@ private fun stopDescription(stop: HomeStop): String =
 private fun StopNumber(stop: HomeStop, number: Int) {
   val scale = LocalDensity.current.fontScale.coerceIn(1f, 1.6f)   // el círculo crece con la letra: con letra 2,0 el número no cabría en 24 dp
   Box(Modifier.size(24.dp * scale).clip(RoundedCornerShape(50)).background(Color(0xFFFFF8EC)).border(2.dp, Clay.Ink, RoundedCornerShape(50)), contentAlignment = Alignment.Center) {
-    if (stop.state == StopState.DONE) Icon(Icons.Default.Check, contentDescription = null, tint = Clay.Ink, modifier = Modifier.size(15.dp * scale))
+    if (stop.state == StopState.DONE) com.example.ui.components.KitGlyph(com.example.ui.components.Glyph.CHECK, size = 15.dp * scale)
     else Text("$number", color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
   }
 }

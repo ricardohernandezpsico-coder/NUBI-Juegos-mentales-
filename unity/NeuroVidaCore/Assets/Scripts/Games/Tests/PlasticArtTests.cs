@@ -219,7 +219,7 @@ namespace NeuroVida.Games.Tests
             Assert.GreaterOrEqual(slabs, 4, "el panel y los botones de la pausa son losas");
             Assert.IsTrue(NubiTeacherSprite.IsPlastic, "la Nubi de los tutoriales es la 3D");
             var nubi = NubiTeacherSprite.Get();
-            Assert.Greater(nubi.rect.width, nubi.rect.height, "la Nubi 3D no es cuadrada (con la sombra mide 720 × 548)");
+            Assert.Greater(nubi.rect.width, nubi.rect.height, "la Nubi 3D no es cuadrada (720 × 475, sin la sombra: es otra imagen desde la Tarea 148)");
         }
 
         [Test]

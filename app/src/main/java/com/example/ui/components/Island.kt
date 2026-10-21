@@ -97,6 +97,8 @@ fun Island(
   pieces: List<IslaPieza> = emptyList(),
   pieceReveal: (id: String) -> Float = { 1f }
 ) {
+  // Nubi viva (Tarea 148, P1): flota y parpadea en reposo; quieta y sin parpadear si mira un lugar o salta (o con «quitar animaciones»). Su sombra se achica y se aclara cuando sube (`docs/diseno-isla.md` §6).
+  val idle = rememberNubiIdle { lookKey == null && nubiLiftDp() <= 0f }
   BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
     val width = minOf(maxHeight * layout.aspect, maxWidth + 28.dp, 480.dp)
     val height = width / layout.aspect
@@ -114,7 +116,11 @@ fun Island(
     ) {
       Image(painterResource(R.drawable.isla_base), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
       Canvas(Modifier.fillMaxSize()) {
-        drawNubiShadow(layout, shiftX = if (lookMoves) look.shift * size.width * lookAmount() else 0f, strength = shadowAlpha() * (1f - 0.25f * (nubiLiftDp() / RouteMotion.JUMP_DP).coerceIn(0f, 1f)))
+        val h = NubiIdle.height01(idle.floatDp)
+        drawNubiShadow(
+          layout, shiftX = if (lookMoves) look.shift * size.width * lookAmount() else 0f,
+          strength = shadowAlpha() * (1f - 0.25f * (nubiLiftDp() / RouteMotion.JUMP_DP).coerceIn(0f, 1f)) * NubiIdle.shadowAlpha(h) / SHADOW_REST_ALPHA, sizeScale = NubiIdle.shadowSize(h)
+        )
         drawLitFootGlows(layout, lit, lampProgress)      // debajo de los edificios: el del Hangar tapa el resplandor de las farolas de adelante
       }
       pieces.filter { it.capa == IslaCapa.SUELO }.forEach { IslaPieceImage(it, layout, pieceReveal) }
@@ -137,9 +143,24 @@ fun Island(
             val amount = lookAmount()
             alpha = (1f - if (miraBox != null) PlaceMotion.lookFade(amount) else 0f) * nubiAlpha()
             translationX = if (lookMoves) look.shift * widthPx * amount else 0f
-            translationY = -nubiLiftDp() * density
+            translationY = -(nubiLiftDp() + idle.floatDp) * density
             rotationZ = (if (lookMoves) look.tiltDeg * amount else 0f) + nubiTiltDeg()
-          },
+          }.testTag("isla_nubi"),
+        contentScale = ContentScale.FillBounds
+      )
+      // los ojos cerrados (`descansa`): el mismo cuerpo y la misma caja; se funde encima de la de frente al parpadear
+      Image(
+        painterResource(R.drawable.isla_nubi_descansa), contentDescription = null,
+        modifier = Modifier
+          .offset(x = width * layout.nubiTopLeft.x, y = height * layout.nubiTopLeft.y)
+          .size(width * (layout.nubiBottomRight.x - layout.nubiTopLeft.x), height * (layout.nubiBottomRight.y - layout.nubiTopLeft.y))
+          .graphicsLayer {
+            val amount = lookAmount()
+            alpha = idle.eyesClosed * (1f - if (miraBox != null) PlaceMotion.lookFade(amount) else 0f) * nubiAlpha()
+            translationX = if (lookMoves) look.shift * widthPx * amount else 0f
+            translationY = -(nubiLiftDp() + idle.floatDp) * density
+            rotationZ = (if (lookMoves) look.tiltDeg * amount else 0f) + nubiTiltDeg()
+          }.testTag("isla_nubi_ojos_cerrados"),
         contentScale = ContentScale.FillBounds
       )
       if (miraBox != null && lookKey != null) {
@@ -238,24 +259,14 @@ internal fun miraDrawable(key: String): Int = when (key) {
 }
 
 /** La sombra de Nubi sobre la losa: una elipse de tinta con el borde muy difuso (degradado radial, no blur). */
-private fun DrawScope.drawNubiShadow(layout: IslaLayout, shiftX: Float = 0f, strength: Float = 1f) {
+private fun DrawScope.drawNubiShadow(layout: IslaLayout, shiftX: Float = 0f, strength: Float = 1f, sizeScale: Float = SHADOW_REST_SIZE) {
   if (strength <= 0f) return
   val s = layout.shadow
   val c = Offset(size.width * s.center.x + shiftX, size.height * s.center.y)
-  val rx = size.width * s.width * SHADOW_REST_SIZE / 2f
-  val ry = size.height * s.height * SHADOW_REST_SIZE / 2f
+  val rx = size.width * s.width * sizeScale / 2f
+  val ry = size.height * s.height * sizeScale / 2f
   val soft = size.width * s.blur / 2f                      // media franja de desenfoque a cada lado del borde
-  val outer = rx + soft
-  val alpha = s.opacity * SHADOW_REST_ALPHA * strength
-  withTransform({ translate(c.x, c.y); scale(1f, ry / rx, Offset.Zero) }) {
-    drawCircle(
-      Brush.radialGradient(
-        0f to ShadowInk.copy(alpha = alpha), (rx - soft).coerceAtLeast(0f) / outer to ShadowInk.copy(alpha = alpha * 0.9f), 1f to Color.Transparent,
-        center = Offset.Zero, radius = outer
-      ),
-      radius = outer, center = Offset.Zero
-    )
-  }
+  drawNubiShadowEllipse(c, rx, ry, soft, alpha = s.opacity * SHADOW_REST_ALPHA * strength)          // la misma sombra que `NubiClay` (Tarea 148, P3)
 }
 
 /** Halos de luz cálida (degradado radial de [IslaHalo.colorHex], opaco al centro y transparente en el borde): el de la torre y los de las farolas. El radio es una fracción del ancho de la isla. */

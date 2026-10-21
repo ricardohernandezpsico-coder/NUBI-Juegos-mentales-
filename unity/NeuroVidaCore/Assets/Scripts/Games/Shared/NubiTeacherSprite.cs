@@ -15,8 +15,8 @@ namespace NeuroVida.Games.Shared
         private static Sprite _sprite;
 
         /// <summary>
-        /// La Nubi de los tutoriales: el render 3D de la app (<c>nubi_3d</c>, con su sombra elíptica) si existe el atlas «nubi»; si no, la Nubi plana procedural de siempre (<see cref="Render"/>).
-        /// La 3D no es cuadrada (720 × 548 con la sombra): el <c>Image</c> que la muestra debe llevar <c>preserveAspect</c>.
+        /// La Nubi de los tutoriales: el render 3D de la app (<c>nubi_3d</c>, con los ojos abiertos y SIN sombra: desde la Tarea 148 la sombra es otra imagen, <see cref="GetShadow"/>, para que quede quieta cuando Nubi flota) si existe el atlas «nubi»; si no, la Nubi plana procedural de siempre (<see cref="Render"/>).
+        /// La 3D no es cuadrada (720 × 475): el <c>Image</c> que la muestra debe llevar <c>preserveAspect</c> (o usar <see cref="NubiFigure"/>, que la arma con sus ojos cerrados y su sombra).
         /// </summary>
         public static Sprite Get()
         {
@@ -24,6 +24,12 @@ namespace NeuroVida.Games.Shared
             if (plastic != null) return plastic;
             return _sprite != null ? _sprite : _sprite = ToSprite(Render(SizePx), SizePx, 100f);
         }
+
+        /// <summary>La misma Nubi con los ojos cerrados («descansa»: <c>nubi_3d_descansa</c>, el mismo recorte): se funde encima de <see cref="Get"/> al parpadear. null si no hay atlas.</summary>
+        public static Sprite GetClosed() => PlasticArt.Get("nubi", "nubi_3d_descansa");
+
+        /// <summary>La sombra de Nubi en el suelo (<c>nubi_sombra</c>): la elipse de la isla, del tamaño de <see cref="NubiFigure.ShadowWidthFactor"/> veces el ancho del cuerpo. null si no hay atlas.</summary>
+        public static Sprite GetShadow() => PlasticArt.Get("nubi", "nubi_sombra");
 
         /// <summary>true si <see cref="Get"/> entrega la Nubi 3D de plasticina.</summary>
         public static bool IsPlastic => PlasticArt.Has("nubi", "nubi_3d");

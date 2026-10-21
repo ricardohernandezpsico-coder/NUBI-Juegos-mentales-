@@ -68,7 +68,7 @@ Todo el HUD, la pausa, la cuenta regresiva y el cierre son de `Games/Shared`. Ho
 | Cuenta regresiva (título, anillo) | `CountdownScreen` | píldora de 3 capas, `RingSprite` | losa `ch` crema; anillo de plasticina |
 | Cierre «¡Listo!» | `FinishCurtain` | texto con contorno tinta | placa `gr` sol detrás del texto; desde la Tarea 126 con el emblema del juego (atlas `emblemas`: las 17 fichas de la app a 6 px/dp, 2,4 MB de PNG / ≈ 1,5 MB con ASTC 6×6) en el momento del objeto y sobre «¡Listo!» |
 | Marca de respuesta ✓ / ✗ | `AnswerMarkSprite` (Estrella intrusa, Disparate, Meteoros, Freno, Satélites, Acoplamiento, Rescate) | disco lima/coral con glifo tinta | disco de plasticina con glifo de churro tinta (la ✗ es un aspa, no una cruz) |
-| La Nubi de los tutoriales | `NubiTeacherSprite` | Nubi plana vieja con destellos en cruz y pizarra | `nubi_3d` (el render de la app) con su sombra |
+| La Nubi de los tutoriales | `NubiTeacherSprite` | Nubi plana vieja con destellos en cruz y pizarra | `nubi_3d` (el render de la app, ojos abiertos), `nubi_3d_descansa` (ojos cerrados) y `nubi_sombra` (la sombra de la isla, aparte para que no flote con Nubi), armadas por `NubiFigure` (Tarea 148) |
 
 Se quedan procedurales: `RingSprite`, `RadialGlowSprite`, `DiscSprite`, `SparkleSprite` (brillo redondo), el cielo (`WorldBackdrop`), las mallas (`LineGraphic`, `LightMesh`, `WedgeGraphic`, `RouteGraphic`…) y todos los efectos.
 
@@ -366,8 +366,8 @@ Meta: **menos de ~1,5 MB por juego** sumados al APK. El atlas va sin compresión
 
 | Grupo | Sprites | Atlas | PNG en disco | En el APK (estimado) | Con ASTC 6×6 |
 |---|---:|---|---:|---:|---:|
-| `comun` (losas del kit y «noche», marcas ✓ ✗, anillo de la cuenta): se paga UNA vez para los 17 juegos | 29 | 896×2472 | 849 KB | 1,11 MB | 0,97 MB |
-| `nubi` (la Nubi 3D de los tutoriales) | 1 | 768×552 | 196 KB | 0,24 MB | 0,18 MB |
+| `comun` (losas del kit y «noche», marcas ✓ ✗, anillo de la cuenta y los numerales 3-2-1; Tarea 148): se paga UNA vez para los 17 juegos | 32 | 2048×1460 | 1131 KB | 1,58 MB | 1,27 MB |
+| `nubi` (la Nubi 3D de los tutoriales: ojos abiertos, ojos cerrados y la sombra; Tarea 148) | 3 | 1536×669 | 447 KB | 0,62 MB | 0,44 MB |
 | `radar` (Rescate relámpago) | 16 | 1024×1776 | 790 KB | **1,11 MB** | 0,77 MB |
 | `piloto` (Piloto Estelar: 15 señales a 192 y 96 px, 15 presionadas, nave) | 46 | 1664×884 | 912 KB | **1,21 MB** | 0,64 MB |
 | `freno` (Freno de Emergencia: 2 botones y sus 2 presionados, 3 cohetes, plataforma, ALTO) | 9 | 1408×664 | 473 KB | **0,66 MB** | 0,41 MB |

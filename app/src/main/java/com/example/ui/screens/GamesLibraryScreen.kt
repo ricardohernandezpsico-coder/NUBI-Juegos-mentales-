@@ -886,7 +886,7 @@ private fun TodaySeal(modifier: Modifier = Modifier) {
       .background(Clay.Sun)
       .border(2.dp, Clay.Ink, CircleShape),
     contentAlignment = Alignment.Center
-  ) { Icon(Icons.Default.Check, contentDescription = "Jugada hoy", tint = Clay.Ink, modifier = Modifier.size(16.dp)) }
+  ) { KitGlyph(Glyph.CHECK, Modifier.semantics { contentDescription = "Jugada hoy" }, size = 16.dp) }
 }
 
 /**

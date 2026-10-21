@@ -197,11 +197,11 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
     // Tres cifras como texto grande, separadas por lineas finas
     item {
       Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        StatText("Racha", "$streak", Clay.Sun, Modifier.weight(1f), fire = true)
+        StatText("Racha", "$streak", com.example.ui.theme.NubiTokens.OnNight, Modifier.weight(1f), fire = true)
         Box(Modifier.width(1.dp).height(44.dp).background(Color.White.copy(alpha = 0.14f)))
-        StatText("Partidas", "${history.size}", Clay.Sky, Modifier.weight(1f))
+        StatText("Partidas", "${history.size}", com.example.ui.theme.NubiTokens.OnNight, Modifier.weight(1f))
         Box(Modifier.width(1.dp).height(44.dp).background(Color.White.copy(alpha = 0.14f)))
-        StatText("Medallas", "$medalCount", Clay.Lime, Modifier.weight(1f).testTag("profile_medal_count"))
+        StatText("Medallas", "$medalCount", com.example.ui.theme.NubiTokens.OnNight, Modifier.weight(1f).testTag("profile_medal_count"))
       }
     }
     item {

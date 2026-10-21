@@ -52,13 +52,24 @@ class NubiAssetsTest {
   }
 
   @Test
-  fun `nubi_3d mide 720 por 476 y la relacion que usa NubiClay es la suya`() {
+  fun `nubi_3d mide 1080 por 713 y la relacion que usa NubiClay es la suya`() {
     val f = File(res, "drawable-nodpi/nubi_3d.webp")
     assertTrue(f.exists())
     val (w, h) = imageSize(f)
-    assertEquals(720, w); assertEquals(476, h)
+    assertEquals(1080, w); assertEquals(713, h)
     assertEquals(w.toFloat() / h, NUBI_ASPECT, 0.001f)
     assertTrue("pesa poco (${f.length() / 1024} KB)", f.length() < 150 * 1024)
+  }
+
+  @Test
+  fun `Nubi con los ojos cerrados mide lo mismo que con los abiertos, en la isla y de frente (Tarea 148)`() {
+    for ((abiertos, cerrados) in listOf("nubi_3d" to "nubi_3d_descansa", "isla_nubi_hola" to "isla_nubi_descansa")) {
+      val a = File(res, "drawable-nodpi/$abiertos.webp"); val c = File(res, "drawable-nodpi/$cerrados.webp")
+      assertTrue("falta $cerrados", c.exists())
+      assertEquals("$cerrados debe medir lo mismo que $abiertos (mismo recorte: el parpadeo es un fundido sin saltos)", imageSize(a), imageSize(c))
+      assertTrue("$cerrados no es una copia de $abiertos (los ojos cerrados son otra imagen)", !a.readBytes().contentEquals(c.readBytes()))
+      assertTrue("$cerrados pesa poco (${c.length() / 1024} KB)", c.length() < 150 * 1024)
+    }
   }
 
   @Test

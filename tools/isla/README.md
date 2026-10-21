@@ -78,6 +78,18 @@ Opciones de `--kit`: `--kit-px` (píxeles por dp; 3 por defecto —la app—; **
 
 **La Nubi 3D de las pantallas y el ícono (Tarea 92).** Un solo render de frente, con fondo transparente, y `icono.py` deja todo lo que entra a `app/src/main/res/` (ver su cabecera): `drawable-nodpi/nubi_3d.webp` (720 px de ancho), el ícono adaptativo (`mipmap-*/ic_launcher_foreground.png` y `ic_launcher_monochrome.png`: la silueta sólida con dos ojos y la sonrisa calados, medidos en el render), los de Android 7 (`ic_launcher.webp`, `ic_launcher_round.webp`) y el de notificación (`drawable-*/ic_stat_neurovida.png`). El fondo del ícono es `res/drawable/ic_launcher_background.xml` (a mano: el azul marino de la lámina B).
 
+**Nubi viva (Tarea 148, P1 y P3 de `auditoria-fable/propuestas-diseno-visual.md`).** Nubi flota y parpadea (`ui/components/NubiIdle.kt`), y el parpadeo es un fundido a la imagen «descansa» (ojos cerrados), así que hacen falta tres renders más con la MISMA cámara y luz de siempre (`isla.py` no se toca) y un recorte común: `nubi_reposo.py` toma el recorte de la Nubi de ojos abiertos y se lo pone a la de ojos cerrados, y deja `drawable-nodpi/isla_nubi_descansa.webp` (la de la isla, la caja de `isla_nubi_hola`), `nubi_3d.webp` y `nubi_3d_descansa.webp` (de frente, **1080 px de ancho**, antes 720). Imprime el `NUBI_ASPECT` que debe llevar `ui/components/NubiHome.kt` (1080 / 713). El ícono de la app no cambia (sigue saliendo de `icono.py`).
+
+```
+B=/c/Users/RURAL7/Tools/blender-4.5.14/blender-4.5.14-windows-x64/blender.exe
+$B -b -P tools/isla/isla.py -- --engine CYCLES --samples 112 --width 1400 --solo-nubi --mirada frente --nubi descansa --out tools/isla/out/n148/isla-descansa    # la de la isla, ojos cerrados (~2 min)
+$B -b -P tools/isla/isla.py -- --engine CYCLES --samples 112 --width 3800 --solo-nubi --mirada frente --nubi hola     --out tools/isla/out/n148/hola                # de frente, abiertos (~8 min)
+$B -b -P tools/isla/isla.py -- --engine CYCLES --samples 112 --width 3800 --solo-nubi --mirada frente --nubi descansa --out tools/isla/out/n148/descansa            # de frente, cerrados (~8 min)
+python -I tools/isla/nubi_reposo.py tools/isla/out/t134/capa-nubi.png tools/isla/out/n148/isla-descansa/capa-nubi-frente.png tools/isla/out/n148/hola/capa-nubi-frente.png tools/isla/out/n148/descansa/capa-nubi-frente.png app/src/main/res
+```
+
+**La gota de la racha (Tarea 148, P4).** `kit_avance.py` trae `llama_encendida` y `llama_apagada` (32 dp; una GOTA de plasticina con la punta arriba, la forma aprobada de `docs/simbolos-neutros.md`; la encendida, sol con una gota clara por dentro; la apagada, crema lisa) para reemplazar al ícono `Whatshot` de Material en Hoy, Avance, el Perfil y el resumen de la ruta: `isla.py --kit --kit-solo avance --pieza llama_`, y `kit_avance_app.py` las lleva a `kit_llama_on` y `kit_llama_off` (ver su `MAPA`).
+
 ```
 BLENDER=/ruta/a/blender
 $BLENDER -b -P tools/isla/isla.py -- --engine CYCLES --samples 112 --width 3000 --solo-nubi --mirada frente --out tools/isla/out/nubi3d     # ~6,5 min con Cycles por CPU

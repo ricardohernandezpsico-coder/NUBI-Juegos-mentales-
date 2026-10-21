@@ -489,7 +489,7 @@ def grupo_comun():
     dif = np.abs(ref[..., :3] - nueva[..., :3]) * (ref[..., 3:4] > 200) / 255.0
     med.append(('control_losa_crema_dif_media', float(dif.sum() / max(1.0, (ref[..., 3] > 200).sum() * 3))))
     # 3) las marcas y el anillo
-    for n, ancho in (('marca_ok', None), ('marca_no', None), ('anillo_cuenta', 576)): S.append(sprite(n, carga_render('comun', n, ancho)))
+    for n, ancho in (('marca_ok', None), ('marca_no', None), ('anillo_cuenta', 576), ('cuenta_3', 480), ('cuenta_2', 480), ('cuenta_1', 480)): S.append(sprite(n, carga_render('comun', n, ancho)))      # (los numerales 3-2-1 de plasticina de la cuenta regresiva: Tarea 148, P9; a 480 px para mostrarse a ~540 unidades, 1,1 veces)
     for k in ('px_por_dp',): med.append((k, float(PX_DP)))
     return S, med
 
@@ -505,17 +505,29 @@ def grupo_emblemas():
         S.append(sprite('emb_' + j, quita_ruido_alfa(limpia_bruma(im), 6)))
     return S, [('px_por_dp', 6.0)]
 
+ANCHO_NUBI = 720                      # px del cuerpo en Unity: la Nubi mide 360 unidades en el foco y 620 en la tarjeta de entrada (sobra un 16 % sobre la mayor); la de la app es de 1080
+
+def sombra_nubi(ancho):
+    """La sombra de Nubi en el suelo (Tarea 148, P3): la misma elipse de la isla y de `NubiClay` (NubiHome.kt, `drawNubiShadowEllipse`): tinta #2B2451, radio 0,6 del ancho del cuerpo, 0,2 de alto sobre eso, desenfoque de 0,045 por lado,
+    0,5 × 0,83 de opacidad en el núcleo y degradado radial (0 → 1, 0,931 → 0,9, 1 → 0). SOLA en su imagen: antes iba horneada en `nubi_3d` y, al flotar Nubi, habría flotado con ella; ahora `NubiFigure` la deja quieta y la achica y aclara al subir."""
+    rx = 0.6 * ancho; soft = 0.045 * ancho; fuera = rx + soft
+    W = int(round(2 * fuera)); H = int(round(2 * fuera * 0.2))
+    yy, xx = np.mgrid[0:H, 0:W].astype(float)
+    d = np.sqrt(((xx + 0.5 - W / 2.0) / fuera) ** 2 + ((yy + 0.5 - H / 2.0) / (fuera * 0.2)) ** 2)
+    corte = (rx - soft) / fuera
+    alfa = np.where(d < corte, 1.0 + (0.9 - 1.0) * (d / corte), np.where(d < 1.0, 0.9 * (1.0 - (d - corte) / (1.0 - corte)), 0.0)) * 0.5 * 0.83
+    s = np.zeros((H, W, 4)); s[..., 0] = 0x2B; s[..., 1] = 0x24; s[..., 2] = 0x51; s[..., 3] = alfa * 255.0
+    return Image.fromarray(s.astype(np.uint8), 'RGBA')
+
 def grupo_nubi():
-    """La Nubi 3D de la app (`nubi_3d.webp`, 720×476) con la sombra elíptica de `NubiClay` (NubiHome.kt) horneada: 0,8 del ancho, 0,17 de alto sobre eso, degradado radial 0,55 → 0,45 (a 0,62) → 0."""
-    nubi = Image.open(os.path.join(RES_APP, 'drawable-nodpi', 'nubi_3d.webp')).convert('RGBA'); w, h = nubi.size
-    sombra_h = round(w * 0.1); H = h + sombra_h
-    yy, xx = np.mgrid[0:H, 0:w].astype(float)
-    cx, cy = w / 2.0, h + w * 0.1 * 0.42; rx = w * 0.4; ry = rx * 0.2
-    d = np.sqrt(((xx + 0.5 - cx) / rx) ** 2 + ((yy + 0.5 - cy) / ry) ** 2)
-    alfa = np.where(d < 0.62, 0.55 + (0.45 - 0.55) * (d / 0.62), np.where(d < 1.0, 0.45 * (1.0 - (d - 0.62) / 0.38), 0.0))
-    sombra = np.zeros((H, w, 4)); sombra[..., 0] = 0x0B; sombra[..., 1] = 0x09; sombra[..., 2] = 0x30; sombra[..., 3] = alfa * 255.0
-    lienzo = Image.fromarray(sombra.astype(np.uint8), 'RGBA'); lienzo.alpha_composite(nubi, (0, 0))
-    return [sprite('nubi_3d', lienzo)], [('ancho_cuerpo_px', float(w)), ('alto_cuerpo_px', float(h))]
+    """La Nubi 3D de la app (Tarea 148: `nubi_3d.webp` y `nubi_3d_descansa.webp`, 1080 px; los mismos ojos abiertos y cerrados de la app) a 720 px de ancho, SIN sombra, y la sombra aparte (`nubi_sombra`): `NubiFigure` las arma, flota y parpadea."""
+    S = []
+    for n in ('nubi_3d', 'nubi_3d_descansa'):
+        im = Image.open(os.path.join(RES_APP, 'drawable-nodpi', n + '.webp')).convert('RGBA')
+        S.append(sprite(n, reduce_premult(im, ANCHO_NUBI)))
+    cuerpo = S[0]['im']
+    S.append(sprite('nubi_sombra', sombra_nubi(cuerpo.width)))
+    return S, [('ancho_cuerpo_px', float(cuerpo.width)), ('alto_cuerpo_px', float(cuerpo.height))]
 
 GRUPO_FN = {'radar': grupo_radar, 'piloto': grupo_piloto, 'freno': grupo_freno, 'calculo': grupo_calculo, 'disparate': grupo_disparate, 'satelites': grupo_satelites, 'rastro': grupo_rastro, 'stroop': grupo_stroop, 'punta': grupo_punta, 'meteoros': grupo_meteoros, 'parejas': grupo_parejas, 'bodega': grupo_bodega, 'correo': grupo_correo, 'aterrizaje': grupo_aterrizaje, 'engranajes': grupo_engranajes, 'acoplamiento': grupo_acoplamiento, 'comun': grupo_comun, 'emblemas': grupo_emblemas, 'nubi': grupo_nubi}
 

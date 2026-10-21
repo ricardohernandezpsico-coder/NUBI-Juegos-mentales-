@@ -128,12 +128,6 @@ fun AchievementOverlay(
     if (!reduceMotion) delay(240L + 300L)
     pieceSound(context)
   }
-  val spin = if (reduceMotion) 0f else {
-    val t = rememberInfiniteTransition(label = "achRays")
-    val v by t.animateFloat(0f, 360f, infiniteRepeatable(tween(18000, easing = LinearEasing)), label = "achSpin")
-    v
-  }
-
   val color = def.medalColor()
   val light = lerp(color, Color.White, 0.45f)
   val sparks = remember(def.id) {
@@ -167,26 +161,15 @@ fun AchievementOverlay(
           val c = center
           val reach = size.minDimension / 2f
           val a = medal.value.coerceIn(0f, 1f)
-          drawCircle(Brush.radialGradient(listOf(color.copy(alpha = 0.45f * a), Color.Transparent), c, reach), reach, c)
-          for (i in 0 until 10) {
-            val ang = (spin + i * 36f) * PI.toFloat() / 180f
-            val p = Path().apply {
-              moveTo(c.x, c.y)
-              lineTo(c.x + cos(ang - 0.1f) * reach, c.y + sin(ang - 0.1f) * reach)
-              lineTo(c.x + cos(ang + 0.1f) * reach, c.y + sin(ang + 0.1f) * reach)
-              close()
-            }
-            drawPath(p, Brush.radialGradient(listOf(light.copy(alpha = 0.30f * a), Color.Transparent), c, reach))
-          }
+          // Un halo sol suave detrás de la medalla (como el de la farola de la Antena) y seis luceros redondos que suben (Tarea 148, P4: antes un abanico de rayos vectoriales que giraba y 18 destellos con puntas; la regla de símbolos pide luceros redondos)
+          drawCircle(Brush.radialGradient(listOf(Clay.Sun.copy(alpha = 0.5f * a), color.copy(alpha = 0.22f * a), Color.Transparent), c, reach), reach, c)
           val b = burst.value
           if (b > 0f && b < 1f) {
-            sparks.forEachIndexed { i, (ang, speed, s) ->
-              val d = reach * speed * (1f - (1f - b) * (1f - b))
-              drawGlint(
-                Offset(c.x + cos(ang) * d, c.y + sin(ang) * d),
-                s.dp.toPx() * (1f - b * 0.5f),
-                sparkColors[i % sparkColors.size].copy(alpha = 1f - b)
-              )
+            val rise = 1f - (1f - b) * (1f - b)
+            sparks.take(6).forEachIndexed { i, (ang, speed, s) ->
+              val x = c.x + cos(ang) * reach * 0.75f * speed
+              val y = c.y + sin(ang) * reach * 0.35f - reach * 0.9f * rise * speed
+              drawCircle(sparkColors[i % sparkColors.size].copy(alpha = 1f - b), s.dp.toPx() * 0.5f * (1f - b * 0.4f), Offset(x, y))
             }
           }
         }
@@ -213,13 +196,7 @@ fun AchievementOverlay(
         modifier = Modifier.alpha(texts.value),
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
-        Text(
-          text = def.title,
-          style = TextStyle(
-            fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 36.sp, lineHeight = 40.sp,
-            color = light, textAlign = TextAlign.Center, shadow = Shadow(Clay.Ink, Offset(0f, 8f), 0f)
-          )
-        )
+        OnBoardText(def.title, color = Clay.Sun, fontSize = 36.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, textAlign = TextAlign.Center)          // sol con el contorno de los títulos de las pestañas (Tarea 148, P4)
         Text(
           text = def.description,
           fontFamily = AppFamily,

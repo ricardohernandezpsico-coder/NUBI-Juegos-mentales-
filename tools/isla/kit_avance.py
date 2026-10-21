@@ -180,6 +180,18 @@ def bolita():
     o = sphere(r=r, seg=48, loc=(0, 0, r), coll='iconos', name='pz_rd_bolita'); organic(o, 0.002, 1.4, 1); mat(o, mk(LIMA))
 
 
+# ---------------------------------------------------------------------------------------------------- la llama de la racha (Tarea 148, P4)
+def llama(encendida):
+    """La llama de la racha: una GOTA de plasticina con la punta hacia arriba (la gota es símbolo aprobado, `docs/simbolos-neutros.md`; nada de llama con varias puntas que parezca una estrella). 24 dp.
+    Encendida: sol, con un corazón claro; apagada: crema lisa, sin corazón. Sustituye al ícono `Whatshot` de Material en Hoy, Avance, el Perfil y el resumen de la ruta."""
+    cuerpo = SOL if encendida else CREMA
+    esf(0.46, (0, -0.2, 0.46), cuerpo, 'pz_rd_llama', seg=56)                       # la misma gota de `em_stroop` a 0,62 de su tamaño: 19 dp de ancho y ~26 de alto en el lienzo de 32 dp
+    p = cono(0.39, 0.045, 0.78, loc=(0, 0.27, 0.3), rot=(-90, 0, 0), coll='iconos', name='pz_llama_punta'); organic(p, 0.003, 1.2, 1); mat(p, mk(cuerpo))
+    if encendida:                                                                    # el corazón: otra gota más chica y más clara, echada sobre la grande (la llama encendida tiene luz por dentro)
+        esf(0.24, (0, -0.27, 0.84), '#FFF0B4', 'pz_brillo', sz=0.55)
+        c = cono(0.2, 0.025, 0.42, loc=(0, -0.05, 0.8), rot=(-90, 0, 0), coll='iconos', name='pz_brillo_punta'); c.scale.z = 0.55; mat(c, mk('#FFF0B4'))
+
+
 # ---------------------------------------------------------------------------------------------------- 3.4 los 17 emblemas (ficha de 64 dp, objeto al ~70 %)
 def ficha(area):
     """La ficha cuadrada redondeada del pastel del área (64 dp, radio 14, 6 dp de alto); devuelve su altura en unidades."""
@@ -484,6 +496,8 @@ def render_kit_avance():
     una('churro_sol', 72.0, 20.0, lambda: churro_p(SOL), nine_slice='horizontal', cuerpo_dp=[60, 8], tapa_dp=6, radio_dp=4)
     una('churro_lima', 72.0, 20.0, lambda: churro_p(LIMA), nine_slice='horizontal', cuerpo_dp=[60, 8], tapa_dp=6, radio_dp=4)
     una('bolita_lima', 20.0, 20.0, bolita, cuerpo_dp=[10, 10])
+    una('llama_encendida', 32.0, 32.0, lambda: llama(True), alto_u=0.5, cuerpo_dp=[19, 26])
+    una('llama_apagada', 32.0, 32.0, lambda: llama(False), alto_u=0.5, cuerpo_dp=[19, 26])
     for (gid, area, fn) in EMBLEMAS:
         def hacer(fn=fn, area=area, esc=ESCALA.get(gid, 1.0)): emblema_en_ficha(fn, area, esc)
         una('emblema_' + gid, 72.0, 72.0, hacer, alto_u=0.9, juego=gid, area=area, cuerpo_dp=[64, 64], usos_dp=[64, 56, 48, 40, 30])

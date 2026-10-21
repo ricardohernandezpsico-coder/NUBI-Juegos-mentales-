@@ -12,9 +12,13 @@ namespace NeuroVida.Games.Shared
     ///
     /// - Cielo nocturno de la app (mismo degradé y nebulosas celeste / uva / coral que <c>CosmosBackground</c>)
     ///   con un campo de estrellas en perspectiva (<see cref="StarfieldFx"/>) que acelera en cada número.
-    /// - Número gigante "de arcilla" (Fredoka, relleno de color, contorno grueso tinta y sombra dura), que
-    ///   cambia de color por paso: celeste (3) -> uva (2) -> coral (1) -> sol ("¡Ya!"). Energía creciente, de
-    ///   frío a cálido.
+    /// - Número gigante que cambia de color por paso: celeste (3) -> uva (2) -> coral (1) -> sol ("¡Ya!"). Energía
+    ///   creciente, de frío a cálido. Desde la Tarea 148 (P9) los numerales 3, 2 y 1 son de PLASTICINA (churros gordos
+    ///   renderizados en Blender, atlas «comun»: <c>cuenta_3</c>, <c>cuenta_2</c>, <c>cuenta_1</c>, claros, que se tiñen con el
+    ///   color del paso, igual que el anillo); «¡Ya!» y la cuenta sin atlas siguen en Fredoka de arcilla (relleno de color,
+    ///   contorno grueso tinta y sombra dura).
+    /// - Bajo el anillo, el EMBLEMA del juego (la ficha de plasticina con su objeto, atlas «emblemas»): el mismo objeto que
+    ///   sale en el momento del final (<see cref="FinishCurtain"/>), así la entrada y la salida son «un solo producto».
     /// - Halo del color del paso detrás del número, anillo de órbita que se vacía en tiempo real con una
     ///   estrella que recorre su borde, y destellos de 4 puntas que brillan alrededor en cada número.
     /// - Título en una píldora de arcilla crema (como las de la app) y subtítulo debajo.
@@ -43,7 +47,7 @@ namespace NeuroVida.Games.Shared
         /// <summary>Muestra la marca de version bajo la cuenta regresiva. Antes dependia de <c>Debug.isDebugBuild</c>,
         /// pero la exportacion de Unity es de produccion y nunca se veia. Poner en false antes de publicar en la tienda.</summary>
         public const bool ShowStyleStamp = true;
-        public const string StyleStamp = "pulido 20-oct";
+        public const string StyleStamp = "pulido 21-oct";
 
         private static readonly Color[] StepColors = { NeuroStyle.Sky, NeuroStyle.Grape, NeuroStyle.Coral };
         private static readonly float[] StepWarp = { 0.07f, 0.15f, 0.27f };
@@ -69,8 +73,11 @@ namespace NeuroVida.Games.Shared
         private readonly RectTransform _orbitStar;
         private readonly Image _orbitStarImage;
         private readonly float _orbitRadius;
-        private readonly Text _number;
-        private readonly Text _numberOut;
+        private readonly NumberView _number;
+        private readonly NumberView _numberOut;
+        private readonly Image _emblem;
+        /// <summary>El juego que está corriendo (su <c>game_id</c>): lo fija <c>GameEntryPoint</c> al recibir la config, para mostrar su emblema bajo el anillo. Vacío = sin emblema (pruebas, juegos sin ficha).</summary>
+        public static string GameId = "";
         private readonly Text _title;
         private readonly RectTransform _titleChipRect;
         private readonly Text _subtitle;
@@ -133,17 +140,23 @@ namespace NeuroVida.Games.Shared
             _orbitStar = NewChild("OrbitStar", _root, new Vector2(0f, _orbitRadius), new Vector2(44f * _u, 44f * _u));
             _orbitStarImage = AddImage(_orbitStar, SparkleSprite.Get(), Color.white);
 
-            _numberOut = NewText("NumberOut", _root, Vector2.zero, new Vector2(340f * _u, 200f * _u), 140, TextAnchor.MiddleCenter, clay: true);
-            _number = NewText("Number", _root, Vector2.zero, new Vector2(340f * _u, 200f * _u), 140, TextAnchor.MiddleCenter, clay: true);
+            _numberOut = NewNumber("NumberOut");
+            _number = NewNumber("Number");
+
+            // el emblema del juego bajo el anillo (el de la cortina del final); entre el anillo y la consigna
+            var emblemRect = NewChild("Emblem", _root, new Vector2(0f, -175f * _u), new Vector2(78f * _u, 78f * _u));       // 78 dp a 175 dp bajo el centro: ~48 unidades de aire sobre el anillo y ~50 sobre la consigna aunque ocupe dos renglones
+            _emblem = AddImage(emblemRect, null, Color.white);
+            _emblem.preserveAspect = true;
+            _emblem.enabled = false;
 
             // Píldora de arcilla crema con el título (arriba del anillo), como las píldoras de la app.
             _titleChipBase = new Vector2(0f, 262f * _u);
             _titleChipRect = NewChild("TitleChip", _root, _titleChipBase, new Vector2(230f * _u, 62f * _u));
-            if (PlasticSlab.Available(SlabSize.Chip, SlabTone.Cream))
+            if (PlasticSlab.Available(SlabSize.Button, SlabTone.Cream))
             {
-                var chipHost = _titleChipRect.gameObject.AddComponent<Image>();      // la píldora es una losa chica de plasticina crema (la del kit de la app)
+                var chipHost = _titleChipRect.gameObject.AddComponent<Image>();      // el título es una losa mediana (md) de plasticina crema (la del kit de la app; Tarea 148, P9)
                 chipHost.raycastTarget = false;
-                PlasticSlab.TryStyle(chipHost, SlabSize.Chip, SlabTone.Cream);
+                PlasticSlab.TryStyle(chipHost, SlabSize.Button, SlabTone.Cream);
             }
             else
             {
@@ -198,6 +211,9 @@ namespace NeuroVida.Games.Shared
             FitTitleChip();
             _subtitle.text = subtitle;
             SetAlpha(_subtitle, 0f);
+            var emblem = FinishCurtain.EmblemSprite(GameId);
+            _emblem.sprite = emblem;
+            _emblem.enabled = emblem != null;
             _number.text = "";
             _numberOut.text = "";
             _number.color = NeuroStyle.WithAlpha(StepColors[0], 0f);
@@ -590,6 +606,62 @@ namespace NeuroVida.Games.Shared
             var c = text.color;
             c.a = a;
             text.color = c;
+        }
+
+        private static void SetAlpha(NumberView number, float a)
+        {
+            var c = number.color;
+            c.a = a;
+            number.color = c;
+        }
+
+        /// <summary>El número grande de la cuenta: el numeral de plasticina (<c>cuenta_3</c>, <c>cuenta_2</c>, <c>cuenta_1</c> del atlas «comun», claros, teñidos con el color del paso) si es 3, 2 o 1 y hay atlas;
+        /// si no, el texto Fredoka de arcilla de siempre («¡Ya!», o la cuenta sin atlas). El <c>Text</c> conserva el texto aunque no se dibuje (así quien mira la pantalla, y las pruebas, lo siguen leyendo).</summary>
+        private sealed class NumberView
+        {
+            private readonly Text _text;
+            private readonly Image _image;
+            public readonly RectTransform rectTransform;
+
+            public NumberView(RectTransform host, Text text, Image image)
+            {
+                rectTransform = host;
+                _text = text;
+                _image = image;
+            }
+
+            public string text
+            {
+                get => _text.text;
+                set
+                {
+                    _text.text = value;
+                    var numeral = value != null && value.Length == 1 && value[0] >= '1' && value[0] <= '3' ? PlasticArt.Get("comun", "cuenta_" + value) : null;
+                    _image.sprite = numeral;
+                    _image.enabled = numeral != null;
+                    _text.enabled = numeral == null;
+                }
+            }
+
+            public Color color
+            {
+                get => _text.color;
+                set
+                {
+                    _text.color = value;
+                    _image.color = value;
+                }
+            }
+        }
+
+        private NumberView NewNumber(string name)
+        {
+            var host = NewChild(name, _root, Vector2.zero, new Vector2(340f * _u, 200f * _u));      // la animación de entrada y salida escala el anfitrión
+            var text = NewText("Text", host, Vector2.zero, new Vector2(340f * _u, 200f * _u), 140, TextAnchor.MiddleCenter, clay: true);
+            var imageRect = NewChild("Numeral", host, Vector2.zero, new Vector2(180f * _u, 180f * _u));      // el lienzo del numeral es cuadrado; el numeral mide ~0,75 de su alto (≈ 135 dp)
+            var image = AddImage(imageRect, null, Color.white);
+            image.enabled = false;
+            return new NumberView(host, text, image);
         }
 
         private static float EaseOutCubic(float t) => 1f - Mathf.Pow(1f - t, 3f);
