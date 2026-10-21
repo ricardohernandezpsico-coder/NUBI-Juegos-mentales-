@@ -113,7 +113,10 @@ internal fun placeColor(area: String): Color = when (area) {
  * corrimiento: la lámina y Nubi aparecen en su sitio con un fundido corto y la mirada solo cambia la imagen.
  */
 @Stable
-internal class PlaceFx {
+internal class PlaceFx(
+  /** true = la lámina de Hoy: Nubi MIRA al edificio antes de que caiga el velo (fundido, corrimiento y ladeo) y el edificio brilla. false = la lámina de Juegos y de Avance (Tarea 155): no hay isla ni edificio, así que no hay mirada ni brillo; el velo y el vuelo de Nubi empiezan de inmediato. */
+  val looks: Boolean = true
+) {
   /** El lugar tocado (`observatorio`…); null = ninguno (la lámina está cerrada del todo). */
   var key by mutableStateOf<String?>(null)
   var closing by mutableStateOf(false)
@@ -141,17 +144,19 @@ internal class PlaceFx {
     job?.cancel()
     job = scope.launch {
       if (reduceMotion) {
-        look.snapTo(1f); flight.snapTo(1f); shadow.snapTo(0f); glow.snapTo(0f)
+        look.snapTo(if (looks) 1f else 0f); flight.snapTo(1f); shadow.snapTo(0f); glow.snapTo(0f)
         coroutineScope {
           launch { veil.animateTo(1f, tween(PlaceMotion.REDUCED_FADE_MS)) }
           launch { sheet.animateTo(1f, tween(PlaceMotion.REDUCED_FADE_MS)) }
           launch { globe.animateTo(1f, tween(PlaceMotion.REDUCED_FADE_MS)) }
         }
       } else {
-        val hold = PlaceMotion.LOOK_HOLD_MS
+        val hold = if (looks) PlaceMotion.LOOK_HOLD_MS else 0
         coroutineScope {
-          launch { look.animateTo(1f, tween(PlaceMotion.LOOK_SHIFT_MS)) }
-          launch { glow.animateTo(1f, tween(PlaceMotion.GLOW_MS)); glow.animateTo(0f, tween(PlaceMotion.GLOW_MS, delayMillis = hold - 2 * PlaceMotion.GLOW_MS)) }
+          if (looks) {
+            launch { look.animateTo(1f, tween(PlaceMotion.LOOK_SHIFT_MS)) }
+            launch { glow.animateTo(1f, tween(PlaceMotion.GLOW_MS)); glow.animateTo(0f, tween(PlaceMotion.GLOW_MS, delayMillis = hold - 2 * PlaceMotion.GLOW_MS)) }
+          }
           launch { veil.animateTo(1f, tween(PlaceMotion.VEIL_MS, delayMillis = hold)) }
           launch { sheet.animateTo(1f, tween(PlaceMotion.SHEET_MS, delayMillis = hold + PlaceMotion.SHEET_DELAY_MS, easing = PlaceMotion.SheetEasing)) }
           launch { flight.animateTo(1f, tween(PlaceMotion.FLIGHT_MS, delayMillis = hold)) }
@@ -159,6 +164,16 @@ internal class PlaceFx {
           launch { globe.animateTo(1f, tween(PlaceMotion.GLOBE_MS, delayMillis = hold + PlaceMotion.GLOBE_DELAY_MS)) }
         }
       }
+    }
+  }
+
+  /** La abre YA, sin animar (Juegos al volver de una partida lanzada desde ella: la lámina queda como se dejó, con Nubi posada). */
+  fun snapOpen(scope: CoroutineScope, place: String) {
+    if (key != null) return
+    key = place; closing = false; outbound = true; moves = true
+    job?.cancel()
+    job = scope.launch {
+      look.snapTo(if (looks) 1f else 0f); glow.snapTo(0f); veil.snapTo(1f); sheet.snapTo(1f); flight.snapTo(1f); globe.snapTo(1f); shadow.snapTo(0f)
     }
   }
 
@@ -198,7 +213,7 @@ internal class PlaceFx {
 }
 
 /** Dónde está Nubi `hola` en la isla ([island] = la caja de la isla en la misma ventana que la capa), ya corrida y ladeada por la mirada. */
-private fun nubiRest(island: Rect, layout: IslaLayout): Rect {
+internal fun placeNubiRest(island: Rect, layout: IslaLayout): Rect {
   val b = layout
   return Rect(
     island.left + island.width * b.nubiTopLeft.x, island.top + island.height * b.nubiTopLeft.y,
@@ -207,8 +222,10 @@ private fun nubiRest(island: Rect, layout: IslaLayout): Rect {
 }
 
 /**
- * Lo que va ENCIMA de Hoy mientras la lámina está abierta o abriéndose: el velo, la lámina y Nubi volando (o posada en ella). Va dentro de la caja de Hoy (no es un `Dialog`), que ocupa toda la pestaña: con la lámina abierta la barra de pestañas se retira y esa
- * caja llega hasta la barra del teléfono, así que el botón «Jugar» queda sobre ella. [island] = la caja de la isla en esta misma caja (px).
+ * Lo que va ENCIMA de una pestaña mientras la lámina de un área está abierta o abriéndose: el velo, la lámina y Nubi volando (o posada en ella). Es LA MISMA lámina en Hoy, en Juegos y en Avance (Tarea 155; `auditoria-fable/spec-area-unica.md`); solo cambia de dónde sale Nubi y,
+ * en Avance, que lleva el gráfico de las 4 semanas ([showChart]). Va dentro de la caja de la pestaña (no es un `Dialog`), que ocupa toda la pantalla: con la lámina abierta la barra de pestañas se retira y esa caja llega hasta la barra del teléfono, así que el botón «Jugar» queda sobre ella.
+ * [rest] = la caja de Nubi en su sitio de la pestaña (px, en esta misma caja): en Hoy, Nubi `hola` en la isla ([placeNubiRest]); en Juegos y en Avance, la Nubi de su cabecera (null o fuera de la vista = no hay de dónde volar: aparece posada con un fundido). [nubiRes] = la imagen que vuela.
+ * [lookShiftBase] = el ancho sobre el que se corre Nubi al mirar (el de la isla; 0 si no hay mirada).
  *
  * La lámina MIDE LO QUE NECESITA (Tarea 147; `auditoria-fable/spec-lamina-lugar.md`): ya no empieza al 22 % fijo. Abre desde abajo con el alto de su contenido y como mucho `página − 56 dp` (siempre queda un poco de cielo arriba); si no cabe, cede lo secundario
  * en este orden: el globo, los nombres de las etapas, el rótulo «Tus juegos aquí» y, solo si aun así no cabe, el medio se desliza. Nubi se posa DENTRO de la lámina, en el hueco que ella le deja ([PlaceSheetContent]).
@@ -217,17 +234,19 @@ private fun nubiRest(island: Rect, layout: IslaLayout): Rect {
 internal fun PlaceLayer(
   fx: PlaceFx,
   place: PlaceSheetUi?,
-  layout: IslaLayout,
-  island: Rect,
+  rest: Rect?,
   onClose: () -> Unit,
   onPlay: (String) -> Unit,
   onGame: (String) -> Unit,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  @androidx.annotation.DrawableRes nubiRes: Int = R.drawable.isla_nubi_hola,
+  lookShiftBase: Float = 0f,
+  showChart: Boolean = false
 ) {
   if (!fx.active || place == null) return
   val density = LocalDensity.current
-  val rest = nubiRest(island, layout)
-  val nubiAspect = if (rest.width > 0f) rest.height / rest.width else 0.675f
+  val hasRest = rest != null && rest.width > 1f && rest.height > 1f
+  val nubiAspect = if (hasRest) rest!!.height / rest.width else 0.675f
   // dónde queda el hueco de Nubi dentro de la lámina (px, desde su esquina de arriba a la izquierda) y cuánto mide la lámina: con eso se sabe dónde se posa Nubi aunque la lámina cambie de alto
   var hole by remember(place.key) { mutableStateOf(Offset.Zero) }
   var sheetHeightPx by remember(place.key) { mutableIntStateOf(0) }
@@ -261,11 +280,11 @@ internal fun PlaceLayer(
       ) {
         PlaceSheetContent(
           place, nubiAspect = nubiAspect, maxHeight = (pageHeight - PLACE_MIN_SKY).coerceAtLeast(0.dp), onClose = onClose, onPlay = onPlay, onGame = onGame,
-          globe = { fx.globe.value }, globeMoves = fx.moves, onHole = { hole = it }
+          globe = { fx.globe.value }, globeMoves = fx.moves, onHole = { hole = it }, showChart = showChart
         )
       }
-      // Nubi: en vuelo (de la isla a la lámina o de vuelta) o ya posada en su hueco. Mientras no vuela, la dibuja la isla.
-      NubiFlight(fx, layout, island, perch)
+      // Nubi: en vuelo (de su sitio a la lámina o de vuelta) o ya posada en su hueco. Mientras no vuela, la dibuja su pestaña.
+      NubiFlight(fx, if (hasRest) rest!! else perch, lookShiftBase, nubiRes, perch, flies = hasRest)
     }
   }
 }
@@ -276,27 +295,28 @@ internal val PLACE_MIN_SKY = 56.dp
 /** El ancho de Nubi posada en la lámina: el tamaño S de Nubi (P3: 72 dp), la misma imagen que vuela. */
 internal val PLACE_NUBI_WIDTH = 72.dp
 
-/** Nubi `hola` entre su sitio en la isla y su sitio en la lámina, con el arco y el balanceo del boceto. Solo se dibuja mientras `flight` > 0. */
+/**
+ * Nubi entre su sitio y su sitio en la lámina, con el arco y el balanceo del boceto. Solo se dibuja mientras `flight` > 0. Si no hay de dónde volar ([flies] = false: la Nubi de la pestaña no está a la vista), no hay vuelo: aparece ya posada, con el fundido de la lámina.
+ */
 @Composable
-private fun NubiFlight(fx: PlaceFx, layout: IslaLayout, island: Rect, perch: Rect) {
+private fun NubiFlight(fx: PlaceFx, rest: Rect, lookShiftBase: Float, @androidx.annotation.DrawableRes nubiRes: Int, perch: Rect, flies: Boolean) {
   val density = LocalDensity.current
-  val rest = nubiRest(island, layout)
   val look = PlaceMotion.look(fx.key)
   androidx.compose.ui.layout.Layout(
     content = {
       Image(
-        painterResource(R.drawable.isla_nubi_hola), contentDescription = null,
+        painterResource(nubiRes), contentDescription = null,
         modifier = Modifier
           .testTag("place_nubi")
           .graphicsLayer {
             val f = fx.flight.value
             val fl = PlaceMotion.flight(f, fx.outbound)
-            val e = fl.easedPosition
-            alpha = if (f > 0f) 1f else 0f
+            val e = if (flies) fl.easedPosition else 1f
+            alpha = if (f > 0f) (if (flies) 1f else fx.sheet.value) else 0f
             val sc = PlaceMotion.lerp(1f, perch.width / rest.width, e)
             scaleX = sc; scaleY = sc
             transformOrigin = TransformOrigin(0f, 0f)
-            rotationZ = PlaceMotion.lerp(if (fx.moves) look.tiltDeg * fx.look.value else 0f, 0f, e) + if (fx.moves) fl.tiltDeg else 0f
+            rotationZ = PlaceMotion.lerp(if (fx.moves) look.tiltDeg * fx.look.value else 0f, 0f, e) + if (fx.moves && flies) fl.tiltDeg else 0f
           },
         contentScale = androidx.compose.ui.layout.ContentScale.FillBounds
       )
@@ -307,10 +327,10 @@ private fun NubiFlight(fx: PlaceFx, layout: IslaLayout, island: Rect, perch: Rec
     layout(constraints.maxWidth, constraints.maxHeight) {
       // El lugar de Nubi cambia cuadro a cuadro: se lee la animación al colocar (no recompone nada).
       val fl = PlaceMotion.flight(fx.flight.value, fx.outbound)
-      val e = fl.easedPosition
-      val startLeft = rest.left + if (fx.moves) look.shift * island.width * fx.look.value else 0f
+      val e = if (flies) fl.easedPosition else 1f
+      val startLeft = rest.left + if (fx.moves) look.shift * lookShiftBase * fx.look.value else 0f
       val left = PlaceMotion.lerp(startLeft, perch.left, e)
-      val top = PlaceMotion.lerp(rest.top, perch.top, e) + if (fx.moves) with(density) { fl.arcDp.dp.toPx() } else 0f
+      val top = PlaceMotion.lerp(rest.top, perch.top, e) + if (fx.moves && flies) with(density) { fl.arcDp.dp.toPx() } else 0f
       p.place(left.toInt(), top.toInt())
     }
   }
@@ -346,7 +366,9 @@ internal fun PlaceSheetContent(
   modifier: Modifier = Modifier,
   globe: () -> Float = { 1f },
   globeMoves: Boolean = false,
-  onHole: (Offset) -> Unit = {}
+  onHole: (Offset) -> Unit = {},
+  /** Las 4 últimas semanas del avance, entre la barra y «Tus juegos aquí» (la lámina de Avance; Tarea 155). Si no hay al menos dos semanas con dato, no se dibuja. */
+  showChart: Boolean = false
 ) {
   val titleFocus = remember { FocusRequester() }
   LaunchedEffect(place.key) { runCatching { titleFocus.requestFocus() } }
@@ -422,6 +444,10 @@ internal fun PlaceSheetContent(
         com.example.ui.components.StageScale(
           if (place.measured) place.fill else null, onCard = true, change = place.change, barTag = "place_bar", namesTag = "place_stages", showNames = level < PlaceLevels.NO_STAGE_NAMES
         )
+        if (showChart && place.measured && place.weeks.count { it != null } >= 2) {
+          Spacer(Modifier.height(if (compact) 6.dp else 10.dp))
+          com.example.ui.components.WeeksChartOnCard(place.weeks)
+        }
         if (level < PlaceLevels.NO_LABEL) {
           Spacer(Modifier.height(12.dp))
           Text("Tus juegos aquí", color = SheetMuted, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.testTag("place_games_label"))
@@ -602,4 +628,30 @@ private fun PlaceGameRowItem(row: PlaceGameRow, suggested: Boolean, onClick: () 
       }
     }
   }
+}
+
+/**
+ * La lámina de CADA área (Tarea 155): lo que las tres pestañas —Hoy, Juegos y Avance— muestran al tocar un área. Se arma una vez por pestaña con LA MISMA lógica ([com.example.data.PlaceSheets.build]) y los mismos datos: el avance del área, sus juegos
+ * (con «hoy, en tu ruta» / «hecho hoy» en las paradas de la ruta [routeGameIds]/[routeCompleted]) y LA sugerencia de Nubi ([suggestion]). La clave del mapa es el área (`MEMORIA`…).
+ */
+@Composable
+internal fun rememberAreaPlaces(
+  statuses: List<com.example.data.AreaStatus>,
+  history: List<com.example.model.GamePlayResult>,
+  measures: List<com.example.data.MeasurePoint>,
+  now: Long,
+  lang: com.example.model.AppLanguage,
+  suggestion: com.example.data.Suggestion.Pick?,
+  routeGameIds: List<String>,
+  routeCompleted: Int
+): Map<String, PlaceSheetUi> = remember(statuses, history, measures, now, lang, suggestion, routeGameIds, routeCompleted) {
+  val routes = com.example.data.routeStatesOf(routeGameIds, routeCompleted)
+  com.example.ui.components.AREA_ORDER.mapIndexed { i, key ->
+    val domain = com.example.ui.components.domainOf(key)
+    key to PlaceSheets.build(
+      area = key, status = statuses.getOrNull(i) ?: com.example.data.AreaStatus(key, null, 0f, emptyList()),
+      games = com.example.model.GameRegistry.allGames.filter { it.domain == domain }, titleOf = { g -> com.example.ui.i18n.getGameTitle(g.id, lang, g.title) },
+      history = history, measures = measures, now = now, suggestion = suggestion, routes = routes
+    )
+  }.toMap()
 }

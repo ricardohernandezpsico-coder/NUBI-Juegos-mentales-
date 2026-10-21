@@ -134,7 +134,7 @@ private fun dayIndex(ts: Long): Long = (ts + TimeZone.getDefault().getOffset(ts)
  * con letra grande o pantalla chica la isla se queda en su mínimo y lo demás se desliza, sin cortarse ni superponerse. El globo de Nubi ya no está: lo que decía (partida en pausa, camino cumplido, Primer vuelo) va debajo del botón.
  *
 
- * Qué pasó con lo que Hoy tenía antes: las cuatro barras de área (con su etapa y el cambio de la semana) ya no están sueltas; cada una vive en el DETALLE de su área ([AreaDetail]: etapa, cuánto avanzó, las últimas semanas, sus juegos y «¿Le damos un empujón?»), que se abre TOCANDO
+ * Qué pasó con lo que Hoy tenía antes: las cuatro barras de área (con su etapa y el cambio de la semana) ya no están sueltas; cada una vive en la LÁMINA de su área ([PlaceSheetContent]: etapa, cuánto avanzó, sus juegos y «Jugar»; la misma que abren Juegos y Avance, Tarea 155), que se abre TOCANDO
  * el edificio de esa área en la isla (Observatorio = Memoria, Antena = Atención, Hangar = Razonamiento, Biblioteca = Lenguaje; hasta la fase 2, que lo cambia a «Juegos con ese lugar elegido»). La liga y la racha pasaron al lado de los farolitos; el perfil y las opciones siguen arriba a la derecha.
  */
 @Composable
@@ -182,16 +182,7 @@ fun HomeScreen(
   // UNA sola sugerencia de Nubi para toda la app (Tarea 150, B2): lo que sigue en la ruta de hoy y, terminada, el juego que más tiempo lleva sin jugarse.
   val suggestion = remember(dailySession, lastPlayed, clock) { com.example.data.Suggestion.next(dailySession.gameIds, dailySession.completedCount, lastPlayed, clock, Streak::dayOf) }
   // La lámina de cada lugar: el avance de su área y sus juegos (la lógica del antiguo detalle de área).
-  val places = remember(statuses, history, measures, clock, lang, suggestion) {
-    AREA_ORDER.mapIndexed { i, key ->
-      val domain = domainOf(key)
-      key to com.example.data.PlaceSheets.build(
-        area = key, status = statuses.getOrNull(i) ?: AreaStatus(key, null, 0f, emptyList()),
-        games = GameRegistry.allGames.filter { it.domain == domain }, titleOf = { g -> getGameTitle(g.id, lang, g.title) },
-        history = history, measures = measures, now = clock, suggestion = suggestion
-      )
-    }.toMap()
-  }
+  val places = rememberAreaPlaces(statuses, history, measures, clock, lang, suggestion, dailySession.gameIds, dailySession.completedCount)
   val completed = dailySession.completedCount
   // La racha que perdona (Tarea 124): con el día de descanso, si lo hubo esta semana.
   val streakInfo = remember(history, clock) { Streak.fromTimestamps(history.map { it.timestamp }, clock) }
@@ -457,11 +448,12 @@ internal fun HomeContent(
 
     // La lámina del lugar tocado (velo, lámina, Nubi volando y su globo) va encima de todo Hoy.
     val density = LocalDensity.current
+    val island = Rect(islandWindow.left - rootOffset.x, islandWindow.top - rootOffset.y, islandWindow.right - rootOffset.x, islandWindow.bottom - rootOffset.y)
     PlaceLayer(
       fx = fx,
       place = fx.key?.let { k -> ui.places.values.firstOrNull { it.key == k } },
-      layout = layout,
-      island = Rect(islandWindow.left - rootOffset.x, islandWindow.top - rootOffset.y, islandWindow.right - rootOffset.x, islandWindow.bottom - rootOffset.y),
+      rest = placeNubiRest(island, layout),
+      lookShiftBase = island.width,
       onClose = { fx.close(scope, reduceMotion) },
       onPlay = onPlaceGame,
       onGame = onPlaceGameCard
@@ -689,185 +681,6 @@ private fun HoyAction(ui: HomeUi, onPlay: () -> Unit, onResume: () -> Unit, onBa
           val p = androidx.compose.ui.graphics.Path().apply { moveTo(size.width * 0.15f, size.height * 0.1f); lineTo(size.width * 0.85f, size.height * 0.5f); lineTo(size.width * 0.15f, size.height * 0.9f) }
           drawPath(p, com.example.ui.theme.NubiTokens.OnNightDim, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
         }
-      }
-    }
-  }
-}
-
-
-/**
- * Detalle de un área (vista "C" aprobada por Ricardo): Nubi explica, la barra grande con las 5 etapas nombradas, de
- * dónde a dónde avanzó en la semana y cuánto falta para la siguiente, las últimas 4 semanas y sus juegos. Abajo, en
- * vez de "Jugar Memoria", la pregunta de Nubi va en su globo (Tarea 143) y abajo el botón "Jugar <juego>" (Nubi elige el juego del área
- * sin jugar o el más olvidado y dice por qué). Flechas (o deslizar sobre Nubi) para pasar a otra área.
- */
-@Composable
-internal fun AreaDetail(
-  areaKey: String,
-  statuses: List<AreaStatus>,
-  names: Map<String, String>,
-  history: List<GamePlayResult>,
-  measures: List<MeasurePoint>,
-  now: Long,
-  lang: com.example.model.AppLanguage,
-  onArea: (String) -> Unit,
-  /** «Jugar <juego>»: juega directo el juego que Nubi elige. */
-  onPlay: (String) -> Unit,
-  /** Tocar el nombre (la fila) de un juego: abre su ficha (Tarea 87). */
-  onGame: (String) -> Unit,
-  onClose: () -> Unit,
-  modifier: Modifier = Modifier,
-  /** A dónde vuelve la flecha: «Avance» (de donde se abre hoy); antes la cabecera decía «Hoy» aunque se abriera desde Avance (Tarea 143, A1). */
-  backLabel: String = "Avance",
-  /** LA sugerencia de Nubi de toda la app ([com.example.data.Suggestion.next]): en su área, Nubi dice por qué; en las otras, el botón propone el juego que más tiempo lleva sin jugarse, sin «Te sugiero». */
-  suggestion: com.example.data.Suggestion.Pick? = null
-) {
-  val idx = AREA_ORDER.indexOf(areaKey).coerceAtLeast(0)
-  val s = statuses.getOrNull(idx) ?: AreaStatus(areaKey, null, 0f, emptyList())
-  val name = names[areaKey] ?: areaKey
-  val domain = domainOf(areaKey) ?: return
-  val games = GameRegistry.allGames.filter { it.domain == domain }
-  val lastPlayed = games.associate { g -> g.id to history.filter { it.gameId == g.id }.maxOfOrNull { it.timestamp } }
-  val pick = com.example.data.Suggestion.forArea(areaKey, suggestion, games, lastPlayed.mapNotNull { (id, t) -> t?.let { id to it } }.toMap(), now, Streak::dayOf)
-  val suggested = pick?.let { p -> games.firstOrNull { it.id == p.gameId } }
-  val suggestedHere = com.example.data.Suggestion.suggestedHere(areaKey, suggestion)
-  fun go(step: Int) = onArea(AREA_ORDER[(idx + step + AREA_ORDER.size) % AREA_ORDER.size])
-
-  Column(modifier.fillMaxSize().testTag("area_detail")) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 12.dp, top = 4.dp)) {
-      com.example.ui.components.KitBackButton(onClose, Modifier.testTag("area_back"), label = "Volver a $backLabel")
-      Spacer(Modifier.width(10.dp))
-      OnBoardText(backLabel, color = OnNight, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
-    }
-    Column(
-      Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp),
-      horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-      // Maqueta B de la Propuesta 3 (Tarea 147): primero el ÁREA (su nombre y su etapa a la izquierda, las flechas ‹ › a la derecha: antes Nubi iba entre las flechas, como si se pasara de Nubi en Nubi) y debajo Nubi M con su globo al lado.
-      // Una voz: lo que dice Nubi va en su globo, en primera persona (la pregunta y, si hay juego elegido, por qué lo eligió; antes el porqué iba suelto como «Nubi lo eligió: …»).
-      var drag by remember(areaKey) { mutableStateOf(0f) }
-      val globeText = com.example.data.Suggestion.detailGlobe(suggested?.let { getGameTitle(it.id, lang, it.title) }, if (suggestedHere) pick else null)      // DOS frases como mucho y sin repetir la línea de avance de abajo (Opus, 21-oct)
-      Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(top = 4.dp).pointerInput(areaKey) {
-          detectHorizontalDragGestures(
-            onDragEnd = { if (drag > 60.dp.toPx()) go(-1) else if (drag < -60.dp.toPx()) go(1); drag = 0f },
-            onDragCancel = { drag = 0f }
-          ) { _, dx -> drag += dx }
-        }
-      ) {
-        Column(Modifier.weight(1f)) {
-          OnBoardText(name, color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("area_name"))
-          OnBoardText(
-            s.value?.let { Skill.stageHeader(Skill.stageName(it), s.points ?: 0) } ?: "Aún sin medir",         // el mismo encabezado que la lámina y la ficha (Tarea 150, B1.6)
-            color = OnNightDim, fontSize = 16.sp
-          )
-        }
-        AreaArrow(left = true, onClick = { go(-1) })
-        Spacer(Modifier.width(8.dp))
-        AreaArrow(left = false, onClick = { go(1) })
-      }
-      Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        NubiClay(com.example.ui.components.NubiSize.M)
-        Spacer(Modifier.width(6.dp))
-        NubiBubble(
-          text = globeText,
-          tailLeft = true, modifier = Modifier.weight(1f).testTag("area_nubi_globe")
-        )
-      }
-      Spacer(Modifier.height(4.dp))
-      com.example.ui.components.StageScale(s.value, onCard = false, change = s.change, barModifier = Modifier.semantics { contentDescription = areaDescription(name, s) })
-      Spacer(Modifier.height(8.dp))
-      OnBoardText(AreaProgress.changeLine(s), color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-      AreaProgress.toNextLine(s)?.let { OnBoardText(it, color = OnNightDim, fontSize = 16.sp) }
-      if (s.value != null && s.weeks.count { it != null } >= 2) WeeksChart(s.weeks)
-      Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 12.dp)) {
-        AREA_ORDER.forEachIndexed { i, _ ->
-          Box(
-            Modifier.size(if (i == idx) 10.dp else 8.dp).clip(RoundedCornerShape(50))
-              .background(if (i == idx) Color.White else Color.White.copy(alpha = 0.25f))
-          )
-        }
-      }
-      OnBoardText(
-        "Tus juegos de ${name.lowercase()}", color = Clay.Sun, fontSize = 16.sp, fontWeight = FontWeight.Bold,
-        modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 2.dp)
-      )
-      games.forEach { g ->
-        val m = StarMeasures.latest(measures, g.id)
-        val last = lastPlayed[g.id]
-        val detail = when {
-          m != null -> StarMeasures.zoneText(m.first, measures)?.let { "$it · promedio reciente" } ?: "${m.first.format(m.second)} ${m.first.unit} · tu última"
-          last == null -> "Sin jugar aún"
-          else -> playedAgo(now, last)
-        }
-        // Cada juego es una tarjeta de plasticina tocable (Tarea 90): tocarla abre su ficha.
-        ClayCard(Modifier.fillMaxWidth().padding(vertical = 2.dp).testTag("area_game_${g.id}"), onClick = { onGame(g.id) }, contentPadding = 0.dp) {
-          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 14.dp, vertical = 6.dp)) {
-            com.example.ui.components.GameEmblem(g.id, 40.dp)
-            Spacer(Modifier.width(12.dp))
-            Column {
-              Text(getGameTitle(g.id, lang, g.title), color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-              Text(detail, color = Clay.InkMuted, fontSize = 16.sp)
-            }
-          }
-        }
-      }
-      Spacer(Modifier.height(8.dp))
-    }
-    if (suggested != null) {
-      // La invitación: el botón «Jugar <juego>» (la pregunta ya la hizo Nubi en su globo) y por qué lo eligió, sin repetir lo que ya dice la tarjeta del juego.
-      Column(Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, top = 8.dp, bottom = 10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        val title = getGameTitle(suggested.id, lang, suggested.title)
-        ClayButton(text = "Jugar $title", onClick = { onPlay(suggested.id) }, leading = { com.example.ui.components.GameEmblem(suggested.id, 32.dp) }, modifier = Modifier.testTag("area_play"))
-      }
-    }
-  }
-}
-
-private fun playedAgo(now: Long, last: Long): String = when (val days = (dayIndex(now) - dayIndex(last)).toInt()) {
-  0 -> "Jugado hoy"
-  1 -> "Jugado ayer"
-  else -> "Hace $days días que no lo juegas"
-}
-
-@Composable
-private fun AreaArrow(left: Boolean, onClick: () -> Unit) {
-  com.example.ui.components.ClayDisc(com.example.ui.components.DiscStyle.CREAM, onClick, if (left) "Área anterior" else "Área siguiente") {
-    com.example.ui.components.KitGlyph(if (left) Glyph.LEFT else Glyph.RIGHT, size = 28.dp)
-  }
-}
-
-/** Las últimas 4 semanas en la misma escala 0-100: una línea lavanda, la de esta semana en sol, con su número. */
-@Composable
-private fun WeeksChart(weeks: List<Float?>) {
-  val vals = weeks.map { it?.let { v -> (v * 100f) } }
-  val known = vals.filterNotNull()
-  val lo = (known.minOrNull() ?: 0f) - 4f
-  val hi = (known.maxOrNull() ?: 0f) + 4f
-  Column(Modifier.fillMaxWidth().padding(top = 16.dp)) {
-    Row(Modifier.fillMaxWidth()) {
-      vals.forEachIndexed { i, v ->
-        OnBoardText(
-          v?.let { "${it.toInt()}" } ?: "", fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.weight(1f),
-          color = if (i == vals.lastIndex) Color.White else OnNightSoft, fontWeight = if (i == vals.lastIndex) FontWeight.Bold else FontWeight.Normal
-        )
-      }
-    }
-    Canvas(Modifier.fillMaxWidth().height(56.dp).padding(vertical = 6.dp)) {
-      fun p(i: Int, v: Float) = Offset(size.width * (i + 0.5f) / vals.size, size.height * (1f - (v - lo) / (hi - lo)))
-      val pts = vals.mapIndexedNotNull { i, v -> v?.let { p(i, it) } }
-      val path = Path().apply { pts.forEachIndexed { i, o -> if (i == 0) moveTo(o.x, o.y) else lineTo(o.x, o.y) } }
-      drawPath(path, AreaBarColor, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
-      pts.forEachIndexed { i, o ->
-        val last = i == pts.lastIndex
-        drawCircle(Clay.Ink, (if (last) 6 else 5).dp.toPx(), o)
-        drawCircle(if (last) Clay.Sun else AreaBarColor, (if (last) 4.5f else 3.5f).dp.toPx(), o)
-      }
-    }
-    Row(Modifier.fillMaxWidth()) {
-      listOf("hace 3 sem.", "hace 2 sem.", "sem. pasada", "esta sem.").forEachIndexed { i, t ->
-        OnBoardText(t, fontSize = 14.sp, textAlign = TextAlign.Center, color = if (i == 3) Color.White else OnNightSoft, modifier = Modifier.weight(1f))
       }
     }
   }

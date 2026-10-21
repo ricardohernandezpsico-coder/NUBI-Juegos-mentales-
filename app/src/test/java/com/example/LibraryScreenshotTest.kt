@@ -26,7 +26,6 @@ import com.example.ui.components.TopActions
 import com.example.ui.screens.AreaGrid
 import com.example.ui.screens.SuggestionHeader
 import com.example.ui.screens.suggestArea
-import com.example.ui.screens.AreaWindow
 import com.example.ui.screens.GameSheetContent
 import com.example.ui.screens.cardData
 import com.example.ui.theme.NeuroVidaTheme
@@ -78,26 +77,6 @@ class LibraryScreenshotTest {
       }
     }
     composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/juegos-areas.png")
-  }
-
-  @Test
-  fun library() {
-    val points = listOf(31f, 27f, 29f, 24f, 22f, 18f).mapIndexed { i, v -> MeasurePoint(now - (6 - i) * day, "numline", v) }
-    val progress = mapOf("aterrizaje" to 0.45f, "secuencia" to 0.75f, "parejas" to 0.40f, "correo" to 0.33f)
-    val games = GameRegistry.allGames.filter { it.domain == DomainType.MEMORIA }
-      .sortedBy { com.example.data.StarMeasures.defForGame(it.id) == null }
-    val cards = games.map { g ->
-      val last = if (g.id == "correo") null else now - (if (g.id == "aterrizaje") 0 else 2) * day
-      cardData(g, g.title, last, now, progress[g.id], if (g.id == "aterrizaje") points else emptyList(), 4)
-    }
-    composeTestRule.setContent {
-      NeuroVidaTheme {
-        Box(Modifier.width(412.dp).height(915.dp).background(Color(0xFF050823))) {
-          AreaWindow(DomainType.MEMORIA, "Memoria", statuses[0], cards, focusGameId = null, onClose = {}, onGame = {})
-        }
-      }
-    }
-    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/library.png")
   }
 
   @Test

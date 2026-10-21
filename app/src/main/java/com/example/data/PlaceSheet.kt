@@ -6,15 +6,25 @@ import java.util.TimeZone
 import kotlin.math.roundToInt
 
 /**
+ * Si un juego es una parada de la ruta de hoy (Tarea 155, «un área, una sola vista»): la lámina del área es la misma en Hoy, Juegos y Avance, y en ella la fila de ese juego dice «hoy, en tu ruta» ([PENDING]) o «hecho hoy» ([DONE]); así no se pierde lo que decían las secciones
+ * «En tu ruta de hoy» de la antigua ventana de Juegos. [NONE] = no es una parada de hoy.
+ */
+enum class RouteState { DONE, PENDING, NONE }
+
+/** Las paradas de la ruta de hoy: las [completed] primeras de [gameIds] están hechas y el resto pendientes; los demás juegos no están en la ruta. */
+fun routeStatesOf(gameIds: List<String>, completed: Int): Map<String, RouteState> =
+  gameIds.mapIndexed { i, id -> id to if (i < completed) RouteState.DONE else RouteState.PENDING }.toMap()
+
+/**
  * Una ficha de «Tus juegos aquí» en la lámina de un lugar: el juego y cuándo se jugó. [daysAgo] = días desde su última partida (null = nunca se jugó); la lámina solo dice eso ([whenShort], [spoken]) y NO la cifra de la medida del juego
  * (esa vive en la ficha del juego, con su explicación: Tarea 143). [detail] = el dato de siempre («Jugado ayer», «Sin jugar aún», su marca…), que ya no se dibuja pero se conserva para las pruebas y los lectores de la lógica.
  */
-data class PlaceGameRow(val gameId: String, val title: String, val detail: String, val daysAgo: Int? = null) {
-  /** «hoy», «ayer», «hace 3 días» o «nuevo» (nunca se jugó): la línea corta de la ficha. */
-  val whenShort: String get() = PlaceSheets.whenShort(daysAgo)
+data class PlaceGameRow(val gameId: String, val title: String, val detail: String, val daysAgo: Int? = null, val routeState: RouteState = RouteState.NONE) {
+  /** «hoy, en tu ruta» o «hecho hoy» si es una parada de la ruta de hoy; si no, «hoy», «ayer», «hace 3 días» o «nuevo» (nunca se jugó): la línea corta de la ficha. */
+  val whenShort: String get() = PlaceSheets.whenShort(daysAgo, routeState)
 
-  /** Lo mismo para el lector de pantalla: «jugado hoy», «jugado ayer», «jugado hace 3 días» o «sin jugar aún». */
-  val spoken: String get() = PlaceSheets.whenSpoken(daysAgo)
+  /** Lo mismo para el lector de pantalla: «pendiente en tu ruta de hoy», «hecho hoy en tu ruta», «jugado hoy», «jugado ayer», «jugado hace 3 días» o «sin jugar aún». */
+  val spoken: String get() = PlaceSheets.whenSpoken(daysAgo, routeState)
 }
 
 /**
@@ -52,6 +62,9 @@ data class PlaceSheetUi(
 
 /** Arma [PlaceSheetUi] con la lógica que ya tenía el detalle de área de Hoy (`AreaProgress`, `Skill`, `StarMeasures`): nada nuevo que medir. */
 object PlaceSheets {
+  /** Lo que dice el globo de Nubi la primera vez que se abre la lámina de un área en Juegos (Tarea 155): una sola frase, una sola vez. */
+  const val AREA_SHEET_INTRO = "Ahora los juegos de cada lugar se ven aquí, como en Hoy."
+
   private const val DAY_MS = 86_400_000L
   private fun dayIndex(ts: Long): Long = (ts + TimeZone.getDefault().getOffset(ts)) / DAY_MS
 
@@ -62,19 +75,23 @@ object PlaceSheets {
     else -> "Hace $days días que no lo juegas"
   }
 
-  /** La línea corta de una ficha de juego en la lámina: «hoy», «ayer», «hace N días»; «nuevo» si nunca se jugó ([daysAgo] nulo). */
-  fun whenShort(daysAgo: Int?): String = when (daysAgo) {
-    null -> "nuevo"
-    0 -> "hoy"
-    1 -> "ayer"
+  /** La línea corta de una ficha de juego en la lámina: «hecho hoy» / «hoy, en tu ruta» si es una parada de hoy ([route]); si no, «hoy», «ayer», «hace N días»; «nuevo» si nunca se jugó ([daysAgo] nulo). */
+  fun whenShort(daysAgo: Int?, route: RouteState = RouteState.NONE): String = when {
+    route == RouteState.DONE -> "hecho hoy"
+    route == RouteState.PENDING -> "hoy, en tu ruta"
+    daysAgo == null -> "nuevo"
+    daysAgo == 0 -> "hoy"
+    daysAgo == 1 -> "ayer"
     else -> "hace $daysAgo días"
   }
 
-  /** Lo que dice el lector de pantalla de esa línea: «jugado hoy», «jugado ayer», «jugado hace N días», «sin jugar aún». */
-  fun whenSpoken(daysAgo: Int?): String = when (daysAgo) {
-    null -> "sin jugar aún"
-    0 -> "jugado hoy"
-    1 -> "jugado ayer"
+  /** Lo que dice el lector de pantalla de esa línea: «hecho hoy en tu ruta», «pendiente en tu ruta de hoy», «jugado hoy», «jugado ayer», «jugado hace N días», «sin jugar aún». */
+  fun whenSpoken(daysAgo: Int?, route: RouteState = RouteState.NONE): String = when {
+    route == RouteState.DONE -> "hecho hoy en tu ruta"
+    route == RouteState.PENDING -> "pendiente en tu ruta de hoy"
+    daysAgo == null -> "sin jugar aún"
+    daysAgo == 0 -> "jugado hoy"
+    daysAgo == 1 -> "jugado ayer"
     else -> "jugado hace $daysAgo días"
   }
 
@@ -97,7 +114,9 @@ object PlaceSheets {
     history: List<GamePlayResult>,
     measures: List<MeasurePoint>,
     now: Long,
-    suggestion: Suggestion.Pick? = null
+    suggestion: Suggestion.Pick? = null,
+    /** Las paradas de la ruta de hoy ([routeStatesOf]): sus filas dicen «hoy, en tu ruta» / «hecho hoy» y van primero (Tarea 155). */
+    routes: Map<String, RouteState> = emptyMap()
   ): PlaceSheetUi {
     val name = IslaLugar.nameOfArea(area).orEmpty()
     val article = IslaLugar.withArticle(area).orEmpty()
@@ -111,8 +130,8 @@ object PlaceSheets {
         last == null -> "Sin jugar aún"
         else -> playedAgoShort(now, last)
       }
-      PlaceGameRow(g.id, titleOf(g), detail, daysAgo = last?.let { (dayIndex(now) - dayIndex(it)).toInt() })
-    }
+      PlaceGameRow(g.id, titleOf(g), detail, daysAgo = last?.let { (dayIndex(now) - dayIndex(it)).toInt() }, routeState = routes[g.id] ?: RouteState.NONE)
+    }.sortedBy { when (it.routeState) { RouteState.PENDING -> 0; RouteState.DONE -> 1; RouteState.NONE -> 2 } }          // las paradas de hoy primero (la que sigue, antes que las hechas); el resto, en el orden de siempre
     val pick = Suggestion.forArea(area, suggestion, games, lastPlayed.mapNotNull { (id, t) -> t?.let { id to it } }.toMap(), now) { dayIndex(it) }
     val chosen = pick?.let { p -> games.firstOrNull { it.id == p.gameId } }
     val stageName = value?.let { Skill.stageName(it) }

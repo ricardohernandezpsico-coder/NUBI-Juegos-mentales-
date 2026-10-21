@@ -81,8 +81,12 @@ fun ProgressScreen(
   val achStats by viewModel.achievementStats.collectAsState()
   val currentLang = LocalAppLanguage.current
   var showMore by remember { mutableStateOf(false) }
-  var openArea by rememberSaveable { mutableStateOf<String?>(null) }
-  var sheetFor by remember { mutableStateOf<com.example.model.GameDefinition?>(null) }   // la ficha de un juego tocado en el detalle de un área o en «Tus medidas»
+  var sheetFor by remember { mutableStateOf<com.example.model.GameDefinition?>(null) }   // la ficha de un juego tocado en la lámina de un área o en «Tus medidas»
+  val scope = androidx.compose.runtime.rememberCoroutineScope()
+  val reduceMotion = com.example.ui.components.rememberReduceMotion()
+  val fx = remember { PlaceFx(looks = false) }                  // la lámina de un área: la misma de Hoy y de Juegos (Tarea 155), con el gráfico de 4 semanas
+  val anchor = remember { NubiAnchor() }
+  val avanceArea by viewModel.avanceArea.collectAsState()        // la lámina abierta: la recuerda el ViewModel porque el pager se retira mientras hay un juego encima
   val streak by viewModel.currentStreak.collectAsState()
   val context = androidx.compose.ui.platform.LocalContext.current
   val shareScope = androidx.compose.runtime.rememberCoroutineScope()
@@ -108,29 +112,32 @@ fun ProgressScreen(
   val lastPlayedByGame = remember(history) { history.groupBy { it.gameId }.mapValues { (_, l) -> l.maxOf { it.timestamp } } }
   val suggestion = remember(dailySession, lastPlayedByGame, now) { com.example.data.Suggestion.next(dailySession.gameIds, dailySession.completedCount, lastPlayedByGame, now, com.example.data.Streak::dayOf) }
   val medals = remember(unlocks, achStats) { AchievementFamily.entries.map { Achievements.familyState(it, unlocks.keys, achStats) } }
-
-  openArea?.let { key ->
-    LockTabSwipe()
-    BackHandler { openArea = null }
-    AreaDetail(
-      areaKey = key, statuses = statuses, names = names, history = history, measures = measures, now = now,
-      lang = currentLang, onArea = { openArea = it },
-      onPlay = { id -> openArea = null; viewModel.launchGame(id) },
-      onGame = { id -> GameRegistry.getById(id)?.let { sheetFor = it } },
-      onClose = { openArea = null }, modifier = modifier, backLabel = "Avance", suggestion = suggestion
-    )
-    // La ficha del juego tocado, encima del detalle del área. Jugar desde ella no recuerda casilla de Juegos y, al volver de la partida, la persona sigue en Avance.
-    sheetFor?.let { g ->
-      GameSheetHost(
-        game = g, viewModel = viewModel,
-        onDismiss = { sheetFor = null },
-        onPlay = { m, timed -> sheetFor = null; openArea = null; viewModel.playFromHome(g.id, m, timed) }
-      )
-    }
-    return
+  val places = rememberAreaPlaces(statuses, history, measures, now, currentLang, suggestion, dailySession.gameIds, dailySession.completedCount)
+  fun placeOf(areaKey: String): String? = com.example.data.IslaLugar.nameOfArea(areaKey)?.lowercase()
+  fun openArea(areaKey: String) {
+    val place = placeOf(areaKey) ?: return
+    viewModel.openAvanceArea(areaKey)
+    fx.open(scope, place, reduceMotion)
+  }
+  fun closeArea() {
+    fx.close(scope, reduceMotion)
+    viewModel.closeAvanceArea()
+  }
+  // Al volver de una partida lanzada desde la lámina de un área, esta queda abierta como se dejó (sin animar), igual que en Juegos; si se cierra por otro lado (cambiar de pestaña), se va de golpe
+  androidx.compose.runtime.LaunchedEffect(avanceArea) {
+    val key = avanceArea
+    if (key != null && !fx.active) placeOf(key)?.let { fx.snapOpen(scope, it) }
+    else if (key == null && fx.active && !fx.closing) fx.reset(scope)
   }
 
-  Column(modifier.fillMaxSize().padding(bottom = com.example.ui.components.LocalBarInset.current)) {      // la franja de la barra de pestañas queda libre; el detalle de un área, arriba, la cubre
+  AreaSheetScaffold(
+    fx = fx, places = places, anchor = anchor, showChart = true,
+    onClose = ::closeArea,
+    onPlay = { id -> viewModel.playFromAvance(id, PlayMode.A_TU_MEDIDA, viewModel.retoFor(id)) },
+    onGame = { id -> GameRegistry.getById(id)?.let { sheetFor = it } },        // la ficha va ENCIMA de la lámina y Atrás vuelve a ella
+    modifier = modifier
+  ) {
+  Column(Modifier.fillMaxSize().padding(bottom = com.example.ui.components.LocalBarInset.current)) {      // la franja de la barra de pestañas queda libre; la lámina de un área, encima, la cubre
   TabTopBar(viewModel) { OnBoardText("Tu avance", color = OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold) }
   LazyColumn(
     modifier = Modifier
@@ -139,19 +146,19 @@ fun ProgressScreen(
     contentPadding = PaddingValues(top = 8.dp, bottom = 28.dp),
     verticalArrangement = Arrangement.spacedBy(26.dp)
   ) {
-    item { AvanceWeek(summary, lamps, streakNote, if (shownHistory.isEmpty()) "" else nubiLine) }       // sin partidas habla UNA sola Nubi (la línea de abajo), no dos con lo mismo
+    item { AvanceWeek(summary, lamps, streakNote, if (shownHistory.isEmpty()) "" else nubiLine, anchor) }       // sin partidas habla UNA sola Nubi (la línea de abajo), no dos con lo mismo
 
     if (shownHistory.isEmpty()) {
       // Sin ninguna partida (Tarea 147, P8): en vez de cuatro tarjetas de áreas vacías y «Lo que descubriste» sin nada, Nubi con UNA línea
       item { com.example.ui.components.NubiEmptyLine(com.example.ui.components.EMPTY_AVANCE_LINE) }
     } else {
-      item { AvanceAreas(statuses, names) { openArea = it } }
+      item { AvanceAreas(statuses, names) { openArea(it) } }
 
       item {
         AvanceDiscoveries(
           cards = cards, nudge = nudge, measures = measures,
           onGame = { id -> GameRegistry.getById(id)?.let { sheetFor = it } },
-          onPlay = { id -> viewModel.playFromHome(id, PlayMode.A_TU_MEDIDA, viewModel.retoFor(id)) }
+          onPlay = { id -> viewModel.playFromAvance(id, PlayMode.A_TU_MEDIDA, viewModel.retoFor(id)) }
         )
       }
     }
@@ -228,13 +235,14 @@ fun ProgressScreen(
     }
   }
   }
+  }
 
-  // La ficha del juego tocado en «Lo que descubriste» (la del detalle de un área se arma arriba).
+  // La ficha del juego tocado: en la lámina de un área o en «Lo que descubriste». Jugar desde ella no recuerda casilla de Juegos y, al volver de la partida, la persona sigue en Avance (con la lámina abierta si venía de ella).
   sheetFor?.let { g ->
     GameSheetHost(
       game = g, viewModel = viewModel,
       onDismiss = { sheetFor = null },
-      onPlay = { m, timed -> sheetFor = null; viewModel.playFromHome(g.id, m, timed) }
+      onPlay = { m, timed -> sheetFor = null; viewModel.playFromAvance(g.id, m, timed) }
     )
   }
 }

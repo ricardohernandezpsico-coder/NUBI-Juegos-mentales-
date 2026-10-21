@@ -37,13 +37,11 @@ import com.example.model.AppLanguage
 import com.example.model.DomainType
 import com.example.model.GameRegistry
 import com.example.ui.screens.AreaGrid
-import com.example.ui.screens.AreaWindow
 import com.example.ui.screens.AvanceAreas
 import com.example.ui.screens.AvanceDiscoveries
 import com.example.ui.screens.AvanceLeague
 import com.example.ui.screens.AvanceMedalsLink
 import com.example.ui.screens.AvanceWeek
-import com.example.ui.screens.cardData
 import com.example.ui.theme.NeuroVidaTheme
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
@@ -91,88 +89,6 @@ class AvanceJuegosLetraGrandeTest {
       org.junit.Assert.assertTrue("«$area» entra entero en 393 × 873 con letra 1,3: $b", b.top >= 0f && b.bottom <= 873f * rule.density.density)
     }
     rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/juegos-areas-letra13.png")
-  }
-
-  @Test
-  fun ventana_de_un_area() {
-    val progress = mapOf("secuencia" to 0.75f, "parejas" to 0.40f, "correo" to 0.33f)
-    val games = GameRegistry.allGames.filter { it.domain == DomainType.MEMORIA }
-    val cards = games.mapIndexed { i, g -> cardData(g, g.title, if (g.id == "correo") null else now - (1 + i) * day, now, progress[g.id], emptyList(), 3).copy(routeStop = if (i == 0) 1 else null, routeDone = i == 0) }
-    big {
-      Box(Modifier.width(393.dp).height(873.dp).background(Color(0xFF050823))) {
-        AreaWindow(
-          DomainType.MEMORIA, "Memoria", statuses[0], cards, focusGameId = null, onClose = {}, onGame = {},
-          sections = listOf("En tu ruta de hoy" to cards.take(1), "Para volver a jugar" to cards.drop(1).take(2), "Nuevo para ti" to cards.drop(3))
-        )
-      }
-    }
-    rule.onNodeWithTag("area_window").assertIsDisplayed()
-    rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/library-letra13.png")
-  }
-
-  /** Tarea 151 (B4.5): un solo visto por casilla. El sello del emblema es «jugado hoy»; la parada que ya se hizo en la ruta se dice con la palabra «Hecho» (antes, un segundo círculo con ✓ en la misma casilla). */
-  @Test
-  fun la_parada_hecha_se_dice_con_la_palabra_Hecho_y_la_pendiente_lleva_su_numero() {
-    val games = GameRegistry.allGames.filter { it.domain == DomainType.MEMORIA }
-    val cards = games.mapIndexed { i, g -> cardData(g, g.title, now - 3_600_000L, now, 0.4f, emptyList(), 3).copy(routeStop = if (i < 2) i + 1 else null, routeDone = i == 0) }
-    big {
-      Box(Modifier.width(393.dp).height(873.dp).background(Color(0xFF050823))) {
-        AreaWindow(DomainType.MEMORIA, "Memoria", statuses[0], cards, focusGameId = null, onClose = {}, onGame = {}, sections = listOf("En tu ruta de hoy" to cards.take(2), "Para volver a jugar" to cards.drop(2)))
-      }
-    }
-    rule.onAllNodes(androidx.compose.ui.test.hasText("Hecho")).assertCountEquals(1)
-    rule.onNodeWithTag("route_stop_1", useUnmergedTree = true).assertExists()
-    rule.onNodeWithTag("route_stop_2", useUnmergedTree = true).assertExists()
-    rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("Hecho en tu ruta")).assertCountEquals(1)
-  }
-
-  /** El detalle de un área (Tarea 143, ítems 1, 2 y A1): la pregunta va en el globo de Nubi, abajo solo el botón «Jugar <juego>», la escala de etapas no se corta y la flecha dice «Avance». */
-  private fun detalle(fontScale: Float) {
-    rule.setContent {
-      CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
-        NeuroVidaTheme {
-          Box(Modifier.width(393.dp).height(873.dp).background(Color(0xFF050823))) {
-            com.example.ui.screens.AreaDetail(
-              areaKey = "MEMORIA", statuses = statuses, names = names, history = emptyList(), measures = emptyList(), now = now, lang = AppLanguage.SPANISH,
-              onArea = {}, onPlay = {}, onGame = {}, onClose = {}
-            )
-          }
-        }
-      }
-    }
-    rule.waitForIdle()
-  }
-
-  @Test
-  fun detalle_de_un_area_con_letra_1_3_deja_ver_un_juego_y_el_boton() {
-    detalle(1.3f)
-    val games = GameRegistry.allGames.filter { it.domain == DomainType.MEMORIA }
-    rule.onNodeWithTag("area_play").assertIsDisplayed()
-    rule.onNodeWithTag("area_game_${games.first().id}").assertIsDisplayed()            // antes, con la letra grande no cabía ninguno
-    rule.onNodeWithTag("area_nubi_globe").assertIsDisplayed()                          // Tarea 147 (P3): el porqué del juego elegido ya va en el globo de Nubi, no suelto bajo el botón
-    rule.onNodeWithText("Etapas:", substring = true).assertIsDisplayed()               // la escala pasa a la frase: ni «Aprendi / z» ni rótulos de 13 sp
-    rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/avance-area-letra13.png")
-  }
-
-  @Test
-  fun detalle_de_un_area_con_letra_normal_deja_ver_al_menos_dos_juegos() {
-    detalle(1f)
-    val games = GameRegistry.allGames.filter { it.domain == DomainType.MEMORIA }
-    rule.onNodeWithTag("area_game_${games[0].id}").assertIsDisplayed()
-    rule.onNodeWithTag("area_game_${games[1].id}").assertIsDisplayed()
-    rule.onNodeWithTag("area_play").assertIsDisplayed()
-  }
-
-  @Test
-  fun la_pregunta_va_en_el_globo_de_nubi_el_boton_dice_el_juego_y_la_flecha_dice_avance() {
-    detalle(1f)
-    val first = GameRegistry.allGames.first { it.domain == DomainType.MEMORIA }
-    rule.onNodeWithText("¿Le damos un empujón?", substring = true).assertIsDisplayed()
-    rule.onNodeWithText("Jugar " + com.example.ui.i18n.getGameTitle(first.id, AppLanguage.SPANISH, first.title)).assertIsDisplayed()
-    org.junit.Assert.assertEquals("la pregunta ya no va suelta sobre el botón", 0, rule.onAllNodes(androidx.compose.ui.test.hasText("¡Sí, vamos!")).fetchSemanticsNodes().size)
-    rule.onNodeWithText("Avance").assertExists()
-    org.junit.Assert.assertEquals("la cabecera ya no dice «Hoy» aunque se abra desde Avance", 0, rule.onAllNodes(androidx.compose.ui.test.hasText("Hoy")).fetchSemanticsNodes().size)
-    rule.onNodeWithTag("area_back").assertExists()
   }
 
   @Test

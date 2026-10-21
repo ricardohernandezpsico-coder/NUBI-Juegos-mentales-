@@ -10,8 +10,8 @@ import java.io.File
  * Se mira el código: ningún `fontSize` de la app baja de 16 sp fuera de esos archivos, y los estilos de Material que usa la app tampoco.
  */
 class TamanosDeLetraTest {
-  /** Los únicos archivos con 14 sp: rótulos de gráfico. */
-  private val chartLabelFiles = setOf("ui/components/StageScale.kt", "ui/screens/HomeScreen.kt", "games/GameResultScreen.kt")
+  /** Los únicos archivos con 14 sp: rótulos de gráfico (la escala de las etapas y el gráfico de las 4 semanas, en `StageScale.kt`, y los de los finales). */
+  private val chartLabelFiles = setOf("ui/components/StageScale.kt", "games/GameResultScreen.kt")
   private val size = Regex("fontSize = (\\d+(?:\\.\\d+)?)\\.sp")
 
   @Test
@@ -48,9 +48,9 @@ class TamanosDeLetraTest {
 
   @Test
   fun `el grafico de las cuatro semanas dice sem y va a 14 sp`() {
-    val home = File("src/main/java/com/example/ui/screens/HomeScreen.kt").readText()
-    assertTrue(home.contains("listOf(\"hace 3 sem.\", \"hace 2 sem.\", \"sem. pasada\", \"esta sem.\")"))
-    assertTrue("los números y los rótulos del gráfico, a 14 sp (rótulos de gráfico)", !home.contains("fontSize = 13.sp"))
+    val chart = File("src/main/java/com/example/ui/components/StageScale.kt").readText()          // el gráfico de las 4 semanas vive en la lámina del área (Tarea 155; antes en el detalle de Avance)
+    assertTrue(chart.contains("listOf(\"hace 3 sem.\", \"hace 2 sem.\", \"sem. pasada\", \"esta sem.\")"))
+    assertTrue("los números y los rótulos del gráfico, a 14 sp (rótulos de gráfico)", !chart.contains("fontSize = 13.sp"))
   }
 
   @Test

@@ -47,17 +47,10 @@ class GlobosDeNubiTest {
   }
 
   @Test
-  fun la_lamina_y_el_detalle_dicen_dos_frases_como_mucho() {
+  fun la_lamina_del_area_dice_dos_frases_como_mucho() {
     for ((value, change) in listOf(0.47f to 0.10f, 0.38f to -0.02f, 0.47f to 0f, 0.91f to 0f, null to 0f, 0.05f to 0.05f)) {
       assertGlobe(PlaceSheets.bubble(AreaStatus("MEMORIA", value, change, listOf(null, null, null, value))), "lámina ($value, $change)")
     }
-    val pick = Suggestion.Pick("parejas", "MEMORIA", Suggestion.Why.ROUTE)
-    assertEquals("¿Le damos un empujón? Te sugiero Constelaciones: sigue en tu ruta de hoy.", Suggestion.detailGlobe("Constelaciones", pick))
-    assertEquals("en las otras áreas, solo la pregunta", "¿Le damos un empujón?", Suggestion.detailGlobe("Constelaciones", null))
-    for (why in Suggestion.Why.entries) for (days in listOf(0, 1, 4, 30)) {
-      assertGlobe(Suggestion.detailGlobe("Rescate relámpago", Suggestion.Pick("radar", "ATENCION", why, days)), "detalle ($why, $days)")
-    }
-    assertTrue("el detalle ya no repite «Esta semana … avanzó» ni «tu memoria» (la línea de avance está debajo)", Suggestion.detailGlobe("X", pick).let { !it.contains("Esta semana") && !it.contains("tu memoria") && !it.contains("Elegí") })
   }
 
   @Test
@@ -70,7 +63,7 @@ class GlobosDeNubiTest {
       val s = suggestArea(daily, lp, now, AppLanguage.SPANISH)
       assertGlobe("Te sugiero ${s.name}: ${s.reason}", "encabezado de Juegos")
     }
-    assertGlobe("¿Qué juego de Memoria jugamos?", "ventana de un área")
+    assertGlobe(PlaceSheets.AREA_SHEET_INTRO, "la primera vez que se abre la lámina de un área en Juegos (Tarea 155)")
     assertGlobe(EMPTY_AVANCE_LINE, "Avance vacío")
   }
 }

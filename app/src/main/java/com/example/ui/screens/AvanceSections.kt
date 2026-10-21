@@ -78,7 +78,7 @@ private val OnNightDim = com.example.ui.theme.NubiTokens.OnNightDim
 
 /** Tu semana: las 7 farolas del kit con «hoy», «3 de 4 días» en grande, la racha con su línea de perdón y las áreas de la semana. */
 @Composable
-internal fun AvanceWeek(summary: WeekSummary, lamps: Week.Lamps, streakNote: String, nubiLine: String) {
+internal fun AvanceWeek(summary: WeekSummary, lamps: Week.Lamps, streakNote: String, nubiLine: String, anchor: NubiAnchor? = null) {
   Column(Modifier.testTag("avance_week")) {
     SpaceSectionTitle("Tu semana")
     Spacer(Modifier.height(10.dp))
@@ -89,7 +89,7 @@ internal fun AvanceWeek(summary: WeekSummary, lamps: Week.Lamps, streakNote: Str
     if (summary.empty) {
       OnBoardText(summary.big, color = OnNight, fontSize = 28.sp, fontWeight = FontWeight.Bold, lineHeight = 32.sp, modifier = Modifier.testTag("avance_week_big"))
       OnBoardText(summary.areasLine, color = OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 4.dp).testTag("avance_week_invite"))
-      NubiWeekComment(nubiLine)
+      NubiWeekComment(nubiLine, anchor)
       return@Column
     }
     OnBoardText(summary.big, color = OnNight, fontSize = 34.sp, fontWeight = FontWeight.Bold, lineHeight = 38.sp, modifier = Modifier.testTag("avance_week_big"))
@@ -101,16 +101,16 @@ internal fun AvanceWeek(summary: WeekSummary, lamps: Week.Lamps, streakNote: Str
       if (!nubiLine.startsWith("Descansaste")) OnBoardText(streakNote, color = OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 4.dp).testTag("streak_note"))
     }
     OnBoardText(summary.areasLine, color = OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 8.dp).testTag("avance_areas_week"))
-    NubiWeekComment(nubiLine)
+    NubiWeekComment(nubiLine, anchor)
   }
 }
 
 /** Nubi comenta tu semana (Tarea 131, A6): Nubi de 56 dp a la izquierda y su globo con UNA frase (`nubiWeekLine`), como la ventana de un área en Juegos pero más chico: el comentario acompaña, no manda. */
 @Composable
-private fun NubiWeekComment(line: String) {
+private fun NubiWeekComment(line: String, anchor: NubiAnchor? = null) {
   if (line.isBlank()) return                                                   // sin frase no hay globo (la hoja «hoy» de la Tarea 131 lo usa)
   Row(Modifier.fillMaxWidth().padding(top = 14.dp).testTag("avance_nubi"), verticalAlignment = Alignment.CenterVertically) {
-    com.example.ui.components.NubiClay(com.example.ui.components.NubiSize.S, modifier = Modifier.padding(end = 6.dp))
+    com.example.ui.components.NubiClay(com.example.ui.components.NubiSize.S, modifier = Modifier.padding(end = 6.dp).let { if (anchor != null) it.markNubi(anchor) else it })       // la lámina de un área vuela desde esta Nubi (Tarea 155)
     NubiBubble(text = line, tailLeft = true, modifier = Modifier.weight(1f).testTag("avance_nubi_line"))
   }
 }

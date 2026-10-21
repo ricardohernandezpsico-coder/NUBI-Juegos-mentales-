@@ -155,14 +155,11 @@ data class GameCardData(
 )
 
 /**
- * Pestaña Juegos (29-sep, 3.ª versión, pedido de Ricardo tras probar el deslizar entre pestañas: en Juegos también se
- * deslizaba para cambiar de área y los dos gestos confundían). Arriba "Juegos" con tu perfil y opciones; debajo LAS 4
+ * Pestaña Juegos (29-sep, 3.ª versión, pedido de Ricardo tras probar el deslizar entre pestañas: en Juegos también se deslizaba para cambiar de área y los dos gestos confundían). Arriba "Juegos" con tu perfil y opciones; debajo LAS 4
  * ÁREAS A LA VEZ ([AreaGrid]: planeta con su ícono, nombre, la barra de avance de Hoy y la etapa; sello sol = jugada hoy).
- * Tocar un área abre su VENTANA ([AreaWindow]): tapa toda la pantalla, las pestañas no se deslizan, X arriba a la
- * derecha (o Atrás) y Nubi científica pregunta con cuál entrenar; debajo, sus juegos. Tocar una casilla abre la FICHA
- * ([GameSheet]): avance, marca, constancia, dificultad y Jugar. Al volver de un juego se abre en la misma ventana y
- * casilla (`NeuroVidaViewModel.libraryFocus`). Maquetas aprobadas: `docs/previews/juegos-nubi.png` y
- * `navegacion-nubi.png`. Razonamiento de la dificultad: `docs/dificultad-y-avance.md`.
+ * Tocar un área abre LA MISMA LÁMINA que Hoy y que Avance (Tarea 155, «un área, una sola vista»; `auditoria-fable/spec-area-unica.md`): el avance del área y sus juegos en filas, con «Jugar <el que sugiere Nubi>» fijo abajo; sube sobre la pestaña con su velo,
+ * las pestañas no se deslizan, X, Atrás o el velo la cierran y Nubi vuela hasta ella desde su sitio en «¿Qué jugamos hoy?». Tocar una fila abre la FICHA ([GameSheet]): avance, marca, constancia, dificultad y Jugar; Atrás vuelve a la lámina. Al volver de un juego lanzado desde aquí
+ * la lámina queda abierta como se dejó (`NeuroVidaViewModel.libraryFocus`). La primera vez, el globo de Nubi dice que los juegos de cada lugar se ven aquí, como en Hoy. Razonamiento de la dificultad: `docs/dificultad-y-avance.md`.
  */
 @Composable
 fun GamesLibraryScreen(
@@ -191,51 +188,58 @@ fun GamesLibraryScreen(
   }
   val modes = remember { mutableStateMapOf<String, PlayMode>() }
   var sheetFor by remember { mutableStateOf<GameDefinition?>(null) }
-  val open = focus.domain?.takeIf { focus.open }
+  val scope = androidx.compose.runtime.rememberCoroutineScope()
+  val reduceMotion = com.example.ui.components.rememberReduceMotion()
 
-  if (open == null) {
-    val suggestion = remember(daily, lastPlayed, now, lang) { suggestArea(daily, lastPlayed, now, lang) }
-    Column(modifier = modifier.fillMaxSize().padding(bottom = com.example.ui.components.LocalBarInset.current)) {      // la franja de la barra de pestañas queda libre; la ventana de un área, más abajo, la cubre
+  // LA sugerencia de Nubi de toda la app (Suggestion.next): el encabezado la dice y la lámina de su área la marca y la juega
+  val suggestion = remember(daily, lastPlayed, now, lang) { suggestArea(daily, lastPlayed, now, lang) }
+  val pick = remember(daily, lastPlayed, now) { Suggestion.next(daily.gameIds, daily.completedCount, lastPlayed, now, com.example.data.Streak::dayOf) }
+  val places = rememberAreaPlaces(statuses, history, measures, now, lang, pick, daily.gameIds, daily.completedCount)
+  val fx = remember { PlaceFx(looks = false) }
+  val anchor = remember { NubiAnchor() }
+  // La primera vez que se abre una lámina en Juegos, el globo de Nubi lo cuenta (una sola vez; se anota al abrir)
+  var introNow by remember { mutableStateOf(false) }
+  val shownPlaces = if (introNow) places.mapValues { (_, p) -> p.copy(bubble = com.example.data.PlaceSheets.AREA_SHEET_INTRO) } else places
+
+  fun placeKeyOf(domain: DomainType): String? = com.example.data.IslaLugar.nameOfArea(domain.name)?.lowercase()
+  fun openArea(areaKey: String) {
+    val domain = DomainType.fromStored(areaKey) ?: return
+    val place = placeKeyOf(domain) ?: return
+    viewModel.setLibraryFocus(domain, null)
+    introNow = !viewModel.areaSheetIntroSeen
+    viewModel.markAreaSheetIntroSeen()
+    fx.open(scope, place, reduceMotion)
+  }
+  fun closeArea() {
+    fx.close(scope, reduceMotion)
+    viewModel.closeLibraryArea()
+  }
+  // Al volver de una partida lanzada desde aquí la lámina queda abierta como se dejó (sin animar); si el foco se cierra por otro lado (cambiar de pestaña), la lámina se va de golpe
+  androidx.compose.runtime.LaunchedEffect(focus.open, focus.domain) {
+    val domain = focus.domain
+    if (focus.open && domain != null && !fx.active) placeKeyOf(domain)?.let { fx.snapOpen(scope, it) }
+    else if (!focus.open && fx.active && !fx.closing) fx.reset(scope)
+  }
+
+  AreaSheetScaffold(
+    fx = fx, places = shownPlaces, anchor = anchor, showChart = false,
+    onClose = ::closeArea,
+    onPlay = { id -> viewModel.playFromLibrary(id, PlayMode.A_TU_MEDIDA, viewModel.retoFor(id)) },
+    onGame = { id -> GameRegistry.getById(id)?.let { g -> viewModel.setLibraryFocus(g.domain, g.id); sheetFor = g } },
+    modifier = modifier
+  ) {
+    Column(modifier = Modifier.fillMaxSize().padding(bottom = com.example.ui.components.LocalBarInset.current)) {      // la franja de la barra de pestañas queda libre; la lámina de un área, encima, la cubre
       TabTopBar(viewModel) {}
-      SuggestionHeader(suggestion)
+      SuggestionHeader(suggestion, anchor)
       AreaGrid(
         statuses = statuses,
         playedToday = playedToday,
         suggested = suggestion.key,
         lang = lang,
-        onArea = { key -> DomainType.fromStored(key)?.let { viewModel.setLibraryFocus(it, null) } },
+        onArea = ::openArea,
         modifier = Modifier.weight(1f)
       )
     }
-  } else {
-    LockTabSwipe()
-    BackHandler { viewModel.closeLibraryArea() }
-    val games = remember(open) { GameRegistry.allGames.filter { it.domain == open } }
-    // «En tu ruta de hoy / Para volver a jugar / Nuevo para ti» (`LibraryOrder`); el último que abriste ya no reordena, solo se pinta en sol.
-    val sections = remember(open, daily, lastPlayed, now) {
-      LibraryOrder.sort(games.map { it.id }, daily.gameIds, daily.completedCount, lastPlayed.mapValues { dayIndex(it.value) }, dayIndex(now), GameRegistry.allGames.map { it.id })
-    }
-    val windowSections = sections.map { sec ->
-      sec.group.title to sec.entries.map { e ->
-        val g = games.first { it.id == e.gameId }
-        cardData(g, getGameTitle(g.id, lang, g.title), lastPlayed[g.id], now, progress[g.id], measures,
-          history.count { it.gameId == g.id && now - it.timestamp <= 14 * DAY_MS }).copy(routeStop = e.routeStop, routeDone = e.doneToday)
-      }
-    }
-    AreaWindow(
-      domain = open,
-      title = getDomainName(open, lang),
-      status = statuses.firstOrNull { it.area == open.name },
-      cards = windowSections.flatMap { it.second },
-      sections = windowSections,
-      focusGameId = focus.gameId,
-      onClose = { viewModel.closeLibraryArea() },
-      onGame = { g ->
-        viewModel.setLibraryFocus(open, g.id)
-        sheetFor = g
-      },
-      modifier = modifier
-    )
   }
 
   sheetFor?.let { g ->
@@ -325,83 +329,6 @@ internal fun cardData(
     lowerIsBetter = def?.lowerIsBetter ?: false,
     playsLast14 = playsLast14
   )
-}
-
-/** El marco del avance alrededor del emblema: un cuadrado de esquinas redondas que se recorre desde arriba al centro hacia la derecha; [w] y [h] en px. */
-private fun ringPath(w: Float, h: Float, r: Float): Path = Path().apply {
-  moveTo(w / 2f, 0f); lineTo(w - r, 0f); arcTo(Rect(w - 2 * r, 0f, w, 2 * r), -90f, 90f, false)
-  lineTo(w, h - r); arcTo(Rect(w - 2 * r, h - 2 * r, w, h), 0f, 90f, false)
-  lineTo(r, h); arcTo(Rect(0f, h - 2 * r, 2 * r, h), 90f, 90f, false)
-  lineTo(0f, r); arcTo(Rect(0f, 0f, 2 * r, 2 * r), 180f, 90f, false)
-  lineTo(w / 2f, 0f)
-}
-
-/**
- * La piedrita con el número de parada de la ruta de hoy; si ya se hizo, la palabra «Hecho» (Tarea 151, B4.5: antes un círculo con ✓, y el sello del emblema —«jugado hoy»— era OTRO visto en la misma casilla; ahora el visto es uno solo, el del emblema, y la parada hecha
- * se dice con una palabra, como en Hoy).
- */
-@Composable
-private fun RouteStone(number: Int, done: Boolean) {
-  if (done) {
-    com.example.ui.theme.ClayPill("Hecho", Modifier.testTag("route_stop_$number").semantics { contentDescription = "Hecho en tu ruta" }, color = Clay.Lime, compact = true)
-    return
-  }
-  val scale = androidx.compose.ui.platform.LocalDensity.current.fontScale.coerceIn(1f, 1.6f)   // el círculo crece con la letra: con letra 2,0 el número no cabría en 24 dp
-  Box(Modifier.size(24.dp * scale).clip(CircleShape).background(Color(0xFFFFF8EC)).border(2.dp, Clay.Ink, CircleShape).testTag("route_stop_$number"), contentAlignment = Alignment.Center) {
-    Text("$number", color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-  }
-}
-
-/**
- * Casilla de un juego en la lista (plasticina, tocable): su emblema (la ficha con el objeto del juego, Tarea 125) con el marco de tu avance alrededor y ✓ si se jugó hoy; el nombre; debajo la etapa y el % (o "Sin medir aún") y, en una tercera línea,
- * cuándo lo jugaste por última vez; a la derecha tu marca si es juego estrella. Los de la ruta de hoy llevan antes del emblema la piedrita con su número de parada. [highlighted] = la última que se abrió (al volver de jugar se ve dónde estabas).
- */
-@Composable
-internal fun GameTile(data: GameCardData, highlighted: Boolean, onClick: () -> Unit) {
-  val g = data.game
-  val ring = if (highlighted) Clay.Ink else onCream(g.domain)
-  // La losa de plasticina crema; la última que se abrió (al volver de jugar se ve dónde estabas) va en sol.
-  ClayCard(
-    color = if (highlighted) Clay.Sun else Clay.Cream,
-    size = SlabSize.MEDIUM, contentPadding = 0.dp, onClick = onClick,
-    modifier = Modifier.fillMaxWidth().testTag("tile_${g.id}").semantics { if (highlighted) stateDescription = "el último que abriste" }
-  ) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
-      if (data.routeStop != null) { RouteStone(data.routeStop, data.routeDone); Spacer(Modifier.width(8.dp)) }
-      Box(
-        Modifier.size(70.dp).drawBehind {
-          val st = 4.dp.toPx(); val r = 20.dp.toPx()
-          val frame = ringPath(size.width - st, size.height - st, r)
-          translate(st / 2f, st / 2f) {
-            drawPath(frame, Clay.Ink.copy(alpha = 0.14f), style = Stroke(st))
-            data.progress?.let { p ->
-              val pm = PathMeasure(); pm.setPath(frame, false)
-              val seg = Path(); pm.getSegment(0f, pm.length * p.coerceIn(0.03f, 1f), seg, true)
-              drawPath(seg, ring, style = Stroke(st, cap = StrokeCap.Round))
-            }
-          }
-        },
-        contentAlignment = Alignment.Center
-      ) { GameEmblem(g.id, 56.dp, done = data.playedToday) }
-      Spacer(Modifier.width(14.dp))
-      Column(Modifier.weight(1f)) {
-        Text(data.title, color = Clay.Ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        Text(
-          if (data.progress != null) "${Skill.stageName(data.progress)} · ${Skill.percent(data.progress)} de 100" else "Aún sin medir",
-          color = if (data.progress != null) ring else CardMuted, fontSize = Body, fontWeight = FontWeight.Medium,
-          modifier = Modifier.padding(top = 2.dp)
-        )
-        Text(data.lastPlayed, color = CardMuted, fontSize = Small, modifier = Modifier.testTag("tile_last_${g.id}"))
-      }
-      if (data.measureValue != null) {
-        Spacer(Modifier.width(8.dp))
-        Column(horizontalAlignment = Alignment.End, modifier = Modifier.widthIn(max = 120.dp)) {
-          Text(data.measureTitle ?: "", color = CardMuted, fontSize = Small, textAlign = TextAlign.End, maxLines = 1, overflow = TextOverflow.Ellipsis)
-          Text(data.measureValue, color = Clay.Ink, fontSize = Body, fontWeight = FontWeight.Bold, textAlign = TextAlign.End, maxLines = 2)
-        }
-      }
-    }
-  }
 }
 
 /**
@@ -789,12 +716,12 @@ internal fun suggestArea(daily: com.example.model.DailySessionState, lastPlayed:
  * izquierda, la pregunta y, debajo, qué área sugiere y por qué.
  */
 @Composable
-internal fun SuggestionHeader(s: AreaSuggestionUi) {
+internal fun SuggestionHeader(s: AreaSuggestionUi, anchor: NubiAnchor? = null) {
   Row(
     verticalAlignment = Alignment.CenterVertically,
     modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp).testTag("suggestion_header")
   ) {
-    com.example.ui.components.NubiClay(com.example.ui.components.NubiSize.M, modifier = Modifier.padding(start = 2.dp, end = 6.dp))
+    com.example.ui.components.NubiClay(com.example.ui.components.NubiSize.M, modifier = Modifier.padding(start = 2.dp, end = 6.dp).let { if (anchor != null) it.markNubi(anchor) else it })
     Column(Modifier.weight(1f)) {
       OnBoardText("¿Qué jugamos hoy?", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
       // Una voz (Tarea 147, P3): lo que sugiere Nubi lo dice Nubi, en primera persona y en SU globo; nunca texto suelto atribuido a ella
@@ -880,69 +807,6 @@ private fun TodaySeal(modifier: Modifier = Modifier) {
       .border(2.dp, Clay.Ink, CircleShape),
     contentAlignment = Alignment.Center
   ) { KitGlyph(Glyph.CHECK, Modifier.semantics { contentDescription = "Jugada hoy" }, size = 16.dp) }
-}
-
-/**
- * La ventana de un área (aprobada por Ricardo con Nubi científica, `docs/previews/juegos-nubi.png`): tapa toda la
- * pantalla (la barra de pestañas se esconde y el dedo no cambia de pestaña), X arriba a la derecha, Nubi con bata y
- * lentes pregunta con cuál entrenar y debajo van los juegos del área. [focusGameId] = la última casilla abierta.
- */
-@Composable
-internal fun AreaWindow(
-  domain: DomainType,
-  title: String,
-  status: AreaStatus?,
-  cards: List<GameCardData>,
-  focusGameId: String?,
-  onClose: () -> Unit,
-  onGame: (GameDefinition) -> Unit,
-  modifier: Modifier = Modifier,
-  /** Los juegos en grupos con su rótulo («En tu ruta de hoy», «Para volver a jugar», «Nuevo para ti»); null = una sola lista en el orden de [cards]. */
-  sections: List<Pair<String, List<GameCardData>>>? = null
-) {
-  Column(modifier.fillMaxSize().testTag("area_window")) {
-    Row(
-      verticalAlignment = Alignment.CenterVertically,
-      modifier = Modifier.fillMaxWidth().padding(start = 8.dp, end = 16.dp, top = 6.dp)
-    ) {
-      BuildingIcon(domain.name, height = 60.dp, box = 72.dp)
-      Column(Modifier.weight(1f)) {
-        OnBoardText(title, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
-        OnBoardText(
-          (status?.value?.let { Skill.stageName(it) } ?: "Aún sin medir") + " · " + if (cards.size == 1) "1 juego" else "${cards.size} juegos",
-          color = OnNightDim, fontSize = 16.sp
-        )
-      }
-      com.example.ui.components.KitCloseButton(onClose, Modifier.testTag("btn_area_close"), label = "Cerrar $title")
-    }
-    val start = cards.indexOfFirst { it.game.id == focusGameId }.let { if (it < 0) 0 else it + 1 }
-    val list = rememberLazyListState(initialFirstVisibleItemIndex = start)
-    LazyColumn(
-      state = list,
-      contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
-      verticalArrangement = Arrangement.spacedBy(12.dp),
-      modifier = Modifier.weight(1f).testTag("game_list")
-    ) {
-      item(key = "nubi") {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
-          com.example.ui.components.NubiClay(com.example.ui.components.NubiSize.M, modifier = Modifier.padding(end = 4.dp))
-          NubiBubble(
-            text = "¿Qué juego de $title jugamos?",
-            tailLeft = true,
-            modifier = Modifier.weight(1f)
-          )
-        }
-      }
-      (sections ?: listOf("" to cards)).forEach { (label, group) ->
-        if (label.isNotEmpty()) item(key = "grupo_$label") {
-          OnBoardText(label, color = Clay.Sun, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth().padding(top = 6.dp).testTag("group_$label"))
-        }
-        items(group, key = { it.game.id }) { data ->
-          GameTile(data, highlighted = data.game.id == focusGameId) { onGame(data.game) }
-        }
-      }
-    }
-  }
 }
 
 @Composable

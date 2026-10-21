@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -95,4 +97,42 @@ private fun ScaleText(
 ) {
   if (onCard) Text(text, modifier, color = color, fontSize = 14.sp, fontWeight = fontWeight, textAlign = textAlign, softWrap = softWrap, maxLines = maxLines, lineHeight = lineHeight)
   else OnBoardText(text, modifier, color = color, fontSize = 14.sp, fontWeight = fontWeight, textAlign = textAlign, softWrap = softWrap, maxLines = maxLines, lineHeight = lineHeight)
+}
+
+/**
+ * Las últimas 4 semanas del avance de un área sobre la lámina crema (Tarea 155; antes `WeeksChart` del detalle de Avance, sobre el cielo): los números arriba, una línea lavanda con sus puntos (el de esta semana en sol, con borde de tinta) y los rótulos
+ * «hace 3 sem. · hace 2 sem. · sem. pasada · esta sem.» abajo. Todo a 14 sp (rótulos de un gráfico). [weeks] = de 0 a 100, la última = esta semana; un null deja un hueco. Mide ~100 dp.
+ */
+@Composable
+fun WeeksChartOnCard(weeks: List<Int?>, modifier: Modifier = Modifier) {
+  val known = weeks.filterNotNull()
+  val lo = (known.minOrNull() ?: 0) - 4f
+  val hi = (known.maxOrNull() ?: 0) + 4f
+  val line = Color(0xFF7B6BD6)
+  Column(modifier.fillMaxWidth().testTag("place_chart")) {
+    Row(Modifier.fillMaxWidth()) {
+      weeks.forEachIndexed { i, v ->
+        Text(
+          v?.toString() ?: "", fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.weight(1f),
+          color = if (i == weeks.lastIndex) Clay.Ink else Clay.InkMuted, fontWeight = if (i == weeks.lastIndex) FontWeight.Bold else FontWeight.Normal
+        )
+      }
+    }
+    Canvas(Modifier.fillMaxWidth().height(56.dp).padding(vertical = 6.dp)) {
+      fun p(i: Int, v: Int) = Offset(size.width * (i + 0.5f) / weeks.size, size.height * (1f - (v - lo) / (hi - lo)))
+      val pts = weeks.mapIndexedNotNull { i, v -> v?.let { p(i, it) } }
+      val path = androidx.compose.ui.graphics.Path().apply { pts.forEachIndexed { i, o -> if (i == 0) moveTo(o.x, o.y) else lineTo(o.x, o.y) } }
+      drawPath(path, line, style = androidx.compose.ui.graphics.drawscope.Stroke(2.5.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+      pts.forEachIndexed { i, o ->
+        val last = i == pts.lastIndex
+        drawCircle(Clay.Ink, (if (last) 6 else 5).dp.toPx(), o)
+        drawCircle(if (last) Clay.Sun else line, (if (last) 4.5f else 3.5f).dp.toPx(), o)
+      }
+    }
+    Row(Modifier.fillMaxWidth()) {
+      listOf("hace 3 sem.", "hace 2 sem.", "sem. pasada", "esta sem.").forEachIndexed { i, label ->
+        Text(label, fontSize = 14.sp, textAlign = TextAlign.Center, color = if (i == 3) Clay.Ink else Clay.InkMuted, modifier = Modifier.weight(1f))          // con letra grande pasa a dos líneas («hace 3 / sem.»), nunca se pisa ni se parte una palabra
+      }
+    }
+  }
 }

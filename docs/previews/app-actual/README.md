@@ -11,10 +11,10 @@ Capturas REALES de Roborazzi (`AppActualScreenshotTest`) con unos 20 días de us
 | La isla sin piezas y con las 10 piezas («Tu isla crece») | `hoy-isla-0.png`, `hoy-isla-10.png`, `hoy-isla-10-letra13.png` |
 | La lámina de un área (al tocar un edificio) | `hoy-lamina.png`, `hoy-lamina-letra13.png` |
 | Juegos: las cuatro áreas | `juegos.png`, `juegos-letra13.png` |
-| La ventana de un área | `juegos-memoria.png`, `juegos-atencion.png`, `juegos-razonamiento.png`, `juegos-lenguaje.png`, `juegos-memoria-letra13.png` |
+| La lámina de un área en Juegos (la misma de Hoy; Tarea 155) | `juegos-lamina.png`, `juegos-lamina-atencion.png`, `juegos-lamina-razonamiento.png`, `juegos-lamina-lenguaje.png`, `juegos-lamina-letra13.png` |
 | La ficha del juego (Tarea 140): plegada y desplegada | `juegos-ficha.png`, `juegos-ficha-desplegada.png`, `juegos-ficha-letra13.png`, `juegos-ficha-desplegada-letra13.png` |
 | Avance: arriba (con Nubi), entero y su pie | `avance.png`, `avance-letra13.png`, `avance-completa.png`, `avance-abajo.png` |
-| El detalle de un área en Avance | `avance-area.png`, `avance-area-letra13.png` |
+| La lámina de un área en Avance, con el gráfico de las 4 semanas (Tarea 155) | `avance-lamina.png`, `avance-lamina-letra13.png` |
 | Perfil | `perfil.png`, `perfil-letra13.png`, `perfil-completa.png` |
 | Ajustes (con las farolas de la meta) y Licencias | `ajustes.png`, `ajustes-letra13.png`, `ajustes-completa.png`, `licencias.png`, `licencias-completa.png` |
 | El final con sentido de una partida: sin récord y con récord | `resultado.png` (Rastro de luz), `resultado-letra13.png`, `resultado-sin-record.png`, `resultado-con-record.png` y sus `-completa` |

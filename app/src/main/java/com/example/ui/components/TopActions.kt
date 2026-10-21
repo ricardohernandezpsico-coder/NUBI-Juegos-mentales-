@@ -50,7 +50,7 @@ import kotlin.math.hypot
 import kotlin.math.sin
 
 /**
- * Cuántas ventanas tapan ahora las pestañas (la de un área en Juegos, el detalle de un área en Hoy, la ficha de un
+ * Cuántas ventanas tapan ahora las pestañas (la lámina de un área, en Hoy, Juegos y Avance; la ficha de un
  * juego...). Mientras haya alguna, el dedo NO cambia de pestaña (29-sep, Ricardo: en Juegos dos gestos hacia los
  * costados confundían). Lo lee el HorizontalPager de MainActivity.
  */

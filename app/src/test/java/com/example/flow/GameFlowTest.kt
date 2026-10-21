@@ -239,6 +239,92 @@ class GameFlowTest {
     assertEquals("la casilla se recuerda aunque el área esté cerrada", "freno", vm.libraryFocus.value.gameId)
   }
 
+  // ---- Avance: la misma regla que Juegos (Tarea 155): al terminar se vuelve a la pestaña desde donde se lanzó, con la lámina como se dejó
+
+  @Test
+  fun `desde la lamina de un area de Avance, al cerrar el resultado se vuelve a Avance con la lamina abierta`() {
+    val vm = newViewModel()
+    vm.setTab(AppTab.PROGRESO)
+    vm.openAvanceArea("ATENCION")
+    vm.playFromAvance("freno", PlayMode.DESAFIO)
+    assertEquals("freno", vm.activeGame.value?.gameDef?.id)
+    assertEquals("la lámina espera abierta mientras se juega", "ATENCION", vm.avanceArea.value)
+    vm.closeGameOrResult()
+    assertEquals(AppTab.PROGRESO, vm.currentTab.value)
+    assertEquals("ATENCION", vm.avanceArea.value)
+    assertFalse("Juegos no abre ningún área", vm.libraryFocus.value.open)
+  }
+
+  @Test
+  fun `desde Avance sin lamina abierta, al cerrar el resultado se vuelve a Avance sin lamina`() {
+    val vm = newViewModel()
+    vm.setTab(AppTab.PROGRESO)
+    vm.playFromAvance("freno", PlayMode.DESAFIO)          // la ficha de «Lo que descubriste»
+    vm.closeGameOrResult()
+    assertEquals(AppTab.PROGRESO, vm.currentTab.value)
+    assertNull(vm.avanceArea.value)
+  }
+
+  @Test
+  fun `cerrar la lamina de Avance la olvida y salir o entrar a Avance tampoco la reabre`() {
+    val vm = newViewModel()
+    vm.setTab(AppTab.PROGRESO)
+    vm.openAvanceArea("MEMORIA")
+    vm.closeAvanceArea()
+    assertNull(vm.avanceArea.value)
+    vm.openAvanceArea("MEMORIA")
+    vm.setTab(AppTab.HOY)
+    assertNull("al salir de Avance la lámina se cierra", vm.avanceArea.value)
+    vm.setTab(AppTab.PROGRESO)
+    assertNull("y no se reabre al volver", vm.avanceArea.value)
+  }
+
+  @Test
+  fun `un juego de la ruta de hoy lanzado tras la lamina de Avance no la reabre`() {
+    val vm = newViewModel()
+    vm.setTab(AppTab.PROGRESO)
+    vm.openAvanceArea("ATENCION")
+    vm.playFromAvance("freno", PlayMode.DESAFIO)
+    vm.launchGame("calculo", isDailyFlow = true)           // «Siguiente: … · 2 de 3» en el final de la partida
+    vm.closeGameOrResult()
+    assertNull(vm.avanceArea.value)
+  }
+
+  @Test
+  fun `un juego de Hoy no devuelve a la lamina de Avance aunque antes se jugara desde ella`() {
+    val vm = newViewModel()
+    vm.setTab(AppTab.PROGRESO)
+    vm.openAvanceArea("ATENCION")
+    vm.playFromAvance("freno", PlayMode.DESAFIO)
+    vm.setTab(AppTab.HOY)                                   // salió sin cerrar el resultado
+    vm.playFromHome("calculo", PlayMode.A_TU_MEDIDA)
+    vm.closeGameOrResult()
+    assertEquals(AppTab.HOY, vm.currentTab.value)
+    assertNull(vm.avanceArea.value)
+  }
+
+  @Test
+  fun `la lamina de Avance tambien se recuerda si Android cierra la app a mitad del juego`() {
+    val first = newViewModel()
+    first.setTab(AppTab.PROGRESO)
+    first.openAvanceArea("MEMORIA")
+    first.playFromAvance("calculo", PlayMode.A_TU_MEDIDA)
+    val second = newViewModel()
+    assertEquals("MEMORIA", second.avanceArea.value)
+    second.setTab(AppTab.PROGRESO)                          // entrar a Avance por la barra: se ven las 4 áreas
+    assertNull(second.avanceArea.value)
+  }
+
+  @Test
+  fun `Nubi cuenta una sola vez que los juegos de cada lugar se ven en la lamina de Juegos`() {
+    val vm = newViewModel()
+    assertFalse("al principio todavía no se contó", vm.areaSheetIntroSeen)
+    vm.markAreaSheetIntroSeen()
+    assertTrue(vm.areaSheetIntroSeen)
+    vm.setLibraryFocus(DomainType.ATENCION, null); vm.closeLibraryArea()
+    assertTrue("cerrar y abrir otra lámina no lo borra: una sola vez", vm.areaSheetIntroSeen)
+  }
+
   @Test
   fun `tocar Juegos estando en Juegos con un area abierta la cierra`() {
     val vm = newViewModel()

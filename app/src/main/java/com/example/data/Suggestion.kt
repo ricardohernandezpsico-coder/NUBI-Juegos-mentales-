@@ -62,12 +62,6 @@ object Suggestion {
 
   fun suggestedHere(area: String, global: Pick?): Boolean = global != null && global.area == area
 
-  /**
-   * Lo que dice Nubi en el detalle de un área (Opus, 21-oct: un globo de 6 líneas pasó a DOS frases y sin repetir lo que la pantalla ya dice; la línea de avance de abajo cuenta cuánto avanzó): «¿Le damos un empujón? Te sugiero Constelaciones: sigue en tu ruta de hoy.».
-   * [pick] = la sugerencia de Nubi SI es de esta área (con [gameTitle]); en las demás áreas, solo la pregunta.
-   */
-  fun detailGlobe(gameTitle: String?, pick: Pick?): String = "¿Le damos un empujón?" + if (pick != null && gameTitle != null) " Te sugiero $gameTitle: ${reason(pick)}." else ""
-
   /** La razón de un juego sugerido, en palabras de tiempo: «sigue en tu ruta de hoy», «aún no lo has jugado», «hace 4 días que no lo juegas». */
   fun reason(p: Pick): String = when (p.why) {
     Why.ROUTE -> "sigue en tu ruta de hoy"

@@ -51,7 +51,6 @@ import com.example.ui.components.LocalBarInset
 import com.example.ui.components.LocalReduceMotion
 import com.example.ui.components.LocalTabSwipeLock
 import com.example.ui.components.NeuroNavBar
-import com.example.ui.screens.AreaDetail
 import com.example.ui.screens.FirstFlightScreen
 import com.example.ui.screens.FlightActions
 import com.example.ui.screens.GameSheetContent
@@ -152,7 +151,7 @@ class AppActualScreenshotTest {
   private val BAR_DP = 115
 
   private enum class Scene {
-    HOY, JUEGOS, FICHA, AVANCE, AREA_DETALLE, PERFIL, AJUSTES, LICENCIAS, BARRA, VUELO_1, VUELO_JUEGO, VUELO_EDAD, VUELO_2, VUELO_PUNTO, VUELO_3, RESULTADO, RESULTADO_RECORD, RESULTADO_CON, MEDALLA_PIEZA, MEDALLA_SIN, CARGA
+    HOY, JUEGOS, FICHA, AVANCE, PERFIL, AJUSTES, LICENCIAS, BARRA, VUELO_1, VUELO_JUEGO, VUELO_EDAD, VUELO_2, VUELO_PUNTO, VUELO_3, RESULTADO, RESULTADO_RECORD, RESULTADO_CON, MEDALLA_PIEZA, MEDALLA_SIN, CARGA
   }
 
   private val rastro = GamePlayResult(
@@ -211,14 +210,7 @@ class AppActualScreenshotTest {
                   }
                   Scene.AVANCE -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) {
                     CompositionLocalProvider(LocalBarInset provides barInset) { Box(top) { ProgressScreen(viewModel = vm!!) } }
-                    NavBar(AppTab.PROGRESO) { barPx = it }
-                  }
-                  Scene.AREA_DETALLE -> Box(top) {
-                    AreaDetail(
-                      areaKey = AREA_ORDER[0], statuses = statuses, names = DomainType.values().associate { it.name to it.displayName }, history = vm!!.gameHistory.value, measures = vm.starMeasures.value,
-                      now = System.currentTimeMillis(), lang = AppLanguage.SPANISH, onArea = {}, onPlay = {}, onGame = {}, onClose = {},
-                      suggestion = com.example.data.Suggestion.Pick(GameRegistry.allGames.first { it.domain.name == AREA_ORDER[0] }.id, AREA_ORDER[0], com.example.data.Suggestion.Why.ROUTE)          // la ruta de hoy sigue por Memoria: Nubi lo dice con la misma frase de todas partes (Tarea 150, B2)
-                    )
+                    if (!sheetOpen) NavBar(AppTab.PROGRESO) { barPx = it }                    // con la lámina de un área abierta la barra se esconde (como en la app)
                   }
                   Scene.PERFIL -> Box(top) { ProfileScreen(viewModel = vm!!, onClose = {}) }
                   Scene.AJUSTES -> Box(top) { SettingsPanel(viewModel = vm!!, onClose = {}) }
@@ -335,13 +327,13 @@ class AppActualScreenshotTest {
     composeTestRule.mainClock.autoAdvance = false
     r.settle(); r.shot("juegos-letra13-abajo", 873, 1.3f)
     r.go(Scene.JUEGOS, 873)
-    // las cuatro áreas y, al tocar una, sus juegos
+    // las cuatro áreas y, al tocar una, LA lámina de su área (Tarea 155: la misma de Hoy y de Avance; sin ventana propia)
     for (area in listOf("memoria", "atencion", "razonamiento", "lenguaje")) {
       composeTestRule.runOnIdle { r.sheetOpen = true }
       composeTestRule.onNodeWithTag("area_$area").performClick()
       r.settle()
-      r.shot("juegos-$area", 873)
-      if (area == "memoria") r.shot("juegos-memoria-letra13", 873, 1.3f)
+      r.shot(if (area == "memoria") "juegos-lamina" else "juegos-lamina-$area", 873)
+      if (area == "memoria") r.shot("juegos-lamina-letra13", 873, 1.3f)
       composeTestRule.runOnIdle { r.vm!!.closeLibraryArea(); r.sheetOpen = false }
       r.go(Scene.JUEGOS, 873)
     }
@@ -378,11 +370,15 @@ class AppActualScreenshotTest {
     r.shot("avance-completa", 3900, 1f)
   }
 
+  /** Tocar un área en Avance abre LA lámina de su área, con el gráfico de las 4 semanas (Tarea 155). */
   @Test
-  fun avance_detalle_de_un_area() {
-    val r = Rig(viewModel(), Scene.AREA_DETALLE)
-    r.settle(); r.shot("avance-area", 873)
-    r.shot("avance-area-letra13", 873, 1.3f)
+  fun avance_lamina_de_un_area() {
+    val r = Rig(viewModel(), Scene.AVANCE)
+    r.settle()
+    composeTestRule.runOnIdle { r.sheetOpen = true }
+    composeTestRule.onNodeWithTag("progress_area_memoria").performClick()
+    r.settle(); r.shot("avance-lamina", 873)
+    r.shot("avance-lamina-letra13", 873, 1.3f)
   }
 
   /** Avance recién instalada la app (sin ninguna partida): Nubi con UNA línea y nada más (Tarea 147, P8), no las secciones vacías de siempre. */
