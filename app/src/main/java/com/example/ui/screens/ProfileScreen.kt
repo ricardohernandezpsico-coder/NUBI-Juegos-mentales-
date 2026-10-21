@@ -117,7 +117,7 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
   val avg = if (ranks.isEmpty()) 0 else ranks.sumOf { it.rating } / ranks.size
   val tier = RankTier.fromRating(avg)
   val index = overallIndex(levels)
-  val best = history.maxOfOrNull { it.score }
+  val medalCount = medals.sumOf { it.level }                    // los niveles ganados en las tres familias: el mismo número de «Tus medallas» (Tarea 145; antes «Mejor», el puntaje más alto, que no dice mejor en qué con 17 juegos de escalas distintas)
 
   val prog = if (tier == RankTier.MAESTRO) ((avg - tier.minRating) % 250) / 250f else (avg - tier.minRating) / 250f
 
@@ -153,7 +153,7 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
         Box(Modifier.width(1.dp).height(44.dp).background(Color.White.copy(alpha = 0.14f)))
         StatText("Partidas", "${history.size}", Clay.Sky, Modifier.weight(1f))
         Box(Modifier.width(1.dp).height(44.dp).background(Color.White.copy(alpha = 0.14f)))
-        StatText("Mejor", best?.toString() ?: "–", Clay.Lime, Modifier.weight(1f))
+        StatText("Medallas", "$medalCount", Clay.Lime, Modifier.weight(1f).testTag("profile_medal_count"))
       }
     }
     item {

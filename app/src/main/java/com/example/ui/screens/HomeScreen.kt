@@ -637,7 +637,7 @@ internal fun captionLine(ui: HomeUi): String? {
   val pending = ui.stops.count { it.state != StopState.DONE }
   return when {
     ui.pausedTitle != null -> "Tienes una partida en pausa: ${ui.pausedTitle}."
-    ui.flightDay -> "Tu Primer vuelo fue tu camino de hoy. Mañana empieza tu camino."
+    ui.flightDay -> "Tu primer vuelo fue tu camino de hoy. Mañana empieza tu camino."
     ui.stops.isNotEmpty() && pending == 0 -> "Ya pasaste por la isla hoy. Mañana sigo aquí."
     else -> null
   }

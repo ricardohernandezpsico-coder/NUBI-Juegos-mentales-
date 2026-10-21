@@ -284,11 +284,14 @@ private data class Opt(val value: String, val label: String, val sub: String? = 
 private fun PageFrame(
   centered: Boolean = false,
   footer: @Composable () -> Unit,
+  fill: Boolean = false,
   body: @Composable () -> Unit
 ) {
   Column(Modifier.fillMaxSize()) {
     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = if (centered) Alignment.Center else Alignment.TopCenter) {
-      Column(
+      // [fill] = el cuerpo se ocupa de su propio alto (y de deslizarse): el cierre, donde la isla toma lo que sobra
+      if (fill) Box(Modifier.fillMaxSize().padding(top = 10.dp)) { body() }
+      else Column(
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(top = 10.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = if (centered) Alignment.CenterHorizontally else Alignment.Start
@@ -601,13 +604,40 @@ private fun ReminderPage(s: FlightState, a: FlightActions) {
   )
 }
 
-/** El último paso: los 3 juegos de hoy, elegidos por las metas y el punto de partida. «Empezar mi camino» entra a Hoy. */
+/**
+ * El último paso: los 3 juegos de hoy, elegidos por las metas y el punto de partida. «Empezar mi camino» entra a Hoy.
+ * Tarea 145 (ítem 23 de la revisión del 19-oct): antes Nubi y dos líneas con la mitad de la pantalla vacía; ahora la ISLA, la misma que se ve mañana en Hoy (el mismo render, con Nubi encima), a un tamaño que entra sin desplazar, y las dos líneas de siempre (sin texto nuevo que prometa algo).
+ * La isla se queda con lo que sobra de alto después de las dos líneas (se miden con la letra del sistema); con letra muy grande, donde ni así entra, la página se desliza como las demás.
+ */
 @Composable
 private fun TodayPathPage(todayGames: List<String>, a: FlightActions) {
   // El día del Primer vuelo, el camino de hoy ya quedó cumplido con el vuelo (repository.completeTodayWithFlight): no se juegan 7 juegos. Mañana empieza el camino de 3 juegos.
-  PageFrame(footer = { MainButton("Empezar mi camino", tag = "btn_flight_finish", onClick = a.onContinue) }) {
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { NubiClay(width = 150.dp, celebrate = true) }
-    Title("Tu Primer vuelo fue tu camino de hoy", center = true)
-    Sub("Mañana empieza tu camino de 3 juegos, elegido por tus metas y por lo que más conviene reforzar.", center = true)
+  val title = "Tu primer vuelo fue tu camino de hoy"
+  val sub = "Mañana empieza tu camino de 3 juegos, elegido por tus metas y por lo que más conviene reforzar."
+  PageFrame(footer = { MainButton("Empezar mi camino", tag = "btn_flight_finish", onClick = a.onContinue) }, fill = true) {
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+      val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+      val density = androidx.compose.ui.platform.LocalDensity.current
+      val textHeight = remember(maxWidth, density.fontScale) {
+        with(density) {
+          val width = maxWidth.roundToPx()
+          val t = measurer.measure(title, TextStyle(fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 28.sp, lineHeight = 33.sp, textAlign = TextAlign.Center), constraints = androidx.compose.ui.unit.Constraints(maxWidth = width))
+          val s = measurer.measure(sub, TextStyle(fontFamily = AppFamily, fontSize = 18.sp, lineHeight = 25.sp, textAlign = TextAlign.Center), constraints = androidx.compose.ui.unit.Constraints(maxWidth = width))
+          (t.size.height + s.size.height).toDp() + 12.dp * 2
+        }
+      }
+      val islandHeight = (maxHeight - textHeight).coerceAtLeast(MIN_ISLAND_HEIGHT)
+      Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        com.example.ui.components.Island(
+          description = "Tu isla, la que verás mañana en Hoy",
+          modifier = Modifier.fillMaxWidth().height(islandHeight).testTag("flight_island")
+        )
+        Title(title, center = true)
+        Sub(sub, center = true)
+      }
+    }
   }
 }
+
+/** Lo menos que mide la isla del cierre (dp): con letra muy grande la página se desliza antes que dejarla más chica. */
+private val MIN_ISLAND_HEIGHT = 170.dp

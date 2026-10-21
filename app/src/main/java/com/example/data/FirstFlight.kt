@@ -259,7 +259,7 @@ object FirstFlight {
   }
 
   /**
-   * El texto bajo las farolas: «Ya diste el primer paso» (hola y nombre), «Paso 2 de 6 · Memoria» … «Paso 6 de 6 · Tu punto de partida»; en la evaluación repetida, «Juego 2 de 4 · Atención» y «Listo · tu punto de partida».
+   * El texto bajo las farolas: «Empezamos juntos» (hola y nombre; Tarea 145: antes «Ya diste el primer paso», que afirmaba algo que la persona todavía no había hecho), «Paso 2 de 6 · Memoria» … «Paso 6 de 6 · Tu punto de partida»; en la evaluación repetida, «Juego 2 de 4 · Atención» y «Listo · tu punto de partida».
    * Nunca dice cuánto falta en minutos.
    */
   fun stationText(s: FlightState): String {
@@ -267,7 +267,7 @@ object FirstFlight {
     val st = stations(s)
     return if (s.mode == FlightMode.GAMES) {
       if (i >= BaselinePlan.steps.size) "Listo · tu punto de partida" else "Juego ${i + 1} de ${BaselinePlan.steps.size} · ${st[i].label}"
-    } else if (i == 0) "Ya diste el primer paso"
+    } else if (i == 0) "Empezamos juntos"                                                // la voz de Nubi, corta; no afirma nada que la persona no haya hecho (Tarea 145, antes «Ya diste el primer paso»)
     else if (s.step.game != null) "Paso ${i + 1} de ${st.size} · ${st[i].label}"      // un juego o su tarjeta: la etapa lleva el nombre del área
     else "Paso ${i + 1} de ${st.size}"                                                   // una pregunta, el punto de partida, el aviso o el camino: «Paso 2 de 6» a secas (Tarea 143, A2: antes «Paso 2 de 6 · Memoria» sobre la pregunta de la edad)
   }

@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.inset
@@ -66,13 +67,24 @@ object ShareCard {
   private const val W = 1080
   private const val H = 1920
 
+  /** La medalla de plasticina de una familia lista para dibujar en la tarjeta (Tarea 145: la misma de la celebración, de «Tus medallas» y del Perfil). */
+  private class MedalArt(val image: ImageBitmap, val piece: com.example.data.KitAvancePiece, val number: Int)
+
+  /** null si el logro no tiene familia (los viejos, de desempeño, que ya no se otorgan): ahí la tarjeta conserva el dibujo de siempre. */
+  private fun medalArt(context: Context, def: AchievementDef?): MedalArt? {
+    val family = def?.family ?: return null
+    val image = android.graphics.BitmapFactory.decodeResource(context.resources, familyMedalRes(family, true))?.asImageBitmap() ?: return null
+    return MedalArt(image, loadKitAvanceSpec(context).piece("med_" + family.name.lowercase()), def.number ?: 1)
+  }
+
   /** Dibuja la tarjeta. Puede correr fuera del hilo principal. */
   fun render(context: Context, content: Content): Bitmap {
     val image = ImageBitmap(W, H)
     val density = Density(1f) // 1 unidad = 1 px de la imagen
     val measurer = TextMeasurer(createFontFamilyResolver(context), density, LayoutDirection.Ltr)
+    val medal = medalArt(context, content.achievement)
     CanvasDrawScope().draw(density, LayoutDirection.Ltr, Canvas(image), Size(W.toFloat(), H.toFloat())) {
-      drawCard(content, measurer)
+      drawCard(content, measurer, medal)
     }
     return image.asAndroidBitmap()
   }
@@ -95,7 +107,7 @@ object ShareCard {
     context.startActivity(Intent.createChooser(send, "Compartir").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
   }
 
-  private fun DrawScope.drawCard(content: Content, measurer: TextMeasurer) {
+  private fun DrawScope.drawCard(content: Content, measurer: TextMeasurer, medal: MedalArt? = null) {
     val w = size.width
     val h = size.height
     val accentLight = content.tier?.palette()?.light ?: content.achievement?.medalColor()?.let { lerp(it, Color.White, 0.45f) } ?: Color.White
@@ -144,6 +156,19 @@ object ShareCard {
     if (tier != null) {
       inset(c.x - shieldW / 2f, c.y - shieldH / 2f, w - (c.x + shieldW / 2f), h - (c.y + shieldH / 2f)) {
         drawLeagueShield(tier, pips = 1)
+      }
+    } else if (achievement != null && medal != null) {
+      // La medalla de plasticina de su familia, con el número de su nivel en la placa (la misma de la celebración)
+      val bodyH = 520f
+      val k = bodyH / medal.piece.bodyHeight
+      val bodyW = medal.piece.bodyWidth * k
+      val left = c.x - bodyW / 2f; val top = c.y - bodyH / 2f
+      drawKitPiece(medal.image, medal.piece.asPiece(), androidx.compose.ui.geometry.Rect(left, top, left + bodyW, top + bodyH), 1f, k)
+      val plate = medal.piece.plate
+      if (plate != null) {
+        val layout = measurer.measure("${medal.number}", TextStyle(fontFamily = AppFamily, fontWeight = FontWeight.Bold, color = Clay.Ink, fontSize = (plate.height * k * 0.8f).sp))
+        val cy = top + (plate.centerY - medal.piece.margins.top) * k
+        drawText(layout, topLeft = Offset(c.x - layout.size.width / 2f, cy - layout.size.height / 2f))
       }
     } else if (achievement != null) {
       val m = 560f

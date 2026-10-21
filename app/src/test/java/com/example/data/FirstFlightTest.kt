@@ -242,8 +242,8 @@ class FirstFlightTest {
 
   @Test
   fun `el texto dice el paso N de 6 y la etapa`() {
-    assertEquals("Ya diste el primer paso", text(FlightStep.HOLA))
-    assertEquals("Ya diste el primer paso", text(FlightStep.NOMBRE))
+    assertEquals("Empezamos juntos", text(FlightStep.HOLA))
+    assertEquals("Empezamos juntos", text(FlightStep.NOMBRE))
     // Un juego o su tarjeta nombran el área; las pantallas que NO son de juego (preguntas, dato, punto de partida, aviso, camino) dicen «Paso N de 6» a secas (Tarea 143, A2)
     for (step in listOf(FlightStep.JUEGO_1, FlightStep.TARJETA_1)) assertEquals("Paso 2 de 6 · Memoria", text(step))
     for (step in listOf(FlightStep.EDAD, FlightStep.METAS, FlightStep.DATO)) assertEquals("Paso 2 de 6", text(step))

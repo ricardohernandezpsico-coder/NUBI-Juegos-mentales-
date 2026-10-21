@@ -68,8 +68,8 @@ class FirstFlightLampsTest {
   @Test
   fun en_hola_la_primera_ya_esta_encendida() {
     frame(FlightState(FlightMode.FULL, FlightStep.HOLA))
-    rule.onNodeWithTag("flight_step_text").assertTextEquals("Ya diste el primer paso")
-    rule.onNodeWithTag("flight_lamps").assertContentDescriptionEquals("Ya diste el primer paso. 1 de 6 farolas encendidas")
+    rule.onNodeWithTag("flight_step_text").assertTextEquals("Empezamos juntos")
+    rule.onNodeWithTag("flight_lamps").assertContentDescriptionEquals("Empezamos juntos. 1 de 6 farolas encendidas")
     // el saludo ya no promete tiempo: «Son 4 juegos cortos.»
     rule.onNodeWithText("Son 4 juegos cortos.", substring = true).assertIsDisplayed()
     rule.onAllNodesWithText("Son unos 5 minutos", substring = true).assertCountEquals(0)

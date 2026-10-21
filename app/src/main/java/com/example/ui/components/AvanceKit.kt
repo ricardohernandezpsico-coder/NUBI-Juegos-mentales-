@@ -45,8 +45,15 @@ private object KitAvanceCache { @Volatile var spec: KitAvanceSpec? = null }
 @Composable
 internal fun rememberKitAvanceSpec(): KitAvanceSpec {
   val context = LocalContext.current
-  return remember { KitAvanceCache.spec ?: KitAvanceSpec.parse(context.resources.openRawResource(R.raw.kit_avance).bufferedReader().use { it.readText() }).also { KitAvanceCache.spec = it } }
+  return remember { loadKitAvanceSpec(context) }
 }
+
+/** La especificación de las piezas del kit de Avance, leída una vez (la usan también las imágenes que no se dibujan en pantalla, como la tarjeta de compartir). */
+internal fun loadKitAvanceSpec(context: android.content.Context): KitAvanceSpec =
+  KitAvanceCache.spec ?: KitAvanceSpec.parse(context.resources.openRawResource(R.raw.kit_avance).bufferedReader().use { it.readText() }).also { KitAvanceCache.spec = it }
+
+/** El dibujo de la medalla de una familia (la de color si está conseguida, la de plasticina cruda si no). */
+internal fun familyMedalRes(family: AchievementFamily, unlocked: Boolean): Int = MEDALS.getValue(family).let { if (unlocked) it.first else it.second }
 
 private val EMBLEMS: Map<String, Int> = mapOf(
   "parejas" to R.drawable.kit_emb_parejas, "secuencia" to R.drawable.kit_emb_secuencia, "bodega" to R.drawable.kit_emb_bodega, "correo" to R.drawable.kit_emb_correo,

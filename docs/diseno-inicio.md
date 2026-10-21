@@ -33,7 +33,7 @@ copiado: nombres, textos, arte y juegos propios.
     «No es un examen: es desde dónde partimos». **(nuevo) Nace tu primera estrella**: Nubi celebra y en el cielo aparece la
     primera estrella (la historia de Nubi: «cada partida hace nacer una estrella»). Se enciende el día 1 de la racha.
 13. **¿A qué hora te aviso?** (aquí se pide el permiso de notificaciones de Android 13+).
-14. **Tu camino de hoy**: los 3 juegos del día elegidos por las metas y el punto de partida → entra a Hoy.
+14. **Tu camino de hoy** (el cierre): la ISLA de Hoy (el mismo render, con Nubi; Tarea 145, antes Nubi y dos líneas con la mitad de la pantalla vacía) con «Tu primer vuelo fue tu camino de hoy» y «Mañana empieza tu camino de 3 juegos…» → «Empezar mi camino» entra a Hoy. La isla toma lo que sobra de alto (mínimo 170 dp; con letra muy grande la página se desliza).
 
 Salen del inicio: nivel de estudios (pasa a Perfil, opcional: hoy no cambia nada del juego), «Así funciona» (cada cosa
 se explica cuando aparece por primera vez) y, desde el 10-oct (Tarea 78), la pregunta «Al terminar cada juego, ¿qué te sirve más ver primero?» («Lo que avancé» / «Un consejo para la próxima»;
@@ -43,7 +43,7 @@ puesta el 3-oct, tarea 21c): con los finales con sentido de los 18 juegos, que t
 
 - **Jugar en menos de un minuto**: antes del primer juego solo el nombre (opcional). Desde la Tarea 132 (18-oct) la edad se pregunta DESPUÉS de la tarjeta del juego 1, y solo si no se sabe.
 - **Farolas de etapa** arriba en todo el recorrido (Tarea 132, en lugar de la barra de avance): **Empezar · Memoria · Atención · Razonamiento · Lenguaje · Tu punto de partida**, con la farola del kit (la de Hoy, Avance y Ajustes); la primera ya
-  está encendida (abrir Nubi es el primer paso) y la actual lleva el aro lima. Debajo, en palabras: «Ya diste el primer paso» y luego «Paso 2 de 6 · Memoria» … «Paso 6 de 6 · Tu punto de partida». **Ya no se dice «faltan unos N minutos»** (una promesa
+  está encendida (abrir Nubi es el primer paso) y la actual lleva el aro lima. Debajo, en palabras: «Empezamos juntos» (Tarea 145; antes «Ya diste el primer paso», que afirmaba algo que la persona todavía no había hecho) y luego «Paso 2 de 6 · Memoria» … «Paso 6 de 6 · Tu punto de partida». **Ya no se dice «faltan unos N minutos»** (una promesa
   de tiempo que en una persona de 60+ no se cumplía). El indicador de 4 pasos de los juegos (✓ ✓ ● ○) salió el 18-oct (decisión de Ricardo): dos indicadores de avance apilados confunden a los 60+ y las farolas ya dicen en qué juego va (etapas 2 a 5 = juegos 1 a 4;
   en la evaluación repetida, «Juego 2 de 4 · Atención»). El saludo dice «Son 4 juegos cortos.» en vez de «Son unos 5 minutos.».
 - **Tutorial dentro del juego** (es EL tutorial de cada juego, el mismo que verá quien abra un juego por primera vez):

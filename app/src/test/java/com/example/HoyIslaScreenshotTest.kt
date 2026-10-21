@@ -349,7 +349,7 @@ class HoyIslaScreenshotTest {
   fun si_el_camino_fue_el_primer_vuelo_Hoy_lo_dice_y_no_hay_boton_de_jugar() {
     show(ui(completed = 3, flightDay = true))
     composeTestRule.onNodeWithTag("home_flight_day").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Tu Primer vuelo fue tu camino de hoy. Mañana empieza tu camino.").assertExists()
+    composeTestRule.onNodeWithText("Tu primer vuelo fue tu camino de hoy. Mañana empieza tu camino.").assertExists()
   }
 
   @Test

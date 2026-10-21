@@ -25,12 +25,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val Title = Color(0xFFEAF0FF)
-private val Body = com.example.ui.theme.NubiTokens.OnNightDim
+// Tarea 145 (ítem 10): el texto largo va sobre una LOSA crema (`ClayPanel`, como el aviso de salud de Ajustes) con la letra en tinta: sobre el cielo, los luceros fijos quedaban detrás de las palabras y leían como puntuación («Mandera, P.•, Keuleers»).
+private val Title = com.example.ui.theme.Clay.Ink
+private val Body = com.example.ui.theme.Clay.InkMuted
 
 /**
- * "Licencias y créditos" (Ajustes, 1-oct): lo que hay que citar de lo que no es nuestro. Texto suelto con títulos, sin
- * recuadros; los enlaces van como texto (no abren el navegador). Letra de 14 sp o más.
+ * "Licencias y créditos" (Ajustes, 1-oct): lo que hay que citar de lo que no es nuestro. Texto con títulos sobre UNA losa crema (Tarea 145: antes suelto sobre el cielo, con los luceros detrás de las palabras); los enlaces van como texto (no abren el navegador). Letra de 15 sp o más.
  * - SPALEX (datos de las palabras de Lluvia de meteoros, Cosecha de palabras y En la punta de la lengua): CC BY 4.0, con su atribución y el cambio que se le hizo en cada juego.
  * - EsPal (Duchon et al., 2013): la frecuencia de uso que trae SPALEX y que En la punta de la lengua usa para el nivel de cada palabra. Se CITA por cortesía (decisión de Ricardo, Tarea 80); su licencia propia NO está confirmada y no se escribe ninguna (consulta a los autores o al abogado pendiente antes de publicar).
  * - Hunspell es_ES de LibreOffice (diccionario que sirvió para armar y filtrar esas palabras; solo al generar): GPL 3+, LGPL 3+ o MPL 1.1+, a elección (LICENSE.md del repositorio LibreOffice/dictionaries, carpeta es).
@@ -53,10 +53,11 @@ fun LicensesContent(modifier: Modifier = Modifier) {
     modifier
       .fillMaxWidth()
       .verticalScroll(rememberScrollState())
-      .padding(horizontal = 24.dp, vertical = 8.dp)
+      .padding(horizontal = 20.dp, vertical = 8.dp)
       .testTag("licenses_content")
   ) {
-    com.example.ui.components.OnBoardText(
+    com.example.ui.components.ClayPanel(Modifier.fillMaxWidth().testTag("licenses_panel"), padding = 18.dp) {
+    Text(
       "Nubi usa trabajo de otras personas. Aquí está de quién es y bajo qué licencia.",
       color = Body, fontSize = 16.sp, lineHeight = 22.sp
     )
@@ -101,6 +102,7 @@ fun LicensesContent(modifier: Modifier = Modifier) {
 
     Section(com.example.data.HealthNotice.TITLE)
     Para(com.example.data.HealthNotice.TEXT)
+    }
 
     Spacer(Modifier.height(90.dp))
   }
@@ -116,17 +118,17 @@ private fun OflText() {
   }
   com.example.ui.theme.ClayButton(
     text = if (open) "Ocultar el texto completo de la licencia" else "Ver el texto completo de la licencia",
-    onClick = { open = !open }, color = com.example.ui.theme.Clay.Cream, fontSize = 16.sp,
+    onClick = { open = !open }, fontSize = 16.sp,                       // sol: sobre la losa crema un botón crema no se vería
     modifier = Modifier.padding(top = 6.dp, bottom = 8.dp).testTag("btn_ofl_text")
   )
   if (open) {
-    com.example.ui.components.OnBoardText(text, color = Body, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(bottom = 8.dp).testTag("ofl_text"))
+    Text(text, color = Body, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(bottom = 8.dp).testTag("ofl_text"))
   }
 }
 
 @Composable
 private fun Section(text: String) {
-  com.example.ui.components.OnBoardText(
+  Text(
     text, color = Title, fontSize = 19.sp, fontWeight = FontWeight.Bold,
     modifier = Modifier.padding(top = 22.dp, bottom = 6.dp)
   )
@@ -134,5 +136,5 @@ private fun Section(text: String) {
 
 @Composable
 private fun Para(text: String) {
-  com.example.ui.components.OnBoardText(text, color = Body, fontSize = 15.sp, lineHeight = 21.sp, modifier = Modifier.padding(bottom = 8.dp))
+  Text(text, color = Body, fontSize = 15.sp, lineHeight = 21.sp, modifier = Modifier.padding(bottom = 8.dp))
 }

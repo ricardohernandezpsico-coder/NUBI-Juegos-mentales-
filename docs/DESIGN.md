@@ -119,7 +119,7 @@ Una sola escala (`NubiMotion`): rápido para lo que responde al dedo, medio para
 3. **Don't** emojis como íconos: cada ícono es una pieza del kit.
 4. **Do** decir el acierto y el error con forma o texto además del color (nada solo por color).
 5. **Don't** poner caras que reaccionen a cómo juegas (sin caras que reaccionen; Nubi no cambia de gesto según el puntaje).
-6. **Do** informar con texto suelto y objetos (sin recuadros para informar en las pantallas principales); la tarjeta es para lo que se toca.
+6. **Do** informar con texto suelto y objetos (sin recuadros para informar en las pantallas principales); la tarjeta es para lo que se toca. La lectura LARGA (Licencias y créditos, el aviso de salud de Ajustes) es la excepción: va sobre UNA losa crema (`ClayPanel`) con la letra en tinta, nunca suelta sobre el cielo, donde los luceros fijos quedan detrás de las palabras y se leen como puntuación (Tarea 145).
 7. **Do** la letra de lectura a 16 o más (letra ≥ 16 en la app y en los juegos; el único 14 son los rótulos de gráficos).
 8. **Do** objetos tocables de 48 o más (toque ≥ 48 en todo, también en la práctica de los tutoriales).
 9. **Don't** partir una palabra por la mitad: si no cabe, 2 líneas.
@@ -139,7 +139,8 @@ App (Compose, `ui/components/` y `ui/theme/`):
 - `ClaySwitch` y `ClayTextField`: los controles de Ajustes; `WeeklyGoalLamps`: la meta semanal en 7 farolas con su número, la elegida en un chip sol.
 - `NubiBubble` y `NubiClay`: el globo de Nubi (losa crema con cola) y Nubi 3D de frente; Nubi comenta, no manda.
 - `FarolaImage` y `WeekLampRendered`: la farola del kit, encendida o apagada (la semana de Hoy y de Avance).
-- `KitBar`: el canal y el churro de las barras de avance; `FamilyMedal`: las medallas de conducta; `GameEmblem`: el emblema de un juego; `PedestalImage` y los edificios: los lugares de la isla.
+- `ClayPanel`: la losa grande crema para la lectura larga y las tarjetas de Ajustes (letra en tinta; Licencias y créditos y el aviso de salud van sobre una).
+- `KitBar`: el canal y el churro de las barras de avance; `FamilyMedal`: las medallas de conducta, también la de la celebración y la de la tarjeta de compartir (la vectorial solo queda para «Medallas anteriores»); `GameEmblem`: el emblema de un juego; `PedestalImage` y los edificios: los lugares de la isla; `Island`: la isla de Hoy y, al cerrar el Primer vuelo, la que se verá mañana.
 - `OnBoardText`, `BoardBackground` y `CosmosBackground`: el texto sobre el cielo y el cielo mismo.
 
 Unity (`Games/Shared/`): `PlasticSlab` y `PlasticTouch` (la losa y su estado presionado), `GameHud` (el marcador común de dos filas y la fila de consigna), `GuidedTutorial` (el tutorial fijo con Nubi), `UiKit` (el movimiento común), `NeuroStyle` (la paleta), `GameFeel` (sonido y háptica).

@@ -58,6 +58,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.AchievementDef
+import com.example.data.FamilyMedalState
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
 import com.example.ui.theme.AppFamily
@@ -67,6 +68,9 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
+
+/** El alto de la medalla de plasticina en la celebración (Tarea 145): grande, para que se vea a distancia de teléfono; el número de su nivel va en su placa (`FamilyMedal` lo escribe desde 80 dp). */
+private val MEDAL_HEIGHT = 160.dp
 
 /**
  * Celebración de un logro conseguido ("¡Logro! Una semana"): más liviana que el ascenso de liga, pero con la
@@ -186,18 +190,24 @@ fun AchievementOverlay(
             }
           }
         }
-        AchievementMedal(
-          def = def,
-          unlocked = true,
-          size = 170.dp,
-          modifier = Modifier.graphicsLayer {
-            val k = medal.value
-            scaleX = k
-            scaleY = k
-            alpha = k.coerceIn(0f, 1f)
-            translationY = (1f - k.coerceIn(0f, 1f)) * -120f
-          }
-        )
+        // La medalla de PLASTICINA de su familia (Tarea 145, ítem 14; antes una moneda vectorial con una llama, el último dibujo «de antes» de la celebración): la misma de «Tus medallas» en Avance y en el Perfil, grande, con el número de su nivel en la placa.
+        // Los rayos, la luz y los destellos de arriba no cambian. Un logro viejo, de desempeño (ya no se otorgan: llegar aquí no pasa), conserva el dibujo de siempre para no romper la pantalla.
+        val medalState = remember(def.id) { def.family?.let { FamilyMedalState(it, reached = def, next = null, progress = null) } }
+        Box(
+          modifier = Modifier
+            .graphicsLayer {
+              val k = medal.value
+              scaleX = k
+              scaleY = k
+              alpha = k.coerceIn(0f, 1f)
+              translationY = (1f - k.coerceIn(0f, 1f)) * -120f
+            }
+            .testTag("achievement_medal"),
+          contentAlignment = Alignment.Center
+        ) {
+          if (medalState != null) FamilyMedal(medalState, MEDAL_HEIGHT)
+          else AchievementMedal(def = def, unlocked = true, size = 170.dp)
+        }
       }
       Column(
         modifier = Modifier.alpha(texts.value),
