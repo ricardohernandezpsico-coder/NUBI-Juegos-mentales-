@@ -70,7 +70,7 @@ fun buildReminder(input: ReminderInput): ReminderMessage? {
   if (gap != null && gap >= 3) {
     return ReminderMessage(
       title = cap("${hi}¡qué bueno verte por aquí!"),
-      text = "Tu camino te espera: 3 juegos cortos y vuelves a sumar trofeos." +
+      text = "Te esperan 3 juegos cortos y sigues tu ruta." +
         (input.nextGameTitle?.let { " Hoy empieza con $it." } ?: "")
     )
   }
@@ -80,7 +80,7 @@ fun buildReminder(input: ReminderInput): ReminderMessage? {
   val options = buildList {
     add(ReminderMessage(cap("${hi}¡tu camino de hoy está listo!"), "¡3 juegos, unos 5 minutos!$weekLine"))
     if (next != null) add(ReminderMessage("¡Hoy toca $next!", "¿Te animas? Es el primero de tu camino de hoy.$weekLine"))
-    add(ReminderMessage("¡Un rato corto hoy!", "Cada partida suma trofeos para tu liga.$weekLine"))
+    add(ReminderMessage("¡Un rato corto hoy!", "Cada partida suma a tu avance.$weekLine"))
   }
   return options[input.dayOfYear.mod(options.size)]
 }

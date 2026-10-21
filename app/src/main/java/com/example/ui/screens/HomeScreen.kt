@@ -404,8 +404,8 @@ internal fun HomeContent(
               Spacer(Modifier.width(4.dp))
               TopActions(
                 name = ui.name, onProfile = onProfile, onSettings = onSettings,
-                profileLabel = "Tu perfil, liga ${ui.tier.tierName}",
-                profileBadge = { LeagueShield(tier = ui.tier, size = 20.dp) }
+                profileLabel = if (com.example.Features.LEAGUES) "Tu perfil, liga ${ui.tier.tierName}" else "Tu perfil",
+                profileBadge = if (com.example.Features.LEAGUES) ({ LeagueShield(tier = ui.tier, size = 20.dp) }) else null           // sin ligas en la v1 (Tarea 149): el avatar va solo con su inicial
               )
             }
             // Una sola línea con la fecha y la meta de la semana.

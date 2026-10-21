@@ -248,9 +248,11 @@ class HoyIslaScreenshotTest {
   }
 
   @Test
-  fun la_liga_va_como_escudo_en_el_perfil_y_el_lector_la_dice() {
+  fun el_avatar_va_solo_con_su_inicial_porque_las_ligas_estan_fuera_de_la_v1() {
+    // Tarea 149: sin ligas en la v1 el avatar ya no lleva el escudo y el lector dice solo «Tu perfil»
     show(ui())
-    composeTestRule.onNodeWithContentDescription("Tu perfil, liga Bronce").assertExists()
+    composeTestRule.onNodeWithContentDescription("Tu perfil").assertExists()
+    composeTestRule.onNodeWithContentDescription("Tu perfil, liga Bronce").assertDoesNotExist()
     composeTestRule.onNodeWithTag("btn_top_profile").assertIsDisplayed()
   }
 

@@ -125,7 +125,7 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
     DebugButton("[Debug] Isla: las 10 piezas", "btn_debug_isla_10") { showPieces(IslaPieza.entries) }
     DebugButton("[Debug] Isla: volver a mis piezas reales", "btn_debug_isla_real") { showPieces(null) }
     DebugButton(if (tutorialOverlay) "[Debug] Rectángulos del tutorial: SÍ (tocar para quitar)" else "[Debug] Rectángulos del tutorial: NO (tocar para ver)", "btn_debug_tutorial_overlay") { tutorialOverlay = !tutorialOverlay }
-    DebugButton("[Debug] Ver celebración de ascenso de liga", "btn_debug_promotion") { viewModel.debugShowPromotion() }
+    if (com.example.Features.LEAGUES) DebugButton("[Debug] Ver celebración de ascenso de liga", "btn_debug_promotion") { viewModel.debugShowPromotion() }
     DebugButton("[Debug] Ver celebración de logro", "btn_debug_achievement") { viewModel.debugShowAchievement() }
     DebugButton("[Debug] Repetir el inicio (sin borrar datos)", "btn_debug_onboarding") { viewModel.debugRestartOnboarding() }
     DebugGames.forEach { g ->

@@ -160,8 +160,8 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
       com.example.ui.components.OnBoardText(streakNote, color = com.example.ui.theme.NubiTokens.OnNightDim, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().testTag("streak_note"))
     }
 
-    // Tu liga: el escudo chico y la liga (el escudo grande queda para cuando se decidan las ligas).
-    item {
+    // Tu liga: el escudo chico y la liga (el escudo grande queda para cuando se decidan las ligas). Fuera de la v1 (Tarea 149): se ve solo con `Features.LEAGUES`.
+    if (com.example.Features.LEAGUES) item {
       Column(Modifier.testTag("profile_league")) {
         SpaceSectionTitle("Tu liga")
         Spacer(Modifier.height(10.dp))

@@ -151,7 +151,8 @@ fun ProgressScreen(
 
     item { AvanceMedals(medals) { familyOpen = it } }
 
-    item {
+    // «Tu liga» y su Compartir: fuera de la v1 (Tarea 149); se ven solo con `Features.LEAGUES`
+    if (com.example.Features.LEAGUES) item {
       AvanceLeague(leagueRow(avg)) {
         // Compartir la liga general como imagen (misma tarjeta que al ascender).
         shareScope.launch {

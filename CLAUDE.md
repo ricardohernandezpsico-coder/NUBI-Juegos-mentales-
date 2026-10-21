@@ -6,7 +6,7 @@
 > (`NeuroVida.*`, `unity/NeuroVidaCore/`) y clases Kotlin (`NeuroVidaViewModel`…), y el `namespace`/paquete del código (`com.example`). El `applicationId` YA es propio: **`com.nubibraingames.app`** desde el 15-oct (pedido de Ricardo, para no publicar con el heredado de AI Studio, `com.aistudio.neurovida.cgnv`, que queda solo como historia en `docs/auditoria-30-sep.md`); cambiarlo después de publicar sería otra app (`docs/nombre-marca-y-riesgos.md`). La carpeta es `C:/Users/RURAL7/Desktop/Proyectos/Nubi`
 > (renombrada el 1-oct; Unity Hub necesita agregar el proyecto `unity/NeuroVidaCore` de nuevo). La app no muestra "NeuroVida" en ningún texto visible; en los documentos, "NeuroVida" solo aparece en identificadores o para el nombre viejo.
 
-App Android de juegos mentales cortos para mantener la mente activa: 17 juegos en 4 áreas (Memoria, Atención, Razonamiento y Lenguaje; de 6 a 4 áreas el 30-sep; juegos retirados en `docs/juegos/descartados.md`), Room v15, dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos, logros,
+App Android de juegos mentales cortos para mantener la mente activa: 17 juegos en 4 áreas (Memoria, Atención, Razonamiento y Lenguaje; de 6 a 4 áreas el 30-sep; juegos retirados en `docs/juegos/descartados.md`), Room v15, dificultad que se adapta, camino diario de 3 juegos, ligas con trofeos (OCULTAS en la v1: `Features.LEAGUES = false`, Tarea 149; el dato se guarda), logros,
 racha y un punto de partida inicial. La app (menús, progreso, datos) es Kotlin + Compose; los juegos corren en Unity embebido ("Unity as a Library"). Dueño y quien prueba: Ricardo (psicólogo). Meta: superar a Lumosity/Peak/Elevate en calidad y en motivación.
 
 El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de Ricardo) está en
@@ -150,7 +150,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pruebas
 
-- Kotlin: 1179 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 1187 (`./gradlew.bat testDebugUnitTest`; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel, el repositorio o leen la base llaman `TestSupport.resetDatabase()` en `@Before` y `@After` (Room EN MEMORIA, nunca `neurovida_database`) y SUELTAN lo creado con `TestSupport.release(...)`
   (cancela y ESPERA su trabajo de fondo); `NoDiskDatabaseGuardTest` falla si falta. Detalle: [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md).

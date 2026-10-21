@@ -371,6 +371,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   /** Solo depuración (botón en Ajustes): muestra la celebración sin tener que ganar 250 trofeos. */
   fun debugShowPromotion() {
+    if (!com.example.Features.LEAGUES) return
     _promotion.value = LeaguePromotion(RankTier.PLATA, RankTier.BRONCE, gameId = "secuencia", rating = 255)
   }
 
@@ -493,7 +494,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       val outcome = repository.recordGameResult(result)
       if (current != null) {
         _modeNote.value = modeNote(result.playMode, outcome)
-        _promotion.value = outcome.promotion(result.gameId)
+        _promotion.value = if (com.example.Features.LEAGUES) outcome.promotion(result.gameId) else null                 // sin ligas en la v1 (Tarea 149): no hay celebración de ascenso (el dato se guarda igual)
         _achievementQueue.value = _achievementQueue.value + outcome.newAchievements
         _lastResultDaily.value = current.isDailyFlow
         _lastResult.value = Pair(result, outcome.didLevelUp)
@@ -652,7 +653,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     )
     viewModelScope.launch {
       val outcome = repository.recordGameResult(result)
-      _promotion.value = outcome.promotion(result.gameId)
+      _promotion.value = if (com.example.Features.LEAGUES) outcome.promotion(result.gameId) else null
       _achievementQueue.value = _achievementQueue.value + outcome.newAchievements
       _lastResultDaily.value = current.isDailyFlow
       _lastResult.value = Pair(result, outcome.didLevelUp)

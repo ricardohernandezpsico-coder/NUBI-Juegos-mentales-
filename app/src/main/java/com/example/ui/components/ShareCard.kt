@@ -48,6 +48,12 @@ import kotlin.random.Random
  * se ve igual que adentro, y se comparte con la hoja de compartir de Android (WhatsApp, Instagram, etc.).
  */
 object ShareCard {
+  /** El pie de la tarjeta (Tarea 149: antes «Juega. Avanza. Sube de liga.», y las ligas quedaron fuera de la v1). */
+  const val FOOTER = "Juega. Avanza. Cada día un poco."
+
+  /** El archivo que se comparte (antes `neurovida-liga.png`: nombre viejo de la app y de la liga). */
+  const val FILE_NAME = "nubi-medalla.png"
+
   data class Content(
     val headline: String,       // "Subí a Plata" / "Estoy en liga Oro" / "Una semana"
     val subtitle: String,       // "en Secuencia Lumínica" / "Mi liga general" / descripción del logro
@@ -94,7 +100,7 @@ object ShareCard {
     val uri = withContext(Dispatchers.Default) {
       val bitmap = render(context, content)
       val dir = File(context.cacheDir, "share").apply { mkdirs() }
-      val file = File(dir, "neurovida-liga.png")
+      val file = File(dir, FILE_NAME)
       file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
       FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
     }
@@ -202,7 +208,7 @@ object ShareCard {
 
     // Pie
     val foot = TextStyle(fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 40.sp, color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Center)
-    centered(measurer, "Juega. Avanza. Sube de liga.", foot, h - 170f)
+    centered(measurer, FOOTER, foot, h - 170f)
   }
 
   /** Texto centrado a todo el ancho (con márgenes); devuelve la coordenada Y de su borde inferior. */
