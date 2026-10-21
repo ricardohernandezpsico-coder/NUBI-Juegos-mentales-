@@ -34,7 +34,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -103,12 +102,12 @@ fun ClayButton(
 
 /** Pastilla de plasticina (losa chica de 14 dp; rachas, etiquetas, contadores). No es tocable: solo informa. */
 @Composable
-fun ClayPill(text: String, modifier: Modifier = Modifier, color: Color = Clay.Sun, textColor: Color = Clay.Ink, icon: ImageVector? = null, compact: Boolean = false) {
+fun ClayPill(text: String, modifier: Modifier = Modifier, color: Color = Clay.Sun, textColor: Color = Clay.Ink, leading: (@Composable () -> Unit)? = null, compact: Boolean = false) {
   ClaySlab(slabColorFor(color), modifier, SlabSize.SMALL) {
     Row(Modifier.heightIn(min = if (compact) 30.dp else 36.dp).padding(horizontal = if (compact) 10.dp else 14.dp, vertical = if (compact) 2.dp else 6.dp), verticalAlignment = Alignment.CenterVertically) {
-      if (icon != null) {
-        Icon(icon, contentDescription = null, tint = textColor, modifier = Modifier.size(16.dp))
-        Spacer(Modifier.width(4.dp))
+      if (leading != null) {
+        leading()
+        Spacer(Modifier.width(6.dp))
       }
       Text(text, color = textColor, fontSize = 16.sp, fontWeight = FontWeight.Bold)
     }

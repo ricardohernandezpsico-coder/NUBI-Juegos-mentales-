@@ -2,11 +2,10 @@
 """Hoja «hoy | propuesta» de la Tarea 148 (21-oct-2026; `auditoria-fable/propuestas-diseno-visual.md`: P1 Nubi viva, P3 una sola sombra y el tamaño de Nubi en los tutoriales, P4 lo que quedaba de otra época y P9 la cuenta regresiva con el mismo kit).
 CAPTURAS REALES: las de la app salen de Roborazzi (`AppActualScreenshotTest`, `AchievementOverlayScreenshotTest` y `NubiIdleScreenshotTest`; «HOY» = el commit `4097255`, la Tarea 153, por `git show`) y las de Unity de
 `bash tools/verificar-todo.sh --capturas Stroop,Bodega,Meteoros` (el «HOY» de Unity son las tomas del último recorrido, guardadas aparte en la carpeta que se pasa como `--hoy-unity`).
-La gota-llama de la racha es una COMPOSICIÓN: el render real de Blender (`kit_avance.py`, `llama_encendida` y `llama_apagada`) pegado sobre las capturas de hoy; todavía NO está en la app (se integra con el OK de la hoja).
+La gota-llama de la racha (render de Blender, `kit_avance.py`) ya está en la app: las capturas son las reales.
 Uso:  python -I tools/previews/tarea_148.py [--hoy-unity CARPETA]      → docs/previews/tarea-148.png
 """
 import glob, io, os, subprocess, sys
-import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 sys.stdout.reconfigure(encoding='utf-8')
@@ -15,7 +14,6 @@ PREV = os.path.join(ROOT, 'docs', 'previews'); OUT = os.path.join(PREV, 'tarea-1
 FONTS = os.path.join(ROOT, 'app', 'src', 'main', 'res', 'font')
 SHOTS = os.path.join(ROOT, 'app', 'src', 'test', 'screenshots')
 UNITY_SHOTS = os.path.join(ROOT, 'unity', 'test-results', 'capturas')
-LLAMAS = os.path.join(ROOT, 'tools', 'isla', 'out', 'kit-avance-llama')
 BEFORE_COMMIT = '4097255'
 args = sys.argv[1:]
 HOY_UNITY = args[args.index('--hoy-unity') + 1] if '--hoy-unity' in args else os.path.join(os.environ.get('TEMP', '.'), 'capturas-hoy')
@@ -100,26 +98,6 @@ class Sheet:
         return sheet
 
 
-def pega_llama(base, caja, centro_dp, tam_dp, encendida, px_dp=3.0, muestra=None):
-    """Borra el ícono de Material (un parche liso del color del fondo de `caja`) y pega la gota de plasticina (el render real) centrada en `centro` (px de la captura)."""
-    im = base.copy(); x0, y0, x1, y1 = caja
-    fondo = np.asarray(im.crop(muestra or (x0 - 6, y0, x0 - 2, y1))).reshape(-1, 3).mean(axis=0).astype(int)      # el fondo justo a la izquierda del ícono (o de la zona de muestra)
-    ImageDraw.Draw(im).rectangle(caja, fill=tuple(int(v) for v in fondo))
-    llama = Image.open(os.path.join(LLAMAS, 'kit_pz_llama_%s.png' % ('encendida' if encendida else 'apagada'))).convert('RGBA')
-    lado = round(tam_dp * px_dp * (32.0 / 26.0))                         # la pieza es de 32 dp con la gota de 19 × 26 dp: «tam_dp» es el ALTO de la gota, su lienzo mide 32/26 de eso
-    llama = llama.resize((lado, lado), Image.LANCZOS)
-    im.paste(llama, (round(centro_dp[0] - lado / 2), round(centro_dp[1] - lado / 2)), llama)
-    return im
-
-
-def pastilla_crema(im, caja):
-    """Aproximación para la hoja: la pastilla sol de Avance pasa a crema (se baja la saturación de los píxeles amarillos de la caja; las sombras y el brillo de la plasticina quedan)."""
-    im = im.copy(); parte = im.crop(caja).convert('HSV'); a = np.asarray(parte).astype(float)
-    amarillo = (a[..., 0] > 20) & (a[..., 0] < 50) & (a[..., 1] > 90)
-    a[..., 1] = np.where(amarillo, a[..., 1] * 0.22, a[..., 1]); a[..., 2] = np.where(amarillo, np.minimum(255, a[..., 2] * 1.03), a[..., 2])
-    im.paste(Image.fromarray(a.astype('uint8'), 'HSV').convert('RGB'), caja[:2]); return im
-
-
 def main():
     W = 6 * 300 + 5 * GAP                                      # ancho de la hoja (seis tomas de teléfono de 300 px)
     S = Sheet(W + 2 * MARGIN)
@@ -156,23 +134,15 @@ def main():
     S.row(tiles)
     S.row([(fit(hoy_app(cifras[1]), 560, cifras[2]), 'HOY · Perfil: sol, cielo y lima', DIM), (fit(nuevo_app(cifras[1]), 560, cifras[2]), 'PROPUESTA · las tres en crema', LIME)])
 
-    # ---------------------------------------------------------------- la gota-llama (propuesta: composición con el render real)
-    S.section('La llama de la racha: una GOTA de plasticina en vez del ícono de Material (propuesta, sin integrar)',
-              'Hoy el ícono `Whatshot` de Material (una llama con varias puntas: la regla de símbolos pide gotas y luceros, nada con puntas) aparece en Hoy, Avance, el Perfil y el resumen de la ruta. La gota es un símbolo aprobado (`docs/simbolos-neutros.md`): '
-              'encendida = sol con una gota clara por dentro; apagada = crema lisa (racha en 0). Es el render real de Blender (`kit_avance.py`) pegado sobre las capturas de hoy; si la apruebas, se integra con `KitGlyph`-like (`kit_llama_on` y `kit_llama_off`) y una prueba que impide volver a un `Icons.` de Material en `ui/`.')
-    hoyimg = hoy_app('hoy-isla-10'); perfimg = hoy_app('perfil'); perfnuevo = nuevo_app('perfil')
+    # ---------------------------------------------------------------- la gota-llama (integrada: capturas reales)
+    S.section('La llama de la racha: una GOTA de plasticina en vez del ícono de Material (aprobada; capturas reales de la app)',
+              'El ícono `Whatshot` de Material (una llama con varias puntas: la regla de símbolos pide gotas y luceros, nada con puntas) se iba en Hoy, Avance, el Perfil y el resumen de la ruta. Ahora es una GOTA de plasticina (render de Blender, `kit_avance.py`): '
+              'encendida = sol con una gota clara por dentro (racha viva); apagada = crema lisa (racha en 0, solo en el Perfil). En Avance la pastilla pasa a crema porque una gota sol no se vería sobre una pastilla sol. `MaterialIconsSweepTest` impide volver a un ícono de Material.')
     fila = (300, 355, 1080, 455)                                       # la fila de las farolas y «7 días»
-    a = pega_llama(hoyimg, (782, 388, 836, 436), (803, 412), 16, True)
-    a2 = pega_llama(hoyimg, (782, 388, 836, 436), (803, 412), 16, False)
-    b = pega_llama(perfnuevo, (166, 1100, 226, 1164), (190, 1131), 21, True)
-    S.row([(fit(hoyimg, 920, fila), 'HOY · Hoy: el ícono Whatshot de Material', DIM), (fit(a, 920, fila), 'PROPUESTA · gota encendida (sol)', LIME)])
-    S.row([(fit(a2, 920, fila), 'ALTERNATIVA · gota crema también en Hoy (un solo sol, P7)', LIME)])
-    S.row([(fit(perfimg, 920, (60, 1090, 1020, 1200)), 'HOY · Perfil (Whatshot en sol)', DIM), (fit(b, 920, (60, 1090, 1020, 1200)), 'PROPUESTA · cifras en crema y gota encendida', LIME)])
-    avimg = hoy_app('avance')
-    pastilla = (60, 735, 480, 845)
-    c = pega_llama(pastilla_crema(avimg, pastilla), (92, 760, 156, 824), (123, 790), 20, True, muestra=(108, 743, 140, 753))
+    S.row([(fit(hoy_app('hoy-isla-10'), 920, fila), 'HOY · Hoy: el ícono Whatshot de Material', DIM), (fit(nuevo_app('hoy-isla-10'), 920, fila), 'PROPUESTA · gota encendida (16 dp; «7 días» sigue en crema)', LIME)])
+    S.row([(fit(hoy_app('perfil'), 920, (60, 1090, 1020, 1200)), 'HOY · Perfil (Whatshot en sol)', DIM), (fit(nuevo_app('perfil'), 920, (60, 1090, 1020, 1200)), 'PROPUESTA · cifras en crema y gota encendida', LIME)])
     fila_av = (40, 700, 560, 880)
-    S.row([(fit(avimg, 920, fila_av), 'HOY · Avance: pastilla sol con el ícono de Material', DIM), (fit(c, 920, fila_av), 'PROPUESTA · pastilla crema + gota encendida (sobre sol no se vería; pastilla aproximada)', LIME)])
+    S.row([(fit(hoy_app('avance'), 920, fila_av), 'HOY · Avance: pastilla sol con el ícono de Material', DIM), (fit(nuevo_app('avance'), 920, fila_av), 'PROPUESTA · pastilla crema con la gota encendida', LIME)])
 
     # ---------------------------------------------------------------- P9 y P3 en Unity: la cuenta regresiva y Nubi de los tutoriales (capturas reales)
     S.section('P9 · La cuenta regresiva con el mismo kit (Unity, capturas reales a 1080 × 2400)',
@@ -182,7 +152,7 @@ def main():
         hoy_c = unity(HOY_UNITY, game, 'cuenta'); n3 = unity_first(UNITY_SHOTS, game, 'cuenta-3'); n2 = unity_first(UNITY_SHOTS, game, 'cuenta'); n1 = unity_first(UNITY_SHOTS, game, 'cuenta-1')
         tiles = []
         for im, tag, col in ((hoy_c, 'HOY · ' + nombre, DIM), (n3, 'PROPUESTA · 3', LIME), (n2, '2', LIME), (n1, '1', LIME)):
-            if im is not None: tiles.append((fit(im, 290, (0, 100, 1080, 2250)), tag, col))
+            if im is not None: tiles.append((fit(im, 440, (0, 330, 1080, 2150)), tag, col))
         if tiles: S.row(tiles)
     S.section('P3 · Nubi en los tutoriales de Unity: 120 dp preferido, 60 dp mínimo (antes 100 a 50), con su sombra fija',
               'La Nubi de los tutoriales mide hasta 120 dp (antes 100) y nunca baja de 60 dp (antes 50: la cara se lee hasta unos 56 dp); flota y parpadea como la de la app, con UNA sombra en el suelo que no flota con ella.')

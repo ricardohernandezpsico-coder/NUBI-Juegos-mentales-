@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -55,7 +53,8 @@ fun HoyWeek(lamps: Week.Lamps, streak: Int, streakNote: String? = null, lampSize
       }
       // un solo sol en Hoy (P7): la racha va en crema (OnNight), no en sol; el sol queda para el botón grande y la piedrita «Sigue»
       Row(Modifier.heightIn(min = HOY_LAMP_BOX), verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Default.Whatshot, contentDescription = null, tint = NubiTokens.OnNight, modifier = Modifier.size(18.dp))
+        KitLlama(lit = streak > 0, size = 16.dp)
+        Spacer(Modifier.width(6.dp))
         OnBoardText(
           if (streak == 1) "1 día" else "$streak días", color = NubiTokens.OnNight, fontSize = 16.sp, fontWeight = FontWeight.Bold,
           modifier = Modifier.testTag("streak_pill")

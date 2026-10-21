@@ -2,7 +2,7 @@
 """Lleva las piezas del kit para Avance y Juegos (Tarea 124, renders de `isla.py --kit --kit-solo avance`) a la app (Tarea 125):
    - `app/src/main/res/drawable-nodpi/kit_<nombre>.webp` (a 3 px por dp, sin que Android los reescale; WebP calidad 92 con alfa) con la bruma del «shadow catcher» recortada, igual que `kit.py`;
    - `app/src/main/res/raw/kit_avance.json`: por pieza la imagen, los márgenes (donde cae la sombra), el cuerpo medido en la imagen y, en el canal y el churro (nine-slice horizontal), los insets; en las medallas, la placa del número.
-Los nombres de la app: kit_canal_<crema|cielo>, kit_churro_<sol|lima>, kit_emb_<juego>, kit_farola_<off|on>, kit_pedestal, kit_cola_<izq|der>, kit_med_<constancia|variedad|volver>[_off], kit_escudo_<liga>, kit_edif_<área> (los edificios de la isla, con `pie_dp`).
+Los nombres de la app: kit_canal_<crema|cielo>, kit_churro_<sol|lima>, kit_emb_<juego>, kit_farola_<off|on>, kit_llama_<off|on>, kit_pedestal, kit_cola_<izq|der>, kit_med_<constancia|variedad|volver>[_off], kit_escudo_<liga>, kit_edif_<área> (los edificios de la isla, con `pie_dp`).
 Uso:  python -I tools/isla/kit_avance_app.py [carpeta_de_renders]      (por defecto tools/isla/out/kit-avance)
 `AvanceKitTest` mide que cada WebP tenga el tamaño que dice el JSON y que no sobre ni falte ninguno."""
 import os, sys, json
@@ -20,7 +20,7 @@ LIGAS = ('bronce', 'plata', 'oro', 'platino', 'esmeralda', 'diamante', 'maestro'
 
 # nombre de la app → render de Blender
 MAPA = {'canal_crema': 'canal_crema', 'canal_cielo': 'canal_cielo', 'churro_sol': 'churro_sol', 'churro_lima': 'churro_lima',
-        'farola_off': 'farola_apagada', 'farola_on': 'farola_encendida', 'pedestal': 'pedestal', 'cola_izq': 'cola_izquierda', 'cola_der': 'cola_derecha'}
+        'farola_off': 'farola_apagada', 'farola_on': 'farola_encendida', 'llama_on': 'llama_encendida', 'llama_off': 'llama_apagada', 'pedestal': 'pedestal', 'cola_izq': 'cola_izquierda', 'cola_der': 'cola_derecha'}
 for j in JUEGOS: MAPA['emb_' + j] = 'emblema_' + j
 for f in FAMILIAS: MAPA['med_' + f] = 'medalla_%s_conseguida' % f; MAPA['med_%s_off' % f] = 'medalla_%s_bloqueada' % f
 for l in LIGAS: MAPA['escudo_' + l] = 'escudo_' + l

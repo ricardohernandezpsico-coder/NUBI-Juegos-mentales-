@@ -33,7 +33,7 @@ class AvanceKitTest {
   private val families = listOf("constancia", "variedad", "volver")
 
   private val expected: Set<String> = buildSet {
-    addAll(listOf("canal_crema", "canal_cielo", "churro_sol", "churro_lima", "farola_off", "farola_on", "pedestal", "cola_izq", "cola_der"))
+    addAll(listOf("canal_crema", "canal_cielo", "churro_sol", "churro_lima", "farola_off", "farola_on", "llama_off", "llama_on", "pedestal", "cola_izq", "cola_der"))
     games.forEach { add("emb_$it") }
     families.forEach { add("med_$it"); add("med_${it}_off") }
     RankTier.entries.forEach { add("escudo_" + it.name.lowercase()) }

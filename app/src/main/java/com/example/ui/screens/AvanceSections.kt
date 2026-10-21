@@ -17,8 +17,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -98,7 +96,7 @@ internal fun AvanceWeek(summary: WeekSummary, lamps: Week.Lamps, streakNote: Str
     OnBoardText(summary.rest.trim(), color = OnNightDim, fontSize = 16.sp, lineHeight = 21.sp)
     if (summary.streakPill != null) {
       Spacer(Modifier.height(10.dp))
-      ClayPill(summary.streakPill, Modifier.testTag("avance_streak_pill"), color = Clay.Sun, icon = Icons.Default.Whatshot)
+      ClayPill(summary.streakPill, Modifier.testTag("avance_streak_pill"), color = Clay.Cream, leading = { com.example.ui.components.KitLlama(lit = true, size = 20.dp) })       // crema: una gota sol no se vería sobre una pastilla sol
       // Si Nubi ya comenta el descanso («Descansaste el viernes y seguiste: eso es constancia.»), la línea suelta con lo mismo sobra (Tarea 143, B2)
       if (!nubiLine.startsWith("Descansaste")) OnBoardText(streakNote, color = OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 4.dp).testTag("streak_note"))
     }

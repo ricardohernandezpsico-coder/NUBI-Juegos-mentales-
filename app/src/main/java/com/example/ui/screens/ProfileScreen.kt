@@ -22,10 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -304,7 +300,10 @@ private fun AchievementDetailDialog(def: AchievementDef, unlockedAt: Long?, stat
 private fun StatText(label: String, value: String, color: Color, modifier: Modifier, fire: Boolean = false) {
   Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-      if (fire) Icon(Icons.Default.Whatshot, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
+      if (fire) {
+        com.example.ui.components.KitLlama(lit = (value.toIntOrNull() ?: 0) > 0, size = 22.dp)
+        Spacer(Modifier.width(6.dp))
+      }
       com.example.ui.components.OnBoardText(value, color = color, fontSize = 34.sp, fontWeight = FontWeight.Bold)
     }
     com.example.ui.components.OnBoardText(label, color = com.example.ui.theme.NubiTokens.OnNightDim, fontSize = 16.sp)

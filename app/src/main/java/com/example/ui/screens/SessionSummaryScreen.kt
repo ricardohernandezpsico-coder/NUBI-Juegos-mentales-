@@ -12,8 +12,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -71,7 +69,7 @@ fun SessionSummaryScreen(
         color = OnNightDim, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 4.dp)
       )
       if (streak > 0) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 10.dp)) {
-        Icon(Icons.Default.Whatshot, contentDescription = null, tint = Clay.Sun, modifier = Modifier.size(20.dp))
+        com.example.ui.components.KitLlama(lit = true, size = 20.dp)
         Spacer(Modifier.width(6.dp))
         Text(if (streak == 1) "Racha: 1 día" else "Racha: $streak días", color = Clay.Sun, fontSize = 16.sp, fontWeight = FontWeight.Bold)
       }

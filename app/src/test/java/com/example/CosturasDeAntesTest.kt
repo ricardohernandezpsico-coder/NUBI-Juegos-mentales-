@@ -58,9 +58,15 @@ class CosturasDeAntesTest {
     assertTrue(overlay.contains("if (medalState != null) FamilyMedal(medalState, MEDAL_HEIGHT)\n          else AchievementMedal("))
     // todo logro que SE OTORGA tiene familia: la celebración nunca cae en el respaldo
     assertTrue("todos los logros que se otorgan tienen familia", Achievements.all.all { it.family != null })
-    // y se conservan lo que siempre tuvo: título «Medalla nueva», los rayos y la luz, el sonido de la pieza
-    for (kept in listOf("\"Medalla nueva\"", "drawGlint(", "Brush.radialGradient", "IslaPiezas.forAchievement", "NewPieceSound.play"))
+    // y se conservan lo que siempre tuvo: título «Medalla nueva», la luz, el sonido de la pieza
+    for (kept in listOf("\"Medalla nueva\"", "Brush.radialGradient", "IslaPiezas.forAchievement", "NewPieceSound.play"))
       assertTrue("la celebración conserva $kept", overlay.contains(kept))
+    // Tarea 148 (P4): sin el abanico de rayos vectoriales que giraba ni los destellos con puntas: un halo sol suave y seis luceros redondos que suben; el título en sol con el contorno de las pestañas
+    assertTrue("el halo sol", overlay.contains("Clay.Sun.copy(alpha = 0.5f * a)"))
+    assertTrue("seis luceros redondos", overlay.contains("sparks.take(6)") && overlay.contains("drawCircle(sparkColors"))
+    assertTrue("el título en sol con el contorno de los títulos de las pestañas", overlay.contains("OnBoardText(def.title, color = Clay.Sun"))
+    for (gone in listOf("drawGlint(", "val spin", "rotate("))
+      assertTrue("la celebración ya no usa $gone (rayos que giran, destellos con puntas)", !overlay.contains(gone))
   }
 
   @Test

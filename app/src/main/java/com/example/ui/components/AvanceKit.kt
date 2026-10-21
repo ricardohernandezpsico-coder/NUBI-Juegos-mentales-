@@ -111,6 +111,15 @@ internal fun GameEmblem(gameId: String, size: Dp, modifier: Modifier = Modifier,
 }
 
 /**
+ * La llama de la racha (Tarea 148, P4; reemplaza al ícono `Whatshot` de Material): una GOTA de plasticina con la punta arriba (la gota es símbolo aprobado, `docs/simbolos-neutros.md`). [lit] = encendida (sol, con una gota clara por dentro; la racha está viva)
+ * o apagada (crema lisa; racha en 0). [size] = el ALTO de la gota en dp. Decorativa: el texto de al lado (o el rótulo) dice la racha.
+ */
+@Composable
+internal fun KitLlama(lit: Boolean, size: Dp, modifier: Modifier = Modifier) {
+  KitPieceImage(if (lit) "llama_on" else "llama_off", if (lit) R.drawable.kit_llama_on else R.drawable.kit_llama_off, modifier, height = size)
+}
+
+/**
  * La barra de avance de un área con el canal y el churro del kit: el churro (sol sobre la tarjeta crema, lima sobre el cielo) llega hasta [value]. UNA sola barra, sin pomo (Tarea 147, P6: la bolita se leía como el pomo de un control deslizante, y en una app para 60+ todo lo que
  * parece control invita a arrastrar): lo que cambió esta semana se dibuja como un TRAMO del mismo churro, más claro, «lo que se sumó» —el churro de hace una semana va a todo color y el tramo nuevo, a media tinta— y lo que bajó, como un tramo punteado más allá de la punta
  * (una forma distinta para cada caso, no solo un color). Sin medir ([value] nulo) solo se ve el canal.
