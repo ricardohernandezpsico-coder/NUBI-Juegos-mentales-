@@ -9,7 +9,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeUp
@@ -69,7 +73,7 @@ class AterrizajeResultScreenshotTest {
 
   @Test
   fun final_de_aterrizaje_primera_partida() {
-    // sin partidas anteriores: «Juega otra vez para ver tu avance.»; lectura pareja y ninguna cúpula todavía
+    // sin partidas anteriores: «Primera partida: la próxima te comparas contigo.»; lectura pareja y ninguna cúpula todavía
     show(result(errorPct = 11.2f, given = parejo, hits = 9, bulls = 1, domes = 0, streak = 3), "aterrizaje-final-primera", emptyList(), null)
   }
 
@@ -94,8 +98,15 @@ class AterrizajeResultScreenshotTest {
     // Tarea 73: «13/15 aciertos» repetía lo que el título («13 aterrizajes justos de 15») ya dice; en los juegos con MeaningfulResult la fila deja solo etapa y modo.
     show(result(errorPct = 7.4f, given = parejo, hits = 13, bulls = 3, domes = 2, streak = 6), "aterrizaje-final-mejor", earlier(12f, 10f, 9.5f), com.example.data.Aterrizaje.Totals(domes = 7, best = 2))
     assertEquals(0, composeTestRule.onAllNodesWithText("aciertos").fetchSemanticsNodes().size)
-    assertEquals(1, composeTestRule.onAllNodesWithText("etapa").fetchSemanticsNodes().size)
-    assertEquals(1, composeTestRule.onAllNodesWithText("modo").fetchSemanticsNodes().size)
+    // final «B» (Tarea 146): ni la fila «etapa · modo» (la ficha ya lo dice) ni el título «13 aterrizajes justos de 15» arriba: el título es la primera línea del detalle
+    assertEquals(0, composeTestRule.onAllNodesWithText("etapa").fetchSemanticsNodes().size)
+    assertEquals(0, composeTestRule.onAllNodesWithText("modo").fetchSemanticsNodes().size)
+    assertEquals(0, composeTestRule.onAllNodesWithText("13 aterrizajes justos de 15").fetchSemanticsNodes().size)
+    composeTestRule.onNodeWithTag("detail_toggle").performScrollTo().performClick()
+    composeTestRule.waitForIdle()
     assertEquals(1, composeTestRule.onAllNodesWithText("13 aterrizajes justos de 15").fetchSemanticsNodes().size)
+    // la cifra y la unidad de Aterrizaje no se tocan: aprobadas por Ricardo el 10-oct
+    composeTestRule.onNodeWithTag("result_headline").assertTextEquals("7 % de la regla")
+    composeTestRule.onNodeWithTag("result_unit").assertTextEquals("Como quedar a 7 en una regla de 0 a 100.")
   }
 }

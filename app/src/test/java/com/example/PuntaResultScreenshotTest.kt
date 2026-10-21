@@ -58,7 +58,7 @@ class PuntaResultScreenshotTest {
         }
       }
     }
-    composeTestRule.onNodeWithTag("meaningful_box").assertIsDisplayed()
+    composeTestRule.onNodeWithTag("result_headline").assertIsDisplayed()
     composeTestRule.onNodeWithTag("punta_words").assertDoesNotExist()   // la lista va en el detalle, cerrado por defecto
     composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/punta-final.png")
     openDetail()
@@ -79,7 +79,7 @@ class PuntaResultScreenshotTest {
         }
       }
     }
-    composeTestRule.onNodeWithTag("meaningful_box").assertIsDisplayed()
+    composeTestRule.onNodeWithTag("result_headline").assertIsDisplayed()
     openDetail()
     composeTestRule.onNodeWithTag("punta_words").performScrollTo().assertIsDisplayed()
     composeTestRule.onAllNodes(hasTestTag("punta_blue_note")).assertCountEquals(0)

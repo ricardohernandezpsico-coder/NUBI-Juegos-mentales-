@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -17,11 +20,13 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import com.example.data.FinalesConSentido
 import com.example.data.MeasurePoint
 import com.example.data.PlayMode
 import com.example.model.AgeBand
@@ -32,6 +37,7 @@ import com.example.ui.screens.cardData
 import com.example.ui.theme.NeuroVidaTheme
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import com.github.takahirom.roborazzi.captureRoboImage
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -179,6 +185,40 @@ class GameSheetFitScreenshotTest {
     assertPlayButtonInsideFrame()
     composeTestRule.onNodeWithTag("sheet_change").performScrollTo().assertIsDisplayed()
     composeTestRule.onNodeWithTag("sheet_play").assertIsDisplayed()
+  }
+
+  // ---------- «Qué pones en juego» (final «B», Tarea 146) ----------
+
+  @Test
+  fun los_17_juegos_muestran_que_pones_en_juego_con_su_texto_en_presente_y_su_fuente() {
+    var data by mutableStateOf(rescue())
+    composeTestRule.setContent {
+      NeuroVidaTheme {
+        Box(Modifier.width(commonW.dp).height(commonH.dp).background(Color(0xFF050823)).padding(horizontal = 14.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
+          Box(Modifier.fillMaxWidth()) { GameSheetContent(data, AgeBand.SENIOR, expertOpen = false, choice = PlayMode.A_TU_MEDIDA, onChoose = {}, onPlay = {}, timed = true, onChooseTimed = {}) }
+        }
+      }
+    }
+    assertEquals("los 17 juegos de la app", 17, GameRegistry.allGames.size)
+    for (g in GameRegistry.allGames) {
+      data = cardData(g, g.title, now - day, now, 0.5f, emptyList(), playsLast14 = 2)
+      composeTestRule.waitForIdle()
+      val (text, source) = FinalesConSentido.sheetFor(g.id) ?: error("${g.id}: sin texto para la ficha")
+      composeTestRule.onNodeWithTag("sheet_why").assertExists()
+      assertEquals("${g.id}: «Qué pones en juego» una vez", 1, composeTestRule.onAllNodesWithText("Qué pones en juego").fetchSemanticsNodes().size)
+      assertEquals("${g.id}: el texto en presente", 1, composeTestRule.onAllNodesWithText(text).fetchSemanticsNodes().size)
+      assertTrue("${g.id}: empieza con «Pones en juego»: $text", text.startsWith("Pones en juego"))
+      assertEquals("${g.id}: su fuente", 1, composeTestRule.onAllNodesWithText(source).fetchSemanticsNodes().size)
+      assertTrue("${g.id}: «Fuente: …»: $source", source.startsWith("Fuente: "))
+    }
+  }
+
+  @Test
+  fun la_ficha_con_que_pones_en_juego_sigue_cabiendo_o_hace_scroll_y_el_boton_a_la_vista() {
+    // el texto largo de Rescate más la medida, a 393 × 873 con letra 1,0 y 1,3: «Jugar» a la vista y la tarjeta dentro del marco
+    show(rescue(), commonW, commonH, "ficha-rescate-393x873-que-pones-en-juego")
+    assertPlayButtonInsideFrame()
+    composeTestRule.onNodeWithTag("sheet_why").performScrollTo().assertIsDisplayed()
   }
 
   // ---------- desplegada: las dos secciones como siempre ----------

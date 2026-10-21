@@ -324,7 +324,9 @@ internal fun KitButton(
   secondLine: String? = null,
   secondLineSize: TextUnit = 16.sp,
   /** Lo que dice el lector de pantalla que pasa al tocar («Mostrar opciones»). */
-  onClickLabel: String? = null
+  onClickLabel: String? = null,
+  /** Un dibujo propio a la izquierda del texto (con [glyph] nulo): el emblema del juego que sigue en el final de partida. */
+  leading: (@Composable () -> Unit)? = null
 ) {
   ClaySlab(color, if (wide) modifier.fillMaxWidth() else modifier, onClick = onClick, forcePressed = forcePressed, onClickLabel = onClickLabel) {
     Row(
@@ -333,6 +335,9 @@ internal fun KitButton(
     ) {
       if (glyph != null) {
         KitGlyph(glyph)
+        Spacer(Modifier.width(10.dp))
+      } else if (leading != null) {
+        leading()
         Spacer(Modifier.width(10.dp))
       }
       if (secondLine == null) {

@@ -244,7 +244,7 @@ class AppActualScreenshotTest {
                   Scene.VUELO_3 -> FirstFlightScreen(FlightState(FlightMode.FULL, FlightStep.CAMINO), listOf("bodega", "calculo", "intrusa"), FlightActions.None)
                   Scene.RESULTADO -> GameResultScreen(
                     result = rastro, didLevelUp = false, isDailyFlow = true, dailyCompletedCount = 2, dailyTotalCount = 3,
-                    starMeasures = emptyList(), onPlayAgain = {}, onContinue = {}
+                    starMeasures = emptyList(), onPlayAgain = {}, onContinue = {}, nextGameId = "intrusa", playsBefore = 0
                   )
                   Scene.RESULTADO_CON -> GameResultScreen(
                     result = constelaciones(record = false), didLevelUp = false, isDailyFlow = false, dailyCompletedCount = 0, dailyTotalCount = 3,

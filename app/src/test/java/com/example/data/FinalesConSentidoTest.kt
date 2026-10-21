@@ -91,51 +91,60 @@ class FinalesConSentidoTest {
     assertEquals(78f, p.today!!, 1e-4f)
     assertNull(p.average)
     assertNull(p.best)
-    assertEquals("Juega otra vez para ver tu avance.", p.phrase)
+    assertEquals(FinalesConSentido.PHRASE_FIRST, p.phrase)
+    assertEquals("Primera partida: la próxima te comparas contigo.", FinalesConSentido.phraseWith(p, FinalesConSentido::percentText))
     val q = FinalesConSentido.progress(null, listOf(60f, 70f), tol)
     assertNull(q.today)
-    assertEquals("Juega otra vez para ver tu avance.", q.phrase)
+    assertEquals(FinalesConSentido.PHRASE_FIRST, q.phrase)
+    assertEquals("sin medida hoy no hay frase", "", FinalesConSentido.phraseWith(q, FinalesConSentido::percentText))
   }
 
   @Test
   fun `mejor que tu mejor anterior es tu mejor partida, aunque sea por poco`() {
     val p = FinalesConSentido.progress(81f, listOf(60f, 80f, 70f), tol)
-    assertEquals("¡Tu mejor partida hasta ahora!", p.phrase)
+    assertEquals(FinalesConSentido.PHRASE_BEST, p.phrase)
+    assertEquals("¡Tu mejor hasta ahora! Tu promedio: 70 %.", FinalesConSentido.phraseWith(p, FinalesConSentido::percentText))
     assertEquals("el promedio sale de las ANTERIORES", 70f, p.average!!, 1e-4f)
     assertEquals("tu mejor incluye hoy", 81f, p.best!!, 1e-4f)
     // empatar la mejor NO es superarla
-    assertEquals("Hoy te fue mejor que tu promedio.", FinalesConSentido.progress(80f, listOf(60f, 80f, 70f), tol).phrase)
+    assertEquals(FinalesConSentido.PHRASE_BETTER, FinalesConSentido.progress(80f, listOf(60f, 80f, 70f), tol).phrase)
   }
 
   @Test
   fun `mejor, parejo o por debajo del promedio segun la tolerancia`() {
     val prev = listOf(60f, 80f, 70f, 90f)                 // promedio 75, mejor 90
-    assertEquals("Hoy te fue mejor que tu promedio.", FinalesConSentido.progress(85f, prev, tol).phrase)
-    assertEquals("Cerca de tu promedio: vas parejo.", FinalesConSentido.progress(79f, prev, tol).phrase)
-    assertEquals("la tolerancia es de 5 puntos alrededor del promedio, en los dos lados", "Cerca de tu promedio: vas parejo.", FinalesConSentido.progress(80f, prev, tol).phrase)
-    assertEquals("Cerca de tu promedio: vas parejo.", FinalesConSentido.progress(70f, prev, tol).phrase)
-    assertEquals("Un poco por debajo de tu promedio: es normal que varíe.", FinalesConSentido.progress(69f, prev, tol).phrase)
+    assertEquals(FinalesConSentido.PHRASE_BETTER, FinalesConSentido.progress(85f, prev, tol).phrase)
+    assertEquals(FinalesConSentido.PHRASE_EVEN, FinalesConSentido.progress(79f, prev, tol).phrase)
+    assertEquals("la tolerancia es de 5 puntos alrededor del promedio, en los dos lados", FinalesConSentido.PHRASE_EVEN, FinalesConSentido.progress(80f, prev, tol).phrase)
+    assertEquals(FinalesConSentido.PHRASE_EVEN, FinalesConSentido.progress(70f, prev, tol).phrase)
+    assertEquals(FinalesConSentido.PHRASE_BELOW, FinalesConSentido.progress(69f, prev, tol).phrase)
     assertEquals(90f, FinalesConSentido.progress(69f, prev, tol).best!!, 1e-4f)
   }
 
   @Test
   fun `el rastro tiene media luz de tolerancia`() {
     val prev = listOf(4f, 5f, 4f, 5f, 4f)                // promedio 4,4 y mejor 5
-    assertEquals("Cerca de tu promedio: vas parejo.", FinalesConSentido.progress(4f, prev, 0.5f).phrase)         // 0,4 por debajo: parejo
-    assertEquals("Hoy te fue mejor que tu promedio.", FinalesConSentido.progress(5f, prev, 0.5f).phrase)          // 0,6 por encima, sin superar tu mejor (5)
-    assertEquals("¡Tu mejor partida hasta ahora!", FinalesConSentido.progress(6f, prev, 0.5f).phrase)
-    assertEquals("Un poco por debajo de tu promedio: es normal que varíe.", FinalesConSentido.progress(3f, prev, 0.5f).phrase)
-    assertEquals("Cerca de tu promedio: vas parejo.", FinalesConSentido.progress(5f, listOf(5f, 5f, 5f, 4f, 5f), 0.5f).phrase)   // promedio 4,8
+    assertEquals(FinalesConSentido.PHRASE_EVEN, FinalesConSentido.progress(4f, prev, 0.5f).phrase)         // 0,4 por debajo: parejo
+    assertEquals(FinalesConSentido.PHRASE_BETTER, FinalesConSentido.progress(5f, prev, 0.5f).phrase)          // 0,6 por encima, sin superar tu mejor (5)
+    assertEquals(FinalesConSentido.PHRASE_BEST, FinalesConSentido.progress(6f, prev, 0.5f).phrase)
+    assertEquals(FinalesConSentido.PHRASE_BELOW, FinalesConSentido.progress(3f, prev, 0.5f).phrase)
+    assertEquals(FinalesConSentido.PHRASE_EVEN, FinalesConSentido.progress(5f, listOf(5f, 5f, 5f, 4f, 5f), 0.5f).phrase)   // promedio 4,8
+    // con los números adentro, en luces
+    assertEquals("Mejor que tu promedio (4 luces). Tu mejor: 5 luces.", FinalesConSentido.phraseWith(FinalesConSentido.progress(5f, prev, 0.5f), FinalesConSentido::lightsText))
+    assertEquals("Como tu promedio (4 luces): vas parejo. Tu mejor: 5 luces.", FinalesConSentido.phraseWith(FinalesConSentido.progress(4f, prev, 0.5f), FinalesConSentido::lightsText))
+    assertEquals("Un poco bajo tu promedio (4 luces): es normal que varíe.", FinalesConSentido.phraseWith(FinalesConSentido.progress(3f, prev, 0.5f), FinalesConSentido::lightsText))
   }
 
   @Test
   fun `si menos es mejor el sentido se invierte`() {
     val prev = listOf(300f, 280f, 320f)                  // promedio 300, mejor (más bajo) 280
-    assertEquals("¡Tu mejor partida hasta ahora!", FinalesConSentido.progress(250f, prev, 10f, lowerIsBetter = true).phrase)
+    assertEquals(FinalesConSentido.PHRASE_BEST, FinalesConSentido.progress(250f, prev, 10f, lowerIsBetter = true).phrase)
     assertEquals(250f, FinalesConSentido.progress(250f, prev, 10f, lowerIsBetter = true).best!!, 1e-4f)
-    assertEquals("Hoy te fue mejor que tu promedio.", FinalesConSentido.progress(285f, prev, 10f, lowerIsBetter = true).phrase)
-    assertEquals("Cerca de tu promedio: vas parejo.", FinalesConSentido.progress(305f, prev, 10f, lowerIsBetter = true).phrase)
-    assertEquals("Un poco por debajo de tu promedio: es normal que varíe.", FinalesConSentido.progress(330f, prev, 10f, lowerIsBetter = true).phrase)
+    assertEquals(FinalesConSentido.PHRASE_BETTER, FinalesConSentido.progress(285f, prev, 10f, lowerIsBetter = true).phrase)
+    assertEquals(FinalesConSentido.PHRASE_EVEN, FinalesConSentido.progress(305f, prev, 10f, lowerIsBetter = true).phrase)
+    assertEquals(FinalesConSentido.PHRASE_BELOW, FinalesConSentido.progress(330f, prev, 10f, lowerIsBetter = true).phrase)
+    // con los números adentro, en milisegundos (menos es mejor)
+    assertEquals("Mejor que tu promedio (300 ms). Tu mejor: 280 ms.", FinalesConSentido.phraseWith(FinalesConSentido.progress(285f, prev, 10f, lowerIsBetter = true), FinalesConSentido::msText))
   }
 
   @Test
@@ -163,6 +172,86 @@ class FinalesConSentidoTest {
     assertEquals("1 luz", FinalesConSentido.lightsText(1f))
     assertEquals("5 luces", FinalesConSentido.lightsText(4.6f))
     assertEquals("—", FinalesConSentido.lightsText(null))
+    assertEquals("2,6 satélites", FinalesConSentido.satellitesText(2.6f))
+    assertEquals("—", FinalesConSentido.satellitesText(null))
+    assertEquals("142 por minuto", FinalesConSentido.ppmText(141.6f))
+    assertEquals("—", FinalesConSentido.ppmText(null))
+  }
+
+  @Test
+  fun `las cinco frases con los numeros adentro, para una medida en porcentaje, una en luces, una de menos-es-mejor y la zona del freno`() {
+    val pct = FinalesConSentido::percentText
+    val prev = listOf(60f, 80f, 70f, 90f)                 // promedio 75, mejor 90
+    assertEquals("Primera partida: la próxima te comparas contigo.", FinalesConSentido.phraseWith(FinalesConSentido.progress(78f, emptyList(), 5f), pct))
+    assertEquals("Mejor que tu promedio (75 %). Tu mejor: 90 %.", FinalesConSentido.phraseWith(FinalesConSentido.progress(85f, prev, 5f), pct))
+    assertEquals("Como tu promedio (75 %): vas parejo. Tu mejor: 90 %.", FinalesConSentido.phraseWith(FinalesConSentido.progress(79f, prev, 5f), pct))
+    assertEquals("Un poco bajo tu promedio (75 %): es normal que varíe.", FinalesConSentido.phraseWith(FinalesConSentido.progress(69f, prev, 5f), pct))
+    assertEquals("¡Tu mejor hasta ahora! Tu promedio: 75 %.", FinalesConSentido.phraseWith(FinalesConSentido.progress(95f, prev, 5f), pct))
+    // la zona del freno (menos milisegundos es mejor)
+    val zone: (Float?) -> String = { v -> if (v == null) "—" else "zona " + Brake.zone(v).label }
+    assertEquals("Como tu promedio (zona firme): vas parejo. Tu mejor: zona firme.", FinalesConSentido.phraseWith(FinalesConSentido.progress(245f, listOf(260f, 250f, 240f, 270f), 20f, lowerIsBetter = true), zone))
+    // el récord con su sello propio se dice una sola vez (arriba): la frase usa la comparación con el promedio
+    assertEquals("Mejor que tu promedio (75 %). Tu mejor: 95 %.", FinalesConSentido.phraseWith(FinalesConSentido.progress(95f, prev, 5f, avoidBest = true), pct))
+  }
+
+  @Test
+  fun `ninguna frase, unidad ni texto de la ficha toca el vocabulario de la culpa`() {
+    val rendered = listOf(
+      FinalesConSentido.PHRASE_FIRST, FinalesConSentido.PHRASE_BEST, FinalesConSentido.PHRASE_BETTER, FinalesConSentido.PHRASE_BELOW, FinalesConSentido.PHRASE_EVEN
+    ).map { it.replace("{promedio}", "4 luces").replace("{mejor}", "5 luces") }
+    for (t in rendered) {
+      assertEquals(t, null, com.example.NoLossGuard.hit(t, com.example.NoLossGuard.literals))
+      assertEquals(t, null, com.example.NoLossGuard.hit(t, com.example.NoLossGuard.reminderRoots))
+    }
+    // los textos de la ficha («Qué pones en juego») de los 17. «rápido» queda fuera de las raíces: en la ficha de ¿Verdad o disparate? DESCRIBE lo que se pone en juego («Comprender frases rápido y decidir si son ciertas», aprobado el 10-oct), no apura a nadie
+    val roots = com.example.NoLossGuard.reminderRoots - "rápido"
+    for (id in FinalesConSentido.gameIds + "aterrizaje") {
+      val (text, source) = FinalesConSentido.sheetFor(id)!!
+      for (t in listOf(text, source)) {
+        assertEquals("$id: «$t»", null, com.example.NoLossGuard.hit(t, com.example.NoLossGuard.literals))
+        assertEquals("$id: «$t»", null, com.example.NoLossGuard.hit(t, roots))
+      }
+    }
+  }
+
+  @Test
+  fun `el texto de la ficha va en presente con las dos reglas, infinitivo y sustantivo, y trae su fuente (los 17)`() {
+    assertEquals(
+      "Pones en juego la memoria de trabajo: sostener un orden en la cabeza mientras lo usas. La usamos para comprender, razonar y aprender: guarda por un rato lo que necesitamos mientras lo usamos.",
+      FinalesConSentido.copy("secuencia")!!.sheetText
+    )
+    assertEquals(
+      "Pones en juego lo que usas para recordar dónde guardaste cada cosa. Recordar dónde están las cosas es esencial en el día a día, y une tres piezas: la cosa, el lugar y el lazo entre las dos.",
+      FinalesConSentido.copy("bodega")!!.sheetText
+    )
+    for (id in FinalesConSentido.gameIds) {
+      val c = FinalesConSentido.copy(id)!!
+      val prefix = if (FinalesConSentido.startsWithInfinitive(c.put)) "Pones en juego lo que usas para " else "Pones en juego "
+      assertTrue("$id: ${c.sheetText}", c.sheetText.startsWith(prefix + c.put.first().lowercase() + c.put.drop(1)) && c.sheetText.endsWith(" " + c.why))
+      assertEquals("$id: lo mismo que el final, pero en presente", c.whyText.removePrefix("Pusiste en juego"), c.sheetText.removePrefix("Pones en juego"))
+      assertEquals(c.sheetText to c.sourceText, FinalesConSentido.sheetFor(id))
+    }
+    // Aterrizaje Lunar trae los suyos en Aterrizaje.kt, en presente
+    val ater = FinalesConSentido.sheetFor("aterrizaje")!!
+    assertEquals(Aterrizaje.SHEET_TEXT, ater.first)
+    assertEquals(Aterrizaje.SOURCE, ater.second)
+    assertTrue(ater.first.startsWith("Pones en juego la estimación en proporción."))
+    assertEquals("lo mismo que el final, pero en presente", Aterrizaje.WHY.removePrefix("Pusiste"), Aterrizaje.SHEET_TEXT.removePrefix("Pones"))
+    assertNull(FinalesConSentido.sheetFor("no_existe"))
+    assertEquals("los 17 de la app", 17, (FinalesConSentido.gameIds + "aterrizaje").mapNotNull { FinalesConSentido.sheetFor(it) }.size)
+  }
+
+  @Test
+  fun `cuantas partidas del juego hubo antes de esta sale de lo guardado y solo cuenta las anteriores de ese juego`() {
+    fun r(id: String, t: Long) = com.example.model.GamePlayResult(gameId = id, score = 1, correctAnswers = 1, totalTrials = 1, timed = false, level = 1, timestamp = t)
+    val history = listOf(r("secuencia", 100), r("secuencia", 200), r("bodega", 250), r("secuencia", 300), r("secuencia", 400))
+    assertEquals(0, FinalesConSentido.playsBefore(emptyList(), "secuencia", 100))
+    assertEquals(0, FinalesConSentido.playsBefore(history, "secuencia", 100))
+    assertEquals(2, FinalesConSentido.playsBefore(history, "secuencia", 300))
+    assertEquals("la de hoy, ya guardada, no se cuenta a sí misma", 3, FinalesConSentido.playsBefore(history, "secuencia", 400))
+    assertEquals("si todavía no se guardó, da lo mismo", 4, FinalesConSentido.playsBefore(history, "secuencia", 500))
+    assertEquals("otro juego: su propio conteo", 0, FinalesConSentido.playsBefore(history, "bodega", 250))
+    assertEquals("«¿Por qué importa?» se ve en las 3 primeras", 3, FinalesConSentido.WHY_INLINE_PLAYS)
   }
 
   @Test

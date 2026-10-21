@@ -411,7 +411,10 @@ data class DailySessionState(
   val gameIds: List<String>,
   val completedCount: Int = 0,
   val scores: List<Int> = emptyList()
-)
+) {
+  /** El juego que sigue en la ruta de hoy (`gameIds[completedCount]`); null cuando ya se jugaron los de la ruta. Lo usan «Continuar» (`continueDailyFlow`) y el botón «Siguiente: …» del final de partida (Tarea 146). */
+  val nextGameId: String? get() = gameIds.getOrNull(completedCount)
+}
 
 
 enum class DifficultyMode(val label: String, val description: String) {

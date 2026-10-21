@@ -137,7 +137,6 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   val aterrizajeTotals by viewModel.aterrizajeTotals.collectAsState()
   val lastResultDaily by viewModel.lastResultDaily.collectAsState()
   val dailySession by viewModel.dailySession.collectAsState()
-  val gameRanks by viewModel.gameRanks.collectAsState()
   val promotion by viewModel.promotion.collectAsState()
   val streak by viewModel.currentStreak.collectAsState()
   val achievementQueue by viewModel.achievementQueue.collectAsState()
@@ -237,13 +236,17 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
 
         // Last Result Screen Overlay
         lastResult?.let { (result, didLevelUp) ->
+          // cuántas partidas de este juego hubo antes de esta: «¿Por qué importa?» se ve en el final solo en las 3 primeras (de lo guardado, sin preferencias nuevas)
+          val history by viewModel.gameHistory.collectAsState()
+          val playsBefore = com.example.data.FinalesConSentido.playsBefore(history, result.gameId, result.timestamp)
           GameResultScreen(
             result = result,
             didLevelUp = didLevelUp,
             isDailyFlow = lastResultDaily,
             dailyCompletedCount = dailySession.completedCount,
             dailyTotalCount = 3,
-            rank = gameRanks.firstOrNull { it.gameId == result.gameId },
+            nextGameId = dailySession.nextGameId,
+            playsBefore = playsBefore,
             modeNote = modeNote,
             atlas = atlas,
             starMeasures = starMeasures,

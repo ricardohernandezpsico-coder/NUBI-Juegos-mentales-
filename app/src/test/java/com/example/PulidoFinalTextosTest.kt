@@ -11,8 +11,7 @@ import androidx.compose.ui.unit.dp
 import com.example.data.FinalesConSentido
 import com.example.data.LibraryOrder
 import com.example.ui.components.MeaningfulResultModel
-import com.example.ui.components.ResultChip
-import com.example.ui.components.YourProgress
+import com.example.ui.components.ResultPhrase
 import com.example.ui.theme.NeuroVidaTheme
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import org.junit.Assert.assertEquals
@@ -38,42 +37,50 @@ class PulidoFinalTextosTest {
 
   private fun src(path: String) = File("src/main/java/com/example/$path").readText().replace("\r\n", "\n")
 
-  private fun model(chips: List<ResultChip>, phrase: String) = MeaningfulResultModel(
-    title = "", boxTitle = "Tu rastro", headline = "5 luces", headlineUnit = "las más largas", dataLine = null, summaryLine = null, progressTitle = "Tu avance", chips = chips, progressPhrase = phrase,
+  private fun model(phrase: String) = MeaningfulResultModel(
+    title = "", boxTitle = "Tu rastro", headline = "5 luces", headlineUnit = "seguidas, bien repetidas", dataLine = null, summaryLine = null, progressTitle = "Tu avance", chips = emptyList(), progressPhrase = phrase,
     trickTitle = "Truco", trick = "Sigue la luz", whyTitle = "¿Por qué importa?", why = "Porque sí", source = "Fuente", note = "Medida de esta partida. No es un diagnóstico."
   )
 
   private fun show(m: MeaningfulResultModel) {
-    rule.setContent { NeuroVidaTheme { Box(Modifier.width(393.dp)) { YourProgress(m) } } }
+    rule.setContent { NeuroVidaTheme { Box(Modifier.width(393.dp)) { ResultPhrase(m) } } }
     rule.waitForIdle()
   }
 
-  // ---- ítem 24: la primera partida de un juego
+  private fun count(tag: String) = rule.onAllNodes(androidx.compose.ui.test.hasTestTag(tag)).fetchSemanticsNodes().size
+
+  // ---- ítem 24 (Tarea 143) en el final «B» (Tarea 146): la primera partida de un juego
 
   @Test
-  fun en_la_primera_partida_solo_se_ve_hoy_y_la_frase_dice_que_juegues_otra_vez_para_comparar() {
-    show(model(listOf(ResultChip("Hoy", "5 luces", highlight = true), ResultChip("Tu promedio", "—"), ResultChip("Tu mejor", "—")), FinalesConSentido.PHRASE_FIRST))
-    rule.onNodeWithTag("progress_chips").assertIsDisplayed()
-    rule.onNodeWithText("Hoy").assertIsDisplayed()
+  fun en_la_primera_partida_solo_se_ve_la_frase_que_dice_que_la_proxima_te_comparas_contigo_y_no_hay_cuadros() {
+    show(model(FinalesConSentido.PHRASE_FIRST))
+    rule.onNodeWithTag("progress_phrase").assertIsDisplayed()
+    rule.onNodeWithText("Primera partida: la próxima te comparas contigo.").assertIsDisplayed()
+    assertEquals("ya no hay cuadros de «Tu avance»", 0, count("progress_chips"))
     assertEquals("sin «Tu promedio» vacío", 0, rule.onAllNodes(androidx.compose.ui.test.hasText("Tu promedio")).fetchSemanticsNodes().size)
     assertEquals("sin «Tu mejor» vacío", 0, rule.onAllNodes(androidx.compose.ui.test.hasText("Tu mejor")).fetchSemanticsNodes().size)
-    rule.onNodeWithTag("progress_phrase").assertIsDisplayed()
-    rule.onNodeWithText("Primera partida: juega otra vez y comparas.").assertIsDisplayed()
   }
 
   @Test
-  fun con_partidas_anteriores_se_ven_los_tres_cuadros_y_la_frase_de_siempre() {
-    show(model(listOf(ResultChip("Hoy", "5 luces", highlight = true), ResultChip("Tu promedio", "4 luces"), ResultChip("Tu mejor", "6 luces")), FinalesConSentido.PHRASE_EVEN))
-    rule.onNodeWithText("Tu promedio").assertIsDisplayed()
-    rule.onNodeWithText("Tu mejor").assertIsDisplayed()
-    rule.onNodeWithText(FinalesConSentido.PHRASE_EVEN).assertIsDisplayed()
+  fun con_partidas_anteriores_la_frase_trae_el_promedio_y_el_mejor_y_no_hay_cuadros() {
+    val rastro = com.example.model.GamePlayResult(
+      gameId = "secuencia", score = 70, correctAnswers = 14, totalTrials = 19, timed = false, level = 3, endRating = 0.5f, timestamp = 1_000L,
+      rasBestLen = listOf(5, 4, 3, 2), rasRounds = listOf(7, 4, 5, 3), rasHits = listOf(7, 3, 2, 2), rasModesSeen = 15, rasNewModes = 0
+    )
+    val previous = listOf(4f, 5f, 4f, 5f, 4f).mapIndexed { i, v -> com.example.data.MeasurePoint(100L * (i + 1), "trail", v, 0.5f, false) }
+    val m = com.example.games.FinalModels.forGame(rastro, previous)!!
+    assertTrue(m.progressPhrase, m.progressPhrase.contains("promedio") && m.progressPhrase.contains("mejor"))
+    show(m)
+    rule.onNodeWithText(m.progressPhrase).assertIsDisplayed()
+    assertEquals(0, count("progress_chips"))
   }
 
   @Test
-  fun sin_medida_de_hoy_se_ven_los_tres_cuadros_aunque_vayan_vacios() {
-    // no es «la primera partida» con una medida: no hay con qué comparar y tampoco hay cifra de hoy; se deja como estaba
-    show(model(listOf(ResultChip("Hoy", "—", highlight = true), ResultChip("Tu promedio", "—"), ResultChip("Tu mejor", "—")), FinalesConSentido.PHRASE_FIRST))
-    rule.onNodeWithText("Tu promedio").assertIsDisplayed()
+  fun sin_medida_de_hoy_no_hay_frase_ni_cuadros() {
+    // no hay con qué comparar y tampoco hay cifra de hoy: la unidad ya dice por qué, y la frase se omite para no decir dos veces lo mismo
+    show(model(""))
+    assertEquals(0, count("progress_phrase"))
+    assertEquals(0, count("progress_chips"))
   }
 
   // ---- los textos que cambiaron (se fijan en el código; se ven en app-actual/)

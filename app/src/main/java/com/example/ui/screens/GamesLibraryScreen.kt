@@ -89,6 +89,7 @@ import com.example.data.AreaProgress
 import com.example.data.AreaSuggestion
 import com.example.data.AreaStatus
 import com.example.data.DiscoveryKind
+import com.example.data.FinalesConSentido
 import com.example.ui.components.OnBoardText
 import com.example.ui.components.AREA_ORDER
 import com.example.ui.components.AreaBar
@@ -586,6 +587,16 @@ internal fun GameSheetContent(
         },
         color = CardMuted, fontSize = Small, modifier = Modifier.padding(top = 6.dp)
       )
+
+      // Qué pones en juego (final «B», Tarea 146): lo que antes iba en «¿Por qué importa?» al pie de cada final ahora vive aquí, en presente («Pones en juego…»), con su fuente. El final solo lo muestra en las 3 primeras partidas de cada juego.
+      FinalesConSentido.sheetFor(g.id)?.let { (whyText, whySource) ->
+        HorizontalLine()
+        Column(Modifier.testTag("sheet_why")) {
+          Text("Qué pones en juego", color = Clay.InkMuted, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+          Text(whyText, color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 4.dp))
+          Text(whySource, color = Clay.InkSoft, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 6.dp))
+        }
+      }
 
       // Lo elegido, dicho en una línea, y el botón que lo cambia: «Cambiar cómo jugar» (plegada) / «Listo» (desplegada). El mismo botón, en el mismo lugar: las opciones se abren debajo y nada de lo de arriba se mueve.
       HorizontalLine()

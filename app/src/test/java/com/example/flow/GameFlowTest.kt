@@ -76,6 +76,19 @@ class GameFlowTest {
   }
 
   @Test
+  fun `el juego que sigue en la ruta es el de completedCount y en el ultimo no hay ninguno`() {
+    // el botón «Siguiente: …» del final de partida (Tarea 146) sale de aquí: `gameIds[completedCount]`, y null cuando ya se jugaron los 3
+    val vm = newViewModel()
+    val today = vm.dailySession.value
+    assertEquals(today.gameIds.getOrNull(today.completedCount), today.nextGameId)
+    val route = com.example.model.DailySessionState("2026-10-20", listOf("bodega", "calculo", "intrusa"))
+    assertEquals("bodega", route.nextGameId)
+    assertEquals("calculo", route.copy(completedCount = 1).nextGameId)
+    assertEquals("intrusa", route.copy(completedCount = 2).nextGameId)
+    assertNull("en el último (3 de 3) no hay siguiente: el botón dice «Terminar la ruta de hoy»", route.copy(completedCount = 3).nextGameId)
+  }
+
+  @Test
   fun `cambiar de pestana cierra el juego y el resultado`() {
     val vm = newViewModel()
     vm.launchGame("radar")

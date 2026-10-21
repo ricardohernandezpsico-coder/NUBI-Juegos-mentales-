@@ -21,7 +21,6 @@ import com.example.data.Trail
 import com.example.data.Vocabulary
 import com.example.model.GamePlayResult
 import com.example.ui.components.MeaningfulResultModel
-import com.example.ui.components.ResultChip
 import kotlin.math.roundToInt
 
 /**
@@ -29,8 +28,8 @@ import kotlin.math.roundToInt
  * Grupo 1 (Memoria): Constelaciones, Rastro de luz, Bodega de carga y La estación de correo. Grupo 2 (Atención): Tinta o Palabra, Piloto Estelar, Freno de Emergencia, Satélites y Rescate relámpago. Grupo 3 (Razonamiento): Carga exacta, Engranajes y Acoplamiento. Grupo 4 (Lenguaje): En la punta de la lengua, Lluvia de meteoros, ¿Verdad o disparate? y La estrella intrusa (Cosecha de palabras tuvo el suyo hasta su retiro, el 10-oct).
  * (Aterrizaje Lunar, hecho antes, arma el suyo en `GameResultScreen`.)
  *
- * «Lo que hiciste»: la medida propia que el juego ya mostraba, en grande, más UN dato tuyo (el récord si lo superaste hoy; si no, el más útil de los que ya mostraba: ver cada juego). «Tu avance»: Hoy, Tu promedio y Tu mejor en la
- * unidad de la medida ([FinalesConSentido.progress], con su tolerancia de «parejo»). «Truco»: el condicional del juego si aplica a esta partida y, si no, el general de la tabla.
+ * El final «B» (Tarea 146, `auditoria-fable/spec-final-B.md`): una cifra y su unidad (§2), UNA frase de avance con los dos números adentro ([FinalesConSentido.phraseWith], con la tolerancia de «parejo» de cada medida), los avisos cuando pasan
+ * (un modo nuevo, un cohete que despegó) y el truco: el condicional del juego si aplica a esta partida y, si no, el general de la tabla. El dato tuyo ([MeaningfulResultModel.dataLine]) pasa al detalle.
  */
 object FinalModels {
   /** Cuántos puntos cuentan como «parejo» alrededor del promedio en las medidas en %: de 8 a 20 ensayos por partida, un solo ensayo pesa de 5 a 12 puntos. */
@@ -122,7 +121,7 @@ object FinalModels {
       todayValue = con.mark(hits, opps),
       boxTitle = "Tu memoria de lugar",
       headline = con.percent(hits, opps)?.let { "$it %" } ?: "—",
-      unit = con.detailLine(hits, opps),
+      unit = if (con.percent(hits, opps) != null) "de las parejas vistas, de memoria" else "Sin oportunidades de memoria en esta partida.",
       dataLine = con.streakLine(result.conBestStreak) ?: record.takeUnless { result.conNewRecord == true },
       conditionalTrick = con.tip(hits, opps)?.let { ResultAdvice.tipOf(it) },
       recordNew = result.conNewRecord == true, recordText = record
@@ -142,9 +141,10 @@ object FinalModels {
       todayValue = trail.mark(result.rasBestLen),
       boxTitle = "Tu rastro",
       headline = best?.let { trail.lights(it) } ?: "—",
-      unit = if (best != null) "las más largas que repetiste bien en el rastro simple" else trail.noTrailLine(rounds),
-      dataLine = trail.unlockedLine(result.rasNewModes) ?: reading.firstOrNull(),
-      conditionalTrick = reading.getOrNull(1)?.let { ResultAdvice.tipOf(it) }
+      unit = if (best != null) "seguidas, bien repetidas" else trail.noTrailLine(rounds),
+      dataLine = reading.firstOrNull(),
+      conditionalTrick = reading.getOrNull(1)?.let { ResultAdvice.tipOf(it) },
+      notice = trail.newModeNotice(result.rasNewModes)
     )
   }
 
@@ -182,8 +182,8 @@ object FinalModels {
       result, measures, key = "estacion", copy = FinalesConSentido.copy("correo")!!, tolerance = TOLERANCE_PERCENT, format = FinalesConSentido::percentText,
       todayValue = mail.mark(ok, all),
       boxTitle = "Tu memoria para lo pendiente",
-      headline = mail.percent(ok, all)?.let { "$it %" } ?: "—",
-      unit = mail.detailLine(ok, all),
+      headline = if (mail.percent(ok, all) != null) "${ok.coerceIn(0, all)} de $all encargos" else "—",
+      unit = if (mail.percent(ok, all) != null) "cumplidos a tiempo" else "Sin encargos en esta partida.",
       dataLine = mail.clockLine(result.mailPeeksGood, result.mailPeeks) ?: mail.cancelLine(result.mailCancels, result.mailCommissions) ?: mail.cardsLine(result.mailRight) ?: record.takeUnless { result.mailNewRecord == true },
       conditionalTrick = tip?.let { ResultAdvice.tipOf(it) },
       recordNew = result.mailNewRecord == true, recordText = record
@@ -203,7 +203,7 @@ object FinalModels {
       todayValue = ms?.toFloat(),
       boxTitle = dos.INTERFERENCE_TITLE,
       headline = ms?.let { dos.cost(it) } ?: "—",
-      unit = if (ms != null) "Lo que tardaste de más cuando la palabra y su tinta no coincidían." else "Esta vez no hubo aciertos suficientes para medirlo.",
+      unit = if (ms != null) "te frenó la palabra" else "Esta vez no hubo aciertos suficientes para medirlo.",
       dataLine = switch?.let { dos.SWITCH_TITLE + ": " + dos.cost(it) },
       conditionalTrick = dos.tips(ms, switch).firstOrNull()?.let { ResultAdvice.tipOf(it) }
     )
@@ -217,7 +217,7 @@ object FinalModels {
       todayValue = Piloto.mark(pct),
       boxTitle = "Tus señales a los mandos",
       headline = pct?.let { "$it %" } ?: "—",
-      unit = if (pct != null) "de las señales de tu misión, a los mandos" else Piloto.TOO_FEW_LINE,
+      unit = if (pct != null) "de las señales, a los mandos" else Piloto.TOO_FEW_LINE,
       dataLine = Piloto.missionLine(result.pilHits, result.pilTargets),
       conditionalTrick = Piloto.advice(result.pilHits, result.pilTargets, result.pilFalse, result.pilLanePct)
     )
@@ -235,9 +235,9 @@ object FinalModels {
       boxTitle = "Tu freno",
       headline = reading?.let { "zona " + it.zone.label } ?: "—",
       unit = when {
-        reading == null -> "Esta vez no se pudo estimar tu freno: hacen falta al menos 6 altos y haber frenado entre 1 de cada 4 y 3 de cada 4."
-        reading.isFirstReading -> "primera lectura: se afina con más partidas"
-        else -> "promedio de tus últimas ${reading.count} partidas"
+        reading == null -> "Sin estimación: hacen falta 6 altos y frenar entre 1 de cada 4 y 3 de cada 4."
+        reading.isFirstReading -> "tu freno, primera lectura"
+        else -> "tu freno, en ${reading.count} partidas"
       },
       dataLine = altos,
       // sin estimación el truco condicional es el que hace que la medida funcione; con ella, el general de la tabla
@@ -250,11 +250,11 @@ object FinalModels {
     val cap = result.trackingCapacity
     val record = Satelites.recordLine(result.satBest, result.satNewRecord)
     return build(
-      result, measures, key = "tracking", copy = FinalesConSentido.copy("satelites")!!, tolerance = TOLERANCE_TRACKING, format = FinalesConSentido::atOnceText,
+      result, measures, key = "tracking", copy = FinalesConSentido.copy("satelites")!!, tolerance = TOLERANCE_TRACKING, format = FinalesConSentido::satellitesText,
       todayValue = cap,
       boxTitle = "Tu seguimiento",
-      headline = cap?.let { FinalesConSentido.atOnceText(it) } ?: "—",
-      unit = if (cap != null) "cuántos seguiste de verdad al mismo tiempo, sin contar la suerte" else "Esta vez no hubo rondas suficientes para medir tu seguimiento.",
+      headline = cap?.let { FinalesConSentido.satellitesText(it) } ?: "—",
+      unit = if (cap != null) "a la vez, sin perderlos de vista" else "Sin rondas suficientes para medir tu seguimiento.",
       dataLine = Satelites.lightsLine(result.satLights) ?: Satelites.perfectLine(result.satPerfect, result.totalTrials, result.satBestStreak),
       conditionalTrick = null,
       recordNew = result.satNewRecord == true, recordText = record
@@ -270,7 +270,7 @@ object FinalModels {
       todayValue = ms?.toFloat(),
       boxTitle = "Tu vistazo",
       headline = ms?.let { "$it ms" } ?: "—",
-      unit = if (ms != null) "el destello más breve con el que rescatas casi todas las cápsulas" else "Esta vez no hubo rondas suficientes para medir tu vistazo.",
+      unit = if (ms != null) "de vistazo te bastan" else "Sin rondas suficientes para medir tu vistazo.",
       dataLine = Rescate.rescuedLine(result.rescRescued) ?: record.takeUnless { result.rescNewRecord == true },
       conditionalTrick = null,
       recordNew = result.rescNewRecord == true, recordText = record
@@ -288,8 +288,8 @@ object FinalModels {
       result, measures, key = "carga", copy = FinalesConSentido.copy("calculo")!!, tolerance = TOLERANCE_PERCENT_SHORT, format = FinalesConSentido::percentText,
       todayValue = carga.mark(alone, total),
       boxTitle = "Tu reactor",
-      headline = if (alone != null && total > 0) "${alone.coerceIn(0, total)} de $total" else "—",
-      unit = "cargas logradas sin pista",
+      headline = if (alone != null && total > 0) "${alone.coerceIn(0, total)} de $total cargas" else "—",
+      unit = "sin pista",
       dataLine = carga.shortLine(result.cargaShort, alone) ?: carga.breakdown(alone, result.cargaHinted, total),
       conditionalTrick = carga.tip(alone, total, result.level)?.let { ResultAdvice.tipOf(it) }
     )
@@ -306,8 +306,9 @@ object FinalModels {
       boxTitle = "Tu cohete",
       headline = if (total > 0) "${ok.coerceIn(0, total)} de $total máquinas" else "—",
       unit = "arregladas",
-      dataLine = eng.launchLine(result.engrLaunches, result.engrOrbit) ?: eng.hangarLine(result.engrLights),
-      conditionalTrick = eng.tip(ok, total)?.let { ResultAdvice.tipOf(it) }
+      dataLine = eng.hangarLine(result.engrLights),
+      conditionalTrick = eng.tip(ok, total)?.let { ResultAdvice.tipOf(it) },
+      notice = eng.launchLine(result.engrLaunches, result.engrOrbit)
     )
   }
 
@@ -320,7 +321,7 @@ object FinalModels {
       todayValue = dps?.toFloat(),
       boxTitle = "Tu giro mental",
       headline = dps?.let { "$it° por segundo" } ?: "—",
-      unit = if (dps != null) "los grados que giras la pieza en tu mente cada segundo" else "Se calcula con al menos 8 aciertos en 3 ángulos distintos y 7 de cada 10 respuestas bien: con más partidas lo verás.",
+      unit = if (dps != null) "de giro en tu mente" else "Se calcula con 8 aciertos en 3 ángulos y 7 de cada 10 bien.",
       dataLine = Acoplamiento.dockedLine(result.dockDocked) ?: record.takeUnless { result.dockNewRecord == true },
       conditionalTrick = null,
       recordNew = result.dockNewRecord == true, recordText = record
@@ -338,8 +339,8 @@ object FinalModels {
       result, measures, key = "punta", copy = FinalesConSentido.copy("anagramas")!!, tolerance = TOLERANCE_PERCENT_SHORT, format = FinalesConSentido::percentText,
       todayValue = punta.mark(solo, total),
       boxTitle = "Tu cielo de palabras",
-      headline = if (solo != null && total > 0) "${solo.coerceIn(0, total)} de $total" else "—",
-      unit = "palabras encontradas por tu cuenta",
+      headline = if (solo != null && total > 0) "${solo.coerceIn(0, total)} de $total palabras" else "—",
+      unit = "por tu cuenta",
       dataLine = punta.speedLine(result.puntaMs, solo) ?: punta.blueNote(result.puntaVista) ?: punta.breakdown(solo, result.puntaPista, result.puntaLetras, result.puntaVista),
       conditionalTrick = punta.message(solo, total)?.let { ResultAdvice.tipOf(it) }
     )
@@ -356,7 +357,7 @@ object FinalModels {
       todayValue = mark,
       boxTitle = "Tu vocabulario",
       headline = mark?.let { "${it.roundToInt()} %" } ?: "—",
-      unit = if (mark != null) "de las palabras menos comunes, reconocidas" else "Esta vez no hubo palabras suficientes para medir tu vocabulario.",
+      unit = if (mark != null) "de las palabras raras, reconocidas" else "Sin palabras suficientes para medir tu vocabulario.",
       dataLine = if (mark != null) vocab.phraseFor(groups) else null,
       conditionalTrick = vocab.filterAdvice(result.lexFaSeen, result.lexFaHits)
     )
@@ -371,8 +372,8 @@ object FinalModels {
       result, measures, key = "wpm", copy = FinalesConSentido.copy("disparate")!!, tolerance = TOLERANCE_WPM, format = FinalesConSentido::ppmText,
       todayValue = reading.mark(wpm),
       boxTitle = "Tu lectura con comprensión",
-      headline = wpm?.let { "$it ppm" } ?: "—",
-      unit = if (wpm != null) "palabras por minuto, leyendo y decidiendo, en las frases que acertaste" else "Juega un poco más para medir tu lectura: hacen falta unas 10 respuestas bien.",
+      headline = wpm?.let { "$it palabras" } ?: "—",
+      unit = if (wpm != null) "por minuto, leyendo y decidiendo" else "Faltan unas 10 respuestas bien para medir tu lectura.",
       dataLine = reading.slowText(rows) ?: reading.streakLine(result.svBestStreak)?.let { "Más seguidos: ${result.svBestStreak}" },
       conditionalTrick = reading.tip(rows)?.let { ResultAdvice.tipOf(it) }
     )
@@ -386,8 +387,8 @@ object FinalModels {
       result, measures, key = "atlas", copy = FinalesConSentido.copy("intrusa")!!, tolerance = TOLERANCE_PERCENT_SHORT, format = FinalesConSentido::percentText,
       todayValue = atlas.mark(result.intrSeenType, result.intrHitsType),
       boxTitle = "Tu red de significados",
-      headline = totals?.let { "${it.first} de ${it.second}" } ?: "—",
-      unit = "rondas bien",
+      headline = totals?.let { "${it.first} de ${it.second} rondas" } ?: "—",
+      unit = "bien resueltas",
       dataLine = atlas.trapFooledLine(result.intrSeenType, result.intrHitsType) ?: atlas.bonusLine(result.intrBonusSeen, result.intrBonusHits)?.let { "¿Qué las une? " + it } ?: atlas.speedLine(result.intrRtMs),
       conditionalTrick = atlas.trapReading(result.intrSeenType, result.intrHitsType)?.let { ResultAdvice.tipOf(it) }
     )
@@ -410,7 +411,9 @@ object FinalModels {
     conditionalTrick: String?,
     lowerIsBetter: Boolean = false,
     recordNew: Boolean = false,
-    recordText: String? = null
+    recordText: String? = null,
+    /** Lo que ESTA partida anuncia y es nuevo («Modo nuevo: En marcha», «¡Despegó tu cohete n.º 3!»): va como aviso, no como dato del detalle (spec-final-B §1.1). */
+    notice: String? = null
   ): MeaningfulResultModel {
     // la partida de hoy tal como se guarda como medida: así se compara con las ANTERIORES (la misma marca de tiempo no se cuenta dos veces)
     val today = todayValue?.let { MeasurePoint(result.timestamp, key, it, result.endRating?.coerceIn(0f, 1f) ?: -1f, result.timed) }
@@ -420,6 +423,8 @@ object FinalModels {
     // partida porque la app le manda 0). Con sello, «Tu avance» usa la comparación normal con el promedio.
     val sealed = recordNew || raw.phrase == FinalesConSentido.PHRASE_BEST
     val progress = if (sealed && raw.phrase == FinalesConSentido.PHRASE_BEST) FinalesConSentido.progress(todayValue, previous, tolerance, lowerIsBetter, avoidBest = true) else raw
+    val phrase = FinalesConSentido.phraseWith(progress, format)                             // los dos números van DENTRO de la frase; sin medida hoy no hay frase
+    val who = com.example.model.GameRegistry.getById(result.gameId)?.let { "${it.title}, ${it.domain.displayName}" }
     return MeaningfulResultModel(
       title = "",
       boxTitle = boxTitle,
@@ -428,19 +433,16 @@ object FinalModels {
       dataLine = dataLine,
       summaryLine = null,
       progressTitle = FinalesConSentido.PROGRESS_TITLE,
-      chips = listOf(
-        ResultChip("Hoy", format(progress.today), highlight = true),
-        ResultChip("Tu promedio", format(progress.average)),
-        ResultChip("Tu mejor", format(progress.best))
-      ),
-      progressPhrase = progress.phrase,
+      chips = emptyList(),
+      progressPhrase = phrase,
+      notices = listOfNotNull(notice),
       trickTitle = FinalesConSentido.TRICK_TITLE,
       trick = conditionalTrick ?: copy.trick,
       whyTitle = FinalesConSentido.WHY_TITLE,
       why = copy.whyText,
       source = copy.sourceText,
       note = FinalesConSentido.NOTE,
-      spoken = FinalesConSentido.spoken(boxTitle, headline, unit, dataLine, progress.phrase),
+      spoken = FinalesConSentido.spoken(who, "$headline $unit", phrase, notice, FinalesConSentido.TRICK_TITLE + ": " + (conditionalTrick ?: copy.trick)),
       recordSeal = if (sealed) (recordText?.takeIf { recordNew } ?: "¡Récord nuevo!") else null
     )
   }

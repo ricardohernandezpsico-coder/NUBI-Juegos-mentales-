@@ -21,6 +21,9 @@ object Aterrizaje {
   const val WHY_TITLE = "¿Por qué importa?"
   const val WHY = "Pusiste en juego la estimación en proporción. Ubicar números a ojo se relaciona con cómo valoramos montos, tiempos y riesgos al decidir."
   const val SOURCE = "Fuente: Schley y Peters, 2014"
+
+  /** «Qué pones en juego» de la ficha (Tarea 146): [WHY] en presente. */
+  const val SHEET_TEXT = "Pones en juego la estimación en proporción. Ubicar números a ojo se relaciona con cómo valoramos montos, tiempos y riesgos al decidir."
   const val NOTE = "Medida de esta partida. No es un diagnóstico."
 
   /** El error medio (en % del largo de la regla): redondeado y nunca menos de 1. null sin dato. */
@@ -75,6 +78,23 @@ object Aterrizaje {
 
   /** «N %»; «—» sin dato. */
   fun chipValue(value: Int?): String = if (value == null) "—" else "$value %"
+
+  /**
+   * La frase de tu avance con los números adentro (Tarea 146, final «B»; ya no hay tres cuadros): las mismas cuatro comparaciones de [progress], más cerca es mejor. Sin medida hoy, vacía.
+   * Primera partida: «Primera partida: la próxima te comparas contigo.»
+   */
+  fun phraseWith(progress: Progress): String {
+    if (progress.today == null) return ""
+    val avg = chipValue(progress.average)
+    val best = chipValue(progress.best)
+    return when (progress.phrase) {
+      "¡Tu partida más precisa hasta ahora!" -> "¡Tu partida más precisa hasta ahora! Tu promedio: $avg."
+      "Hoy quedaste más cerca que tu promedio." -> "Hoy quedaste más cerca que tu promedio ($avg). Tu mejor: $best."
+      "Un poco más lejos que tu promedio: es normal que varíe." -> "Un poco más lejos que tu promedio ($avg): es normal que varíe."
+      "Cerca de tu promedio: vas parejo." -> "Cerca de tu promedio ($avg): vas parejo. Tu mejor: $best."
+      else -> FinalesConSentido.PHRASE_FIRST
+    }
+  }
 
   // ------------------------------------------------------------------ las cúpulas de tu base (preferencias `aterrizaje_record`, en el respaldo)
 

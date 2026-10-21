@@ -141,8 +141,8 @@ class Grupo1FinalesScreenshotTest {
     // «7/9 aciertos» repetía lo que el recuadro principal ya dice; en los finales con sentido la fila común deja solo etapa y modo
     show(result, measures)
     assertEquals(result.gameId, 0, composeTestRule.onAllNodes(hasText("aciertos")).fetchSemanticsNodes().size)
-    assertEquals(result.gameId, 1, composeTestRule.onAllNodes(hasText("etapa")).fetchSemanticsNodes().size)
-    assertEquals(result.gameId, 1, composeTestRule.onAllNodes(hasText("modo")).fetchSemanticsNodes().size)
+    assertEquals(result.gameId, 0, composeTestRule.onAllNodes(hasText("etapa")).fetchSemanticsNodes().size)   // la fila «etapa · modo» también se fue (final B, Tarea 146: la ficha ya lo dice)
+    assertEquals(result.gameId, 0, composeTestRule.onAllNodes(hasText("modo")).fetchSemanticsNodes().size)
   }
 
   @Test

@@ -94,9 +94,11 @@ fun ClayButton(
   /** El inicio nuevo pide texto de 18 sp o más. */
   fontSize: TextUnit = 17.sp,
   /** false = solo el ancho de su contenido (por defecto ocupa toda la fila). */
-  wide: Boolean = true
+  wide: Boolean = true,
+  /** Un dibujo propio a la izquierda del texto en lugar del glifo (el emblema del juego que sigue en «Siguiente: …»; Tarea 146). */
+  leading: (@Composable () -> Unit)? = null
 ) {
-  KitButton(text, onClick, modifier, slabColorFor(color), glyph, fontSize, textColor, wide)
+  KitButton(text, onClick, modifier, slabColorFor(color), glyph, fontSize, textColor, wide, leading = leading)
 }
 
 /** Pastilla de plasticina (losa chica de 14 dp; rachas, etiquetas, contadores). No es tocable: solo informa. */

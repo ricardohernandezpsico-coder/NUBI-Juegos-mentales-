@@ -19,6 +19,12 @@ object FinalesConSentido {
   /** Cuántas partidas anteriores entran en «Tu promedio» y «Tu mejor» (las últimas). */
   const val PREVIOUS_MAX = 10
 
+  /** «¿Por qué importa?» se ve en el final solo en las primeras partidas de cada juego (las que tienen menos de [WHY_INLINE_PLAYS] partidas antes); después vive en el detalle y en la ficha del juego (final «B», Tarea 146). */
+  const val WHY_INLINE_PLAYS = 3
+
+  /** Cuántas partidas de [gameId] hubo ANTES de la de [timestamp]: sale de lo ya guardado (`game_results`), sin preferencias nuevas. Funciona igual si la de hoy todavía no se guardó o ya sí (solo cuenta las anteriores). */
+  fun playsBefore(history: List<com.example.model.GamePlayResult>, gameId: String, timestamp: Long): Int = history.count { it.gameId == gameId && it.timestamp < timestamp }
+
   /**
    * Los textos propios de cada juego (de la tabla del documento): [put] = «Lo que pusiste en juego» (con mayúscula inicial), [trick] = el truco GENERAL (el condicional del juego, si aplica, gana), [why] = «Por qué importa»,
    * [source] = la cita corta (el DOI vive en el documento).
@@ -34,6 +40,16 @@ object FinalesConSentido {
         return (if (startsWithInfinitive(put)) "Pusiste en juego lo que usas para " else "Pusiste en juego ") + lower + " " + why
       }
     val sourceText: String get() = "Fuente: $source"
+
+    /**
+     * El mismo texto en PRESENTE para la ficha del juego («Qué pones en juego», Tarea 146): «Pones en juego la memoria de lugar: recordar dónde quedó cada cosa. …» o, si lo que pones empieza con un infinitivo,
+     * «Pones en juego lo que usas para recordar dónde guardaste cada cosa. …». El final dice «pusiste» (lo que acabas de hacer); la ficha dice «pones» (lo que haces cuando juegas).
+     */
+    val sheetText: String
+      get() {
+        val lower = put.replaceFirstChar { it.lowercase() }
+        return (if (startsWithInfinitive(put)) "Pones en juego lo que usas para " else "Pones en juego ") + lower + " " + why
+      }
   }
 
   private val ALL = listOf(
@@ -82,16 +98,24 @@ object FinalesConSentido {
   /** Los ids que ya traen sus textos aquí (los 17 de la Etapa 3). */
   val gameIds: List<String> get() = ALL.map { it.gameId }
 
+  /** El texto de «Qué pones en juego» de la ficha de CUALQUIERA de los 17 juegos y su fuente («Fuente: …»); Aterrizaje Lunar trae los suyos en `Aterrizaje.kt`. null para un id que no existe. */
+  fun sheetFor(gameId: String): Pair<String, String>? =
+    if (gameId == "aterrizaje") Aterrizaje.SHEET_TEXT to Aterrizaje.SOURCE else copy(gameId)?.let { it.sheetText to it.sourceText }
+
   // ------------------------------------------------------------------ tu avance, solo contigo
 
-  /** Los tres cuadros («Hoy», «Tu promedio», «Tu mejor») y su frase. Los valores son de la medida guardada del juego (`StarMeasures`); null = «—». */
+  /** Hoy, tu promedio, tu mejor y la frase (con `{promedio}` y `{mejor}` por llenar: [phraseWith]). Los valores son de la medida guardada del juego (`StarMeasures`); null = «—». */
   data class Progress(val today: Float?, val average: Float?, val best: Float?, val phrase: String)
 
-  const val PHRASE_FIRST = "Juega otra vez para ver tu avance."
-  const val PHRASE_BEST = "¡Tu mejor partida hasta ahora!"
-  const val PHRASE_BETTER = "Hoy te fue mejor que tu promedio."
-  const val PHRASE_BELOW = "Un poco por debajo de tu promedio: es normal que varíe."
-  const val PHRASE_EVEN = "Cerca de tu promedio: vas parejo."
+  /**
+   * Las frases de tu avance (Tarea 146, final «B»): cortas, con los DOS números adentro (ya no hay tres cuadros). `{promedio}` y `{mejor}` se llenan con la unidad del juego en [phraseWith]. «Mejor», «como» y «bajo» comparan solo contigo.
+   * «Un poco bajo» no repite «tu mejor»: justo ahí no hace falta.
+   */
+  const val PHRASE_FIRST = "Primera partida: la próxima te comparas contigo."
+  const val PHRASE_BEST = "¡Tu mejor hasta ahora! Tu promedio: {promedio}."
+  const val PHRASE_BETTER = "Mejor que tu promedio ({promedio}). Tu mejor: {mejor}."
+  const val PHRASE_BELOW = "Un poco bajo tu promedio ({promedio}): es normal que varíe."
+  const val PHRASE_EVEN = "Como tu promedio ({promedio}): vas parejo. Tu mejor: {mejor}."
 
   /**
    * Las partidas ANTERIORES de este juego con las que se compara hoy: las medidas guardadas de [today] (la misma clave) sin la de esta partida (la misma marca de tiempo: funciona igual si todavía no se guardó o ya sí), las que se
@@ -107,8 +131,8 @@ object FinalesConSentido {
    * [lowerIsBetter] respeta el sentido de la medida (menos es mejor: distancias, tiempos). [tolerance] (en la unidad de la medida) es lo que cuenta como «parejo» alrededor del promedio; por medida:
    * - Constelaciones, Bodega y Correo (porcentajes de 8 a 20 ensayos, donde un solo ensayo pesa de 5 a 12 puntos): 5 puntos.
    * - Rastro de luz (luces seguidas, números enteros): media luz.
-   * Frases: sin partidas anteriores (o sin medida hoy) «Juega otra vez…»; mejor que tu mejor anterior (por poco que sea) «¡Tu mejor partida hasta ahora!»; más que el promedio por sobre la tolerancia «Hoy te fue mejor…»; menos, «Un poco por
-   * debajo…»; si no, «Cerca de tu promedio…».
+   * Frases: sin partidas anteriores (o sin medida hoy) «Primera partida…»; mejor que tu mejor anterior (por poco que sea) «¡Tu mejor hasta ahora!»; más que el promedio por sobre la tolerancia «Mejor que tu promedio…»; menos, «Un poco bajo…»; si no,
+   * «Como tu promedio…». La frase sale con `{promedio}` y `{mejor}` por llenar: [phraseWith] los pone en la unidad del juego.
    */
   fun progress(today: Float?, previous: List<Float>, tolerance: Float, lowerIsBetter: Boolean = false, avoidBest: Boolean = false): Progress {
     if (today == null || today.isNaN() || previous.isEmpty()) return Progress(today?.takeIf { !it.isNaN() }, null, null, PHRASE_FIRST)
@@ -127,6 +151,10 @@ object FinalesConSentido {
     return Progress(today, mean, best, phrase)
   }
 
+  /** La frase de tu avance con los números adentro, en la unidad del juego («4 luces», «70 %», «zona firme», «+0,3 s»). Sin medida hoy no hay frase (la unidad ya dice por qué): vacía. */
+  fun phraseWith(progress: Progress, format: (Float?) -> String): String =
+    if (progress.today == null) "" else progress.phrase.replace("{promedio}", format(progress.average)).replace("{mejor}", format(progress.best))
+
   /** «78 %» (redondeado); «—» sin dato. */
   fun percentText(value: Float?): String = if (value == null || value.isNaN()) "—" else "${value.roundToInt()} %"
 
@@ -136,15 +164,15 @@ object FinalesConSentido {
   /** «212 °/s» (grados por segundo, redondeado); «—» sin dato. */
   fun degreesText(value: Float?): String = if (value == null || value.isNaN()) "—" else "${value.roundToInt()} °/s"
 
-  /** «142 ppm» (palabras por minuto, redondeado); «—» sin dato. */
-  fun ppmText(value: Float?): String = if (value == null || value.isNaN()) "—" else "${value.roundToInt()} ppm"
+  /** «142 por minuto» (palabras por minuto, redondeado; en la frase de tu avance); «—» sin dato. */
+  fun ppmText(value: Float?): String = if (value == null || value.isNaN()) "—" else "${value.roundToInt()} por minuto"
 
-  /** «3,2 a la vez» (coma decimal); «—» sin dato. */
-  fun atOnceText(value: Float?): String = if (value == null || value.isNaN()) "—" else String.format(java.util.Locale("es"), "%.1f", value) + " a la vez"
+  /** «2,6 satélites» (coma decimal); «—» sin dato. */
+  fun satellitesText(value: Float?): String = if (value == null || value.isNaN()) "—" else String.format(java.util.Locale("es"), "%.1f", value) + " satélites"
 
   /** «6 luces» (en singular «1 luz»; el promedio se redondea a un número entero de luces); «—» sin dato. */
   fun lightsText(value: Float?): String = if (value == null || value.isNaN()) "—" else value.roundToInt().let { if (it == 1) "1 luz" else "$it luces" }
 
-  /** Para lectores de pantalla: los textos del recuadro principal y la frase de tu avance, de corrido. */
-  fun spoken(vararg parts: String?): String = parts.filterNotNull().filter { it.isNotBlank() }.joinToString(". ")
+  /** Para lectores de pantalla: las partes de corrido, cada una terminada en un solo punto (las frases ya traen el suyo: sin «..»). */
+  fun spoken(vararg parts: String?): String = parts.filterNotNull().map { it.trim().trimEnd('.') }.filter { it.isNotBlank() }.joinToString(". ").let { if (it.isEmpty()) it else "$it." }
 }

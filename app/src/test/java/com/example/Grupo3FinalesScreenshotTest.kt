@@ -109,7 +109,7 @@ class Grupo3FinalesScreenshotTest {
   private fun assertNoRepeatedHits(result: GamePlayResult, measures: List<MeasurePoint>) {
     show(result, measures)
     assertEquals(result.gameId, 0, composeTestRule.onAllNodes(hasText("aciertos")).fetchSemanticsNodes().size)
-    assertEquals(result.gameId, 1, composeTestRule.onAllNodes(hasText("etapa")).fetchSemanticsNodes().size)
+    assertEquals(result.gameId, 0, composeTestRule.onAllNodes(hasText("etapa")).fetchSemanticsNodes().size)   // la fila «etapa · modo» también se fue (final B, Tarea 146: la ficha ya lo dice)
   }
 
   @Test

@@ -32,10 +32,10 @@ object Trail {
   /** «5 luces»; null si no hay medida. */
   fun lights(n: Int?): String? = n?.let { if (it == 1) "1 luz" else "$it luces" }
 
-  /** Qué se dice cuando no hubo rastro simple repetido entero: sin culpa y con un consejo. */
+  /** Qué se dice cuando no hubo rastro simple repetido entero: sin culpa y con un consejo (corto: es la unidad bajo la cifra «—» del final y no pasa de 2 líneas; Tarea 146). */
   fun noTrailLine(rounds: List<Int>?): String =
     if (rounds?.getOrNull(SIMPLE)?.let { it > 0 } == true)
-      "Esta vez no salió un rastro completo. Mira el camino con calma y toca una luz a la vez: así se arma."
+      "Esta vez no salió un rastro completo. Toca una luz a la vez: así se arma."
     else "Esta partida no tuvo rastro simple: juega otra para medir tu rastro."
 
   // ------------------------------------------------------------------ por modo
@@ -96,6 +96,13 @@ object Trail {
     val names = (0 until 4).filter { it != SIMPLE && ((bits ?: 0) shr it) and 1 == 1 }.map { MODE_NAMES[it] }
     if (names.isEmpty()) return null
     return if (names.size == 1) "Desbloqueaste un modo nuevo: ${names[0]}" else "Desbloqueaste modos nuevos: ${names.joinToString(", ")}"
+  }
+
+  /** El aviso corto del final (Tarea 146: una píldora): «Modo nuevo: En marcha» / «Modos nuevos: Al revés, En marcha»; null si no hubo. Es [unlockedLine] dicho en pocas palabras. */
+  fun newModeNotice(bits: Int?): String? {
+    val names = (0 until 4).filter { it != SIMPLE && ((bits ?: 0) shr it) and 1 == 1 }.map { MODE_NAMES[it] }
+    if (names.isEmpty()) return null
+    return if (names.size == 1) "Modo nuevo: ${names[0]}" else "Modos nuevos: ${names.joinToString(", ")}"
   }
 
   /** Para lectores de pantalla. */

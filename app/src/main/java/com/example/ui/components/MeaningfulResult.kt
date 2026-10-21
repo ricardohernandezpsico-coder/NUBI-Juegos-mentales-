@@ -1,25 +1,21 @@
 package com.example.ui.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,6 +24,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -43,19 +40,17 @@ import com.example.data.FinalesConSentido
 import com.example.ui.theme.AppFamily
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayCard
+import com.example.ui.theme.ClayPill
+import com.example.ui.theme.NubiTokens
 
-/** Un número del «Tu avance»: «Hoy», «Tu promedio» o «Tu mejor», con su valor ya escrito («11 %» o «—»). El de hoy va resaltado. */
+/** Un número del antiguo «Tu avance» (tres cuadros). Desde el final «B» (Tarea 146) ya no se dibujan: los dos números van dentro de la frase; el modelo trae la lista vacía. */
 data class ResultChip(val label: String, val value: String, val highlight: Boolean = false)
 
 /**
- * Lo que se ve en un final CON SENTIDO (docs/diseno-aterrizaje.md §6): la plantilla que el primer juego que la usa (Aterrizaje Lunar) deja lista para los demás, si Ricardo lo confirma. Cuatro piezas, en este orden de importancia:
- * 1. **Lo que hiciste** (recuadro principal): un título, la cifra en grande con su unidad, UN dato tuyo (dónde te costó más) y una línea chica con lo que pasó en la partida;
- * 2. **Tu avance**, solo contigo (nunca percentiles ni otras personas): una fila de tres números y una frase;
- * 3. **Un truco** para la próxima (recuadro chico);
- * 4. **¿Por qué importa?**, abajo, en chico y sin recuadro: una frase, su fuente y la nota de siempre («Medida de esta partida. No es un diagnóstico.»).
- * Si el juego trae [detail] (los 17 juegos de la Etapa 3: `docs/finales-con-sentido.md`), el detalle que antes se veía (barras, listas, desgloses) NO se borra: va detrás de «Ver el detalle de tu partida», un botón de 56 dp o más cerrado por defecto,
- * entre el truco y «¿Por qué importa?». El [MeaningfulResultModel.title] y el [MeaningfulResultModel.boxTitle] pueden ir en blanco (no se dibujan).
- * Todo el texto va desde 14 sp, nada se dice solo con color y cada pieza se lee de corrido con un lector de pantalla.
+ * Lo que se ve en un final CON SENTIDO, en su versión «B» (Tarea 146; `auditoria-fable/spec-final-B.md`): UNA cifra y su unidad, UNA frase de avance solo contigo (con los dos números adentro; nunca percentiles ni otras personas), los avisos cuando pasan y el truco.
+ * Después van los botones (los pone la pantalla: [ResultFrame.actions]), «Ver el detalle de tu partida» (el desglose que cada juego ya mostraba: nada se borra), «¿Por qué importa?» con su fuente solo en las 3 primeras partidas de cada juego
+ * (desde la cuarta vive en el detalle y en la ficha del juego) y la nota de siempre («Medida de esta partida. No es un diagnóstico.»).
+ * Todo texto suelto va con la orilla navy de [OnBoardText]; nada se dice solo con color y nada va bajo 16 sp.
  */
 data class MeaningfulResultModel(
   val title: String,
@@ -66,7 +61,9 @@ data class MeaningfulResultModel(
   val summaryLine: String?,
   val extraLine: String? = null,
   val progressTitle: String,
+  /** Vacía desde el final «B»: los dos números van dentro de [progressPhrase]. */
   val chips: List<ResultChip>,
+  /** La frase de avance con los números adentro; vacía si hoy no hay medida (la unidad ya dice por qué). */
   val progressPhrase: String,
   val trickTitle: String,
   val trick: String,
@@ -74,51 +71,138 @@ data class MeaningfulResultModel(
   val why: String,
   val source: String,
   val note: String,
-  /** Lo que lee en voz alta un lector de pantalla del recuadro principal. */
+  /** Lo que lee en voz alta un lector de pantalla: el juego, la cifra con su unidad, la frase de avance, los avisos y el truco. */
   val spoken: String = "",
   /**
-   * El sello del récord (Tarea 127): UNA sola vez por pantalla, arriba, con la cifra cuando la hay («¡Récord nuevo: 31 cápsulas!»); null si no hay récord. Nunca en la primera partida de un juego (no hay nada que superar). Si hay sello, ni la tarjeta de la medida
-   * ni «Tu avance» repiten el récord.
+   * El sello del récord (Tarea 127): UNA sola vez por pantalla, arriba, con la cifra cuando la hay («¡Récord nuevo: 31 cápsulas!»); null si no hay récord. Nunca en la primera partida de un juego (no hay nada que superar). Si hay sello, la frase de avance no lo repite.
    */
-  val recordSeal: String? = null
+  val recordSeal: String? = null,
+  /** Lo que esta partida anuncia y es nuevo («Modo nuevo: En marcha», «¡Despegó tu cohete n.º 3!»): sale como aviso (una píldora) bajo la frase de avance. */
+  val notices: List<String> = emptyList()
 )
 
-// Las piezas de este final son losas de plasticina CLARAS (Tarea 90): crema para lo que hiciste y los números, lima para el truco, sol para el número de hoy; su texto va en tinta.
-// `Soft`, `Muted` y `Faint` quedan para el texto que va suelto sobre el cielo de la pantalla.
-private val Soft = Color(0xFFD6D1F2)
+/** Un aviso del final (una píldora): lima si celebra o anuncia algo nuevo, crema si solo informa. [pop] = el rebote de «¡Subiste de etapa!» (con «quitar animaciones», ya quieto). */
+class ResultNotice(val text: String, val lime: Boolean = text.startsWith("¡"), val pop: Animatable<Float, AnimationVector1D>? = null)
 
-/** Los valores con que un cuadro de «Tu avance» dice que no hay dato («—» en cada juego; «–» por si acaso). */
-private val EMPTY_CHIP = setOf("—", "–", "")
-private val Muted = Color(0xFFABA5D2)
-private val Faint = Color(0xFF8F8AC0)
+/**
+ * Lo que la pantalla de resultado le entrega al final: el puntaje (va primero en el detalle), los avisos que no son del juego (la etapa que subió y la nota del modo), si «¿Por qué importa?» va a la vista (las 3 primeras partidas del juego)
+ * y los botones, que van entre el truco y «Ver el detalle». Fuera de la pantalla de resultado, todo vacío.
+ */
+class ResultFrame(
+  val score: String? = null,
+  val levelNotice: ResultNotice? = null,
+  val modeNotice: ResultNotice? = null,
+  val showWhyInline: Boolean = true,
+  val actions: (@Composable ColumnScope.() -> Unit)? = null
+)
 
-/** El puntaje de la partida («74 puntos · 14 de 19 aciertos»): se sigue guardando, pero ya no es lo primero que se ve; va en «Ver el detalle de tu partida» (Tarea 126). La pantalla de resultado lo fija; fuera de ella, nulo. */
-val LocalResultScore = androidx.compose.runtime.compositionLocalOf<String?> { null }
+val LocalResultFrame = androidx.compose.runtime.compositionLocalOf { ResultFrame() }
 
 object ResultScore {
+  /** El puntaje de la partida («74 puntos · 14 de 19 aciertos»): se sigue guardando, pero va dentro de «Ver el detalle de tu partida». */
   fun line(r: com.example.model.GamePlayResult): String = "${r.score} ${if (r.score == 1) "punto" else "puntos"}" + if (r.totalTrials > 0) " · ${r.correctAnswers} de ${r.totalTrials} aciertos" else ""
 }
 
+/** Cuántos avisos caben bajo la frase de avance; los demás pasan al detalle como una línea. */
+const val MAX_NOTICES = 2
+
 @Composable
 fun MeaningfulResult(model: MeaningfulResultModel, modifier: Modifier = Modifier, detail: (@Composable ColumnScope.() -> Unit)? = null) {
-  val score = LocalResultScore.current
-  Column(modifier = modifier.fillMaxWidth().testTag("meaningful_result"), horizontalAlignment = Alignment.CenterHorizontally) {
-    WhatYouDid(model)
-    YourProgress(model)
+  val frame = LocalResultFrame.current
+  // el orden de los avisos: la etapa, lo nuevo del juego (un modo, un cohete) y la nota del modo
+  val notices = buildList {
+    frame.levelNotice?.let { add(it) }
+    model.notices.forEach { add(ResultNotice(it, lime = true)) }
+    frame.modeNotice?.let { add(it) }
+  }
+  Column(modifier = modifier.fillMaxWidth().testTag("meaningful_result"), horizontalAlignment = Alignment.Start) {
+    ResultHeadline(model)
+    ResultPhrase(model)
+    ResultNotices(notices.take(MAX_NOTICES))
     NextTrick(model)
-    if (detail != null || score != null) DetailSection {
-      if (score != null) Text(score, color = Clay.Cream, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(bottom = 8.dp).testTag("detail_score"))
+    frame.actions?.invoke(this)
+    DetailSection {
+      if (frame.score != null) DetailText(frame.score, "detail_score", strong = true)
+      model.dataLine?.let { DetailText(it, "detail_data", strong = true) }
+      if (model.title.isNotBlank()) DetailText(model.title, "detail_title", strong = true)
+      model.summaryLine?.let { DetailText(it, "detail_summary") }
+      model.extraLine?.let { DetailText(it, "detail_extra") }
+      notices.drop(MAX_NOTICES).forEach { DetailText(it.text, "detail_notice") }
       detail?.invoke(this)
+      if (!frame.showWhyInline) WhyItMatters(model, topPadding = 16.dp)
     }
-    WhyItMatters(model)
+    if (frame.showWhyInline) WhyItMatters(model)
+    ResultNote(model)
   }
 }
 
-/** «Ver el detalle de tu partida»: un botón de 56 dp o más, cerrado por defecto, que abre el detalle que cada juego ya mostraba (nada se borra). */
+// ---------------------------------------------------------------- la cifra, la frase y los avisos
+
+/** La cifra suelta («5 luces») y su unidad («seguidas, bien repetidas»), alineadas a la izquierda; sin tarjeta. */
+@Composable
+fun ResultHeadline(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
+  Column(modifier.fillMaxWidth()) {
+    OnBoardText(
+      text = model.headline, color = Clay.Cream, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 34.sp, lineHeight = 38.sp,
+      modifier = Modifier.padding(top = 24.dp).testTag("result_headline")
+    )
+    if (model.headlineUnit.isNotBlank()) {
+      OnBoardText(
+        text = model.headlineUnit, color = NubiTokens.OnNight, fontFamily = AppFamily, fontWeight = FontWeight.Normal, fontSize = 17.sp, lineHeight = 24.sp,
+        modifier = Modifier.padding(top = 4.dp).testTag("result_unit")
+      )
+    }
+  }
+}
+
+/** Tu avance en UNA frase, solo contigo, con los dos números adentro («Mejor que tu promedio (4 luces). Tu mejor: 6 luces.»). Sin medida hoy no se dibuja. */
+@Composable
+fun ResultPhrase(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
+  if (model.progressPhrase.isBlank()) return
+  OnBoardText(
+    text = model.progressPhrase, color = NubiTokens.OnNightDim, fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 22.sp,
+    modifier = modifier.fillMaxWidth().padding(top = 10.dp).testTag("progress_phrase")
+  )
+}
+
+/** Los avisos que pasaron en esta partida: píldoras de plasticina, lima si celebran o anuncian algo nuevo y crema si solo informan. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun ResultNotices(notices: List<ResultNotice>, modifier: Modifier = Modifier) {
+  if (notices.isEmpty()) return
+  FlowRow(
+    modifier.fillMaxWidth().padding(top = 12.dp).testTag("result_notices"),
+    horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)
+  ) {
+    for (n in notices) {
+      ClayPill(text = n.text, color = if (n.lime) Clay.Lime else Clay.Cream, modifier = Modifier.scale(n.pop?.value ?: 1f).testTag("result_notice"))
+    }
+  }
+}
+
+/** El truco para la próxima: un recuadro lima, el único recuadro del final. */
+@Composable
+fun NextTrick(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
+  ClayCard(
+    modifier = modifier.fillMaxWidth().padding(top = 20.dp).testTag("next_trick").semantics(mergeDescendants = true) { contentDescription = model.trickTitle + ": " + model.trick },
+    color = Clay.Lime,
+    size = SlabSize.MEDIUM,
+    contentPadding = 14.dp
+  ) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+      Text(model.trickTitle, color = Clay.Ink, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+      Text(model.trick, color = Clay.Ink, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, modifier = Modifier.padding(top = 4.dp))
+    }
+  }
+}
+
+// ---------------------------------------------------------------- el detalle, «¿Por qué importa?» y la nota
+
+/** «Ver el detalle de tu partida»: un botón de 56 dp o más, cerrado por defecto, que abre el detalle que cada juego ya mostraba (nada se borra). Va después de «Jugar de nuevo». */
 @Composable
 fun DetailSection(content: @Composable ColumnScope.() -> Unit) {
   var open by rememberSaveable { mutableStateOf(false) }
-  Column(Modifier.fillMaxWidth().padding(top = 18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+  Column(Modifier.fillMaxWidth().padding(top = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
     val label = if (open) FinalesConSentido.DETAIL_CLOSE else FinalesConSentido.DETAIL_OPEN
     ClayCard(
       modifier = Modifier.fillMaxWidth().testTag("detail_toggle").semantics(mergeDescendants = true) { role = Role.Button; contentDescription = label; stateDescription = if (open) "abierto" else "cerrado" },
@@ -133,117 +217,52 @@ fun DetailSection(content: @Composable ColumnScope.() -> Unit) {
         KitGlyph(if (open) Glyph.UP else Glyph.DOWN, size = 26.dp)
       }
     }
-    if (open) Column(Modifier.fillMaxWidth().padding(top = 10.dp).testTag("detail_content"), horizontalAlignment = Alignment.CenterHorizontally, content = content)
+    if (open) Column(Modifier.fillMaxWidth().padding(top = 14.dp).testTag("detail_content"), horizontalAlignment = Alignment.Start, content = content)
   }
 }
 
-/** 1) Lo que hiciste: el título y el recuadro principal. */
+/**
+ * Una línea del detalle (la parte de LECTURA, spec-final-B §1.3): a la izquierda, 17 sp Nunito Regular `OnNight` con interlineado de 24 sp; [strong] = SemiBold del mismo tamaño; las que empiezan con «¡» (un récord) van en sol. 8 dp entre líneas.
+ * Ya no se usan `Soft`, `Muted` ni `Faint` para el cuerpo.
+ */
 @Composable
-fun WhatYouDid(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
-  Column(modifier = modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-    if (model.title.isNotBlank()) {
-      Text(
-        text = model.title,
-        color = Color.White,
-        fontFamily = AppFamily,
-        fontWeight = FontWeight.Bold,
-        fontSize = 24.sp,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.padding(horizontal = 16.dp)
-      )
-      Spacer(Modifier.height(12.dp))
-    }
-    ClayCard(
-      modifier = Modifier.fillMaxWidth().testTag("meaningful_box").semantics(mergeDescendants = true) { if (model.spoken.isNotEmpty()) contentDescription = model.spoken },
-      color = Clay.Cream,
-      size = SlabSize.LARGE,
-      contentPadding = 16.dp
-    ) {
-      Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-        if (model.boxTitle.isNotBlank()) Text(model.boxTitle, color = Clay.InkMuted, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 15.sp, textAlign = TextAlign.Center)
-        Text(model.headline, color = Clay.Ink, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 34.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 2.dp))
-        Text(model.headlineUnit, color = Clay.Ink, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, textAlign = TextAlign.Center)
-        model.dataLine?.let {
-          Text(it, color = PanelAccent, fontWeight = FontWeight.Bold, fontSize = 15.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
-        }
-        model.summaryLine?.let {
-          Text(it, color = Clay.InkMuted, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp))
-        }
-        model.extraLine?.let {
-          Text(it, color = Clay.InkMuted, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 2.dp))
-        }
-      }
-    }
+fun DetailText(text: String, tag: String, strong: Boolean = false, modifier: Modifier = Modifier) {
+  val celebrate = text.startsWith("¡")
+  OnBoardText(
+    text = text, color = if (celebrate) Clay.Sun else NubiTokens.OnNight, fontFamily = AppFamily,
+    fontWeight = if (celebrate || strong) FontWeight.SemiBold else FontWeight.Normal, fontSize = 17.sp, lineHeight = 24.sp,
+    modifier = modifier.fillMaxWidth().padding(start = 4.dp, top = 4.dp, bottom = 4.dp).testTag(tag)
+  )
+}
+
+/** El título de una sección del detalle («Por modo», «Qué te frena»): 18 sp Fredoka Bold en sol, 12 dp antes. */
+@Composable
+fun DetailTitle(text: String, modifier: Modifier = Modifier) {
+  OnBoardText(
+    text = text, color = Clay.Sun, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp, lineHeight = 24.sp,
+    modifier = modifier.fillMaxWidth().padding(start = 4.dp, top = 12.dp, bottom = 4.dp)
+  )
+}
+
+/**
+ * ¿Por qué importa?: un bloque de lectura (título de 20 sp, cuerpo de 17 sp con interlineado 1,45, «Fuente: …» de 16 sp), alineado a la izquierda y con una línea fina arriba. A la vista en las 3 primeras partidas de cada juego; desde la cuarta va dentro del detalle.
+ * (En la ficha del juego se llama «Qué pones en juego».)
+ */
+@Composable
+fun WhyItMatters(model: MeaningfulResultModel, modifier: Modifier = Modifier, topPadding: androidx.compose.ui.unit.Dp = 24.dp) {
+  Column(modifier.fillMaxWidth().padding(top = topPadding).testTag("why_it_matters")) {
+    Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF8F8AC0).copy(alpha = 0.35f)))
+    OnBoardText(model.whyTitle, color = NubiTokens.OnNight, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 20.sp, lineHeight = 26.sp, modifier = Modifier.padding(start = 4.dp, top = 12.dp))
+    OnBoardText(model.why, color = NubiTokens.OnNight, fontFamily = AppFamily, fontWeight = FontWeight.Normal, fontSize = 17.sp, lineHeight = 25.sp, modifier = Modifier.padding(start = 4.dp, top = 6.dp))
+    OnBoardText(model.source, color = NubiTokens.OnNightDim, fontFamily = AppFamily, fontWeight = FontWeight.Normal, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(start = 4.dp, top = 8.dp))
   }
 }
 
-/** 2) Tu avance, solo contigo: tres números en una fila y su frase. */
+/** La nota de siempre al pie, centrada y en una línea: «Medida de esta partida. No es un diagnóstico.» Va en todos los estados. */
 @Composable
-fun YourProgress(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
-  Column(modifier = modifier.fillMaxWidth().padding(top = 18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-    Text(model.progressTitle, color = Soft, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-    Spacer(Modifier.height(8.dp))
-    // En la primera partida de un juego (sin partidas anteriores) «Tu promedio» y «Tu mejor» irían vacíos («—»): se muestra solo «Hoy» y la frase dice que juegues otra vez para comparar (Tarea 143, ítem 24)
-    val first = model.progressPhrase == FinalesConSentido.PHRASE_FIRST && model.chips.size >= 2 && model.chips[0].value !in EMPTY_CHIP && model.chips.drop(1).all { it.value in EMPTY_CHIP }
-    val shownChips = if (first) model.chips.take(1) else model.chips
-    Row(
-      horizontalArrangement = if (first) Arrangement.Center else Arrangement.spacedBy(10.dp),
-      modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).testTag("progress_chips")
-    ) {
-      for (chip in shownChips) {
-        val spoken = chip.label + ": " + chip.value
-        ClayCard(
-          modifier = (if (first) Modifier.width(150.dp) else Modifier.weight(1f)).fillMaxHeight().semantics(mergeDescendants = true) { contentDescription = spoken },
-          color = if (chip.highlight) Clay.Sun else Clay.Cream,
-          size = SlabSize.SMALL,
-          contentPadding = 8.dp
-        ) {
-          // los tres cuadros miden lo mismo aunque un valor largo («3,2 a la vez», «zona firme») pase a dos líneas
-          Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center, modifier = Modifier.fillMaxSize()) {
-            Text(chip.label, color = if (chip.highlight) Clay.Ink else Clay.InkMuted, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center)
-            Text(chip.value, color = Clay.Ink, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 17.sp, textAlign = TextAlign.Center)
-          }
-        }
-      }
-    }
-    Text(
-      text = if (first) "Primera partida: juega otra vez y comparas." else model.progressPhrase,
-      color = Color(0xFFF4F2FF),
-      fontWeight = FontWeight.SemiBold,
-      fontSize = 15.sp,
-      textAlign = TextAlign.Center,
-      modifier = Modifier.padding(top = 10.dp, start = 16.dp, end = 16.dp).testTag("progress_phrase")
-    )
-  }
-}
-
-/** 3) El truco para la próxima: un recuadro chico. */
-@Composable
-fun NextTrick(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
-  ClayCard(
-    modifier = modifier.fillMaxWidth().padding(top = 18.dp).testTag("next_trick").semantics(mergeDescendants = true) { contentDescription = model.trickTitle + ": " + model.trick },
-    color = Clay.Lime,
-    size = SlabSize.MEDIUM,
-    contentPadding = 14.dp
-  ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-      Text(model.trickTitle, color = Clay.Ink, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-      Text(model.trick, color = Clay.Ink, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, modifier = Modifier.padding(top = 4.dp))
-    }
-  }
-}
-
-/** 4) ¿Por qué importa?: abajo, en chico y sin recuadro (una frase, su fuente y la nota de siempre). */
-@Composable
-fun WhyItMatters(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
-  Column(
-    modifier = modifier.fillMaxWidth().padding(top = 22.dp, start = 12.dp, end = 12.dp).testTag("why_it_matters"),
-    horizontalAlignment = Alignment.CenterHorizontally
-  ) {
-    Box(Modifier.fillMaxWidth().height(1.dp).background(Faint.copy(alpha = 0.35f)))
-    Text(model.whyTitle, color = Muted, fontWeight = FontWeight.Bold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 8.dp))
-    Text(model.why, color = Muted, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 4.dp))
-    Text(model.source, color = Faint, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp))
-    Text(model.note, color = Faint, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 2.dp))
-  }
+fun ResultNote(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
+  OnBoardText(
+    text = model.note, color = NubiTokens.OnNightDim, fontFamily = AppFamily, fontWeight = FontWeight.Normal, fontSize = 16.sp, textAlign = TextAlign.Center,
+    modifier = modifier.fillMaxWidth().padding(top = 20.dp, bottom = 8.dp).testTag("result_note")
+  )
 }

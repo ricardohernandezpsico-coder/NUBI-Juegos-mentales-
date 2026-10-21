@@ -6,7 +6,64 @@
 
 > **UN solo final (Tarea 126, 18-oct):** la pantalla de la app abre DIRECTO con el final con sentido, sin el puntaje gigante, las tres estrellas ni «¡Muy bien!» (decisión de Ricardo, 17-oct): arriba va la placa del juego (su emblema, el nombre y el área) y, si hubo récord, una línea con su sello y su sonido. El puntaje se sigue guardando y es la primera línea de «Ver el detalle de tu partida». En Unity ya no hay panel de resultado: el «momento del objeto» y la cortina «¡Listo!» con el emblema del juego (`docs/arquitectura-app.md` § «Un solo final y un solo cielo»; hoja `docs/previews/final-unico.png`). Las líneas que decían «Racha mayor» o «mejor racha» para aciertos seguidos dicen «Más seguidos». **Récord (Tarea 127):** se dice UNA vez por pantalla, en el sello de arriba y con la cifra cuando la hay («¡Récord nuevo: 31 cápsulas!»); la tarjeta de la medida no lo repite y, con sello, «Tu avance» usa la comparación normal con el promedio (no «¡Tu mejor partida hasta ahora!»). La primera partida de un juego no celebra récord: la app le manda 0 a Unity y toda primera partida «lo rompía»; `FirstRecord.gate` lo apaga (la marca previa, leída antes de guardar, debe ser mayor que 0). «Cerca de tu promedio: vas parejo.» reemplaza a «Igual que tu promedio…».
 
-## Orden del final, para todos los juegos
+## El final «B» (Tarea 146, 20-oct): una cifra, una frase, un siguiente paso
+
+> **Vigente.** Ricardo dijo que el final «aún es mucha información y dice poco para la persona». Fable investigó la competencia (`auditoria-fable/investigacion-final-competencia.md`) y escribió la especificación (`auditoria-fable/spec-final-B.md`); hoja `docs/previews/final-B.png`. Lo de abajo («Orden del final», las tablas de cada grupo) queda como historia y como la fuente de las medidas, las tolerancias, los trucos y las fuentes, que NO cambian.
+
+**Decisiones de Ricardo (20-oct):** B ahora (C después de la 2b); **sin la línea «para ti»** en ningún juego; «¿Por qué importa?» y su fuente van a la ficha del juego («Qué pones en juego») y al detalle, y en el final se ven **solo en las 3 primeras partidas de cada juego**; «Jugar de nuevo» se queda; la sesión de hoy va solo en el botón. Criterio de Opus en las 5 decisiones abiertas: Correo «8 de 11 encargos»; en partida libre el botón dice «Listo»; Aterrizaje no se toca; «¿Por qué importa?» va DESPUÉS de los botones y antes de la nota; el emblema va en el botón «Siguiente». Un ajuste a la spec: Satélites dice «2,6 satélites» · «a la vez, sin perderlos de vista» (no «seguidos a la vez»: en los juegos «seguidos» son los aciertos en fila).
+
+**Orden de arriba hacia abajo** (393 × 873 dp, 24 dp a los lados, desplazable; todo texto suelto con `OnBoardText`):
+
+| # | Bloque | `testTag` |
+|---|---|---|
+| 1 | Placa compacta: emblema de 72 dp, el nombre (22 sp) y el área (16 sp) | `result_plaque` |
+| 2 | Sello del récord (solo si lo hay; 20 sp, a la izquierda) | `result_record` |
+| 3 | **La cifra** (34 sp, Fredoka Bold, suelta, sin tarjeta) | `result_headline` |
+| 4 | **La unidad** (17 sp Nunito Regular, interlineado 24 sp) | `result_unit` |
+| 5 | **Tu avance en UNA frase**, con los dos números adentro (16 sp SemiBold); sin medida hoy no se dibuja | `progress_phrase` |
+| 6 | **Avisos** cuando pasan (píldoras; máximo 2): la etapa que subió, lo nuevo del juego («Modo nuevo: En marcha», «¡Despegó tu cohete n.º 3!»), la nota del modo | `result_notices` |
+| 7 | **Truco para la próxima** (el único recuadro) | `next_trick` |
+| 8 | **Botón principal**: «Siguiente: {juego} · N de 3» con el emblema del juego a la izquierda; en el último, «Terminar la ruta de hoy»; en partida libre, «Listo» | `btn_result_continue` |
+| 9 | «Jugar de nuevo» | `btn_result_replay` |
+| 10 | «Ver el detalle de tu partida» (cerrado) | `detail_toggle`, `detail_content` |
+| 11 | «¿Por qué importa?» + fuente, a la vista SOLO si hubo menos de 3 partidas antes de esta (`FinalesConSentido.WHY_INLINE_PLAYS`); desde la cuarta va al final del detalle | `why_it_matters` |
+| 12 | La nota «Medida de esta partida. No es un diagnóstico.», siempre | `result_note` |
+
+**Se fueron de la pantalla:** la fila «etapa · modo» (la ficha ya lo dice), el título «Tu avance» y los tres cuadros, la tarjeta crema de la medida (`WhatYouDid`; la cifra va suelta), los discos «Sesión de hoy» (pasaron al texto del botón), la fila de la liga (`rank`: la v1 va sin ligas; el parámetro se quitó) y el dato tuyo de la vista (`dataLine`: pasa a la primera línea del detalle, o a un aviso si anuncia algo nuevo). Los `boxTitle` de antes («Tu rastro», «Tu reactor»…) ya no se dibujan: siguen en el modelo para el lector de pantalla.
+
+**Detalle (en este orden):** el puntaje (`detail_score`), el `dataLine` (SemiBold), el título de Aterrizaje («13 aterrizajes justos de 15»), su resumen y su base, los avisos de más, el detalle propio del juego (sin cambios de contenido) y, desde la cuarta partida, «¿Por qué importa?». Tipografía de LECTURA (P5 de `propuestas-diseno-visual.md`): a la izquierda, cuerpo de 17 sp Nunito Regular `OnNight` con interlineado de 24 sp (`DetailText`), títulos de sección de 18 sp en sol (`DetailTitle`), nada bajo 16 sp (las barras de «Por modo», «Qué te frena», «Tu atlas», «Por grupo de palabras» pasaron de 15 a 16).
+
+**Las 17 «cifra · unidad»** (sin imágenes de la vida diaria; «seguidos» solo para aciertos en fila; la fila «sin medida» es la unidad cuando la cifra es «—»):
+
+| Juego | Cifra · unidad | Sin medida |
+|---|---|---|
+| Constelaciones | «78 %» · «de las parejas vistas, de memoria» | «Sin oportunidades de memoria en esta partida.» |
+| Rastro de luz | «5 luces» · «seguidas, bien repetidas» | la frase de `Trail.noTrailLine` |
+| Bodega de carga | «9 de 12 objetos» · «al primer intento» | — |
+| La estación de correo | «8 de 11 encargos» · «cumplidos a tiempo» (la frase de avance sigue en %) | «Sin encargos en esta partida.» |
+| Tinta o Palabra | «+0,4 s» (o «casi nada») · «te frenó la palabra» | «Esta vez no hubo aciertos suficientes para medirlo.» |
+| Piloto Estelar | «58 %» · «de las señales, a los mandos» | `Piloto.TOO_FEW_LINE` |
+| Freno de Emergencia | «zona firme» · «tu freno, en 5 partidas» / «tu freno, primera lectura» | «Sin estimación: hacen falta 6 altos y frenar entre 1 de cada 4 y 3 de cada 4.» |
+| Satélites | «2,6 satélites» · «a la vez, sin perderlos de vista» | «Sin rondas suficientes para medir tu seguimiento.» |
+| Rescate relámpago | «170 ms» · «de vistazo te bastan» | «Sin rondas suficientes para medir tu vistazo.» |
+| Carga exacta | «5 de 8 cargas» · «sin pista» | — |
+| Engranajes | «7 de 10 máquinas» · «arregladas» | — |
+| Acoplamiento | «212° por segundo» · «de giro en tu mente» | «Se calcula con 8 aciertos en 3 ángulos y 7 de cada 10 bien.» |
+| Aterrizaje Lunar | no se toca: «9 % de la regla» · «Como quedar a 9 en una regla de 0 a 100.» | — |
+| En la punta de la lengua | «5 de 8 palabras» · «por tu cuenta» | — |
+| Lluvia de meteoros | «51 %» · «de las palabras raras, reconocidas» | «Sin palabras suficientes para medir tu vocabulario.» |
+| ¿Verdad o disparate? | «142 palabras» · «por minuto, leyendo y decidiendo» (la frase usa «142 por minuto») | «Faltan unas 10 respuestas bien para medir tu lectura.» |
+| La estrella intrusa | «11 de 14 rondas» · «bien resueltas» | — |
+
+**Las frases de avance** (`FinalesConSentido.PHRASE_*` con `{promedio}` y `{mejor}`; `phraseWith` los llena con la unidad del juego: «4 luces», «70 %», «zona firme», «+0,3 s», «2,4 satélites», «180 ms», «200 °/s», «140 por minuto»): primera partida «Primera partida: la próxima te comparas contigo.»; mejor «Mejor que tu promedio ({promedio}). Tu mejor: {mejor}.»; parejo «Como tu promedio ({promedio}): vas parejo. Tu mejor: {mejor}.»; bajo «Un poco bajo tu promedio ({promedio}): es normal que varíe.»; mejor que tu mejor «¡Tu mejor hasta ahora! Tu promedio: {promedio}.» — esta última solo cuando no hay sello propio: con sello (`recordNew`, o cualquier récord) el récord se dice UNA vez, arriba, y la frase usa la comparación con el promedio (`avoidBest`). Aterrizaje usa `Aterrizaje.phraseWith` con las mismas ideas. Las tolerancias de «parejo» (`FinalModels.TOLERANCE_*`) no cambiaron.
+
+**La ficha del juego, «Qué pones en juego»** (`GameSheetContent`, tag `sheet_why`): después de la medida y antes de «A tu medida · con reloj», el mismo texto de «Por qué importa» pero en PRESENTE («Pones en juego la memoria de trabajo: …» / «Pones en juego lo que usas para recordar …», `Copy.sheetText`, misma regla del infinitivo) y «Fuente: …». Aterrizaje usa `Aterrizaje.SHEET_TEXT` y `Aterrizaje.SOURCE`.
+
+**El contador de las 3 partidas:** `FinalesConSentido.playsBefore(historial, juego, marca de tiempo)` = cuántas partidas de ese juego hay en `game_results` ANTERIORES a esta (sale de lo ya guardado, sin preferencias nuevas: un respaldo restaurado en otro teléfono trae el conteo con la base). `MainActivity` lo pasa como `playsBefore`; el id del siguiente es `DailySessionState.nextGameId` (`gameIds[completedCount]`, null en el último).
+
+**Pruebas:** `FinalOrderTest` (orden por `testTag`, sin cuadros, «¿Por qué importa?» entre el detalle y la nota con 0 partidas y dentro del detalle desde 3, los tres textos del botón, los avisos), `FinalesConSentidoTest` (las cinco frases con números, `sheetText`, la guardia de culpa), `FinalModelsTest` (las 16 cifras y unidades, las «sin medida», avisos, vocabulario, lector de pantalla), `FinalFitTest` (los 17 juegos en 393 × 873 y 360 × 780 con letra 1,0 y 1,3: «Jugar de nuevo» termina sobre el borde / el botón principal empieza sobre el borde; ninguna palabra partida en «Siguiente: La estación de correo · 2 de 3»; las unidades en dos líneas como máximo, también «sin medida»), `PulidoFinalTextosTest`, `GameFlowTest` (`nextGameId`), `GameSheetFitScreenshotTest` y las capturas de cada juego.
+
+## Orden del final, para todos los juegos (HISTORIA: antes de la Tarea 146)
 
 Es la plantilla de Aterrizaje Lunar (Tarea 70; componente `ui/components/MeaningfulResult.kt`):
 

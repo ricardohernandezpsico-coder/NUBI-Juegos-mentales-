@@ -140,6 +140,7 @@ App (Compose, `ui/components/` y `ui/theme/`):
 - `NubiBubble` y `NubiClay`: el globo de Nubi (losa crema con cola) y Nubi 3D de frente; Nubi comenta, no manda.
 - `FarolaImage` y `WeekLampRendered`: la farola del kit, encendida o apagada (la semana de Hoy y de Avance).
 - `ClayPanel`: la losa grande crema para la lectura larga y las tarjetas de Ajustes (letra en tinta; Licencias y créditos y el aviso de salud van sobre una).
+- El final de partida «B» (Tarea 146, `ui/components/MeaningfulResult.kt`): la cifra y su unidad, la frase de avance, «¿Por qué importa?» y el detalle van SUELTOS sobre el cielo con `OnBoardText`, alineados a la izquierda: cuerpo de 17 sp Nunito Regular `OnNight` con interlineado de 24 sp (`DetailText`), títulos de 18 sp en sol (`DetailTitle`), «Fuente» y nota en `OnNightDim`; el único recuadro es el truco (lima). `ClayButton(leading = …)` pone un dibujo propio (el emblema del juego que sigue) en lugar del glifo.
 - `KitBar`: el canal y el churro de las barras de avance; `FamilyMedal`: las medallas de conducta, también la de la celebración y la de la tarjeta de compartir (la vectorial solo queda para «Medallas anteriores»); `GameEmblem`: el emblema de un juego; `PedestalImage` y los edificios: los lugares de la isla; `Island`: la isla de Hoy y, al cerrar el Primer vuelo, la que se verá mañana.
 - `OnBoardText`, `BoardBackground` y `CosmosBackground`: el texto sobre el cielo y el cielo mismo.
 

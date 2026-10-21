@@ -669,8 +669,8 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   fun continueDailyFlow() {
     _lastResult.value = null
     val session = dailySession.value
-    if (session.completedCount < session.gameIds.size) {
-      val nextId = session.gameIds[session.completedCount]
+    val nextId = session.nextGameId
+    if (nextId != null) {
       launchGame(nextId, isDailyFlow = true)
     } else {
       setTab(AppTab.HOY)
