@@ -198,18 +198,17 @@ namespace NeuroVida.Games.Parejas
         public const string MemoryLabel = "De memoria";
         public const string MemoryNone = "aún nada que recordar";
         public const string FloatMemory = "¡De memoria!", FloatFound = "¡Encontrada!", FloatTrio = "¡Trío!", FloatThird = "¡Falta la tercera!";
-        public const string Streak = "Racha de memoria";
-        public const string TapToStart = "Toca para empezar";
+        public const string Streak = "Seguidas de memoria";
         public const string GoldLegend = "Línea dorada: la recordaste";
 
         public static string SkyOf(int board, int boards) => boards > 0 ? "Cielo " + board + " de " + boards : "Cielo " + board;
 
-        public static string BestStreakLine(int best) => best > 0 ? "Mejor racha: " + best : "";
+        public static string BestStreakLine(int best) => best > 0 ? "Más seguidas: " + best : "";
 
         public static string MemoryCount(int hits, int opps) => opps > 0 ? hits + " de " + opps : MemoryNone;
 
         public static string DoneLine(int hits, int opps, bool recordStreak) =>
-            opps > 0 ? hits + " de " + opps + " de memoria" + (recordStreak ? " · ¡racha récord!" : "") : LuckyLine;
+            opps > 0 ? hits + " de " + opps + " de memoria" + (recordStreak ? " · ¡récord de seguidas!" : "") : LuckyLine;
 
         /// <summary>«2 parejas», «1 trío», «2 parejas y 1 trío»: lo que falta del cielo.</summary>
         public static string Missing(int pairs, int trios)
@@ -256,7 +255,7 @@ namespace NeuroVida.Games.Parejas
         /// <summary>El consejo del final: rota con el cielo; el primero es el de la medida («da vuelta primero una luz nueva»).</summary>
         public static string Tip(int board) => Tips[((board % Tips.Length) + Tips.Length) % Tips.Length];
 
-        public static string IntroTag(ConIntro intro) => intro == ConIntro.Cielo ? "CONSTELACIONES" : "NUEVO";
+        public static string IntroTag(ConIntro intro) => intro == ConIntro.Cielo ? "Constelaciones" : "Nuevo";
 
         public static string[] IntroLines(ConIntro intro)
         {

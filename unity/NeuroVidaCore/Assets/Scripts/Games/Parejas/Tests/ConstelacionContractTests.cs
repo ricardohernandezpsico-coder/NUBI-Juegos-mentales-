@@ -692,15 +692,15 @@ namespace NeuroVida.Games.Parejas.Tests
             Assert.AreEqual("Gemelos, parejas y tríos", ConstelacionContract.CardTitle(ConstelacionContract.Stage(14)));
             Assert.AreEqual("Cielo 2 de 6", ConstelacionContract.SkyOf(2, 6));
             Assert.AreEqual("3 de 4 de memoria", ConstelacionContract.DoneLine(3, 4, false));
-            Assert.AreEqual("3 de 4 de memoria · ¡racha récord!", ConstelacionContract.DoneLine(3, 4, true));
+            Assert.AreEqual("3 de 4 de memoria · ¡récord de seguidas!", ConstelacionContract.DoneLine(3, 4, true));
             Assert.AreEqual("Todas a la primera vista: ¡qué suerte!", ConstelacionContract.DoneLine(0, 0, false));
             Assert.AreEqual("aún nada que recordar", ConstelacionContract.MemoryCount(0, 0));
             Assert.AreEqual("2 de 5", ConstelacionContract.MemoryCount(2, 5));
             StringAssert.StartsWith("Truco: da vuelta primero una luz nueva", ConstelacionContract.Tip(0));
             foreach (var intro in new[] { ConIntro.Cielo, ConIntro.Gemelos, ConIntro.Trios, ConIntro.Mezcla, ConIntro.Grande })
                 Assert.AreEqual(3, ConstelacionContract.IntroLines(intro).Length, "cada tarjeta explica con 3 líneas");
-            Assert.AreEqual("CONSTELACIONES", ConstelacionContract.IntroTag(ConIntro.Cielo));
-            Assert.AreEqual("NUEVO", ConstelacionContract.IntroTag(ConIntro.Grande));
+            Assert.AreEqual("Constelaciones", ConstelacionContract.IntroTag(ConIntro.Cielo));
+            Assert.AreEqual("Nuevo", ConstelacionContract.IntroTag(ConIntro.Grande));
             var all = new List<string> { ConstelacionContract.MissTitle, ConstelacionContract.MissSub, ConstelacionContract.CardDoneTitle, ConstelacionContract.LuckyLine, ConstelacionContract.GoldLegend };
             all.AddRange(ConstelacionContract.AllTips());
             foreach (var i in new[] { ConIntro.Cielo, ConIntro.Gemelos, ConIntro.Trios, ConIntro.Mezcla, ConIntro.Grande }) all.AddRange(ConstelacionContract.IntroLines(i));

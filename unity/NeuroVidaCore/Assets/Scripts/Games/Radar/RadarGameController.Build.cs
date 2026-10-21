@@ -35,7 +35,7 @@ namespace NeuroVida.Games.Radar
 
     public sealed partial class RadarGameController
     {
-        private const int CapsulePool = 6, RockPool = 2, EchoPool = 6, DustPool = 30, DebrisPool = 5, SmokePool = 4, NebulaPool = 4, WindowCount = 10, BeamPool = 4, SparksPerBeam = 5, EndCapsPool = 48, ConfettiPool = 60, TripLines = 7, DockSparks = 6, EndRows = 5;
+        private const int CapsulePool = 6, RockPool = 2, EchoPool = 6, DustPool = 30, DebrisPool = 5, SmokePool = 4, NebulaPool = 4, WindowCount = 10, BeamPool = 4, SparksPerBeam = 5, TripLines = 7, DockSparks = 6;
 
         private static readonly Color Gold = new Color(255f / 255f, 201f / 255f, 74f / 255f);
         private static readonly Color Cyan = new Color(127f / 255f, 216f / 255f, 255f / 255f);
@@ -65,7 +65,7 @@ namespace NeuroVida.Games.Radar
             public PlasticTouch Touch;          // plasticina: la losa presionada (con su huella) al tocarla; el juego lee Touch.Down al elegir la imagen
         }
 
-        private RectTransform _safe, _play, _backLayer, _radarLayer, _shipLayer, _fxLayer, _boardLayer, _hudLayer, _endLayer, _radarZone, _shipZone;
+        private RectTransform _safe, _play, _backLayer, _radarLayer, _shipLayer, _fxLayer, _boardLayer, _hudLayer, _radarZone, _shipZone;
         private readonly List<KeyValuePair<Text, float>> _fonts = new List<KeyValuePair<Text, float>>();
         private readonly List<KeyValuePair<Image, float>> _radii = new List<KeyValuePair<Image, float>>();
 
@@ -99,10 +99,6 @@ namespace NeuroVida.Games.Radar
         private bool _msgCream;
 
         // pantalla final
-        private Image _endCard, _endRecordBg;
-        private readonly Image[] _endCaps = new Image[EndCapsPool], _confetti = new Image[ConfettiPool];
-        private Text _endTag, _endTitle, _endNote1, _endNote2, _endNote3, _endRecord;
-        private readonly Text[] _endLabel = new Text[EndRows], _endValue = new Text[EndRows];
 
         // ------------------------------------------------------------------ construcción de UI
 
@@ -146,14 +142,12 @@ namespace NeuroVida.Games.Radar
             _fxLayer = Layer(_play, "Fx");
             _boardLayer = Layer(_play, "Board");
             _hudLayer = Layer(_play, "HudExtra");
-            _endLayer = Layer(_play, "End");
             BuildBack();
             BuildRadar();
             BuildShip();
             BuildFx();
             BuildBoard();
             BuildHud();
-            BuildEnd();
             BuildHiddenResult();
 
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
@@ -373,41 +367,6 @@ namespace NeuroVida.Games.Radar
             _msgPill.gameObject.SetActive(false);
         }
 
-        private void BuildEnd()
-        {
-            _endTag = MakeLabel(_endLayer, "Tag", 16f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
-            _endTitle = MakeLabel(_endLayer, "Title", 27f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
-            for (int i = 0; i < EndCapsPool; i++) { _endCaps[i] = MakeImage(_endLayer, "EndCap" + i, null); _endCaps[i].gameObject.SetActive(false); }
-            _endCard = Rr(_endLayer, "Card", new Color(34f / 255f, 32f / 255f, 90f / 255f, 0.97f), 22f, SlabSize.Button, SlabTone.Night);
-            for (int i = 0; i < _endLabel.Length; i++)
-            {
-                _endLabel[i] = MakeLabel(_endLayer, "Label" + i, 16f, UiFonts.Regular, Soft, TextAnchor.MiddleLeft);
-                _endValue[i] = MakeLabel(_endLayer, "Value" + i, 17f, UiFonts.Bold, Color.white, TextAnchor.MiddleRight);
-                _endLabel[i].horizontalOverflow = _endValue[i].horizontalOverflow = HorizontalWrapMode.Overflow;
-            }
-            _endNote1 = MakeLabel(_endLayer, "Note1", 16f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
-            _endNote2 = MakeLabel(_endLayer, "Note2", 16f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
-            _endNote3 = MakeLabel(_endLayer, "Note3", 16f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
-            _endRecordBg = Rr(_endLayer, "RecordBg", Gold, 15f, SlabSize.Chip, SlabTone.Sun);
-            _endRecord = MakeLabel(_endLayer, "Record", 16f, UiFonts.Bold, Ink, TextAnchor.MiddleCenter);
-            _endTag.text = RadarContract.EndTag;
-            _endNote1.text = RadarContract.EndNote1;
-            _endNote2.text = RadarContract.EndNote2;
-            _endNote3.text = RadarContract.EndNote3;
-            _endLabel[0].text = RadarContract.EndCapture;
-            _endLabel[1].text = RadarContract.EndShortest;
-            _endLabel[2].text = RadarContract.EndPerfect;
-            _endLabel[3].text = RadarContract.EndStreak;
-            _endLabel[4].text = RadarContract.EndTrips;
-            foreach (var t in new[] { _endTag, _endTitle, _endNote1, _endNote2, _endNote3, _endRecord }) t.horizontalOverflow = HorizontalWrapMode.Wrap;
-            for (int i = 0; i < ConfettiPool; i++)
-            {
-                _confetti[i] = MakeImage(_endLayer, "Confetti" + i, DiscSprite.Get());
-                _confetti[i].gameObject.SetActive(false);
-            }
-            _endLayer.gameObject.SetActive(false);
-        }
-
         /// <summary>El panel de resultado de la clase base (no se muestra: la pantalla final es la de <see cref="BuildEnd"/>; la base pide que exista).</summary>
         private void BuildHiddenResult()
         {
@@ -551,7 +510,6 @@ namespace NeuroVida.Games.Radar
             LayoutShip();
             LayoutBoard();
             LayoutHud();
-            LayoutEnd();
         }
 
         private void LayoutBack()
@@ -666,27 +624,6 @@ namespace NeuroVida.Games.Radar
             r.sizeDelta = new Vector2(Mathf.Max(0.01f, (RadarPlan.Width - 24f) * _timerFraction) * _s, 5f * _s);
             r.anchoredPosition = P(12f, 71f);
             _timerFill.color = _timerFraction > 0.5f ? Color.Lerp(Gold, Lime, (_timerFraction - 0.5f) * 2f) : Color.Lerp(Coral, Gold, _timerFraction * 2f);
-        }
-
-        private void LayoutEnd()
-        {
-            float cx = RadarPlan.Width * 0.5f;
-            SetRect(_endTag.rectTransform, cx, RadarPlan.HudBottom + 12f, 300f, 20f);               // bajo el marcador (63 dp): nunca lo tapa
-            SetRect(_endTitle.rectTransform, cx, RadarPlan.HudBottom + 39f, 330f, 34f);
-            PlaceEndCaps();
-            int rows = Mathf.Max(1, Mathf.CeilToInt(Mathf.Min(_seats.Count, EndCapsPool) / 10f));
-            float y0 = Mathf.Min(150f + rows * 32f, 290f);                                      // hasta 48 caben sin tocar la tarjeta
-            SetRect(_endCard.rectTransform, cx, y0 + 86f, RadarPlan.Width - 44f, 172f);
-            for (int i = 0; i < _endLabel.Length; i++)
-            {
-                SetRect(_endLabel[i].rectTransform, 40f + 110f, y0 + 22f + i * 32f, 220f, 24f);
-                SetRect(_endValue[i].rectTransform, RadarPlan.Width - 40f - 70f, y0 + 22f + i * 32f, 140f, 24f);
-            }
-            SetRect(_endNote1.rectTransform, cx, y0 + 194f, 336f, 22f);
-            SetRect(_endNote2.rectTransform, cx, y0 + 214f, 336f, 22f);
-            SetRect(_endNote3.rectTransform, cx, y0 + 234f, 336f, 22f);
-            SetRect(_endRecordBg.rectTransform, cx, y0 + 270f, 190f, 30f);
-            SetRect(_endRecord.rectTransform, cx, y0 + 270f, 190f, 24f);
         }
 
         /// <summary>Lo que ocupan, abajo, el rótulo «Práctica: no cuenta» y «Saltar tutorial» (dp).</summary>

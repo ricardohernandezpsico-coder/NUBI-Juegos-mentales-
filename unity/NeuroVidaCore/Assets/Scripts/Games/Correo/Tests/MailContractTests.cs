@@ -73,8 +73,8 @@ namespace NeuroVida.Games.Correo.Tests
                 Assert.GreaterOrEqual(lines.Length, 3, intro + ": al menos 3 líneas");
                 Assert.IsFalse(string.IsNullOrEmpty(MailContract.IntroTag(intro)));
             }
-            Assert.AreEqual("CORREO ESTELAR", MailContract.IntroTag(MailIntro.Estacion));
-            Assert.AreEqual("NUEVO", MailContract.IntroTag(MailIntro.Hora));
+            Assert.AreEqual("Correo Estelar", MailContract.IntroTag(MailIntro.Estacion));
+            Assert.AreEqual("Nuevo", MailContract.IntroTag(MailIntro.Hora));
             // la tarjeta de la hora cuenta lo del faro y de la nave (docs §11)
             StringAssert.Contains("nave del correo", string.Join(" ", MailContract.IntroLines(MailIntro.Hora)));
         }
@@ -824,10 +824,10 @@ namespace NeuroVida.Games.Correo.Tests
             Assert.AreEqual("¡Maestro del correo! ×30", MailContract.FloatCombo(30));
             Assert.AreEqual("¡Maestro del correo! ×40", MailContract.FloatCombo(40));
             Assert.AreEqual("hoy NO hace falta encender el faro a media tarde", MailContract.RadioText(MailMoment.Tarde));
-            Assert.AreEqual("DÍA 2 DE 4", MailContract.DayTitle(2));
+            Assert.AreEqual("Día 2 de 4", MailContract.DayTitle(2));
             Assert.AreEqual("Día 3 de 4", MailContract.DayHud(3));
-            Assert.AreEqual("Cartas: 12", MailContract.CartasLine(12, 0));
-            Assert.AreEqual("Cartas: 12 · atrasadas: 2", MailContract.CartasLine(12, 2));
+            Assert.AreEqual("Encargos: 1 de 2", MailContract.EncargosLine(1, 2));
+            Assert.AreEqual("Encargos: 0", MailContract.EncargosLine(0, 0), "sin encargos que ya cuenten no se inventa un «de 0»");
             Assert.AreEqual("¡Todos los encargos!", MailContract.RecapTitle(3, 3));
             Assert.AreEqual("Encargos: 2 de 3", MailContract.RecapTitle(2, 3));
             Assert.AreEqual("Reloj: lo miraste 1 vez, 1 cerca de la hora", MailContract.RecapClock(1, 1));

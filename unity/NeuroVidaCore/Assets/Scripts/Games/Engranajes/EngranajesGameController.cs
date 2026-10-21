@@ -295,7 +295,7 @@ namespace NeuroVida.Games.Engranajes
         {
             _phase = Phase.Intro;
             _introTapped = false;
-            _introTitle.text = "NUEVO";
+            _introTitle.text = "Nuevo";
             _introLayer.gameObject.SetActive(true);
             LayoutIntro(EngranajesContract.IntroText(intro));
             _introAt = GameClock.Time;

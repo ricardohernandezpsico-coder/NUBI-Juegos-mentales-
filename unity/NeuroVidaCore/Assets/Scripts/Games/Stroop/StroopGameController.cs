@@ -209,7 +209,7 @@ namespace NeuroVida.Games.Stroop
                 yield return StartCoroutine(ResolveTrial(correct));
                 if (change == DdaChange.Up)
                 {
-                    _toast.Show($"Nivel {_dda.Level}", _dda.Level == 3 ? "Ahora llegan por las dos orillas" : "Más difícil", GoodColor, 1.0f);
+                    _toast.Show("¡Un paso más!", _dda.Level == 3 ? "Ahora llegan por las dos orillas" : "Más difícil", GoodColor, 1.0f);
                     GameFeel.LevelUp();
                 }
                 else if (change == DdaChange.Down || _dda.Struggling) _toast.Show("Con calma", "Ajustamos la dificultad", AmberColor, 1.0f);
@@ -851,7 +851,7 @@ namespace NeuroVida.Games.Stroop
             lr.anchorMax = new Vector2(0.94f, 0.38f);
             lr.offsetMin = lr.offsetMax = Vector2.zero;
             BestFit(line, 48);
-            line.text = "Toca lo que DICE la palabra, no su color";
+            line.text = "Toca lo que dice la palabra, no su color";
             go.SetActive(false);
         }
 

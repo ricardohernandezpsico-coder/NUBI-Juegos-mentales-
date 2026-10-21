@@ -345,12 +345,12 @@ namespace NeuroVida.Games.Secuencia.Tests
         [Test]
         public void TheModeCueTexts_SayWhatToDoInEachMode()
         {
-            StringAssert.Contains("AL REVÉS", RastroModes.CueText(RastroMode.Reves, 4));
+            StringAssert.Contains("Al revés", RastroModes.CueText(RastroMode.Reves, 4));
             StringAssert.Contains("empieza por la última", RastroModes.CueText(RastroMode.Reves, 4));
-            Assert.AreEqual("SOLO LAS ÚLTIMAS 3", RastroModes.CueText(RastroMode.Marcha, 3));
-            StringAssert.Contains("LOS LUCEROS SE MOVIERON", RastroModes.CueText(RastroMode.Gira, 5));
-            Assert.AreEqual("EN ORDEN", RastroModes.CueText(RastroMode.Rastro, 3));
-            Assert.AreEqual("AL REVÉS", RastroModes.NoticeTitle(RastroMode.Reves));
+            Assert.AreEqual("Solo las últimas 3", RastroModes.CueText(RastroMode.Marcha, 3));
+            StringAssert.Contains("los luceros se movieron", RastroModes.CueText(RastroMode.Gira, 5));
+            Assert.AreEqual("En orden", RastroModes.CueText(RastroMode.Rastro, 3));
+            Assert.AreEqual("Al revés", RastroModes.NoticeTitle(RastroMode.Reves));
             Assert.AreEqual("De la última a la primera", RastroModes.NoticeLine(RastroMode.Reves, 4));
             Assert.AreEqual("Solo las últimas 4", RastroModes.NoticeLine(RastroMode.Marcha, 4));
             Assert.AreEqual("El cielo va a girar", RastroModes.NoticeLine(RastroMode.Gira, 5));

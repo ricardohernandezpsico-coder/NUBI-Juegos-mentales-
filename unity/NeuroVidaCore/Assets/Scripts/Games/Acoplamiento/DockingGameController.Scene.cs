@@ -24,15 +24,9 @@ namespace NeuroVida.Games.Acoplamiento
         private bool _poseAligned, _poseSeated;
         private int _moduleNo;
         private float _fuelFraction = 1f, _timerFraction = 1f;
-        private float _noticeAt = -10f, _noticeLife = 1.3f, _landAt = -10f, _endAt = -10f, _confettiAt, _endBarMaxH = 80f;
-        private bool _noticeBig, _confettiOn;
-        private int[] _curve = { -1, -1, -1, -1, -1 };
-        private readonly Vector2[] _confettiPos = new Vector2[ConfettiPool], _confettiVel = new Vector2[ConfettiPool];
-        private readonly float[] _confettiLife = new float[ConfettiPool];
+        private float _noticeAt = -10f, _noticeLife = 1.3f, _landAt = -10f;
+        private bool _noticeBig;
         private Image _timerTrack, _timerFill;
-
-        /// <summary>Las piezas que acopló la persona en la partida (la práctica del tutorial no cuenta): con ellas se arma la escultura de la pantalla final.</summary>
-        private readonly List<Cell[]> _dockedShapes = new List<Cell[]>();
 
         // ------------------------------------------------------------------ reposo y módulo
 
@@ -41,7 +35,6 @@ namespace NeuroVida.Games.Acoplamiento
         {
             DiscardPrebake();
             ReleasePiece();
-            ReleaseSculpture();
             _trial = null;
             _moduleRoot.gameObject.SetActive(false);
             _portEdge.gameObject.SetActive(false);
@@ -52,9 +45,6 @@ namespace NeuroVida.Games.Acoplamiento
             SetNotice("", Lime, false);
             SetFuelVisible(false);
             _hint.gameObject.SetActive(false);
-            _endLayer.gameObject.SetActive(false);
-            foreach (var c in _confetti) c.gameObject.SetActive(false);
-            _confettiOn = false;
             _lightGlow.gameObject.SetActive(false);
             _hud.Rect.gameObject.SetActive(true);
             _hudLayer.gameObject.SetActive(true);
@@ -340,7 +330,6 @@ namespace NeuroVida.Games.Acoplamiento
             RefreshButtons(now);
             AnimateNotice(now);
             RefreshLights(now);
-            if (_phase == Phase.Done) AnimateEnd(now, dt);
         }
 
         /// <summary>El cordón del hueco (verde agua en reposo, lima al encajar, celeste al «mostrar»), los chevrones (lima al encajar: parpadean; con «quitar animaciones», fijos; celestes al mostrar) y el visto lima cuando la pieza queda a ras.</summary>
@@ -539,183 +528,5 @@ namespace NeuroVida.Games.Acoplamiento
             }
         }
 
-        // ------------------------------------------------------------------ la pantalla final
-
-        /// <summary>Las 5 columnas de «Tu curva de giro» (el tiempo medio de los aciertos por ángulo, en la escala del máximo de la curva y 1,5 s como mínimo).</summary>
-        private void PlaceCurve()
-        {
-            float baseY = EndY(582f);
-            int maxv = 1500;
-            foreach (int v in _curve) maxv = Mathf.Max(maxv, v);
-            for (int i = 0; i < CurveBars; i++)
-            {
-                float x = 56f + i * 62f;
-                int v = _curve[i];
-                bool has = v >= 0;
-                _curveBar[i].gameObject.SetActive(has);
-                _curveBarInk[i].gameObject.SetActive(has);
-                _curveValue[i].text = DockingContract.CurveValue(v);
-                _curveValue[i].color = has ? Color.white : Dim;
-                if (has)
-                {
-                    float h = Mathf.Max(8f, _endBarMaxH * v / maxv);
-                    SetRect(_curveBar[i].rectTransform, x, baseY - h * 0.5f, 28f, h);
-                    SetRect(_curveBarInk[i].rectTransform, x, baseY - h * 0.5f, 33.2f, h + 5.2f);
-                    SetRect(_curveValue[i].rectTransform, x, baseY - h - 12f, 56f, 20f);
-                }
-                else SetRect(_curveValue[i].rectTransform, x, baseY - 12f, 56f, 20f);
-            }
-        }
-
-        // ------------------------------------------------------------------ la escultura de «tu estación»
-
-        private readonly List<Sprite> _sculptSprites = new List<Sprite>();
-        private Sprite _coreSprite, _trackBackSprite, _trackFrontSprite;
-        private float _trackWDp, _trackHDp, _coreHDp, _coreTopDp, _coreBotDp;
-        private readonly float[,] _sculptSide = new float[SculptureRings, SlotsPerRing];
-
-        /// <summary>Suelta las texturas de la escultura (se hornean al terminar la partida).</summary>
-        private void ReleaseSculpture()
-        {
-            foreach (var s in _sculptSprites) DockingArt.Release(s);
-            _sculptSprites.Clear();
-            DockingArt.Release(_coreSprite);
-            DockingArt.Release(_trackBackSprite);
-            DockingArt.Release(_trackFrontSprite);
-            _coreSprite = _trackBackSprite = _trackFrontSprite = null;
-            if (_sculptCore == null) return;
-            _sculptCore.sprite = null;
-            for (int r = 0; r < SculptureRings; r++)
-            {
-                _trackBack[r].sprite = null;
-                _trackFront[r].sprite = null;
-                for (int k = 0; k < SlotsPerRing; k++) _sculptPieces[r, k].sprite = null;
-            }
-        }
-
-        /// <summary>
-        /// Arma la escultura con las piezas que acopló la persona: hasta 3 anillos de 8 (los más nuevos) alrededor de un núcleo, con la misma lámpara y el mismo celeste de la pieza de juego; las pistas de los anillos completos van lima y la del que sigue en curso, lavanda. Las piezas se hornean de a pocas por cuadro
-        /// (24 piezas chicas de 10 dp por bloque) mientras la pantalla final entra.
-        /// </summary>
-        private IEnumerator SculptureRoutine()
-        {
-            ReleaseSculpture();
-            var (first, count) = DockingPlan.VisibleRange(_docked);
-            const float pxDp = 3f;
-            _trackBackSprite = DockingArt.TrackSprite(DockingPlan.SculptureRx, DockingPlan.SculptureRy, 3.4f, pxDp, true, out _trackWDp, out _trackHDp);
-            _trackFrontSprite = DockingArt.TrackSprite(DockingPlan.SculptureRx, DockingPlan.SculptureRy, 3.4f, pxDp, false, out _, out _);
-            _coreTopDp = DockingPlan.SculptureRingY[count - 1] - DockingPlan.SculptureRy - 10f;
-            _coreBotDp = DockingPlan.SculptureRingY[0] + DockingPlan.SculptureRy + 12f;
-            _coreSprite = DockingArt.CoreSprite(46f, (_coreBotDp - _coreTopDp) - 18f, 9f, pxDp, out _coreHDp);
-            _sculptCore.sprite = _coreSprite;
-            for (int r = 0; r < SculptureRings; r++)
-            {
-                bool on = r < count;
-                bool full = on && (first + r + 1) * SlotsPerRing <= _docked;
-                var tint = full ? Lime : RingViolet;
-                _trackBack[r].sprite = on ? _trackBackSprite : null; _trackFront[r].sprite = on ? _trackFrontSprite : null;
-                _trackBack[r].color = _trackFront[r].color = tint;
-                _trackBack[r].gameObject.SetActive(on); _trackFront[r].gameObject.SetActive(on);
-            }
-            LayoutSculpture();
-            int baked = 0;
-            for (int r = 0; r < count; r++)
-                for (int k = 0; k < SlotsPerRing; k++)
-                {
-                    int idx = (first + r) * SlotsPerRing + k;
-                    if (idx >= _docked) { _sculptPieces[r, k].gameObject.SetActive(false); continue; }
-                    var shape = idx < _dockedShapes.Count ? _dockedShapes[idx] : PracticeShape();
-                    var sprite = DockingArt.BakeSculpturePiece(shape, 30, 4, 3 + idx, out _sculptSide[r, k]);
-                    _sculptSprites.Add(sprite);
-                    _sculptPieces[r, k].sprite = sprite;
-                    _sculptPieces[r, k].color = DockingPlan.IsFront(k) ? Color.white : new Color(0.84f, 0.88f, 0.98f, 1f);        // las de atrás van más oscuras y más chicas
-                    _sculptPieces[r, k].gameObject.SetActive(true);
-                    PlaceSculpturePiece(r, k);
-                    if (++baked % 4 == 0) yield return null;
-                }
-            for (int r = count; r < SculptureRings; r++)
-                for (int k = 0; k < SlotsPerRing; k++) _sculptPieces[r, k].gameObject.SetActive(false);
-        }
-
-        private void PlaceSculpturePiece(int r, int k)
-        {
-            var p = DockingPlan.SlotPoint(DockingPlan.SculptureRingY[r], k);
-            float side = _sculptSide[r, k] * DockingPlan.SculptureBlock * (DockingPlan.IsFront(k) ? 1f : 0.88f);
-            SetRect(_sculptPieces[r, k].rectTransform, p.x, p.y, side, side);
-        }
-
-        private void LayoutSculpture()
-        {
-            if (_sculptCore == null) return;
-            if (_coreSprite != null) SetRect(_sculptCore.rectTransform, DockingPlan.SculptureCx, (_coreTopDp + _coreBotDp) * 0.5f, 46f, _coreHDp);
-            for (int r = 0; r < SculptureRings; r++)
-            {
-                if (_trackBackSprite != null)
-                {
-                    SetRect(_trackBack[r].rectTransform, DockingPlan.SculptureCx, DockingPlan.SculptureRingY[r], _trackWDp, _trackHDp);
-                    SetRect(_trackFront[r].rectTransform, DockingPlan.SculptureCx, DockingPlan.SculptureRingY[r], _trackWDp, _trackHDp);
-                }
-                for (int k = 0; k < SlotsPerRing; k++) if (_sculptPieces[r, k].sprite != null) PlaceSculpturePiece(r, k);
-            }
-        }
-
-        private void ShowEnd(int record, bool broke, int speed, int[] curve)
-        {
-            _hud.Rect.gameObject.SetActive(false);
-            _hudLayer.gameObject.SetActive(false);
-            _portLayer.gameObject.SetActive(false);
-            _moduleLayer.gameObject.SetActive(false);
-            _buttonLayer.gameObject.SetActive(false);
-            _timerTrack.gameObject.SetActive(false);
-            _timerFill.gameObject.SetActive(false);
-            _endTitle.text = DockingContract.EndTitle(_docked);
-            _endValue[0].text = DockingContract.HitsValue(_correct, _trials);
-            _endValue[1].text = DockingContract.SpeedValue(speed);
-            _endValue[2].text = _rings.ToString();
-            _endValue[3].text = DockingContract.StreakValue(_bestStreak);
-            _endRecord.text = broke ? DockingContract.NewRecord : DockingContract.RecordLine(record);
-            _endRecordBg.color = broke ? Gold : new Color(Gold.r, Gold.g, Gold.b, 0f);
-            _endRecord.color = broke ? Ink : Lavender;
-            _curve = curve != null && curve.Length == CurveBars ? curve : new[] { -1, -1, -1, -1, -1 };
-            _endAt = Now;
-            _endLayer.gameObject.SetActive(true);
-            Layout();
-            StartCoroutine(SculptureRoutine());
-            if (Motion.Decorative)
-            {
-                _confettiOn = true;
-                _confettiAt = Now;
-                var rng = new System.Random();
-                var cols = new[] { Lime, Cyan, Gold, DockingSprites.GrapeColor, Coral };
-                for (int i = 0; i < ConfettiPool; i++)
-                {
-                    _confettiPos[i] = new Vector2(DockingPlan.Width * 0.5f + ((float)rng.NextDouble() - 0.5f) * 120f, 170f);
-                    _confettiVel[i] = new Vector2(((float)rng.NextDouble() - 0.5f) * 260f, -120f - (float)rng.NextDouble() * 220f);
-                    _confettiLife[i] = 1.6f + (float)rng.NextDouble() * 0.7f;
-                    _confetti[i].color = cols[i % cols.Length];
-                    float sz = 3f + (float)rng.NextDouble() * 3f;
-                    _confetti[i].rectTransform.sizeDelta = new Vector2(sz * 2f * _s, sz * 2f * _s);
-                    _confetti[i].gameObject.SetActive(true);
-                }
-            }
-        }
-
-        private void AnimateEnd(float now, float dt)
-        {
-            if (!_confettiOn || dt <= 0f) return;
-            float age = now - _confettiAt;
-            for (int i = 0; i < ConfettiPool; i++)
-            {
-                float life = _confettiLife[i];
-                bool on = age < life;
-                _confetti[i].gameObject.SetActive(on);
-                if (!on) continue;
-                _confettiVel[i].y += 300f * dt;
-                _confettiPos[i] += _confettiVel[i] * dt;
-                SetRect(_confetti[i].rectTransform, _confettiPos[i].x, _confettiPos[i].y, _confetti[i].rectTransform.sizeDelta.x / _s, _confetti[i].rectTransform.sizeDelta.y / _s);
-                var c = _confetti[i].color;
-                _confetti[i].color = new Color(c.r, c.g, c.b, 0.95f * (1f - age / life));
-            }
-        }
     }
 }

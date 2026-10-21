@@ -252,14 +252,13 @@ namespace NeuroVida.Games.Correo
         public const string BriefStart = "Empezar el día";
         public const string BriefNote1 = "Durante el día no los verás.";
         public const string BriefNote2 = "Dilo en voz baja: «cuando vea…, haré…»";
-        public const string RoutineTag = "TODOS LOS DÍAS";
+        public const string RoutineTag = "Todos los días";
         public const string RoutineTitle = "Y lo de todos los días";
         public const string RoutineSub = "(ya no se anota: acuérdate tú)";
         public const string PlayHint = "Toca el buzón del sello";
-        public const string TapToContinue = "Toca para seguir";
         public const string ClockLabel = "reloj";
         public const string ClockPanel = "Hora del día";
-        public const string RadioTag = "RADIO";
+        public const string RadioTag = "Radio";
         public const string RushTitle = "¡Llega un saco!";
         public const string RushSub = "5 cartas seguidas: ¡rápido!";
         public const string SafeLabelA = "Caja", SafeLabelB = "fuerte", BeaconLabel = "Faro";
@@ -282,12 +281,13 @@ namespace NeuroVida.Games.Correo
         }
         public static string RadioText(MailMoment m) => "hoy NO hace falta encender el faro " + MomentPhrase(m);
 
-        public static string DayTitle(int day) => "DÍA " + day + " DE " + Days;
+        public static string DayTitle(int day) => "Día " + day + " de " + Days;
         public static string DayHud(int day) => "Día " + day + " de " + Days;
-        public static string CartasLine(int right, int late) => "Cartas: " + right + (late > 0 ? " · atrasadas: " + late : "");
-        public static string RecapTag(int day) => "FIN DEL DÍA " + day;
+        /// <summary>El contador del marcador mientras se juega (Tarea 154, decisión de Ricardo: «Encargos», como el final de la app): los encargos cumplidos de los que ya cuentan, con el mismo criterio del resumen (<see cref="MailRecapItem"/>).</summary>
+        public static string EncargosLine(int ok, int all) => all <= 0 ? "Encargos: 0" : "Encargos: " + ok + " de " + all;
+        public static string RecapTag(int day) => "Fin del día " + day;
         public static string RecapTitle(int ok, int all) => ok == all ? "¡Todos los encargos!" : "Encargos: " + ok + " de " + all;
-        public static string RecapCards(int right, int total, int bestCombo) => "Cartas bien puestas: " + right + " de " + total + " · racha mayor ×" + bestCombo;
+        public static string RecapCards(int right, int total, int bestCombo) => "Cartas bien puestas: " + right + " de " + total + " · ×" + bestCombo + " seguidas";
         public static string RecapClock(int peeks, int good) => "Reloj: lo miraste " + peeks + (peeks == 1 ? " vez" : " veces") + ", " + good + " cerca de la hora";
         public const string RecapRecord = "¡Nuevo récord de cartas en un día perfecto!";
         public const string RecapUp = "Mañana: un poco más difícil", RecapSame = "Mañana: mismo ritmo";
@@ -309,7 +309,7 @@ namespace NeuroVida.Games.Correo
         public const string DetCommission = "lo hiciste igual", DetNoCommission = "no lo hiciste: bien";
         public static string DetCount(int ok, int all) => ok + " de " + all;
 
-        public static string IntroTag(MailIntro intro) => intro == MailIntro.Estacion ? "CORREO ESTELAR" : "NUEVO";
+        public static string IntroTag(MailIntro intro) => intro == MailIntro.Estacion ? "Correo Estelar" : "Nuevo";
 
         public static string[] IntroLines(MailIntro intro)
         {

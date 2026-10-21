@@ -97,9 +97,9 @@ Trabajas en la estación de correo de la nave.
 
 | Zona | Contenido |
 |---|---|
-| Arriba | «Día N de 4» y «Cartas: N · atrasadas: M». El **reloj tapado** a la derecha (aro de 56 dp, «?», rótulo «reloj»). |
+| Arriba | «Día N de 4» y «Encargos: 1 de 2» (Tarea 154, decisión de Ricardo, como el final de la app; antes «Cartas: N · atrasadas: M»; `MailDay.EncargosSoFar` usa el mismo criterio del resumen). El **reloj tapado** a la derecha (aro de 56 dp, «?», rótulo «reloj»). |
 | Al mirar el reloj | Panel «Hora del día» con la barra, los 4 momentos (14 dp) y el lucero. |
-| Radio | Franja de 3,2 s con «RADIO» y el aviso. |
+| Radio | Franja de 3,2 s con «Radio» y el aviso. |
 | Cinta (y ≈ 250) | La carta activa en el marco punteado (112×76) y las que vienen detrás, más chicas, avanzando con resorte. Píldora «Racha ×N» desde 3. |
 | Buzones (y 326-438) | 2-4 botones de arcilla, 78-150 dp de ancho y 112 de alto, con planeta, figura y nombre: Coralia (círculo), Celesta (triángulo), Lima (cuadrado) y Uva (gota). |
 | Acciones (y 468-556) | **Caja fuerte** (dial con marcas y manija) y **Faro** (torre que, encendida, lanza dos haces), de 158×88 dp. Siempre visibles, haya o no encargo, para que no sirvan de recordatorio. |

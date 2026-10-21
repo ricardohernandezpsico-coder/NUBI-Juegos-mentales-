@@ -9,7 +9,7 @@ namespace NeuroVida.Games.Acoplamiento
 {
     public sealed partial class DockingGameController
     {
-        private const int Lights = DockingPlan.Lights, SlotsPerRing = DockingContract.Slots, SculptureRings = DockingPlan.SculptureRings, ConfettiPool = 50, CurveBars = 5, EndRows = 4, ChevronCount = 4;
+        private const int Lights = DockingPlan.Lights, SlotsPerRing = DockingContract.Slots, ChevronCount = 4;
 
         /// <summary>El atlas de plasticina de Acoplamiento (los íconos de los botones, los chevrones y las luces de la fila de avance; el resto sale del kit de la app).</summary>
         public const string PlasticGroup = "acoplamiento";
@@ -30,7 +30,7 @@ namespace NeuroVida.Games.Acoplamiento
         private static readonly Color PortEdgeIdle = new Color(92f / 255f, 200f / 255f, 194f / 255f);
         private static readonly Color CardFill = new Color(34f / 255f, 32f / 255f, 90f / 255f, 0.97f);
 
-        private RectTransform _safe, _play, _backLayer, _portLayer, _moduleLayer, _buttonLayer, _hudLayer, _fxLayer, _endLayer;
+        private RectTransform _safe, _play, _backLayer, _portLayer, _moduleLayer, _buttonLayer, _hudLayer, _fxLayer;
         private readonly List<KeyValuePair<Text, float>> _fonts = new List<KeyValuePair<Text, float>>();
         private readonly List<KeyValuePair<Image, float>> _radii = new List<KeyValuePair<Image, float>>();
 
@@ -66,18 +66,6 @@ namespace NeuroVida.Games.Acoplamiento
         // barra de tiempo, pista y avisos (la losa chica del kit)
         private Image _fuelBorder, _fuelTrack, _fuelFill, _noticeShadow, _noticeBorder, _noticePill, _noticeSlab;
         private Text _fuelLabel, _hint, _noticeText;
-
-        // pantalla final
-        private Image _endShade, _endCard, _endRecordBg;
-        private Text _endTag, _endTitle, _endCurveTitle, _endNote1, _endNote2, _endRecord;
-        private readonly Text[] _endLabel = new Text[EndRows], _endValue = new Text[EndRows], _curveValue = new Text[CurveBars], _curveAngle = new Text[CurveBars];
-        private readonly Image[] _curveBarInk = new Image[CurveBars], _curveBar = new Image[CurveBars], _confetti = new Image[ConfettiPool];
-
-        // la escultura de «tu estación» (pantalla final): el núcleo, las pistas de los anillos (atrás y adelante) y las piezas acopladas (3 anillos de 8)
-        private RectTransform _sculptBack, _sculptFront;
-        private Image _sculptCore;
-        private readonly Image[] _trackBack = new Image[SculptureRings], _trackFront = new Image[SculptureRings];
-        private readonly Image[,] _sculptPieces = new Image[SculptureRings, SlotsPerRing];
 
         private static Sprite Art(string name) => PlasticArt.Get(PlasticGroup, name);
 
@@ -120,14 +108,12 @@ namespace NeuroVida.Games.Acoplamiento
             _buttonLayer = Layer(_play, "Buttons");
             _hudLayer = Layer(_play, "HudExtra");
             _fxLayer = Layer(_play, "Fx");
-            _endLayer = Layer(_play, "End");
             BuildLights();
             BuildPort();
             BuildModule();
             BuildButtons();
             BuildFuelAndNotice();
             BuildHud();
-            BuildEnd();
             BuildHiddenResult();
 
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
@@ -269,66 +255,6 @@ namespace NeuroVida.Games.Acoplamiento
             _timerFill.rectTransform.pivot = new Vector2(0f, 0.5f);
         }
 
-        private void BuildEnd()
-        {
-            _endShade = MakeImage(_endLayer, "Shade", null);
-            _endShade.color = new Color(4f / 255f, 5f / 255f, 26f / 255f, 0.55f);
-            BuildSculpture();
-            _endTag = MakeLabel(_endLayer, "Tag", 16f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
-            _endTitle = MakeLabel(_endLayer, "Title", 26f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
-            _endCard = Rr(_endLayer, "Card", CardFill, 22f);
-            string[] labels = { DockingContract.EndHits, DockingContract.EndSpeed, DockingContract.EndRings, DockingContract.EndStreak };
-            for (int i = 0; i < EndRows; i++)
-            {
-                _endLabel[i] = MakeLabel(_endLayer, "Label" + i, 16f, UiFonts.Regular, Soft, TextAnchor.MiddleLeft);
-                _endValue[i] = MakeLabel(_endLayer, "Value" + i, 17f, UiFonts.Bold, Color.white, TextAnchor.MiddleRight);
-                _endLabel[i].horizontalOverflow = _endValue[i].horizontalOverflow = HorizontalWrapMode.Overflow;
-                _endLabel[i].text = labels[i];
-            }
-            _endCurveTitle = MakeLabel(_endLayer, "CurveTitle", 16f, UiFonts.Bold, Soft, TextAnchor.MiddleCenter);
-            _endCurveTitle.text = DockingContract.EndCurve;
-            for (int i = 0; i < CurveBars; i++)
-            {
-                _curveBarInk[i] = Rr(_endLayer, "BarInk" + i, Ink, 10f);
-                _curveBar[i] = Rr(_endLayer, "Bar" + i, DockingSprites.GrapeColor, 8f);
-                _curveValue[i] = MakeLabel(_endLayer, "BarValue" + i, 16f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
-                _curveAngle[i] = MakeLabel(_endLayer, "BarAngle" + i, 16f, UiFonts.Bold, Soft, TextAnchor.MiddleCenter);
-                _curveValue[i].horizontalOverflow = _curveAngle[i].horizontalOverflow = HorizontalWrapMode.Overflow;
-                _curveAngle[i].text = DockingContract.CurveBins[i] + "°";
-            }
-            _endNote1 = MakeLabel(_endLayer, "Note1", 16f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
-            _endNote2 = MakeLabel(_endLayer, "Note2", 16f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
-            _endNote1.text = DockingContract.EndNote1;
-            _endNote2.text = DockingContract.EndNote2;
-            _endNote1.horizontalOverflow = _endNote2.horizontalOverflow = HorizontalWrapMode.Wrap;
-            _endRecordBg = Rr(_endLayer, "RecordBg", Gold, 15f);
-            _endRecord = MakeLabel(_endLayer, "Record", 16f, UiFonts.Bold, Ink, TextAnchor.MiddleCenter);
-            _endTag.text = DockingContract.EndTag;
-            foreach (var t in new[] { _endTag, _endTitle, _endCurveTitle, _endRecord }) t.horizontalOverflow = HorizontalWrapMode.Wrap;
-            for (int i = 0; i < ConfettiPool; i++)
-            {
-                _confetti[i] = MakeImage(_endLayer, "Confetti" + i, DiscSprite.Get());
-                _confetti[i].gameObject.SetActive(false);
-            }
-            _endLayer.gameObject.SetActive(false);
-        }
-
-        /// <summary>«Tu estación» como una escultura de plasticina: un núcleo y, a su alrededor, hasta 3 anillos de 8 piezas (las que acopló la persona); atrás del núcleo van las pistas y las piezas de atrás, adelante las demás. Se arma al final (<see cref="ShowSculpture"/>).</summary>
-        private void BuildSculpture()
-        {
-            _sculptBack = Layer(_endLayer, "SculptureBack");
-            _sculptCore = MakeImage(_endLayer, "SculptureCore", null);
-            _sculptFront = Layer(_endLayer, "SculptureFront");
-            for (int r = 0; r < SculptureRings; r++)
-            {
-                _trackBack[r] = MakeImage(_sculptBack, "TrackBack" + r, null);
-                _trackFront[r] = MakeImage(_sculptFront, "TrackFront" + r, null);
-            }
-            for (int r = 0; r < SculptureRings; r++)
-                for (int k = 0; k < SlotsPerRing; k++)
-                    _sculptPieces[r, k] = MakeImage(DockingPlan.IsFront(k) ? _sculptFront : _sculptBack, "Piece" + r + "_" + k, null);
-        }
-
         /// <summary>El panel de resultado de la clase base (no se muestra: la pantalla final es la de <see cref="BuildEnd"/>; la base pide que exista).</summary>
         private void BuildHiddenResult()
         {
@@ -450,7 +376,6 @@ namespace NeuroVida.Games.Acoplamiento
             LayoutButtons();
             LayoutFuelAndNotice();
             LayoutHud();
-            LayoutEnd();
             RefreshLights(Now);
             ApplyModulePose();
         }
@@ -550,47 +475,6 @@ namespace NeuroVida.Games.Acoplamiento
             SetRect(_timerTrack.rectTransform, DockingPlan.Width * 0.5f, 71f, DockingPlan.Width - 24f, 5f);
             SetRect(_noticeZone, DockingPlan.Width * 0.5f, _plan.StripCy, DockingPlan.Width - 56f, 38f);
             SetTimer(_timerFraction);
-        }
-
-        /// <summary>Lo que va bajo la franja de arriba en la pantalla final se aprieta parejo en pantallas bajas (el botón «Continuar» ocupa los últimos 65 dp). Las dos notas y el cartel del récord van a distancias fijas bajo la curva (no se aprietan: son texto), así que lo que se aprieta es lo de arriba (de 1 a 0,6).</summary>
-        private float EndK() => Mathf.Clamp((_logicalH - 65f - 250f - 4f - EndFixedBelowCurve) / 332f, 0.6f, 1f);
-
-        /// <summary>Lo que ocupan, bajo la base de la curva, los ángulos, las dos notas y el cartel del récord (dp).</summary>
-        private const float EndFixedBelowCurve = 100f;
-
-        private float EndY(float refY) => 250f + (refY - 250f) * EndK();
-
-        private void LayoutEnd()
-        {
-            float cx = DockingPlan.Width * 0.5f;
-            SetRect(_endShade.rectTransform, cx, 250f + (_logicalH - 250f) * 0.5f, DockingPlan.Width, _logicalH - 250f);
-            SetRect(_endTag.rectTransform, cx, 34f, 300f, 22f);
-            SetRect(_endTitle.rectTransform, cx, 64f, 330f, 36f);
-            float top = EndY(262f), bottom = EndY(422f);
-            SetRect(_endCard.rectTransform, cx, (top + bottom) * 0.5f, DockingPlan.Width - 44f, bottom - top);
-            float rowH = (bottom - top - 16f) / EndRows;
-            for (int i = 0; i < EndRows; i++)
-            {
-                float y = top + 8f + rowH * (i + 0.5f);
-                SetRect(_endLabel[i].rectTransform, 40f + 110f, y, 220f, 24f);
-                SetRect(_endValue[i].rectTransform, DockingPlan.Width - 40f - 80f, y, 160f, 24f);
-            }
-            SetRect(_endCurveTitle.rectTransform, cx, EndY(462f), 260f, 24f);
-            float baseY = EndY(582f), maxH = 80f * Mathf.Clamp((EndY(582f) - EndY(482f)) / 100f, 0.6f, 1f);
-            for (int i = 0; i < CurveBars; i++)
-            {
-                float x = 56f + i * 62f;
-                SetRect(_curveAngle[i].rectTransform, x, baseY + 16f, 56f, 20f);
-            }
-            _endBarMaxH = maxH;
-            float noteY = baseY + 38f;                                                      // las notas y el cartel, a distancias fijas bajo la curva: el cartel nunca pisa la nota
-            SetRect(_endNote1.rectTransform, cx, noteY, 340f, 22f);
-            SetRect(_endNote2.rectTransform, cx, noteY + 19f, 340f, 22f);
-            float pillY = noteY + 19f + 8.5f + 6f + 14f;
-            SetRect(_endRecordBg.rectTransform, cx, pillY, 190f, 28f);
-            SetRect(_endRecord.rectTransform, cx, pillY, 190f, 24f);
-            PlaceCurve();
-            LayoutSculpture();
         }
 
         /// <summary>Lo que ocupa, abajo, el rótulo «Práctica: no cuenta» y «Saltar tutorial» (dp).</summary>

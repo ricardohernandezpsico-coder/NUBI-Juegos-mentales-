@@ -277,6 +277,6 @@ namespace NeuroVida.Games.Stroop
 
         /// <summary>Qué se toca con cada orilla, en una frase.</summary>
         public static string RuleLine(StroopRule rule) =>
-            rule == StroopRule.Ink ? "Toca el color con que está escrita" : "Toca lo que DICE la palabra, no su color";
+            rule == StroopRule.Ink ? "Toca el color con que está escrita" : "Toca lo que dice la palabra, no su color";
     }
 }

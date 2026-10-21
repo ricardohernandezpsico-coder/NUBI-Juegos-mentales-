@@ -80,6 +80,7 @@ namespace NeuroVida.Games.Parejas
         // la tarjeta «NUEVO»
         private Image _dim, _introCard, _introRim;
         private Text _introTag, _introBody, _introTap;
+        private Image _introTapSlab;
         private CanvasGroup _introGroup;
         private readonly List<Image> _introImgs = new List<Image>();
         private readonly List<Text> _introLabels = new List<Text>();
@@ -340,8 +341,9 @@ namespace NeuroVida.Games.Parejas
             foreach (var t in _introLabels) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.gameObject.SetActive(false); }
             _introTag = MakeLabel(_introLayer, "Tag", 16f, UiFonts.Bold, _introSlab != null ? NeuroStyle.InkMuted : Gold, TextAnchor.MiddleCenter);
             _introBody = MakeLabel(_introLayer, "Body", 17f, UiFonts.Bold, _introSlab != null ? NeuroStyle.Ink : Color.white, TextAnchor.UpperCenter);
-            _introTap = MakeLabel(_introLayer, "Tap", 16f, UiFonts.Bold, _introSlab != null ? NeuroStyle.PanelAccent : Cyan, TextAnchor.MiddleCenter);
-            _introTap.text = ConstelacionContract.TapToStart;
+            _introTapSlab = SeguirChip.Create(_introLayer);                // la losa chica «Seguir» del kit (Tarea 154): toda la tarjeta se toca; la losa solo lo dice con la forma de un botón
+            _introTap = MakeLabel(_introLayer, "Tap", 16f, UiFonts.Bold, NeuroStyle.Ink, TextAnchor.MiddleCenter);
+            _introTap.text = SeguirChip.Label;
             foreach (var t in new[] { _introTag, _introTap }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow; }
             _introBody.horizontalOverflow = HorizontalWrapMode.Wrap;
             _introBody.verticalOverflow = VerticalWrapMode.Overflow;
@@ -529,7 +531,7 @@ namespace NeuroVida.Games.Parejas
             _introBody.text = sb.ToString();
             _introBody.rectTransform.sizeDelta = new Vector2((cw - 28f) * _s, 400f * _s);
             float bodyH = _introBody.preferredHeight / _s;
-            float ch = 150f + bodyH + 44f;
+            float ch = 150f + bodyH + 44f + SeguirChip.ExtraDp;
             float top = Mathf.Min(_logicalH * 0.5f - ch / 2f, _logicalH - ch - 12f);
             top = Mathf.Max(top, 12f);
             SetRect(_introRim.rectTransform, cx, top + ch / 2f, cw + 4f, ch + 4f);
@@ -538,7 +540,8 @@ namespace NeuroVida.Games.Parejas
             SetRadius(_introCard, 26f * _s);
             SetRect(_introTag.rectTransform, cx, top + 26f, 220f, 24f);
             SetRect(_introBody.rectTransform, cx, top + 150f + bodyH / 2f, cw - 28f, bodyH + 4f);
-            SetRect(_introTap.rectTransform, cx, top + ch - 24f, 200f, 24f);
+            SetRect(_introTapSlab.rectTransform, cx, top + ch - SeguirChip.FromBottomDp, SeguirChip.WidthDp, SeguirChip.HeightDp);
+            SetRect(_introTap.rectTransform, cx, top + ch - SeguirChip.FromBottomDp, SeguirChip.WidthDp, SeguirChip.HeightDp);
             LayoutIntroArt(cx, top + 88f);
         }
     }

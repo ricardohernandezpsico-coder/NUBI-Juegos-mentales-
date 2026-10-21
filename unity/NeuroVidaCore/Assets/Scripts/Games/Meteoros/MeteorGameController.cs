@@ -547,7 +547,7 @@ namespace NeuroVida.Games.Meteoros
         {
             if (spec.Shower) return; // la lluvia de estrellas va fuera de la escalera
             var change = _dda.Register(correct);
-            if (change == DdaChange.Up) _toast.Show("¡Subes de nivel!", MeteorContract.LevelNews(_dda.Level), GoodColor, 1.1f);
+            if (change == DdaChange.Up) _toast.Show("¡Un paso más!", MeteorContract.LevelNews(_dda.Level), GoodColor, 1.1f);
             else if (change == DdaChange.Down || _dda.Struggling) _toast.Show("Con calma", "Mira la palabra entera, de principio a fin", AmberColor, 0.9f);
         }
 

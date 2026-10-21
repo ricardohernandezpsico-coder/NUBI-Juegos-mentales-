@@ -224,9 +224,9 @@ namespace NeuroVida.Games.Piloto
 
         public static string MissionName(PilotMission m) => ShapeNames[(int)m.Shape] + " " + DetailNames[(int)m.Detail];
 
-        public const string MissionLabel = "MISIÓN:", NewMissionLabel = "NUEVA MISIÓN:";
+        public const string MissionLabel = "Misión:", NewMissionLabel = "Nueva misión:";
         public static string SectorHud(int sector) => "Sector " + (sector + 1) + " de " + Sectors + " · " + SectorName(sector);
-        public static string SectorBannerTag(int sector) => "SECTOR " + (sector + 1);
+        public static string SectorBannerTag(int sector) => "Sector " + (sector + 1);
 
         /// <summary>El aviso de misión (Tarea 63): arriba el título (en el primer sector todavía nada cambió: «¡Tu misión!»; en los otros, «¡Nueva misión!»), al medio la forma con su detalle dibujada y su nombre, abajo «Sector N · nombre».</summary>
         public const string FirstMissionTitle = "¡Tu misión!", NewMissionTitle = "¡Nueva misión!";
@@ -253,21 +253,11 @@ namespace NeuroVida.Games.Piloto
         public const string CountdownSub = "Guía la nave y atrapa tu misión";
         public const string StripLabel = "‹  Desliza aquí  ›", StripLabelGentle = "‹  Desliza aquí para guiar la nave  ›", StripHint = "Con el otro dedo, toca solo tu misión";
         public const string WrongText = "No era de tu misión", GoneText = "Se fue";
-        public const string HyperTitle = "¡HIPERIMPULSO!", HyperSub = "Puntos ×2";
+        public const string HyperTitle = "¡Hiperimpulso!", HyperSub = "Puntos ×2";
         public const string HyperChip = " ×2";
         public static string PointsText(int points) => points.ToString("#,0", System.Globalization.CultureInfo.InvariantCulture).Replace(',', '.') + " pts";
         public static string PrecisionChip(int resolved, int total = PrecisionSignals) => Math.Min(resolved, total) + " de " + total;
 
-        public const string EndTag = "LLEGASTE AL PUERTO";
-        public static string EndTitle(int points) => PointsText(points);
-        public const string EndLane = "En la ruta", EndMission = "Señales de tu misión", EndWrong = "Toques equivocados", EndLevel = "Tu nivel de señales", EndStreak = "Racha mayor", EndMeasure = "Tus señales a los mandos";
-        public static string LaneValue(float fraction) => (int)Math.Round(Math.Max(0f, Math.Min(1f, fraction)) * 100f) + " %";
-        public static string MissionValue(int hits, int targets) => hits + " de " + targets;
-        public static string LevelValue(int level) => Clamp(level) + " de " + MaxLevel;
-        public static string StreakValue(int best) => "×" + best;
-        public static string MeasureValue(float? score) => score.HasValue ? (int)Math.Round(score.Value * 100f) + " %" : "—";
-        public const string MeasureTooFew = "faltan señales";
-        public const string EndNote1 = "Todo medido mientras hacías las dos cosas a la vez.", EndNote2 = "Medida de esta partida. No es un diagnóstico.";
 
         public static int Clamp(int level) => Math.Max(1, Math.Min(MaxLevel, level));
     }

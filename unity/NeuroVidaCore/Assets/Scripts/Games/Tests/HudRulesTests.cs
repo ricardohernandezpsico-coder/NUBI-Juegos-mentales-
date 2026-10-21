@@ -257,6 +257,90 @@ namespace NeuroVida.Games.Tests
             Assert.IsEmpty(found, "letra bajo 16 dp (48 unidades): se parte en dos renglones o se acorta el texto, no se achica:\n" + string.Join("\n", found));
         }
 
+        // ------------------------------------------------------------------ el vocabulario de lo que se dibuja (Tarea 154)
+
+        /// <summary>Lo que SÍ va en mayúscula en pantalla: es el estímulo del juego, no un título. Tinta o Palabra (las dos orillas y los nombres de los colores), Freno de Emergencia (la señal «ALTO») y la ficha «CASA» del tutorial de En la punta de la lengua (las fichas son letras en mayúscula, como las de la partida).</summary>
+        private static readonly HashSet<string> StimulusCaps = new HashSet<string> { "TINTA", "PALABRA", "ROJO", "AZUL", "AMARILLO", "BLANCO", "ALTO", "CASA" };
+
+        /// <summary>Archivos con mayúsculas que NO se leen como texto: el banco de palabras y las letras de En la punta de la lengua (estímulos), los identificadores de la configuración de edad, las guardas del tutorial y la versión de Android.</summary>
+        private static readonly string[] CapsFilesOutOfScope = { "Anagramas/PuntaBank.cs", "Anagramas/PuntaContract.cs", "DdaUserProfileConfig.cs", "Shared/TutorialGuards.cs", "Shared/GameFeel.cs" };
+
+        private static readonly Regex StringLiteral = new Regex("(?<![\\\\@])\"((?:[^\"\\\\\\r\\n]|\\\\.)*)\"");
+        private static readonly Regex Interpolation = new Regex(@"\{[^{}]*\}");
+        private static readonly Regex CapsWord = new Regex(@"(?<![A-Za-zÁÉÍÓÚÜÑáéíóúüñ])[A-ZÁÉÍÓÚÜÑ]{2,}(?![A-Za-zÁÉÍÓÚÜÑáéíóúüñ])");
+        private static readonly Regex BanishedWord = new Regex(@"\b(racha|rachas|nivel|niveles|reto|precisi[oó]n|sesi[oó]n|cerebro|entrenamiento|cognitiv\w*)\b|camino de hoy", RegexOptions.IgnoreCase);
+        private static readonly Regex ToUpperCall = new Regex(@"\.ToUpper(?:Invariant)?\(\)");
+
+        /// <summary>
+        /// Cada texto entre comillas del CÓDIGO de los juegos que se dibuja (Tarea 154): sin comentarios, sin lo que solo existe en el Editor (<c>#if UNITY_EDITOR</c>), sin bitácoras, excepciones ni mensajes de las auditorías del smoke (<c>problems.Add</c>, <c>Check(</c>…).
+        /// Los juegos retirados (Bitácora, Rumbo, Cosecha) quedan fuera: el código se conserva pero no se juegan. Devuelve archivo, renglón, texto sin las llaves de interpolación y el renglón entero.
+        /// </summary>
+        private static List<(string rel, int line, string text, string code)> DrawnStringLiterals()
+        {
+            var root = Path.Combine(Application.dataPath, "Scripts", "Games");
+            var found = new List<(string, int, string, string)>();
+            string[] diagnostics = { "Debug.Log", "LogDiagnostic", "throw ", "Assert.", "Expect(", "problems.Add(", "Check(", "Bare(", "string tag =", "tag +", "nameof(", "Application.", "Environment." };
+            foreach (var file in Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories))
+            {
+                string rel = file.Substring(root.Length + 1).Replace('\\', '/');
+                if (rel.StartsWith("Tests/") || rel.Contains("/Tests/") || rel.Contains("/Editor/") || rel.StartsWith("Bitacora/") || rel.StartsWith("Rumbo/") || rel.StartsWith("Cosecha/")) continue;
+                var lines = File.ReadAllLines(file);
+                bool editorOnly = false;
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    string trimmed = lines[i].Trim();
+                    if (trimmed.StartsWith("#if UNITY_EDITOR")) { editorOnly = true; continue; }
+                    if (trimmed.StartsWith("#else") || trimmed.StartsWith("#elif") || trimmed.StartsWith("#endif")) { editorOnly = false; continue; }
+                    if (editorOnly || trimmed.StartsWith("//") || trimmed.StartsWith("*") || trimmed.StartsWith("/*")) continue;
+                    string code = lines[i];
+                    int cut = code.IndexOf("//", System.StringComparison.Ordinal);
+                    if (cut >= 0 && StringLiteral.Matches(code.Substring(0, cut)).Count == StringLiteral.Matches(code).Count) code = code.Substring(0, cut);
+                    bool diagnostic = false;
+                    foreach (var d in diagnostics) if (code.Contains(d)) { diagnostic = true; break; }
+                    if (diagnostic) continue;
+                    foreach (Match m in StringLiteral.Matches(code))
+                        found.Add((rel, i + 1, Interpolation.Replace(m.Groups[1].Value, ""), trimmed));
+                }
+            }
+            return found;
+        }
+
+        /// <summary>
+        /// Sin mayúsculas sostenidas (<c>DESIGN.md</c> §1; Tarea 154): ninguna palabra de 4 letras o más ni dos palabras seguidas en mayúscula en lo que se dibuja, salvo el estímulo de Tinta o Palabra, la señal «ALTO» de Freno y la ficha «CASA» (<see cref="StimulusCaps"/>).
+        /// La fuerza de un título la da el color y el peso, no las mayúsculas. Tampoco un <c>.ToUpper()</c> sobre un texto.
+        /// </summary>
+        [Test]
+        public void NoGameDrawsSustainedCapitals_InItsSources()
+        {
+            var found = new List<string>();
+            foreach (var (rel, line, text, code) in DrawnStringLiterals())
+            {
+                if (System.Array.IndexOf(CapsFilesOutOfScope, rel) >= 0) continue;
+                var words = new List<string>();
+                foreach (Match m in CapsWord.Matches(text)) if (!StimulusCaps.Contains(m.Value)) words.Add(m.Value);
+                bool longWord = words.Exists(w => w.Length >= 4);
+                if (longWord || words.Count >= 2) found.Add(rel + ":" + line + " «" + text + "»");
+                if (rel != "DdaUserProfileConfig.cs" && ToUpperCall.IsMatch(code)) found.Add(rel + ":" + line + " pasa un texto a mayúsculas: " + code);
+            }
+            Assert.IsEmpty(found, "mayúsculas sostenidas en lo que se dibuja (se escribe en caja normal; solo el estímulo del juego va en mayúscula):\n" + string.Join("\n", found));
+        }
+
+        /// <summary>
+        /// Las palabras que la app ya no dice (Tarea 154, vocabulario de <c>DESIGN.md</c> §1 y Tarea 150): «racha» (en los juegos es «seguidos»; la racha es la de días), «nivel» (no se ve), «Reto» y «Precisión» (son «Con reloj» y «Sin reloj»), «sesión» (es «ruta»), «camino de hoy»,
+        /// «cerebro», «entrenamiento» y «cognitivo». Se mira lo que se dibuja, no los identificadores (<c>PrecisionRounds</c>) ni las bitácoras del smoke.
+        /// </summary>
+        [Test]
+        public void NoGameDrawsTheBanishedWords_InItsSources()
+        {
+            var found = new List<string>();
+            foreach (var (rel, line, text, _) in DrawnStringLiterals())
+            {
+                var m = BanishedWord.Match(text);
+                if (m.Success) found.Add(rel + ":" + line + " «" + text + "» dice «" + m.Value + "»");
+            }
+            Assert.IsEmpty(found, "palabras desterradas en lo que se dibuja:\n" + string.Join("\n", found));
+        }
+
         // ------------------------------------------------------------------ puntos de avance
 
         [Test]

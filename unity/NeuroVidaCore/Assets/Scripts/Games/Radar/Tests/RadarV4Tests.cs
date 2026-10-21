@@ -231,12 +231,10 @@ namespace NeuroVida.Games.Radar.Tests
         }
 
         [Test]
-        public void TheTripAndTheFinalTextsAreTheDesignOnes()
+        public void TheTripNoticeIsTheDesignOne()
         {
             Assert.AreEqual("¡Nave llena! Viaje a la estación", RadarContract.TripNotice);
-            Assert.AreEqual("Viajes a la estación", RadarContract.EndTrips);
-            Assert.AreEqual("3", RadarContract.TripsValue(3));
-            foreach (var t in new[] { RadarContract.TripNotice, RadarContract.EndTrips })
+            foreach (var t in new[] { RadarContract.TripNotice })
                 foreach (var bad in new[] { "cognitiv", "entrenamiento", "cerebro" }) Assert.IsFalse(t.ToLowerInvariant().Contains(bad), t);
         }
     }

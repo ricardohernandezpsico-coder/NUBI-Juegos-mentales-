@@ -127,7 +127,7 @@ namespace NeuroVida.Games.Satelites
 
         // ------------------------------------------------------------------ textos de la pantalla (español cercano, sin jerga)
 
-        public const string NewTag = "NUEVO", SurpriseTag = "SORPRESA", CrossText = "¿Aquí se cruzaron?", TrackTitle = "Síguelos con la vista", CueSub = "Síguelos con la vista";
+        public const string NewTag = "Nuevo", SurpriseTag = "Sorpresa", CrossText = "¿Aquí se cruzaron?", TrackTitle = "Síguelos con la vista", CueSub = "Síguelos con la vista";
 
         public static string CueTitle(int k) => "Estos " + k + " traen un mensaje";
 
@@ -168,13 +168,6 @@ namespace NeuroVida.Games.Satelites
         public static string LightsFooter(int lights) => "Luces encendidas: " + lights;
 
         /// <summary>«2,6 de 3,5 a la vez» (coma decimal; el segundo número sin decimales si es entero).</summary>
-        public static string TrackedLine(float capacity, float meanTargets) => Decimal(capacity, "0.0") + " de " + Decimal(meanTargets, "0.#") + " a la vez";
-
-        public static string PerfectLine(int perfect, int rounds, int bestStreak) =>
-            "Rondas perfectas: " + perfect + " de " + rounds + (bestStreak >= 2 ? " · racha mayor ×" + bestStreak : "");
-
-        public static string RecordLine(int record, bool broke) =>
-            broke ? "¡Récord nuevo: " + record + " luces!" : record > 0 ? "Tu récord: " + record + " luces en una partida" : "";
 
         private static string Decimal(float v, string format) => v.ToString(format, System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',');
 
@@ -298,7 +291,6 @@ namespace NeuroVida.Games.Satelites
         public static bool BrokeRecord(int best, int lights) => lights > 0 && lights > Math.Max(0, best);
 
         /// <summary>«Encendiste N luces» (una sola: «Encendiste 1 luz»; ninguna: «No se encendió ninguna luz»).</summary>
-        public static string LightsTitle(int lights) => lights <= 0 ? "No se encendió ninguna luz" : lights == 1 ? "Encendiste 1 luz" : "Encendiste " + lights + " luces";
 
         private static int Clamp(int level) => Math.Max(1, Math.Min(MaxLevel, level));
     }

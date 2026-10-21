@@ -329,22 +329,6 @@ namespace NeuroVida.Games.Aterrizaje
 
         // ------------------------------------------------------------------ el final dentro del juego (el de la app va en GameResultScreen)
 
-        public const string EndTag = "¡MISIÓN CUMPLIDA!", EndBoxTitle = "Tu distancia promedio al lugar justo";
-
-        public static string EndTitle(int hits, int total) => (hits == 1 ? "1 aterrizaje justo" : hits + " aterrizajes justos") + " de " + total;
-
-        /// <summary>El error medio como número entero de la cifra grande: redondeado y nunca menos de 1 (el mismo de la app: <c>Aterrizaje.estimate</c>).</summary>
-        private static int EndN(float meanErrorPct) => Math.Max(1, (int)Math.Round(meanErrorPct));
-
-        /// <summary>«11 % de la regla» (el error medio redondeado, nunca menos de 1; con espacio antes del %, igual que la app); «—» sin aterrizajes.</summary>
-        public static string EndEstimate(float meanErrorPct) => meanErrorPct < 0f ? "—" : EndN(meanErrorPct) + " % de la regla";
-
-        /// <summary>La línea simple bajo la cifra, con la unidad puesta en algo que se imagina: «Como quedar a 11 en una regla de 0 a 100.»; vacía sin aterrizajes (igual que la app).</summary>
-        public static string EndAnalogy(float meanErrorPct) => meanErrorPct < 0f ? "" : "Como quedar a " + EndN(meanErrorPct) + " en una regla de 0 a 100.";
-
-        /// <summary>«2 dianas lunares · racha mayor ×4 · 1 cúpula» (en singular cuando corresponde; sin racha mayor: «—»).</summary>
-        public static string EndSummary(int bulls, int bestStreak, int domes) =>
-            (bulls == 1 ? "1 diana lunar" : bulls + " dianas lunares") + " · racha mayor " + (bestStreak >= 2 ? "×" + bestStreak : "—") + " · " + (domes == 1 ? "1 cúpula" : domes + " cúpulas");
 
         private static int Clamp(int level) => Math.Max(1, Math.Min(MaxLevel, level));
     }

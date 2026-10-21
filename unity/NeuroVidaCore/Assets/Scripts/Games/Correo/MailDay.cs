@@ -435,6 +435,24 @@ namespace NeuroVida.Games.Correo
 
         /// <summary>Lo que se ve al terminar el día: cada encargo con su marca, las cartas, las miradas al reloj. Un encargo por evento cuya carta nunca alcanzó a llegar a la cinta (o quedó sin tocar al terminar) no tuvo
         /// oportunidad y no se cuenta.</summary>
+        /// <summary>Los encargos del día vistos desde ya (el marcador, Tarea 154): <paramref name="ok"/> cumplidos de <paramref name="all"/> que ya cuentan, con el MISMO criterio de <see cref="Summarize"/> (el del evento que todavía no pasó no cuenta; el de la hora cuenta desde la mañana).</summary>
+        public void EncargosSoFar(out int ok, out int all)
+        {
+            ok = all = 0;
+            foreach (var t in Todos)
+            {
+                if (!t.IsTime)
+                {
+                    int events = t.Hits + t.Misses;
+                    if (events == 0) continue;
+                    all++;
+                    if (t.Hits == events) ok++;
+                }
+                else if (t.Cancelled) { all++; if (t.State != MailState.Commission) ok++; }
+                else { all++; if (t.State == MailState.Hit) ok++; }
+            }
+        }
+
         public MailRecap Summarize()
         {
             var r = new MailRecap();

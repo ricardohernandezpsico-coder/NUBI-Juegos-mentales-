@@ -50,7 +50,7 @@ namespace NeuroVida.Games.Satelites
             public float At;
         }
 
-        private RectTransform _safe, _play, _orbitLayer, _planetRoot, _satLayer, _cloudLayer, _fxLayer, _promptLayer, _footerLayer, _surpriseLayer, _endLayer;
+        private RectTransform _safe, _play, _orbitLayer, _planetRoot, _satLayer, _cloudLayer, _fxLayer, _promptLayer, _footerLayer, _surpriseLayer;
         private readonly List<KeyValuePair<Text, float>> _fonts = new List<KeyValuePair<Text, float>>();
         private readonly List<KeyValuePair<Image, float>> _radii = new List<KeyValuePair<Image, float>>();
 
@@ -76,7 +76,6 @@ namespace NeuroVida.Games.Satelites
         private Text _surpriseTag, _surpriseName, _surpriseLine;
 
         // la pantalla final
-        private Text _endTag, _endTitle, _endLabel, _endValue, _endDetail, _endNote1, _endNote2, _endRecord;
 
         // el zumbido del seguimiento (se repite)
         private AudioSource _humSource;
@@ -122,7 +121,6 @@ namespace NeuroVida.Games.Satelites
             _promptLayer = Layer(_play, "Prompts");
             _footerLayer = Layer(_play, "Footer");
             _surpriseLayer = Layer(_play, "Surprise");
-            _endLayer = Layer(_play, "End");
             BuildOrbits();
             BuildPlanet();
             BuildSats();
@@ -132,7 +130,6 @@ namespace NeuroVida.Games.Satelites
             BuildFooter();
             BuildTimer();
             BuildSurprise();
-            BuildEnd();
             BuildHiddenResult();
 
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
@@ -324,24 +321,6 @@ namespace NeuroVida.Games.Satelites
             _surpriseLayer.gameObject.SetActive(false);
         }
 
-        private void BuildEnd()
-        {
-            _endTag = MakeLabel(_endLayer, "Tag", 16f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
-            _endTitle = MakeLabel(_endLayer, "Title", 27f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
-            _endLabel = MakeLabel(_endLayer, "Label", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
-            _endValue = MakeLabel(_endLayer, "Value", 30f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
-            _endDetail = MakeLabel(_endLayer, "Detail", 16f, UiFonts.Regular, Soft, TextAnchor.MiddleCenter);
-            _endRecord = MakeLabel(_endLayer, "Record", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
-            _endNote1 = MakeLabel(_endLayer, "Note1", 16f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
-            _endNote2 = MakeLabel(_endLayer, "Note2", 16f, UiFonts.Regular, Dim, TextAnchor.MiddleCenter);
-            foreach (var t in new[] { _endTag, _endTitle, _endLabel, _endValue, _endDetail, _endRecord, _endNote1, _endNote2 }) t.horizontalOverflow = HorizontalWrapMode.Wrap;
-            _endTag.text = "FIN DE LA PARTIDA";
-            _endLabel.text = "Tu seguimiento";
-            _endNote1.text = "Descuenta lo que se acierta por suerte.";
-            _endNote2.text = "Medida de esta partida. No es un diagnóstico.";
-            _endLayer.gameObject.SetActive(false);
-        }
-
         /// <summary>El panel de resultado de la clase base (no se muestra: la pantalla final es la de <see cref="BuildEnd"/>; la base pide que exista).</summary>
         private void BuildHiddenResult()
         {
@@ -475,7 +454,6 @@ namespace NeuroVida.Games.Satelites
             LayoutSats();
             LayoutTexts();
             LayoutSurprise();
-            LayoutEnd();
         }
 
         private void LayoutOrbits()
@@ -555,22 +533,6 @@ namespace NeuroVida.Games.Satelites
             SetRect(_surpriseName.rectTransform, ScreenPlan.Width * 0.5f, cy - h * 0.5f + 62f, w - 24f, 34f);
             SetRect(_surpriseLine.rectTransform, ScreenPlan.Width * 0.5f, cy + h * 0.5f - 44f, w - 36f, 54f);
             SetRect(_surpriseIcon.rectTransform, -1000f, -1000f, 1f, 1f);       // sin icono por ahora (el aviso es texto)
-        }
-
-        private void LayoutEnd()
-        {
-            float cx = ScreenPlan.Width * 0.5f;
-            float H = _logicalH;
-            SetRect(_endTag.rectTransform, cx, ScreenPlan.HudBottom + 22f, 300f, 22f);
-            SetRect(_endTitle.rectTransform, cx, ScreenPlan.HudBottom + 54f, 330f, 36f);
-            // el planeta grande ocupa el medio (lo coloca FinishGame): el bloque de medidas va debajo
-            float y0 = Mathf.Min(H - 250f, ScreenPlan.HudBottom + 74f + 168f + 40f);
-            SetRect(_endLabel.rectTransform, cx, y0, 300f, 22f);
-            SetRect(_endValue.rectTransform, cx, y0 + 34f, 330f, 40f);
-            SetRect(_endDetail.rectTransform, cx, y0 + 70f, 330f, 40f);
-            SetRect(_endRecord.rectTransform, cx, y0 + 108f, 330f, 22f);
-            SetRect(_endNote1.rectTransform, cx, y0 + 138f, 330f, 22f);
-            SetRect(_endNote2.rectTransform, cx, y0 + 160f, 330f, 22f);
         }
 
         /// <summary>Lo que ocupan, abajo, el rótulo «Práctica: no cuenta» y «Saltar tutorial» (dp).</summary>

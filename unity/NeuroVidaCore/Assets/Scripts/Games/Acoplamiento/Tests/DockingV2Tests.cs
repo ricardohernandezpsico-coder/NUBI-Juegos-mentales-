@@ -79,7 +79,7 @@ namespace NeuroVida.Games.Acoplamiento.Tests
             Assert.AreEqual("Sin tiempo: era su espejo", DockingContract.Notice(true, DockingContract.AnswerTimeout, 0));
             Assert.AreEqual("Sin tiempo: sí encajaba", DockingContract.Notice(false, DockingContract.AnswerTimeout, 0));
             foreach (var bad in new[] { "cognitiv", "entrenamiento", "cerebro", "combustible" })
-                foreach (var t in new[] { DockingContract.Hint, DockingContract.RingComplete, DockingContract.EndTag, DockingContract.EndNote1, DockingContract.EndNote2, DockingContract.Notice(true, DockingContract.AnswerTimeout, 0) })
+                foreach (var t in new[] { DockingContract.Hint, DockingContract.RingComplete, DockingContract.Notice(true, DockingContract.AnswerTimeout, 0) })
                     Assert.IsFalse(t.ToLowerInvariant().Contains(bad), "«" + t + "» usa «" + bad + "»");
         }
 
@@ -113,27 +113,14 @@ namespace NeuroVida.Games.Acoplamiento.Tests
         }
 
         [Test]
-        public void TheEndTextsAndTheCurve()
+        public void TheRoundChips()
         {
-            Assert.AreEqual("1 módulo acoplado", DockingContract.EndTitle(1));
-            Assert.AreEqual("24 módulos acoplados", DockingContract.EndTitle(24));
-            Assert.AreEqual("0 módulos acoplados", DockingContract.EndTitle(0));
-            Assert.AreEqual("9 de 12", DockingContract.HitsValue(9, 12));
-            Assert.AreEqual("212° por segundo", DockingContract.SpeedValue(212));
-            Assert.AreEqual("—", DockingContract.SpeedValue(-1));
-            Assert.AreEqual("×4", DockingContract.StreakValue(4));
-            Assert.AreEqual("—", DockingContract.StreakValue(1));
-            Assert.AreEqual("1,5 s", DockingContract.CurveValue(1500));
-            Assert.AreEqual("0,9 s", DockingContract.CurveValue(900));
-            Assert.AreEqual("—", DockingContract.CurveValue(-1));
             Assert.AreEqual("Módulo 3 de 24", DockingContract.RoundChip(3, 24));
             Assert.AreEqual("Módulo 30", DockingContract.RoundChip(30, 0));
             // el chip de avance del marcador común lleva el contador (Tarea 144): de lo más completo a lo más corto
             Assert.AreEqual(new[] { "Módulo 3 de 24 · 8 a bordo", "3 de 24 · 8 a bordo", "Módulo 3 · 8 a bordo" }, DockingContract.InfoChips(3, 24, 8));
             Assert.AreEqual(new[] { "Módulo 7 · 5 a bordo", "7 · 5 a bordo" }, DockingContract.InfoChips(7, 0, 5));
             Assert.AreEqual("Módulo 24 de 24 · 0 a bordo", DockingContract.InfoChips(30, 24, 0)[0], "el módulo nunca pasa del total");
-            Assert.AreEqual("Tu récord: 1 módulo", DockingContract.RecordLine(1));
-            Assert.AreEqual("Tu récord: 31 módulos", DockingContract.RecordLine(31));
         }
 
         // ------------------------------------------------------------------ la pantalla (v3: sin estación, el bloque de 38 dp y la fila de luces)

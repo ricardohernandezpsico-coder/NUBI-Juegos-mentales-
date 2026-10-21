@@ -132,6 +132,7 @@ namespace NeuroVida.Games.Correo
         private readonly RowView[] _recapRows = new RowView[RecapRows];
         private Image _dim, _introCard, _introRim, _endDim, _endCard, _endCardRim;
         private Text _introTag, _introBody, _introTap;
+        private Image _introTapSlab;
         private CanvasGroup _introGroup;
         private readonly List<Image> _introImgs = new List<Image>();
         private readonly List<Text> _introLabels = new List<Text>();
@@ -654,8 +655,9 @@ namespace NeuroVida.Games.Correo
             foreach (var t in _introLabels) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.gameObject.SetActive(false); }
             _introTag = MakeLabel(_introLayer, "Tag", 16f, UiFonts.Bold, OnCream(NeuroStyle.InkMuted, Gold), TextAnchor.MiddleCenter);
             _introBody = MakeLabel(_introLayer, "Body", 17f, UiFonts.Bold, OnCream(InkEdge, Color.white), TextAnchor.UpperCenter);
-            _introTap = MakeLabel(_introLayer, "Tap", 16f, UiFonts.Bold, OnCream(NeuroStyle.PanelAccent, Cyan), TextAnchor.MiddleCenter);
-            _introTap.text = MailContract.TapToContinue;
+            _introTapSlab = SeguirChip.Create(_introLayer);                // la losa chica «Seguir» del kit (Tarea 154): toda la tarjeta se toca; la losa solo lo dice con la forma de un botón
+            _introTap = MakeLabel(_introLayer, "Tap", 16f, UiFonts.Bold, NeuroStyle.Ink, TextAnchor.MiddleCenter);
+            _introTap.text = SeguirChip.Label;
             foreach (var t in new[] { _introTag, _introTap }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow; }
             _introBody.horizontalOverflow = HorizontalWrapMode.Wrap;
             _introBody.verticalOverflow = VerticalWrapMode.Overflow;

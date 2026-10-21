@@ -90,6 +90,7 @@ namespace NeuroVida.Games.Bodega
         // la tarjeta «NUEVO»
         private Image _dim, _introCard, _introRim, _introFrame, _introInterior, _introObj, _introDoor;
         private Text _introTitle, _introBody, _introTap;
+        private Image _introTapSlab;
         private CanvasGroup _introGroup;
 
         private readonly List<KeyValuePair<Text, float>> _fonts = new List<KeyValuePair<Text, float>>();
@@ -300,8 +301,9 @@ namespace NeuroVida.Games.Bodega
             _introDoor.color = Door;
             _introTitle = MakeLabel(_introLayer, "Title", 16f, UiFonts.Bold, _introSlab != null ? NeuroStyle.InkMuted : Gold, TextAnchor.MiddleCenter);
             _introBody = MakeLabel(_introLayer, "Body", 16f, UiFonts.Bold, _introSlab != null ? NeuroStyle.Ink : Color.white, TextAnchor.UpperCenter);
-            _introTap = MakeLabel(_introLayer, "Tap", 16f, UiFonts.Bold, _introSlab != null ? NeuroStyle.PanelAccent : Cyan, TextAnchor.MiddleCenter);
-            _introTap.text = "Toca para seguir";
+            _introTapSlab = SeguirChip.Create(_introLayer);                // la losa chica «Seguir» del kit (Tarea 154): toda la tarjeta se toca; la losa solo lo dice con la forma de un botón
+            _introTap = MakeLabel(_introLayer, "Tap", 16f, UiFonts.Bold, NeuroStyle.Ink, TextAnchor.MiddleCenter);
+            _introTap.text = SeguirChip.Label;
             foreach (var t in new[] { _introTitle, _introTap }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow; }
             _introBody.horizontalOverflow = HorizontalWrapMode.Wrap;
             _introBody.verticalOverflow = VerticalWrapMode.Overflow;
@@ -701,7 +703,7 @@ namespace NeuroVida.Games.Bodega
             _toastSub.gameObject.SetActive(hasSub);
         }
 
-        /// <summary>La tarjeta «NUEVO»: el título, la escotilla que abre y cierra, el texto (cada línea puede partirse en dos si no cabe en 14 dp o más) y «Toca para seguir». Crece con el texto.</summary>
+        /// <summary>La tarjeta «NUEVO»: el título, la escotilla que abre y cierra, el texto (cada línea puede partirse en dos si no cabe en 14 dp o más) y la losa «Seguir». Crece con el texto.</summary>
         private void LayoutIntro(string[] lines)
         {
             float cw = BodegaLayout.W - 36f, cx = BodegaLayout.W / 2f;
@@ -715,7 +717,7 @@ namespace NeuroVida.Games.Bodega
             _introBody.text = sb.ToString();
             _introBody.rectTransform.sizeDelta = new Vector2((cw - 28f) * _s, 400f * _s);
             float bodyH = _introBody.preferredHeight / _s;
-            float ch = 128f + bodyH + 40f;
+            float ch = 128f + bodyH + 40f + SeguirChip.ExtraDp;
             float top = Mathf.Min(_logicalH * 0.5f - ch / 2f, _logicalH - ch - 12f);
             top = Mathf.Max(top, 12f);
             SetRect(_introRim.rectTransform, cx, top + ch / 2f, cw + 4f, ch + 4f);
@@ -724,7 +726,8 @@ namespace NeuroVida.Games.Bodega
             SetRadius(_introCard, 26f * _s);
             SetRect(_introTitle.rectTransform, cx, top + 26f, 220f, 24f);
             SetRect(_introBody.rectTransform, cx, top + 120f + bodyH / 2f, cw - 28f, bodyH + 4f);
-            SetRect(_introTap.rectTransform, cx, top + ch - 24f, 200f, 24f);
+            SetRect(_introTapSlab.rectTransform, cx, top + ch - SeguirChip.FromBottomDp, SeguirChip.WidthDp, SeguirChip.HeightDp);
+            SetRect(_introTap.rectTransform, cx, top + ch - SeguirChip.FromBottomDp, SeguirChip.WidthDp, SeguirChip.HeightDp);
             float iy = top + 76f;
             SetRect(_introFrame.rectTransform, cx, iy, 2f * (BodegaSprites.FrameR + 2.5f), 2f * (BodegaSprites.FrameR + 2.5f));
             SetRect(_introInterior.rectTransform, cx, iy, 2f * (BodegaSprites.HatchR + 1f), 2f * (BodegaSprites.HatchR + 1f));

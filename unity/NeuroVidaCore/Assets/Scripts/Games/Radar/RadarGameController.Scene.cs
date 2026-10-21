@@ -25,7 +25,7 @@ namespace NeuroVida.Games.Radar
         private readonly HashSet<CapsuleType> _hitSet = new HashSet<CapsuleType>(), _wrongSet = new HashSet<CapsuleType>(), _missedSet = new HashSet<CapsuleType>();
         private readonly float[] _pressAt = { -10f, -10f, -10f, -10f, -10f, -10f };
         private BoardMode _boardMode = BoardMode.Dim;
-        private float _flashAt = -10f, _flashMs = 100f, _shipPopAt = -10f, _dockAt = -10f, _tripAt = -10f, _revealAt = -10f, _endAt = -10f, _goPressAt = -10f, _beamAngle;
+        private float _flashAt = -10f, _flashMs = 100f, _shipPopAt = -10f, _dockAt = -10f, _tripAt = -10f, _revealAt = -10f, _goPressAt = -10f, _beamAngle;
         /// <summary>La geometría con que se armó la ronda en curso (si la pantalla cambia a mitad de ronda, las posiciones se escalan con el radar).</summary>
         private RadarGeometry _roundGeo = RadarGeometry.Reference;
         private bool _hideShipCount;
@@ -33,10 +33,6 @@ namespace NeuroVida.Games.Radar
         private int OnBoard => RadarCargo.OnBoard(_seats.Count, _trips);
         private int _shownRescued, _lastTurn = -1, _maskCount;
         private bool _beamOn = true;
-        private bool _confettiOn;
-        private readonly Vector2[] _confettiPos = new Vector2[ConfettiPool], _confettiVel = new Vector2[ConfettiPool];
-        private readonly float[] _confettiLife = new float[ConfettiPool];
-        private float _confettiAt;
 
         // ------------------------------------------------------------------ reposo y ronda
 
@@ -54,9 +50,6 @@ namespace NeuroVida.Games.Radar
             _flashFill.color = new Color(_flashFill.color.r, _flashFill.color.g, _flashFill.color.b, 0f);
             _flashGlow.color = new Color(_flashGlow.color.r, _flashGlow.color.g, _flashGlow.color.b, 0f);
             _flashWave.color = new Color(_flashWave.color.r, _flashWave.color.g, _flashWave.color.b, 0f);
-            _endLayer.gameObject.SetActive(false);
-            foreach (var c in _confetti) c.gameObject.SetActive(false);
-            _confettiOn = false;
             _hudLayer.gameObject.SetActive(true);
             _boardLayer.gameObject.SetActive(true);
             _shipLayer.gameObject.SetActive(true);
@@ -262,11 +255,7 @@ namespace NeuroVida.Games.Radar
         private void Animate(float now, float dt)
         {
             AnimateBack(now, dt);
-            if (_phase == Phase.Done)
-            {
-                AnimateEnd(now, dt);
-                return;
-            }
+            if (_phase == Phase.Done) return;
             AnimateRadar(now, dt);
             AnimateShip(now);
             if (_phase == Phase.Reveal) AnimateReveal(now);
@@ -556,91 +545,5 @@ namespace NeuroVida.Games.Radar
         }
 
         // ------------------------------------------------------------------ la pantalla final
-
-        private void PlaceEndCaps()
-        {
-            float cs = 29f * RadarSprites.CapsuleSideInSizes;                                      // las rescatadas, a media escala, en filas de 10 cada 32 dp
-            for (int i = 0; i < EndCapsPool; i++)
-            {
-                int col = i % 10, row = i / 10;
-                SetRect(_endCaps[i].rectTransform, RadarPlan.Width * 0.5f - 4.5f * 32f + col * 32f, 136f + row * 32f, cs, cs);
-            }
-        }
-
-        private void ShowEnd(int record, bool broke)
-        {
-            _beamOn = false;
-            foreach (var b in _beams) b.gameObject.SetActive(false);
-            foreach (var f in _flying) f.gameObject.SetActive(false);
-            foreach (var sp in _sparks) sp.gameObject.SetActive(false);
-            _radarLayer.gameObject.SetActive(false);
-            _shipLayer.gameObject.SetActive(false);
-            _boardLayer.gameObject.SetActive(false);
-            foreach (var l in _tripLines) l.gameObject.SetActive(false);
-            _msgA.text = _msgB.text = "";
-            _msgPill.gameObject.SetActive(false);
-            _endTitle.text = RadarContract.EndTitle(_run.Rescued);
-            _endValue[0].text = RadarContract.CaptureValue(_run.Capture);
-            _endValue[1].text = RadarContract.ShortestValue(_run.ShortestPerfectMs);
-            _endValue[2].text = RadarContract.PerfectValue(_run.Perfect, _run.RoundsPlayed);
-            _endValue[3].text = RadarContract.StreakValue(_run.BestStreak);
-            _endValue[4].text = RadarContract.TripsValue(_run.Trips);
-            _endRecord.text = broke ? RadarContract.NewRecord : RadarContract.RecordLine(record);
-            if (RadarSprites.Plastic) _endRecordBg.gameObject.SetActive(broke);                          // con plasticina el fondo es una losa (hija): se enciende o se apaga el objeto entero
-            else _endRecordBg.color = broke ? Gold : new Color(PanelFill.r, PanelFill.g, PanelFill.b, 0f);
-            _endRecord.color = broke ? Ink : Lavender;
-            for (int i = 0; i < EndCapsPool; i++)
-            {
-                bool on = i < _seats.Count;
-                _endCaps[i].gameObject.SetActive(on);
-                if (on) _endCaps[i].sprite = RadarSprites.CapsuleSprite(_seats[i]);
-            }
-            _endAt = Now;
-            _endLayer.gameObject.SetActive(true);
-            Layout();
-            if (Motion.Decorative)
-            {
-                _confettiOn = true;
-                _confettiAt = Now;
-                var rng = new System.Random();
-                for (int i = 0; i < ConfettiPool; i++)
-                {
-                    _confettiPos[i] = new Vector2(RadarPlan.Width * 0.5f + ((float)rng.NextDouble() - 0.5f) * 120f, 170f);
-                    _confettiVel[i] = new Vector2(((float)rng.NextDouble() - 0.5f) * 260f, -120f - (float)rng.NextDouble() * 220f);
-                    _confettiLife[i] = 1.6f + (float)rng.NextDouble() * 0.7f;
-                    var c = RadarSprites.Colors[i % RadarContract.TypeCount];
-                    _confetti[i].color = c;
-                    float sz = 3f + (float)rng.NextDouble() * 3f;
-                    _confetti[i].rectTransform.sizeDelta = new Vector2(sz * 2f * _s, sz * 2f * _s);
-                    _confetti[i].gameObject.SetActive(true);
-                }
-            }
-        }
-
-        private void AnimateEnd(float now, float dt)
-        {
-            for (int i = 0; i < Mathf.Min(_seats.Count, EndCapsPool); i++)
-            {
-                float k = Motion.Decorative ? Mathf.Clamp01((now - _endAt - i * 0.045f) / 0.32f) : 1f;
-                float e = 1f - Mathf.Pow(1f - k, 3f);
-                _endCaps[i].rectTransform.localScale = Vector3.one * Mathf.Max(0.001f, e);          // las cápsulas rescatadas entran una tras otra
-            }
-            if (_confettiOn && dt > 0f)
-            {
-                float age = now - _confettiAt;
-                for (int i = 0; i < ConfettiPool; i++)
-                {
-                    float life = _confettiLife[i];
-                    bool on = age < life;
-                    _confetti[i].gameObject.SetActive(on);
-                    if (!on) continue;
-                    _confettiVel[i].y += 300f * dt;
-                    _confettiPos[i] += _confettiVel[i] * dt;
-                    SetRect(_confetti[i].rectTransform, _confettiPos[i].x, _confettiPos[i].y, _confetti[i].rectTransform.sizeDelta.x / _s, _confetti[i].rectTransform.sizeDelta.y / _s);
-                    var c = _confetti[i].color;
-                    _confetti[i].color = new Color(c.r, c.g, c.b, 0.95f * (1f - age / life));
-                }
-            }
-        }
     }
 }

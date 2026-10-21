@@ -7,10 +7,7 @@ namespace NeuroVida.Games.Aterrizaje
 {
     public sealed partial class LandingGameController
     {
-        private float _timerFraction = 1f, _shootAt = -100f, _shootX, _shootY, _domePopAt = -10f, _endAt = -10f, _confettiAt;
-        private bool _confettiOn;
-        private readonly Vector2[] _confettiPos = new Vector2[ConfettiPool], _confettiVel = new Vector2[ConfettiPool];
-        private readonly float[] _confettiLife = new float[ConfettiPool];
+        private float _timerFraction = 1f, _shootAt = -100f, _shootX, _shootY, _domePopAt = -10f;
         private System.Random _worldRng = new System.Random(5);
 
         /// <summary>Un hijo posicionado por su DESPLAZAMIENTO (dp) desde el centro del padre (x a la derecha, y hacia abajo).</summary>
@@ -36,9 +33,6 @@ namespace NeuroVida.Games.Aterrizaje
             _hint.gameObject.SetActive(false);
             _timerTrack.gameObject.SetActive(false);                                  // la barra del Reto solo se ve en la partida (GameLoop la prende después del tutorial y la cuenta regresiva)
             _timerFill.gameObject.SetActive(false);
-            _endLayer.gameObject.SetActive(false);
-            foreach (var c in _confetti) c.gameObject.SetActive(false);
-            _confettiOn = false;
             _hud.Rect.gameObject.SetActive(true);
             _hudLayer.gameObject.SetActive(true);
             _rulerLayer.gameObject.SetActive(true);
@@ -87,7 +81,6 @@ namespace NeuroVida.Games.Aterrizaje
             AnimateNotices();
             AnimateHud(now);
             AnimateHover(Mathf.Max(GameClock.RealDeltaTime, 0f));
-            if (_phase == Phase.Done) AnimateEnd(now, dt);
         }
 
         /// <summary>El cielo con vida: las estrellas titilan, de vez en cuando pasa una fugaz y un satélite cruza despacio; las dos cordilleras se desplazan (3 y 7 dp/s). Con «quitar animaciones» las estrellas quedan fijas y no hay fugaz, ni satélite, NI CORDILLERAS (quietas junto a la regla serían marcas).</summary>
@@ -433,58 +426,5 @@ namespace NeuroVida.Games.Aterrizaje
         }
 
         // ------------------------------------------------------------------ la pantalla final
-
-        private void ShowEnd(float meanErr)
-        {
-            _hud.Rect.gameObject.SetActive(false);
-            _hudLayer.gameObject.SetActive(false);
-            _noticeLayer.gameObject.SetActive(false);
-            _timerTrack.gameObject.SetActive(false);
-            _timerFill.gameObject.SetActive(false);
-            _missionSmall.gameObject.SetActive(false);                                // la misión («Aterriza en» y su número) se transparentaba detrás del recuadro del cierre (Tarea 73); ResetViews la vuelve a mostrar
-            _missionNumber.gameObject.SetActive(false);
-            _endTitle.text = LandingContract.EndTitle(_hits, _trials);
-            _endEstimate.text = LandingContract.EndEstimate(meanErr);
-            _endUnit.text = LandingContract.EndAnalogy(meanErr);
-            _endSummary.text = LandingContract.EndSummary(_bulls, _bestStreak, _domes);
-            _endAt = Now;
-            _endLayer.gameObject.SetActive(true);
-            Layout();
-            if (Motion.Decorative)
-            {
-                _confettiOn = true;
-                _confettiAt = Now;
-                var rng = new System.Random();
-                var cols = new[] { Lime, Cyan, Gold, new Color(183f / 255f, 155f / 255f, 1f), Coral };
-                for (int i = 0; i < ConfettiPool; i++)
-                {
-                    _confettiPos[i] = new Vector2(LandingPlan.Width * 0.5f + ((float)rng.NextDouble() - 0.5f) * 120f, 170f);
-                    _confettiVel[i] = new Vector2(((float)rng.NextDouble() - 0.5f) * 260f, -120f - (float)rng.NextDouble() * 220f);
-                    _confettiLife[i] = 1.6f + (float)rng.NextDouble() * 0.7f;
-                    _confetti[i].color = cols[i % cols.Length];
-                    float sz = 3f + (float)rng.NextDouble() * 3f;
-                    _confetti[i].rectTransform.sizeDelta = new Vector2(sz * 2f * _s, sz * 2f * _s);
-                    _confetti[i].gameObject.SetActive(true);
-                }
-            }
-        }
-
-        private void AnimateEnd(float now, float dt)
-        {
-            if (!_confettiOn || dt <= 0f) return;
-            float age = now - _confettiAt;
-            for (int i = 0; i < ConfettiPool; i++)
-            {
-                float life = _confettiLife[i];
-                bool on = age < life;
-                _confetti[i].gameObject.SetActive(on);
-                if (!on) continue;
-                _confettiVel[i].y += 300f * dt;
-                _confettiPos[i] += _confettiVel[i] * dt;
-                SetRect(_confetti[i].rectTransform, _confettiPos[i].x, _confettiPos[i].y, _confetti[i].rectTransform.sizeDelta.x / _s, _confetti[i].rectTransform.sizeDelta.y / _s);
-                var c = _confetti[i].color;
-                _confetti[i].color = new Color(c.r, c.g, c.b, 0.95f * (1f - age / life));
-            }
-        }
     }
 }

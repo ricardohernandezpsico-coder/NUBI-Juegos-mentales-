@@ -129,7 +129,7 @@ object GameRegistry {
       title = "¿Verdad o disparate?",
       domain = DomainType.LENGUAJE,
       subtitle = "Lee y decide rápido",
-      instruction = "Llegan frases cortas desde la radio. Toca VERDAD si es cierta o DISPARATE si no tiene sentido; también puedes deslizar la frase. Si una frase no se entiende, mantenla presionada."
+      instruction = "Llegan frases cortas desde la radio. Toca Verdad si es cierta o Disparate si no tiene sentido; también puedes deslizar la frase. Si una frase no se entiende, mantenla presionada."
     ),
     GameDefinition(
       id = "calculo",

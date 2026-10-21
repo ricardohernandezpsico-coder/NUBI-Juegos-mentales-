@@ -9,7 +9,7 @@ namespace NeuroVida.Games.Aterrizaje
 {
     public sealed partial class LandingGameController
     {
-        private const int StarCount = 26, GuideDots = 40, DustCount = 14, ConfettiPool = 50, ProgressDots = LandingContract.DomeEvery;
+        private const int StarCount = 26, GuideDots = 40, DustCount = 14, ProgressDots = LandingContract.DomeEvery;
 
         private static readonly Color Gold = LandingSprites.Gold;
         private static readonly Color Cyan = LandingSprites.Cyan;
@@ -24,7 +24,7 @@ namespace NeuroVida.Games.Aterrizaje
         private static readonly Color NoticeFill = LandingSprites.NoticeFill;
         private static readonly Color CardFill = new Color(34f / 255f, 32f / 255f, 90f / 255f, 0.97f);
 
-        private RectTransform _safe, _play, _worldLayer, _rulerLayer, _guideLayer, _landerLayer, _resultLayer, _fxLayer, _noticeLayer, _hudLayer, _endLayer;
+        private RectTransform _safe, _play, _worldLayer, _rulerLayer, _guideLayer, _landerLayer, _resultLayer, _fxLayer, _noticeLayer, _hudLayer;
         private readonly List<KeyValuePair<Text, float>> _fonts = new List<KeyValuePair<Text, float>>();
         private readonly List<KeyValuePair<Image, float>> _radii = new List<KeyValuePair<Image, float>>();
 
@@ -76,9 +76,6 @@ namespace NeuroVida.Games.Aterrizaje
         private Text _hudCount, _streakText, _hint;
 
         // la pantalla final
-        private Image _endShade, _endCard;
-        private Text _endTag, _endTitle, _endBoxTitle, _endEstimate, _endUnit, _endSummary;
-        private readonly Image[] _confetti = new Image[ConfettiPool];
 
         // ------------------------------------------------------------------ construcción de UI
 
@@ -122,7 +119,6 @@ namespace NeuroVida.Games.Aterrizaje
             _fxLayer = Layer(_play, "Fx");
             _noticeLayer = Layer(_play, "Notices");
             _hudLayer = Layer(_play, "HudExtra");
-            _endLayer = Layer(_play, "End");
             BuildWorld();
             BuildRuler();
             BuildMission(missionLayer);
@@ -132,7 +128,6 @@ namespace NeuroVida.Games.Aterrizaje
             BuildFx();
             BuildNotices();
             BuildHud();
-            BuildEnd();
             BuildHiddenResult();
 
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
@@ -268,11 +263,6 @@ namespace NeuroVida.Games.Aterrizaje
                 _dust[i] = MakeImage(_fxLayer, "Dust" + i, DiscSprite.Get());
                 _dust[i].gameObject.SetActive(false);
             }
-            for (int i = 0; i < ConfettiPool; i++)
-            {
-                _confetti[i] = MakeImage(_fxLayer, "Confetti" + i, DiscSprite.Get());
-                _confetti[i].gameObject.SetActive(false);
-            }
         }
 
         private void BuildNotices()
@@ -306,24 +296,6 @@ namespace NeuroVida.Games.Aterrizaje
             _timerTrack = Rr(_hudLayer, "TimerTrack", new Color(Lavender.r, Lavender.g, Lavender.b, 0.25f), 2.5f);
             _timerFill = Rr(_hudLayer, "TimerFill", Lime, 2.5f);
             _timerFill.rectTransform.pivot = new Vector2(0f, 0.5f);
-        }
-
-        private void BuildEnd()
-        {
-            _endShade = MakeImage(_endLayer, "Shade", null);
-            _endShade.color = new Color(4f / 255f, 5f / 255f, 26f / 255f, 0.62f);
-            _endTag = MakeLabel(_endLayer, "Tag", 16f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
-            _endTag.text = LandingContract.EndTag;
-            _endTitle = MakeLabel(_endLayer, "Title", 25f, UiFonts.Bold, Color.white, TextAnchor.MiddleCenter);
-            _endCard = Rr(_endLayer, "Card", CardFill, 22f);
-            _endBoxTitle = MakeLabel(_endLayer, "BoxTitle", 16f, UiFonts.Bold, Soft, TextAnchor.MiddleCenter);
-            _endBoxTitle.text = LandingContract.EndBoxTitle;
-            _endEstimate = MakeLabel(_endLayer, "Estimate", 34f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
-            _endUnit = MakeLabel(_endLayer, "Unit", 16f, UiFonts.Regular, Color.white, TextAnchor.MiddleCenter);
-            _endSummary = MakeLabel(_endLayer, "Summary", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
-            foreach (var t in new[] { _endTag, _endTitle, _endBoxTitle, _endEstimate, _endUnit, _endSummary }) t.horizontalOverflow = HorizontalWrapMode.Wrap;
-            _endBoxTitle.horizontalOverflow = _endUnit.horizontalOverflow = HorizontalWrapMode.Overflow;          // estas dos se achican (hasta 14 dp) para caber en UNA línea del recuadro: ver FitEndLine
-            _endLayer.gameObject.SetActive(false);
         }
 
         /// <summary>El panel de resultado de la clase base (no se muestra: la pantalla final es la de <see cref="BuildEnd"/>; la base pide que exista).</summary>
@@ -440,7 +412,6 @@ namespace NeuroVida.Games.Aterrizaje
             LayoutRuler();
             LayoutMission();
             LayoutHud();
-            LayoutEnd();
             RefreshHudExtras();
             Animate(Now, 0f);
         }
@@ -515,37 +486,6 @@ namespace NeuroVida.Games.Aterrizaje
             SetRect(_streakText.rectTransform, LandingPlan.Width - 16f - 56f, LandingPlan.StreakY + 0.5f, 112f, 22f);
             SetRect(_hint.rectTransform, LandingPlan.Width * 0.5f, _plan.HintY, 336f, 22f);
             SetRect(_timerTrack.rectTransform, LandingPlan.Width * 0.5f, 71f, LandingPlan.Width - 24f, 5f);
-        }
-
-        private void LayoutEnd()
-        {
-            float cx = LandingPlan.Width * 0.5f;
-            SetRect(_endShade.rectTransform, cx, _logicalH * 0.5f, LandingPlan.Width, _logicalH);
-            SetRect(_endTag.rectTransform, cx, 34f, 300f, 22f);
-            SetRect(_endTitle.rectTransform, cx, 64f, 330f, 36f);
-            SetRect(_endCard.rectTransform, cx, 92f + 78f, LandingPlan.Width - 36f, 156f);
-            SetRect(_endBoxTitle.rectTransform, cx, 92f + 22f, EndTextWidth, 22f);
-            SetRect(_endEstimate.rectTransform, cx, 92f + 56f, 300f, 44f);
-            SetRect(_endUnit.rectTransform, cx, 92f + 84f, EndTextWidth, 24f);
-            SetRect(_endSummary.rectTransform, cx, 92f + 126f, 300f, 22f);
-            FitEndLine(_endBoxTitle, 15f);
-            FitEndLine(_endUnit, 16f);
-        }
-
-        /// <summary>Lo que cabe de ancho dentro del recuadro del cierre (324 dp de recuadro menos 4 dp de aire a cada lado).</summary>
-        private const float EndTextWidth = LandingPlan.Width - 36f - 8f;
-
-        /// <summary>Deja el texto en UNA línea dentro del recuadro: parte de su tamaño y lo achica de a medio dp, sin bajar nunca de 14 dp.</summary>
-        private void FitEndLine(Text t, float startDp)
-        {
-            float fs = startDp;
-            do
-            {
-                t.fontSize = Mathf.RoundToInt(fs * _s);
-                if (t.preferredWidth / _s <= EndTextWidth) break;
-                fs -= 0.5f;
-            } while (fs > 14f);
-            t.fontSize = Mathf.RoundToInt(Mathf.Max(14f, fs) * _s);
         }
     }
 }

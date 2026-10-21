@@ -314,19 +314,8 @@ namespace NeuroVida.Games.Radar
         /// <summary>Las cápsulas rescatadas en la partida, en la fila de consigna del marcador (Tarea 127; antes un número suelto con una cápsula arriba a la derecha).</summary>
         public static string RescuedPhase(int rescued) => rescued == 1 ? "1 rescatada" : rescued + " rescatadas";
 
-        public const string EndTag = "¡RESCATE COMPLETO!";
-        public static string EndTitle(int rescued) => rescued == 1 ? "1 cápsula a salvo" : rescued + " cápsulas a salvo";
-        public const string EndCapture = "Tu captura", EndShortest = "Destello más corto resuelto", EndPerfect = "Rondas perfectas", EndStreak = "Racha mayor", EndTrips = "Viajes a la estación";
         /// <summary>El aviso de arriba cuando la nave se llena y parte a la estación (v4).</summary>
         public const string TripNotice = "¡Nave llena! Viaje a la estación";
-        public static string TripsValue(int trips) => trips.ToString();
-        public static string CaptureValue(float capture) => capture < 0f ? "—" : capture.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',') + " de 4";
-        public static string ShortestValue(int ms) => ms <= 0 ? "—" : ms + " ms";
-        public static string PerfectValue(int perfect, int rounds) => perfect + " de " + rounds;
-        public static string StreakValue(int best) => best >= 2 ? "×" + best : "—";
-        public const string EndNote1 = "Captura: cuántas nombras bien en la lluvia;", EndNote2 = "una que no estaba descuenta el doble.", EndNote3 = "Medida de esta partida. No es un diagnóstico.";
-        public const string NewRecord = "¡Récord nuevo!";
-        public static string RecordLine(int best) => "Tu récord: " + best + (best == 1 ? " cápsula" : " cápsulas");
         public const string CountdownSub = "Mira un instante y elige qué cápsulas viste";
     }
 

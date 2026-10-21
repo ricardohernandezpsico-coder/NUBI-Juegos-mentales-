@@ -36,10 +36,10 @@ Cómo se arman las tomas: la barra de pestañas se mide como en `MainActivity` (
 
 ### En los juegos de Unity (`../capturas/`, a primera vista)
 
-Sin errores de consola en los 19. Cosas que se ven en las láminas:
+Sin errores de consola en los 17 (corrida del 21-oct, Tarea 154: 310 capturas; el script ya no incluye Rumbo a Casa ni Cosecha de palabras, retirados de la app). Los cuatro puntos que esta nota traía de la corrida del 20-oct **ya estaban resueltos desde la Tarea 144** (Fable había leído esta nota vieja); se verificaron con las capturas nuevas:
 
-- **Acoplamiento:** arriba a la derecha el rótulo «Módulo …» y el chip «15 seguidos» se pisan.
-- **Bodega de carga:** en el aviso «¡Pedido perfecto!» el chip «x2 seguidos» tapa el final de la palabra.
-- **En la punta de la lengua:** en la primera pantalla hay un gran vacío entre la tarjeta de la definición y «¿Cuál es la palabra?».
-- **Freno de emergencia:** la mitad de arriba de la pantalla queda vacía (solo la barra «Tu freno»); los dos cohetes quedan abajo.
-- **Rumbo a Casa y Cosecha de palabras** (retirados de la app) siguen en las láminas: son las 19 del script de capturas.
+- **Acoplamiento:** «Módulo 2 · 8 a bordo» y el chip «×8 seguidos» van en filas aparte: no se pisan.
+- **Bodega de carga:** el chip «×N seguidos» baja bajo la consigna (`AvoidForStreak`) y no tapa el aviso.
+- **En la punta de la lengua:** la pregunta va pegada a la tarjeta y las casillas vacías están desde el primer cuadro: ya no hay un hueco.
+- **Freno de emergencia:** el conjunto cohete-plataforma-botón subió (0,22 del alto) y creció; la mitad de arriba la ocupa la señal ALTO durante la partida (en la primera pantalla solo está «Tu freno»: es lo esperado).
+- **Lo que cambió con la Tarea 154:** las tarjetas «Nuevo» y el resto de los textos que dibuja Unity hablan como la app (caja normal, «seguidos», «¡Un paso más!», «Encargos» en Correo) y llevan la losa chica «Seguir»; hoja `docs/previews/tarea-154.png`.

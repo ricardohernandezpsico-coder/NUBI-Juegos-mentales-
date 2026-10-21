@@ -29,19 +29,19 @@ namespace NeuroVida.Bridge.EditorTools
         private static int Height = 2400;
         private const double WholeRunTimeoutSeconds = 3.0 * 3600.0;
 
-        /// <summary>Los 19 juegos en el orden de las áreas (nombre de la hoja de ruta / id).</summary>
+        /// <summary>Los 17 juegos de la app en el orden de las áreas (nombre de la hoja de ruta / id). Tarea 154: Rumbo a Casa y Cosecha de palabras (retirados el 10-oct) ya no se capturan.</summary>
         private static readonly (string Name, string Id)[] AllGames =
         {
-            ("Parejas", "parejas"), ("Secuencia", "secuencia"), ("Bodega", "bodega"), ("Rumbo", "rumbo"), ("Correo", "correo"),
+            ("Parejas", "parejas"), ("Secuencia", "secuencia"), ("Bodega", "bodega"), ("Correo", "correo"),
             ("Stroop", "stroop"), ("Piloto", "piloto"), ("Freno", "freno"), ("Satelites", "satelites"), ("Radar", "radar"),
             ("Acoplamiento", "acoplamiento"), ("Calculo", "calculo"), ("Aterrizaje", "aterrizaje"), ("Engranajes", "engranajes"),
-            ("Anagramas", "anagramas"), ("Meteoros", "meteoros"), ("Disparate", "disparate"), ("Cosecha", "cosecha"), ("Intrusa", "intrusa"),
+            ("Anagramas", "anagramas"), ("Meteoros", "meteoros"), ("Disparate", "disparate"), ("Intrusa", "intrusa"),
         };
 
         /// <summary>Los juegos con tutorial guiado (los de <c>UnityGameLauncher.TUTORIAL_GAMES</c> de la app).</summary>
         private static readonly HashSet<string> TutorialGames = new HashSet<string>
         {
-            "secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "cosecha", "disparate", "intrusa", "satelites", "piloto", "radar", "acoplamiento",
+            "secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "disparate", "intrusa", "satelites", "piloto", "radar", "acoplamiento",
         };
 
         /// <summary>Los juegos que el smoke juega solos con <c>GuidedTutorial.EditorAutoPlayGame</c> (el único «piloto automático» que hay de la partida real).</summary>

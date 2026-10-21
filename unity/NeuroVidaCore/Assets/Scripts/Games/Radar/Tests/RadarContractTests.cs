@@ -297,10 +297,6 @@ namespace NeuroVida.Games.Radar.Tests
             Assert.AreEqual("Rescataste 1 de 4 · 2 no estaban", RadarContract.Partial(1, 4, 2));
             Assert.AreEqual("Ronda 5 de 12", RadarContract.RoundChip(5, 12));
             Assert.AreEqual("Ronda 7", RadarContract.RoundChip(7, 0));
-            Assert.AreEqual("3,5 de 4", RadarContract.CaptureValue(3.5f));
-            Assert.AreEqual("—", RadarContract.CaptureValue(-1f));
-            Assert.AreEqual("1 cápsula a salvo", RadarContract.EndTitle(1));
-            Assert.AreEqual("23 cápsulas a salvo", RadarContract.EndTitle(23));
             var texts = new List<string>();
             foreach (var f in typeof(RadarContract).GetFields(BindingFlags.Public | BindingFlags.Static))
             {
@@ -310,7 +306,6 @@ namespace NeuroVida.Games.Radar.Tests
             foreach (var t in texts)
                 foreach (var banned in new[] { "cognitiv", "entrenamiento", "cerebro", "ufov", "double decision", "eagle eye", "speed match", "astronauta" })
                     StringAssert.DoesNotContain(banned, t.ToLowerInvariant());
-            StringAssert.Contains("No es un diagnóstico", RadarContract.EndNote3);
         }
     }
 }

@@ -168,7 +168,6 @@ namespace NeuroVida.Games.Acoplamiento
                 _correct++;
                 _docked++;
                 _stationShown++;
-                _dockedShapes.Add(PracticeShape());
                 _streak++;
                 _bestStreak = Mathf.Max(_bestStreak, _streak);
             }

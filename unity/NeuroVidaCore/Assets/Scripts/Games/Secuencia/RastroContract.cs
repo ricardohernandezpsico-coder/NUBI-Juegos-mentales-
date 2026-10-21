@@ -68,8 +68,8 @@ namespace NeuroVida.Games.Secuencia
         /// <summary>La píldora de cuántas luces: «3 luces», «Últimas 3 luces».</summary>
         public static string CountLabel(RastroMode m, int asked) => (m == RastroMode.Marcha ? "Últimas " : "") + asked + " luces";
 
-        /// <summary>Título del aviso al cambiar de modo: «AL REVÉS» (el aviso dice «Ahora: AL REVÉS»).</summary>
-        public static string NoticeTitle(RastroMode m) => Name(m).ToUpperInvariant();
+        /// <summary>Título del aviso al cambiar de modo: «Al revés» (el aviso dice «Ahora: Al revés»; Tarea 154: sin mayúsculas sostenidas).</summary>
+        public static string NoticeTitle(RastroMode m) => Name(m);
 
         /// <summary>La línea del aviso al cambiar de modo.</summary>
         public static string NoticeLine(RastroMode m, int asked)
@@ -88,10 +88,10 @@ namespace NeuroVida.Games.Secuencia
         {
             switch (m)
             {
-                case RastroMode.Reves: return "AL REVÉS · empieza por la última";
-                case RastroMode.Marcha: return "SOLO LAS ÚLTIMAS " + asked;
-                case RastroMode.Gira: return "MISMO ORDEN, LOS LUCEROS SE MOVIERON";
-                default: return "EN ORDEN";
+                case RastroMode.Reves: return "Al revés · empieza por la última";
+                case RastroMode.Marcha: return "Solo las últimas " + asked;
+                case RastroMode.Gira: return "Mismo orden, los luceros se movieron";
+                default: return "En orden";
             }
         }
 

@@ -577,7 +577,7 @@ namespace NeuroVida.Games.Disparate
         private void Register(bool correct)
         {
             var change = _dda.Register(correct);
-            if (change == DdaChange.Up) _toast.Show("¡Subes de nivel!", DisparateContract.LevelNews(_dda.Level), GoodColor, 1.1f);
+            if (change == DdaChange.Up) _toast.Show("¡Un paso más!", DisparateContract.LevelNews(_dda.Level), GoodColor, 1.1f);
             else if (change == DdaChange.Down || _dda.Struggling) _toast.Show("Con calma", "Lee la frase hasta el final", AmberColor, 0.9f);
         }
 

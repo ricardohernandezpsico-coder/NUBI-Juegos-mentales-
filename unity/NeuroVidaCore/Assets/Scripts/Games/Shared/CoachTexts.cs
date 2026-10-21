@@ -75,10 +75,10 @@ namespace NeuroVida.Games.Shared
         public static class Stroop
         {
             public const string InkRule = "Responde TINTA: toca el color con que está escrita";
-            public const string WordRule = "Responde PALABRA: toca lo que DICE la palabra";
+            public const string WordRule = "Responde PALABRA: toca lo que dice la palabra";
             public static string Good(string explain) => "¡Bien! " + explain;
             public const string MissedInk = "Casi: con TINTA se toca el color de la letra";
-            public const string MissedWord = "Casi: con PALABRA se toca lo que DICE";
+            public const string MissedWord = "Casi: con PALABRA se toca lo que dice";
         }
 
         /// <summary>Engranajes: Taller de reparación (pantalla: los carteles de las piezas del cohete, el motor con su flecha y el botón «Arrancar»).</summary>

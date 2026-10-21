@@ -262,12 +262,9 @@ namespace NeuroVida.Games.Piloto.Tests
             foreach (var shape in Enum.GetValues(typeof(SignalShape)).Cast<SignalShape>())
                 foreach (var detail in Enum.GetValues(typeof(SignalDetail)).Cast<SignalDetail>())
                     texts.Add(PilotContract.MissionName(new PilotMission(shape, detail)));
-            texts.Add(PilotContract.MeasureValue(0.71f));
             foreach (var t in texts)
                 foreach (var banned in new[] { "cognitiv", "entrenamiento", "cerebro" })
                     StringAssert.DoesNotContain(banned, t.ToLowerInvariant());
-            StringAssert.Contains("No es un diagnóstico", PilotContract.EndNote2);
-            StringAssert.Contains("las dos cosas a la vez", PilotContract.EndNote1);
         }
     }
 }

@@ -365,7 +365,7 @@ namespace NeuroVida.Games.Engranajes
                 _pulses[i].color = new Color(1f, 214f / 255f, 120f / 255f, 1f);
             }
             _motorPill = BuildPill(_machineLayer, "MotorLabel", MotorW, MotorH, ButtonFill, ButtonText, 16f);
-            _motorPill.Label.text = "MOTOR";
+            _motorPill.Label.text = "Motor";
             if (_volume && EngranajesSprites.HasPlates)                                                                // el rótulo: una losa chica del kit (noche; dorada cuando el motor está cambiado), con el texto liso
             {
                 _motorPill.Slab = PlasticSlab.AttachCustom(_motorPill.Root, EngranajesSprites.NeutralGroup, EngranajesSprites.NeutralPlate);
@@ -663,8 +663,9 @@ namespace NeuroVida.Games.Engranajes
             _introCard.color = new Color(20f / 255f, 27f / 255f, 58f / 255f);
             _introTitle = MakeLabel(_introLayer, "Title", 16f, UiFonts.Bold, Gold, TextAnchor.MiddleCenter);
             _introBody = MakeLabel(_introLayer, "Body", 16f, UiFonts.Bold, Color.white, TextAnchor.UpperCenter);
-            var tap = MakeLabel(_introLayer, "Tap", 16f, UiFonts.Bold, Cyan, TextAnchor.MiddleCenter);
-            tap.text = "Toca para seguir";
+            _introTapSlab = SeguirChip.Create(_introLayer);                // la losa chica «Seguir» del kit (Tarea 154): toda la tarjeta se toca; la losa solo lo dice con la forma de un botón
+            var tap = MakeLabel(_introLayer, "Tap", 16f, UiFonts.Bold, NeuroStyle.Ink, TextAnchor.MiddleCenter);
+            tap.text = SeguirChip.Label;
             _introTap = tap;
             foreach (var t in new[] { _introTitle, tap }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow; }
             _introBody.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -679,6 +680,7 @@ namespace NeuroVida.Games.Engranajes
         }
 
         private Text _introTap;
+        private Image _introTapSlab;
 
         private static RectTransform Layer(Transform parent, string name)
         {
@@ -870,7 +872,7 @@ namespace NeuroVida.Games.Engranajes
             _introBody.text = sb.ToString();
             _introBody.rectTransform.sizeDelta = new Vector2((cw - 28f) * _s, 400f * _s);
             float bodyH = _introBody.preferredHeight / _s;
-            float ch = 128f + bodyH + 40f;
+            float ch = 128f + bodyH + 40f + SeguirChip.ExtraDp;
             float top = Mathf.Min(_logicalH * 0.5f - ch / 2f, _logicalH - ch - 12f);
             top = Mathf.Max(top, 12f);
             SetRect(_introRim.rectTransform, cx, top + ch / 2f, cw + 4f, ch + 4f);
@@ -879,7 +881,8 @@ namespace NeuroVida.Games.Engranajes
             SetRadius(_introCard, 26f * _s);
             SetRect(_introTitle.rectTransform, cx, top + 26f, 200f, 24f);
             SetRect(_introBody.rectTransform, cx, top + 120f + bodyH / 2f, cw - 28f, bodyH + 4f);
-            SetRect(_introTap.rectTransform, cx, top + ch - 24f, 200f, 24f);
+            SetRect(_introTapSlab.rectTransform, cx, top + ch - SeguirChip.FromBottomDp, SeguirChip.WidthDp, SeguirChip.HeightDp);
+            SetRect(_introTap.rectTransform, cx, top + ch - SeguirChip.FromBottomDp, SeguirChip.WidthDp, SeguirChip.HeightDp);
             LayoutIntroGear(_introA, cx - 24f, top + 76f, EngranajesSprites.GearSize.Big, EngranajesSprites.Palette.Main);
             LayoutIntroGear(_introB, cx + 26f, top + 76f, EngranajesSprites.GearSize.Small, EngranajesSprites.Palette.Station);
             _introA.Root.gameObject.SetActive(true);

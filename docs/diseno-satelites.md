@@ -205,3 +205,5 @@ Regla del 14-oct: todo objeto de plasticina que se toca tiene su estado presiona
 ## Cambio de diseño del 18-oct-2026 (Tarea 129): avisos en crema
 
 El rótulo «¿Aquí se cruzaron?» (losa chica) y el aviso sorpresa («NUEVO · Cambio de órbita…») pasan a **crema** con la letra en tinta (#514B78 el rótulo secundario). Lo demás —plano, sin respuesta durante el seguimiento, sin «firma» por series— no cambia.
+
+**Tarea 154 (21-oct): se borró la pantalla final de Unity que nadie llamaba** (`ShowEnd`, `BuildEnd`, `LayoutEnd`, el confeti y el planeta grande del cierre; desde la Tarea 126 Unity no dibuja un resultado: el «momento del objeto», la cortina «¡Listo!» y la app lo hacen todo). Con ella se fueron sus textos y los de `SatelliteContract` que solo ella usaba (`LightsTitle`, `TrackedLine`, `PerfectLine` y `RecordLine`). Lo que mide y guarda la telemetría no cambió. Los textos de lo que SÍ se dibuja siguen la regla común: caja normal y «seguidos» en vez de «racha» (`HudRulesTests`).

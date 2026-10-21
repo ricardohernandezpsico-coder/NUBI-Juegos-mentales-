@@ -544,7 +544,7 @@ namespace NeuroVida.Games.Piloto
             _sector = sector;
             _gateScheduled = false;
 #if UNITY_EDITOR
-            Debug.Log("[SmokeTest] Piloto: sector " + (sector + 1) + " a los " + _t.ToString("0.0") + " s (" + (Endless ? "Reto" : "Precisión") + "), nacieron " + _spawned + ", resueltas " + _run.Resolved);
+            Debug.Log("[SmokeTest] Piloto: sector " + (sector + 1) + " a los " + _t.ToString("0.0") + " s (" + (Endless ? "con reloj" : "sin reloj") + "), nacieron " + _spawned + ", resueltas " + _run.Resolved);
 #endif
             // las señales que quedaban eran de la misión vieja: se retiran sin contar
             foreach (var s in _signals) if (s.Alive) { s.Outcome = Outcome.Gone; s.DoneAt = now - SignalFadeSeconds + 0.12f; _dropped++; }

@@ -312,7 +312,7 @@ namespace NeuroVida.Games.Intrusa
         private void Register(bool correct)
         {
             var change = _dda.Register(correct);
-            if (change == DdaChange.Up) _toast.Show("¡Subes de nivel!", IntrusaContract.LevelNews(_dda.Level), GoodColor, 1.1f);
+            if (change == DdaChange.Up) _toast.Show("¡Un paso más!", IntrusaContract.LevelNews(_dda.Level), GoodColor, 1.1f);
             else if (change == DdaChange.Down || _dda.Struggling) _toast.Show("Con calma", "Piensa qué tienen en común las otras", AmberColor, 0.9f);
         }
 

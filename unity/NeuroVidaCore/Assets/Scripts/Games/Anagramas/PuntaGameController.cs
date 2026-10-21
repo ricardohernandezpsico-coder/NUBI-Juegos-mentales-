@@ -348,7 +348,7 @@ namespace NeuroVida.Games.Anagramas
             UpdateHud();
             if (change == DdaChange.Up)
             {
-                _toast.Show("¡Subes de nivel!", "Palabras menos comunes y más largas", NeuroStyle.Lime, 1.1f);
+                _toast.Show("¡Un paso más!", "Palabras menos comunes y más largas", NeuroStyle.Lime, 1.1f);
                 GameFeel.LevelUp();
             }
             else if (change == DdaChange.Down || _dda.Struggling)

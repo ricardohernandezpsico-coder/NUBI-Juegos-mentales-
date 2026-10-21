@@ -357,7 +357,7 @@ namespace NeuroVida.Games.Freno
             bool record = ssd > _bestSsd && _stopsOk >= 2;
             _bestSsd = Mathf.Max(_bestSsd, ssd);
             GameFeel.Correct(_streak);
-            SetPrompt("¡FRENO PERFECTO!", GoodColor);
+            SetPrompt("¡Freno perfecto!", GoodColor);
             ShowMark(lit, true);
             StartCoroutine(Steam(lit));
             StartCoroutine(FloatText(_stopRect, "+" + pts, NeuroStyle.Sun));

@@ -875,7 +875,6 @@ namespace NeuroVida.Games.Engranajes
             _introGearB.A = EngranajesContract.MeshPhase(_introGearA, _introGearB);
             ApplyAngle(_introA, _introGearA.A);
             ApplyAngle(_introB, _introGearB.A);
-            _introTap.color = deco ? new Color(Cyan.r, Cyan.g, Cyan.b, 0.7f + 0.3f * Mathf.Sin(now * 4f)) : Cyan;
         }
 
         // ------------------------------------------------------------------ qué se tocó

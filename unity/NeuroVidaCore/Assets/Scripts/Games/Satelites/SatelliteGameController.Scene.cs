@@ -54,7 +54,6 @@ namespace NeuroVida.Games.Satelites
             _cloud.gameObject.SetActive(false);
             _crossMarker.gameObject.SetActive(false);
             _surpriseLayer.gameObject.SetActive(false);
-            _endLayer.gameObject.SetActive(false);
             _orbitLayer.gameObject.SetActive(false);
             _promptLayer.gameObject.SetActive(true);
             _footerLayer.gameObject.SetActive(true);
@@ -248,27 +247,5 @@ namespace NeuroVida.Games.Satelites
         }
 
         // ------------------------------------------------------------------ la pantalla final
-
-        private void ShowEnd(int record, bool broke)
-        {
-            _orbitLayer.gameObject.SetActive(false);
-            _promptLayer.gameObject.SetActive(false);
-            _footerLayer.gameObject.SetActive(false);
-            _timerBg.gameObject.SetActive(false);
-            foreach (var f in _flights) { f.Active = false; f.Root.gameObject.SetActive(false); }
-            _planetBig = true;
-            _planetRoot.localScale = Vector3.one * 1.75f;
-            _planetRoot.anchoredPosition = P(ScreenPlan.Width * 0.5f, EndPlanetY);
-            _endTitle.text = SatelliteContract.LightsTitle(_run.Lights);
-            float cap = _run.Capacity, mean = _run.MeanTargets;
-            _endLabel.gameObject.SetActive(cap >= 0f);
-            _endValue.text = cap >= 0f ? SatelliteContract.TrackedLine(cap, mean) : "";
-            _endDetail.text = SatelliteContract.PerfectLine(_run.Perfect, _run.RoundsPlayed, _run.BestStreak);
-            _endRecord.text = SatelliteContract.RecordLine(record, broke);
-            _endLayer.gameObject.SetActive(true);
-        }
-
-        /// <summary>El centro del planeta grande de la pantalla final (dp desde arriba).</summary>
-        private static float EndPlanetY => ScreenPlan.HudBottom + 78f + 80f;
     }
 }

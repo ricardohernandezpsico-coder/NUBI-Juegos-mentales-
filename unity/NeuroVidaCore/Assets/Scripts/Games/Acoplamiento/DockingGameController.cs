@@ -96,7 +96,6 @@ namespace NeuroVida.Games.Acoplamiento
             _rts.Clear();
             _corrects.Clear();
             _trials = _correct = _docked = _rings = _streak = _bestStreak = _stationShown = 0;
-            _dockedShapes.Clear();
             _endsAt = 0f;
             _lastTickSecond = -1;
             _trial = null;
@@ -119,7 +118,6 @@ namespace NeuroVida.Games.Acoplamiento
         {
             DiscardPrebake();
             ReleasePiece();
-            ReleaseSculpture();
         }
 
         private IEnumerator GameLoop()
@@ -342,7 +340,6 @@ namespace NeuroVida.Games.Acoplamiento
             if (!_guided)
             {
                 _docked++;
-                if (_trial != null) _dockedShapes.Add(_trial.Shape);
             }
             _landAt = Now;
             RefreshLights(Now);

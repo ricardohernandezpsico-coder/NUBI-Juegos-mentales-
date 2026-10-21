@@ -690,7 +690,6 @@ namespace NeuroVida.Games.Bodega
             SetRect(_introObj.rectTransform, _introIllustration.x, _introIllustration.y, 38f * t + 2f, 38f * t + 2f);
             float dd = BodegaSprites.Plastic ? 57f / 52f : 1f;                                          // (el lienzo de la puerta de plasticina trae margen: 57 dp para un disco de 52)
             SetRect(_introDoor.rectTransform, _introIllustration.x, _introIllustration.y, Mathf.Max(0.5f, (1f - t) * 2f * (BodegaSprites.HatchR - 1f) * dd), 2f * (BodegaSprites.HatchR - 1f) * dd);
-            _introTap.color = deco ? new Color(Cyan.r, Cyan.g, Cyan.b, 0.7f + 0.3f * Mathf.Sin(now * 4f)) : Cyan;
         }
 
         // ------------------------------------------------------------------ verificación de que lo dibujado se ve

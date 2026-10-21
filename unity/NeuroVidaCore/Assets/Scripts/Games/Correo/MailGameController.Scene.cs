@@ -314,8 +314,9 @@ namespace NeuroVida.Games.Correo
 
         private void AnimateHeader()
         {
-            // el marcador común (Tarea 127): fila 1 «Correo Estelar» + «Día 1 de 4»; fila 2, la consigna «Toca el buzón del sello» y a la derecha «Cartas: 0» (con las atrasadas si las hay). Antes: «Nivel», «Día», «Cartas», la racha y «+1» sueltos, y la consigna al pie.
-            string cards = MailContract.CartasLine(_day.Right, _day.Late);
+            // el marcador común (Tarea 127): fila 1 «Correo Estelar» + «Día 1 de 4»; fila 2, la consigna «Toca el buzón del sello» y a la derecha «Encargos: 1 de 2» (Tarea 154: antes «Cartas: 0»). Antes: «Nivel», «Día», «Cartas», la racha y «+1» sueltos, y la consigna al pie.
+            _day.EncargosSoFar(out int encOk, out int encAll);
+            string cards = MailContract.EncargosLine(encOk, encAll);
             string hint = _phase == Phase.Play ? MailContract.PlayHint : "";
             string key = cards + "|" + hint;
             if (key != _lastCards)
@@ -929,14 +930,15 @@ namespace NeuroVida.Games.Correo
             _introBody.text = sb.ToString();
             _introBody.rectTransform.sizeDelta = new Vector2((cw - 28f) * _s, 400f * _s);
             float bodyH = _introBody.preferredHeight / _s;
-            float ch = 150f + bodyH + 44f;
+            float ch = 150f + bodyH + 44f + SeguirChip.ExtraDp;
             float top = Mathf.Min(_logicalH * 0.5f - ch / 2f, _logicalH - ch - 12f);
             top = Mathf.Max(top, 12f);
             SetRect(_introRim.rectTransform, cx, top + ch / 2f, cw + 4f, ch + 4f);
             SetRect(_introCard.rectTransform, cx, top + ch / 2f, cw, ch);
             SetRect(_introTag.rectTransform, cx, top + 26f, 220f, 24f);
             SetRect(_introBody.rectTransform, cx, top + 150f + bodyH / 2f, cw - 28f, bodyH + 4f);
-            SetRect(_introTap.rectTransform, cx, top + ch - 24f, 200f, 24f);
+            SetRect(_introTapSlab.rectTransform, cx, top + ch - SeguirChip.FromBottomDp, SeguirChip.WidthDp, SeguirChip.HeightDp);
+            SetRect(_introTap.rectTransform, cx, top + ch - SeguirChip.FromBottomDp, SeguirChip.WidthDp, SeguirChip.HeightDp);
             LayoutIntroArt(cx, top + 88f);
         }
 

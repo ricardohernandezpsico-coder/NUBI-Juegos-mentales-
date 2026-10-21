@@ -318,15 +318,5 @@ namespace NeuroVida.Games.Acoplamiento
             return streak >= 3 ? "¡Encaja! " + streak + " seguidos" : "¡Encaja!";
         }
 
-        public const string EndTag = "¡TU ESTACIÓN CRECIÓ!";
-        public static string EndTitle(int docked) => docked == 1 ? "1 módulo acoplado" : docked + " módulos acoplados";
-        public const string EndHits = "Aciertos", EndSpeed = "Tu giro mental", EndRings = "Anillos completos", EndStreak = "Racha mayor", EndCurve = "Tu curva de giro";
-        public static string HitsValue(int correct, int trials) => correct + " de " + trials;
-        public static string SpeedValue(int dps) => dps > 0 ? dps + "° por segundo" : "—";
-        public static string StreakValue(int best) => best >= 2 ? "×" + best : "—";
-        public static string CurveValue(int ms) => ms < 0 ? "—" : (ms / 1000f).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',') + " s";
-        public const string EndNote1 = "Más giro, más tiempo: es lo esperable.", EndNote2 = "Medida de esta partida. No es un diagnóstico.";
-        public const string NewRecord = "¡Récord nuevo!";
-        public static string RecordLine(int best) => "Tu récord: " + best + (best == 1 ? " módulo" : " módulos");
     }
 }

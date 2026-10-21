@@ -276,21 +276,6 @@ namespace NeuroVida.Games.Satelites.Tests
             Assert.AreEqual("Ronda 3", SatelliteContract.RoundHudReto(3));
             Assert.AreEqual("Luces encendidas: 7", SatelliteContract.LightsFooter(7));
             Assert.AreEqual("¿Aquí se cruzaron?", SatelliteContract.CrossText);
-            Assert.AreEqual("Encendiste 1 luz", SatelliteContract.LightsTitle(1));
-            Assert.AreEqual("Encendiste 12 luces", SatelliteContract.LightsTitle(12));
-            Assert.AreEqual("No se encendió ninguna luz", SatelliteContract.LightsTitle(0));
-        }
-
-        [Test]
-        public void TheEndLinesUseTheDecimalCommaAndOnlyShowWhatWasMeasured()
-        {
-            Assert.AreEqual("2,6 de 3,5 a la vez", SatelliteContract.TrackedLine(2.6f, 3.5f));
-            Assert.AreEqual("3,0 de 3 a la vez", SatelliteContract.TrackedLine(3f, 3f));
-            Assert.AreEqual("Rondas perfectas: 3 de 8", SatelliteContract.PerfectLine(3, 8, 1));
-            Assert.AreEqual("Rondas perfectas: 5 de 8 · racha mayor ×3", SatelliteContract.PerfectLine(5, 8, 3));
-            Assert.AreEqual("¡Récord nuevo: 22 luces!", SatelliteContract.RecordLine(22, true));
-            Assert.AreEqual("Tu récord: 22 luces en una partida", SatelliteContract.RecordLine(22, false));
-            Assert.AreEqual("", SatelliteContract.RecordLine(0, false));
         }
 
         [Test]
@@ -300,8 +285,8 @@ namespace NeuroVida.Games.Satelites.Tests
             {
                 SatelliteContract.Title, SatelliteContract.CountdownSub, SatelliteContract.NewTag, SatelliteContract.SurpriseTag, SatelliteContract.CrossText,
                 SatelliteContract.TrackTitle, SatelliteContract.CueSub, SatelliteContract.CueTitle(3), SatelliteContract.AnswerTitle(3), SatelliteContract.AnswerSub(1, 3),
-                SatelliteContract.ResultTitle(2, 3), SatelliteContract.ResultSub(true, 4), SatelliteContract.ResultSub(false, 0), SatelliteContract.LightsTitle(5),
-                SatelliteContract.LightsFooter(5), SatelliteContract.TrackedLine(2f, 3f), SatelliteContract.PerfectLine(2, 8, 2), SatelliteContract.RecordLine(5, true),
+                SatelliteContract.ResultTitle(2, 3), SatelliteContract.ResultSub(true, 4), SatelliteContract.ResultSub(false, 0),
+                SatelliteContract.LightsFooter(5),
             };
             foreach (var s in new[] { Surprise.Orbit, Surprise.Cloud, Surprise.Fast }) { all.Add(SatelliteContract.SurpriseName(s)); all.Add(SatelliteContract.SurpriseLine(s)); all.Add(SatelliteContract.TrackHint(s)); }
             foreach (string text in all)

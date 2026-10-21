@@ -317,7 +317,7 @@ namespace NeuroVida.Games.Acoplamiento.Tests
                 build.Invoke(controller, null);
                 go.SetActive(true);
                 var fonts = (List<KeyValuePair<Text, float>>)typeof(DockingGameController).GetField("_fonts", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).GetValue(controller);
-                Assert.Greater(fonts.Count, 10);
+                Assert.Greater(fonts.Count, 5, "los textos del juego (marcador, avisos, botones…); sin el panel de fin que nadie dibujaba (Tarea 154)");
                 foreach (var kv in fonts) Assert.GreaterOrEqual(kv.Value, 14f, "el texto «" + kv.Key.name + "» mide " + kv.Value + " dp (el mínimo es 14)");
                 foreach (float h in new[] { 640f, 700f, 780f, 800f, 900f })
                     foreach (bool guided in new[] { false, true })

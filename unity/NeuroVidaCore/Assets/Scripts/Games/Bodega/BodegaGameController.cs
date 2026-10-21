@@ -544,7 +544,7 @@ namespace NeuroVida.Games.Bodega
             _phase = Phase.Intro;
             _introTapped = false;
             _introKind = intro;
-            _introTitle.text = intro == Intro.Bodega ? "BODEGA DE CARGA" : "NUEVO";
+            _introTitle.text = intro == Intro.Bodega ? "Bodega de carga" : "Nuevo";
             _introLayer.gameObject.SetActive(true);
             LayoutIntro(BodegaContract.IntroText(intro));
             _introAt = GameClock.Time;

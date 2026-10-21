@@ -609,7 +609,7 @@ namespace NeuroVida.Games.Secuencia
             Color sky = SkyTint[(int)mode];
             _unlockGlow.color = NeuroStyle.WithAlpha(sky, 0.5f);
             _unlockIcon.sprite = RastroSprites.Icon(mode);
-            _unlockNew.text = isNew ? "¡NUEVO!" : "Ahora:";
+            _unlockNew.text = isNew ? "¡Nuevo!" : "Ahora:";
             _unlockName.text = isNew ? RastroModes.Name(mode) : RastroModes.NoticeTitle(mode);
             _unlockLine.text = isNew ? RastroModes.UnlockLine(mode) : RastroModes.NoticeLine(mode, r.Asked);
             _unlockRoot.gameObject.SetActive(true);
@@ -1172,7 +1172,7 @@ namespace NeuroVida.Games.Secuencia
             _unlockGlow = Center(_unlockRoot, "Glow", RadialGlowSprite.Get(), 260f * UnitsPerDp);
             _unlockGlow.rectTransform.anchoredPosition = new Vector2(0f, 40f * UnitsPerDp);
             _unlockNew = TextAt(_unlockRoot, "New", 66, Sun, 0f, 118f);
-            _unlockNew.text = "¡NUEVO!";
+            _unlockNew.text = "¡Nuevo!";
             _unlockIcon = Center(_unlockRoot, "Icon", RastroSprites.Icon(RastroMode.Reves), 120f * UnitsPerDp);
             _unlockIcon.rectTransform.anchoredPosition = new Vector2(0f, 40f * UnitsPerDp);
             _unlockIcon.color = Color.white;
