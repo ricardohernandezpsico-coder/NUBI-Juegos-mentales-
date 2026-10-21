@@ -926,7 +926,7 @@ private fun RotationCurve(curve: List<Int?>, modifier: Modifier = Modifier) {
     val labelH = 18.dp.toPx()
     val valueH = 16.dp.toPx()
     val chartH = size.height - labelH - valueH
-    val small = TextStyle(color = TextSoft, fontSize = 13.sp)
+    val small = TextStyle(color = TextSoft, fontSize = 14.sp)               // rótulo de gráfico: 14 sp (Tarea 153)
     for (i in 0 until 5) {
       val cx = slot * (i + 0.5f)
       val lab = measurer.measure(labels[i], small)
@@ -967,7 +967,7 @@ private fun VocabBar(label: String, percent: Int, lowest: Boolean, modifier: Mod
         fontSize = if (percent >= 0) 17.sp else 16.sp,
         textAlign = TextAlign.End
       )
-      if (lowest) Text("la más baja", color = Clay.Coral, fontWeight = FontWeight.Bold, fontSize = 12.sp, textAlign = TextAlign.End)
+      if (lowest) Text("la más baja", color = Clay.Coral, fontWeight = FontWeight.Bold, fontSize = 14.sp, textAlign = TextAlign.End)             // rótulo de gráfico: 14 sp (Tarea 153)
     }
   }
 }

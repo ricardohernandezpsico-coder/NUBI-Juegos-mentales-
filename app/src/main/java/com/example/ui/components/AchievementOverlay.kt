@@ -232,7 +232,7 @@ fun AchievementOverlay(
         Text(
           text = "$unlockedCount de $totalCount medallas",
           fontFamily = AppFamily,
-          fontSize = 15.sp,
+          fontSize = 16.sp,
           color = com.example.ui.theme.NubiTokens.OnNightDim,
           modifier = Modifier.padding(top = 10.dp)
         )

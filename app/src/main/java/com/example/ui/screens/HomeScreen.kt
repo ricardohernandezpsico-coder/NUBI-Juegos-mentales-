@@ -303,9 +303,9 @@ internal fun greetingWord(now: Long): String {
   return when { h < 12 -> "Buenos días"; h < 20 -> "Buenas tardes"; else -> "Buenas noches" }
 }
 
-/** «Domingo 11 de octubre». */
+/** «Domingo 11 oct.» (con el mes abreviado: a 16 sp, «Miércoles 21 de octubre · 2 de 4 días de tu meta» no cabía en una línea a 393 dp y le quitaba alto a la isla; Tarea 153). */
 internal fun dateText(now: Long): String =
-  java.text.SimpleDateFormat("EEEE d 'de' MMMM", java.util.Locale("es")).format(java.util.Date(now)).replaceFirstChar { it.uppercase() }
+  java.text.SimpleDateFormat("EEEE d MMM", java.util.Locale("es")).format(java.util.Date(now)).replaceFirstChar { it.uppercase() }
 
 /**
  * El nombre que dice el lector de pantalla para la isla, con el estado de la ruta de hoy (Tarea 88): «Tu isla: hoy la ruta pasa por el Observatorio, la Antena y el Hangar» (nada hecho), «Tu isla: hecho el Observatorio; faltan la Antena y el Hangar»
@@ -414,7 +414,7 @@ internal fun HomeContent(
             // Una sola línea con la fecha y la meta de la semana.
             OnBoardText(
               "${dateText(ui.now)} · ${Week.caption(ui.lamps.daysPlayed, ui.weeklyGoal)}",
-              color = HoySoft, fontSize = 15.sp, lineHeight = 19.sp, modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 2.dp).testTag("home_date")
+              color = HoySoft, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 2.dp).testTag("home_date")
             )
             com.example.ui.components.HoyWeek(ui.lamps, ui.streak, ui.streakNote)
           }
@@ -520,12 +520,12 @@ private fun HoyRoute(ui: HomeUi, onStop: (HomeStop) -> Unit) {
       // Con letra grande el título y su meta no caben lado a lado: uno debajo del otro.
       Column {
         OnBoardText("Tu ruta de hoy", color = HoyCream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.testTag("home_route_title"))
-        OnBoardText(routeMeta(ui), color = HoySoft, fontSize = 15.sp, lineHeight = 19.sp, modifier = Modifier.testTag("home_route_meta"))
+        OnBoardText(routeMeta(ui), color = HoySoft, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.testTag("home_route_meta"))
       }
     } else {
       Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         OnBoardText("Tu ruta de hoy", color = HoyCream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.testTag("home_route_title"))
-        OnBoardText(routeMeta(ui), color = HoySoft, fontSize = 15.sp, lineHeight = 19.sp, textAlign = TextAlign.End, modifier = Modifier.weight(1f).testTag("home_route_meta"))
+        OnBoardText(routeMeta(ui), color = HoySoft, fontSize = 16.sp, lineHeight = 20.sp, textAlign = TextAlign.End, modifier = Modifier.weight(1f).testTag("home_route_meta"))
       }
     }
     HoyStops(ui, onStop, bigFont)
@@ -786,7 +786,7 @@ internal fun AreaDetail(
       com.example.ui.components.StageScale(s.value, onCard = false, change = s.change, barModifier = Modifier.semantics { contentDescription = areaDescription(name, s) })
       Spacer(Modifier.height(8.dp))
       OnBoardText(AreaProgress.changeLine(s), color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-      AreaProgress.toNextLine(s)?.let { OnBoardText(it, color = OnNightDim, fontSize = 15.sp) }
+      AreaProgress.toNextLine(s)?.let { OnBoardText(it, color = OnNightDim, fontSize = 16.sp) }
       if (s.value != null && s.weeks.count { it != null } >= 2) WeeksChart(s.weeks)
       Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(vertical = 12.dp)) {
         AREA_ORDER.forEachIndexed { i, _ ->
@@ -856,7 +856,7 @@ private fun WeeksChart(weeks: List<Float?>) {
     Row(Modifier.fillMaxWidth()) {
       vals.forEachIndexed { i, v ->
         OnBoardText(
-          v?.let { "${it.toInt()}" } ?: "", fontSize = 13.sp, textAlign = TextAlign.Center, modifier = Modifier.weight(1f),
+          v?.let { "${it.toInt()}" } ?: "", fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.weight(1f),
           color = if (i == vals.lastIndex) Color.White else OnNightSoft, fontWeight = if (i == vals.lastIndex) FontWeight.Bold else FontWeight.Normal
         )
       }
@@ -873,8 +873,8 @@ private fun WeeksChart(weeks: List<Float?>) {
       }
     }
     Row(Modifier.fillMaxWidth()) {
-      listOf("hace 3", "hace 2", "pasada", "esta").forEachIndexed { i, t ->
-        OnBoardText(t, fontSize = 13.sp, textAlign = TextAlign.Center, color = if (i == 3) Color.White else OnNightSoft, modifier = Modifier.weight(1f))
+      listOf("hace 3 sem.", "hace 2 sem.", "sem. pasada", "esta sem.").forEachIndexed { i, t ->
+        OnBoardText(t, fontSize = 14.sp, textAlign = TextAlign.Center, color = if (i == 3) Color.White else OnNightSoft, modifier = Modifier.weight(1f))
       }
     }
   }

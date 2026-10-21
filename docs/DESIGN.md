@@ -62,7 +62,7 @@ El cielo: tres tonos en vertical, `#07071F` arriba, `#100F3A` al medio y `#1C1B5
 ## 3 · Tipografía
 
 - **Dos familias, elegidas por el peso (`AppFamily`):** Fredoka 600-700 para títulos, botones y números; Nunito 400-500 para el cuerpo. Una palabra nunca se parte: si no cabe, pasa a 2 líneas, se achica el ícono o se usan menos columnas.
-- **Escala en sp:** 13 `labelSmall` (la etiqueta más chica) · 14 solo rótulos de gráficos y la escala de las 5 etapas · **16 el secundario (el mínimo para informar)** · 17-18 cuerpo · 21-22 títulos de tarjeta · 26-28 títulos de pantalla · 34 el único número grande (la semana de Avance).
+- **Escala en sp:** 14 solo rótulos de gráficos y la escala de las 5 etapas (Tarea 153: ya no hay 13 `labelSmall`; `TamanosDeLetraTest` lo vigila) · **16 el secundario (el mínimo para informar)** · 17-18 cuerpo · 21-22 títulos de tarjeta · 26-28 títulos de pantalla · 34 el único número grande (la semana de Avance).
 - **Unity:** nada informativo bajo 16 dp (48 unidades del lienzo de 1080), en el código (`HudRulesTests`) y en pantalla (la guardia de textos del smoke). Marcador de dos filas: título a 18 dp, consigna y fase a 16-17 dp, chips a 16 dp; «×N seguidos» solo desde 2; el nivel no se ve en partida.
 - Con la letra del sistema al 130 % y al 200 % nada se corta ni se solapa (§10).
 

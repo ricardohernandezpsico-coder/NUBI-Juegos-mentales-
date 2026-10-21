@@ -43,7 +43,7 @@ fun DomainChip(
       Spacer(modifier = Modifier.width(6.dp))
       Text(
         text = domain.displayName,
-        style = MaterialTheme.typography.labelSmall,
+        style = MaterialTheme.typography.labelMedium,
         fontWeight = FontWeight.SemiBold,
         color = domain.color
       )

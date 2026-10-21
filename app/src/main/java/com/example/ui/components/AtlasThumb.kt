@@ -45,7 +45,7 @@ fun AtlasThumb(figure: Figure, modifier: Modifier = Modifier, size: androidx.com
     Canvas(Modifier.size(size).semantics { contentDescription = "Lámina: ${figure.name}" }) { drawFigure(figure) }
     if (showName) {
       Text(
-        figure.name, color = Color(0xFFFFE3A3), fontSize = 15.sp, fontWeight = FontWeight.SemiBold, fontFamily = AppFamily,
+        figure.name, color = Color(0xFFFFE3A3), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, fontFamily = AppFamily,
         textAlign = TextAlign.Center, modifier = Modifier.padding(top = 2.dp)
       )
     }

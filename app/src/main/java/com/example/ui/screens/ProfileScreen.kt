@@ -39,6 +39,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -142,21 +147,41 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
           modifier = Modifier.fillMaxWidth().height(150.dp).testTag("profile_island"),
           pieces = com.example.data.IslaPiezas.earned(unlocks.keys)
         )
-        // El nombre se edita AQUÍ y se guarda al salir del campo (Tarea 152, B6.3 y B6.5: antes estaba en Ajustes, con un botón «Guardar», y Ajustes es de cómo juega la app)
+        // El nombre en GRANDE, como siempre, y un botón chico del kit «Cambiar» (Opus, 21-oct: un campo siempre abierto bajo la isla se leía como un formulario, sin rótulo, y le quitaba el protagonismo al nombre; es el mismo patrón de «Cambiar cómo jugar» de la ficha).
+        // Al tocarlo, el nombre pasa a un campo con el rótulo «Tu nombre» y el teclado abierto; se guarda con «Listo» del teclado, al salir del campo o al salir del Perfil, y vuelve a texto (Tarea 153; antes de la 152 estaba en Ajustes con un botón «Guardar»).
         val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
+        var editing by remember { mutableStateOf(false) }
         var nameDraft by remember(userSettings.name) { mutableStateOf(userSettings.name) }
         var hadFocus by remember { mutableStateOf(false) }
+        val nameFocus = remember { androidx.compose.ui.focus.FocusRequester() }
         val saveName = { if (nameDraft.trim() != userSettings.name) viewModel.setName(nameDraft) }
         val latestSave by androidx.compose.runtime.rememberUpdatedState(saveName)
         DisposableEffect(Unit) { onDispose { latestSave() } }                                  // si se sale del perfil con el campo abierto, también se guarda
-        Box(Modifier.widthIn(max = 340.dp).padding(top = 6.dp)) {
-          com.example.ui.components.ClayTextField(
-            value = nameDraft, onValueChange = { nameDraft = it.take(30) },
-            placeholder = "Tu nombre", fontSize = 22.sp,
-            modifier = Modifier.testTag("input_user_name").onFocusChanged { st -> if (hadFocus && !st.isFocused) saveName(); hadFocus = st.isFocused },
-            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Words, imeAction = androidx.compose.ui.text.input.ImeAction.Done),
-            keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { focusManager.clearFocus() })
-          )
+        if (!editing) {
+          val shown = userSettings.name.ifBlank { "Sin nombre" }
+          Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(top = 6.dp)) {
+            com.example.ui.components.OnBoardText(
+              shown, color = Color(0xFFEAF0FF), fontSize = 30.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
+              modifier = Modifier.testTag("profile_name").clearAndSetSemantics { }                // lo dice el botón de abajo: «Tu nombre, Ricardo, botón Cambiar»
+            )
+            com.example.ui.components.KitButton(
+              text = "Cambiar", onClick = { editing = true; hadFocus = false }, color = com.example.ui.components.SlabColor.CREAM, fontSize = 16.sp, wide = false, minHeight = 48.dp,
+              modifier = Modifier.padding(top = 4.dp).testTag("btn_change_name").semantics { contentDescription = "Tu nombre, $shown, botón Cambiar" }
+            )
+          }
+        } else {
+          Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.widthIn(max = 340.dp).padding(top = 6.dp)) {
+            com.example.ui.components.OnBoardText("Tu nombre", color = com.example.ui.theme.NubiTokens.OnNightDim, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(bottom = 6.dp).testTag("name_label"))
+            com.example.ui.components.ClayTextField(
+              value = nameDraft, onValueChange = { nameDraft = it.take(30) },
+              placeholder = "Tu nombre", fontSize = 22.sp,
+              modifier = Modifier.focusRequester(nameFocus).testTag("input_user_name")
+                .onFocusChanged { st -> if (st.isFocused) hadFocus = true else if (hadFocus) { saveName(); editing = false; hadFocus = false } },
+              keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Words, imeAction = androidx.compose.ui.text.input.ImeAction.Done),
+              keyboardActions = androidx.compose.foundation.text.KeyboardActions(onDone = { focusManager.clearFocus() })
+            )
+          }
+          LaunchedEffect(Unit) { runCatching { nameFocus.requestFocus() } }                    // el teclado se abre solo
         }
         index?.let {
           com.example.ui.components.OnBoardText(
@@ -246,7 +271,7 @@ private fun AchievementDetailDialog(def: AchievementDef, unlockedAt: Long?, stat
             .padding(10.dp)
         ) { AchievementMedal(def = def, unlocked = unlockedAt != null, size = 110.dp) }
         Text(def.title, color = Clay.Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 10.dp))
-        Text(def.description, color = Clay.InkSoft, fontSize = 15.sp, textAlign = TextAlign.Center)
+        Text(def.description, color = Clay.InkSoft, fontSize = 16.sp, textAlign = TextAlign.Center)
         Spacer(Modifier.height(10.dp))
         if (unlockedAt != null) {
           val f = java.text.SimpleDateFormat("d 'de' MMMM yyyy", java.util.Locale("es"))
@@ -282,7 +307,7 @@ private fun StatText(label: String, value: String, color: Color, modifier: Modif
       if (fire) Icon(Icons.Default.Whatshot, contentDescription = null, tint = color, modifier = Modifier.size(24.dp))
       com.example.ui.components.OnBoardText(value, color = color, fontSize = 34.sp, fontWeight = FontWeight.Bold)
     }
-    com.example.ui.components.OnBoardText(label, color = com.example.ui.theme.NubiTokens.OnNightDim, fontSize = 15.sp)
+    com.example.ui.components.OnBoardText(label, color = com.example.ui.theme.NubiTokens.OnNightDim, fontSize = 16.sp)
   }
 }
 

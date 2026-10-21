@@ -832,7 +832,7 @@ internal fun AreaGrid(
     // Con letra normal las dos filas llenan la pantalla (aprobado por Ricardo); con letra grande (> 1,15) cada fila mide lo que su contenido, van arriba con 24 dp entre ellas y el aire que sobra queda abajo (Tarea 143, ítem 7)
     val bigLetters = fontScale > 1.15f
     val rowHeight = maxOf(maxHeight / 2, 262.dp * maxOf(1f, fontScale))
-    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(horizontal = 12.dp), verticalArrangement = if (bigLetters) Arrangement.spacedBy(24.dp) else Arrangement.Top) {
+    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(start = 12.dp, end = 12.dp, bottom = 16.dp), verticalArrangement = if (bigLetters) Arrangement.spacedBy(24.dp) else Arrangement.Top) {
       statuses.chunked(2).forEach { row ->
         Row(Modifier.fillMaxWidth().then(if (bigLetters) Modifier.height(IntrinsicSize.Max) else Modifier.height(rowHeight))) {
           row.forEach { s ->
@@ -917,7 +917,7 @@ internal fun AreaWindow(
         OnBoardText(title, color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp)
         OnBoardText(
           (status?.value?.let { Skill.stageName(it) } ?: "Aún sin medir") + " · " + if (cards.size == 1) "1 juego" else "${cards.size} juegos",
-          color = OnNightDim, fontSize = 15.sp
+          color = OnNightDim, fontSize = 16.sp
         )
       }
       com.example.ui.components.KitCloseButton(onClose, Modifier.testTag("btn_area_close"), label = "Cerrar $title")

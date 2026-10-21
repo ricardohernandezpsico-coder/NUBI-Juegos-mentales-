@@ -34,7 +34,10 @@ class AjustesDepuradosTest {
   fun `el nombre se edita en el Perfil y se guarda al salir del campo`() {
     val profile = src("ui/screens/ProfileScreen.kt")
     assertTrue(profile.contains("testTag(\"input_user_name\")") && profile.contains("viewModel.setName("))
-    assertTrue("se guarda al salir del campo", profile.contains("onFocusChanged") && profile.contains("onDispose"))
+    assertTrue("el nombre es texto grande con un botón «Cambiar» (Opus, 21-oct), no un campo siempre abierto", profile.contains("testTag(\"btn_change_name\")") && profile.contains("text = \"Cambiar\"") && profile.contains("testTag(\"profile_name\")"))
+    assertTrue("al tocarlo, un campo con el rótulo «Tu nombre» y el teclado abierto", profile.contains("testTag(\"name_label\")") && profile.contains("requestFocus()"))
+    assertTrue("se guarda con «Listo» del teclado, al salir del campo o al salir del Perfil", profile.contains("ImeAction.Done") && profile.contains("onFocusChanged") && profile.contains("onDispose"))
+    assertTrue("el lector de pantalla dice «Tu nombre, Ricardo, botón Cambiar»", profile.contains("contentDescription = \"Tu nombre, \$shown, botón Cambiar\""))
     assertFalse("sin botón «Guardar»", profile.contains("\"Guardar\""))
   }
 

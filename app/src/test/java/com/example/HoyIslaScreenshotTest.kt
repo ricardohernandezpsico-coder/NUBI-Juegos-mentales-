@@ -229,9 +229,10 @@ class HoyIslaScreenshotTest {
 
   @Test
   fun el_saludo_dice_el_momento_del_dia_el_nombre_y_la_fecha_con_la_meta_en_una_linea() {
-    show(ui())
+    val u = ui()
+    show(u)
     composeTestRule.onNodeWithText("Buenas tardes, Ricardo").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Domingo 11 de octubre · 3 de 4 días de tu meta").assertIsDisplayed()
+    composeTestRule.onNodeWithText(com.example.ui.screens.dateText(u.now) + " · 3 de 4 días de tu meta").assertIsDisplayed()          // «Domingo 11 oct. · 3 de 4 días de tu meta»: una línea a 16 sp (Tarea 153)
   }
 
   @Test

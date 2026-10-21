@@ -43,7 +43,7 @@ fun SpaceSectionTitle(text: String, modifier: Modifier = Modifier, hint: String?
         .background(Color.White.copy(alpha = 0.10f))
     )
     OnBoardText(text, color = OnNight, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 14.dp))
-    if (hint != null) OnBoardText(hint, color = OnNightDim, fontSize = 15.sp, modifier = Modifier.padding(top = 2.dp))
+    if (hint != null) OnBoardText(hint, color = OnNightDim, fontSize = 16.sp, modifier = Modifier.padding(top = 2.dp))
   }
 }
 
@@ -102,7 +102,7 @@ fun GameLevelsList(levels: GameLevels, ranks: Map<String, GameRankInfo>, modifie
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
           Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            OnBoardText(g.title, color = OnNight, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            OnBoardText(g.title, color = OnNight, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
             OnBoardText(
               text = if (v == null) "Aún sin medir" else levelWord(v),
               color = if (v == null) OnNightDim else g.domain.color,

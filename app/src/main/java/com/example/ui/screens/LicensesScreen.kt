@@ -135,5 +135,5 @@ private fun Section(text: String) {
 
 @Composable
 private fun Para(text: String) {
-  Text(text, color = Body, fontSize = 15.sp, lineHeight = 21.sp, modifier = Modifier.padding(bottom = 8.dp))
+  Text(text, color = Body, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(bottom = 8.dp))
 }

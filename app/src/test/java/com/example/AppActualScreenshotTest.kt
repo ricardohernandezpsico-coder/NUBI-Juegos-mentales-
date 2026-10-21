@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
@@ -327,6 +328,12 @@ class AppActualScreenshotTest {
     val r = Rig(viewModel(), Scene.JUEGOS)
     r.settle(); r.shot("juegos", 873)
     r.shot("juegos-letra13", 873, 1.3f)
+    // Tarea 153 (C10): deslizada hasta el final, la segunda fila de áreas se ve entera sobre la barra (la rejilla termina con 16 dp de aire)
+    composeTestRule.mainClock.autoAdvance = true
+    composeTestRule.onNodeWithTag("area_lenguaje").performScrollTo()
+    composeTestRule.waitForIdle()
+    composeTestRule.mainClock.autoAdvance = false
+    r.settle(); r.shot("juegos-letra13-abajo", 873, 1.3f)
     r.go(Scene.JUEGOS, 873)
     // las cuatro áreas y, al tocar una, sus juegos
     for (area in listOf("memoria", "atencion", "razonamiento", "lenguaje")) {
@@ -392,6 +399,9 @@ class AppActualScreenshotTest {
     r.settle(); r.shot("perfil", 873)
     r.shot("perfil-letra13", 873, 1.3f)
     r.shot("perfil-completa", 2100, 1f)
+    // Tarea 153: «Cambiar» abre el nombre como campo con su rótulo «Tu nombre» (el teclado no se dibuja en la prueba)
+    composeTestRule.onNodeWithTag("btn_change_name").performScrollTo().performClick()
+    r.settle(); r.shot("perfil-editando", 873, 1f)
   }
 
   @Test

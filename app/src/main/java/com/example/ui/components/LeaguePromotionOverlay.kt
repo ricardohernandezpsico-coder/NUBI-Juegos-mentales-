@@ -263,7 +263,7 @@ fun LeaguePromotionOverlay(
             else append("  ·  la liga más alta")
           },
           fontFamily = AppFamily,
-          fontSize = 15.sp,
+          fontSize = 16.sp,
           color = com.example.ui.theme.NubiTokens.OnNightDim,
           textAlign = TextAlign.Center,
           modifier = Modifier.padding(top = 10.dp)

@@ -175,7 +175,7 @@ fun SettingsScreen(
             ) {
               Text(
                 text = lang.displayName,
-                fontSize = 15.sp,
+                fontSize = 16.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
               )
             }
@@ -264,7 +264,7 @@ fun SettingsScreen(
                   viewModel.setAgeBand(band)
                 },
                 modifier = Modifier.testTag("chip_age_band_${band.name.lowercase()}")
-              ) { Text(text = band.label, fontSize = 15.sp, fontWeight = if (ageBand == band) FontWeight.Bold else FontWeight.Medium) }
+              ) { Text(text = band.label, fontSize = 16.sp, fontWeight = if (ageBand == band) FontWeight.Bold else FontWeight.Medium) }
             }
           }
           Text(
@@ -392,7 +392,7 @@ fun SettingsScreen(
               )
               Text(
                 text = "Un aviso al día",
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelMedium,
                 color = PanelAccent
               )
             }
@@ -485,7 +485,7 @@ fun SettingsScreen(
                 }
               ) {
                 Column(Modifier.weight(1f)) {
-                  Text(text = label, fontSize = 15.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium)
+                  Text(text = label, fontSize = 16.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium)
                   Text(text = "%02d:%02d".format(h, m), fontSize = 16.sp, color = Clay.InkMuted)
                 }
               }

@@ -137,7 +137,7 @@ fun GameLoadingScreen(
         text = "Cómo se juega",
         fontFamily = AppFamily,
         fontWeight = FontWeight.SemiBold,
-        fontSize = 15.sp,
+        fontSize = 16.sp,
         letterSpacing = 1.5.sp,
         color = com.example.ui.theme.NubiTokens.OnNightDim
       )
@@ -166,7 +166,7 @@ fun GameLoadingScreen(
           }
         },
         fontFamily = AppFamily,
-        fontSize = 15.sp,
+        fontSize = 16.sp,
         color = Color.White.copy(alpha = 0.62f)
       )
     }
