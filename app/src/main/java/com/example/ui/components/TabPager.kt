@@ -52,7 +52,7 @@ fun rememberTabPager(currentTab: AppTab, onTabSettled: (AppTab) -> Unit): PagerS
 /**
  * La barra de pestañas LIGADA AL PAGER EN VIVO (Tarea 142: Ricardo notaba «lag»: la página se movía bien pero los íconos de la barra cambiaban recién DESPUÉS de que terminaba el movimiento, porque la barra leía la pestaña del ViewModel, que solo se
  * actualiza cuando el pager se asienta). Aquí la elegida es `pagerState.targetPage`: la página a la que va el pager. Al arrastrar cambia en cuanto el gesto decide (pasado el umbral de posición del pager, unos 56 dp, sin soltar el dedo) y se
- * deshace si se suelta antes y vuelve; al tocar una pestaña, en cuanto el pager arranca hacia ella (un par de cuadros). Cubo, sombra y etiqueta cambian juntos (el cubo se funde en 150 ms, de golpe con «quitar animaciones»).
+ * deshace si se suelta antes y vuelve; al tocar una pestaña, en cuanto el pager arranca hacia ella (un par de cuadros). La losa sol y el rótulo cambian juntos (la losa se funde en 150 ms, de golpe con «quitar animaciones»).
  */
 @Composable
 fun PagerNavBar(pagerState: PagerState, onSelect: (AppTab) -> Unit, modifier: Modifier = Modifier) {

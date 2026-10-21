@@ -32,8 +32,8 @@ object PlaceMotion {
   const val GLOBE_MS = 320
   const val SHADOW_MS = 320
   const val GLOW_MS = 320
-  /** Fundido entre el cubo normal y el elegido de la barra inferior (Tarea 86). */
-  const val CUBE_FADE_MS = NubiMotion.STATE_FAST_MS
+  /** Fundido de la losa sol de la pestaña elegida en la barra inferior (Tarea 86 el cubo; Tarea 156 la losa). */
+  const val TAB_FADE_MS = NubiMotion.STATE_FAST_MS
   /** Con «quitar animaciones»: un fundido corto y nada más. */
   const val REDUCED_FADE_MS = NubiMotion.REDUCED_FADE_MS
 

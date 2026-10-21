@@ -147,8 +147,8 @@ class AppActualScreenshotTest {
     NeuroNavBar(current = tab, onSelect = {}, modifier = Modifier.align(Alignment.BottomCenter).onSizeChanged { if (it.height > 0) onHeight(it.height) })
   }
 
-  /** Lo que mide la barra de pestañas a 393 dp de ancho (la bandeja con los cubos y las etiquetas, ~115 dp): la franja que cada pestaña deja libre (`LocalBarInset`). */
-  private val BAR_DP = 115
+  /** Lo que mide la barra de pestañas a 393 dp de ancho (los discos con su glifo y el rótulo, ~88 dp; Tarea 156, antes 115): la franja que cada pestaña deja libre (`LocalBarInset`). */
+  private val BAR_DP = 88
 
   private enum class Scene {
     HOY, JUEGOS, FICHA, AVANCE, PERFIL, AJUSTES, LICENCIAS, BARRA, VUELO_1, VUELO_JUEGO, VUELO_EDAD, VUELO_2, VUELO_PUNTO, VUELO_3, RESULTADO, RESULTADO_RECORD, RESULTADO_CON, MEDALLA_PIEZA, MEDALLA_SIN, CARGA
@@ -178,7 +178,7 @@ class AppActualScreenshotTest {
     var frameH by mutableStateOf(873)
     var sheetOpen by mutableStateOf(false)
     var fontScale by mutableStateOf(1f)
-    var barPx by mutableIntStateOf(0)                    // lo que mide la barra de pestañas (`MainActivity` lo mide igual): con la letra al 130 % es más alta que los 115 dp de la letra normal
+    var barPx by mutableIntStateOf(0)                    // lo que mide la barra de pestañas (`MainActivity` lo mide igual): con la letra al 130 % es más alta que los 88 dp de la letra normal
 
     init {
       composeTestRule.mainClock.autoAdvance = false

@@ -13,7 +13,7 @@ import androidx.compose.animation.core.tween
  * | Clase | Duración | Curva | Dónde |
  * |---|---|---|---|
  * | Respuesta al dedo | 80 al apretar, 140 al soltar | suave | losas y discos del kit (`ClayKit`): la plasticina real se hunde rápido y recupera su forma un poco más lento |
- * | Cambio de estado | 150-200 | estándar | cubo de la barra (150), interruptor (150), velo de la lámina (200) |
+ * | Cambio de estado | 150-200 | estándar | losa de la barra (150), interruptor (150), velo de la lámina (200) |
  * | Cambio de lugar | 300 pestaña · 400 lámina | enfatizada (arranca rápido, frena suave) | `animateScrollToPage`, la lámina de un lugar (sin espera) y los pasos del Primer vuelo (300) |
  * | Celebración | 600-900 | resorte suave | pulso de farola 600 y saltito 900 (`RouteMotion`) |
  *
@@ -25,7 +25,7 @@ object NubiMotion {
   /** Al soltarlo: más lento que al apretar. */
   const val RELEASE_MS = 140
 
-  /** Cambio de estado, rápido (cubo de la barra, interruptor). */
+  /** Cambio de estado, rápido (losa de la barra, interruptor). */
   const val STATE_FAST_MS = 150
   /** Cambio de estado, normal (velo de la lámina, aparición de un rótulo). */
   const val STATE_MS = 200

@@ -88,7 +88,7 @@ Una sola escala (`NubiMotion`): rápido para lo que responde al dedo, medio para
 |---|---|---|---|
 | Al apretar | `NubiMotion.PRESS_MS` | 80 ms | losas y discos del kit |
 | Al soltar | `NubiMotion.RELEASE_MS` | 140 ms | losas y discos del kit (más lento que al apretar) |
-| Estado, rápido | `NubiMotion.STATE_FAST_MS` | 150 ms | cubo de la barra, interruptor |
+| Estado, rápido | `NubiMotion.STATE_FAST_MS` | 150 ms | losa de la barra, interruptor |
 | Estado | `NubiMotion.STATE_MS` | 200 ms | velo de la lámina, farola que se enciende |
 | Pestaña | `NubiMotion.TAB_MS` | 300 ms | pasar de una pestaña a otra, pasos del Primer vuelo |
 | Lámina | `NubiMotion.SHEET_MS` | 400 ms | la lámina de un lugar, sin espera |
@@ -109,7 +109,7 @@ Una sola escala (`NubiMotion`): rápido para lo que responde al dedo, medio para
 
 - **«Espacio profundo»:** lámina `BoardNavy` con una nebulosa suave, viñeta y 46 luceros fijos; un solo cielo en toda la app (también en Unity, la cortina, la pausa y la carga).
 - **Los luceros van siempre DETRÁS** del contenido (`BoardLayersTest`); los textos sueltos sobre el cielo usan `OnBoardText`.
-- **La barra de pestañas es una capa fija** encima de las páginas (cada pestaña deja su franja con `LocalBarInset`); las ventanas y láminas la cubren; las páginas no se desvanecen.
+- **La barra de pestañas es una capa fija** encima de las páginas (cada pestaña deja su franja con `LocalBarInset`); las ventanas y láminas la cubren; las páginas no se desvanecen. Es una franja del cielo un tono más claro (`#29276A`, filo de 2 dp arriba) y mide 88 dp (94 con letra 1,3): ver `NeuroNavBar` en §9.
 - **Las pantallas principales no usan recuadros para informar:** texto suelto, objetos y líneas finas; las tarjetas son para lo que se toca y para los diálogos (el globo de Nubi es el único recuadro de Avance).
 
 ## 8 · Do / Don't
@@ -135,6 +135,7 @@ App (Compose, `ui/components/` y `ui/theme/`):
 - `ClaySlab`: la losa de plasticina (chica, mediana, grande) con su imagen presionada; todo lo demás se apoya en ella.
 - `KitButton` / `ClayButton`: el botón de la losa mediana (sol por defecto; lila para secundarios), ≥ 56 dp de alto.
 - `ClayDisc` y `KitCloseButton`: el disco de 48 dp (cerrar, atrás, íconos de churro).
+- `NeuroNavBar` (Tarea 156, opción C de `auditoria-fable/spec-barra-inferior.md`): la barra de pestañas con el lenguaje del kit: tres discos crema de 48 dp con un glifo de churro tinta de 32 dp (`Glyph.ISLA`: la isla con su banderita; `COHETE`; `FAROLA`) y el rótulo de 16 sp debajo; la elegida se apoya en una losa SOL chica con el rótulo dentro en tinta y negrita (forma + peso + `selected`, nunca solo color). Cada pestaña es toda su columna (un tercio del ancho, todo el alto: ≥ 48 dp), `Role.Tab`; al apoyar el dedo el disco se hunde; la losa se funde en 150 ms (`PlaceMotion.TAB_FADE_MS`). Sustituye a la bandeja crema con cubos y objetos de la isla (Tarea 86).
 - `ClayPill`: pastilla chica que solo informa (rachas, etiquetas); no se toca.
 - `ClaySwitch` y `ClayTextField`: los controles de Ajustes; `WeeklyGoalLamps`: la meta semanal en 7 farolas con su número, la elegida en un chip sol.
 - `NubiBubble` y `NubiClay`: el globo de Nubi (losa crema con cola) y Nubi 3D de frente; Nubi comenta, no manda; **un globo dice como mucho DOS frases y no repite lo que la pantalla ya dice** (`GlobosDeNubiTest`). **Tres tamaños, no más** (Tarea 147, P3; `NubiSize`): S = 72 dp (resumen de la ruta, tira de la lámina), M = 120 dp (cabeceras de Juegos y de la ventana de un área, Avance vacío, perfil) y L = 200 dp (el Primer vuelo y la bienvenida). **UN solo globo** (`NubiBubble(text, tailLeft, title)`): el título solo sale cuando Nubi habla sin estar al lado de lo que comenta. Cuando el globo no cabe (letra 1,3 en pantalla chica) Nubi se queda callado junto a la línea de avance, sin globo. **Nubi está viva** (Tarea 148): en reposo flota (±6 dp cada 4,5 s) y parpadea (120 ms, cada 4 a 7 s, doble cada cinco) con la imagen «descansa»; es decorativo e igual en toda partida (nada reacciona al desempeño), se apaga mientras salta o mira un lugar y con «quitar animaciones» queda quieta y con los ojos abiertos; su sombra es UNA, la de la isla (`NubiIdle.kt`; en Unity `NubiFigure`, y en los tutoriales Nubi mide 120 dp como máximo y 60 dp como mínimo).

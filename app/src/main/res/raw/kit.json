@@ -487,6 +487,54 @@
     "ancho": 16.67,
     "alto": 10.33
    }
+  },
+  "isla": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 5.33,
+    "arr": 3.0,
+    "der": 7.0,
+    "abajo": 8.67
+   },
+   "cuerpo_dp": {
+    "ancho": 21.67,
+    "alto": 22.33
+   }
+  },
+  "cohete": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 7.0,
+    "arr": 3.0,
+    "der": 9.0,
+    "abajo": 12.67
+   },
+   "cuerpo_dp": {
+    "ancho": 18.0,
+    "alto": 18.33
+   }
+  },
+  "farola": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 9.33,
+    "arr": 3.0,
+    "der": 11.0,
+    "abajo": 11.0
+   },
+   "cuerpo_dp": {
+    "ancho": 13.67,
+    "alto": 20.0
+   }
   }
  }
 }

@@ -1179,7 +1179,30 @@ def ic_arriba():
 def ic_abajo():
     return churros(poli([(-6.5, 3.2), (0, -3.4), (6.5, 3.2)]), radio=1.9)
 
-ICONOS_T91 = {'globo': ic_globo, 'altavoz': ic_altavoz, 'vibracion': ic_vibracion, 'reloj': ic_reloj, 'sin_reloj': ic_sin_reloj, 'escudo': ic_escudo, 'info': ic_info, 'campana': ic_campana, 'persona': ic_persona, 'arriba': ic_arriba, 'abajo': ic_abajo}
+# ---- Tarea 156 (la barra de pestañas nueva, opción C de `auditoria-fable/spec-barra-inferior.md`): los tres glifos de las pestañas, de churro tinta como el resto del kit (28 dp sobre un disco crema de 48)
+def ic_isla():
+    """Hoy: la ISLA con su banderita: una losa en rombo (con su grosor) y, encima, el palo con el banderín triangular."""
+    y = 0.8
+    losa = poli([(-9.5, -3.2 + y), (0, -7.6 + y), (9.5, -3.2 + y), (0, 1.2 + y)], cerrar=True)
+    grosor = [(-9.5, -3.2 + y, -9.5, -6.0 + y), (9.5, -3.2 + y, 9.5, -6.0 + y), (0, -7.6 + y, 0, -10.4 + y)] + poli([(-9.5, -6.0 + y), (0, -10.4 + y), (9.5, -6.0 + y)])
+    asta = [(0, -1.0 + y, 0, 9.2 + y)]
+    banderin = poli([(0, 9.2 + y), (6.6, 6.7 + y), (0, 4.2 + y)], cerrar=True)
+    return churros(losa + grosor + asta + banderin, radio=1.5)
+
+def ic_cohete():
+    """Juegos: el cohete: el cuerpo con la punta, dos aletas y su ventanilla redonda."""
+    cuerpo = poli([(0, 10.0), (3.8, 4.5), (3.8, -4.2), (-3.8, -4.2), (-3.8, 4.5)], cerrar=True)
+    aletas = poli([(-3.8, 0.0), (-7.6, -5.6), (-3.8, -4.2)]) + poli([(3.8, 0.0), (7.6, -5.6), (3.8, -4.2)])
+    return churros(cuerpo + aletas, radio=1.6) + [aro(1.9, 0, 2.6, r=1.3)]
+
+def ic_farola():
+    """Avance: la farola de la ruta: la argolla, la tapa, el cuerpo, su luz y el pie."""
+    tapa = poli([(-4.2, 3.8), (-2.6, 6.4), (2.6, 6.4), (4.2, 3.8)])
+    cuerpo = poli([(-4.2, 3.8), (-4.2, -4.4), (4.2, -4.4), (4.2, 3.8)])
+    pie = [(-5.4, -6.9, 5.4, -6.9)]
+    return churros(tapa + cuerpo + pie, radio=1.6) + [aro(1.7, 0, 8.4, r=1.3), punto(0, -0.2, 2.3)]
+
+ICONOS_T91 = {'isla': ic_isla, 'cohete': ic_cohete, 'farola': ic_farola, 'globo': ic_globo, 'altavoz': ic_altavoz, 'vibracion': ic_vibracion, 'reloj': ic_reloj, 'sin_reloj': ic_sin_reloj, 'escudo': ic_escudo, 'info': ic_info, 'campana': ic_campana, 'persona': ic_persona, 'arriba': ic_arriba, 'abajo': ic_abajo}
 
 def icono_kit(nombre):
     objs = []
@@ -1211,9 +1234,9 @@ def icono_kit(nombre):
     raiz = raiz_kit()
     for o in objs: o.parent = raiz
 
-def render_iconos_kit():
+def render_iconos_kit(solo=None):
     cam_pieza((4.0, 3.0, 6.0, 7.0), 24.0, 24.0)
-    for nombre in ('volver', 'visto', 'izq', 'der', 'compartir', 'candado', 'engranaje') + tuple(ICONOS_T91):
+    for nombre in (solo if solo else ('volver', 'visto', 'izq', 'der', 'compartir', 'candado', 'engranaje') + tuple(ICONOS_T91)):
         before = set(bpy.data.objects); suelo_kit(); icono_kit(nombre)
         n = 'kit_i_' + nombre; times[n] = render(n, {'iconos', 'luces'})
         for o in [o for o in bpy.data.objects if o not in before]: bpy.data.objects.remove(o, do_unlink=True)
@@ -1301,6 +1324,7 @@ def render_kit():
     scene.view_settings.exposure = float(arg('--kit-exp','-0.42'))   # la plasticina clara se quemaba (crema y lima a 255) con el sol desde arriba
     if KIT_SOLO == 'avance':   # Tarea 124: canal, churro, bolita, 17 emblemas, farola, pedestal, cola del globo, medallas y escudos (`kit_avance.py`; solo si se pide: no entra en 'todo')
         exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'kit_avance.py'), encoding='utf-8').read(), 'kit_avance.py', 'exec'), globals()); render_kit_avance()
+    if KIT_SOLO == 'barra': render_iconos_kit(solo=('isla', 'cohete', 'farola'))          # Tarea 156: solo los tres glifos de la barra de pestañas
     if KIT_SOLO in ('todo', 'losas'): render_losas()
     if KIT_SOLO in ('todo', 'discos'): render_discos()
     if KIT_SOLO in ('todo', 'avatares'): render_avatares()

@@ -38,7 +38,7 @@ class NubiMotionTest {
     assertEquals(NubiMotion.STATE_MS, PlaceMotion.VEIL_MS)
     assertEquals(NubiMotion.SHEET_MS, PlaceMotion.SHEET_MS)
     assertEquals("la lámina sale sin esperar al velo", 0, PlaceMotion.SHEET_DELAY_MS)
-    assertEquals(NubiMotion.STATE_FAST_MS, PlaceMotion.CUBE_FADE_MS)
+    assertEquals(NubiMotion.STATE_FAST_MS, PlaceMotion.TAB_FADE_MS)
     assertEquals(NubiMotion.REDUCED_FADE_MS, PlaceMotion.REDUCED_FADE_MS)
     assertEquals(NubiMotion.CELEBRATE_MS, RouteMotion.PULSE_MS)
     assertEquals(NubiMotion.CELEBRATE_LONG_MS, RouteMotion.JUMP_MS)
