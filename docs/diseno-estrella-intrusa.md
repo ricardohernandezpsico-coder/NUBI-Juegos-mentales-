@@ -54,13 +54,13 @@ una estrella de cinco puntas y las formas de «Tu atlas» parecían símbolos. E
 - **El grabado**: contorno dorado #E9C77B (alfa 0,55, 1,2 dp) que se dibuja de 0 a 1500 ms (curva cúbica); de 700 a 1600 ms, sombreado
   de líneas diagonales cada 6 dp (alfa 0,13) recortado al contorno, más los detalles (ojo, aro, línea). Se rasteriza UNA vez por
   ronda (texturas, no cuadros). El **nombre** va en Fraunces SemiBold Italic de 32 sp (#FFE3A3) con fundido desde los 900 ms; la **regla** en
-  Atkinson Bold 16 sp (#D9D4F5); si se acertó el bonus: «La nombraste tú · puntos ×2» (#FFC94A). Un toque cierra la ronda.
+  Atkinson Bold 16 sp (#D9D4F5); si se acertó el bonus: «La nombraste tú · puntos dobles» (Tarea 161: antes «puntos ×2») (#FFC94A). Un toque cierra la ronda.
 - **Error**: la estrella tocada con aro coral y una X dibujada (sin emoji), la intrusa con aro sol que late, la explicación («Todos
   viven en el agua; el loro no.») y, si era TRAMPA, una línea punteada entre la intrusa y su pareja con «va con perro, pero no es un
   animal». Con «Seguir» (≥ 64 dp) la intrusa cae y la figura se traza al doble de velocidad, sin bonus ni notas fuertes. La regla
   queda **«por repasar»** y NO suma lámina.
 - **Ritmo**: Reto 120 s (una cometa cruza arriba = tiempo de la partida, sin reloj por ronda); Precisión 20 rondas sin tiempo.
-  Racha de 5 = «Cielo despejado» (× 1,5; el fondo se aclara un poco).
+  Racha de 5 = «Cielo despejado» (× 1,5; el aviso dice «50 % más de puntos»; el fondo se aclara un poco).
 - **«Quitar animaciones»**: las líneas aparecen con un fundido de 300 ms, sin partículas ni recorrido de caída, y el grabado de una vez.
   Sonido y vibración apagados se respetan (vibración solo al acertar y al completar la figura).
 

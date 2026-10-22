@@ -175,7 +175,7 @@ En «cualquier grupo», el grupo «todas fallan», que se arregla con el motor, 
 
 ## 6. Presentación
 
-- **Base:** como la versión anterior (sala de máquinas, cohete, cabecera con «Cohete n.º N» y 10 luces). El cohete está un
+- **Base:** como la versión anterior (sala de máquinas, cohete, cabecera con «Cohete número N» y 10 luces (Tarea 161: «número» y no «n.º»; el título mide 160 dp y las luces empiezan en x = 184, cada 16)). El cohete está un
   poco más abajo (punta en y 104), para que el radar no pise la consigna.
 - **Correas:** una **polea** oscura en el eje de cada engranaje de los extremos, y la correa que las abraza, dibujada
   **encima** de los engranajes.

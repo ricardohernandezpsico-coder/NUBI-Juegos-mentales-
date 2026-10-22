@@ -277,7 +277,7 @@ namespace NeuroVida.Games.Correo
         public static string FloatCombo(int combo)
         {
             int tier = combo / ComboStep;
-            return tier <= 1 ? "¡" + combo + " seguidos!" : tier == 2 ? "¡Imparable! ×" + combo : "¡Maestro del correo! ×" + combo;
+            return tier <= 1 ? "¡" + combo + " seguidos!" : tier == 2 ? "¡Imparable! " + combo + " seguidos" : "¡Maestro del correo! " + combo + " seguidos";
         }
         public static string RadioText(MailMoment m) => "hoy NO hace falta encender el faro " + MomentPhrase(m);
 
@@ -287,7 +287,7 @@ namespace NeuroVida.Games.Correo
         public static string EncargosLine(int ok, int all) => all <= 0 ? "Encargos: 0" : "Encargos: " + ok + " de " + all;
         public static string RecapTag(int day) => "Fin del día " + day;
         public static string RecapTitle(int ok, int all) => ok == all ? "¡Todos los encargos!" : "Encargos: " + ok + " de " + all;
-        public static string RecapCards(int right, int total, int bestCombo) => "Cartas bien puestas: " + right + " de " + total + " · ×" + bestCombo + " seguidas";
+        public static string RecapCards(int right, int total, int bestCombo) => "Cartas bien puestas: " + right + " de " + total + " · " + bestCombo + " seguidas";
         public static string RecapClock(int peeks, int good) => "Reloj: lo miraste " + peeks + (peeks == 1 ? " vez" : " veces") + ", " + good + " cerca de la hora";
         public const string RecapRecord = "¡Nuevo récord de cartas en un día perfecto!";
         public const string RecapUp = "Mañana: un poco más difícil", RecapSame = "Mañana: mismo ritmo";

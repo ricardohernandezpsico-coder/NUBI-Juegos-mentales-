@@ -242,7 +242,7 @@ namespace NeuroVida.Games.Piloto
             ExtendRoute();
             bool wasHyper = Hyper;
             if (_hyperLeft > 0f) _hyperLeft = Mathf.Max(0f, _hyperLeft - dt);
-            if (wasHyper && !Hyper) UpdateHud();                 // el chip de puntos deja de decir «×2»
+            if (wasHyper && !Hyper) UpdateHud();                 // el chip de puntos deja de decir «dobles»
 
             // la nave sigue al dedo con inercia
             _shipX = Mathf.Lerp(_shipX, _steerX, Mathf.Min(1f, dt * PilotContract.ShipFollow));

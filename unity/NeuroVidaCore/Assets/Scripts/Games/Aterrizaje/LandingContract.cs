@@ -196,9 +196,9 @@ namespace NeuroVida.Games.Aterrizaje
             t.Min = 0;
             t.Max = 100;
             t.Target = p;
-            t.Label = p + "%";
-            t.MinLabel = "0%";
-            t.MaxLabel = "100%";
+            t.Label = p + " %";
+            t.MinLabel = "0 %";
+            t.MaxLabel = "100 %";
             t.MidTick = false;
             t.Unit = true;
         }
@@ -309,7 +309,7 @@ namespace NeuroVida.Games.Aterrizaje
         public const int HintTrials = 3;
         public const string BullNotice = "¡Diana lunar!", DomeNotice = "¡Nueva cúpula en tu base!";
 
-        public static string RoundChip(int n, int total) => total > 0 ? Math.Min(n, total) + " de " + total : "N.º " + n;
+        public static string RoundChip(int n, int total) => total > 0 ? Math.Min(n, total) + " de " + total : "Aterrizaje " + n;
         public static string StreakChip(int streak) => streak + " seguidos";
 
         /// <summary>Cómo salió el aterrizaje.</summary>

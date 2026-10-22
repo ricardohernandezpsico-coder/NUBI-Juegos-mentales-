@@ -820,9 +820,10 @@ namespace NeuroVida.Games.Correo.Tests
             Assert.AreEqual("Si llega una carta con lazo,", MailContract.CueLineA(MailCue.Lazo));
             Assert.AreEqual("Se pasó la hora: al anochecer", MailContract.FloatLateWindow(MailMoment.Noche));
             Assert.AreEqual("¡10 seguidos!", MailContract.FloatCombo(10));
-            Assert.AreEqual("¡Imparable! ×20", MailContract.FloatCombo(20));
-            Assert.AreEqual("¡Maestro del correo! ×30", MailContract.FloatCombo(30));
-            Assert.AreEqual("¡Maestro del correo! ×40", MailContract.FloatCombo(40));
+            Assert.AreEqual("¡Imparable! 20 seguidos", MailContract.FloatCombo(20));
+            Assert.AreEqual("¡Maestro del correo! 30 seguidos", MailContract.FloatCombo(30));
+            Assert.AreEqual("¡Maestro del correo! 40 seguidos", MailContract.FloatCombo(40));
+            Assert.AreEqual("Cartas bien puestas: 8 de 11 · 5 seguidas", MailContract.RecapCards(8, 11, 5), "sin «×»: el número y su palabra");
             Assert.AreEqual("hoy NO hace falta encender el faro a media tarde", MailContract.RadioText(MailMoment.Tarde));
             Assert.AreEqual("Día 2 de 4", MailContract.DayTitle(2));
             Assert.AreEqual("Día 3 de 4", MailContract.DayHud(3));

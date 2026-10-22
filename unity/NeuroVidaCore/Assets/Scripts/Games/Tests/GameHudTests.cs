@@ -81,9 +81,9 @@ namespace NeuroVida.Games.Tests
             Assert.IsFalse(hud.StreakVisible, "con 1 acierto todavía no");
             hud.SetStreak(2);
             Assert.IsTrue(hud.StreakVisible);
-            Assert.AreEqual("×2 seguidos", hud.StreakText);
+            Assert.AreEqual("2 seguidos", hud.StreakText);
             hud.SetStreak(7);
-            Assert.AreEqual("×7 seguidos", hud.StreakText);
+            Assert.AreEqual("7 seguidos", hud.StreakText);
             hud.SetStreak(0);
             Assert.IsFalse(hud.StreakVisible, "al fallar, el chip se va");
             Assert.AreEqual(GameHud.StreakFrom, 2);

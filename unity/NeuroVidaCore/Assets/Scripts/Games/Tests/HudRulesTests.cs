@@ -341,6 +341,35 @@ namespace NeuroVida.Games.Tests
             Assert.IsEmpty(found, "palabras desterradas en lo que se dibuja:\n" + string.Join("\n", found));
         }
 
+        private static readonly Regex GluedPercent = new Regex(@"(^|\d)%");
+        private static readonly Regex AbbreviatedNumber = new Regex(@"[nN]\.º");
+
+        /// <summary>
+        /// Sin signos ni abreviaturas en lo que se dibuja (Tarea 161; regla de Ricardo «sin palabras sueltas», la misma que la app desde la Tarea 160): nada de «×» (la excepción es el «×» de la cuenta de Carga exacta: es el signo de multiplicar de un operador, no un texto),
+        /// nada de «n.º» (se dice «número») y un «%» nunca pegado a la cifra: «40 %», no «40%» (tampoco el «%» suelto de una concatenación, <c>p + "%"</c>). Los juegos retirados, los <c>Debug.Log</c> y lo del Editor quedan fuera.
+        /// </summary>
+        [Test]
+        public void NoGameDrawsSignsOrGluedPercents_InItsSources()
+        {
+            var found = new List<string>();
+            foreach (var (rel, line, text, _) in DrawnStringLiterals())
+            {
+                if (text.Contains("×") && !(rel == "Calculo/CalculoContract.cs" && text == "×")) found.Add(rel + ":" + line + " «" + text + "» dice «×»");
+                if (AbbreviatedNumber.IsMatch(text)) found.Add(rel + ":" + line + " «" + text + "» dice «n.º»");
+                if (GluedPercent.IsMatch(text)) found.Add(rel + ":" + line + " «" + text + "» trae el «%» pegado a la cifra");
+            }
+            Assert.IsEmpty(found, "signos y abreviaturas en lo que se dibuja («3 seguidos», «número 3», «40 %»):\n" + string.Join("\n", found));
+        }
+
+        [Test]
+        public void TheSignsGuard_CatchesWhatItShould_AndLetsThroughWhatIsAllowed()
+        {
+            foreach (var bad in new[] { "×3 seguidos", "Puntos × 1,5", "Cohete n.º 3", "40%", "%", "100%" })
+                Assert.IsTrue(bad.Contains("×") || AbbreviatedNumber.IsMatch(bad) || GluedPercent.IsMatch(bad), "la guardia no atrapa «" + bad + "»");
+            foreach (var good in new[] { "3 seguidos", "50 % más de puntos", "Cohete número 3", "40 %", "0 %", "a 5 % del blanco" })
+                Assert.IsFalse(AbbreviatedNumber.IsMatch(good) || GluedPercent.IsMatch(good), "la guardia atrapa «" + good + "» sin motivo");
+        }
+
         // ------------------------------------------------------------------ puntos de avance
 
         [Test]

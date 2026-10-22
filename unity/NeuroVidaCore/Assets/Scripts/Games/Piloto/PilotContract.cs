@@ -253,8 +253,8 @@ namespace NeuroVida.Games.Piloto
         public const string CountdownSub = "Guía la nave y atrapa tu misión";
         public const string StripLabel = "‹  Desliza aquí  ›", StripLabelGentle = "‹  Desliza aquí para guiar la nave  ›", StripHint = "Con el otro dedo, toca solo tu misión";
         public const string WrongText = "No era de tu misión", GoneText = "Se fue";
-        public const string HyperTitle = "¡Hiperimpulso!", HyperSub = "Puntos ×2";
-        public const string HyperChip = " ×2";
+        public const string HyperTitle = "¡Hiperimpulso!", HyperSub = "Puntos dobles";
+        public const string HyperChip = " dobles";
         public static string PointsText(int points) => points.ToString("#,0", System.Globalization.CultureInfo.InvariantCulture).Replace(',', '.') + " pts";
         public static string PrecisionChip(int resolved, int total = PrecisionSignals) => Math.Min(resolved, total) + " de " + total;
 

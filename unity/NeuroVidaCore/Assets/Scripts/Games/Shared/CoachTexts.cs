@@ -216,7 +216,7 @@ namespace NeuroVida.Games.Shared
             yield return ("anagramas", "con ayuda", Punta.FoundWithHelp);
             yield return ("anagramas", "también", Punta.HelpAlso);
 
-            foreach (var label in new[] { "0", "7", "10", "1/4", "0.75", "100%", "500 + 250" })
+            foreach (var label in new[] { "0", "7", "10", "1/4", "0.75", "100 %", "500 + 250" })
             {
                 yield return ("aterrizaje", "arrastra " + label, Aterrizaje.Drag(label));
                 yield return ("aterrizaje", "otra vez " + label, Aterrizaje.Again(label));

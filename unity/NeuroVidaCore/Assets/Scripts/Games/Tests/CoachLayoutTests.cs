@@ -89,7 +89,7 @@ namespace NeuroVida.Games.Tests
         [Test]
         public void NubiAndTheBubble_NeverCoverTheHoleOrTheProtectedZones_InThreeScreenShapes()
         {
-            string[] texts = { "Toca la celda", "Si ya la sabes, toca ¡La tengo!", "Arrastra la nave hasta el 40% y suelta" };
+            string[] texts = { "Toca la celda", "Si ya la sabes, toca ¡La tengo!", "Arrastra la nave hasta el 40 % y suelta" };
             int cases = 0;
             foreach (var (name, h) in Screens)
             {

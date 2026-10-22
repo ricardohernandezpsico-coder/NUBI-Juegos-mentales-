@@ -706,7 +706,7 @@ namespace NeuroVida.Games.Engranajes
 
         public void RefreshStrip()
         {
-            _rocketTitle.text = "Cohete n.º " + (_shownOrbit + 1);
+            _rocketTitle.text = "Cohete número " + (_shownOrbit + 1);
             _orbitText.text = _shownOrbit > 0 ? $"{_shownOrbit} {(_shownOrbit == 1 ? "cohete" : "cohetes")} en órbita" : "";
         }
 
@@ -808,7 +808,7 @@ namespace NeuroVida.Games.Engranajes
             }
             bool deco = Motion.Decorative;
             int idx = Mathf.Clamp(_shownLights, 0, EngranajesContract.RocketLights - 1);
-            var to = new Vector2(150f + idx * 19f, _lay.StripTop + 14f);
+            var to = new Vector2(EngranajesLayout.LightsX0 + idx * EngranajesLayout.LightsStep, _lay.StripTop + 14f);
             float k = (now - _flyerAt) / (deco ? 0.7f : 0.01f);
             if (k >= 1f)
             {

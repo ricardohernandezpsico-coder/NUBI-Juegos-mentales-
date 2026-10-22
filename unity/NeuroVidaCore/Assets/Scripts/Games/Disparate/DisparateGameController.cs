@@ -791,7 +791,7 @@ namespace NeuroVida.Games.Disparate
         private IEnumerator PerfectTransmission()
         {
             // 10 seguidas: la antena se enciende (× 1,5) y una aurora suave cruza el cielo
-            _toast.Show("¡Transmisión perfecta!", "Antena encendida: puntos × 1,5", AmberColor, 1.4f, sound: false);       // ya suena su Streak: el aviso va mudo
+            _toast.Show("¡Transmisión perfecta!", "Antena encendida: 50 % más de puntos", AmberColor, 1.4f, sound: false);       // ya suena su Streak: el aviso va mudo
             WoodCore.Play(WoodSfx.Streak);                              // un hito de racha (× 1,5), no un nivel: solo el Streak (se quitó el LevelUp que sonaba encima)
             if (GameFeel.ReduceMotion) yield break;
             float t = 0f;

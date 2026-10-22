@@ -995,7 +995,7 @@ namespace NeuroVida.Games.Intrusa
             _rule.gameObject.SetActive(true);
             _rule.canvasRenderer.SetAlpha(0f);
             _named.gameObject.SetActive(named);
-            _named.text = "La nombraste tú · puntos ×2";
+            _named.text = "La nombraste tú · puntos dobles";
             _named.canvasRenderer.SetAlpha(0f);
 
             float t = 0f;
@@ -1039,7 +1039,7 @@ namespace NeuroVida.Games.Intrusa
             if (clear && !_clearShown)
             {
                 _clearShown = true;
-                _toast.Show("¡Cielo despejado!", "Puntos × 1,5", AmberColor, 1.2f);
+                _toast.Show("¡Cielo despejado!", "50 % más de puntos", AmberColor, 1.2f);
                 GameFeel.LevelUp();
             }
             else if (!clear) _clearShown = false;

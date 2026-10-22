@@ -248,7 +248,7 @@ namespace NeuroVida.Games.Engranajes
             _rocketTitle = MakeLabel(_stripLayer, "Title", 17f, UiFonts.Bold, ButtonText, TextAnchor.MiddleLeft);
             _orbitText = MakeLabel(_stripLayer, "Orbit", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleLeft);
             _rocketTitle.horizontalOverflow = _orbitText.horizontalOverflow = HorizontalWrapMode.Overflow;
-            _rocketTitle.text = "Cohete n.º 1";
+            _rocketTitle.text = "Cohete número 1";
         }
 
         /// <summary>La consigna de arriba, en dos líneas: «Que cada pieza cumpla su cartel» y lo que se puede hacer en la etapa.</summary>
@@ -834,12 +834,12 @@ namespace NeuroVida.Games.Engranajes
             _sceneRoot.anchoredPosition = P(EngranajesLayout.W / 2f + EngranajesLayout.SceneShiftX, _lay.SceneCenterLogicalY);
             foreach (var kv in _sceneFonts) kv.Key.fontSize = Mathf.RoundToInt(kv.Value * Su / k);
 
-            // cabecera: «Cohete n.º N», las 10 luces (x = 150 + 19 k) y los cohetes en órbita
+            // cabecera: «Cohete número N», las 10 luces (x = LightsX0 + LightsStep k) y los cohetes en órbita
             float row1 = _lay.StripTop + 14f, row2 = _lay.StripTop + 34f;
-            SetRect(_rocketTitle.rectTransform, 14f + 65f, row1, 130f, 24f);
+            SetRect(_rocketTitle.rectTransform, 14f + EngranajesLayout.TitleW / 2f, row1, EngranajesLayout.TitleW, 24f);
             SetRect(_orbitText.rectTransform, 14f + 100f, row2, 200f, 20f);
-            for (int i = 0; i < _lights.Length; i++) SetRect(_lights[i].rectTransform, 150f + i * 19f, row1, 12f, 12f);
-            SetRect(_stripGlow.rectTransform, 150f, row1, 36f, 36f);
+            for (int i = 0; i < _lights.Length; i++) SetRect(_lights[i].rectTransform, EngranajesLayout.LightsX0 + i * EngranajesLayout.LightsStep, row1, 12f, 12f);
+            SetRect(_stripGlow.rectTransform, EngranajesLayout.LightsX0, row1, 36f, 36f);
 
             // consigna: dos líneas
             float qy = _lay.QuestionTop + EngranajesLayout.QuestionH / 2f;

@@ -60,7 +60,7 @@ disparate?": frase común, sin registro conocido; va a la lista del abogado como
   imposible: "las mesas lloran") y **sutiles** (casi verdad: "los pingüinos vuelan", "el hielo es caliente").
 - **Precisión**: sin señal que se apaga, 30 frases. **Reto**: 120 s. Mayores: señal × 1,3 y letra mayor.
 - **Ráfaga** (enganche): cada 12 frases, 5 frases de 3 palabras muy rápidas, fuera de la escalera y de las medidas.
-- **Transmisión perfecta**: 10 seguidas sin error = antena encendida (puntos × 1,5).
+- **Transmisión perfecta**: 10 seguidas sin error = antena encendida (puntos × 1,5; el aviso dice «Antena encendida: 50 % más de puntos»).
 
 ## 5. Medidas al final (juego estrella)
 

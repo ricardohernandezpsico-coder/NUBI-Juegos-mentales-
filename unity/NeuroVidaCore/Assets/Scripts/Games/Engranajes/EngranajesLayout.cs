@@ -12,6 +12,8 @@ namespace NeuroVida.Games.Engranajes
     public static class EngranajesLayout
     {
         public const float W = 360f;
+        /// <summary>La cabecera del cohete (Tarea 161): «Cohete número 12» pide 160 dp; las 10 luces empiezan a la derecha del título y se separan 16 dp (antes: título de 130 dp, luces desde 150 cada 19).</summary>
+        public const float TitleW = 160f, LightsX0 = 184f, LightsStep = 16f;
         /// <summary>Lo que ocupa el marcador común de los juegos (GameHud, 190 unidades = 63 dp) más un respiro.</summary>
         public const float HudDp = 66f;
         public const float SideMargin = 14f;

@@ -131,7 +131,7 @@ namespace NeuroVida.Games.Aterrizaje.Tests
         public void TheChipsAreSingularWhenTheyShouldBe()
         {
             Assert.AreEqual("3 de 15", LandingContract.RoundChip(3, 15));
-            Assert.AreEqual("N.º 3", LandingContract.RoundChip(3, 0));
+            Assert.AreEqual("Aterrizaje 3", LandingContract.RoundChip(3, 0), "sin total (con reloj): el número, sin «n.º»");
             Assert.AreEqual("15 de 15", LandingContract.RoundChip(16, 15));
             Assert.AreEqual("5 seguidos", LandingContract.StreakChip(5));
         }

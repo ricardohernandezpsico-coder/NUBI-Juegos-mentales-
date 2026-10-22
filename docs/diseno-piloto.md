@@ -47,7 +47,7 @@ Un dedo, en la franja de abajo, guía la nave por una ruta de balizas. El otro d
   - La tarjeta de misión dice «NUEVA MISIÓN:», se ilumina 1,6 s y late dos veces (Tarea 63; 1,06); la misión nueva es distinta de la anterior.
   - El cielo cambia de tinte (Nebulosa azul, Cinturón de hielo, Mar de polvo coral, Puerto lunar).
   - Nada se detiene.
-- **Hiperimpulso:** cada 5 señales bien resueltas seguidas, con ≥ 3 ventanas limpias de pilotaje: puntos × 2 durante 6 s, velocidad × 1,15 y estrellas en líneas.
+- **Hiperimpulso:** cada 5 señales bien resueltas seguidas, con ≥ 3 ventanas limpias de pilotaje: puntos × 2 durante 6 s (el aviso dice «Puntos dobles» y el chip, «1.250 puntos dobles»), velocidad × 1,15 y estrellas en líneas.
 - **Puntos:** 10 por señal de la misión (× 2 en hiperimpulso). Racha de señales bien resueltas.
 
 ## 5. Niveles (9 por tarea)

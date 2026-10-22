@@ -383,7 +383,7 @@ namespace NeuroVida.Games.Shared
             bool wasShown = _streakChip.gameObject.activeSelf;
             _streakChip.gameObject.SetActive(show);
             if (!show) return;
-            _streakText.text = "×" + streak + " seguidos";
+            _streakText.text = streak + " seguidos";
             _streakChip.sizeDelta = new Vector2(Mathf.Ceil(_streakText.preferredWidth) + ChipPad * 2f, ChipH);
             if (!wasShown) _streakChip.SetAsLastSibling();                  // al aparecer se dibuja encima del juego (la zona de debajo del marcador, a la derecha)
             if (!wasShown || grew) PlaceStreakChip();

@@ -59,7 +59,7 @@ namespace NeuroVida.Games.Aterrizaje.Tests
                 var add = s.Label.Split('+');
                 Assert.AreEqual(float.Parse(add[0].Trim()) + float.Parse(add[1].Trim()), s.Target, 1e-3f);
                 var d = LandingContract.NextTrial(8, rng);
-                if (d.Label.EndsWith("%")) Assert.AreEqual(float.Parse(d.Label.TrimEnd('%')), d.Target, 1e-3f);
+                if (d.Label.EndsWith("%")) Assert.AreEqual(float.Parse(d.Label.TrimEnd('%', ' ')), d.Target, 1e-3f);
                 else
                 {
                     StringAssert.StartsWith("0,", d.Label); // coma decimal
