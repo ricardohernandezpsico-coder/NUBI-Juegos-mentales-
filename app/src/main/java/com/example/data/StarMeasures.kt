@@ -184,6 +184,25 @@ object StarMeasures {
     return MeasurePhrases.sentence(d, last.value, best, today = dayIndex(last.timestamp) == dayIndex(now))
   }
 
+  /**
+   * La última partida con medida de un juego estrella para la fila «Tu última partida, hoy: …» de su tarjeta (Tarea 162): [timestamp] = cuándo fue y [body] = la frase de la medida SIN su comienzo ([MeasurePhrases.body]).
+   * [standalone] = la frase es una oración aparte (Freno: «Tu freno, promedio de tus últimas 4 partidas: zona firme.»; el rótulo termina en punto y no en dos puntos).
+   */
+  data class LastMeasure(val timestamp: Long, val body: String, val standalone: Boolean = false)
+
+  /** Ver [LastMeasure]; null si el juego no tiene medida o todavía no hay ninguna comparable. [withBest] = false no dice «Tu mejor marca: …» (ver [LevelLines.overlapsMeasure]). */
+  fun lastMeasure(gameId: String, points: List<MeasurePoint>, withBest: Boolean = true): LastMeasure? {
+    val d = defForGame(gameId) ?: return null
+    if (d.key == Brake.KEY) {
+      val at = points.filter { it.key == d.key }.maxByOrNull { it.timestamp }?.timestamp ?: return null
+      return Brake.reading(points)?.headline?.let { LastMeasure(at, "$it.", standalone = true) }
+    }
+    val series = comparable(points.filter { it.key == d.key })
+    val last = series.lastOrNull() ?: return null
+    val best = if (series.size >= MIN_POINTS) bestOf(d, series)?.value else null
+    return LastMeasure(last.timestamp, MeasurePhrases.body(d, last.value, best, withBest))
+  }
+
   /** Última medida de un juego (para la ventana de cada zona). */
   fun latest(points: List<MeasurePoint>, gameId: String): Pair<MeasureDef, Float>? {
     val d = defForGame(gameId) ?: return null

@@ -107,9 +107,21 @@ object MeasurePhrases {
    */
   fun sentence(def: MeasureDef, last: Float, best: Float?, today: Boolean): String {
     val lead = if (today) "Hoy" else "En tu última partida"
-    val first = "$lead: ${value(def, last)}."
+    return "$lead: ${body(def, last, best)}"
+  }
+
+  /**
+   * La frase de la medida SIN su comienzo, para la fila «Tu última partida, hoy: …» de la tarjeta de un juego (Tarea 162: el «Hoy:» / «En tu última partida:» pasó al rótulo, con la fecha): «234 grados por segundo. Es tu mejor marca.»,
+   * «a 3,5 % del blanco. Tu mejor marca: a 2 % del blanco.». [withBest] = false no dice «Tu mejor marca: …» (Rastro de luz y Satélites: el nivel de la fila de arriba ya dice lo que repites seguido); «Es tu mejor marca.» sí se dice siempre.
+   */
+  fun body(def: MeasureDef, last: Float, best: Float?, withBest: Boolean = true): String {
+    val first = "${value(def, last)}."
     if (best == null) return first
     val tied = if (def.lowerIsBetter) best >= last else best <= last
-    return if (tied) "$first Es tu mejor marca." else "$first Tu mejor marca: ${short(def, best)}."
+    return when {
+      tied -> "$first Es tu mejor marca."
+      withBest -> "$first Tu mejor marca: ${short(def, best)}."
+      else -> first
+    }
   }
 }

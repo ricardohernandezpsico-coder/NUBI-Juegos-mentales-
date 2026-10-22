@@ -134,10 +134,22 @@ class LevelLinesTest {
   }
 
   @Test
-  fun `la tarjeta no repite la cifra que ya dice la medida del juego`() {
-    // Rastro (luces seguidas), Satélites (a la vez) y Rescate (el destello) hablan de LO MISMO en la misma unidad que su medida: si la medida está a la vista, solo va la medida
-    assertEquals(setOf("secuencia", "satelites", "radar"), games.filter { LevelLines.overlapsMeasure(it) }.toSet())
+  fun `Rastro y Satelites dicen lo mismo en su nivel y en su medida, asi que su ultima partida va sin mejor marca`() {
+    // Rastro (luces seguidas) y Satélites (a la vez) hablan de LO MISMO en la misma unidad que su medida (Tarea 162: la fila del nivel ya no se oculta; la de la última partida va sin «Tu mejor marca»); Rescate dice el destello en una unidad más fina y la dice completa
+    assertEquals(setOf("secuencia", "satelites"), games.filter { LevelLines.overlapsMeasure(it) }.toSet())
     for (g in games.filter { LevelLines.overlapsMeasure(it) }) assertTrue(g, StarMeasures.defForGame(g) != null)
+  }
+
+  @Test
+  fun `las 17 frases empiezan con Ya, asi que en la fila Tu nivel basta bajar la mayuscula`() {
+    for (g in games) for (level in 1..Skill.ladder(g).levels) for (timed in listOf(false, true)) {
+      val line = Skill.levelLine(g, level, timed)
+      assertTrue("$g nivel $level: «$line» no empieza con «Ya »", line.startsWith("Ya "))
+    }
+    // la fila de la tarjeta: «Tu nivel: ya giras piezas de 6 bloques, en giros finos.» (la «Ya» en minúscula y el punto al final)
+    assertEquals("ya giras piezas de 6 bloques, en giros finos.", LevelLines.inRow("acoplamiento", 0.59f))
+    assertEquals("ya eliges entre 3 plataformas y lanzas en 1,2 segundos.", LevelLines.inRow("freno", 0.4f, timed = true))
+    assertEquals("ya repites 6 luces seguidas y 5 al revés.", LevelLines.inRow("secuencia", 0.7f))
   }
 
   @Test

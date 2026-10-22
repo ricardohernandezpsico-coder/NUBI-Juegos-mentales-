@@ -36,16 +36,21 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.AreaPoints
 import com.example.data.GamePoints
 import com.example.data.LevelLines
+import com.example.data.MeasurePhrases
 import com.example.data.MeasurePoint
 import com.example.data.StarMeasures
 import com.example.model.GameRegistry
 import com.example.ui.components.GameEmblem
+import com.example.ui.components.KitBar
 import com.example.ui.components.OnBoardText
 import com.example.ui.components.SpaceSectionTitle
 import com.example.ui.components.StageScale
@@ -59,7 +64,7 @@ private val ChartLine = Color(0xFF7B6BD6)
 
 /**
  * La PÁGINA de un área (Tarea 159; `auditoria-fable/avance-b-puntos.md` §4): lo que se abre al tocar una fila de Avance. De arriba abajo: «‹ Avance» y el nombre del área; los puntos y la etapa; la barra de las 5 etapas con sus nombres (o en una frase con letra grande);
- * lo que falta y lo que sumaste esta semana; los puntos de las últimas 8 semanas (con menos de 4 semanas, una frase que dice cuándo aparece el gráfico); una tarjeta por juego del área con sus puntos, su nivel en palabras («Ya repites 6 luces seguidas»), su medida y cuándo se jugó;
+ * lo que falta y lo que sumaste esta semana; los puntos de las últimas 8 semanas (con menos de 4 semanas, una frase que dice cuándo aparece el gráfico); una tarjeta por juego del área, de cuatro filas fijas (nombre; barra con sus puntos; «Tu nivel: …»; «Tu última partida, hoy: …» con su medida);
  * «Qué pones en juego» y la nota honesta. SIN «Jugar»: Avance mira, Hoy juega. Atrás (o «‹ Avance») vuelve a la lista de áreas, donde estaba. Todo a 16 sp o más, con sus unidades y sin palabras sueltas.
  * [lastPlayed] = cuándo se jugó cada juego (de `game_history`, no del registro de avance, que solo anota cuando el avance cambia); [measures] = las medidas de los juegos estrella.
  */
@@ -224,8 +229,10 @@ private fun WeeksChart(values: List<Int>) {
 }
 
 /**
- * La tarjeta de un juego del área: el emblema; el nombre; «180 de 250 puntos»; su nivel en palabras («Ya repites 6 luces seguidas»); la medida propia en una frase («Hoy: 5 luces seguidas. Tu mejor marca: 7 luces.»; «En tu última partida: …» si no fue hoy); y cuándo se jugó.
- * Sin partidas: «Todavía sin partidas · aporta hasta 250 puntos». Sin «Jugar» (la página mira, Hoy juega).
+ * La tarjeta de un juego del área, ORDENADA (Tarea 162; `auditoria-fable/spec-tarjeta-juego-avance.md`; la prueba de Ricardo con 5 personas: «se ve desordenada»): CUATRO FILAS FIJAS al borde izquierdo, siempre en este orden, con dos pesos de letra y un solo color (tinta):
+ * (1) el emblema de 44 dp y el nombre en negrita (18 sp; baja a 16 solo si UNA palabra no cabe); (2) la barra fina del kit con «147 de 250 puntos» a su derecha, o DEBAJO si ese texto mide más del 60 % del ancho (letra 1,5 o más); (3) «**Tu nivel:** ya giras piezas de 6 bloques, en giros finos.»;
+ * (4) «**Tu última partida, hoy:** 234 grados por segundo. Es tu mejor marca.» (la fecha va en el rótulo, `MeasurePhrases.ago`). Casos: Freno («Tu última partida, ayer. Tu freno, promedio de tus últimas 4 partidas: zona firme.»), sin medida comparable («Tu última partida, hace 2 días.»),
+ * jugado pero sin medir («**Aún sin medir:** juega a tu medida y empieza a sumar.») y sin partidas («**Todavía sin partidas.** Este juego aporta hasta 250 puntos.», sin fila 4). Sin «Jugar» (la página mira, Hoy juega). El alto es el del contenido: nunca se corta.
  */
 @Composable
 private fun GameCard(g: GamePoints, last: Long?, measures: List<MeasurePoint>, lang: com.example.model.AppLanguage, now: Long, timed: Boolean) {
@@ -233,39 +240,89 @@ private fun GameCard(g: GamePoints, last: Long?, measures: List<MeasurePoint>, l
   val title = getGameTitle(game.id, lang, game.title)
   val measurer = androidx.compose.ui.text.rememberTextMeasurer()
   val base = androidx.compose.material3.LocalTextStyle.current
-  val large = LocalDensity.current.fontScale > 1.3f
-  ClayCard(Modifier.fillMaxWidth().heightIn(min = 100.dp).testTag("page_game_${g.gameId}"), contentPadding = 0.dp) {
-    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp)) {
-      // con letra grande el emblema se achica (56 → 40 dp) para dejarle sitio al texto, y el nombre baja de 18 a 16 sp si su palabra más larga no cabe: ninguna palabra se parte
-      val emblem = if (large) 40.dp else 56.dp
-      val room = constraints.maxWidth - with(LocalDensity.current) { (emblem + 12.dp).toPx() }
+  val measure = if (g.measured) StarMeasures.lastMeasure(g.gameId, measures, withBest = !LevelLines.overlapsMeasure(g.gameId)) else null
+  // fila 3: el nivel (o por qué no hay)
+  val level: Pair<String, String?> = when {
+    g.measured -> "Tu nivel:" to LevelLines.inRow(g.gameId, g.progress, timed)
+    last == null -> "Todavía sin partidas." to "Este juego aporta hasta ${g.max} puntos."
+    else -> "Aún sin medir:" to "juega a tu medida y empieza a sumar."
+  }
+  // fila 4: la última partida con su fecha en el rótulo; sin partidas no hay fila
+  val whenTs = measure?.timestamp ?: last
+  val lastRow: Pair<String, String?>? = whenTs?.let { ts ->
+    val lead = "Tu última partida, ${MeasurePhrases.ago(daysBetween(ts, now))}"
+    when {
+      measure == null -> "$lead." to null
+      measure.standalone -> "$lead." to measure.body
+      else -> "$lead:" to measure.body
+    }
+  }
+  val points = "${g.points} de ${g.max} puntos"
+  ClayCard(Modifier.fillMaxWidth().testTag("page_game_${g.gameId}"), contentPadding = 0.dp) {
+    BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp)) {
+      // el nombre baja de 18 a 16 sp solo si su palabra más larga no cabe: una palabra nunca se parte
+      val room = constraints.maxWidth - with(LocalDensity.current) { (44.dp + 12.dp).toPx() }
       val longest = title.split(' ').maxByOrNull { it.length } ?: title
       val titleSp = (18 downTo 16).firstOrNull { measurer.measure(longest, base.merge(androidx.compose.ui.text.TextStyle(fontSize = it.sp, fontWeight = FontWeight.Bold)), softWrap = false, maxLines = 1).size.width <= room } ?: 16
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-      GameEmblem(g.gameId, emblem)
-      Spacer(Modifier.width(12.dp))
-      Column(Modifier.weight(1f)) {
-        Text(title, color = Clay.Ink, fontSize = titleSp.sp, fontWeight = FontWeight.Bold, lineHeight = (titleSp + 4).sp, modifier = Modifier.testTag("page_game_name_${g.gameId}"))
-        val measure = StarMeasures.sentence(g.gameId, measures, now)
-        when {
-          g.measured -> {
-            Text("${g.points} de ${g.max} puntos", color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp, modifier = Modifier.testTag("page_game_points_${g.gameId}"))
-            // si la medida del juego ya dice lo mismo en la misma unidad (luces seguidas, satélites a la vez, el destello), solo va la medida: no conviven dos cifras de lo mismo
-            if (measure == null || !LevelLines.overlapsMeasure(g.gameId)) Text(LevelLines.line(g.gameId, g.progress, timed), color = Clay.Ink, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.testTag("page_game_level_${g.gameId}"))
-          }
-          last == null -> Text("Todavía sin partidas · aporta hasta ${g.max} puntos", color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.testTag("page_game_empty_${g.gameId}"))
-          else -> {
-            Text("0 de ${g.max} puntos", color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp, modifier = Modifier.testTag("page_game_points_${g.gameId}"))
-            Text("Aún sin medir: juega a tu medida y empieza a sumar.", color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 21.sp)
-          }
+      Column(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+          GameEmblem(g.gameId, 44.dp)
+          Spacer(Modifier.width(12.dp))
+          Text(title, color = Clay.Ink, fontSize = titleSp.sp, fontWeight = FontWeight.Bold, lineHeight = (titleSp + 4).sp, modifier = Modifier.weight(1f).semantics { heading() }.testTag("page_game_name_${g.gameId}"))
         }
-        measure?.let { Text(it, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.testTag("page_game_measure_${g.gameId}")) }
-        if (last != null) {
-          val days = daysBetween(last, now)
-          Text(when (days) { 0 -> "Jugado hoy"; 1 -> "Jugado ayer"; else -> "Jugado hace $days días" }, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.testTag("page_game_when_${g.gameId}"))
+        // las filas 2 a 4 se leen de una vez («Acoplamiento, 147 de 250 puntos. Tu nivel: …»)
+        Column(Modifier.semantics(mergeDescendants = true) {}) {
+          Spacer(Modifier.height(8.dp))
+          PointsBar(g, points)
+          Spacer(Modifier.height(10.dp))
+          LabeledLine(level.first, level.second, Modifier.testTag(if (g.measured || last != null) "page_game_level_${g.gameId}" else "page_game_empty_${g.gameId}"))
+          lastRow?.let { (label, body) ->
+            Spacer(Modifier.height(6.dp))
+            LabeledLine(label, body, Modifier.testTag("page_game_last_${g.gameId}"))
+          }
         }
       }
     }
+  }
+}
+
+/** La fila 2 de la tarjeta: la barra fina del kit y «147 de 250 puntos» a su derecha; si ese texto mide más del 60 % del ancho (letra 1,5 o más), pasa DEBAJO, entero, y la barra ocupa todo el ancho. Es la misma regla en todas las tarjetas. */
+@Composable
+private fun PointsBar(g: GamePoints, text: String) {
+  val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+  val style = androidx.compose.material3.LocalTextStyle.current.merge(androidx.compose.ui.text.TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold))
+  BoxWithConstraints(Modifier.fillMaxWidth()) {
+    // se mide el texto MÁS ANCHO que puede decir esta tarjeta («250 de 250 puntos»), no el suyo: a una letra dada todas las tarjetas del área ponen los puntos en el mismo lugar
+    val wide = measurer.measure("${g.max} de ${g.max} puntos", style, softWrap = false, maxLines = 1).size.width
+    val value = if (g.points > 0) g.fill else null              // sin puntos, solo el canal
+    val label: @Composable (Modifier) -> Unit = { m -> Text(text, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp, softWrap = false, modifier = m.testTag("page_game_points_${g.gameId}")) }
+    if (wide <= constraints.maxWidth * 0.6f) {
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.weight(1f)) { KitBar(value, 0f, Modifier.testTag("page_game_bar_${g.gameId}")) }
+        Spacer(Modifier.width(12.dp))
+        label(Modifier)
+      }
+    } else {
+      Column {
+        KitBar(value, 0f, Modifier.testTag("page_game_bar_${g.gameId}"))
+        Spacer(Modifier.height(6.dp))
+        label(Modifier)
+      }
     }
   }
+}
+
+/**
+ * Una fila de la tarjeta (filas 3 y 4): el rótulo en negrita y, seguido, la frase en normal, en UN solo texto de 16 sp con interlínea de 22 sp y tinta (Tarea 162). Se parte entre palabras donde caiga; el rótulo termina en dos puntos si trae frase y en punto si no
+ * («Tu última partida, hace 2 días.»): nunca un rótulo con dos puntos y nada detrás. El rótulo dice de qué habla la línea aunque la frase siga en el renglón de abajo.
+ */
+@Composable
+internal fun LabeledLine(label: String, body: String?, modifier: Modifier = Modifier) {
+  Text(
+    buildAnnotatedString {
+      withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(label) }
+      if (body != null) { append(" "); append(body) }
+    },
+    color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = modifier
+  )
 }

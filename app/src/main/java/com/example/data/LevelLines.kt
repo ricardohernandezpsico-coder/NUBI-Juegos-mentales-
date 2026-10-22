@@ -10,7 +10,7 @@ import java.math.RoundingMode
  *
  * **Reglas de las frases (Opus, 22-oct, para una persona mayor; `LevelLinesTest` las vigila):** 12 palabras como máximo; una cifra principal y como mucho UN rasgo extra; nada de mecánica interna («4 de cada 10», «en tramos de 4 a 6») ni de condiciones («con reloj»); segundos con a lo más 2 cifras significativas («1,2 segundos», no «1,18»);
  * ni milisegundos ni «dp». Los rasgos que NO suben de un nivel al siguiente (cielos de 12 luces que vuelven a aparecer con gemelos, bodegas de menos escotillas que giran) se dicen en la misma frase para que no parezca que se retrocede.
- * Si la tarjeta ya muestra la MEDIDA del juego en la misma unidad (luces seguidas, satélites a la vez, destello), la tarjeta no repite la frase del nivel: [overlapsMeasure].
+ * La tarjeta de un juego dice el nivel en su fila «Tu nivel: ya giras piezas de 6 bloques, en giros finos.» ([inRow]); si la medida del juego repite lo mismo en la misma unidad (Rastro y Satélites), la fila de la última partida va sin «Tu mejor marca»: [overlapsMeasure].
  */
 object LevelLines {
   /** El nivel 1..N de [gameId] donde está [progress] (0..1): `min(N, 1 + floor(N · progress))`. El épsilon evita que 0,25 caiga en el nivel 3 por el redondeo del flotante. */
@@ -22,10 +22,14 @@ object LevelLines {
   /** La frase de nivel de [gameId] para su avance [progress] (0..1). [timed] = la persona juega este juego con reloj. */
   fun line(gameId: String, progress: Float, timed: Boolean = false): String = lineAt(gameId, levelOf(gameId, progress), timed)
 
+  /** El nivel dentro de la fila «Tu nivel: …» de la tarjeta (Tarea 162): la frase con la «Ya» en minúscula y su punto final, «ya giras piezas de 6 bloques, en giros finos.». Las 17 frases empiezan con «Ya » (`LevelLinesTest` lo vigila). */
+  fun inRow(gameId: String, progress: Float, timed: Boolean = false): String = line(gameId, progress, timed).replaceFirstChar { it.lowercase() } + "."
+
   /**
-   * Los juegos cuya frase de nivel habla de lo MISMO, en la misma unidad, que su medida propia (Rastro: «luces seguidas»; Satélites: «satélites a la vez»; Rescate: el destello): en la tarjeta de un juego con su medida a la vista solo va la medida, para que no convivan dos cifras de lo mismo.
+   * Los juegos cuya frase de nivel habla de lo MISMO, en la misma unidad, que su medida propia (Rastro: «luces seguidas»; Satélites: «satélites a la vez»): en su tarjeta la fila «Tu última partida» va SIN «Tu mejor marca: …» (el nivel de arriba ya dice lo que repites seguido). Rescate relámpago
+   * habla de lo mismo pero su medida en segundos es más fina que el destello del nivel, así que la dice completa (Tarea 162; antes, en la Tarea 159, estos juegos ocultaban la frase del nivel).
    */
-  fun overlapsMeasure(gameId: String): Boolean = gameId in setOf("secuencia", "satelites", "radar")
+  fun overlapsMeasure(gameId: String): Boolean = gameId in setOf("secuencia", "satelites")
 
   /**
    * La frase del nivel [level] (1..N; se acota) de [gameId]. [timed] solo importa en Freno de Emergencia: el plazo para lanzar solo es cierto CON reloj (sin reloj es 0,3 segundos más largo), así que se dice solo si la persona juega con reloj.

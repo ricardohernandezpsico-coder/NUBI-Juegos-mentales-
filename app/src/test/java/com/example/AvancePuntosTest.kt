@@ -247,41 +247,86 @@ class AvancePuntosTest {
     assertEquals("ni un botón de jugar por ningún lado", 0, count("place_play") + count("btn_discovery_play"))
   }
 
+  /** El texto con su formato: (el texto, si el rótulo del comienzo —hasta los dos puntos o el punto— va en negrita y solo él). */
+  private fun annotated(tag: String): androidx.compose.ui.text.AnnotatedString =
+    rule.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.Text].first()
+
+  private fun assertLabelBold(tag: String, label: String) {
+    val ann = annotated(tag)
+    assertTrue("«$tag»: el rótulo «$label» va en negrita y solo él", ann.spanStyles.any { it.item.fontWeight == androidx.compose.ui.text.font.FontWeight.Bold && it.start == 0 && it.end == label.length })
+    assertTrue("«$tag» empieza con su rótulo", ann.text.startsWith(label))
+  }
+
   @Test
-  fun cada_tarjeta_de_juego_dice_sus_puntos_su_nivel_en_palabras_su_medida_y_cuando_se_jugo() {
+  fun cada_tarjeta_tiene_cuatro_filas_fijas_nombre_barra_con_puntos_nivel_y_ultima_partida() {
     page(logMemoria(), measures = seriesToday("trail", 4f, 7f, 6f, 5f), played = mapOf("secuencia" to now, "parejas" to now - 2 * day, "bodega" to now - 3 * day))
     val p = AreaPoints.compute("MEMORIA", memoria, logMemoria(), now)
     val rastro = p.perGame.first { it.gameId == "secuencia" }
     assertEquals("${rastro.points} de 250 puntos", textOf("page_game_points_secuencia"))
-    assertEquals("Rastro de luz habla de LO MISMO que su medida (luces seguidas): con la medida a la vista, la frase del nivel no repite la cifra", 0, count("page_game_level_secuencia"))
-    assertTrue(textOf("page_game_level_parejas").startsWith("Ya resuelves cielos de "))
-    assertTrue("Bodega: UN solo rasgo extra", textOf("page_game_level_bodega").startsWith("Ya recuerdas "))
-    assertEquals("la última partida fue hoy: «Hoy: …» y la mejor marca al lado", "Hoy: 5 luces seguidas. Tu mejor marca: 7 luces.", textOf("page_game_measure_secuencia"))
-    assertEquals("Jugado hoy", textOf("page_game_when_secuencia")); assertEquals("Jugado hace 2 días", textOf("page_game_when_parejas"))
-    assertEquals("un juego sin partidas", "Todavía sin partidas · aporta hasta 250 puntos", textOf("page_game_empty_correo"))
-    assertEquals("y sin «Jugar»", 0, count("page_game_play_correo"))
+    // fila 3: «Tu nivel:» con el nivel en palabras (la «Ya» en minúscula, con su punto); Rastro también la dice (antes se ocultaba)
+    assertTrue(textOf("page_game_level_secuencia"), textOf("page_game_level_secuencia").startsWith("Tu nivel: ya repites ") && textOf("page_game_level_secuencia").contains("luces seguidas") && textOf("page_game_level_secuencia").endsWith("."))
+    assertTrue(textOf("page_game_level_parejas").startsWith("Tu nivel: ya resuelves cielos de "))
+    assertTrue("Bodega: UN solo rasgo extra", textOf("page_game_level_bodega").startsWith("Tu nivel: ya recuerdas "))
+    // fila 4: «Tu última partida, hoy:» con la fecha en el rótulo; Rastro, sin «Tu mejor marca» (el nivel ya dice lo que repites seguido)
+    assertEquals("Tu última partida, hoy: 5 luces seguidas.", textOf("page_game_last_secuencia"))
+    assertEquals("sin medida comparable todavía: el rótulo termina en punto y no en dos puntos", "Tu última partida, hace 2 días.", textOf("page_game_last_parejas"))
+    assertEquals("Tu última partida, hace 3 días.", textOf("page_game_last_bodega"))
+    assertEquals("un juego sin partidas", "Todavía sin partidas. Este juego aporta hasta 250 puntos.", textOf("page_game_empty_correo"))
+    assertEquals("sin partidas no hay fila de última partida", 0, count("page_game_last_correo"))
+    // el rótulo va en negrita y solo él; el resto, en normal
+    assertLabelBold("page_game_level_secuencia", "Tu nivel:"); assertLabelBold("page_game_last_secuencia", "Tu última partida, hoy:")
+    assertLabelBold("page_game_last_parejas", "Tu última partida, hace 2 días."); assertLabelBold("page_game_empty_correo", "Todavía sin partidas.")
+    // nada de «Jugado …», ni de «·» uniendo fragmentos, ni de «Jugar»
+    assertEquals(0, textCount("Jugado")); assertEquals("y sin «Jugar»", 0, count("page_game_play_correo"))
+    for (g in memoria) for (tag in listOf("page_game_level_$g", "page_game_last_$g", "page_game_empty_$g")) if (count(tag) > 0) assertFalse("«$tag» sin «·»", textOf(tag).contains("·"))
   }
 
   @Test
-  fun sin_medida_a_la_vista_rastro_de_luz_si_dice_sus_luces_en_la_frase_del_nivel() {
-    page(logMemoria(), played = mapOf("secuencia" to now))
-    assertTrue(textOf("page_game_level_secuencia").startsWith("Ya repites ")); assertTrue(textOf("page_game_level_secuencia").contains("luces seguidas"))
-    assertEquals(0, count("page_game_measure_secuencia"))
+  fun las_cuatro_filas_van_en_el_mismo_orden_y_las_frases_al_borde_izquierdo() {
+    page(logMemoria(), measures = seriesToday("trail", 4f, 7f, 6f, 5f), played = mapOf("secuencia" to now, "parejas" to now - 2 * day, "bodega" to now - 3 * day))
+    for (g in listOf("secuencia", "parejas", "bodega")) {
+      val name = bounds("page_game_name_$g"); val bar = bounds("page_game_bar_$g"); val pts = bounds("page_game_points_$g"); val level = bounds("page_game_level_$g"); val last = bounds("page_game_last_$g"); val card = bounds("page_game_$g")
+      assertTrue("$g: nombre, barra, nivel y última partida, de arriba abajo", name.bottom <= bar.top + 1f && bar.bottom <= level.top + 1f && pts.bottom <= level.top + 1f && level.bottom <= last.top + 1f)
+      assertEquals("$g: el nivel y la última partida empiezan en el mismo borde izquierdo", level.left, last.left, 1f)
+      assertTrue("$g: ese borde es el de la tarjeta (más su relleno), no el del texto del nombre", level.left < name.left && level.left <= card.left + 16f * rule.density.density)
+      assertTrue("$g: todo queda dentro de la tarjeta", listOf(name, bar, pts, level, last).all { it.left >= card.left - 1f && it.right <= card.right + 1f && it.top >= card.top - 1f && it.bottom <= card.bottom + 1f })
+    }
   }
 
   @Test
-  fun si_la_ultima_partida_no_fue_hoy_dice_en_tu_ultima_partida() {
-    page(logMemoria(), measures = series("trail", 4f, 5f, 7f, 5f), played = mapOf("secuencia" to now - 4 * day))
-    assertEquals("En tu última partida: 5 luces seguidas. Tu mejor marca: 7 luces.", textOf("page_game_measure_secuencia"))
+  fun una_ultima_partida_de_otro_dia_lleva_la_fecha_en_el_rotulo_y_en_palabras() {
+    val far = listOf(MeasurePoint(now - 50 * day, "trail", 4f, 0.5f, true, PlayMode.A_TU_MEDIDA), MeasurePoint(now - 48 * day, "trail", 7f, 0.5f, true, PlayMode.A_TU_MEDIDA), MeasurePoint(now - 45 * day, "trail", 5f, 0.5f, true, PlayMode.A_TU_MEDIDA))
+    page(logMemoria(), measures = far, played = mapOf("secuencia" to now - 45 * day))
+    assertEquals("hace 6 semanas, no «hace 45 días»", "Tu última partida, hace 6 semanas: 5 luces seguidas.", textOf("page_game_last_secuencia"))
   }
 
   @Test
-  fun atencion_aporta_hasta_200_por_juego() {
-    val log = listOf(ProgressPoint("radar", Week.weekStart(now, 0) + day, 0.5f))
-    page(log, "ATENCION")
+  fun una_ultima_partida_de_ayer_lo_dice_en_el_rotulo() {
+    page(logMemoria(), measures = series("trail", 4f, 5f, 7f, 5f), played = mapOf("secuencia" to now - day))
+    assertEquals("ayer", "Tu última partida, ayer: 5 luces seguidas.", textOf("page_game_last_secuencia"))
+  }
+
+  @Test
+  fun un_juego_jugado_pero_aun_sin_medir_lo_dice_y_su_barra_va_vacia() {
+    page(emptyList(), played = mapOf("parejas" to now - 2 * day))
+    assertEquals("0 de 250 puntos", textOf("page_game_points_parejas"))
+    assertEquals("Aún sin medir: juega a tu medida y empieza a sumar.", textOf("page_game_level_parejas"))
+    assertEquals("Tu última partida, hace 2 días.", textOf("page_game_last_parejas"))
+    assertLabelBold("page_game_level_parejas", "Aún sin medir:")
+    assertEquals("Todavía sin partidas. Este juego aporta hasta 250 puntos.", textOf("page_game_empty_bodega"))
+  }
+
+  @Test
+  fun atencion_aporta_hasta_200_por_juego_y_freno_dice_su_zona_en_una_oracion_aparte() {
+    val log = listOf(ProgressPoint("radar", Week.weekStart(now, 0) + day, 0.5f), ProgressPoint("freno", Week.weekStart(now, 0) + day, 0.6f))
+    page(log, "ATENCION", measures = seriesToday("glance", 200f, 180f, 150f, 160f) + series("brake", 270f, 262f, 248f, 255f), played = mapOf("radar" to now, "freno" to now - day))
     rule.onNodeWithText("Cada juego aporta hasta 200 puntos. Suben cuando llegas a niveles más altos.").assertExists()
     assertEquals("100 de 200 puntos", textOf("page_game_points_radar"))
-    assertTrue(textOf("page_game_level_radar").startsWith("Ya rescatas "))
+    assertTrue(textOf("page_game_level_radar").startsWith("Tu nivel: ya rescatas "))
+    assertEquals("Rescate dice su medida completa, con la mejor marca", "Tu última partida, hoy: 0,16 segundos de destello. Tu mejor marca: 0,15 segundos.", textOf("page_game_last_radar"))
+    assertEquals("Tu nivel: ya eliges entre 3 plataformas.", textOf("page_game_level_freno"))
+    assertEquals("Freno: su medida es un promedio, no una partida", "Tu última partida, ayer. Tu freno, promedio de tus últimas 4 partidas: zona firme.", textOf("page_game_last_freno"))
+    assertLabelBold("page_game_last_freno", "Tu última partida, ayer.")
   }
 
   @Test
@@ -298,7 +343,7 @@ class AvancePuntosTest {
     assertEquals("0 puntos de 1000 · Aún sin medir", textOf("page_points"))
     assertEquals("Todavía sin puntos en Memoria: cada juego suma desde su primera partida a tu medida.", textOf("page_to_next"))
     assertEquals("Todavía no hay semanas en Memoria. El gráfico aparece cuando tengas 4.", textOf("page_weeks_empty"))
-    for (g in memoria) assertEquals("Todavía sin partidas · aporta hasta 250 puntos", textOf("page_game_empty_$g"))
+    for (g in memoria) assertEquals("Todavía sin partidas. Este juego aporta hasta 250 puntos.", textOf("page_game_empty_$g"))
   }
 
   @Test
@@ -321,11 +366,16 @@ class AvancePuntosTest {
   private fun assertPageFits(fontScale: Float) {
     page(logMemoria(), fontScale = fontScale, measures = series("trail", 4f, 5f, 7f, 5f), played = mapOf("secuencia" to now, "parejas" to now - 2 * day, "bodega" to now - 3 * day))
     val width = 393 * rule.density.density
-    for (tag in listOf("page_title", "page_points", "page_to_next", "page_what", "page_note", "page_game_level_parejas", "page_game_measure_secuencia", "page_game_points_secuencia", "chart_first", "chart_last", "chart_axis_first", "chart_axis_last")) {
+    for (tag in listOf("page_title", "page_points", "page_to_next", "page_what", "page_note", "page_game_level_parejas", "page_game_last_secuencia", "page_game_points_secuencia", "chart_first", "chart_last", "chart_axis_first", "chart_axis_last")) {
       val b = bounds(tag)
       assertTrue("«$tag» ($fontScale) cabe a lo ancho: $b", b.left >= 0f && b.right <= width + 1f)
     }
-    for (t in listOf("page_title", "page_points", "page_to_next", "page_what", "page_note", "page_game_name_secuencia", "page_game_name_parejas", "page_game_level_parejas", "page_game_measure_secuencia", "page_game_name_bodega", "page_game_name_correo")) assertNoWordSplit(t, "página a letra $fontScale")
+    for (t in listOf("page_title", "page_points", "page_to_next", "page_what", "page_note", "page_game_name_secuencia", "page_game_name_parejas", "page_game_level_parejas", "page_game_last_secuencia", "page_game_last_parejas", "page_game_empty_correo", "page_game_name_bodega", "page_game_name_correo")) assertNoWordSplit(t, "página a letra $fontScale")
+    // los puntos de cada tarjeta van al lado de la barra o DEBAJO, enteros, y a una letra dada TODAS las tarjetas hacen lo mismo
+    val inline = memoria.map { g -> val bar = bounds("page_game_bar_$g"); val pts = bounds("page_game_points_$g"); (pts.left >= bar.right - 1f) to (pts.top >= bar.bottom - 1f) }
+    for ((beside, below) in inline) assertTrue("($fontScale) los puntos van al lado de la barra o debajo de ella", beside || below)
+    assertEquals("($fontScale) todas las tarjetas ponen los puntos en el mismo lugar", 1, inline.map { it.first }.toSet().size)
+    for (g in memoria) assertNoWordSplit("page_game_points_$g", "puntos de $g a letra $fontScale")
     val bar = bounds("page_bar"); val names = count("page_stages")
     assertTrue("la barra de etapas se ve", bar.height > 0f && names == 1)
     // las dos cifras del gráfico no se pisan entre sí ni con el eje, a ninguna letra (a 2,0 una cifra de 16 sp mide ~42 dp)

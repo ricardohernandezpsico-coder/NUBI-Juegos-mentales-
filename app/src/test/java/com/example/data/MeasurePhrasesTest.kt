@@ -61,6 +61,34 @@ class MeasurePhrasesTest {
   }
 
   @Test
+  fun `la frase sin su comienzo es la de la fila Tu ultima partida y puede ir sin la mejor marca`() {
+    val d = def("trail")
+    assertEquals("5 luces seguidas. Tu mejor marca: 7 luces.", MeasurePhrases.body(d, 5f, 7f))
+    assertEquals("Rastro y Satélites: sin «Tu mejor marca» (el nivel ya dice lo que repites)", "5 luces seguidas.", MeasurePhrases.body(d, 5f, 7f, withBest = false))
+    assertEquals("«Es tu mejor marca.» sí se dice siempre", "7 luces seguidas. Es tu mejor marca.", MeasurePhrases.body(d, 7f, 7f, withBest = false))
+    assertEquals("con menos de tres partidas no se dice nada de «mejor»", "5 luces seguidas.", MeasurePhrases.body(d, 5f, null))
+    assertEquals("menos es mejor", "0,16 segundos de destello. Tu mejor marca: 0,15 segundos.", MeasurePhrases.body(def("glance"), 160f, 150f))
+    assertEquals("234 grados por segundo. Es tu mejor marca.", MeasurePhrases.body(def("rotation"), 234f, 234f))
+    assertEquals("la frase entera es el comienzo más la frase sin comienzo", "Hoy: " + MeasurePhrases.body(d, 5f, 7f), MeasurePhrases.sentence(d, 5f, 7f, today = true))
+  }
+
+  @Test
+  fun `la ultima medida de un juego dice cuando fue y la frase sin comienzo`() {
+    val pts = listOf(p("trail", 9, 4f), p("trail", 5, 7f), p("trail", 3, 6f), p("trail", 0, 5f))
+    val m = StarMeasures.lastMeasure("secuencia", pts)!!
+    assertEquals(now, m.timestamp); assertEquals("5 luces seguidas. Tu mejor marca: 7 luces.", m.body); assertFalse(m.standalone)
+    assertEquals("5 luces seguidas.", StarMeasures.lastMeasure("secuencia", pts, withBest = false)!!.body)
+    val old = StarMeasures.lastMeasure("secuencia", listOf(p("trail", 9, 4f), p("trail", 6, 5f), p("trail", 3, 5f)))!!
+    assertEquals("la fecha es la de la medida, no la de hoy", now - 3 * day, old.timestamp)
+    assertNull("sin medida propia no hay nada", StarMeasures.lastMeasure("no_existe", pts))
+    assertNull("sin partidas con la medida, nada", StarMeasures.lastMeasure("secuencia", emptyList()))
+    // Freno: su medida es un promedio y va en una oración aparte («Tu última partida, ayer. Tu freno, …»)
+    val brake = StarMeasures.lastMeasure("freno", listOf(p("brake", 4, 250f), p("brake", 3, 255f), p("brake", 1, 260f)))!!
+    assertTrue(brake.standalone); assertEquals(now - day, brake.timestamp)
+    assertTrue(brake.body, brake.body.startsWith("Tu freno, promedio de tus últimas 3 partidas: zona firme") && brake.body.endsWith("."))
+  }
+
+  @Test
   fun `la frase de la tarjeta de un juego sale de las partidas comparables con la ultima`() {
     val pts = listOf(p("trail", 9, 4f), p("trail", 5, 7f), p("trail", 3, 6f), p("trail", 0, 5f))
     assertEquals("Hoy: 5 luces seguidas. Tu mejor marca: 7 luces.", StarMeasures.sentence("secuencia", pts, now))
