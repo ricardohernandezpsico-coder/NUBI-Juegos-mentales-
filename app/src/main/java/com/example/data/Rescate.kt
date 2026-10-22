@@ -34,18 +34,18 @@ object Rescate {
   const val CAPTURE_EXPLANATION =
     "Cuántas cápsulas nombras bien de un vistazo cuando el destello no apura (en las lluvias de cápsulas). Elegir una que no estaba descuenta el doble, así que adivinar no suma."
 
-  /** «Tu vistazo: 280 ms»; null sin dato. */
-  fun glanceLine(ms: Int?): String? = if (ms == null || ms <= 0) null else "Tu vistazo: $ms ms"
+  /** «Tu vistazo: 0,28 segundos»; null sin dato (Unity manda milisegundos; se dicen en segundos). */
+  fun glanceLine(ms: Int?): String? = if (ms == null || ms <= 0) null else "Tu vistazo: ${MeasurePhrases.secondsWord(ms.toFloat())}"
 
   /** Cómo leer «Tu vistazo», con cuántas cápsulas a la vez (si Unity lo mandó). */
   fun glanceExplanation(load: Float?): String {
     val n = load?.takeIf { it > 0f }?.let { String.format(java.util.Locale("es"), if (it % 1f == 0f) "%.0f" else "%.1f", it) }
     val with = if (n != null) "con $n cápsulas a la vez, " else ""
-    return "El destello más breve con el que, ${with}las rescatas casi todas unas 4 de cada 5 veces. Mientras menos milisegundos, más rápido captas."
+    return "El destello más breve con el que, ${with}las rescatas casi todas unas 4 de cada 5 veces. Mientras más corto el destello, más rápido captas."
   }
 
-  /** «Destello más corto resuelto: 150 ms» (el de una ronda perfecta); null si ninguna lo fue. */
-  fun shortestLine(ms: Int?): String? = if (ms == null || ms <= 0) null else "Destello más corto resuelto: $ms ms"
+  /** «Destello más corto resuelto: 0,15 segundos» (el de una ronda perfecta); null si ninguna lo fue. */
+  fun shortestLine(ms: Int?): String? = if (ms == null || ms <= 0) null else "Destello más corto resuelto: ${MeasurePhrases.secondsWord(ms.toFloat())}"
 
   /** «Rondas perfectas: 5 de 12 · más seguidos ×3» (la racha solo desde 2); null sin dato. */
   fun perfectLine(perfect: Int?, rounds: Int?, bestStreak: Int?): String? {

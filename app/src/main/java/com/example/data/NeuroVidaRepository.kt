@@ -589,7 +589,7 @@ class NeuroVidaRepository(
       else -> return emptyList()
     }
     return if (value == null || value.isNaN()) emptyList()
-    else listOf(MeasurePoint(r.timestamp, key, value, r.endRating?.coerceIn(0f, 1f) ?: -1f, r.timed))
+    else listOf(MeasurePoint(r.timestamp, key, value, r.endRating?.coerceIn(0f, 1f) ?: -1f, r.timed, r.playMode))
   }
 
   private fun recordLeagueEvents(outcome: RecordOutcome, gameId: String, timestamp: Long) {

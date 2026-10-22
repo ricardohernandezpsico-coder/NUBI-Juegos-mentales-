@@ -309,7 +309,7 @@ fun GameResultScreen(
             BrakeGauge(reading, Modifier.semantics { contentDescription = reading.spoken })
           }
         }
-        result.brakeBestSsdMs?.let { DetailLine("Récord: frenaste con el alto a $it ms", "freno_record", strong = true) }
+        result.brakeBestSsdMs?.let { DetailLine("Récord: frenaste con el alto a ${com.example.data.MeasurePhrases.secondsWord(it.toFloat())}", "freno_record", strong = true) }
         DetailLine(
           if (brake != null) "Mide cuánto tardas en frenar una acción que ya ibas a hacer. Una sola partida trae pocos altos: por eso mostramos el promedio de varias."
           else "Esta vez no se pudo estimar tu freno: hacen falta al menos 6 altos y haber frenado entre 1 de cada 4 y 3 de cada 4. Lanza apenas se encienda la luz, sin esperar al ALTO: así la medida funciona." +

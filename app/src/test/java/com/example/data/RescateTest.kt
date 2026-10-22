@@ -30,12 +30,12 @@ class RescateTest {
   }
 
   @Test
-  fun `tu vistazo se dice en milisegundos reales`() {
-    assertEquals("Tu vistazo: 280 ms", Rescate.glanceLine(280))
+  fun `tu vistazo se dice en segundos, no en milisegundos`() {
+    assertEquals("Tu vistazo: 0,28 segundos", Rescate.glanceLine(280))
     assertNull(Rescate.glanceLine(null))
     assertNull(Rescate.glanceLine(0))
     assertNull(Rescate.glanceLine(-1))
-    assertEquals("Destello más corto resuelto: 150 ms", Rescate.shortestLine(150))
+    assertEquals("Destello más corto resuelto: 0,15 segundos", Rescate.shortestLine(150))
     assertNull(Rescate.shortestLine(null))
     assertNull(Rescate.shortestLine(-1))
   }
@@ -117,7 +117,7 @@ class RescateTest {
 
   @Test
   fun `la lectura para lector de pantalla junta lo que hay`() {
-    assertEquals("9 cápsulas a salvo. Tu captura: 3,5 de 4. Tu vistazo: 280 ms", Rescate.spoken(9, 3.5f, 280))
+    assertEquals("9 cápsulas a salvo. Tu captura: 3,5 de 4. Tu vistazo: 0,28 segundos", Rescate.spoken(9, 3.5f, 280))
     assertEquals("9 cápsulas a salvo", Rescate.spoken(9, null, null))
   }
 

@@ -25,9 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.data.AreaProgress
+import com.example.data.AreaPoints
 import com.example.data.SessionSummary
-import com.example.data.Skill
 import com.example.model.AppLanguage
 import com.example.model.GameRegistry
 import com.example.ui.components.AreaBar
@@ -81,15 +80,16 @@ fun SessionSummaryScreen(
       summary.games.forEach { g ->
         val def = GameRegistry.getById(g.gameId)
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-          MiniPlanet(g.gameId, 36.dp, done = g.score != null)
+          MiniPlanet(g.gameId, 36.dp, done = g.played)
           Spacer(Modifier.width(12.dp))
           Column(Modifier.weight(1f)) {
             Text(def?.let { getGameTitle(it.id, lang, it.title) } ?: g.gameId, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-            Text(domainOf(g.area)?.displayName ?: "", color = OnNightDim, fontSize = 16.sp)
-          }
-          Column(horizontalAlignment = Alignment.End) {
-            Text(g.score?.let { "$it" } ?: "—", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text("puntaje de 100", color = OnNightDim, fontSize = 16.sp)
+            val areaName = domainOf(g.area)?.displayName ?: ""
+            // los PUNTOS DE AVANCE que sumó hoy en su área (la misma escala del resto de la app), o «Hecho»; sin partida, el área (Tarea 159: antes «puntaje de 100» de la partida, otra escala)
+            Text(
+              when { !g.played -> areaName; g.gained > 0 -> "Sumaste ${AreaPoints.pointsText(g.gained)} en $areaName"; else -> "Hecho" },
+              color = OnNightDim, fontSize = 16.sp, modifier = Modifier.testTag("summary_game_${g.gameId}")
+            )
           }
         }
       }
@@ -100,14 +100,12 @@ fun SessionSummaryScreen(
       )
       summary.areas.forEachIndexed { i, a ->
         Column(Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics { contentDescription = areaDescription(names[i], a) }) {
-          Row(verticalAlignment = Alignment.Bottom) {
-            Text(names[i], color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.weight(1f))
-            Text(a.value?.let { Skill.stageName(it) } ?: "Aún sin medir", color = OnNightDim, fontSize = 16.sp)
-          }
-          AreaBar(a.value, a.change, height = 10.dp, modifier = Modifier.padding(vertical = 8.dp))
+          // el nombre y debajo la etapa con los puntos (uno al lado del otro se partían y se pisaban con letra grande)
+          Text(names[i], color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+          Text(if (a.measured) "Etapa ${a.stageName} · ${a.total} de ${AreaPoints.SCALE} puntos" else "Aún sin medir", color = OnNightDim, fontSize = 16.sp)
+          AreaBar(if (a.measured) a.fill else null, a.change, height = 10.dp, modifier = Modifier.padding(vertical = 8.dp))
           Text(
-            if (a.value == null) "Se mide al jugarlo a tu medida" else AreaProgress.changeLine(a, "Hoy"),
+            if (!a.measured) "Se mide al jugarlo a tu medida" else AreaPoints.todayLine(a, names[i]),
             color = OnNightDim, fontSize = 16.sp
           )
         }

@@ -168,8 +168,8 @@ object FinalesConSentido {
   /** «78 %» (redondeado); «—» sin dato. */
   fun percentText(value: Float?): String = if (value == null || value.isNaN()) "—" else "${value.roundToInt()} %"
 
-  /** «170 ms» (redondeado); «—» sin dato. */
-  fun msText(value: Float?): String = if (value == null || value.isNaN()) "—" else "${value.roundToInt()} ms"
+  /** «0,17 segundos» (los milisegundos de Unity, dichos en segundos: Tarea 159); «—» sin dato. Se llama `msText` porque recibe milisegundos. */
+  fun msText(value: Float?): String = if (value == null || value.isNaN()) "—" else MeasurePhrases.secondsWord(value)
 
   /** «212 °/s» (grados por segundo, redondeado); «—» sin dato. */
   fun degreesText(value: Float?): String = if (value == null || value.isNaN()) "—" else "${value.roundToInt()} °/s"

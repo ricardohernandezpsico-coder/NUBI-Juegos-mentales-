@@ -37,16 +37,10 @@ import androidx.compose.ui.window.Dialog
 import com.example.data.AchievementFamily
 import com.example.data.AchievementStats
 import com.example.data.Achievements
-import com.example.data.AreaProgress
-import com.example.data.AreaStatus
-import com.example.data.Discovery
-import com.example.data.DiscoveryKind
-import com.example.data.DiscoveryNudge
 import com.example.data.FamilyMedalState
 import com.example.data.LeagueRow
 import com.example.data.Skill
 import com.example.data.StarMeasures
-import com.example.data.WeekSummary
 import com.example.data.Week
 import com.example.data.goalText
 import com.example.data.measureText
@@ -72,153 +66,15 @@ private val OnNight = androidx.compose.ui.graphics.Color(0xFFEAF0FF)
 private val OnNightDim = com.example.ui.theme.NubiTokens.OnNightDim
 
 /**
- * Las secciones de Avance (Tarea 125; `auditoria-fable/spec-avance-juegos.md` §1): tu semana, tus áreas, lo que descubriste, tus medallas, tu liga y las últimas partidas. Cada una es una función suelta con sus datos ya armados (los arma `ProgressScreen`
- * con lógica pura de `data/`), para poder fotografiarlas y probarlas aparte. Los textos secundarios van a 16 sp; el único número grande de la pantalla es el de la semana.
+ * Lo que queda de las secciones de Avance (Tarea 159): las casillas de medallas y el detalle de una familia (las usa «Tú»; Avance ya no las lleva) y la fila de la liga (oculta con `Features.LEAGUES`). Las filas por área, «Tus mejores marcas» y la línea de la semana viven en `AvanceAreas.kt`;
+ * la página de un área, en `AvanceAreaPage.kt`. Los textos secundarios van a 16 sp.
  */
-
-/** Tu semana: las 7 farolas del kit con «hoy», «3 de 4 días» en grande, la racha (solo el número, en su pastilla: la frase del descanso es de Hoy) y las áreas de la semana. */
-@Composable
-internal fun AvanceWeek(summary: WeekSummary, lamps: Week.Lamps, nubiLine: String, anchor: NubiAnchor? = null) {
-  Column(Modifier.testTag("avance_week")) {
-    SpaceSectionTitle("Tu semana")
-    Spacer(Modifier.height(10.dp))
-    Row(Modifier.semantics { contentDescription = Week.lampsSpoken(lamps.daysPlayed) }.testTag("avance_lamps"), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-      lamps.played.forEachIndexed { i, on -> WeekLampRendered(on = on, today = i == lamps.todayIndex) }
-    }
-    Spacer(Modifier.height(10.dp))
-    if (summary.empty) {
-      OnBoardText(summary.big, color = OnNight, fontSize = 28.sp, fontWeight = FontWeight.Bold, lineHeight = 32.sp, modifier = Modifier.testTag("avance_week_big"))
-      OnBoardText(summary.areasLine, color = OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 4.dp).testTag("avance_week_invite"))
-      NubiWeekComment(nubiLine, anchor)
-      return@Column
-    }
-    OnBoardText(summary.big, color = OnNight, fontSize = 34.sp, fontWeight = FontWeight.Bold, lineHeight = 38.sp, modifier = Modifier.testTag("avance_week_big"))
-    OnBoardText(summary.rest.trim(), color = OnNightDim, fontSize = 16.sp, lineHeight = 21.sp)
-    if (summary.streakPill != null) {
-      Spacer(Modifier.height(10.dp))
-      ClayPill(summary.streakPill, Modifier.testTag("avance_streak_pill"), color = Clay.Cream, leading = { com.example.ui.components.KitLlama(lit = true, size = 20.dp) })       // crema: una gota sol no se vería sobre una pastilla sol
-      // Sin la línea del descanso («Un día de descanso por semana no la corta», «Descansaste el martes…»): la frase de la racha vive solo en Hoy (Tarea 158)
-    }
-    OnBoardText(summary.areasLine, color = OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 8.dp).testTag("avance_areas_week"))
-    NubiWeekComment(nubiLine, anchor)
-  }
-}
-
-/** Nubi comenta tu semana (Tarea 131, A6): Nubi de 56 dp a la izquierda y su globo con UNA frase (`nubiWeekLine`), como la ventana de un área en Juegos pero más chico: el comentario acompaña, no manda. */
-@Composable
-private fun NubiWeekComment(line: String, anchor: NubiAnchor? = null) {
-  if (line.isBlank()) return                                                   // sin frase no hay globo (la hoja «hoy» de la Tarea 131 lo usa)
-  Row(Modifier.fillMaxWidth().padding(top = 14.dp).testTag("avance_nubi"), verticalAlignment = Alignment.CenterVertically) {
-    com.example.ui.components.NubiClay(com.example.ui.components.NubiSize.S, modifier = Modifier.padding(end = 6.dp).let { if (anchor != null) it.markNubi(anchor) else it })       // la lámina de un área vuela desde esta Nubi (Tarea 155)
-    NubiBubble(text = line, tailLeft = true, modifier = Modifier.weight(1f).testTag("avance_nubi_line"))
-  }
-}
-
-/** Tus áreas: 4 tarjetas crema tocables con su nombre, su etapa, el canal con el churro, la línea del cambio y, si no hay medida, la invitación. */
-@Composable
-internal fun AvanceAreas(statuses: List<AreaStatus>, names: Map<String, String>, onArea: (String) -> Unit) {
-  Column {
-    SpaceSectionTitle("Tus áreas", hint = "Toca un área para ver su detalle")
-    Spacer(Modifier.height(8.dp))
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-      statuses.forEach { s ->
-        val name = names[s.area] ?: s.area
-        ClayCard(
-          modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = areaDescription(name, s) }.testTag("progress_area_${s.area.lowercase()}"),
-          onClick = { onArea(s.area) }, contentPadding = 0.dp
-        ) {
-          Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-              Text(name, color = Clay.Ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp, modifier = Modifier.weight(1f))
-              Spacer(Modifier.width(8.dp))
-              Text(s.value?.let { Skill.stageName(it) } ?: "Aún sin medir", color = Clay.InkMuted, fontSize = 16.sp)
-            }
-            KitBar(s.value, s.change, Modifier.padding(top = 8.dp, bottom = 2.dp), onCard = true)
-            val line = if (s.value == null) "Juega un juego de $name y aquí verás tu avance" else AreaProgress.cardLine(s)
-            if (line != null) Text(line, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 6.dp).testTag("area_line_${s.area.lowercase()}"))
-          }
-        }
-      }
-    }
-  }
-}
-
-/** Lo que dice una tarjeta de «Lo que descubriste»: el valor en palabras (Freno y Tinta o Palabra, en zonas y palabras, nunca en milisegundos). */
-internal fun discoveryValue(d: Discovery, measures: List<com.example.data.MeasurePoint>): String =
-  StarMeasures.zoneText(d.def, measures) ?: measureText(d.def, d.values.last())
-
-/**
- * Lo que descubriste: de una a tres tarjetas con tus marcas («Tu vistazo», «4 de 4 cápsulas», «Tu récord»), comparadas solo contigo; tocar una abre la ficha de su juego. Sin marcas todavía, una sola tarjeta: la invitación a jugar el juego al que le faltan menos partidas.
- */
-@Composable
-internal fun AvanceDiscoveries(
-  cards: List<Discovery>, nudge: DiscoveryNudge?, measures: List<com.example.data.MeasurePoint>,
-  onGame: (String) -> Unit, onPlay: (String) -> Unit
-) {
-  Column {
-    SpaceSectionTitle("Tus medidas", hint = "Comparadas solo contigo")                // «Tus medidas» (Tarea 150, B1.5; antes «Lo que descubriste» y «Tus marcas»)
-    Spacer(Modifier.height(8.dp))
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-      cards.forEach { d ->
-        ClayCard(Modifier.fillMaxWidth().testTag("discovery_${d.def.key}"), onClick = { onGame(d.def.gameId) }, contentPadding = 0.dp) {
-          Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-              Text(d.def.short.replaceFirstChar { it.uppercase() }, color = Clay.Ink, fontSize = 19.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp, modifier = Modifier.weight(1f))
-              Spacer(Modifier.width(8.dp))
-              when (d.kind) {
-                DiscoveryKind.RECORD -> ClayPill("Tu récord", color = Clay.Lime, compact = true)
-                DiscoveryKind.IMPROVING -> ClayPill("Mejorando", color = Clay.Sun, compact = true)
-                DiscoveryKind.STEADY -> ClayPill("Se mantiene", color = Clay.Cream, compact = true)
-              }
-            }
-            Text(discoveryValue(d, measures), color = Clay.Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold, lineHeight = 28.sp, modifier = Modifier.padding(top = 4.dp))
-            Text(d.caption, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 2.dp))
-          }
-        }
-      }
-      if (cards.isEmpty() && nudge != null) {
-        val title = StarMeasures.gameNames[nudge.def.gameId] ?: nudge.def.gameId
-        val times = if (nudge.remaining == 1) "1 vez" else "${nudge.remaining} veces"
-        ClayCard(Modifier.fillMaxWidth().testTag("discovery_nudge"), contentPadding = 0.dp) {
-          Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Text("Juega $title $times más y aquí aparece ${nudge.def.short}.", color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, lineHeight = 23.sp)
-            Spacer(Modifier.height(10.dp))
-            ClayButton(text = "Jugar", onClick = { onPlay(nudge.def.gameId) }, glyph = Glyph.PLAY, wide = false, modifier = Modifier.testTag("btn_discovery_play"))
-          }
-        }
-      }
-    }
-  }
-}
 
 /** Cuántas medallas caben por fila sin partir la palabra más larga («Constancia»): con letra grande, menos columnas. */
 @Composable
 private fun medalColumns(maxWidth: androidx.compose.ui.unit.Dp): Int {
   val needed = 104.dp * LocalDensity.current.fontScale
   return (3 downTo 1).firstOrNull { maxWidth / it - 8.dp >= needed } ?: 1
-}
-
-/**
- * Las medallas en Avance: UNA línea que lleva a la pestaña «Tú», donde viven (Tarea 152, B6.1: antes las tres tarjetas enteras aquí y en el Perfil, con el mismo título; Tarea 158: el Perfil es «Tú»): «9 medallas · ver en Tú».
- */
-@Composable
-internal fun AvanceMedalsLink(count: Int, onClick: () -> Unit) {
-  val text = when (count) {
-    0 -> "Aún sin medallas · ver en Tú"
-    1 -> "1 medalla · ver en Tú"
-    else -> "$count medallas · ver en Tú"
-  }
-  Row(
-    Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick).heightIn(min = 48.dp).testTag("avance_medals_link"),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    OnBoardText(text, color = OnNight, fontSize = 18.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f, fill = false))
-    Spacer(Modifier.width(8.dp))
-    androidx.compose.foundation.Canvas(Modifier.size(width = 10.dp, height = 16.dp)) {
-      val p = androidx.compose.ui.graphics.Path().apply { moveTo(size.width * 0.15f, size.height * 0.1f); lineTo(size.width * 0.85f, size.height * 0.5f); lineTo(size.width * 0.15f, size.height * 0.9f) }
-      drawPath(p, OnNight, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round, join = androidx.compose.ui.graphics.StrokeJoin.Round))
-    }
-  }
 }
 
 /** Las casillas de las familias (las usa también «Tú»). */

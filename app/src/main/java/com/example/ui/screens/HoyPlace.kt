@@ -222,8 +222,8 @@ internal fun placeNubiRest(island: Rect, layout: IslaLayout): Rect {
 }
 
 /**
- * Lo que va ENCIMA de una pestaña mientras la lámina de un área está abierta o abriéndose: el velo, la lámina y Nubi volando (o posada en ella). Es LA MISMA lámina en Hoy y en Avance (Tarea 155, con Juegos, que se fue en la Tarea 158; `auditoria-fable/spec-area-unica.md`); solo cambia de dónde sale Nubi y
- * qué dice del avance: en Hoy UNA línea («Hábil · 47 de 100», `showProgress = false`), en Avance la barra de etapas y el gráfico de las 4 semanas ([showChart]). Va dentro de la caja de la pestaña (no es un `Dialog`), que ocupa toda la pantalla: con la lámina abierta la barra de pestañas se retira y esa caja llega hasta la barra del teléfono, así que el botón «Jugar» queda sobre ella.
+ * Lo que va ENCIMA de una pestaña mientras la lámina de un lugar está abierta o abriéndose: el velo, la lámina y Nubi volando (o posada en ella). Desde la Tarea 159 es solo de Hoy (antes también de Avance, Tarea 155, y de Juegos; Avance abre ahora la PÁGINA del área, `AvanceAreaPage`);
+ * dice del avance UNA línea («Etapa Hábil · 470 de 1000 puntos», `showProgress = false`). Va dentro de la caja de la pestaña (no es un `Dialog`), que ocupa toda la pantalla: con la lámina abierta la barra de pestañas se retira y esa caja llega hasta la barra del teléfono, así que el botón «Jugar» queda sobre ella.
  * [rest] = la caja de Nubi en su sitio de la pestaña (px, en esta misma caja): en Hoy, Nubi `hola` en la isla ([placeNubiRest]); en Juegos y en Avance, la Nubi de su cabecera (null o fuera de la vista = no hay de dónde volar: aparece posada con un fundido). [nubiRes] = la imagen que vuela.
  * [lookShiftBase] = el ancho sobre el que se corre Nubi al mirar (el de la isla; 0 si no hay mirada).
  *
@@ -241,8 +241,7 @@ internal fun PlaceLayer(
   modifier: Modifier = Modifier,
   @androidx.annotation.DrawableRes nubiRes: Int = R.drawable.isla_nubi_hola,
   lookShiftBase: Float = 0f,
-  showChart: Boolean = false,
-  /** La barra de las 5 etapas con sus nombres (Avance). Hoy dice solo la línea «Hábil · 47 de 100» (Tarea 158). */
+  /** La barra de las 5 etapas con sus nombres. Hoy dice solo la línea «Etapa Hábil · 470 de 1000 puntos» (Tareas 158 y 159): el detalle vive en la página del área de Avance. */
   showProgress: Boolean = true
 ) {
   if (!fx.active || place == null) return
@@ -282,7 +281,7 @@ internal fun PlaceLayer(
       ) {
         PlaceSheetContent(
           place, nubiAspect = nubiAspect, maxHeight = (pageHeight - PLACE_MIN_SKY).coerceAtLeast(0.dp), onClose = onClose, onPlay = onPlay, onGame = onGame,
-          globe = { fx.globe.value }, globeMoves = fx.moves, onHole = { hole = it }, showChart = showChart, showProgress = showProgress
+          globe = { fx.globe.value }, globeMoves = fx.moves, onHole = { hole = it }, showProgress = showProgress
         )
       }
       // Nubi: en vuelo (de su sitio a la lámina o de vuelta) o ya posada en su hueco. Mientras no vuela, la dibuja su pestaña.
@@ -354,7 +353,7 @@ internal object PlaceLevels {
 
 /**
  * La lámina de plasticina en UNA sola vista (Tarea 147; `auditoria-fable/spec-lamina-lugar.md`). De arriba abajo: el lugar con su área y la X; Nubi (S, 72 dp) con su globo, que dice lo que cambió esta semana y lo que falta; el avance en UNA línea
- * («Hábil · 47 de 100») sobre la barra del kit con sus 5 etapas; «Tus juegos aquí» y los juegos en filas compactas (emblema, nombre, cuándo y, en el que sugiere Nubi, el chip «Nubi sugiere»); y, fijo abajo, «Jugar <el que sugiere Nubi>» con su emblema.
+ * («Etapa Hábil · 470 de 1000 puntos») sobre la barra del kit con sus 5 etapas; «Tus juegos aquí» y los juegos en filas compactas (emblema, nombre, cuándo y, en el que sugiere Nubi, el chip «Nubi sugiere»); y, fijo abajo, «Jugar <el que sugiere Nubi>» con su emblema.
  * Mide lo que necesita (hasta [maxHeight]): si no cabe, sube un nivel de [PlaceLevels] hasta que cabe. [nubiAspect] = alto / ancho de Nubi; [onHole] avisa dónde queda su hueco dentro de la lámina (px).
  */
 @Composable
@@ -369,9 +368,7 @@ internal fun PlaceSheetContent(
   globe: () -> Float = { 1f },
   globeMoves: Boolean = false,
   onHole: (Offset) -> Unit = {},
-  /** Las 4 últimas semanas del avance, entre la barra y «Tus juegos aquí» (la lámina de Avance; Tarea 155). Si no hay al menos dos semanas con dato, no se dibuja. */
-  showChart: Boolean = false,
-  /** La barra del kit con las 5 etapas bajo la línea de avance. Apagada (Hoy, Tarea 158) queda SOLO la línea «Hábil · 47 de 100»: el detalle del avance vive en Avance. */
+  /** La barra del kit con las 5 etapas bajo la línea de avance. Apagada (Hoy, Tarea 158) queda SOLO la línea «Etapa Hábil · 470 de 1000 puntos»: el detalle del avance vive en la página del área de Avance (Tarea 159). */
   showProgress: Boolean = true
 ) {
   val titleFocus = remember { FocusRequester() }
@@ -440,7 +437,7 @@ internal fun PlaceSheetContent(
         Row(Modifier.fillMaxWidth().heightIn(min = if (level > PlaceLevels.FULL) PLACE_NUBI_WIDTH * nubiAspect else 0.dp), verticalAlignment = Alignment.CenterVertically) {
           if (level > PlaceLevels.FULL) { Hole(); Spacer(Modifier.width(8.dp)) }
           Text(
-            if (place.measured) com.example.data.Skill.stageHeader(place.stageName.orEmpty(), place.points ?: 0) else "Aún sin medir",
+            place.stageLine,
             color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("place_stage")
           )
         }
@@ -449,10 +446,6 @@ internal fun PlaceSheetContent(
           com.example.ui.components.StageScale(
             if (place.measured) place.fill else null, onCard = true, change = place.change, barTag = "place_bar", namesTag = "place_stages", showNames = level < PlaceLevels.NO_STAGE_NAMES
           )
-        }
-        if (showProgress && showChart && place.measured && place.weeks.count { it != null } >= 2) {
-          Spacer(Modifier.height(if (compact) 6.dp else 10.dp))
-          com.example.ui.components.WeeksChartOnCard(place.weeks)
         }
         if (level < PlaceLevels.NO_LABEL) {
           Spacer(Modifier.height(12.dp))
@@ -642,7 +635,7 @@ internal fun PlaceGameRowItem(row: PlaceGameRow, suggested: Boolean, onClick: ()
  */
 @Composable
 internal fun rememberAreaPlaces(
-  statuses: List<com.example.data.AreaStatus>,
+  areaPoints: List<com.example.data.AreaPoints>,
   history: List<com.example.model.GamePlayResult>,
   measures: List<com.example.data.MeasurePoint>,
   now: Long,
@@ -650,12 +643,12 @@ internal fun rememberAreaPlaces(
   suggestion: com.example.data.Suggestion.Pick?,
   routeGameIds: List<String>,
   routeCompleted: Int
-): Map<String, PlaceSheetUi> = remember(statuses, history, measures, now, lang, suggestion, routeGameIds, routeCompleted) {
+): Map<String, PlaceSheetUi> = remember(areaPoints, history, measures, now, lang, suggestion, routeGameIds, routeCompleted) {
   val routes = com.example.data.routeStatesOf(routeGameIds, routeCompleted)
   com.example.ui.components.AREA_ORDER.mapIndexed { i, key ->
     val domain = com.example.ui.components.domainOf(key)
     key to PlaceSheets.build(
-      area = key, status = statuses.getOrNull(i) ?: com.example.data.AreaStatus(key, null, 0f, emptyList()),
+      area = key, points = areaPoints.getOrNull(i) ?: com.example.data.AreaPoints.compute(key, emptyList(), emptyList(), now),
       games = com.example.model.GameRegistry.allGames.filter { it.domain == domain }, titleOf = { g -> com.example.ui.i18n.getGameTitle(g.id, lang, g.title) },
       history = history, measures = measures, now = now, suggestion = suggestion, routes = routes
     )

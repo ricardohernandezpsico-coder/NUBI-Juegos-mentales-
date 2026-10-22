@@ -1,6 +1,7 @@
 package com.example.data
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -13,12 +14,9 @@ class StarMeasuresTest {
     v.mapIndexed { i, x -> MeasurePoint(now - (lastDaysAgo + v.size - 1 - i) * day, key, x) }
 
   @Test
-  fun `sin 3 partidas no hay descubrimiento, y la invitacion dice cuantas faltan`() {
+  fun `sin 3 partidas no hay descubrimiento`() {
     assertNull(StarMeasures.discover(series("glance", 120f, 110f), now))
-    val n = StarMeasures.nudge(series("glance", 120f, 110f))
-    assertEquals(1, n.remaining)
-    assertEquals("Juega Rescate relámpago 1 vez más y verás cómo evoluciona tu vistazo.", n.text)
-    assertEquals("Juega Rescate relámpago para descubrir tu vistazo.", StarMeasures.nudge(emptyList()).text)
+    assertNull(StarMeasures.discover(emptyList(), now))
   }
 
   @Test
@@ -46,9 +44,10 @@ class StarMeasuresTest {
   fun `formato con coma decimal y guardado de ida y vuelta`() {
     assertEquals("3,8%", StarMeasures.def("numline")!!.format(3.8f))
     assertEquals("84", StarMeasures.def("glance")!!.format(84.4f))
-    assertEquals("84 ms", StarMeasures.def("glance")!!.compact(84.4f))
-    assertEquals("a 18,0%", StarMeasures.def("numline")!!.compact(18f))
-    assertEquals("96°/s", StarMeasures.def("rotation")!!.compact(96f))
+    // lo que se VE no lleva abreviaturas ni milisegundos (Tarea 159): ver MeasurePhrasesTest
+    assertEquals("0,08 segundos de destello", measureText(StarMeasures.def("glance")!!, 84.4f))
+    assertEquals("a 18,0% del blanco", measureText(StarMeasures.def("numline")!!, 18f))
+    assertEquals("96 grados por segundo", measureText(StarMeasures.def("rotation")!!, 96f))
     val pts = series("tracking", 2.5f, 2.75f, 3f)
     assertEquals(pts, StarMeasures.decode(StarMeasures.encode(pts)))
     assertEquals(0, StarMeasures.decode("x|glance|3\n1|nada|2\n").size)
@@ -73,5 +72,24 @@ class StarMeasuresTest {
     val all = byLevel + old
     assertEquals(all, StarMeasures.decode(StarMeasures.encode(all)))
     assertEquals(listOf(MeasurePoint(7L, "glance", 84f)), StarMeasures.decode("7|glance|84.0"))
+  }
+
+  @Test
+  fun `cada medida guarda el modo en que se jugo y las lineas viejas sin modo se leen igual (Tarea 159)`() {
+    val pts = listOf(
+      MeasurePoint(1L, "glance", 120f, 0.5f, true, PlayMode.DESAFIO),
+      MeasurePoint(2L, "glance", 110f, 0.5f, false, PlayMode.A_TU_MEDIDA),
+      MeasurePoint(3L, "trail", 6f, -1f, null, PlayMode.EXPERTO)                      // sin rating ni reloj pero con modo: no se pierde
+    )
+    assertEquals(pts, StarMeasures.decode(StarMeasures.encode(pts)))
+    assertEquals("1|glance|120.0|0.5|1|DESAFIO", StarMeasures.encode(pts.take(1)))
+    // las líneas de antes de la Tarea 159: 3 campos, o 5 (rating y reloj) y sin modo
+    assertEquals(listOf(MeasurePoint(7L, "glance", 84f)), StarMeasures.decode("7|glance|84.0"))
+    assertEquals(listOf(MeasurePoint(7L, "glance", 84f, 0.4f, true)), StarMeasures.decode("7|glance|84.0|0.4|1"))
+    assertEquals("un modo que no existe se lee como sin dato", listOf(MeasurePoint(7L, "glance", 84f, 0.4f, true, null)), StarMeasures.decode("7|glance|84.0|0.4|1|OTRO"))
+    // y sin modo se sigue escribiendo igual que antes
+    assertEquals("7|glance|84.0|0.4|1", StarMeasures.encode(listOf(MeasurePoint(7L, "glance", 84f, 0.4f, true))))
+    // comparar con otras personas: preparado, pero apagado y sin nada que se vea
+    assertFalse(com.example.Features.COMPARE)
   }
 }

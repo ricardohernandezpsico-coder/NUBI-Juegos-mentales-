@@ -80,7 +80,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.data.AreaProgress
 import com.example.data.Suggestion
-import com.example.data.AreaStatus
+import com.example.data.AreaPoints
 import com.example.data.DiscoveryKind
 import com.example.data.FinalesConSentido
 import com.example.ui.components.OnBoardText
@@ -98,6 +98,7 @@ import com.example.ui.components.areaDescription
 import com.example.data.PlayMode
 import com.example.data.RetoChoice
 import com.example.ui.components.KitButton
+import com.example.data.GamePoints
 import com.example.data.Skill
 import com.example.data.measureText
 import com.example.data.StarMeasures
@@ -143,8 +144,8 @@ data class GameCardData(
   val title: String,
   val lastPlayed: String,
   val playedToday: Boolean,
-  /** Tu avance 0..1 (null = sin medir aún). */
-  val progress: Float?,
+  /** Tus puntos en este juego (null = sin medir aún): «180 de 250 puntos», con su etapa (Tarea 159). */
+  val points: GamePoints?,
   /** Tu marca de juego estrella: nombre ("Tu brújula"), valor ("a 18% de casa"), etiqueta y últimas partidas. */
   val measureTitle: String? = null,
   val measureValue: String? = null,
@@ -167,13 +168,15 @@ internal fun GameSheetHost(game: GameDefinition, viewModel: NeuroVidaViewModel, 
   val history by viewModel.gameHistory.collectAsState()
   val settings by viewModel.userSettings.collectAsState()
   val measures by viewModel.starMeasures.collectAsState()
-  val progress by viewModel.gameProgress.collectAsState()
+  val progressLog by viewModel.progressLog.collectAsState()
   val skill by viewModel.skill.collectAsState()
   val lang = LocalAppLanguage.current
   val now = remember(game.id) { System.currentTimeMillis() }
+  // Los puntos del juego salen de los de su área, para que la ficha y la página del área digan lo mismo (el redondeo se reparte entre los juegos del área)
+  val gamePoints = remember(game.id, progressLog, now) { AreaPoints.compute(game.domain.name, AreaPoints.gamesOf(game.domain.name), progressLog, now).perGame.firstOrNull { it.gameId == game.id } }
   val data = cardData(
-    game, getGameTitle(game.id, lang, game.title), history.filter { it.gameId == game.id }.maxOfOrNull { it.timestamp }, now, progress[game.id], measures,
-    history.count { it.gameId == game.id && now - it.timestamp <= 14 * DAY_MS }
+    game, getGameTitle(game.id, lang, game.title), history.filter { it.gameId == game.id }.maxOfOrNull { it.timestamp }, now, null, measures,
+    history.count { it.gameId == game.id && now - it.timestamp <= 14 * DAY_MS }, points = gamePoints
   )
   GameSheet(
     data = data,
@@ -194,7 +197,9 @@ internal fun cardData(
   now: Long,
   progress: Float?,
   measures: List<com.example.data.MeasurePoint>,
-  playsLast14: Int
+  playsLast14: Int,
+  /** Los puntos del juego ya repartidos con el resto de su área ([AreaPoints.perGame]); sin ellos se calculan a solas desde [progress]. */
+  points: GamePoints? = null
 ): GameCardData {
   val daysAgo = last?.let { (dayIndex(now) - dayIndex(it)).toInt() }
   val lastText = when (daysAgo) {
@@ -212,7 +217,7 @@ internal fun cardData(
     title = title,
     lastPlayed = lastText,
     playedToday = daysAgo == 0,
-    progress = progress,
+    points = points ?: progress?.let { GamePoints.of(g.id, it) },
     measureTitle = def?.short?.replaceFirstChar { it.uppercase() },
     measureValue = def?.let { StarMeasures.zoneText(it, measures) }                        // Freno: la zona del promedio, no milisegundos
       ?: series.lastOrNull()?.let { p -> def?.let { measureText(it, p.value) } },
@@ -353,13 +358,12 @@ internal fun GameSheetContent(
         com.example.ui.components.KitCloseButton(onClose, Modifier.testTag("sheet_close"))
       }
 
-      // Tu avance: «34%» en 30, la etapa en 17 con el color de su área y cuánto falta en 14
+      // Tu avance: «Etapa Experto · 180 de 250 puntos» en 20 con el color de su área y cuánto falta en 16 (Tarea 159: los puntos del juego, con los mismos tramos de la escala en proporción; antes «Hábil · 47 de 100»)
       HorizontalLine()
-      if (data.progress != null) {
-        // El mismo encabezado de etapa y la misma frase de «cuánto falta» que la lámina y el detalle de un área (Tarea 150, B1.6 y B1.7: antes «55 / de 100 · Hábil · a 5 puntos de Experto»)
-        Text(Skill.stageHeader(data.progress), color = onCream(g.domain), fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 24.sp, modifier = Modifier.testTag("sheet_stage"))
-        Text(Skill.toNextLine(data.progress) ?: "La etapa más alta", color = CardMuted, fontSize = Small, modifier = Modifier.testTag("sheet_to_next"))
-        com.example.ui.components.StageScale(data.progress, onCard = true, modifier = Modifier.padding(top = 6.dp))
+      if (data.points != null && data.points.measured) {
+        Text(data.points.stageLine, color = onCream(g.domain), fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 24.sp, modifier = Modifier.testTag("sheet_stage"))
+        Text(data.points.toNextLine ?: "La etapa más alta", color = CardMuted, fontSize = Small, modifier = Modifier.testTag("sheet_to_next"))
+        com.example.ui.components.StageScale(data.points.fill, onCard = true, modifier = Modifier.padding(top = 6.dp))
       } else {
         Text("Aún sin medir", color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Text("Juega a tu medida una vez y verás dónde estás.", color = CardMuted, fontSize = Small)

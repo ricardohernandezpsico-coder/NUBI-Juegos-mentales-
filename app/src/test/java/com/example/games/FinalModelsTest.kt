@@ -230,10 +230,10 @@ class FinalModelsTest {
   fun `Rescate dice tu vistazo y las capsulas a salvo, y menos milisegundos es mejor`() {
     val m = FinalModels.forGame(rescate, points("glance", 200f, 190f, 180f))!!
     assertEquals("Tu vistazo", m.boxTitle)
-    assertEquals("170 ms", m.headline)
+    assertEquals("0,17 segundos", m.headline)
     assertEquals("de vistazo te bastan", m.headlineUnit)
     assertEquals("23 cápsulas a salvo", m.dataLine)
-    assertEquals("Como tu promedio (190 ms): vas parejo.", m.progressPhrase)
+    assertEquals("Como tu promedio (0,19 segundos): vas parejo.", m.progressPhrase)
     assertSealed(m)                                                                                  // más rápido que tu mejor anterior: el sello lo dice, «Tu avance» usa la comparación normal
     assertEquals("Mira el centro del radar y, apenas se apague, nombra por dentro las formas que viste.", m.trick)
     assertEquals("—", FinalModels.forGame(rescate.copy(glanceMs = null), emptyList())!!.headline)
@@ -508,7 +508,7 @@ class FinalModelsTest {
       Triple(piloto, "58 %", "de las señales, a los mandos"),
       Triple(freno, "zona firme", "tu freno, primera lectura"),
       Triple(satelites, "2,6 satélites", "que seguiste a la vez"),
-      Triple(rescate, "170 ms", "de vistazo te bastan"),
+      Triple(rescate, "0,17 segundos", "de vistazo te bastan"),
       Triple(carga, "5 de 8 cargas", "sin pista"),
       Triple(engranajes, "7 de 10 máquinas", "arregladas"),
       Triple(acoplamiento, "212° por segundo", "de giro en tu mente"),

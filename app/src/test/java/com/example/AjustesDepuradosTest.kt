@@ -42,12 +42,12 @@ class AjustesDepuradosTest {
   }
 
   @Test
-  fun `las medallas viven en Tu y Avance solo dice cuantas hay`() {
+  fun `las medallas viven solo en Tu y Avance ya no las nombra`() {
+    // Tarea 159: Avance perdió hasta el enlace «9 medallas · ver en Tú» (antes, Tarea 152 B6.1, solo decía cuántas había)
     val progress = src("ui/screens/ProgressScreen.kt")
     val sections = src("ui/screens/AvanceSections.kt")
-    assertTrue(progress.contains("AvanceMedalsLink(") && !progress.contains("AvanceMedals(") && !progress.contains("FamilyMedalDialog"))
-    assertTrue(sections.contains("medallas · ver en Tú") && sections.contains("1 medalla · ver en Tú"))
-    assertFalse("las tres tarjetas enteras ya no se repiten en Avance (B6.1)", sections.contains("internal fun AvanceMedals("))
+    assertFalse(progress.contains("AvanceMedalsLink(") || progress.contains("AvanceMedals(") || progress.contains("FamilyMedalDialog") || progress.contains("FamilyMedalCards("))
+    assertFalse("sin el enlace a las medallas en Avance", sections.contains("ver en Tú") || sections.contains("internal fun AvanceMedals"))
     assertTrue("Tú sí las trae", src("ui/screens/ProfileScreen.kt").contains("FamilyMedalCards("))
   }
 

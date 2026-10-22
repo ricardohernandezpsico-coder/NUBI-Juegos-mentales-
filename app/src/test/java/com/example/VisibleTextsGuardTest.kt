@@ -222,6 +222,60 @@ class VisibleTextsGuardTest {
     assertEquals("Con reloj (2 min)", com.example.data.RetoChoice.timedLabel("calculo"))
   }
 
+  // ---- Una sola escala de avance (Tarea 159; Ricardo: «sin palabras sueltas», una unidad clara: puntos por área)
+
+  @Test
+  fun `ningun texto visible dice el avance en la escala vieja de 100`() {
+    val found = mutableListOf<String>()
+    File("src/main/java").walkTopDown().filter { it.extension == "kt" }.forEach { f ->
+      f.readLines().forEachIndexed { i, raw ->
+        for (text in visibleLiteralsOf(raw)) {
+          if (Regex("\\bde 100\\b").containsMatchIn(text)) found += "${f.path.removePrefix("src/main/java/")}:${i + 1} «$text»"
+        }
+      }
+    }
+    assertTrue("El avance se dice en puntos de 0 a 1000 (áreas) o en puntos del juego («180 de 250 puntos»), nunca «N de 100»:\n" + found.joinToString("\n"), found.isEmpty())
+  }
+
+  /** Tarea 159 (Opus, 22-oct): los SEGUNDOS valen en TODA la app; «ms» y «milisegundos» no se ven en ningún texto. `data/StarMeasures.kt` guarda la unidad interna («ms») de cada medida, que no se dice nunca (se dice con `MeasurePhrases`). */
+  @Test
+  fun `ningun texto visible de la app dice milisegundos`() {
+    val found = mutableListOf<String>()
+    File("src/main/java").walkTopDown().filter { it.extension == "kt" }.forEach { f ->
+      if (f.path.replace('\\', '/').endsWith("com/example/data/StarMeasures.kt")) return@forEach
+      f.readLines().forEachIndexed { i, raw ->
+        for (text in visibleLiteralsOf(raw)) {
+          if (Regex("(^|[\\s\\d}])ms\\b").containsMatchIn(text) || "milisegundo" in text.lowercase()) found += "${f.path.removePrefix("src/main/java/")}:${i + 1} «$text»"
+        }
+      }
+    }
+    assertTrue("Los tiempos se dicen en segundos («0,17 segundos»), nunca en ms ni en milisegundos:\n" + found.joinToString("\n"), found.isEmpty())
+  }
+
+  @Test
+  fun `la guardia de milisegundos atrapa lo que debe y deja pasar lo permitido`() {
+    for (bad in listOf("Tu vistazo: 170 ms", "Récord: frenaste con el alto a \$it ms", "280 milisegundos", "ms")) {
+      val hit = visibleLiteralsOf("""Text("$bad")""").any { Regex("(^|[\\s\\d}])ms\\b").containsMatchIn(it) || "milisegundo" in it.lowercase() }
+      assertTrue("la guardia no atrapa «$bad»", hit)
+    }
+    for (good in listOf("Tu vistazo: 0,17 segundos", "Cambios de nivel", "Mismo tamaño", "1 segundo")) {
+      val hit = visibleLiteralsOf("""Text("$good")""").any { Regex("(^|[\\s\\d}])ms\\b").containsMatchIn(it) || "milisegundo" in it.lowercase() }
+      assertFalse("la guardia atrapa «$good» sin motivo", hit)
+    }
+  }
+
+  @Test
+  fun `lo que Avance dice de las medidas va en segundos y en palabras, sin milisegundos ni abreviaturas`() {
+    val found = mutableListOf<String>()
+    val bad = listOf(" ms", "°", " dp", "pts", "sem.", "→", "▲", "▼", " seg.")
+    for (name in listOf("ui/screens/AvanceAreas.kt", "ui/screens/AvanceAreaPage.kt", "data/MeasurePhrases.kt", "data/LevelLines.kt", "data/AreaPoints.kt")) {
+      File("src/main/java/com/example/$name").readLines().forEachIndexed { i, raw ->
+        for (text in visibleLiteralsOf(raw)) bad.firstOrNull { it in text }?.let { found += "$name:${i + 1} «$text» (por «$it»)" }
+      }
+    }
+    assertTrue("Textos de Avance con abreviaturas o cifras internas:\n" + found.joinToString("\n"), found.isEmpty())
+  }
+
   @Test
   fun `los subtitulos de los juegos hablan como los buenos y no en jerga de laboratorio`() {
     // Tarea 150 (B5.5): «Memoria de trabajo visoespacial», «Control inhibitorio», «rotación mental», «Sentido numérico»… no los entiende un 60+ y rozaban el vocabulario prohibido

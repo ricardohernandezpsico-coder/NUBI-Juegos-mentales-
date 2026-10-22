@@ -1,7 +1,6 @@
 package com.example.data
 
 import com.example.model.AgeBand
-import kotlin.math.ceil
 import kotlin.math.exp
 import kotlin.math.ln
 
@@ -128,38 +127,13 @@ object Skill {
     return if (mode == PlayMode.A_TU_MEDIDA) blended.coerceAtLeast(previous - MAX_DROP) else maxOf(previous, blended)
   }
 
-  /** Etapa 0..4 (Inicio..Maestro): quintos del avance. */
+  /** Etapa 0..4 (Inicio..Maestro): quintos del avance de un juego (0..1). Los PUNTOS (de cada área y de cada juego) y lo que falta para la etapa que sigue viven en [AreaPoints]/[GamePoints] (Tarea 159: una sola escala en toda la app). */
   fun stage(progress: Float): Int = (progress.coerceIn(0f, 1f) * 5f).toInt().coerceIn(0, 4)
-
-  /** El encabezado de etapa que se ve igual en la lámina, el detalle de un área y la ficha de un juego (Tarea 150, B1.6): «Hábil · 47 de 100». */
-  fun stageHeader(stageName: String, points: Int): String = "$stageName · $points de 100"
-
-  fun stageHeader(progress: Float): String = stageHeader(stageName(progress), percent(progress))
-
-  /** «Te faltan 8 para Experto» / «Te falta 1 para Experto» (null en Maestro): lo que falta para la etapa que sigue, dicho igual en toda la app (Tarea 150, B1.7; antes la ficha decía «a 5 puntos de Experto»). */
-  fun toNextLine(progress: Float): String? {
-    val (pts, next) = toNextStage(progress) ?: return null
-    return if (pts == 1) "Te falta 1 para $next" else "Te faltan $pts para $next"
-  }
 
   fun stageName(progress: Float): String = STAGES[stage(progress)]
 
-  /** Puntos que faltan para la etapa siguiente ("a 5 puntos de Experto"); null en Maestro. */
-  fun toNextStage(progress: Float): Pair<Int, String>? {
-    val s = stage(progress)
-    if (s >= 4) return null
-    val pts = ceil(((s + 1) * 0.2f - progress) * 100f - 1e-3f).toInt().coerceAtLeast(1)
-    return pts to STAGES[s + 1]
-  }
-
-  /** Avance en porcentaje entero para mostrar. */
-  fun percent(progress: Float): Int = (progress.coerceIn(0f, 1f) * 100f).toInt()
-
-  /** Avance de un área: promedio de sus juegos medidos (null si ninguno) y cuántos de [games] se exploraron. */
-  fun area(games: List<String>, measured: Map<String, Float>): Pair<Float?, Int> {
-    val vals = games.mapNotNull { measured[it] }
-    return (if (vals.isEmpty()) null else vals.average().toFloat()) to vals.size
-  }
+  /** El nivel de [gameId] dicho en palabras, «Ya repites 6 luces seguidas» (Tarea 159; ver [LevelLines]). [level] = 1..N de su escalera ([Ladder.levels]); [timed] = la persona juega con reloj (solo cambia Freno de Emergencia). */
+  fun levelLine(gameId: String, level: Int, timed: Boolean = false): String = LevelLines.lineAt(gameId, level, timed)
 }
 
 /**

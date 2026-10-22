@@ -121,8 +121,8 @@ class HoyPlaceSheetTest {
     rule.onNodeWithTag("place_title").assertIsDisplayed()
     rule.onNodeWithText("Observatorio").assertExists()
     rule.onNodeWithTag("place_area").assertIsDisplayed()
-    assertEquals("el avance en UNA línea", "Aprendiz · 22 de 100", textOf("place_stage"))
-    rule.onNodeWithText("Esta semana avanzó de 18 a 22. Te faltan 18 para Hábil.").assertIsDisplayed()
+    assertEquals("el avance en UNA línea, en puntos de la escala de 1000 (Tarea 159)", "Etapa Aprendiz · 220 de 1000 puntos", textOf("place_stage"))
+    rule.onNodeWithText("Te faltan 180 puntos para Hábil. Esta semana sumaste 40 puntos.").assertIsDisplayed()
     rule.onNodeWithText("Tus juegos aquí").assertExists()
     for (g in ui.places.getValue("MEMORIA").games) rule.onNodeWithTag("place_game_${g.gameId}").assertExists()
     rule.onNodeWithText("Jugar ${firstTitle("MEMORIA")}").assertIsDisplayed()
@@ -131,22 +131,22 @@ class HoyPlaceSheetTest {
   @Test
   fun la_antena_muestra_la_atencion_que_se_mantiene() {
     show(); open("antena")
-    assertEquals("Aprendiz · 31 de 100", textOf("place_stage"))
-    rule.onNodeWithText("Esta semana se mantuvo en 31. Te faltan 9 para Hábil.").assertIsDisplayed()
+    assertEquals("Etapa Aprendiz · 310 de 1000 puntos", textOf("place_stage"))
+    rule.onNodeWithText("Te faltan 90 puntos para Hábil. Esta semana te mantuviste.").assertIsDisplayed()
     rule.onNodeWithText("Jugar ${firstTitle("ATENCION")}").assertIsDisplayed()
   }
 
   @Test
   fun el_hangar_muestra_el_razonamiento_que_recien_empieza() {
     show(); open("hangar")
-    assertEquals("Inicio · 9 de 100", textOf("place_stage"))
-    rule.onNodeWithText("Esta semana avanzó de 6 a 9. Te faltan 11 para Aprendiz.").assertIsDisplayed()
+    assertEquals("Etapa Inicio · 90 de 1000 puntos", textOf("place_stage"))
+    rule.onNodeWithText("Te faltan 110 puntos para Aprendiz. Esta semana sumaste 30 puntos.").assertIsDisplayed()
     rule.onNodeWithText("Jugar ${firstTitle("RAZONAMIENTO")}").assertIsDisplayed()
   }
 
   @Test
   fun en_Hoy_el_avance_es_una_sola_linea_sin_la_barra_de_etapas_ni_el_grafico() {
-    // Tarea 158: el detalle del avance (la barra con sus 5 etapas y el gráfico de 4 semanas) vive solo en Avance; en Hoy, UNA línea («Hábil · 47 de 100»)
+    // Tarea 158: el detalle del avance (la barra con sus 5 etapas y el gráfico de semanas) vive solo en la página del área de Avance; en Hoy, UNA línea («Etapa Hábil · 470 de 1000 puntos»)
     show()
     for (key in listOf("observatorio", "antena", "hangar", "biblioteca")) {
       open(key)

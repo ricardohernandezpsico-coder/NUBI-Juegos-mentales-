@@ -134,7 +134,7 @@ class TrailTest {
     assertEquals("secuencia", def.gameId)
     assertFalse(def.lowerIsBetter)
     assertTrue(def.levelDependent)
-    assertEquals("5 luces", def.compact(5f))
+    assertEquals("5 luces", MeasurePhrases.short(def, 5f))
     assertEquals("Rastro de luz", StarMeasures.gameNames["secuencia"])
     assertEquals(def, StarMeasures.defForGame("secuencia"))
   }

@@ -1,11 +1,9 @@
 package com.example
 
-import com.example.data.AreaStatus
 import com.example.data.PlaceSheets
 import com.example.data.Streak
 import com.example.data.Suggestion
 import com.example.data.Week
-import com.example.data.nubiWeekLine
 import com.example.model.AppLanguage
 import com.example.model.DailySessionState
 import com.example.ui.components.EMPTY_AVANCE_LINE
@@ -30,24 +28,14 @@ class GlobosDeNubiTest {
   fun el_contador_de_frases_cuenta_bien() {
     assertEquals(1, sentences("Te sugiero Atención: hace 4 días que no juegas Constelaciones"))
     assertEquals(2, sentences("¿Le damos un empujón? Te sugiero Constelaciones: sigue en tu ruta de hoy."))
-    assertEquals(2, sentences("Esta semana avanzó de 18 a 22. Te faltan 18 para Hábil."))
+    assertEquals(2, sentences("Te faltan 130 puntos para Experto. Esta semana sumaste 12 puntos."))
     assertEquals(3, sentences("Una. Dos. Tres."))
   }
 
   @Test
-  fun la_semana_de_avance_dice_una_o_dos_frases_y_ninguna_cifra_que_la_pantalla_ya_dice() {
-    fun lamps(days: Int) = Week.Lamps(List(7) { it < days }, todayIndex = 3)
-    for (days in 0..7) for (goal in 0..7) for (areas in 0..4) for (none in listOf(false, true)) {
-      val line = nubiWeekLine(lamps(days), goal, areas, none)
-      assertGlobe(line, "nubiWeekLine($days días, meta $goal, $areas áreas)")
-      assertTrue("«$line» repite una cifra que la pantalla ya dice («2 de 4 días», «Áreas esta semana: 4 de 4»)", line.none { it.isDigit() })
-    }
-  }
-
-  @Test
   fun la_lamina_del_area_dice_dos_frases_como_mucho() {
-    for ((value, change) in listOf(0.47f to 0.10f, 0.38f to -0.02f, 0.47f to 0f, 0.91f to 0f, null to 0f, 0.05f to 0.05f)) {
-      assertGlobe(PlaceSheets.bubble(AreaStatus("MEMORIA", value, change, listOf(null, null, null, value))), "lámina ($value, $change)")
+    for ((total, change, measured) in listOf(Triple(470, 100, true), Triple(380, -20, true), Triple(470, 0, true), Triple(910, 0, true), Triple(0, 0, false), Triple(50, 50, true))) {
+      assertGlobe(PlaceSheets.bubble(PlaceTestData.points("MEMORIA", total, change, measured), "Memoria"), "lámina ($total, $change, $measured)")
     }
   }
 

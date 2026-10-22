@@ -12,7 +12,7 @@ una sola matriz lógica. Este documento revisa lo que hay hoy, propone la regla 
 
 1. **Una sola regla para todas las edades**: cada juego tiene su **escalera** de niveles (lo que cambia la tarea:
    más ítems, menos tiempo de exposición, más distractores). La escalera es la misma para todos.
-2. **Tu avance** (0-100%) = **el punto de la escalera donde aciertas 8 de cada 10**. Se lee igual a los 15, a los
+2. **Tu avance** (0 a 1 por juego; desde la Tarea 159 se ve en PUNTOS: cada área de 0 a 1000, cada juego hasta 1000 ÷ N; sección 13) = **el punto de la escalera donde aciertas 8 de cada 10**. Se lee igual a los 15, a los
    40 y a los 75 años. Por eso se puede comparar contigo mismo en el tiempo y entre juegos.
 3. **La edad no cambia la regla, cambia cómo se entrena**: cuántos aciertos busca el juego mientras juegas, qué
    tan rápido sube, cuánto pesa la rapidez, los tiempos y tamaños, y desde dónde parte.
@@ -128,9 +128,9 @@ Un solo mecanismo en Unity: A tu medida con **piso** o **techo**. No hay que toc
 
 | Número | Qué es | Cómo se dice | Cuándo aparece |
 |---|---|---|---|
-| **Tu avance** | Lugar en la escalera del juego donde aciertas 8 de 10 (sección 3) | "45%" | Desde la primera partida A tu medida. Antes: "Sin medir aún". |
-| **Etapa** | Quintos del avance: Inicio 0-19, Aprendiz 20-39, Hábil 40-59, Experto 60-79, Maestro 80-100 | "Hábil · a 5 puntos de Experto" | Con el avance. La etapa lograda queda con su fecha aunque el avance baje. |
-| **Avance del área** | Promedio del avance de los juegos **medidos** del área | "Memoria · 51% · 4 de 6 juegos explorados" | En el selector de área. |
+| **Tu avance** | Lugar en la escalera del juego donde aciertas 8 de 10 (sección 3), dicho en puntos del juego (Tarea 159) | "Etapa Experto · 180 de 250 puntos" | Desde la primera partida A tu medida. Antes: "Sin medir aún". |
+| **Etapa** | Quintos del avance: del área, tramos de 200 (Inicio 0-199, Aprendiz 200-399, Hábil 400-599, Experto 600-799, Maestro 800-1000); del juego, cinco tramos iguales de su máximo | "Te faltan 130 puntos para Experto" | Con el avance. La etapa lograda queda con su fecha aunque el avance baje. |
+| **Puntos del área** | SUMA de los puntos de sus juegos (un juego sin partidas vale 0; cada juego aporta hasta 1000 ÷ N) | "Etapa Hábil · 470 de 1000 puntos" | En Hoy (la lámina del edificio), en Avance (filas y página del área). Ver sección 13. |
 | **Tu marca** | La medida propia del juego estrella (`StarMeasures`) | "a 18% de casa" + últimas 6 a nivel parecido | Con 1 partida; la evolución, con 3. |
 | **Tus fortalezas aquí** | Ver sección 8 | puntos 1 a 5 o una frase | Con 3 partidas A tu medida. |
 | **Modo de hoy** | Sección 4.B | "Desafío · aciertas cerca de 7 de 10" | Botón de la carta y ventana antes de jugar. |
@@ -204,6 +204,40 @@ para poder revisarlas.
    para la persona y el avance y las marcas se miden siempre igual. La alternativa es dejarlo en la ventana y
    separar las marcas por reloj.
 4. ¿Sacamos el modo de dificultad de Ajustes (Principiante, Intermedio…), que hoy casi no tiene efecto?
+
+## 13. Puntos por área y frases de nivel (Tarea 159, 22-oct)
+
+**Los puntos.** Ricardo pidió una sola unidad clara: PUNTOS POR ÁREA. Cada juego aporta `avance × 1000 ÷ N` (N = los juegos del área: Memoria 4, Atención 5, Razonamiento 4, Lenguaje 4 → 250 por juego, 200 en Atención); el área es la **suma** (un juego sin partidas vale 0, así que probar uno nuevo solo puede sumar) y va de 0 a 1000; la etapa es el tramo fijo de 200 donde cae (los mismos cortes de quintil de siempre, así que nadie cambia de etapa por el cambio de escala,
+salvo quien tenía juegos sin medir: antes el promedio no los contaba). Nunca sale del porcentaje de aciertos ni del tiempo de juego; no baja por dejar de jugar; con `MAX_DROP` una partida baja el área a lo más 1000 × 0,05 ÷ N. «Cambio de la semana» = hoy menos el lunes a las 0:00; «tu mejor marca» = el máximo anotado en `progress_log` (se guarda un año). Los puntos dependen de la edad (la escalera se ajusta a ella): sirven para verse contigo, no para compararse con otras personas
+(en Desafío, si algún día hay servidor, se compararía la marca del juego en su unidad, nunca los puntos: `Features.COMPARE`, apagada). Código: `data/AreaPoints.kt`; detalle de pantallas en `docs/arquitectura-app.md` § «Avance con PUNTOS por área».
+
+**El nivel en palabras (`Skill.levelLine`, `data/LevelLines.kt`).** La frase «Ya …» sale del nivel `min(N, 1 + floor(N × avance))` (el motor común, `Games/AdaptiveDifficulty.cs`: `Level = clamp(floor(Rating), 1, N)`, `RatingNormalized = (Rating − 1) / N`; `Skill.progress` ya lleva el avance a «8 de 10», así que sirve para todas las edades) y de la tabla del contrato de cada juego (Unity, solo lectura).
+**Reglas (Opus, 22-oct, para una persona mayor; `LevelLinesTest` las vigila):** 12 palabras como máximo; UNA cifra principal y a lo más UN rasgo extra; nada de mecánica interna («4 de cada 10», «por tramos de 4 a 6») ni de condiciones («con reloj»); a lo más 2 cifras significativas en los segundos («1,2 segundos», no «1,18»). Una tarjeta no muestra dos cifras de lo mismo: Rastro de luz (luces seguidas), Satélites (a la vez) y Rescate (el destello) dicen en su medida («Hoy: 5 luces seguidas.») lo mismo y en la misma unidad que su frase de nivel, así que con la medida a la vista la tarjeta solo lleva la medida (`LevelLines.overlapsMeasure`).
+Freno de Emergencia dice su plazo solo si la persona juega con reloj (`Skill.levelLine(juego, nivel, timed)`; la ficha recuerda la elección por juego). Fuentes y qué dice cada una:
+
+| Juego | Frase («Ya …») | Contrato (Unity) |
+|---|---|---|
+| Constelaciones (18) | «resuelves cielos de 12 luces con gemelos»: las luces NO suben siempre (12 en los niveles 4, 7 y 10; 16 → 12 al entrar los gemelos); la frase suma gemelos, tríos o «parejas y tríos» | `Parejas/ConstelacionContract.cs:88-105` |
+| Rastro de luz (16) | «repites 6 luces seguidas y 5 al revés» (el rastro al revés desde el nivel 5) | `Secuencia/RastroContract.cs:158-177` |
+| Bodega de carga (12) | «recuerdas 4 objetos en 8 escotillas, con una caja que cambia» / «con la bodega girando» (UN solo rasgo extra, el más nuevo; desde el nivel 8 con menos escotillas y objetos, por eso se dice el giro) | `Bodega/BodegaContract.cs:82-96` |
+| Correo Estelar (10) | «ordenas cartas en 3 buzones y cumples 2 encargos al día» (lo que la persona HACE; buzones y encargos de la etapa del contrato; el nivel cambia día a día dentro de la partida) | `Correo/MailContract.cs:116-139` |
+| Rescate relámpago (12) | «rescatas 3 de 4 cápsulas con un destello de 0,22 segundos» (en los niveles 1 a 6, «las 3 cápsulas»; segundos y no milisegundos) | `Radar/RadarContract.cs:112-114` |
+| Freno de Emergencia (12) | «eliges entre 3 plataformas» y, SOLO con reloj, «y lanzas en 1,2 segundos» (el plazo es del nivel CON reloj; NO es el tiempo del aviso, como decía la propuesta). Con 2 cifras significativas, dos pares de niveles vecinos dicen lo mismo (1,3 y 1,1 segundos) | `Freno/BrakeContract.cs:69-80` |
+| Satélites (12) | «sigues 4 satélites a la vez, entre 8» (los que traen mensaje y los que hay en total; «anillos al revés» no es un rasgo del nivel; la velocidad no se dice) | `Satelites/SatelliteContract.cs:66-80` |
+| Piloto Estelar (9) | «atrapas señales de 1,5 segundos mientras pilotas»; desde el nivel 3, «señales parecidas» (sin «en los bordes»); «4 señales» NO existe en el código: lo que sube es el ritmo. El avance es el promedio del pilotaje y las señales | `Piloto/PilotContract.cs:119-138` |
+| Tinta o Palabra (5) | «respondes por el color de la tinta» (1-2), «alternas entre la tinta y la palabra» (3), «… sin aviso» (4-5); sin «casi siempre» ni cifras de cada cuántas palabras | `Stroop/StroopContract.cs:146-153` |
+| Acoplamiento (12) | «giras piezas de 4 bloques, hasta un cuarto de vuelta» → «hasta media vuelta» (niveles 1-4) → «giras piezas de 5 bloques, en giros finos» (desde el 5; «bloques», no «celdas», que es de Carga exacta). Sin «en la mente» para no pasar de 12 palabras | `Acoplamiento/DockingContract.cs:67-77` |
+| Carga exacta (5) | «llegas a la carga con sumas» → «con las cuatro operaciones y más números» (el nivel 5 trae las mismas operaciones que el 4; lo nuevo es el tablero) | `Calculo/CalculoContract.cs:150-157` |
+| Engranajes (12) | «arreglas máquinas de 3 piezas y 4 correas» (sin «hasta dos cambios»; las piezas bajan de 3 a 2 en el nivel 9 por las dos llaves: la frase del 9 dice «2 piezas y 2 correas») | `Engranajes/EngranajesContract.cs:187-201` |
+| Aterrizaje Lunar (12) | una frase por tramo: regla y tipo de número («ubicas fracciones entre 0 y 1», «números negativos entre menos 50 y 50») | `Aterrizaje/LandingContract.cs:94-142` |
+| En la punta de la lengua (5) | «encuentras palabras de 6 o 7 letras» (el largo habitual; los largos se solapan entre niveles; el banco las mezcla con la rareza) | `Anagramas/PuntaContract.cs:50-57`, `tools/punta/banco.py:86-99` |
+| Lluvia de meteoros (12) | «reconoces palabras poco comunes» en seis grados de «muy comunes» a «raras»; las bandas son prevalencia (SPALEX), NO frecuencia de uso | `Meteoros/MeteorContract.cs:134-154`, `tools/lexico/meteoros.py` |
+| ¿Verdad o disparate? (12) | «distingues verdades de disparates en frases con «no»» (la forma de la frase; los segundos de la señal no se dicen: no existen sin reloj y cambian con la edad) | `Disparate/DisparateContract.cs:71-77` |
+| La estrella intrusa (12) | «detectas intrusas por su uso» en seis tipos de regla (no hay «material» en el banco; el sexto, «regla con trampa», faltaba en la propuesta) | `Intrusa/IntrusaContract.cs:165-166`, `tools/intrusa/grupos.py:160-186` |
+
+Las escaleras de 12 niveles de Meteoros, Disparate e Intrusa se leen de a pares (seis frases); las demás son por nivel. Las frases de Constelaciones y Rescate son todas distintas, y en Bodega solo coinciden los niveles 9 y 10 (`LevelLinesTest`). La lista completa, por tramos de niveles, está en la lámina `docs/previews/tarea-159.png` (al final). La frase dice lo que alcanzó la persona, no una promesa; en un juego sin partidas medidas no hay frase.
+
+**Segundos y no milisegundos en toda la app (Opus, 22-oct).** Las medidas internas (milisegundos de Unity, grados) no cambian; lo que se VE va en segundos con coma y sin ceros de sobra, y con «segundos» escrito completo (`MeasurePhrases.seconds` / `secondsWord`: «0,16 segundos de destello», «Tu vistazo: 0,28 segundos», «Récord: frenaste con el alto a 0,35 segundos»). `VisibleTextsGuardTest` falla si un texto visible de cualquier archivo trae « ms» o «milisegundo» (única excepción: `data/StarMeasures.kt`, que guarda la unidad interna de cada medida y nunca la dice).
 
 ## Referencias
 

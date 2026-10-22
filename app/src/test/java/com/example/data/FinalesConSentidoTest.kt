@@ -143,8 +143,8 @@ class FinalesConSentidoTest {
     assertEquals(FinalesConSentido.PHRASE_BETTER, FinalesConSentido.progress(285f, prev, 10f, lowerIsBetter = true).phrase)
     assertEquals(FinalesConSentido.PHRASE_EVEN, FinalesConSentido.progress(305f, prev, 10f, lowerIsBetter = true).phrase)
     assertEquals(FinalesConSentido.PHRASE_BELOW, FinalesConSentido.progress(330f, prev, 10f, lowerIsBetter = true).phrase)
-    // con los números adentro, en milisegundos (menos es mejor)
-    assertEquals("Mejor que tu promedio (300 ms). Tu mejor: 280 ms.", FinalesConSentido.phraseWith(FinalesConSentido.progress(285f, prev, 10f, lowerIsBetter = true), FinalesConSentido::msText))
+    // con los números adentro, en segundos (menos es mejor)
+    assertEquals("Mejor que tu promedio (0,3 segundos). Tu mejor: 0,28 segundos.", FinalesConSentido.phraseWith(FinalesConSentido.progress(285f, prev, 10f, lowerIsBetter = true), FinalesConSentido::msText))
   }
 
   @Test

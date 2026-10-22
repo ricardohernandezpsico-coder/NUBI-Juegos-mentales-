@@ -688,20 +688,18 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     com.example.data.SessionSummary.build(
       gameIds = dailySession.value.gameIds,
       history = gameHistory.value,
-      progress = gameProgress.value,
       points = repository.progressLog.value,
       now = System.currentTimeMillis()
     )
 
   /**
-   * «Listo» del resultado: vuelve a la pestaña DESDE DONDE se lanzó la partida y la deja como estaba (Tarea 158: dos orígenes, Hoy y Avance; antes también Juegos). Desde Hoy, con la lámina del lugar o «Todos los juegos» abierta (mismo filtro, misma búsqueda y la fila marcada);
-   * desde Avance, con la lámina de su área. Si la partida no se lanzó desde una pestaña (el recordatorio, el inicio) no hay origen: se queda donde está y no queda nada abierto. También si Android cerró la app durante el juego y el ViewModel es nuevo (el origen vive en disco).
+   * «Listo» del resultado: vuelve a Hoy, de donde se lanzó la partida, y lo deja como estaba (Tarea 159: solo se juega desde Hoy; antes también desde Avance, Tarea 158). Con la lámina del lugar o «Todos los juegos» abierta (mismo filtro, misma búsqueda y la fila marcada).
+   * Si la partida no se lanzó desde Hoy (el recordatorio, el inicio) no hay origen: se queda donde está y no queda nada abierto. También si Android cerró la app durante el juego y el ViewModel es nuevo (el origen vive en disco).
    */
   fun closeGameOrResult() {
     val gameId = _lastResult.value?.first?.gameId ?: _activeGame.value?.gameDef?.id
     val origin = if (gameId != null && focusPrefs.getString("origin_game", null) == gameId) focusPrefs.getString("origin", null) else null
     when (origin) {
-      ORIGIN_AVANCE -> { _currentTab.value = AppTab.PROGRESO; _hoyArea.value = null; _allGames.value = null }
       ORIGIN_HOY -> { _currentTab.value = AppTab.HOY; _avanceArea.value = null }
       else -> { _hoyArea.value = null; _allGames.value = null; _avanceArea.value = null }
     }
@@ -742,13 +740,13 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   /** La X o Atrás de «Todos los juegos». */
   fun closeAllGames() { _allGames.value = null }
 
-  // La lámina de un área abierta en Avance (la clave del área: «MEMORIA»…): al terminar una partida lanzada desde ella se vuelve a Avance con la lámina como se dejó (Tarea 155).
-  private val _avanceArea = MutableStateFlow<String?>(if (restoredOrigin == ORIGIN_AVANCE) focusPrefs.getString("avance_area", null) else null)
+  // La página de un área abierta en Avance (la clave del área: «MEMORIA»…; Tarea 159: antes la lámina de Tarea 155). Desde ella no se juega, así que no hay nada que recordar al volver de una partida: vive solo en memoria, y cambiar de pestaña la cierra.
+  private val _avanceArea = MutableStateFlow<String?>(null)
   val avanceArea: StateFlow<String?> = _avanceArea.asStateFlow()
 
   fun openAvanceArea(areaKey: String) { _avanceArea.value = areaKey }
 
-  /** La X, Atrás o el velo de la lámina de Avance. */
+  /** «‹ Avance» o Atrás en la página de un área: vuelve a la lista de áreas, donde estaba. */
   fun closeAvanceArea() { _avanceArea.value = null }
 
   /** Nada abierto sobre las pestañas (y sin origen que recordar). */
@@ -765,17 +763,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     focusPrefs.edit()
       .putString("origin", origin).putString("origin_game", gameId)
       .putString("hoy_area", _hoyArea.value).putBoolean("all_open", all != null).putString("all_area", all?.area).putString("all_query", all?.query.orEmpty()).putString("all_mark", all?.mark)
-      .putString("avance_area", _avanceArea.value)
       .apply()
-  }
-
-  /**
-   * «Jugar» desde Avance (la lámina de un área, su ficha o «Lo que descubriste»): recuerda que se lanzó de aquí y si había una lámina abierta, para volver a ella al terminar.
-   */
-  fun playFromAvance(gameId: String, mode: com.example.data.PlayMode, timed: Boolean? = null) {
-    rememberOrigin(ORIGIN_AVANCE, gameId)
-    if (timed != null) repository.setReto(gameId, timed)       // se recuerda por juego
-    launchGame(gameId, mode = mode, customTimed = timed?.let { it && com.example.data.RetoChoice.supports(gameId) })
   }
 
   /**
@@ -924,7 +912,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   private companion object {
     const val ORIGIN_HOY = "hoy"
-    const val ORIGIN_AVANCE = "avance"
   }
 
   fun triggerHapticFeedback(type: HapticType = HapticType.LIGHT) {

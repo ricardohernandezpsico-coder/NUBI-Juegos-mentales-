@@ -1,6 +1,7 @@
 package com.example
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
@@ -10,9 +11,9 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import com.example.data.Streak
 import com.example.data.Week
-import com.example.data.nubiWeekLine
-import com.example.data.weekSummary
-import com.example.ui.screens.AvanceWeek
+import com.example.model.DomainType
+import com.example.ui.screens.AvanceAreaRows
+import com.example.ui.screens.AvanceWeekLine
 import com.example.ui.theme.NeuroVidaTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -27,7 +28,8 @@ import java.io.File
 
 /**
  * La frase de la racha vive SOLO en Hoy (Tarea 158, Opus, 21-oct): «Descansaste el domingo: tu racha sigue.» y «Un día de descanso por semana no la corta.» salían en Hoy (bajo las farolas), en Avance (el globo de Nubi y una línea suelta) y en Tú (bajo las cifras): la repetición que Ricardo quiere sacar.
- * Se prueba que el globo de Nubi de Avance no habla de la racha ni del descanso con ninguna semana posible, que «Tu semana» de Avance conserva la pastilla «Racha: N días» pero no la frase, y que el código solo arma esas frases en `HomeScreen` (Tú no las lleva: quedan las cifras).
+ * Desde la Tarea 159 Avance ni siquiera lleva la pastilla «Racha: N días» ni el globo de Nubi (la semana es UNA línea: las farolas y «2 de 4 días de tu meta»; la racha vive en Hoy y en Tú). Se prueba que Avance (la línea de la semana, las filas y la página del área) no habla de la racha ni del descanso, y que el código solo arma esas frases en `HomeScreen`
+ * (Tú no las lleva: quedan las cifras).
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -35,29 +37,15 @@ import java.io.File
 class LaFraseDeLaRachaTest {
   @get:Rule val rule = createComposeRule()
 
-  private fun lamps(days: Int) = Week.Lamps(List(7) { it < days }, todayIndex = 3)
-
   @Test
-  fun el_globo_de_nubi_en_avance_no_dice_nada_de_la_racha_ni_del_descanso_con_ninguna_semana() {
-    val lines = mutableSetOf<String>()
-    for (days in 0..7) for (goal in 0..7) for (areas in 0..4) for (none in listOf(false, true)) lines += nubiWeekLine(lamps(days), goal, areas, none)
-    assertTrue("hay frases", lines.isNotEmpty())
-    for (l in lines) {
-      val low = l.lowercase()
-      assertFalse("«$l» empieza con «Descansaste»", l.startsWith("Descansaste"))
-      assertFalse("«$l» habla de la racha", "racha" in low)
-      assertFalse("«$l» habla del descanso", "descans" in low)
-    }
-  }
-
-  @Test
-  fun tu_semana_en_avance_conserva_la_pastilla_de_racha_pero_no_la_frase_del_descanso() {
-    val l = lamps(5)
-    val summary = weekSummary(l, goal = 4, streak = 7, areas = 4, noGamesAtAll = false)
-    rule.setContent { NeuroVidaTheme { Box(Modifier.width(393.dp)) { AvanceWeek(summary, l, nubiWeekLine(l, 4, 4, noGamesAtAll = false)) } } }
-    rule.onNodeWithTag("avance_streak_pill").assertIsDisplayed()
-    assertEquals("la pastilla dice el número", "Racha: 7 días", summary.streakPill)
-    for (frase in listOf("Descansaste", "descanso", Streak.REST_LINE, "tu racha sigue")) assertEquals("«$frase» no debe verse en Avance", 0, rule.onAllNodes(hasText(frase, substring = true)).fetchSemanticsNodes().size)
+  fun avance_no_dice_nada_de_la_racha_ni_del_descanso() {
+    val l = Week.Lamps(List(7) { it < 5 }, todayIndex = 3)
+    val names = DomainType.values().associate { it.name to it.displayName }
+    val areas = listOf(PlaceTestData.points("MEMORIA", 470, 12), PlaceTestData.points("ATENCION", 310, -8, best = 400), PlaceTestData.points("RAZONAMIENTO", 440, 0), PlaceTestData.points("LENGUAJE", 0, 0, measured = false))
+    rule.setContent { NeuroVidaTheme { Box(Modifier.width(393.dp)) { Column { AvanceWeekLine(l, goal = 4, empty = false); AvanceAreaRows(areas, names) {} } } } }
+    rule.onNodeWithTag("avance_week_line").assertIsDisplayed()
+    assertEquals("0 de 0: ni la pastilla de la racha", 0, rule.onAllNodes(androidx.compose.ui.test.hasTestTag("avance_streak_pill")).fetchSemanticsNodes().size)
+    for (frase in listOf("Descansaste", "descanso", Streak.REST_LINE, "tu racha sigue", "racha", "Racha")) assertEquals("«$frase» no debe verse en Avance", 0, rule.onAllNodes(hasText(frase, substring = true)).fetchSemanticsNodes().size)
     assertEquals("ya no hay una línea suelta de la racha", 0, rule.onAllNodes(androidx.compose.ui.test.hasTestTag("streak_note")).fetchSemanticsNodes().size)
   }
 

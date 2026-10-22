@@ -88,7 +88,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.data.AreaProgress
-import com.example.data.AreaStatus
 import com.example.data.MeasurePoint
 import com.example.data.Skill
 import com.example.data.StarMeasures
@@ -143,7 +142,6 @@ fun HomeScreen(
   val dailySession by viewModel.dailySession.collectAsState()
   val history by viewModel.gameHistory.collectAsState()
   val ranks by viewModel.gameRanks.collectAsState()
-  val progress by viewModel.gameProgress.collectAsState()
   val progressLog by viewModel.progressLog.collectAsState()
   val pausedGameId by viewModel.pausedGameId.collectAsState()
   val baseline by viewModel.baseline.collectAsState()
@@ -170,16 +168,12 @@ fun HomeScreen(
   val tier = RankTier.fromRating(avg)
 
   val names = remember { DomainType.values().associate { it.name to it.displayName } }
-  val statuses = remember(progress, progressLog, clock) {
-    AREA_ORDER.map { key ->
-      AreaProgress.status(key, GameRegistry.allGames.filter { it.domain.name == key }.map { it.id }, progress, progressLog, clock)
-    }
-  }
+  val areaPoints = remember(progressLog, clock) { com.example.data.AreaPoints.forAreas(AREA_ORDER, progressLog, clock) }
 
   // UNA sola sugerencia de Nubi para toda la app (Tarea 150, B2): lo que sigue en la ruta de hoy y, terminada, el juego que más tiempo lleva sin jugarse.
   val suggestion = remember(dailySession, lastPlayed, clock) { com.example.data.Suggestion.next(dailySession.gameIds, dailySession.completedCount, lastPlayed, clock, Streak::dayOf) }
   // La lámina de cada lugar: el avance de su área y sus juegos (la lógica del antiguo detalle de área).
-  val places = rememberAreaPlaces(statuses, history, measures, clock, lang, suggestion, dailySession.gameIds, dailySession.completedCount)
+  val places = rememberAreaPlaces(areaPoints, history, measures, clock, lang, suggestion, dailySession.gameIds, dailySession.completedCount)
   val completed = dailySession.completedCount
   // La racha que perdona (Tarea 124): con el día de descanso, si lo hubo esta semana.
   val streakInfo = remember(history, clock) { Streak.fromTimestamps(history.map { it.timestamp }, clock) }
@@ -481,7 +475,7 @@ internal fun HomeContent(
       onClose = { fx.close(scope, reduceMotion); onPlaceClosed() },
       onPlay = onPlaceGame,
       onGame = onPlaceGameCard,
-      showProgress = false                                  // en Hoy, UNA línea de avance («Hábil · 47 de 100»): la barra y el gráfico viven en Avance (Tarea 158)
+      showProgress = false                                  // en Hoy, UNA línea de avance («Etapa Hábil · 470 de 1000 puntos»): la barra y el gráfico viven en la página del área de Avance (Tareas 158 y 159)
     )
   }
 }

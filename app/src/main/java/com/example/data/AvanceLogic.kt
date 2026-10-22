@@ -1,13 +1,10 @@
 package com.example.data
 
-import com.example.model.GamePlayResult
-import com.example.model.GameRegistry
 import com.example.model.RankTier
 import java.util.Locale
-import kotlin.math.roundToInt
 
 /**
- * Lo que sostiene las pantallas de Avance y Juegos (Tarea 125; `auditoria-fable/spec-avance-juegos.md` §1 y §2): textos y estados armados con lógica pura, con pruebas (`AvanceLogicTest`).
+ * Lo que sostiene las medallas de «Tú» y la fila de la liga (Tarea 125; `auditoria-fable/spec-avance-juegos.md` §1 y §2): textos y estados armados con lógica pura, con pruebas (`AvanceLogicTest`). Los puntos por área de Avance viven en `AreaPoints` (Tarea 159).
  */
 
 /** Lo que cuenta la meta de un nivel de logro, con su unidad: «3 días», «25 partidas», «4 áreas», «9 juegos», «1 regreso». */
@@ -77,53 +74,3 @@ fun leagueRow(avg: Int): LeagueRow {
   )
 }
 
-private val SHORT_DAYS = arrayOf("Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb")
-
-/** «Lun 14 · Rescate relámpago · a tu medida» (con reloj: «con reloj»); si el juego tiene medida y hay un punto con la misma marca de tiempo, se agrega su valor en palabras: «· 4 de 4 cápsulas». Sin puntos («pts»). */
-fun historyLine(r: GamePlayResult, measures: List<MeasurePoint>, title: String): String {
-  val cal = java.util.Calendar.getInstance().apply { timeInMillis = r.timestamp }
-  val day = "${SHORT_DAYS[cal.get(java.util.Calendar.DAY_OF_WEEK) - 1]} ${cal.get(java.util.Calendar.DAY_OF_MONTH)}"
-  val def = StarMeasures.defForGame(r.gameId)
-  val point = def?.let { d -> measures.firstOrNull { it.key == d.key && it.timestamp == r.timestamp } }
-  val value = if (def != null && point != null) when (def.key) {
-    "stroop" -> DosOrillas.cost(point.value.roundToInt())                    // en palabras, como en su final
-    Brake.KEY -> StarMeasures.zoneText(def, measures)                        // Freno: la zona, nunca milisegundos
-    else -> measureText(def, point.value)
-  } else null
-  return listOfNotNull(day, title, if (r.timed) "con reloj" else "a tu medida", value).joinToString(" · ")
-}
-
-/** El estado de «Tu semana» (§1.1): los textos y si hay algo que celebrar o invitar. */
-data class WeekSummary(val big: String, val rest: String, val streakPill: String?, val areasLine: String, val empty: Boolean)
-
-fun weekSummary(lamps: Week.Lamps, goal: Int, streak: Int, areas: Int, noGamesAtAll: Boolean): WeekSummary {
-  if (noGamesAtAll) return WeekSummary("Tu semana empieza hoy", "", null, "Juega tu ruta de hoy y se enciende la primera farola.", true)
-  val (big, rest) = Week.captionParts(lamps.daysPlayed, goal)
-  return WeekSummary(big, rest, if (streak > 0) "Racha: ${if (streak == 1) "1 día" else "$streak días"}" else null, "Áreas esta semana: $areas de ${com.example.model.DomainType.values().size}", false)
-}
-
-/**
- * Lo que Nubi comenta bajo «Tu semana» (Tarea 131, A6; `auditoria-fable/spec-adopcion-A1-A7.md`): UNA frase, la primera que se cumple de estas cinco (en este orden de prioridad), siempre en positivo: nunca «no jugaste», «perdiste» ni «te atrasaste»
- * (`NoLossGuard` lo vigila en las pruebas).
- *  1. sin partidas: invita a la primera ruta;
- *  2. meta cumplida (`daysPlayed >= goal`): lo de más es regalo;
- *  3. las 4 áreas: lo celebra;
- *  4. falta 1 día: «Cualquier ruta cuenta»;
- *  5. el resto: que un rato corto suma.
- * NUNCA dice nada de la racha ni del descanso (Tarea 158, Opus: «la frase de la racha vive solo en Hoy», `LaFraseDeLaRachaTest`): antes el día perdonado era la frase 2 y se repetía en Hoy, en Avance y en Tú.
- * Sin meta (`goal <= 0`) no hay lo de la meta: cae en cuántos días lleva.
- */
-fun nubiWeekLine(lamps: Week.Lamps, goal: Int, areas: Int, noGamesAtAll: Boolean): String {
-  val played = lamps.daysPlayed
-  return when {
-    noGamesAtAll -> "Cuando juegues tu primera ruta, aquí te cuento cómo va tu semana."
-    // Sin repetir lo que la pantalla ya dice (Opus, 21-oct: «Llevas 2 de 4», «Meta cumplida» y «Pasaste por las 4 áreas» estaban justo encima, en «2 de 4 días de tu meta» y «Áreas esta semana: 4 de 4»): el globo solo suma ánimo, sin cifras
-    goal > 0 && played >= goal -> "Lo que juegues de más es regalo."
-    areas >= com.example.model.DomainType.values().size -> "¡Qué buena variedad esta semana!"
-    goal > 0 && goal - played == 1 -> "Cualquier ruta cuenta."
-    else -> "Un rato corto hoy también suma."
-  }
-}
-
-/** El nombre del área de un juego (null si es uno retirado): para contar las áreas de la semana. */
-fun areaNameOf(gameId: String): String? = GameRegistry.getById(gameId)?.domain?.name

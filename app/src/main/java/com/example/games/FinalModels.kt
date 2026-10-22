@@ -10,6 +10,7 @@ import com.example.data.DosOrillas
 import com.example.data.Engranajes
 import com.example.data.FinalesConSentido
 import com.example.data.Mail
+import com.example.data.MeasurePhrases
 import com.example.data.MeasurePoint
 import com.example.data.Piloto
 import com.example.data.Punta
@@ -261,7 +262,7 @@ object FinalModels {
     )
   }
 
-  /** Rescate relámpago («Tu vistazo»): el destello más breve con el que rescatas casi todas las cápsulas; menos milisegundos es mejor. */
+  /** Rescate relámpago («Tu vistazo»): el destello más breve con el que rescatas casi todas las cápsulas; menos segundos es mejor. */
   fun rescate(result: GamePlayResult, measures: List<MeasurePoint>): MeaningfulResultModel {
     val ms = result.glanceMs?.takeIf { it > 0 }
     val record = Rescate.recordLine(result.rescBest, result.rescNewRecord)
@@ -269,7 +270,7 @@ object FinalModels {
       result, measures, key = "glance", copy = FinalesConSentido.copy("radar")!!, tolerance = TOLERANCE_GLANCE_MS, lowerIsBetter = true, format = FinalesConSentido::msText,
       todayValue = ms?.toFloat(),
       boxTitle = "Tu vistazo",
-      headline = ms?.let { "$it ms" } ?: "—",
+      headline = ms?.let { MeasurePhrases.secondsWord(it.toFloat()) } ?: "—",
       unit = if (ms != null) "de vistazo te bastan" else "Sin rondas suficientes para medir tu vistazo.",
       dataLine = Rescate.rescuedLine(result.rescRescued) ?: record.takeUnless { result.rescNewRecord == true },
       conditionalTrick = null,
@@ -416,7 +417,7 @@ object FinalModels {
     notice: String? = null
   ): MeaningfulResultModel {
     // la partida de hoy tal como se guarda como medida: así se compara con las ANTERIORES (la misma marca de tiempo no se cuenta dos veces)
-    val today = todayValue?.let { MeasurePoint(result.timestamp, key, it, result.endRating?.coerceIn(0f, 1f) ?: -1f, result.timed) }
+    val today = todayValue?.let { MeasurePoint(result.timestamp, key, it, result.endRating?.coerceIn(0f, 1f) ?: -1f, result.timed, result.playMode) }
     val previous = if (today != null) FinalesConSentido.previousValues(measures, today) else emptyList()
     val raw = FinalesConSentido.progress(todayValue, previous, tolerance, lowerIsBetter)
     // El récord se dice UNA vez, con el sello de arriba (Tarea 127). La primera partida de un juego no lo celebra: de eso se encarga la app antes de guardar (`FirstRecord.gate`: la marca previa debe ser mayor que 0; Unity dice «récord nuevo» a toda primera

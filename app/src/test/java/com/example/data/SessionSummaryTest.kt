@@ -2,7 +2,6 @@ package com.example.data
 
 import com.example.model.GamePlayResult
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
 
 class SessionSummaryTest {
@@ -23,15 +22,16 @@ class SessionSummaryTest {
       ProgressPoint("radar", now - 5 * 24 * hour, 0.46f), ProgressPoint("radar", now - 20 * 60_000L, 0.52f),
       ProgressPoint("calculo", now - 3 * 24 * hour, 0.40f)
     )
-    val progress = mapOf("radar" to 0.52f, "calculo" to 0.40f)
-    val s = SessionSummary.build(listOf("radar", "calculo", "parejas"), history, progress, points, now)
-    assertEquals(listOf(82, 74, null), s.games.map { it.score })
+    val s = SessionSummary.build(listOf("radar", "calculo", "parejas"), history, points, now)
+    assertEquals("quiénes se jugaron en esta ruta (parejas no)", listOf(true, true, false), s.games.map { it.played })
+    assertEquals("los puntos que sumó cada juego hoy en su área: radar 0,46 → 0,52 = 92 → 104 de 200; calculo no se movió; parejas no se jugó", listOf(12, 0, 0), s.games.map { it.gained })
     assertEquals(listOf("ATENCION", "RAZONAMIENTO", "MEMORIA"), s.areas.map { it.area })
-    // Atención: la partida de hoy movió radar de 46 a 52.
-    assertEquals(0.06f, s.areas[0].change, 1e-4f)
-    assertEquals("Hoy avanzó de 46 a 52", AreaProgress.changeLine(s.areas[0], "Hoy"))
+    // Atención (5 juegos, hasta 200 cada uno): la partida de hoy movió radar de 0,46 a 0,52 → de 92 a 104 puntos.
+    assertEquals(12, s.areas[0].weekDelta)
+    assertEquals("Hoy sumaste 12 puntos.", AreaPoints.todayLine(s.areas[0], "Atención"))
     // Razonamiento: calculo no se movió en la sesión; Memoria sin medir.
-    assertEquals(0f, s.areas[1].change, 1e-4f)
-    assertNull(s.areas[2].value)
+    assertEquals(0, s.areas[1].weekDelta)
+    assertEquals("Hoy te mantuviste.", AreaPoints.todayLine(s.areas[1], "Razonamiento"))
+    assertEquals(false, s.areas[2].measured)
   }
 }

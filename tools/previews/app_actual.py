@@ -26,7 +26,8 @@ SUN = (255, 201, 60)
 
 # Recortes (en píxeles de la captura de 1080 de ancho; los fija mirar las imágenes, ver el README de la carpeta)
 CROPS = {
-    "avance-completa": (0, 5050),          # hasta «Ver más» (Tarea 147: sin «Tu liga» ni la bolita; antes 5330 y, en la Tarea 125, 8250 hasta «Ver más detalles»; debajo solo la barra de pestañas del marco)
+    "avance-completa": (0, 3350),          # hasta «Tu punto de partida» (Tarea 159: puntos por área; antes 5050 hasta «Ver más»; debajo solo la barra de pestañas del marco)
+    "avance-pagina-completa": (0, 4300),   # la página de Memoria entera, hasta la nota honesta (Tarea 159)
     "tu-completa": (0, 2450),              # «Tú» entera, hasta la losa «Ajustes» (Tarea 158; antes «perfil-completa», un panel)
     "resultado-completa": (0, 4380),       # hasta «Jugar de nuevo»
     "resultado-sin-record-completa": (0, 3650),   # Constelaciones sin récord, hasta «Jugar de nuevo»
@@ -79,8 +80,8 @@ def lamina():
                     ("Lámina de un área", [load("hoy-lamina")]), ("Lámina con letra 1,3", [load("hoy-lamina-letra13")])]),
         ("Todos los juegos (Tarea 158: la ventana de Hoy con los 17, el buscador y los chips de área)", [("Sin filtro", [load("todos-los-juegos")]), ("Letra 1,3", [load("todos-los-juegos-letra13")]), ("Con «Memoria»", [load("todos-los-juegos-memoria")])]),
         ("La ficha del juego (Tarea 140)", [("Plegada", [load("ficha")]), ("Desplegada", [load("ficha-desplegada")]), ("Plegada, letra 1,3", [load("ficha-letra13")]), ("Desplegada, letra 1,3", [load("ficha-desplegada-letra13")])]),
-        ("Avance (arriba, con letra 1,3, entera en tiras y la lámina de un área con su gráfico, la única con la barra de etapas)", [("Avance", [load("avance")]), ("Con letra 1,3", [load("avance-letra13")]), ("Avance (entera, en tiras)", strips(cropped("avance-completa"), W, H_PHONE)),
-                    ("Lámina de un área", [load("avance-lamina")]), ("Lámina, letra 1,3", [load("avance-lamina-letra13")]),
+        ("Avance con puntos por área (arriba, con letra 1,3, entera en tiras y la página de un área, Tarea 159)", [("Avance", [load("avance")]), ("Con letra 1,3", [load("avance-letra13")]), ("Avance (entera, en tiras)", strips(cropped("avance-completa"), W, H_PHONE)),
+                    ("Página de un área", [load("avance-pagina")]), ("Página, letra 1,3", [load("avance-pagina-letra13")]), ("Página entera, en tiras", strips(cropped("avance-pagina-completa"), W, H_PHONE)),
                     ("Sin partidas (Tarea 147)", [load("avance-vacio")]), ("Sin partidas, letra 1,3", [load("avance-vacio-letra13")])]),
         ("Tú, Ajustes y Licencias (Tarea 158: el perfil es la pestaña «Tú»)", [("Tú", strips(cropped("tu-completa"), W, H_PHONE)), ("Tú, letra 1,3", [load("tu-letra13")]), ("Tú sin partidas", [load("tu-vacio")]),
                                          ("Ajustes", strips(cropped("ajustes-completa"), W, H_PHONE)), ("Ajustes, letra 1,3", [load("ajustes-letra13")]),

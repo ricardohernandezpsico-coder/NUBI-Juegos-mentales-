@@ -13,8 +13,8 @@ Capturas REALES de Roborazzi (`AppActualScreenshotTest`) con unos 20 días de us
 | La lámina del lugar (al tocar un edificio; en Hoy, una sola línea de avance, Tarea 158) | `hoy-lamina.png`, `hoy-lamina-letra13.png` |
 | «Todos los juegos» (Tarea 158; antes la pestaña Juegos): sin filtro, con «Memoria» y con letra 1,3 | `todos-los-juegos.png`, `todos-los-juegos-memoria.png`, `todos-los-juegos-letra13.png` |
 | La ficha del juego (Tarea 140): plegada y desplegada | `ficha.png`, `ficha-desplegada.png`, `ficha-letra13.png`, `ficha-desplegada-letra13.png` |
-| Avance: arriba (con Nubi), entero y su pie | `avance.png`, `avance-letra13.png`, `avance-completa.png`, `avance-abajo.png` |
-| La lámina de un área en Avance, con el gráfico de las 4 semanas (Tarea 155) | `avance-lamina.png`, `avance-lamina-letra13.png` |
+| Avance con puntos por área (Tarea 159): arriba, entero y su pie | `avance.png`, `avance-letra13.png`, `avance-completa.png`, `avance-abajo.png` |
+| La página de un área en Avance (Tarea 159; antes la lámina de la Tarea 155) | `avance-pagina.png`, `avance-pagina-letra13.png`, `avance-pagina-completa.png` |
 | Tú (Tarea 158; antes el panel «Perfil»): arriba, entera, sin partidas y editando el nombre | `tu.png`, `tu-letra13.png`, `tu-completa.png`, `tu-vacio.png`, `tu-vacio-letra13.png`, `tu-editando.png` |
 | Ajustes (con las farolas de la meta) y Licencias | `ajustes.png`, `ajustes-letra13.png`, `ajustes-completa.png`, `licencias.png`, `licencias-completa.png` |
 | El final con sentido de una partida: sin récord y con récord | `resultado.png` (Rastro de luz), `resultado-letra13.png`, `resultado-sin-record.png`, `resultado-con-record.png` y sus `-completa` |

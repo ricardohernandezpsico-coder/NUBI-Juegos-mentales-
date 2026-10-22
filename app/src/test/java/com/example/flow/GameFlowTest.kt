@@ -271,26 +271,6 @@ class GameFlowTest {
   }
 
   @Test
-  fun `un juego de Hoy no devuelve a la lamina de Avance aunque antes se jugara desde ella, y al reves`() {
-    val vm = newViewModel()
-    vm.setTab(AppTab.PROGRESO)
-    vm.openAvanceArea("ATENCION")
-    vm.playFromAvance("freno", PlayMode.DESAFIO)
-    vm.setTab(AppTab.HOY)                                   // salió sin cerrar el resultado
-    vm.playFromHome("calculo", PlayMode.A_TU_MEDIDA)
-    vm.closeGameOrResult()
-    assertEquals(AppTab.HOY, vm.currentTab.value)
-    assertNull(vm.avanceArea.value)
-    vm.openHoyArea("MEMORIA")
-    vm.playFromHome("freno", PlayMode.DESAFIO)
-    vm.setTab(AppTab.PROGRESO)
-    vm.playFromAvance("calculo", PlayMode.A_TU_MEDIDA)
-    vm.closeGameOrResult()
-    assertEquals(AppTab.PROGRESO, vm.currentTab.value)
-    assertNull("la lámina de Hoy no se reabre desde Avance", vm.hoyArea.value)
-  }
-
-  @Test
   fun `la lamina de Hoy y Todos los juegos tambien se recuerdan si Android cierra la app a mitad del juego`() {
     val first = newViewModel()
     first.openAllGames()
@@ -317,63 +297,30 @@ class GameFlowTest {
     assertTrue("abrir y cerrar una lámina no lo borra: una sola vez", vm.islandMapIntroSeen)
   }
 
-  // ---- Avance (Tarea 155): al terminar se vuelve a la pestaña desde donde se lanzó, con la lámina como se dejó
+  // ---- Avance (Tarea 159): la página de un área no lanza juegos; se abre y se cierra, y cambiar de pestaña la cierra
 
   @Test
-  fun `desde la lamina de un area de Avance, al cerrar el resultado se vuelve a Avance con la lamina abierta`() {
-    val vm = newViewModel()
-    vm.setTab(AppTab.PROGRESO)
-    vm.openAvanceArea("ATENCION")
-    vm.playFromAvance("freno", PlayMode.DESAFIO)
-    assertEquals("freno", vm.activeGame.value?.gameDef?.id)
-    assertEquals("la lámina espera abierta mientras se juega", "ATENCION", vm.avanceArea.value)
-    vm.closeGameOrResult()
-    assertEquals(AppTab.PROGRESO, vm.currentTab.value)
-    assertEquals("ATENCION", vm.avanceArea.value)
-  }
-
-  @Test
-  fun `desde Avance sin lamina abierta, al cerrar el resultado se vuelve a Avance sin lamina`() {
-    val vm = newViewModel()
-    vm.setTab(AppTab.PROGRESO)
-    vm.playFromAvance("freno", PlayMode.DESAFIO)          // la ficha de «Lo que descubriste»
-    vm.closeGameOrResult()
-    assertEquals(AppTab.PROGRESO, vm.currentTab.value)
-    assertNull(vm.avanceArea.value)
-  }
-
-  @Test
-  fun `cerrar la lamina de Avance la olvida y salir o entrar a Avance tampoco la reabre`() {
+  fun `la pagina de un area de Avance se abre y se cierra y salir o entrar a Avance tampoco la reabre`() {
     val vm = newViewModel()
     vm.setTab(AppTab.PROGRESO)
     vm.openAvanceArea("MEMORIA")
+    assertEquals("MEMORIA", vm.avanceArea.value)
+    assertEquals("abrir la página no cambia de pestaña (la barra sigue en Avance)", AppTab.PROGRESO, vm.currentTab.value)
     vm.closeAvanceArea()
     assertNull(vm.avanceArea.value)
     vm.openAvanceArea("MEMORIA")
     vm.setTab(AppTab.HOY)
-    assertNull("al salir de Avance la lámina se cierra", vm.avanceArea.value)
+    assertNull("al salir de Avance la página se cierra", vm.avanceArea.value)
     vm.setTab(AppTab.PROGRESO)
     assertNull("y no se reabre al volver", vm.avanceArea.value)
   }
 
   @Test
-  fun `un juego de la ruta de hoy lanzado tras la lamina de Avance no la reabre`() {
+  fun `un juego lanzado desde Hoy vuelve a Hoy y no deja ninguna pagina de Avance abierta`() {
     val vm = newViewModel()
     vm.setTab(AppTab.PROGRESO)
     vm.openAvanceArea("ATENCION")
-    vm.playFromAvance("freno", PlayMode.DESAFIO)
-    vm.launchGame("calculo", isDailyFlow = true)           // «Siguiente: … · 2 de 3» en el final de la partida
-    vm.closeGameOrResult()
-    assertNull(vm.avanceArea.value)
-  }
-
-  @Test
-  fun `un juego de Hoy no devuelve a la lamina de Avance aunque antes se jugara desde ella`() {
-    val vm = newViewModel()
-    vm.setTab(AppTab.PROGRESO)
-    vm.openAvanceArea("ATENCION")
-    vm.playFromAvance("freno", PlayMode.DESAFIO)
-    vm.setTab(AppTab.HOY)                                   // salió sin cerrar el resultado
+    vm.setTab(AppTab.HOY)                                   // cambiar de pestaña cierra la página
     vm.playFromHome("calculo", PlayMode.A_TU_MEDIDA)
     vm.closeGameOrResult()
     assertEquals(AppTab.HOY, vm.currentTab.value)
@@ -381,14 +328,12 @@ class GameFlowTest {
   }
 
   @Test
-  fun `la lamina de Avance tambien se recuerda si Android cierra la app a mitad del juego`() {
-    val first = newViewModel()
-    first.setTab(AppTab.PROGRESO)
-    first.openAvanceArea("MEMORIA")
-    first.playFromAvance("calculo", PlayMode.A_TU_MEDIDA)
-    val second = newViewModel()
-    assertEquals("MEMORIA", second.avanceArea.value)
-    second.setTab(AppTab.PROGRESO)                          // entrar a Avance por la barra: se ven las 4 áreas
-    assertNull(second.avanceArea.value)
+  fun `un origen avance que quedo guardado de antes ya no devuelve a Avance`() {
+    app.getSharedPreferences("library_focus", android.content.Context.MODE_PRIVATE).edit().putString("origin", "avance").putString("origin_game", "freno").putString("avance_area", "ATENCION").commit()
+    val vm = newViewModel()
+    assertNull("la página de un área no se restaura: no se juega desde ella", vm.avanceArea.value)
+    vm.launchGame("freno")
+    vm.closeGameOrResult()
+    assertNull(vm.avanceArea.value)
   }
 }

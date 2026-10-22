@@ -9,7 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
-import com.example.data.AreaStatus
+import com.example.data.AreaPoints
 import com.example.data.SessionGame
 import com.example.data.SessionSummary
 import com.example.model.AppLanguage
@@ -35,11 +35,11 @@ class SessionSummaryScreenshotTest {
   @Test
   fun resumen_de_la_sesion() {
     val summary = SessionSummary(
-      games = listOf(SessionGame("radar", "ATENCION", 82), SessionGame("calculo", "RAZONAMIENTO", 74), SessionGame("parejas", "MEMORIA", 68)),
+      games = listOf(SessionGame("radar", "ATENCION", played = true, gained = 12), SessionGame("calculo", "RAZONAMIENTO", played = true, gained = 0), SessionGame("parejas", "MEMORIA", played = true, gained = 5)),
       areas = listOf(
-        AreaStatus("ATENCION", 0.52f, 0.06f, emptyList()),
-        AreaStatus("RAZONAMIENTO", 0.40f, 0f, emptyList()),
-        AreaStatus("MEMORIA", null, 0f, emptyList())
+        PlaceTestData.points("ATENCION", 330, 12),
+        PlaceTestData.points("RAZONAMIENTO", 400, 0),
+        PlaceTestData.points("MEMORIA", 205, 5)
       )
     )
     composeTestRule.mainClock.autoAdvance = false

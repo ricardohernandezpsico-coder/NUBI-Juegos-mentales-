@@ -10,7 +10,7 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.example.TestSupport
-import com.example.data.AreaProgress
+import com.example.data.AreaPoints
 import com.example.data.MeasurePoint
 import com.example.data.PlayMode
 import com.example.data.ProgressPoint
@@ -127,13 +127,16 @@ class RetiredCosechaTest {
   }
 
   @Test
-  fun `el avance de Lenguaje se calcula con sus 4 juegos y no cuenta a Cosecha`() {
+  fun `los puntos de Lenguaje se calculan con sus 4 juegos y no cuentan a Cosecha`() {
     val now = 100 * day
     val ids = GameRegistry.allGames.filter { it.domain.name == "LENGUAJE" }.map { it.id }
-    val current = mapOf("anagramas" to 0.40f, "meteoros" to 0.50f, "disparate" to 0.60f, "intrusa" to 0.30f, old to 0.95f)
-    val s = AreaProgress.status("LENGUAJE", ids, current, listOf(ProgressPoint(old, now - 2 * day, 0.95f), ProgressPoint("anagramas", now - 20 * day, 0.35f)), now)
-    assertEquals("promedio de los 4 que quedan: 0,45", 0.45f, s.value!!, 0.0001f)
-    assertEquals(45, s.points)
+    val log = listOf(
+      ProgressPoint("anagramas", now - 2 * day, 0.40f), ProgressPoint("meteoros", now - 2 * day, 0.50f), ProgressPoint("disparate", now - 2 * day, 0.60f), ProgressPoint("intrusa", now - 2 * day, 0.30f),
+      ProgressPoint(old, now - 2 * day, 0.95f)
+    )
+    val s = AreaPoints.compute("LENGUAJE", ids, log, now)
+    assertEquals("la suma de los 4 que quedan, de a 250: (0,40 + 0,50 + 0,60 + 0,30) × 250", 450, s.total)
+    assertEquals(ids, s.perGame.map { it.gameId })
   }
 
   @Test

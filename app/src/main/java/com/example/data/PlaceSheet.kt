@@ -3,7 +3,6 @@ package com.example.data
 import com.example.model.GameDefinition
 import com.example.model.GamePlayResult
 import java.util.TimeZone
-import kotlin.math.roundToInt
 
 /**
  * Si un juego es una parada de la ruta de hoy (Tarea 155, «un área, una sola vista»): la lámina del área es la misma en Hoy y en Avance (Juegos se fue en la Tarea 158), y en ella la fila de ese juego dice «hoy, en tu ruta» ([PENDING]) o «hecho hoy» ([DONE]); así no se pierde lo que decían las secciones
@@ -29,7 +28,7 @@ data class PlaceGameRow(val gameId: String, val title: String, val detail: Strin
 
 /**
  * Todo lo que dice la lámina que se abre al tocar un edificio de la isla (Tarea 85; boceto «A» de Hoy, aprobado por Ricardo el 12-oct): el AVANCE de esa área y sus juegos. Es solo texto y números (ya calculados), así que la lámina se prueba y se captura con datos fijos.
- * [area] = `MEMORIA`…; [key] = el lugar en `isla.json` (`observatorio`…); [stageIndex]/[stageName]/[points] son null si el área aún no se mide.
+ * [area] = `MEMORIA`…; [key] = el lugar en `isla.json` (`observatorio`…); [stageIndex]/[stageName]/[points] son null si el área aún no se mide. Los puntos y la etapa son los de [AreaPoints] (Tarea 159: UNA escala en toda la app, 0 a 1000).
  */
 data class PlaceSheetUi(
   val area: String,
@@ -40,13 +39,12 @@ data class PlaceSheetUi(
   val areaName: String,
   val stageIndex: Int?,
   val stageName: String?,
+  /** Los puntos del área (0 a 1000); null si todavía no se mide. */
   val points: Int?,
   /** Cuánto de la barra se llena, 0..1. */
   val fill: Float,
-  val changeLine: String,
-  val toNextLine: String?,
-  /** El avance al final de las últimas 4 semanas (la última = hoy), de 0 a 100; null = sin dato. */
-  val weeks: List<Int?>,
+  /** La línea de avance de la lámina: «Etapa Hábil · 470 de 1000 puntos» o «Aún sin medir» ([AreaPoints.stageLine]). */
+  val stageLine: String,
   /** Cuánto cambió el avance esta semana (de -1 a 1, en la escala 0..1 de la barra): la barra del kit lo dibuja como un tramo más claro. */
   val change: Float = 0f,
   val games: List<PlaceGameRow>,
@@ -54,13 +52,13 @@ data class PlaceSheetUi(
   val chosenGameId: String?,
   /** El juego que lleva el chip «Nubi sugiere»: LA sugerencia de Nubi, solo en el área donde está (Tarea 150, B2); null en las demás. */
   val suggestedGameId: String? = null,
-  /** Lo que dice Nubi en su globo, dentro de la lámina (Tarea 147): lo que avanzó el área esta semana (la misma frase que el detalle, [AreaProgress.changeLine]) y lo que le falta. */
+  /** Lo que dice Nubi en su globo, dentro de la lámina (Tarea 147): lo que le falta al área para su siguiente etapa y lo que sumó esta semana, en puntos ([AreaPoints.toNextSentence]). */
   val bubble: String
 ) {
   val measured: Boolean get() = stageIndex != null
 }
 
-/** Arma [PlaceSheetUi] con la lógica que ya tenía el detalle de área de Hoy (`AreaProgress`, `Skill`, `StarMeasures`): nada nuevo que medir. */
+/** Arma [PlaceSheetUi] con los puntos del área ([AreaPoints]), sus juegos y las marcas de los juegos estrella: nada nuevo que medir. */
 object PlaceSheets {
   private const val DAY_MS = 86_400_000L
   private fun dayIndex(ts: Long): Long = (ts + TimeZone.getDefault().getOffset(ts)) / DAY_MS
@@ -100,12 +98,12 @@ object PlaceSheets {
   }
 
   /**
-   * [status] = el avance del área; [games] = sus juegos; [titleOf] = el nombre visible de un juego (con idioma); [history] = las partidas guardadas; [measures] = las marcas de los juegos estrella.
+   * [points] = los puntos del área; [games] = sus juegos; [titleOf] = el nombre visible de un juego (con idioma); [history] = las partidas guardadas; [measures] = las marcas de los juegos estrella.
    * [suggestion] = LA sugerencia de Nubi de toda la app ([Suggestion.next]): en su área marca ese juego y el botón lo juega; en las otras áreas el botón propone el que más tiempo lleva sin jugarse, sin chip.
    */
   fun build(
     area: String,
-    status: AreaStatus,
+    points: AreaPoints,
     games: List<GameDefinition>,
     titleOf: (GameDefinition) -> String,
     history: List<GamePlayResult>,
@@ -117,13 +115,12 @@ object PlaceSheets {
   ): PlaceSheetUi {
     val name = IslaLugar.nameOfArea(area).orEmpty()
     val article = IslaLugar.withArticle(area).orEmpty()
-    val value = status.value
     val lastPlayed = games.associate { g -> g.id to history.filter { it.gameId == g.id }.maxOfOrNull { it.timestamp } }
     val rows = games.map { g ->
       val m = StarMeasures.latest(measures, g.id)
       val last = lastPlayed[g.id]
       val detail = when {
-        m != null -> StarMeasures.zoneText(m.first, measures)?.let { "$it · promedio reciente" } ?: "${m.first.format(m.second)} ${m.first.unit} · tu última"
+        m != null -> StarMeasures.zoneText(m.first, measures)?.let { "$it · promedio reciente" } ?: "${MeasurePhrases.value(m.first, m.second)} · tu última"
         last == null -> "Sin jugar aún"
         else -> playedAgoShort(now, last)
       }
@@ -131,25 +128,20 @@ object PlaceSheets {
     }.sortedBy { when (it.routeState) { RouteState.PENDING -> 0; RouteState.DONE -> 1; RouteState.NONE -> 2 } }          // las paradas de hoy primero (la que sigue, antes que las hechas); el resto, en el orden de siempre
     val pick = Suggestion.forArea(area, suggestion, games, lastPlayed.mapNotNull { (id, t) -> t?.let { id to it } }.toMap(), now) { dayIndex(it) }
     val chosen = pick?.let { p -> games.firstOrNull { it.id == p.gameId } }
-    val stageName = value?.let { Skill.stageName(it) }
+    val measured = points.measured
     return PlaceSheetUi(
       area = area, key = name.lowercase(), name = name, article = article, areaName = IslaLugar.areaName(area).orEmpty(),
-      stageIndex = value?.let { Skill.stage(it) }, stageName = stageName, points = status.points, fill = value?.coerceIn(0f, 1f) ?: 0f,
-      changeLine = AreaProgress.changeLine(status), toNextLine = AreaProgress.toNextLine(status),
-      weeks = status.weeks.map { w -> w?.let { (it.coerceIn(0f, 1f) * 100f).roundToInt() } }, change = status.change,
+      stageIndex = if (measured) points.stage else null, stageName = if (measured) points.stageName else null, points = if (measured) points.total else null, fill = points.fill,
+      stageLine = AreaPoints.stageLine(points), change = points.change,
       games = rows, chosenGameId = chosen?.id, suggestedGameId = if (Suggestion.suggestedHere(area, suggestion)) chosen?.id else null,
-      bubble = bubble(status)
+      bubble = bubble(points, IslaLugar.areaName(area).orEmpty())
     )
   }
 
   /**
-   * Lo que dice Nubi en su globo (Tarea 147; `spec-lamina-lugar.md` §3) con LA frase de siempre ([AreaProgress.changeLine], Tarea 150, B1.8: antes «avanzaste», que en Avance era «avanzó»): «Esta semana avanzó de 37 a 47. Te faltan 13 para Experto.» / «bajó un poco, de 40 a 38: es normal que varíe» / «se mantuvo en 47»;
-   * en Maestro, la primera frase sola; sin medir, «Aún no hay avance aquí: juega uno y lo verás.».
+   * Lo que dice Nubi en su globo (Tarea 147; `spec-lamina-lugar.md` §3), en puntos (Tarea 159): «Te faltan 130 puntos para Experto. Esta semana sumaste 12 puntos.» ([AreaPoints.toNextSentence]; en Maestro, «Llegaste al último tramo. …»);
+   * sin medir, «Aún no hay avance aquí: juega uno y lo verás.».
    */
-  fun bubble(s: AreaStatus): String {
-    if (s.points == null) return "Aún no hay avance aquí: juega uno y lo verás."
-    val first = AreaProgress.changeLine(s) + "."
-    val next = AreaProgress.toNextLine(s)
-    return if (next == null) first else "$first $next."
-  }
+  fun bubble(p: AreaPoints, areaName: String): String =
+    if (!p.measured) "Aún no hay avance aquí: juega uno y lo verás." else AreaPoints.toNextSentence(p, areaName)
 }

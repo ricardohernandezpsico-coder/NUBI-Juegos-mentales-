@@ -36,13 +36,18 @@ class SkillTest {
   }
 
   @Test
-  fun `el encabezado de etapa y lo que falta se dicen igual en toda la app`() {
-    // Tarea 150 (B1.6 y B1.7): «Hábil · 47 de 100» y «Te faltan 5 para Experto» en la lámina, el detalle y la ficha
-    assertEquals("Hábil · 47 de 100", Skill.stageHeader("Hábil", 47))
-    assertEquals("Experto · 62 de 100", Skill.stageHeader(0.62f))
-    assertEquals("Te faltan 5 para Experto", Skill.toNextLine(0.55f))
-    assertEquals("Te falta 1 para Experto", Skill.toNextLine(0.5999f))
-    assertEquals("en Maestro no hay siguiente", null, Skill.toNextLine(0.95f))
+  fun `el encabezado de etapa y lo que falta se dicen en puntos en toda la app`() {
+    // Tarea 159: UNA escala. El área, de 0 a 1000 («Etapa Hábil · 470 de 1000 puntos»); la ficha de un juego, los mismos tramos en proporción («Etapa Experto · 180 de 250 puntos»)
+    val g = GamePoints("parejas", 180, 250, 0.72f, true)
+    assertEquals("Etapa Experto · 180 de 250 puntos", g.stageLine)
+    assertEquals("Te faltan 20 puntos para Maestro", g.toNextLine)
+    assertEquals("Te falta 1 punto para Maestro", GamePoints("parejas", 199, 250, 0.8f, true).toNextLine)
+    assertEquals("en Maestro no hay siguiente", null, GamePoints("parejas", 240, 250, 0.96f, true).toNextLine)
+    assertEquals("Etapa Hábil · 90 de 200 puntos", GamePoints("radar", 90, 200, 0.45f, true).stageLine)
+    // un juego mirado a solas: avance × 1000 ÷ N (Memoria tiene 4 juegos; Atención, 5)
+    assertEquals(GamePoints("parejas", 180, 250, 0.72f, true).points, GamePoints.of("parejas", 0.72f).points)
+    assertEquals(100, GamePoints.of("radar", 0.5f).points); assertEquals(200, GamePoints.of("radar", 1f).max)
+    assertEquals(250, GamePoints.of("parejas", 1f).points)
   }
 
   @Test
@@ -82,18 +87,11 @@ class SkillTest {
   }
 
   @Test
-  fun `etapas, puntos a la siguiente y avance del area`() {
+  fun `las etapas son quintos del avance`() {
     assertEquals("Inicio", Skill.stageName(0.05f))
     assertEquals("Hábil", Skill.stageName(0.45f))
     assertEquals("Maestro", Skill.stageName(1f))
-    assertEquals(15 to "Experto", Skill.toNextStage(0.45f))
-    assertEquals(20 to "Experto", Skill.toNextStage(0.40f))
-    assertEquals(1 to "Aprendiz", Skill.toNextStage(0.199f))
-    assertNull(Skill.toNextStage(0.85f))
-    assertEquals(45, Skill.percent(0.459f))
-    val (avg, explored) = Skill.area(listOf("bodega", "correo", "secuencia"), mapOf("bodega" to 0.4f, "secuencia" to 0.6f, "radar" to 1f))
-    assertEquals(0.5f, avg!!, eps); assertEquals(2, explored)
-    assertEquals(null to 0, Skill.area(listOf("correo"), emptyMap()))
+    assertEquals(1, Skill.stage(0.2f)); assertEquals(0, Skill.stage(0.199f)); assertEquals(4, Skill.stage(1f))
   }
 
   @Test

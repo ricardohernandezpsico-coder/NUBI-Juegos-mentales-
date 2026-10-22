@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
-import com.example.data.AreaStatus
+import com.example.data.AreaPoints
 import com.example.data.Skill
 import com.example.ui.theme.Clay
 import kotlin.math.PI
@@ -187,16 +187,8 @@ fun AreaBar(value: Float?, change: Float, modifier: Modifier = Modifier, height:
   }
 }
 
-/** Qué dice la barra, para lectores de pantalla. */
-fun areaDescription(name: String, s: AreaStatus): String {
-  val v = s.points ?: return "$name: aún sin medir"
-  val ch = when {
-    s.change > 0f -> "avanzó esta semana"
-    s.change < 0f -> "bajó un poco esta semana"
-    else -> "igual que la semana pasada"
-  }
-  return "$name: ${Skill.stageName(s.value!!)}, $v de 100, $ch"
-}
+/** Qué dice la barra de un área, para lectores de pantalla: «Memoria: etapa Hábil, 470 de 1000 puntos. Esta semana sumaste 12 puntos» ([AreaPoints.spoken]). */
+fun areaDescription(name: String, p: AreaPoints): String = AreaPoints.spoken(p, name)
 
 /** Lo que dice Avance cuando todavía no hay ninguna partida (Tarea 147, P8): en vez de tarjetas vacías, Nubi (S) con UNA línea que dice qué va a pasar. */
 const val EMPTY_AVANCE_LINE = "Todavía no hay nada aquí. Después de tu primera ruta, esto se llena."

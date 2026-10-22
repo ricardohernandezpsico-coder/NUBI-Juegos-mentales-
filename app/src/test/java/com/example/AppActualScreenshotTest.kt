@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.Achievements
-import com.example.data.AreaStatus
 import com.example.data.FlightMode
 import com.example.data.FlightState
 import com.example.data.FlightStep
@@ -163,13 +162,6 @@ class AppActualScreenshotTest {
   private fun constelaciones(record: Boolean) = GamePlayResult(
     gameId = "parejas", score = 74, correctAnswers = 7, totalTrials = 9, timed = false, level = 8, endRating = 0.5f, timestamp = System.currentTimeMillis(),
     conGroup = 4, conGroups = 6, conMemGroups = 4, conBestStreak = 5, conBest = 6, conNewRecord = record
-  )
-
-  private val statuses = listOf(
-    AreaStatus("MEMORIA", 0.52f, 0.06f, listOf(0.40f, 0.43f, 0.46f, 0.52f)),
-    AreaStatus("ATENCION", 0.62f, 0.04f, listOf(0.50f, 0.56f, 0.58f, 0.62f)),
-    AreaStatus("RAZONAMIENTO", 0.43f, 0f, listOf(0.43f, 0.43f, 0.43f, 0.43f)),
-    AreaStatus("LENGUAJE", 0.12f, 0.03f, listOf(0.06f, 0.08f, 0.09f, 0.12f))
   )
 
   /** El marco de 393 dp con la escena puesta: [go] cambia de escena y alto, [shot] captura el marco (con la letra del sistema que se pida: 1,0 o 1,3). */
@@ -369,15 +361,15 @@ class AppActualScreenshotTest {
     r.shot("avance-completa", 3900, 1f)
   }
 
-  /** Tocar un área en Avance abre LA lámina de su área, con el gráfico de las 4 semanas (Tarea 155). */
+  /** Tocar un área en Avance abre su PÁGINA (Tarea 159: antes la lámina de la Tarea 155): puntos y etapa, lo que falta, las semanas, una tarjeta por juego, «Qué pones en juego» y la nota. La barra de pestañas sigue visible. */
   @Test
-  fun avance_lamina_de_un_area() {
+  fun avance_pagina_de_un_area() {
     val r = Rig(viewModel(), Scene.AVANCE)
     r.settle()
-    composeTestRule.runOnIdle { r.sheetOpen = true }
     composeTestRule.onNodeWithTag("progress_area_memoria").performClick()
-    r.settle(); r.shot("avance-lamina", 873)
-    r.shot("avance-lamina-letra13", 873, 1.3f)
+    r.settle(); r.shot("avance-pagina", 873)
+    r.shot("avance-pagina-letra13", 873, 1.3f)
+    r.shot("avance-pagina-completa", 3000, 1f)
   }
 
   /** Avance recién instalada la app (sin ninguna partida): Nubi con UNA línea y nada más (Tarea 147, P8), no las secciones vacías de siempre. */

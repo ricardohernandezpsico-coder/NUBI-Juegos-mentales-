@@ -42,21 +42,6 @@ object Week {
   }
 
   /**
-   * Cuántas áreas distintas se jugaron esta semana (desde el lunes): «Áreas esta semana: 2 de 4» (Tarea 125, reemplaza al desafío «Variedad»). [entries] = (marca de tiempo, nombre del área) de cada partida; los juegos retirados
-   * (sin área) no cuentan. [mondayOffset] = días desde el lunes hasta hoy (lunes = 0).
-   */
-  fun areasPlayed(entries: List<Pair<Long, String?>>, now: Long, dayOf: (Long) -> Long, mondayOffset: Int): Int {
-    val monday = dayOf(now) - mondayOffset.coerceIn(0, 6)
-    return entries.filter { dayOf(it.first) in monday..dayOf(now) }.mapNotNull { it.second }.toSet().size
-  }
-
-  /** [areasPlayed] con el lunes y los días locales de hoy. */
-  fun areasPlayedFor(entries: List<Pair<Long, String?>>, now: Long): Int {
-    val cal = java.util.Calendar.getInstance().apply { timeInMillis = now }
-    return areasPlayed(entries, now, Streak::dayOf, (cal.get(java.util.Calendar.DAY_OF_WEEK) + 5) % 7)
-  }
-
-  /**
    * La frase de la semana partida en lo GRANDE y lo demás (Avance, Tarea 125: «**3 de 4 días** de tu meta»): [caption] es la suma de las dos. «3 de 4 días» + « de tu meta»; pasada la meta, «6 días» + « esta semana: meta cumplida» (no «6 de 4»);
    * sin meta, «3 días» + « esta semana».
    */

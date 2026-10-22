@@ -47,9 +47,15 @@ class TamanosDeLetraTest {
   }
 
   @Test
-  fun `el grafico de las cuatro semanas dice sem y va a 14 sp`() {
-    val chart = File("src/main/java/com/example/ui/components/StageScale.kt").readText()          // el gráfico de las 4 semanas vive en la lámina del área (Tarea 155; antes en el detalle de Avance)
-    assertTrue(chart.contains("listOf(\"hace 3 sem.\", \"hace 2 sem.\", \"sem. pasada\", \"esta sem.\")"))
-    assertTrue("los números y los rótulos del gráfico, a 14 sp (rótulos de gráfico)", !chart.contains("fontSize = 13.sp"))
+  fun `la pagina del area y las filas de Avance van a 16 sp o mas y sin abreviar semanas`() {
+    // Tarea 159: el gráfico de las 4 semanas («hace 3 sem.») se fue con la lámina de Avance; el de 8 semanas de la página del área va a 16 sp y en palabras («hace 7 semanas», «esta semana»)
+    for (name in listOf("ui/screens/AvanceAreas.kt", "ui/screens/AvanceAreaPage.kt")) {
+      val src = File("src/main/java/com/example/$name").readText()
+      assertTrue("$name no lleva «sem.» abreviado", !src.contains("sem.\"") && !src.contains(" sem. "))
+      for (m in size.findAll(src)) assertTrue("$name trae ${m.value}", m.groupValues[1].toFloat() >= 16f)
+    }
+    val chart = File("src/main/java/com/example/ui/components/StageScale.kt").readText()
+    assertTrue("los rótulos de las etapas de las láminas siguen a 14 sp (rótulo de gráfico) y los de la página, a 16", chart.contains("labelSp: Int = 14") && !chart.contains("hace 3 sem."))
+    assertTrue("la página pide los nombres de las etapas a 16 sp", File("src/main/java/com/example/ui/screens/AvanceAreaPage.kt").readText().contains("labelSp = 16"))
   }
 }

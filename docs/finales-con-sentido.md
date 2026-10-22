@@ -45,7 +45,7 @@
 | Piloto Estelar | «58 %» · «de las señales, a los mandos» | `Piloto.TOO_FEW_LINE` |
 | Freno de Emergencia | «zona firme» · «tu freno, en 5 partidas» / «tu freno, primera lectura» | «Sin estimación: hacen falta 6 altos y frenar entre 1 de cada 4 y 3 de cada 4.» |
 | Satélites | «2,6 satélites» · «a la vez, sin perderlos de vista» | «Sin rondas suficientes para medir tu seguimiento.» |
-| Rescate relámpago | «170 ms» · «de vistazo te bastan» | «Sin rondas suficientes para medir tu vistazo.» |
+| Rescate relámpago | «0,17 segundos» · «de vistazo te bastan» | «Sin rondas suficientes para medir tu vistazo.» |
 | Carga exacta | «5 de 8 cargas» · «sin pista» | — |
 | Engranajes | «7 de 10 máquinas» · «arregladas» | — |
 | Acoplamiento | «212° por segundo» · «de giro en tu mente» | «Se calcula con 8 aciertos en 3 ángulos y 7 de cada 10 bien.» |
@@ -55,7 +55,7 @@
 | ¿Verdad o disparate? | «142 palabras» · «por minuto, leyendo y decidiendo» (la frase usa «142 por minuto») | «Faltan unas 10 respuestas bien para medir tu lectura.» |
 | La estrella intrusa | «11 de 14 rondas» · «bien resueltas» | — |
 
-**Las frases de avance** (`FinalesConSentido.PHRASE_*` con `{promedio}` y `{mejor}`; `phraseWith` los llena con la unidad del juego: «4 luces», «70 %», «zona firme», «+0,3 s», «2,4 satélites», «180 ms», «200 °/s», «140 por minuto»): primera partida «Primera partida: la próxima te comparas contigo.»; mejor «Mejor que tu promedio ({promedio}). Tu mejor: {mejor}.»; parejo «Como tu promedio ({promedio}): vas parejo. Tu mejor: {mejor}.»; bajo «Un poco bajo tu promedio ({promedio}): es normal que varíe.»; mejor que tu mejor «¡Tu mejor hasta ahora! Tu promedio: {promedio}.» — esta última solo cuando no hay sello propio: con sello (`recordNew`, o cualquier récord) el récord se dice UNA vez, arriba, y la frase usa la comparación con el promedio (`avoidBest`). Aterrizaje usa `Aterrizaje.phraseWith` con las mismas ideas. Las tolerancias de «parejo» (`FinalModels.TOLERANCE_*`) no cambiaron.
+**Las frases de avance** (`FinalesConSentido.PHRASE_*` con `{promedio}` y `{mejor}`; `phraseWith` los llena con la unidad del juego: «4 luces», «70 %», «zona firme», «+0,3 s», «2,4 satélites», «0,18 segundos», «200 °/s», «140 por minuto»): primera partida «Primera partida: la próxima te comparas contigo.»; mejor «Mejor que tu promedio ({promedio}). Tu mejor: {mejor}.»; parejo «Como tu promedio ({promedio}): vas parejo. Tu mejor: {mejor}.»; bajo «Un poco bajo tu promedio ({promedio}): es normal que varíe.»; mejor que tu mejor «¡Tu mejor hasta ahora! Tu promedio: {promedio}.» — esta última solo cuando no hay sello propio: con sello (`recordNew`, o cualquier récord) el récord se dice UNA vez, arriba, y la frase usa la comparación con el promedio (`avoidBest`). Aterrizaje usa `Aterrizaje.phraseWith` con las mismas ideas. Las tolerancias de «parejo» (`FinalModels.TOLERANCE_*`) no cambiaron.
 
 **La ficha del juego, «Qué pones en juego»** (`GameSheetContent`, tag `sheet_why`): después de la medida y antes de «A tu medida · con reloj», el mismo texto de «Por qué importa» pero en PRESENTE («Pones en juego la memoria de trabajo: …» / «Pones en juego lo que usas para recordar …», `Copy.sheetText`, misma regla del infinitivo) y «Fuente: …». Aterrizaje usa `Aterrizaje.SHEET_TEXT` y `Aterrizaje.SOURCE`.
 
@@ -174,7 +174,7 @@ El condicional del juego si aplica a esta partida (`Constelaciones.tip`, el modo
 | Piloto Estelar | tus señales a los mandos (%) | hacia arriba | 5 puntos | de 8 a 25 señales de la misión por partida |
 | Freno de Emergencia | tu freno (ms; se dice en ZONAS: ágil, firme, pausado) | hacia abajo | 20 ms | una estimación sola trae pocos altos y varía unos 20 ms; la frase mira los milisegundos, pero NUNCA se muestran |
 | Satélites | cuántos seguiste de verdad a la vez (con un decimal) | hacia arriba | 0,3 | una partida varía de 0,3 a 0,6 de una a otra |
-| Rescate relámpago | tu vistazo (ms) | hacia abajo | 20 ms | la duración de destello varía unos 20 ms entre partidas parecidas |
+| Rescate relámpago | tu vistazo (ms; se dice en segundos: «0,17 segundos», Tarea 159) | hacia abajo | 20 ms | la duración de destello varía unos 20 ms entre partidas parecidas |
 
 **Una medida que no se guardaba: Tinta o Palabra.** El juego ya calculaba «cuánto te frenó la palabra» pero no la guardaba, así que no había con qué comparar. Se guarda ahora como una medida estrella más (`stroop`, en `star_measures`, que ya va en el respaldo; menos es mejor; dependiente del nivel) y la ficha del juego y Hoy la muestran en palabras. Las partidas anteriores a este cambio no tienen punto: el primer final dice «Juega otra vez para ver tu avance».
 
@@ -186,7 +186,7 @@ El condicional del juego si aplica a esta partida (`Constelaciones.tip`, el modo
 | Piloto Estelar | «58 %» «de las señales de tu misión, a los mandos» | «Señales de tu misión: 14 de 18» |
 | Freno de Emergencia | «zona firme» y «promedio de tus últimas 5 partidas» (o «primera lectura») | «Frenaste 6 de 8 altos» |
 | Satélites | «2,6 a la vez» y «cuántos seguiste de verdad al mismo tiempo…» | «Encendiste 12 luces» (o las rondas perfectas) |
-| Rescate relámpago | «170 ms» y «el destello más breve con el que rescatas casi todas las cápsulas» | «23 cápsulas a salvo» |
+| Rescate relámpago | «0,17 segundos» y «el destello más breve con el que rescatas casi todas las cápsulas» | «23 cápsulas a salvo» |
 
 **Detrás de «Ver el detalle de tu partida»** (sin repetir lo que ya está arriba): Tinta, la explicación del costo de cambio; Piloto, cómo leer la medida, la ruta, los toques equivocados, el nivel, la racha y los puntos; Freno, el velocímetro de tres zonas, el récord de frenado y cómo leerlo; Satélites, el planeta con sus luces, las rondas perfectas, el récord, la velocidad superada y cómo leerlo; Rescate, las cápsulas a salvo en fila, las rondas perfectas, el destello más corto, los viajes, el récord, el total, «Tu captura» con sus casilleros y cómo leer el vistazo.
 
