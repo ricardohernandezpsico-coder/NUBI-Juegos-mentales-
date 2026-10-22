@@ -75,7 +75,7 @@ class HoyStonesWordsTest {
       NeuroVidaTheme {
         Box(Modifier.width(widthDp.dp).height(heightDp.dp)) {
           BoardBackground()
-          HomeContent(ui = current, onProfile = {}, onSettings = {}, onPlaceGame = {}, onPlaceGameCard = {}, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {}, modifier = Modifier.padding(top = 24.dp, bottom = 163.dp))
+          HomeContent(ui = current, onAllGames = {}, onPlaceGame = {}, onPlaceGameCard = {}, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {}, modifier = Modifier.padding(top = 24.dp, bottom = 163.dp))
         }
       }
     }

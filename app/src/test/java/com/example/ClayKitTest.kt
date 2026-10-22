@@ -94,7 +94,7 @@ class ClayKitTest {
     }
     assertEquals(setOf("cerrar", "disco_crema", "disco_cielo"), spec.discs.keys)
     assertEquals("cada ícono del kit tiene su pieza en el JSON (los de la Tarea 91 reemplazan a los de Material de los paneles)", Glyph.values().map { it.key }.toSet(), spec.pieces.keys)
-    assertEquals(setOf("jugar", "volver", "visto", "izq", "der", "compartir", "candado", "engranaje", "globo", "altavoz", "vibracion", "reloj", "sin_reloj", "escudo", "info", "campana", "persona", "arriba", "abajo", "isla", "cohete", "farola"), spec.pieces.keys)
+    assertEquals(setOf("jugar", "volver", "visto", "izq", "der", "compartir", "candado", "engranaje", "globo", "altavoz", "vibracion", "reloj", "sin_reloj", "escudo", "info", "campana", "persona", "arriba", "abajo"), spec.pieces.keys)
   }
 
   @Test

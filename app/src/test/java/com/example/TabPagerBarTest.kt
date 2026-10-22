@@ -42,7 +42,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * La barra de abajo sin «lag» (Tarea 142, 19-oct): Ricardo deslizaba de Hoy a Juegos o a Avance y la página se movía bien, pero los íconos de la barra cambiaban recién DESPUÉS de que terminaba el movimiento: la barra leía la pestaña del ViewModel, que solo se actualiza
+ * La barra de abajo sin «lag» (Tarea 142, 19-oct): Ricardo deslizaba de Hoy a otra pestaña y la página se movía bien, pero los íconos de la barra cambiaban recién DESPUÉS de que terminaba el movimiento: la barra leía la pestaña del ViewModel, que solo se actualiza
  * cuando el pager se asienta (`settledPage`). Ahora la barra lee el pager EN VIVO (`PagerNavBar`: `targetPage`). Estas pruebas arman el mismo cableado que `MainActivity` (`rememberTabPager` + `HorizontalPager` + `PagerNavBar`, con un estado en el lugar del ViewModel) y miran
  * lo que se ve ANTES de que el pager se asiente.
  */
@@ -86,17 +86,17 @@ class TabPagerBarTest {
   }
 
   private fun assertOnlySelected(tag: String) {
-    for (t in listOf("nav_item_hoy", "nav_item_juegos", "nav_item_progreso")) {
+    for (t in listOf("nav_item_hoy", "nav_item_progreso", "nav_item_tu")) {
       if (t == tag) rule.onNodeWithTag(t).assertIsSelected() else rule.onNodeWithTag(t).assertIsNotSelected()
     }
   }
 
   @Test
-  fun arrastrar_el_pager_mas_alla_de_la_mitad_sin_soltar_ya_selecciona_Juegos_antes_de_asentarse() {
+  fun arrastrar_el_pager_mas_alla_de_la_mitad_sin_soltar_ya_selecciona_Avance_antes_de_asentarse() {
     show()
     assertOnlySelected("nav_item_hoy")
     dragWithoutRelease(0.6f)                                                  // más allá de la mitad de la página, el dedo sigue abajo
-    assertOnlySelected("nav_item_juegos")                                    // la barra ya cambió…
+    assertOnlySelected("nav_item_progreso")                                    // la barra ya cambió…
     assertEquals("…y el pager todavía no se asentó", 0, pager.settledPage)
     assertEquals("…ni el ViewModel (la lógica sigue con settledPage)", AppTab.HOY, viewModelTab)
     assertTrue("no hubo aviso de asentamiento", settledCalls.isEmpty())
@@ -104,16 +104,16 @@ class TabPagerBarTest {
     rule.mainClock.advanceTimeBy(1_000)
     rule.waitForIdle()
     assertEquals(1, pager.settledPage)
-    assertEquals(AppTab.JUEGOS, viewModelTab)
-    assertEquals(listOf(AppTab.JUEGOS), settledCalls)
-    assertOnlySelected("nav_item_juegos")
+    assertEquals(AppTab.PROGRESO, viewModelTab)
+    assertEquals(listOf(AppTab.PROGRESO), settledCalls)
+    assertOnlySelected("nav_item_progreso")
   }
 
   @Test
   fun la_barra_cambia_en_cuanto_el_gesto_decide_sin_esperar_a_la_mitad() {
     show()
     dragWithoutRelease(0.25f)                                                // un cuarto de página: pasó el umbral del pager (unos 56 dp), todavía no la mitad
-    assertOnlySelected("nav_item_juegos")
+    assertOnlySelected("nav_item_progreso")
     assertEquals(0, pager.settledPage)
   }
 
@@ -134,7 +134,7 @@ class TabPagerBarTest {
   fun si_se_arrastra_mas_alla_y_se_vuelve_atras_antes_de_soltar_la_barra_se_deshace() {
     show()
     dragWithoutRelease(0.6f)
-    assertOnlySelected("nav_item_juegos")
+    assertOnlySelected("nav_item_progreso")
     rule.onNodeWithTag("tabs_pager").performTouchInput { repeat(8) { moveBy(Offset(width * 0.6f / 8f, 0f), delayMillis = 16) } }
     rule.mainClock.advanceTimeBy(50)
     rule.waitForIdle()
@@ -145,42 +145,42 @@ class TabPagerBarTest {
   @Test
   fun tocar_una_pestana_la_selecciona_al_instante_sin_esperar_a_que_el_pager_termine() {
     show()
-    rule.onNodeWithTag("nav_item_progreso").performClick()
+    rule.onNodeWithTag("nav_item_tu").performClick()
     rule.mainClock.advanceTimeBy(48)                                         // tres cuadros: el pager apenas arrancó (su movimiento dura 300 ms)
     rule.waitForIdle()
-    assertOnlySelected("nav_item_progreso")
+    assertOnlySelected("nav_item_tu")
     assertEquals("el pager todavía no llegó", 0, pager.settledPage)
-    assertEquals(AppTab.PROGRESO, viewModelTab)
+    assertEquals(AppTab.TU, viewModelTab)
     rule.mainClock.advanceTimeBy(1_000)
     rule.waitForIdle()
     assertEquals(2, pager.settledPage)
-    assertOnlySelected("nav_item_progreso")
+    assertOnlySelected("nav_item_tu")
     assertTrue("tocar no es un asentamiento por gesto: el aviso no se repite", settledCalls.isEmpty())
   }
 
   @Test
   fun tocar_otra_pestana_a_mitad_del_movimiento_no_espera_a_que_termine_el_anterior() {
     show()
-    rule.onNodeWithTag("nav_item_progreso").performClick()
+    rule.onNodeWithTag("nav_item_tu").performClick()
     rule.mainClock.advanceTimeBy(100)
-    assertOnlySelected("nav_item_progreso")
-    rule.onNodeWithTag("nav_item_juegos").performClick()                    // cambia de idea a medio camino
+    assertOnlySelected("nav_item_tu")
+    rule.onNodeWithTag("nav_item_progreso").performClick()                    // cambia de idea a medio camino
     rule.mainClock.advanceTimeBy(48)
     rule.waitForIdle()
-    assertOnlySelected("nav_item_juegos")
+    assertOnlySelected("nav_item_progreso")
     rule.mainClock.advanceTimeBy(1_000)
     rule.waitForIdle()
     assertEquals(1, pager.settledPage)
-    assertEquals(AppTab.JUEGOS, viewModelTab)
+    assertEquals(AppTab.PROGRESO, viewModelTab)
   }
 
   @Test
   fun con_quitar_animaciones_tocar_una_pestana_salta_de_golpe() {
     show(reduce = true)
-    rule.onNodeWithTag("nav_item_juegos").performClick()
+    rule.onNodeWithTag("nav_item_progreso").performClick()
     rule.mainClock.advanceTimeBy(32)
     rule.waitForIdle()
-    assertOnlySelected("nav_item_juegos")
-    assertEquals("de golpe: el pager ya está en Juegos", 1, pager.settledPage)
+    assertOnlySelected("nav_item_progreso")
+    assertEquals("de golpe: el pager ya está en Avance", 1, pager.settledPage)
   }
 }

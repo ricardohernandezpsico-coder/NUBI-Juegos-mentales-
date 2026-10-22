@@ -74,7 +74,7 @@ class HoyLamparasTest {
           Box(Modifier.width(393.dp).height(873.dp)) {
             BoardBackground()
             HomeContent(
-              ui = ui, onProfile = {}, onSettings = {}, onPlaceGame = {}, onPlaceGameCard = {}, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {},
+              ui = ui, onAllGames = {}, onPlaceGame = {}, onPlaceGameCard = {}, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {},
               modifier = Modifier.padding(top = 24.dp, bottom = 163.dp), routeStore = store, onRoutePlan = { plans += it }
             )
           }
@@ -170,7 +170,7 @@ class HoyLamparasTest {
       NeuroVidaTheme {
         Box(Modifier.width(393.dp).height(873.dp)) {
           BoardBackground()
-          HomeContent(ui = current, onProfile = {}, onSettings = {}, onPlaceGame = {}, onPlaceGameCard = {}, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {}, modifier = Modifier.padding(top = 24.dp, bottom = 163.dp), routeStore = store, onRoutePlan = { plans += it })
+          HomeContent(ui = current, onAllGames = {}, onPlaceGame = {}, onPlaceGameCard = {}, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {}, modifier = Modifier.padding(top = 24.dp, bottom = 163.dp), routeStore = store, onRoutePlan = { plans += it })
         }
       }
     }

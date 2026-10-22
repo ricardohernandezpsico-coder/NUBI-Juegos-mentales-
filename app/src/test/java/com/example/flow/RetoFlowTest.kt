@@ -48,7 +48,7 @@ class RetoFlowTest {
   @Test
   fun `la eleccion de la ficha se usa en esa partida y se recuerda solo para ese juego`() {
     val vm = newViewModel()
-    vm.playFromLibrary("radar", PlayMode.A_TU_MEDIDA, timed = true)
+    vm.playFromHome("radar", PlayMode.A_TU_MEDIDA, timed = true)
     assertTrue("la partida lanzada desde la ficha va con reloj", vm.activeGame.value!!.timed)
     assertTrue(saved("radar"))
     assertTrue(vm.retoFor("radar"))
@@ -59,7 +59,7 @@ class RetoFlowTest {
   @Test
   fun `elegir sin reloj en la ficha se recuerda y la partida va sin reloj`() {
     val vm = newViewModel()
-    vm.playFromLibrary("calculo", PlayMode.A_TU_MEDIDA, timed = false)
+    vm.playFromHome("calculo", PlayMode.A_TU_MEDIDA, timed = false)
     assertFalse(vm.activeGame.value!!.timed)
     assertEquals(mapOf("calculo" to false), vm.retoChoices.value)
   }
@@ -67,7 +67,7 @@ class RetoFlowTest {
   @Test
   fun `el camino diario de Hoy va siempre sin reloj aunque el juego tenga el Reto elegido`() {
     val vm = newViewModel()
-    vm.playFromLibrary("radar", PlayMode.A_TU_MEDIDA, timed = true)
+    vm.playFromHome("radar", PlayMode.A_TU_MEDIDA, timed = true)
     vm.launchGame("radar", isDailyFlow = true)
     assertTrue(vm.activeGame.value!!.isDailyFlow)
     assertFalse("la sesión diaria nunca lleva reloj", vm.activeGame.value!!.timed)

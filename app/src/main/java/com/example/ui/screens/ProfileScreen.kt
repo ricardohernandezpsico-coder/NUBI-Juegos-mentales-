@@ -37,6 +37,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.focus.focusRequester
@@ -66,7 +67,7 @@ import com.example.ui.theme.ClayButton
 import com.example.viewmodel.NeuroVidaViewModel
 
 /**
- * Cabecera de los paneles que se abren desde arriba a la derecha (perfil y opciones): flecha para volver y el título.
+ * Cabecera de los paneles que se abren encima de una pestaña (los Ajustes): flecha para volver y el título.
  */
 @Composable
 fun PanelHeader(title: String, onBack: () -> Unit) {
@@ -82,7 +83,7 @@ fun PanelHeader(title: String, onBack: () -> Unit) {
   }
 }
 
-/** Las opciones (engranaje de arriba a la derecha), con su flecha de regreso. */
+/** Los Ajustes (la losa «Ajustes» de «Tú»), con su flecha de regreso. */
 @Composable
 fun SettingsPanel(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: Modifier = Modifier) {
   var showLicenses by remember { mutableStateOf(false) }
@@ -99,17 +100,15 @@ fun SettingsPanel(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
 }
 
 /**
- * Perfil (se abre con tu inicial, arriba a la derecha, desde el 29-sep): quién eres (escudo, nombre, liga), tres cifras
- * y tus logros. Las áreas y el punto de partida pasaron a Avance; los ajustes, al engranaje.
+ * Tú (la tercera pestaña, Tarea 158, 21-oct, «La isla es el mapa»; antes el Perfil era un panel que se abría con tu inicial, arriba a la derecha, y estaba escondido): lo tuyo en un solo sitio, con nombre. Tu isla con las piezas que ganaste, tu nombre con «Cambiar», Racha · Partidas · Medallas,
+ * tus medallas (y las anteriores) y, al final, una losa «Ajustes» que abre los Ajustes como panel (Licencias sigue adentro). Es una página de pestaña como Hoy y Avance: sin X (se sale con la barra de abajo) y con la franja de la barra libre (`LocalBarInset`).
+ * Cuando las ligas vuelvan (`Features.LEAGUES`), «Tu liga» va aquí, donde ya estaba en el perfil; hoy no se ve.
  */
 @Composable
-fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: Modifier = Modifier) {
-  BackHandler(onBack = onClose)
+fun TuScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) {
   val userSettings by viewModel.userSettings.collectAsState()
   val streak by viewModel.currentStreak.collectAsState()
   val history by viewModel.gameHistory.collectAsState()
-  // Lo que dice la racha: que un día de descanso por semana no la corta, o cuál fue el que descansó («Descansaste el martes: tu racha sigue.»)
-  val streakNote = remember(history) { Streak.forgivenLine(Streak.fromTimestamps(history.map { it.timestamp }, System.currentTimeMillis())) ?: Streak.REST_LINE }
   val ranks by viewModel.gameRanks.collectAsState()
   val levels by viewModel.gameLevelsForProgress.collectAsState()
   val unlocks by viewModel.achievementUnlocks.collectAsState()
@@ -125,13 +124,15 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
 
   val prog = if (tier == RankTier.MAESTRO) ((avg - tier.minRating) % 250) / 250f else (avg - tier.minRating) / 250f
 
-  Column(modifier.fillMaxSize()) {
-  PanelHeader("Tu perfil", onClose)
+  Column(modifier.fillMaxSize().padding(bottom = com.example.ui.components.LocalBarInset.current)) {      // la franja de la barra de pestañas queda libre
+  Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+    com.example.ui.components.OnBoardText("Tú", color = Color(0xFFEAF0FF), fontSize = 26.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() }.testTag("tu_title"))
+  }
   LazyColumn(
     modifier = Modifier
       .weight(1f)
       .padding(horizontal = 22.dp),
-    contentPadding = PaddingValues(top = 4.dp, bottom = 28.dp),
+    contentPadding = PaddingValues(top = 8.dp, bottom = 28.dp),
     verticalArrangement = Arrangement.spacedBy(22.dp)
   ) {
     // Nubi y tu nombre, sin recuadros (Tarea 143, R2 b: mientras las ligas esperan la decisión de negocio, el héroe del perfil es Nubi y el escudo, un dibujo «de antes», queda chico en «Tu liga»)
@@ -200,9 +201,7 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
         StatText("Medallas", "$medalCount", com.example.ui.theme.NubiTokens.OnNight, Modifier.weight(1f).testTag("profile_medal_count"))
       }
     }
-    item {
-      com.example.ui.components.OnBoardText(streakNote, color = com.example.ui.theme.NubiTokens.OnNightDim, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().testTag("streak_note"))
-    }
+    // (Tarea 158: aquí NO va la frase de la racha ni la del descanso: vive solo en Hoy; quedan las cifras)
 
     // Tu liga: el escudo chico y la liga (el escudo grande queda para cuando se decidan las ligas). Fuera de la v1 (Tarea 149): se ve solo con `Features.LEAGUES`.
     if (com.example.Features.LEAGUES) item {
@@ -239,7 +238,13 @@ fun ProfileScreen(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
       }
     }
 
-
+    // Los Ajustes (antes el engranaje de arriba a la derecha): una losa del kit al final de lo tuyo; abre el panel de Ajustes.
+    item {
+      com.example.ui.components.KitButton(
+        text = "Ajustes", onClick = { viewModel.openTopPanel(com.example.viewmodel.TopPanel.AJUSTES) }, color = com.example.ui.components.SlabColor.CREAM,
+        glyph = com.example.ui.components.Glyph.GEAR, fontSize = 18.sp, modifier = Modifier.testTag("btn_open_settings")
+      )
+    }
   }
   }
 

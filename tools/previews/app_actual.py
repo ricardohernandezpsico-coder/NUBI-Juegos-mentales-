@@ -4,7 +4,7 @@
   ./gradlew.bat :app:recordRoborazziDebug --tests "*AppActualScreenshotTest*"     (graba en app/src/test/screenshots/app-actual/)
   python tools/previews/app_actual.py                                              ->  docs/previews/app-actual/*.png + lamina.png
 
-Las pantallas que se deslizan (Avance, Ajustes, Perfil, Licencias, resultado) se capturan enteras en una imagen alta; aquí se recortan al contenido y,
+Las pantallas que se deslizan (Avance, Ajustes, Tú, Licencias, resultado) se capturan enteras en una imagen alta; aquí se recortan al contenido y,
 en la lámina, se parten en tiras del alto de un teléfono. De Ajustes se corta el bloque «[Debug]» (solo existe en builds de depuración).
 """
 import os
@@ -27,7 +27,7 @@ SUN = (255, 201, 60)
 # Recortes (en píxeles de la captura de 1080 de ancho; los fija mirar las imágenes, ver el README de la carpeta)
 CROPS = {
     "avance-completa": (0, 5050),          # hasta «Ver más» (Tarea 147: sin «Tu liga» ni la bolita; antes 5330 y, en la Tarea 125, 8250 hasta «Ver más detalles»; debajo solo la barra de pestañas del marco)
-    "perfil-completa": (0, 3450),          # hasta «Prefiero no decir» (Tarea 125; antes 4900: los logros ya no son una rejilla de 18 medallas)
+    "tu-completa": (0, 2450),              # «Tú» entera, hasta la losa «Ajustes» (Tarea 158; antes «perfil-completa», un panel)
     "resultado-completa": (0, 4380),       # hasta «Jugar de nuevo»
     "resultado-sin-record-completa": (0, 3650),   # Constelaciones sin récord, hasta «Jugar de nuevo»
     "resultado-con-record-completa": (0, 3650),   # Constelaciones con récord (Tarea 141)
@@ -75,15 +75,14 @@ def lamina():
     GAP = 22
     H_PHONE = int(W * 2401 / 1080)           # alto de un teléfono entero
     sections = [
-        ("Hoy (la isla con 0 y con 10 piezas, con letra 1,3 y la lámina de un área)", [("Hoy", [load("hoy")]), ("Hoy con letra 1,3", [load("hoy-letra13")]), ("Isla sin piezas", [load("hoy-isla-0")]), ("Isla con las 10 piezas", [load("hoy-isla-10")]),
+        ("Hoy (la isla con 0 y con 10 piezas, con letra 1,3 y la lámina de un área)", [("Hoy", [load("hoy")]), ("Hoy con letra 1,3", [load("hoy-letra13")]), ("Con el globo de Nubi (una vez)", [load("hoy-globo")]), ("Isla sin piezas", [load("hoy-isla-0")]), ("Isla con las 10 piezas", [load("hoy-isla-10")]),
                     ("Lámina de un área", [load("hoy-lamina")]), ("Lámina con letra 1,3", [load("hoy-lamina-letra13")])]),
-        ("Juegos (grilla y la lámina de un área: la MISMA de Hoy y Avance, Tarea 155)", [("Las cuatro áreas", [load("juegos")]), ("Con letra 1,3", [load("juegos-letra13")]), ("Lámina de Memoria", [load("juegos-lamina")]), ("Lámina, letra 1,3", [load("juegos-lamina-letra13")]),
-                    ("Atención", [load("juegos-lamina-atencion")]), ("Razonamiento", [load("juegos-lamina-razonamiento")]), ("Lenguaje", [load("juegos-lamina-lenguaje")])]),
-        ("La ficha del juego (Tarea 140)", [("Plegada", [load("juegos-ficha")]), ("Desplegada", [load("juegos-ficha-desplegada")]), ("Plegada, letra 1,3", [load("juegos-ficha-letra13")]), ("Desplegada, letra 1,3", [load("juegos-ficha-desplegada-letra13")])]),
-        ("Avance (arriba, con letra 1,3, entera en tiras y la lámina de un área con su gráfico)", [("Avance", [load("avance")]), ("Con letra 1,3", [load("avance-letra13")]), ("Avance (entera, en tiras)", strips(cropped("avance-completa"), W, H_PHONE)),
+        ("Todos los juegos (Tarea 158: la ventana de Hoy con los 17, el buscador y los chips de área)", [("Sin filtro", [load("todos-los-juegos")]), ("Letra 1,3", [load("todos-los-juegos-letra13")]), ("Con «Memoria»", [load("todos-los-juegos-memoria")])]),
+        ("La ficha del juego (Tarea 140)", [("Plegada", [load("ficha")]), ("Desplegada", [load("ficha-desplegada")]), ("Plegada, letra 1,3", [load("ficha-letra13")]), ("Desplegada, letra 1,3", [load("ficha-desplegada-letra13")])]),
+        ("Avance (arriba, con letra 1,3, entera en tiras y la lámina de un área con su gráfico, la única con la barra de etapas)", [("Avance", [load("avance")]), ("Con letra 1,3", [load("avance-letra13")]), ("Avance (entera, en tiras)", strips(cropped("avance-completa"), W, H_PHONE)),
                     ("Lámina de un área", [load("avance-lamina")]), ("Lámina, letra 1,3", [load("avance-lamina-letra13")]),
                     ("Sin partidas (Tarea 147)", [load("avance-vacio")]), ("Sin partidas, letra 1,3", [load("avance-vacio-letra13")])]),
-        ("Perfil, Ajustes y Licencias", [("Perfil", strips(cropped("perfil-completa"), W, H_PHONE)), ("Perfil, letra 1,3", [load("perfil-letra13")]),
+        ("Tú, Ajustes y Licencias (Tarea 158: el perfil es la pestaña «Tú»)", [("Tú", strips(cropped("tu-completa"), W, H_PHONE)), ("Tú, letra 1,3", [load("tu-letra13")]), ("Tú sin partidas", [load("tu-vacio")]),
                                          ("Ajustes", strips(cropped("ajustes-completa"), W, H_PHONE)), ("Ajustes, letra 1,3", [load("ajustes-letra13")]),
                                          ("Licencias y créditos", strips(cropped("licencias-completa") if os.path.exists(os.path.join(SRC, "licencias-completa.png")) else load("licencias"), W, H_PHONE))]),
         ("Primer vuelo, barra y medalla", [("Hola", [load("primer-vuelo-1")]), ("Hola, letra 1,3", [load("primer-vuelo-1-letra13")]), ("Antes del juego 1", [load("primer-vuelo-juego")]), ("Edad", [load("primer-vuelo-edad")]), ("Metas", [load("primer-vuelo-2")]),
@@ -116,7 +115,7 @@ def lamina():
         height += 56 + max(v.height for _, v, _, _ in t) + 56
     sheet = Image.new("RGB", (width, height + margin), BG)
     d = ImageDraw.Draw(sheet)
-    d.text((margin, margin), "Nubi · la app de hoy (19-oct, Tareas 121-142): capturas reales con unos 20 días de uso de ejemplo", font=title_f, fill=CREAM)
+    d.text((margin, margin), "Nubi · la app de hoy (21-oct, hasta la Tarea 158): capturas reales con unos 20 días de uso de ejemplo", font=title_f, fill=CREAM)
     y = margin + 80
     for name, t in rows:
         d.text((margin, y), name, font=sec_f, fill=SUN)

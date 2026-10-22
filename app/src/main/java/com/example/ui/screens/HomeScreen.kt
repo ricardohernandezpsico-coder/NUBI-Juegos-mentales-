@@ -107,7 +107,6 @@ import com.example.ui.components.LockTabSwipe
 import com.example.ui.components.MiniPlanet
 import com.example.ui.components.NubiBubble
 import com.example.ui.components.Island
-import com.example.ui.components.TopActions
 import com.example.ui.components.NubiClay
 import com.example.ui.components.areaDescription
 import com.example.ui.components.domainOf
@@ -118,7 +117,6 @@ import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
 import com.example.ui.theme.ClayCard
 import com.example.viewmodel.NeuroVidaViewModel
-import com.example.viewmodel.TopPanel
 import java.util.TimeZone
 
 private const val DAY_MS = 86_400_000L
@@ -134,13 +132,12 @@ private fun dayIndex(ts: Long): Long = (ts + TimeZone.getDefault().getOffset(ts)
  * con letra grande o pantalla chica la isla se queda en su mínimo y lo demás se desliza, sin cortarse ni superponerse. El globo de Nubi ya no está: lo que decía (partida en pausa, camino cumplido, Primer vuelo) va debajo del botón.
  *
 
- * Qué pasó con lo que Hoy tenía antes: las cuatro barras de área (con su etapa y el cambio de la semana) ya no están sueltas; cada una vive en la LÁMINA de su área ([PlaceSheetContent]: etapa, cuánto avanzó, sus juegos y «Jugar»; la misma que abren Juegos y Avance, Tarea 155), que se abre TOCANDO
- * el edificio de esa área en la isla (Observatorio = Memoria, Antena = Atención, Hangar = Razonamiento, Biblioteca = Lenguaje; hasta la fase 2, que lo cambia a «Juegos con ese lugar elegido»). La liga y la racha pasaron al lado de los farolitos; el perfil y las opciones siguen arriba a la derecha.
+ * Qué pasó con lo que Hoy tenía antes: las cuatro barras de área (con su etapa y el cambio de la semana) ya no están sueltas; cada una vive en la LÁMINA de su área ([PlaceSheetContent]: etapa, cuánto avanzó, sus juegos y «Jugar»; la misma que abre Avance, con más detalle, Tarea 155; en Hoy, con UNA línea de avance, Tarea 158), que se abre TOCANDO
+ * el edificio de esa área en la isla (Observatorio = Memoria, Antena = Atención, Hangar = Razonamiento, Biblioteca = Lenguaje; hasta la fase 2, que lo cambia a «Juegos con ese lugar elegido»). La liga y la racha pasaron al lado de los farolitos. Tarea 158 («La isla es el mapa»): arriba a la derecha ya no hay botones (el perfil es la pestaña «Tú»), y bajo la ruta y su botón va la losa crema «Todos los juegos» (el buscador de los 17).
  */
 @Composable
 fun HomeScreen(
   viewModel: NeuroVidaViewModel,
-  onNavigateToGames: () -> Unit,
   modifier: Modifier = Modifier
 ) {
   val dailySession by viewModel.dailySession.collectAsState()
@@ -205,10 +202,28 @@ fun HomeScreen(
   val appContext = androidx.compose.ui.platform.LocalContext.current
   val routeStore = remember { PrefsRouteCelebrationStore(appContext) }
   val pieceStore = remember { PrefsIslaPiezasStore(appContext) }
+  // La lámina de un lugar abierta: la recuerda el ViewModel porque el pager se retira mientras hay un juego encima; al volver de una partida lanzada desde ella (Tarea 158) queda abierta como se dejó (sin animar). Si se cierra por otro lado (cambiar de pestaña), se va de golpe.
+  val hoyArea by viewModel.hoyArea.collectAsState()
+  val scope = androidx.compose.runtime.rememberCoroutineScope()
+  val fx = remember { PlaceFx() }
+  LaunchedEffect(hoyArea) {
+    val key = hoyArea
+    if (key != null && !fx.active) IslaLugar.nameOfArea(key)?.lowercase()?.let { fx.snapOpen(scope, it) }
+    else if (key == null && fx.active && !fx.closing) fx.reset(scope)
+  }
+  // El globo de Nubi, UNA sola vez y solo para quien ya jugó: los juegos ahora están en la isla (Tarea 158). Se anota al mostrarlo; se cierra tocándolo o al abrir un lugar o «Todos los juegos».
+  var islandNote by remember { mutableStateOf(false) }
+  LaunchedEffect(history.isNotEmpty()) {
+    if (history.isNotEmpty() && !viewModel.islandMapIntroSeen) { islandNote = true; viewModel.markIslandMapIntroSeen() }
+  }
   HomeContent(
     ui = ui,
-    onProfile = { viewModel.openTopPanel(TopPanel.PERFIL) },
-    onSettings = { viewModel.openTopPanel(TopPanel.AJUSTES) },
+    fx = fx,
+    onAllGames = { islandNote = false; viewModel.openAllGames() },
+    onPlaceOpened = { islandNote = false; viewModel.openHoyArea(it) },
+    onPlaceClosed = { viewModel.closeHoyArea() },
+    islandNote = islandNote,
+    onIslandNoteDismiss = { islandNote = false },
     onPlaceGame = { id -> viewModel.playFromHome(id, com.example.data.PlayMode.A_TU_MEDIDA) },
     onPlaceGameCard = { id -> GameRegistry.getById(id)?.let { sheetFor = it } },
     onStop = { stop -> GameRegistry.getById(stop.gameId)?.let { sheetFor = it } },
@@ -299,7 +314,7 @@ internal fun islandDescription(ui: HomeUi): String =
   RouteLamps.description(ui.stops.mapNotNull { s -> IslaLugar.withArticle(s.area)?.let { it to (s.state == StopState.DONE) } }) + IslaPiezas.description(ui.islandPieces)
 
 /**
- * El contenido de Hoy sin ViewModel (Tarea 84, distribución «A» aprobada por Ricardo el 12-oct): saludo con tu perfil y opciones, la fecha con la meta de la semana, los siete farolitos con tu racha, LA ISLA (la protagonista: toma todo lo que sobra),
+ * El contenido de Hoy sin ViewModel (Tarea 84, distribución «A» aprobada por Ricardo el 12-oct): saludo, la fecha con la meta de la semana, los siete farolitos con tu racha, LA ISLA (la protagonista: toma todo lo que sobra),
  * «Tu ruta de hoy» con tres piedritas (una por juego; tocarlas abre la ficha del juego) y UN solo botón grande. La isla ocupa lo que SOBRA entre los demás elementos,
  * con un mínimo de [ISLAND_MIN_HEIGHT] ([HoyColumn]): si lo demás no cabe (letra grande, pantalla chica) la isla se queda en su mínimo y toda la pantalla se desliza. Con letra grande (≥ 1,3) las tres piedritas pasan a una lista de filas, porque en tres columnas no caben las palabras.
  * [onStop] = se tocó la piedrita de un juego del camino; [onPlaceGame] = se pidió jugar un juego desde la lámina de un lugar (Tarea 85: tocar un edificio abre esa lámina con el avance del área; ver `HoyPlace.kt`).
@@ -308,8 +323,8 @@ internal fun islandDescription(ui: HomeUi): String =
 @Composable
 internal fun HomeContent(
   ui: HomeUi,
-  onProfile: () -> Unit,
-  onSettings: () -> Unit,
+  /** La losa «Todos los juegos»: abre la ventana con los 17 y su buscador (Tarea 158). */
+  onAllGames: () -> Unit,
   /** El botón grande «Jugar en el …» de la lámina: juega directo el juego que elige Nubi. */
   onPlaceGame: (gameId: String) -> Unit,
   /** Tocar el nombre (la fila) de un juego en la lámina: abre la ficha de ese juego encima de ella (Tarea 87). */
@@ -320,6 +335,12 @@ internal fun HomeContent(
   onBaseline: () -> Unit,
   modifier: Modifier = Modifier,
   fx: PlaceFx = remember { PlaceFx() },
+  /** Se abrió la lámina del lugar de esta área (`MEMORIA`…) / se cerró: el ViewModel lo recuerda para volver a ella tras una partida. */
+  onPlaceOpened: (area: String) -> Unit = {},
+  onPlaceClosed: () -> Unit = {},
+  /** El globo de Nubi «Los juegos ahora están en la isla…» (una sola vez, solo a quien ya jugó) y cómo se cierra. */
+  islandNote: Boolean = false,
+  onIslandNoteDismiss: () -> Unit = {},
   /** Dónde se guarda lo celebrado hoy (las farolas que ya pulsaron y la ruta completa). Con null (pruebas de dibujo) no hay celebración: las farolas de las paradas hechas están encendidas y quietas. */
   routeStore: RouteCelebrationStore? = null,
   /** Avisa qué se va a animar (pruebas): se llama una vez por plan no vacío, justo antes de animar. */
@@ -372,7 +393,7 @@ internal fun HomeContent(
   val barInset = com.example.ui.components.LocalBarInset.current
   if (fx.active) {
     LockTabSwipe()                                            // las pestañas no se deslizan con la lámina abierta (y la barra se retira)
-    BackHandler { fx.close(scope, reduceMotion) }             // Atrás la cierra
+    BackHandler { fx.close(scope, reduceMotion); onPlaceClosed() }             // Atrás la cierra
   }
   BoxWithConstraints(modifier.fillMaxSize().onGloballyPositioned { rootOffset = it.positionInWindow() }) {
     val viewportHeight = maxHeight - barInset                  // lo que ve la isla: el alto de la página sin la franja de la barra
@@ -381,18 +402,12 @@ internal fun HomeContent(
         viewportHeight = viewportHeight,
         top = {
           Column(Modifier.fillMaxWidth()) {
-            // Saludo; arriba a la derecha tu perfil (con el escudo de tu liga) y las opciones, como en las otras pestañas. Todo el texto va a la IZQUIERDA y desde 28 dp bajo la barra: la zona del fondo sin luceros (`ZONAS_HOY` en `tools/isla/isla.py`;
+            // Saludo (Tarea 158: arriba a la derecha ya no hay botones; el perfil es la pestaña «Tú»). Todo el texto va a la IZQUIERDA y desde 28 dp bajo la barra: la zona del fondo sin luceros (`ZONAS_HOY` en `tools/isla/isla.py`;
             // la vigila `HoyIslaScreenshotTest`). Con 24 dp, en una pantalla de 411 × 914 dp, el lucero de arriba a la izquierda rozaba la caja del saludo.
             Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 28.dp), verticalAlignment = Alignment.CenterVertically) {
               OnBoardText(
                 if (ui.name.isBlank()) greetingWord(ui.now) else "${greetingWord(ui.now)}, ${ui.name.trim()}",
                 color = HoyCream, fontSize = 22.sp, fontWeight = FontWeight.Bold, lineHeight = 27.sp, modifier = Modifier.weight(1f).testTag("home_greeting")
-              )
-              Spacer(Modifier.width(4.dp))
-              TopActions(
-                name = ui.name, onProfile = onProfile, onSettings = onSettings,
-                profileLabel = if (com.example.Features.LEAGUES) "Tu perfil, liga ${ui.tier.tierName}" else "Tu perfil",
-                profileBadge = if (com.example.Features.LEAGUES) ({ LeagueShield(tier = ui.tier, size = 20.dp) }) else null           // sin ligas en la v1 (Tarea 149): el avatar va solo con su inicial
               )
             }
             // Una sola línea con la fecha y la meta de la semana.
@@ -412,6 +427,7 @@ internal fun HomeContent(
               val key = IslaLugar.nameOfArea(area)?.lowercase()
               if (key != null && ui.places.containsKey(area) && !fx.active) {
                 fx.open(scope, key, reduceMotion)
+                onPlaceOpened(area)
               }
             },
             lookKey = fx.key ?: routeFx.lookKey,
@@ -435,11 +451,11 @@ internal fun HomeContent(
           Column(Modifier.fillMaxWidth()) {
             // Con letra grande (> 1,15) lo principal va primero (Tarea 143, ítem 3): el botón «Seguir la ruta» antes de la lista de paradas, que es la explicación y puede quedar bajo el pliegue
             if (LocalDensity.current.fontScale > 1.15f) {
-              HoyAction(ui, onPlay = onPlay, onResume = onResume, onBaseline = onBaseline)
+              HoyAction(ui, onPlay = onPlay, onResume = onResume, onBaseline = onBaseline, onAllGames = onAllGames)
               HoyRoute(ui, onStop)
             } else {
               HoyRoute(ui, onStop)
-              HoyAction(ui, onPlay = onPlay, onResume = onResume, onBaseline = onBaseline)
+              HoyAction(ui, onPlay = onPlay, onResume = onResume, onBaseline = onBaseline, onAllGames = onAllGames)
             }
           }
         }
@@ -449,14 +465,23 @@ internal fun HomeContent(
     // La lámina del lugar tocado (velo, lámina, Nubi volando y su globo) va encima de todo Hoy.
     val density = LocalDensity.current
     val island = Rect(islandWindow.left - rootOffset.x, islandWindow.top - rootOffset.y, islandWindow.right - rootOffset.x, islandWindow.bottom - rootOffset.y)
+    // El globo de Nubi de «los juegos ahora están en la isla»: sobre la isla, arriba; tocarlo lo cierra (Tarea 158)
+    if (islandNote && !fx.active && island.height > 1f) {
+      Box(Modifier.fillMaxWidth().padding(top = with(density) { island.top.toDp() } + 8.dp, start = 28.dp, end = 28.dp), contentAlignment = Alignment.TopCenter) {
+        com.example.ui.components.NubiBubble(
+          text = ISLAND_NOTE, modifier = Modifier.clickable(role = androidx.compose.ui.semantics.Role.Button, onClickLabel = "Cerrar el aviso", onClick = onIslandNoteDismiss).testTag("home_island_note")
+        )
+      }
+    }
     PlaceLayer(
       fx = fx,
       place = fx.key?.let { k -> ui.places.values.firstOrNull { it.key == k } },
       rest = placeNubiRest(island, layout),
       lookShiftBase = island.width,
-      onClose = { fx.close(scope, reduceMotion) },
+      onClose = { fx.close(scope, reduceMotion); onPlaceClosed() },
       onPlay = onPlaceGame,
-      onGame = onPlaceGameCard
+      onGame = onPlaceGameCard,
+      showProgress = false                                  // en Hoy, UNA línea de avance («Hábil · 47 de 100»): la barra y el gráfico viven en Avance (Tarea 158)
     )
   }
 }
@@ -619,6 +644,12 @@ private fun HoyStopRow(stop: HomeStop, number: Int, onClick: () -> Unit) {
   }
 }
 
+/** El rótulo de la losa que abre la ventana con los 17 juegos. */
+internal const val ALL_GAMES_LABEL = "Todos los juegos"
+
+/** Lo que dice el globo de Nubi, una sola vez (Tarea 158): dos frases. */
+internal const val ISLAND_NOTE = "Los juegos ahora están en la isla. Toca un edificio o «Todos los juegos»."
+
 /** Lo que Hoy dice debajo del botón cuando hay algo que decir: la partida en pausa, la ruta ya cumplida o el Primer vuelo. Antes lo decía el globo de Nubi. */
 internal fun captionLine(ui: HomeUi): String? {
   val pending = ui.stops.count { it.state != StopState.DONE }
@@ -632,7 +663,7 @@ internal fun captionLine(ui: HomeUi): String? {
 
 /** UN solo botón grande: seguir la partida en pausa, empezar o seguir la ruta de hoy, o «Ruta completa» cuando ya no queda nada; debajo, lo que haya que decir ([captionLine]) y, si todavía no hizo la evaluación, la invitación a hacerla. */
 @Composable
-private fun HoyAction(ui: HomeUi, onPlay: () -> Unit, onResume: () -> Unit, onBaseline: () -> Unit) {
+private fun HoyAction(ui: HomeUi, onPlay: () -> Unit, onResume: () -> Unit, onBaseline: () -> Unit, onAllGames: () -> Unit) {
   val pending = ui.stops.count { it.state != StopState.DONE }
   Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 2.dp)) {
     when {
@@ -657,6 +688,12 @@ private fun HoyAction(ui: HomeUi, onPlay: () -> Unit, onResume: () -> Unit, onBa
         modifier = Modifier.fillMaxWidth().padding(top = 4.dp).testTag(if (ui.flightDay) "home_flight_day" else "home_caption")
       )
     }
+    // «Todos los juegos» (Tarea 158): una losa crema, visible y ancha, con las cuatro casillas; NO es un enlace chico. Es crema para que el único sol de Hoy siga siendo el botón de la ruta.
+    com.example.ui.components.KitButton(
+      text = ALL_GAMES_LABEL, onClick = onAllGames, color = com.example.ui.components.SlabColor.CREAM, fontSize = 17.sp, minHeight = 48.dp,
+      leading = { com.example.ui.components.NavIconImage(com.example.ui.components.NavIcon.CASILLAS, size = 32.dp) },
+      modifier = Modifier.padding(top = 8.dp).testTag("btn_all_games")
+    )
     if (ui.baselineInvite) {
       // Un solo sol en Hoy (Tarea 147, P7): el enlace sigue siendo un enlace pero en crema tenue (`OnNightDim`) con su chevrón, para que no compita con el botón grande, que lleva el único sol
       Row(

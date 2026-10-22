@@ -27,7 +27,7 @@ class BoardLayersTest {
     assertTrue("la barra se compone DESPUÉS de las páginas (capa fija encima)", pager < bar)
     assertFalse("la barra ya no es el bottomBar de un Scaffold", main.contains("Scaffold(") || main.contains("bottomBar"))
     assertFalse("ya no hay desvanecido de página", main.contains("PAGE_BOTTOM_FADE") || main.contains("DstIn"))
-    assertTrue("las páginas dejan la franja de la barra con LocalBarInset", src("ui/screens/HomeScreen.kt").contains("LocalBarInset") && src("ui/screens/GamesLibraryScreen.kt").contains("LocalBarInset") && src("ui/screens/ProgressScreen.kt").contains("LocalBarInset"))
+    assertTrue("las páginas dejan la franja de la barra con LocalBarInset", src("ui/screens/HomeScreen.kt").contains("LocalBarInset") && src("ui/screens/ProfileScreen.kt").contains("LocalBarInset") && src("ui/screens/ProgressScreen.kt").contains("LocalBarInset"))
   }
 
   @Test

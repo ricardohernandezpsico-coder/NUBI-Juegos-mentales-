@@ -42,11 +42,11 @@ import com.example.viewmodel.AppTab
 /**
  * La barra inferior del kit (Tarea 156, 21-oct; opción C de `auditoria-fable/spec-barra-inferior.md`, elegida por Ricardo; antes, desde la Tarea 86, una bandeja crema con tres cubos y objetos de la isla, `docs/diseno-isla.md` §4.4: quedó en historia).
  * Queja de Ricardo: «los íconos casi no se ven y su base parece un sándwich». Ahora es el lenguaje de la X, la flecha de volver y los íconos de Ajustes: sobre una franja del cielo un tono más claro ([BarTone]) con un filo arriba, tres DISCOS crema de 48 dp (`ClayDisc`) con un glifo
- * de churro tinta de 32 dp (la isla de Hoy, el cohete de Juegos, la farola de Avance) y su rótulo de 16 sp debajo. La pestaña elegida se apoya en una losa SOL chica con el rótulo dentro, en tinta y negrita: la elegida se ve por forma (la losa), por peso (la negrita) y por `selected`
+ * ícono de línea de tinta ([NavIcon], Tarea 158: la isla con su banderín de Hoy, tres barras que suben de Avance y una persona de Tú; antes glifos de churro de 32 dp —la isla, el cohete de Juegos y la farola— que «no se reconocían») y su rótulo de 16 sp debajo. La pestaña elegida se apoya en una losa SOL chica con el rótulo dentro, en tinta y negrita: la elegida se ve por forma (la losa), por peso (la negrita) y por `selected`
  * para el lector de pantalla; nunca solo por color.
  *
  * Cada pestaña es TODA su columna (un tercio del ancho × todo el alto de la barra: ≥ 48 dp en los dos ejes), con `Role.Tab`; al apoyar el dedo el disco se hunde (su imagen presionada). La losa se funde en 150 ms ([PlaceMotion.TAB_FADE_MS]; con «quitar animaciones», de golpe).
- * Mide 89 dp (8 + 48 + 4 + 21 + 8) con letra normal y crece solo lo que crece el rótulo (95 dp con letra 1,3): los discos, glifos y la losa son objetos, no cambian con la letra. Va sobre la barra del teléfono: el que la pone (`safeDrawingPadding`) ya la deja encima de ella.
+ * Las pestañas son Hoy · Avance · Tú (Tarea 158; Juegos se fue). Mide 88 dp (7 + 48 + 4 + 21 + 8) con letra normal y crece solo lo que crece el rótulo (95 dp con letra 1,3): los discos, íconos y la losa son objetos, no cambian con la letra. Va sobre la barra del teléfono: el que la pone (`safeDrawingPadding`) ya la deja encima de ella.
  */
 @Composable
 fun NeuroNavBar(current: AppTab, onSelect: (AppTab) -> Unit, modifier: Modifier = Modifier) {
@@ -69,8 +69,6 @@ private val EdgeTone = NubiTokens.OnNight.copy(alpha = 0.22f)
 private const val EDGE_DP = 2
 /** El cuerpo de la losa sol de la elegida (ancho; el alto lo da la columna). */
 private const val SLAB_WIDTH_DP = 96
-/** El glifo de churro tinta dentro del disco de 48 dp: 32 dp (la flecha de volver usa 28; en la barra el ícono es lo primero que se reconoce a distancia de teléfono, así que va un poco más grande). */
-private const val GLYPH_DP = 32
 
 @Composable
 private fun NavItem(t: NavTab, selected: Boolean, reduceMotion: Boolean, modifier: Modifier, onClick: () -> Unit) {
@@ -89,7 +87,7 @@ private fun NavItem(t: NavTab, selected: Boolean, reduceMotion: Boolean, modifie
       ClaySlab(SlabColor.SUN, Modifier.width(SLAB_WIDTH_DP.dp).fillMaxHeight().padding(top = 3.dp), size = SlabSize.SMALL, onClick = null, role = null) {}
     }
     Column(Modifier.padding(top = 7.dp, bottom = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-      ClayDisc(DiscStyle.CREAM, onClick = null, label = t.label, forcePressed = pressed) { KitGlyph(t.glyph, size = GLYPH_DP.dp) }
+      ClayDisc(DiscStyle.CREAM, onClick = null, label = t.label, forcePressed = pressed) { NavIconImage(t.icon) }
       Spacer(Modifier.height(4.dp))
       Text(
         t.label, color = lerp(NubiTokens.OnNightDim, Clay.Ink, on), fontSize = 16.sp, lineHeight = 21.sp,
@@ -99,10 +97,10 @@ private fun NavItem(t: NavTab, selected: Boolean, reduceMotion: Boolean, modifie
   }
 }
 
-private data class NavTab(val tab: AppTab, val label: String, val glyph: Glyph)
+private data class NavTab(val tab: AppTab, val label: String, val icon: NavIcon)
 
 private val TABS = listOf(
-  NavTab(AppTab.HOY, "Hoy", Glyph.ISLA),
-  NavTab(AppTab.JUEGOS, "Juegos", Glyph.COHETE),
-  NavTab(AppTab.PROGRESO, "Avance", Glyph.FAROLA)
+  NavTab(AppTab.HOY, "Hoy", NavIcon.ISLA),
+  NavTab(AppTab.PROGRESO, "Avance", NavIcon.BARRAS),
+  NavTab(AppTab.TU, "Tú", NavIcon.PERSONA)
 )

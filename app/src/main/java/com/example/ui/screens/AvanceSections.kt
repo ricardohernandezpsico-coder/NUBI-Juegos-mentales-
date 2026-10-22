@@ -76,9 +76,9 @@ private val OnNightDim = com.example.ui.theme.NubiTokens.OnNightDim
  * con lógica pura de `data/`), para poder fotografiarlas y probarlas aparte. Los textos secundarios van a 16 sp; el único número grande de la pantalla es el de la semana.
  */
 
-/** Tu semana: las 7 farolas del kit con «hoy», «3 de 4 días» en grande, la racha con su línea de perdón y las áreas de la semana. */
+/** Tu semana: las 7 farolas del kit con «hoy», «3 de 4 días» en grande, la racha (solo el número, en su pastilla: la frase del descanso es de Hoy) y las áreas de la semana. */
 @Composable
-internal fun AvanceWeek(summary: WeekSummary, lamps: Week.Lamps, streakNote: String, nubiLine: String, anchor: NubiAnchor? = null) {
+internal fun AvanceWeek(summary: WeekSummary, lamps: Week.Lamps, nubiLine: String, anchor: NubiAnchor? = null) {
   Column(Modifier.testTag("avance_week")) {
     SpaceSectionTitle("Tu semana")
     Spacer(Modifier.height(10.dp))
@@ -97,8 +97,7 @@ internal fun AvanceWeek(summary: WeekSummary, lamps: Week.Lamps, streakNote: Str
     if (summary.streakPill != null) {
       Spacer(Modifier.height(10.dp))
       ClayPill(summary.streakPill, Modifier.testTag("avance_streak_pill"), color = Clay.Cream, leading = { com.example.ui.components.KitLlama(lit = true, size = 20.dp) })       // crema: una gota sol no se vería sobre una pastilla sol
-      // Si Nubi ya comenta el descanso («Descansaste el viernes y seguiste: eso es constancia.»), la línea suelta con lo mismo sobra (Tarea 143, B2)
-      if (!nubiLine.startsWith("Descansaste")) OnBoardText(streakNote, color = OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 4.dp).testTag("streak_note"))
+      // Sin la línea del descanso («Un día de descanso por semana no la corta», «Descansaste el martes…»): la frase de la racha vive solo en Hoy (Tarea 158)
     }
     OnBoardText(summary.areasLine, color = OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 8.dp).testTag("avance_areas_week"))
     NubiWeekComment(nubiLine, anchor)
@@ -200,14 +199,14 @@ private fun medalColumns(maxWidth: androidx.compose.ui.unit.Dp): Int {
 }
 
 /**
- * Las medallas en Avance: UNA línea que lleva al Perfil, donde viven (Tarea 152, B6.1: antes las tres tarjetas enteras aquí y en el Perfil, con el mismo título): «9 medallas · ver en tu perfil».
+ * Las medallas en Avance: UNA línea que lleva a la pestaña «Tú», donde viven (Tarea 152, B6.1: antes las tres tarjetas enteras aquí y en el Perfil, con el mismo título; Tarea 158: el Perfil es «Tú»): «9 medallas · ver en Tú».
  */
 @Composable
 internal fun AvanceMedalsLink(count: Int, onClick: () -> Unit) {
   val text = when (count) {
-    0 -> "Aún sin medallas · ver en tu perfil"
-    1 -> "1 medalla · ver en tu perfil"
-    else -> "$count medallas · ver en tu perfil"
+    0 -> "Aún sin medallas · ver en Tú"
+    1 -> "1 medalla · ver en Tú"
+    else -> "$count medallas · ver en Tú"
   }
   Row(
     Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick).heightIn(min = 48.dp).testTag("avance_medals_link"),
@@ -222,7 +221,7 @@ internal fun AvanceMedalsLink(count: Int, onClick: () -> Unit) {
   }
 }
 
-/** Las casillas de las familias (las usa también el Perfil). */
+/** Las casillas de las familias (las usa también «Tú»). */
 @Composable
 internal fun FamilyMedalCards(states: List<FamilyMedalState>, onTap: (AchievementFamily) -> Unit) {
   BoxWithConstraints(Modifier.fillMaxWidth()) {

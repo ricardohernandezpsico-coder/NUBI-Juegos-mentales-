@@ -140,8 +140,10 @@ class PulidoFinalTextosTest {
   }
 
   @Test
-  fun avance_no_repite_la_linea_del_descanso_cuando_nubi_ya_la_dice() {
+  fun avance_no_dice_la_linea_del_descanso_porque_esa_frase_vive_solo_en_Hoy() {
+    // Tarea 158 (Opus): antes la línea se quitaba solo si Nubi ya la decía; ahora no está en Avance (ni en Tú): `LaFraseDeLaRachaTest`
     val sections = src("ui/screens/AvanceSections.kt")
-    assertTrue(sections.contains("if (!nubiLine.startsWith(\"Descansaste\")) OnBoardText(streakNote"))
+    assertFalse(sections.contains("OnBoardText(streakNote"))
+    assertFalse(sections.contains("streak_note"))
   }
 }

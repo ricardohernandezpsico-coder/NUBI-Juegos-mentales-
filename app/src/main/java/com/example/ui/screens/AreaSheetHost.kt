@@ -22,7 +22,7 @@ import com.example.ui.components.LockTabSwipe
 import com.example.ui.components.NUBI_ASPECT
 
 /**
- * Dónde está la Nubi de una pestaña (Juegos: la de «¿Qué jugamos hoy?»; Avance: la de «Tu semana»), para que la lámina de un área vuele desde ahí y se pose en ella (Tarea 155). La Nubi de la pestaña se marca con [markNubi]; [bounds] es su caja en la ventana (px) o null si no
+ * Dónde está la Nubi de una pestaña (Avance: la de «Tu semana»; antes también Juegos, que se fue en la Tarea 158), para que la lámina de un área vuele desde ahí y se pose en ella (Tarea 155). La Nubi de la pestaña se marca con [markNubi]; [bounds] es su caja en la ventana (px) o null si no
  * hay (no se ha dibujado o salió de la vista); mientras vuela hacia la lámina se esconde ([alpha] = 0), como la de la isla en Hoy.
  */
 @Stable
@@ -38,7 +38,7 @@ internal fun Modifier.markNubi(anchor: NubiAnchor): Modifier = this
   .graphicsLayer { alpha = anchor.alpha() }
 
 /**
- * La lámina de un área sobre una pestaña (Juegos o Avance; Tarea 155): [page] es la pestaña y, encima, [PlaceLayer] con el velo, la lámina y Nubi volando desde [anchor]. Mientras está abierta las pestañas no se deslizan (y la barra se retira) y Atrás la cierra.
+ * La lámina de un área sobre una pestaña (Avance; antes también Juegos; Tarea 155): [page] es la pestaña y, encima, [PlaceLayer] con el velo, la lámina y Nubi volando desde [anchor]. Mientras está abierta las pestañas no se deslizan (y la barra se retira) y Atrás la cierra.
  * La pestaña es dueña de [fx] (el estado de las animaciones, `PlaceFx(looks = false)`: aquí no hay isla ni edificio que mirar) y de [places] (una lámina por área, [rememberAreaPlaces]); [onClose] = X, velo o Atrás: la pestaña cierra con `fx.close` y limpia lo suyo.
  * [showChart] = el gráfico de las 4 semanas (Avance).
  */

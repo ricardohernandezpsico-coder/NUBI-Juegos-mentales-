@@ -6,7 +6,7 @@ import java.util.TimeZone
 import kotlin.math.roundToInt
 
 /**
- * Si un juego es una parada de la ruta de hoy (Tarea 155, «un área, una sola vista»): la lámina del área es la misma en Hoy, Juegos y Avance, y en ella la fila de ese juego dice «hoy, en tu ruta» ([PENDING]) o «hecho hoy» ([DONE]); así no se pierde lo que decían las secciones
+ * Si un juego es una parada de la ruta de hoy (Tarea 155, «un área, una sola vista»): la lámina del área es la misma en Hoy y en Avance (Juegos se fue en la Tarea 158), y en ella la fila de ese juego dice «hoy, en tu ruta» ([PENDING]) o «hecho hoy» ([DONE]); así no se pierde lo que decían las secciones
  * «En tu ruta de hoy» de la antigua ventana de Juegos. [NONE] = no es una parada de hoy.
  */
 enum class RouteState { DONE, PENDING, NONE }
@@ -62,9 +62,6 @@ data class PlaceSheetUi(
 
 /** Arma [PlaceSheetUi] con la lógica que ya tenía el detalle de área de Hoy (`AreaProgress`, `Skill`, `StarMeasures`): nada nuevo que medir. */
 object PlaceSheets {
-  /** Lo que dice el globo de Nubi la primera vez que se abre la lámina de un área en Juegos (Tarea 155): una sola frase, una sola vez. */
-  const val AREA_SHEET_INTRO = "Ahora los juegos de cada lugar se ven aquí, como en Hoy."
-
   private const val DAY_MS = 86_400_000L
   private fun dayIndex(ts: Long): Long = (ts + TimeZone.getDefault().getOffset(ts)) / DAY_MS
 

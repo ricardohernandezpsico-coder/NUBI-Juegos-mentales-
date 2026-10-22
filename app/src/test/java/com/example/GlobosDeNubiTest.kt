@@ -9,7 +9,6 @@ import com.example.data.nubiWeekLine
 import com.example.model.AppLanguage
 import com.example.model.DailySessionState
 import com.example.ui.components.EMPTY_AVANCE_LINE
-import com.example.ui.screens.suggestArea
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -38,9 +37,8 @@ class GlobosDeNubiTest {
   @Test
   fun la_semana_de_avance_dice_una_o_dos_frases_y_ninguna_cifra_que_la_pantalla_ya_dice() {
     fun lamps(days: Int) = Week.Lamps(List(7) { it < days }, todayIndex = 3)
-    val streaks = listOf(Streak.StreakInfo(3, null, true), Streak.StreakInfo(5, 5L, false), Streak.StreakInfo(0, null, true))
-    for (days in 0..7) for (goal in 0..7) for (areas in 0..4) for (st in streaks) for (none in listOf(false, true)) {
-      val line = nubiWeekLine(lamps(days), goal, st, areas, none)
+    for (days in 0..7) for (goal in 0..7) for (areas in 0..4) for (none in listOf(false, true)) {
+      val line = nubiWeekLine(lamps(days), goal, areas, none)
       assertGlobe(line, "nubiWeekLine($days días, meta $goal, $areas áreas)")
       assertTrue("«$line» repite una cifra que la pantalla ya dice («2 de 4 días», «Áreas esta semana: 4 de 4»)", line.none { it.isDigit() })
     }
@@ -54,16 +52,8 @@ class GlobosDeNubiTest {
   }
 
   @Test
-  fun juegos_y_el_avance_vacio_tambien_cumplen() {
-    val day = 86_400_000L
-    val now = 400 * day
-    val route = DailySessionState("2026-10-21", listOf("calculo", "secuencia", "stroop"), 0)
-    val last = com.example.model.GameRegistry.allGames.associate { it.id to now - 3 * day }
-    for (daily in listOf(route, route.copy(completedCount = 3), DailySessionState("2026-10-21", emptyList(), 0))) for (lp in listOf(last, emptyMap())) {
-      val s = suggestArea(daily, lp, now, AppLanguage.SPANISH)
-      assertGlobe("Te sugiero ${s.name}: ${s.reason}", "encabezado de Juegos")
-    }
-    assertGlobe(PlaceSheets.AREA_SHEET_INTRO, "la primera vez que se abre la lámina de un área en Juegos (Tarea 155)")
+  fun la_isla_como_mapa_y_el_avance_vacio_tambien_cumplen() {
+    assertGlobe(com.example.ui.screens.ISLAND_NOTE, "el globo de «los juegos ahora están en la isla» (Tarea 158)")
     assertGlobe(EMPTY_AVANCE_LINE, "Avance vacío")
   }
 }

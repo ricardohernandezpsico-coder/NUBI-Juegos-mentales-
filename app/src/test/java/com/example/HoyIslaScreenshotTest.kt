@@ -71,7 +71,7 @@ class HoyIslaScreenshotTest {
   private var played = 0
   private var resumed = 0
 
-  private fun show(ui: HomeUi, widthDp: Int = 393, heightDp: Int = 873, fontScale: Float = 1f) {
+  private fun show(ui: HomeUi, widthDp: Int = 393, heightDp: Int = 873, fontScale: Float = 1f, onAllGames: () -> Unit = {}) {
     composeTestRule.setContent {
       val base = LocalDensity.current
       CompositionLocalProvider(LocalDensity provides Density(base.density, fontScale)) {
@@ -79,7 +79,7 @@ class HoyIslaScreenshotTest {
           Box(Modifier.width(widthDp.dp).height(heightDp.dp)) {
             BoardBackground()
             HomeContent(
-              ui = ui, onProfile = {}, onSettings = {}, onPlaceGame = { playedFromSheet = it }, onPlaceGameCard = {}, onStop = { stopTapped = it }, onPlay = { played++ }, onResume = { resumed++ }, onBaseline = {},
+              ui = ui, onAllGames = onAllGames, onPlaceGame = { playedFromSheet = it }, onPlaceGameCard = {}, onStop = { stopTapped = it }, onPlay = { played++ }, onResume = { resumed++ }, onBaseline = {},
               modifier = Modifier.padding(top = 24.dp, bottom = 163.dp)
             )
           }
@@ -109,14 +109,14 @@ class HoyIslaScreenshotTest {
   fun la_isla_es_la_protagonista_y_toma_lo_que_sobra() {
     show(ui())
     printIsland("393×873 sin el enlace")
-    composeTestRule.onNodeWithTag("home_isla").assertHeightIsAtLeast(340.dp)   // Tarea 123 (letra de 16 sp): 344 dp, 16 menos que con la letra de 14 (antes ≥ 360). A 393 × 873 con letra 1,0 y sin el enlace: más de 360 dp con la barra nueva de plasticina (371 en la Tarea 86; con la barra vieja eran ~417 y en la Tarea 83 ~240)
+    composeTestRule.onNodeWithTag("home_isla").assertHeightIsAtLeast(300.dp)   // Tarea 123 (letra de 16 sp): 344 dp, 16 menos que con la letra de 14 (antes ≥ 360). A 393 × 873 con letra 1,0 y sin el enlace: más de 360 dp con la barra nueva de plasticina (371 en la Tarea 86; con la barra vieja eran ~417 y en la Tarea 83 ~240)
   }
 
   @Test
   fun con_el_enlace_del_punto_de_partida_la_isla_cede_ese_alto_pero_sigue_siendo_grande() {
     show(ui(hasBaseline = false))
     printIsland("393×873 con el enlace")
-    composeTestRule.onNodeWithTag("home_isla").assertHeightIsAtLeast(300.dp)   // Tarea 123 (letra de 16 sp): 304 dp (antes ≥ 320); con el enlace en UNA línea (Tarea 87): 331 dp a 393 × 873 (con la frase de dos líneas eran 307)
+    composeTestRule.onNodeWithTag("home_isla").assertHeightIsAtLeast(250.dp)   // Tarea 158 (la losa «Todos los juegos» le quita ~45 dp a la isla): 259 dp; antes de ella, ≥ 300. Tarea 123 (letra de 16 sp): 304 dp (antes ≥ 320); con el enlace en UNA línea (Tarea 87): 331 dp a 393 × 873 (con la frase de dos líneas eran 307)
     composeTestRule.onNodeWithTag("btn_home_baseline").assertIsDisplayed()
     composeTestRule.onNodeWithTag("btn_home_play").assertIsDisplayed()
   }
@@ -250,12 +250,19 @@ class HoyIslaScreenshotTest {
   }
 
   @Test
-  fun el_avatar_va_solo_con_su_inicial_porque_las_ligas_estan_fuera_de_la_v1() {
-    // Tarea 149: sin ligas en la v1 el avatar ya no lleva el escudo y el lector dice solo «Tu perfil»
-    show(ui())
-    composeTestRule.onNodeWithContentDescription("Tu perfil").assertExists()
-    composeTestRule.onNodeWithContentDescription("Tu perfil, liga Bronce").assertDoesNotExist()
-    composeTestRule.onNodeWithTag("btn_top_profile").assertIsDisplayed()
+  fun arriba_a_la_derecha_ya_no_hay_botones_y_bajo_la_ruta_esta_la_losa_todos_los_juegos() {
+    // Tarea 158: el perfil es la pestaña «Tú» y los Ajustes se abren desde ahí; en Hoy, la losa crema «Todos los juegos» (el dibujo de las cuatro casillas, texto de 17 sp o más)
+    var opened = 0
+    show(ui(), onAllGames = { opened++ })
+    composeTestRule.onNodeWithTag("btn_top_profile").assertDoesNotExist()
+    composeTestRule.onNodeWithTag("btn_top_settings").assertDoesNotExist()
+    composeTestRule.onNodeWithContentDescription("Tu perfil").assertDoesNotExist()
+    composeTestRule.onNodeWithTag("btn_all_games").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Todos los juegos").assertIsDisplayed()
+    val b = bounds("btn_all_games"); val d = composeTestRule.density.density
+    org.junit.Assert.assertTrue("la losa es ancha (${b.width / d} dp) y alta (${b.height / d} dp): un botón, no un enlace chico", b.width >= 300f * d && b.height >= 48f * d)
+    composeTestRule.onNodeWithTag("btn_all_games").performClick()
+    org.junit.Assert.assertEquals("tocar la losa abre «Todos los juegos»", 1, opened)
   }
 
   // ---- «Tu ruta de hoy»

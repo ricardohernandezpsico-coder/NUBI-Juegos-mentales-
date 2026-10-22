@@ -59,7 +59,7 @@ class AvanceNubiScreenshotTest {
     // lun, mar y jue jugados; hoy es el jueves: lleva 3 de 4 → «Te falta 1 día para tu meta. Cualquier ruta cuenta.»
     val lamps = Week.Lamps(listOf(true, true, false, true, false, false, false), todayIndex = 3)
     val summary = weekSummary(lamps, goal = 4, streak = 3, areas = 2, noGamesAtAll = false)
-    val line = if (prefix == "hoy") "" else nubiWeekLine(lamps, 4, Streak.StreakInfo(3, null, true), 2, noGamesAtAll = false)
+    val line = if (prefix == "hoy") "" else nubiWeekLine(lamps, 4, 2, noGamesAtAll = false)
     composeTestRule.mainClock.autoAdvance = false
     composeTestRule.setContent {
       val base = LocalDensity.current
@@ -68,7 +68,7 @@ class AvanceNubiScreenshotTest {
           Box(Modifier.width(393.dp).height(873.dp).testTag("frame")) {
             BoardBackground()
             Column(Modifier.fillMaxSize().padding(horizontal = 22.dp, vertical = 24.dp)) {
-              AvanceWeek(summary, lamps, Streak.REST_LINE, line)
+              AvanceWeek(summary, lamps, line)
               Box(Modifier.height(26.dp))
               AvanceAreas(statuses, names) {}
             }

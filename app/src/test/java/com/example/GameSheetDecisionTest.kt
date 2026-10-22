@@ -178,7 +178,7 @@ class GameSheetDecisionTest {
   /** El cambio de tamaño es suave: 200 ms (NubiMotion, cambio de estado) y de un salto con «quitar animaciones». */
   @Test
   fun las_secciones_cambian_de_altura_con_nubi_motion_y_de_un_salto_con_quitar_animaciones() {
-    val source = java.io.File("src/main/java/com/example/ui/screens/GamesLibraryScreen.kt").readText()
+    val source = java.io.File("src/main/java/com/example/ui/screens/GameSheet.kt").readText()
     val sheet = source.substring(source.indexOf("internal fun GameSheetContent("), source.indexOf("private fun SheetPlayButton("))
     assertTrue("entra y sale cambiando de altura", sheet.contains("expandVertically(") && sheet.contains("shrinkVertically("))
     assertTrue("con la duración de NubiMotion (cambio de estado, 200 ms)", sheet.contains("tween(NubiMotion.STATE_MS, easing = NubiMotion.Standard)"))

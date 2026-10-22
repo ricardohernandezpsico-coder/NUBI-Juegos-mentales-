@@ -23,7 +23,7 @@ import com.example.model.AgeBand
 import com.example.model.GamePlayResult
 import com.example.model.GameRegistry
 import com.example.model.UserSettings
-import com.example.ui.screens.GamesLibraryScreen
+import com.example.ui.screens.TuScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.ProgressScreen
 import com.example.ui.theme.NeuroVidaTheme
@@ -145,7 +145,7 @@ class RetiredBitacoraTest {
     // no se puede abrir, ni desde Juegos ni desde las herramientas
     vm.launchGame(old)
     assertNull(vm.activeGame.value)
-    vm.playFromLibrary(old, PlayMode.A_TU_MEDIDA)
+    vm.playFromHome(old, PlayMode.A_TU_MEDIDA)
     assertNull(vm.activeGame.value)
   }
 
@@ -176,7 +176,7 @@ class RetiredBitacoraTest {
   }
 
   @Test
-  fun `Hoy, Juegos y Avance se abren sin errores, no nombran Bitacora y Hoy ya no tiene la linea de la mision`() {
+  fun `Hoy, Tú y Avance se abren sin errores, no nombran Bitacora y Hoy ya no tiene la linea de la mision`() {
     seedOldData()
     val vm = newViewModel()
     TestSupport.awaitUntil { vm.gameHistory.value.isNotEmpty() && vm.dailySession.value.gameIds.none { it == old } }
@@ -187,8 +187,8 @@ class RetiredBitacoraTest {
         Box(Modifier.width(412.dp).height(915.dp)) {
           androidx.compose.runtime.CompositionLocalProvider(com.example.ui.components.LocalTabSwipeLock provides androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }) {
             when (screen.intValue) {
-              0 -> HomeScreen(viewModel = vm, onNavigateToGames = {})
-              1 -> GamesLibraryScreen(viewModel = vm)
+              0 -> HomeScreen(viewModel = vm)
+              1 -> TuScreen(viewModel = vm)
               else -> ProgressScreen(viewModel = vm)
             }
           }

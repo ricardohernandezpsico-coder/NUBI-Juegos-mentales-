@@ -70,7 +70,7 @@ class LaminaLugarCapturesTest {
           Box(Modifier.width(widthDp.dp).height(heightDp.dp)) {
             BoardBackground()
             HomeContent(
-              ui = ui, onProfile = {}, onSettings = {}, onPlaceGame = {}, onPlaceGameCard = {}, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {}, fx = fx,
+              ui = ui, onAllGames = {}, onPlaceGame = {}, onPlaceGameCard = {}, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {}, fx = fx,
               modifier = Modifier.padding(top = 24.dp, bottom = 48.dp)
             )
           }

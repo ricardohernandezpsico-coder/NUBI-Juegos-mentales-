@@ -103,21 +103,20 @@ fun weekSummary(lamps: Week.Lamps, goal: Int, streak: Int, areas: Int, noGamesAt
 }
 
 /**
- * Lo que Nubi comenta bajo «Tu semana» (Tarea 131, A6; `auditoria-fable/spec-adopcion-A1-A7.md`): UNA frase, la primera que se cumple de estas seis (en este orden de prioridad), siempre en positivo: nunca «no jugaste», «perdiste» ni «te atrasaste»
+ * Lo que Nubi comenta bajo «Tu semana» (Tarea 131, A6; `auditoria-fable/spec-adopcion-A1-A7.md`): UNA frase, la primera que se cumple de estas cinco (en este orden de prioridad), siempre en positivo: nunca «no jugaste», «perdiste» ni «te atrasaste»
  * (`NoLossGuard` lo vigila en las pruebas).
  *  1. sin partidas: invita a la primera ruta;
- *  2. día perdonado esta semana (`streak.forgivenDay`): lo dice como constancia, con el día en español;
- *  3. meta cumplida (`daysPlayed >= goal`): lo de más es regalo;
- *  4. las 4 áreas: lo celebra;
- *  5. falta 1 día: «Cualquier ruta cuenta»;
- *  6. el resto: cuánto lleva de la meta y que un rato corto suma.
+ *  2. meta cumplida (`daysPlayed >= goal`): lo de más es regalo;
+ *  3. las 4 áreas: lo celebra;
+ *  4. falta 1 día: «Cualquier ruta cuenta»;
+ *  5. el resto: que un rato corto suma.
+ * NUNCA dice nada de la racha ni del descanso (Tarea 158, Opus: «la frase de la racha vive solo en Hoy», `LaFraseDeLaRachaTest`): antes el día perdonado era la frase 2 y se repetía en Hoy, en Avance y en Tú.
  * Sin meta (`goal <= 0`) no hay lo de la meta: cae en cuántos días lleva.
  */
-fun nubiWeekLine(lamps: Week.Lamps, goal: Int, streak: Streak.StreakInfo, areas: Int, noGamesAtAll: Boolean): String {
+fun nubiWeekLine(lamps: Week.Lamps, goal: Int, areas: Int, noGamesAtAll: Boolean): String {
   val played = lamps.daysPlayed
   return when {
     noGamesAtAll -> "Cuando juegues tu primera ruta, aquí te cuento cómo va tu semana."
-    streak.forgivenDay != null -> Streak.forgivenLine(streak)!!                      // una sola frase del descanso en toda la app: la de Hoy (Tarea 150, B1.8)
     // Sin repetir lo que la pantalla ya dice (Opus, 21-oct: «Llevas 2 de 4», «Meta cumplida» y «Pasaste por las 4 áreas» estaban justo encima, en «2 de 4 días de tu meta» y «Áreas esta semana: 4 de 4»): el globo solo suma ánimo, sin cifras
     goal > 0 && played >= goal -> "Lo que juegues de más es regalo."
     areas >= com.example.model.DomainType.values().size -> "¡Qué buena variedad esta semana!"

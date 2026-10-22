@@ -106,7 +106,7 @@ class EmojiSweepTest {
     assertNoEmoji("areas", DomainType.entries.flatMap { listOf(it.displayName, it.tagline) })
     for (lang in AppLanguage.entries) {
       val t = getTranslations(lang)
-      assertNoEmoji("traducciones ${lang.code}", listOf(t.greetingFormat("Ana"), t.settingsTitle, t.languageCardTitle, t.languageCardSubtitle, t.tabToday, t.tabGames, t.tabProgress, t.tabSettings))
+      assertNoEmoji("traducciones ${lang.code}", listOf(t.greetingFormat("Ana"), t.settingsTitle, t.languageCardTitle, t.languageCardSubtitle, t.tabToday, t.tabProgress, t.tabSettings))
     }
   }
 

@@ -33,7 +33,7 @@ class GameSheetEdgeToEdgeTest {
 
   @Test
   fun la_ficha_pide_su_ventana_borde_a_borde_y_deja_la_tarjeta_dentro_de_las_barras() {
-    val source = File("src/main/java/com/example/ui/screens/GamesLibraryScreen.kt").readText()
+    val source = File("src/main/java/com/example/ui/screens/GameSheet.kt").readText()
     val sheet = source.substring(source.indexOf("internal fun GameSheet("), source.indexOf("internal fun GameSheetContent("))
     assertTrue("GameSheet debe volver borde a borde la ventana de su diálogo", sheet.contains("makeDialogWindowEdgeToEdge"))
     assertTrue("GameSheet debe pedir decorFitsSystemWindows = false", sheet.contains("decorFitsSystemWindows = false"))

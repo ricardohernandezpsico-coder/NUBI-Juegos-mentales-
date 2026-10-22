@@ -21,7 +21,7 @@ import com.example.model.AgeBand
 import com.example.model.GamePlayResult
 import com.example.model.GameRegistry
 import com.example.model.UserSettings
-import com.example.ui.screens.GamesLibraryScreen
+import com.example.ui.screens.TuScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.ProgressScreen
 import com.example.ui.theme.NeuroVidaTheme
@@ -46,7 +46,7 @@ import java.util.Locale
 
 /**
  * Juego RETIRADO (`cambiochip`, 3-oct-2026): quien ya lo jugó conserva sus partidas y su progreso en la base de datos y en las preferencias (nada se borra ni se migra),
- * pero no se muestra en ningún lado y no rompe nada. Prueba con datos viejos de verdad en Room y en `skill`: el ViewModel, las pantallas Hoy, Juegos y Avance, los logros y el camino de hoy.
+ * pero no se muestra en ningún lado y no rompe nada. Prueba con datos viejos de verdad en Room y en `skill`: el ViewModel, las pantallas Hoy, Tú y Avance, los logros y el camino de hoy.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
@@ -122,7 +122,7 @@ class RetiredGameTest {
     // no se puede abrir
     vm.launchGame(old)
     assertNull(vm.activeGame.value)
-    vm.playFromLibrary(old, com.example.data.PlayMode.A_TU_MEDIDA)
+    vm.playFromHome(old, com.example.data.PlayMode.A_TU_MEDIDA)
     assertNull(vm.activeGame.value)
   }
 

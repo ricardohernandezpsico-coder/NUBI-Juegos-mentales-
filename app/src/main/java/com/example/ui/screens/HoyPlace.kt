@@ -222,8 +222,8 @@ internal fun placeNubiRest(island: Rect, layout: IslaLayout): Rect {
 }
 
 /**
- * Lo que va ENCIMA de una pestaña mientras la lámina de un área está abierta o abriéndose: el velo, la lámina y Nubi volando (o posada en ella). Es LA MISMA lámina en Hoy, en Juegos y en Avance (Tarea 155; `auditoria-fable/spec-area-unica.md`); solo cambia de dónde sale Nubi y,
- * en Avance, que lleva el gráfico de las 4 semanas ([showChart]). Va dentro de la caja de la pestaña (no es un `Dialog`), que ocupa toda la pantalla: con la lámina abierta la barra de pestañas se retira y esa caja llega hasta la barra del teléfono, así que el botón «Jugar» queda sobre ella.
+ * Lo que va ENCIMA de una pestaña mientras la lámina de un área está abierta o abriéndose: el velo, la lámina y Nubi volando (o posada en ella). Es LA MISMA lámina en Hoy y en Avance (Tarea 155, con Juegos, que se fue en la Tarea 158; `auditoria-fable/spec-area-unica.md`); solo cambia de dónde sale Nubi y
+ * qué dice del avance: en Hoy UNA línea («Hábil · 47 de 100», `showProgress = false`), en Avance la barra de etapas y el gráfico de las 4 semanas ([showChart]). Va dentro de la caja de la pestaña (no es un `Dialog`), que ocupa toda la pantalla: con la lámina abierta la barra de pestañas se retira y esa caja llega hasta la barra del teléfono, así que el botón «Jugar» queda sobre ella.
  * [rest] = la caja de Nubi en su sitio de la pestaña (px, en esta misma caja): en Hoy, Nubi `hola` en la isla ([placeNubiRest]); en Juegos y en Avance, la Nubi de su cabecera (null o fuera de la vista = no hay de dónde volar: aparece posada con un fundido). [nubiRes] = la imagen que vuela.
  * [lookShiftBase] = el ancho sobre el que se corre Nubi al mirar (el de la isla; 0 si no hay mirada).
  *
@@ -241,7 +241,9 @@ internal fun PlaceLayer(
   modifier: Modifier = Modifier,
   @androidx.annotation.DrawableRes nubiRes: Int = R.drawable.isla_nubi_hola,
   lookShiftBase: Float = 0f,
-  showChart: Boolean = false
+  showChart: Boolean = false,
+  /** La barra de las 5 etapas con sus nombres (Avance). Hoy dice solo la línea «Hábil · 47 de 100» (Tarea 158). */
+  showProgress: Boolean = true
 ) {
   if (!fx.active || place == null) return
   val density = LocalDensity.current
@@ -280,7 +282,7 @@ internal fun PlaceLayer(
       ) {
         PlaceSheetContent(
           place, nubiAspect = nubiAspect, maxHeight = (pageHeight - PLACE_MIN_SKY).coerceAtLeast(0.dp), onClose = onClose, onPlay = onPlay, onGame = onGame,
-          globe = { fx.globe.value }, globeMoves = fx.moves, onHole = { hole = it }, showChart = showChart
+          globe = { fx.globe.value }, globeMoves = fx.moves, onHole = { hole = it }, showChart = showChart, showProgress = showProgress
         )
       }
       // Nubi: en vuelo (de su sitio a la lámina o de vuelta) o ya posada en su hueco. Mientras no vuela, la dibuja su pestaña.
@@ -368,7 +370,9 @@ internal fun PlaceSheetContent(
   globeMoves: Boolean = false,
   onHole: (Offset) -> Unit = {},
   /** Las 4 últimas semanas del avance, entre la barra y «Tus juegos aquí» (la lámina de Avance; Tarea 155). Si no hay al menos dos semanas con dato, no se dibuja. */
-  showChart: Boolean = false
+  showChart: Boolean = false,
+  /** La barra del kit con las 5 etapas bajo la línea de avance. Apagada (Hoy, Tarea 158) queda SOLO la línea «Hábil · 47 de 100»: el detalle del avance vive en Avance. */
+  showProgress: Boolean = true
 ) {
   val titleFocus = remember { FocusRequester() }
   LaunchedEffect(place.key) { runCatching { titleFocus.requestFocus() } }
@@ -440,11 +444,13 @@ internal fun PlaceSheetContent(
             color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("place_stage")
           )
         }
-        Spacer(Modifier.height(6.dp))
-        com.example.ui.components.StageScale(
-          if (place.measured) place.fill else null, onCard = true, change = place.change, barTag = "place_bar", namesTag = "place_stages", showNames = level < PlaceLevels.NO_STAGE_NAMES
-        )
-        if (showChart && place.measured && place.weeks.count { it != null } >= 2) {
+        if (showProgress) {
+          Spacer(Modifier.height(6.dp))
+          com.example.ui.components.StageScale(
+            if (place.measured) place.fill else null, onCard = true, change = place.change, barTag = "place_bar", namesTag = "place_stages", showNames = level < PlaceLevels.NO_STAGE_NAMES
+          )
+        }
+        if (showProgress && showChart && place.measured && place.weeks.count { it != null } >= 2) {
           Spacer(Modifier.height(if (compact) 6.dp else 10.dp))
           com.example.ui.components.WeeksChartOnCard(place.weeks)
         }
@@ -586,16 +592,16 @@ private fun PlaceGamesList(place: PlaceSheetUi, onGame: (String) -> Unit, gap: D
 }
 
 /**
- * Una fila de juego: losa crema del kit con su estado presionado; a la izquierda el emblema (48 dp, con el sello «jugado hoy»), a su derecha el nombre (16 sp Bold) y cuándo se jugó (16 sp); el sugerido por Nubi lleva el chip sol «Nubi sugiere» pegado al borde derecho.
+ * Una fila de juego (la lámina de un lugar y «Todos los juegos»): losa crema del kit con su estado presionado (sol si es la [marked]: el último que se jugó desde «Todos los juegos», para encontrarlo al volver); a la izquierda el emblema (48 dp, con el sello «jugado hoy»), a su derecha el nombre (16 sp Bold) y cuándo se jugó (16 sp); el sugerido por Nubi lleva el chip sol «Nubi sugiere» pegado al borde derecho.
  * Si la palabra más larga del nombre no cabe junto al chip (letra grande), el chip baja DENTRO de la columna de texto, bajo el «cuándo» (la fila crece). Se lee «Satélites, sin jugar aún, Nubi lo sugiere».
  */
 @Composable
-private fun PlaceGameRowItem(row: PlaceGameRow, suggested: Boolean, onClick: () -> Unit) {
+internal fun PlaceGameRowItem(row: PlaceGameRow, suggested: Boolean, onClick: () -> Unit, marked: Boolean = false) {
   val density = LocalDensity.current
   val measurer = androidx.compose.ui.text.rememberTextMeasurer()
   val base = androidx.compose.material3.LocalTextStyle.current
   com.example.ui.components.ClaySlab(
-    color = com.example.ui.components.SlabColor.CREAM,
+    color = if (marked) com.example.ui.components.SlabColor.SUN else com.example.ui.components.SlabColor.CREAM,
     size = com.example.ui.components.SlabSize.SMALL,
     onClick = onClick,
     role = Role.Button,
@@ -604,7 +610,7 @@ private fun PlaceGameRowItem(row: PlaceGameRow, suggested: Boolean, onClick: () 
     modifier = Modifier
       .fillMaxWidth()
       .heightIn(min = 60.dp)
-      .semantics(mergeDescendants = true) { contentDescription = row.title + ", " + row.spoken + if (suggested) ", Nubi lo sugiere" else "" }
+      .semantics(mergeDescendants = true) { contentDescription = row.title + ", " + row.spoken + (if (suggested) ", Nubi lo sugiere" else "") + (if (marked) ", el último que jugaste" else "") }
       .testTag("place_game_${row.gameId}")
   ) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {

@@ -40,7 +40,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 
 **App Android** (`app/src/main/java/com/example/`, paquete `com.example`, applicationId `com.nubibraingames.app`):
 - `MainActivity` + `viewmodel/NeuroVidaViewModel` (un solo ViewModel) + `data/NeuroVidaRepository`.
-- 3 pestañas (Hoy, Juegos, Avance; se pasan deslizando), perfil y opciones como paneles, inicio «Primer vuelo con Nubi» y ruta diaria (SOLO los 3 juegos de la ruta): detalle en [`docs/arquitectura-app.md`](docs/arquitectura-app.md).
+- 3 pestañas (**Hoy · Avance · Tú**, «La isla es el mapa», Tarea 158; se pasan deslizando; Hoy = jugar, con la losa «Todos los juegos» y su buscador; Avance = cómo voy; Tú = tu isla, tu nombre, tus medallas y los Ajustes), sin botones arriba a la derecha, inicio «Primer vuelo con Nubi» y ruta diaria (SOLO los 3 juegos de la ruta): detalle en [`docs/arquitectura-app.md`](docs/arquitectura-app.md).
 - Lógica pura con pruebas en `data/`: `Achievements`, `AreaProgress`, `Baseline`, `DailyPath`, `FirstFlight`, `DdaRating`, `Mail`, `LeagueEvents`, `NumberLine`, `Aterrizaje`, `RetoChoice`,
   `Planet`, `SessionSummary`, `StarMeasures`, `Library` (con `LibraryOrder`), `Skill` y `Streak` (la racha que perdona: un día de descanso por semana no la corta, una sola en toda la app); y
   `notification/ReminderContent`. Modelos y catálogo de juegos (`GameRegistry`, `RankTier`, ...) en `model/Models.kt`.
@@ -150,7 +150,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pruebas
 
-- Kotlin: 1260 (`./gradlew.bat testDebugUnitTest`; más 33 de capturas que solo corren al grabar; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 1276 (`./gradlew.bat testDebugUnitTest`; más 34 de capturas que solo corren al grabar; lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel, el repositorio o leen la base llaman `TestSupport.resetDatabase()` en `@Before` y `@After` (Room EN MEMORIA, nunca `neurovida_database`) y SUELTAN lo creado con `TestSupport.release(...)`
   (cancela y ESPERA su trabajo de fondo); `NoDiskDatabaseGuardTest` falla si falta. Detalle: [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md).

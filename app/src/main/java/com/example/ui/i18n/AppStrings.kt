@@ -13,7 +13,6 @@ val strings: Translations
 
 data class Translations(
   val tabToday: String,
-  val tabGames: String,
   val tabProgress: String,
   val tabSettings: String,
 
@@ -49,7 +48,6 @@ data class Translations(
 
 private val spanishTranslations = Translations(
   tabToday = "Hoy",
-  tabGames = "Juegos",
   tabProgress = "Progreso",
   tabSettings = "Ajustes",
   streakLabel = "Racha",
@@ -77,7 +75,6 @@ private val spanishTranslations = Translations(
 
 private val englishTranslations = Translations(
   tabToday = "Today",
-  tabGames = "Games",
   tabProgress = "Progress",
   tabSettings = "Settings",
   streakLabel = "Streak",
@@ -105,7 +102,6 @@ private val englishTranslations = Translations(
 
 private val frenchTranslations = Translations(
   tabToday = "Aujourd'hui",
-  tabGames = "Jeux",
   tabProgress = "Progrès",
   tabSettings = "Paramètres",
   streakLabel = "Série",
@@ -133,7 +129,6 @@ private val frenchTranslations = Translations(
 
 private val germanTranslations = Translations(
   tabToday = "Heute",
-  tabGames = "Spiele",
   tabProgress = "Fortschritt",
   tabSettings = "Einstellungen",
   streakLabel = "Serie",
@@ -161,7 +156,6 @@ private val germanTranslations = Translations(
 
 private val portugueseTranslations = Translations(
   tabToday = "Hoje",
-  tabGames = "Jogos",
   tabProgress = "Progresso",
   tabSettings = "Ajustes",
   streakLabel = "Sequência",

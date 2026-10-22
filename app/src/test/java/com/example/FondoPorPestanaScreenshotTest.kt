@@ -23,7 +23,7 @@ import com.example.model.GameRegistry
 import com.example.model.UserSettings
 import com.example.ui.components.BoardBackground
 import com.example.ui.components.LocalTabSwipeLock
-import com.example.ui.screens.GamesLibraryScreen
+import com.example.ui.screens.TuScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.ProgressScreen
 import com.example.ui.theme.NeuroVidaTheme
@@ -94,16 +94,16 @@ class FondoPorPestanaScreenshotTest {
           CompositionLocalProvider(LocalTabSwipeLock provides remember { mutableIntStateOf(0) }) {
             Box(Modifier.padding(top = 24.dp, bottom = 163.dp)) {
               when (page.intValue) {
-                0 -> HomeScreen(viewModel = vm, onNavigateToGames = {})
-                1 -> GamesLibraryScreen(viewModel = vm)
-                else -> ProgressScreen(viewModel = vm)
+                0 -> HomeScreen(viewModel = vm)
+                1 -> ProgressScreen(viewModel = vm)
+                else -> TuScreen(viewModel = vm)
               }
             }
           }
         }
       }
     }
-    for ((i, name) in listOf("hoy", "juegos", "avance").withIndex()) {
+    for ((i, name) in listOf("hoy", "avance", "tu").withIndex()) {
       composeTestRule.runOnIdle { page.intValue = i }
       composeTestRule.mainClock.advanceTimeBy(600)
       composeTestRule.waitForIdle()

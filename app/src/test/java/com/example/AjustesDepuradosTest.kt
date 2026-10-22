@@ -42,13 +42,13 @@ class AjustesDepuradosTest {
   }
 
   @Test
-  fun `las medallas viven en el Perfil y Avance solo dice cuantas hay`() {
+  fun `las medallas viven en Tu y Avance solo dice cuantas hay`() {
     val progress = src("ui/screens/ProgressScreen.kt")
     val sections = src("ui/screens/AvanceSections.kt")
     assertTrue(progress.contains("AvanceMedalsLink(") && !progress.contains("AvanceMedals(") && !progress.contains("FamilyMedalDialog"))
-    assertTrue(sections.contains("medallas · ver en tu perfil") && sections.contains("1 medalla · ver en tu perfil"))
+    assertTrue(sections.contains("medallas · ver en Tú") && sections.contains("1 medalla · ver en Tú"))
     assertFalse("las tres tarjetas enteras ya no se repiten en Avance (B6.1)", sections.contains("internal fun AvanceMedals("))
-    assertTrue("el Perfil sí las trae", src("ui/screens/ProfileScreen.kt").contains("FamilyMedalCards("))
+    assertTrue("Tú sí las trae", src("ui/screens/ProfileScreen.kt").contains("FamilyMedalCards("))
   }
 
   @Test
@@ -65,7 +65,7 @@ class AjustesDepuradosTest {
 
   @Test
   fun `el boton de la ficha plegada dice Jugar a secas`() {
-    val library = src("ui/screens/GamesLibraryScreen.kt")
+    val library = src("ui/screens/GameSheet.kt")
     assertTrue(library.contains("SheetPlayButton(choice, timed, supportsReto, detailed = opciones"))
     assertTrue("plegada: «Jugar» y nada más (C5: la línea de arriba ya dice lo elegido)", library.contains("KitButton(text = \"Jugar\", onClick = onPlay"))
   }

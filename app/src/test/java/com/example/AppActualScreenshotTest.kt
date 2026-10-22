@@ -54,10 +54,10 @@ import com.example.ui.components.NeuroNavBar
 import com.example.ui.screens.FirstFlightScreen
 import com.example.ui.screens.FlightActions
 import com.example.ui.screens.GameSheetContent
-import com.example.ui.screens.GamesLibraryScreen
+import com.example.ui.screens.AllGamesScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.LicensesScreen
-import com.example.ui.screens.ProfileScreen
+import com.example.ui.screens.TuScreen
 import com.example.ui.screens.ProgressScreen
 import com.example.ui.screens.SettingsPanel
 import com.example.ui.screens.cardData
@@ -151,7 +151,7 @@ class AppActualScreenshotTest {
   private val BAR_DP = 88
 
   private enum class Scene {
-    HOY, JUEGOS, FICHA, AVANCE, PERFIL, AJUSTES, LICENCIAS, BARRA, VUELO_1, VUELO_JUEGO, VUELO_EDAD, VUELO_2, VUELO_PUNTO, VUELO_3, RESULTADO, RESULTADO_RECORD, RESULTADO_CON, MEDALLA_PIEZA, MEDALLA_SIN, CARGA
+    HOY, TODOS, FICHA, AVANCE, TU, AJUSTES, LICENCIAS, BARRA, BARRA_AVANCE, BARRA_TU, VUELO_1, VUELO_JUEGO, VUELO_EDAD, VUELO_2, VUELO_PUNTO, VUELO_3, RESULTADO, RESULTADO_RECORD, RESULTADO_CON, MEDALLA_PIEZA, MEDALLA_SIN, CARGA
   }
 
   private val rastro = GamePlayResult(
@@ -194,13 +194,10 @@ class AppActualScreenshotTest {
                 val barInset = with(LocalDensity.current) { if (barPx > 0) barPx.toDp() else BAR_DP.dp }
                 when (scene) {
                   Scene.HOY -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) {                    // 48 dp de la barra de navegación del sistema; la barra de pestañas es una capa fija (Tarea 123) y la página deja su franja libre con LocalBarInset
-                    CompositionLocalProvider(LocalBarInset provides barInset) { Box(top) { HomeScreen(viewModel = vm!!, onNavigateToGames = {}) } }
+                    CompositionLocalProvider(LocalBarInset provides barInset) { Box(top) { HomeScreen(viewModel = vm!!) } }
                     if (!sheetOpen) NavBar(AppTab.HOY) { barPx = it }
                   }
-                  Scene.JUEGOS -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) {
-                    CompositionLocalProvider(LocalBarInset provides barInset) { Box(top) { GamesLibraryScreen(viewModel = vm!!) } }
-                    if (!sheetOpen) NavBar(AppTab.JUEGOS) { barPx = it }                       // con la ventana de un área abierta la barra se esconde (como en la app)
-                  }
+                  Scene.TODOS -> Box(top) { AllGamesScreen(viewModel = vm!!) }                          // «Todos los juegos»: ocupa toda la pantalla y esconde la barra (Tarea 158)
                   Scene.FICHA -> Box(Modifier.fillMaxSize().background(Color(0xFF050823)).padding(horizontal = 14.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
                     val g = GameRegistry.getById("radar")!!
                     val now = System.currentTimeMillis()
@@ -212,10 +209,15 @@ class AppActualScreenshotTest {
                     CompositionLocalProvider(LocalBarInset provides barInset) { Box(top) { ProgressScreen(viewModel = vm!!) } }
                     if (!sheetOpen) NavBar(AppTab.PROGRESO) { barPx = it }                    // con la lámina de un área abierta la barra se esconde (como en la app)
                   }
-                  Scene.PERFIL -> Box(top) { ProfileScreen(viewModel = vm!!, onClose = {}) }
+                  Scene.TU -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) {                      // «Tú»: la tercera pestaña (Tarea 158; antes el Perfil era un panel)
+                    CompositionLocalProvider(LocalBarInset provides barInset) { Box(top) { TuScreen(viewModel = vm!!) } }
+                    NavBar(AppTab.TU) { barPx = it }
+                  }
                   Scene.AJUSTES -> Box(top) { SettingsPanel(viewModel = vm!!, onClose = {}) }
                   Scene.LICENCIAS -> Box(top) { LicensesScreen(onClose = {}) }
                   Scene.BARRA -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) { NavBar(AppTab.HOY) }
+                  Scene.BARRA_AVANCE -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) { NavBar(AppTab.PROGRESO) }
+                  Scene.BARRA_TU -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) { NavBar(AppTab.TU) }
                   Scene.VUELO_1 -> FirstFlightScreen(FlightState(FlightMode.FULL, FlightStep.HOLA), emptyList(), FlightActions.None)
                   Scene.VUELO_JUEGO -> FirstFlightScreen(FlightState(FlightMode.FULL, FlightStep.JUEGO_1, name = "Ana"), emptyList(), FlightActions.None)
                   Scene.VUELO_EDAD -> FirstFlightScreen(
@@ -278,10 +280,11 @@ class AppActualScreenshotTest {
     }
   }
 
-  private fun viewModel(): NeuroVidaViewModel {
+  private fun viewModel(withNote: Boolean = false): NeuroVidaViewModel {
     seed()
     val vm = NeuroVidaViewModel(app).also { viewModels.add(it) }
     TestSupport.awaitUntil(30_000) { vm.gameHistory.value.size >= 40 }
+    if (!withNote) vm.markIslandMapIntroSeen()                  // el globo «Los juegos ahora están en la isla» solo sale en su propia toma
     return vm
   }
 
@@ -313,54 +316,50 @@ class AppActualScreenshotTest {
     r.shot("hoy-isla-10-letra13", 873, 1.3f)
   }
 
-  // ---------------------------------------------------------------- Juegos
-
+  /** El globo de Nubi, una sola vez (Tarea 158): «Los juegos ahora están en la isla. Toca un edificio o «Todos los juegos».» */
   @Test
-  fun juegos() {
-    val r = Rig(viewModel(), Scene.JUEGOS)
-    r.settle(); r.shot("juegos", 873)
-    r.shot("juegos-letra13", 873, 1.3f)
-    // Tarea 153 (C10): deslizada hasta el final, la segunda fila de áreas se ve entera sobre la barra (la rejilla termina con 16 dp de aire)
-    composeTestRule.mainClock.autoAdvance = true
-    composeTestRule.onNodeWithTag("area_lenguaje").performScrollTo()
-    composeTestRule.waitForIdle()
-    composeTestRule.mainClock.autoAdvance = false
-    r.settle(); r.shot("juegos-letra13-abajo", 873, 1.3f)
-    r.go(Scene.JUEGOS, 873)
-    // las cuatro áreas y, al tocar una, LA lámina de su área (Tarea 155: la misma de Hoy y de Avance; sin ventana propia)
-    for (area in listOf("memoria", "atencion", "razonamiento", "lenguaje")) {
-      composeTestRule.runOnIdle { r.sheetOpen = true }
-      composeTestRule.onNodeWithTag("area_$area").performClick()
-      r.settle()
-      r.shot(if (area == "memoria") "juegos-lamina" else "juegos-lamina-$area", 873)
-      if (area == "memoria") r.shot("juegos-lamina-letra13", 873, 1.3f)
-      composeTestRule.runOnIdle { r.vm!!.closeLibraryArea(); r.sheetOpen = false }
-      r.go(Scene.JUEGOS, 873)
-    }
+  fun hoy_con_el_globo_de_nubi() {
+    val r = Rig(viewModel(withNote = true), Scene.HOY)
+    r.settle(); r.shot("hoy-globo", 873)
+    r.shot("hoy-globo-letra13", 873, 1.3f)
+  }
+
+  // ---------------------------------------------------------------- Todos los juegos
+
+  /** La ventana con los 17 juegos, su buscador y los chips de área (Tarea 158): sin filtro, con «Memoria» y con letra 1,3. */
+  @Test
+  fun todos_los_juegos() {
+    val r = Rig(viewModel(), Scene.TODOS)
+    composeTestRule.runOnIdle { r.vm!!.openAllGames() }
+    r.settle(); r.shot("todos-los-juegos", 873)
+    r.shot("todos-los-juegos-letra13", 873, 1.3f)
+    composeTestRule.runOnIdle { r.vm!!.setAllGamesArea("MEMORIA") }
+    r.settle(); r.shot("todos-los-juegos-memoria", 873, 1f)
   }
 
   /** La ficha de un juego (Tarea 140): plegada por defecto, desplegada con «Listo» y las dos con la letra del sistema al 130 %. */
   @Test
   fun ficha_plegada_y_desplegada() {
     val r = Rig(null, Scene.FICHA)
-    r.settle(); r.shot("juegos-ficha", 873)
+    r.settle(); r.shot("ficha", 873)
     composeTestRule.onNodeWithTag("sheet_change").performClick()
-    r.settle(); r.shot("juegos-ficha-desplegada", 873)
+    r.settle(); r.shot("ficha-desplegada", 873)
     r.go(Scene.BARRA, 873)                                            // sale de la ficha: al volver nace plegada otra vez
-    r.go(Scene.FICHA, 873, 1.3f); r.shot("juegos-ficha-letra13", 873)
+    r.go(Scene.FICHA, 873, 1.3f); r.shot("ficha-letra13", 873)
     composeTestRule.onNodeWithTag("sheet_change").performClick()
-    r.settle(); r.shot("juegos-ficha-desplegada-letra13", 873)
+    r.settle(); r.shot("ficha-desplegada-letra13", 873)
   }
 
   /** Juegos recién instalada la app (sin ninguna partida): la toma que faltaba (Tarea 147, P8): con todo en «Inicio». */
+  /** «Tú» recién instalada la app (sin partidas): la isla sin piezas, el nombre y las medallas por ganar. */
   @Test
-  fun juegos_sin_partidas() {
-    val r = Rig(NeuroVidaViewModel(app).also { viewModels.add(it) }, Scene.JUEGOS)
-    r.settle(); r.shot("juegos-vacio", 873)
-    r.shot("juegos-vacio-letra13", 873, 1.3f)
+  fun tu_sin_partidas() {
+    val r = Rig(NeuroVidaViewModel(app).also { viewModels.add(it) }, Scene.TU)
+    r.settle(); r.shot("tu-vacio", 873)
+    r.shot("tu-vacio-letra13", 873, 1.3f)
   }
 
-  // ---------------------------------------------------------------- Avance, perfil y ajustes
+  // ---------------------------------------------------------------- Avance, Tú y ajustes
 
   @Test
   fun avance() {
@@ -389,15 +388,16 @@ class AppActualScreenshotTest {
     r.shot("avance-vacio-letra13", 873, 1.3f)
   }
 
+  /** Tú (Tarea 158): tu isla con sus piezas, tu nombre con «Cambiar», Racha · Partidas · Medallas, las medallas y, al final, la losa «Ajustes». */
   @Test
-  fun perfil() {
-    val r = Rig(viewModel(), Scene.PERFIL)
-    r.settle(); r.shot("perfil", 873)
-    r.shot("perfil-letra13", 873, 1.3f)
-    r.shot("perfil-completa", 2100, 1f)
+  fun tu() {
+    val r = Rig(viewModel(), Scene.TU)
+    r.settle(); r.shot("tu", 873)
+    r.shot("tu-letra13", 873, 1.3f)
+    r.shot("tu-completa", 2100, 1f)
     // Tarea 153: «Cambiar» abre el nombre como campo con su rótulo «Tu nombre» (el teclado no se dibuja en la prueba)
     composeTestRule.onNodeWithTag("btn_change_name").performScrollTo().performClick()
-    r.settle(); r.shot("perfil-editando", 873, 1f)
+    r.settle(); r.shot("tu-editando", 873, 1f)
   }
 
   @Test
@@ -416,6 +416,12 @@ class AppActualScreenshotTest {
   fun primer_vuelo_y_barra() {
     val r = Rig(null, Scene.BARRA)
     r.settle(); r.shot("barra", 873)
+    r.shot("barra-letra13", 873, 1.3f)
+    r.go(Scene.BARRA_AVANCE, 873); r.shot("barra-avance", 873)                   // cada pestaña elegida (Tarea 158: la lámina mide los íconos de las tres)
+    r.shot("barra-avance-letra13", 873, 1.3f)
+    r.go(Scene.BARRA_TU, 873); r.shot("barra-tu", 873)
+    r.shot("barra-tu-letra13", 873, 1.3f)
+    composeTestRule.runOnIdle { r.fontScale = 1f }
     r.go(Scene.VUELO_1, 873); r.shot("primer-vuelo-1", 873)                     // Hola
     r.go(Scene.VUELO_JUEGO, 873); r.shot("primer-vuelo-juego", 873)             // antes del juego 1
     r.go(Scene.VUELO_EDAD, 873); r.shot("primer-vuelo-edad", 873)               // la edad

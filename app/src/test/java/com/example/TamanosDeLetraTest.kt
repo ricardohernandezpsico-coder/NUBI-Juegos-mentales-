@@ -52,10 +52,4 @@ class TamanosDeLetraTest {
     assertTrue(chart.contains("listOf(\"hace 3 sem.\", \"hace 2 sem.\", \"sem. pasada\", \"esta sem.\")"))
     assertTrue("los números y los rótulos del gráfico, a 14 sp (rótulos de gráfico)", !chart.contains("fontSize = 13.sp"))
   }
-
-  @Test
-  fun `la rejilla de areas de Juegos termina con aire para que con letra grande nada quede bajo la barra`() {
-    val games = File("src/main/java/com/example/ui/screens/GamesLibraryScreen.kt").readText()
-    assertTrue(games.contains("padding(start = 12.dp, end = 12.dp, bottom = 16.dp)"))
-  }
 }

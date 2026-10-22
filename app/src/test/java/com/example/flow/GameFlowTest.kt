@@ -8,6 +8,7 @@ import com.example.data.PlayMode
 import com.example.data.local.NeuroVidaDatabase
 import com.example.model.DomainType
 import com.example.model.GamePlayResult
+import com.example.viewmodel.AllGamesState
 import com.example.viewmodel.AppTab
 import com.example.viewmodel.NeuroVidaViewModel
 import kotlinx.coroutines.runBlocking
@@ -198,48 +199,125 @@ class GameFlowTest {
     assertEquals(0, savedResults())
   }
 
+  // ---- Hoy (Tarea 158): al terminar se vuelve a la pestaña desde donde se lanzó, con lo que había abierto (la lámina de un lugar o «Todos los juegos») como se dejó
+
   @Test
-  fun `desde Juegos, al cerrar el resultado se vuelve a la misma casilla`() {
+  fun `desde la lamina de un lugar de Hoy, al cerrar el resultado se vuelve a Hoy con la lamina abierta`() {
     val vm = newViewModel()
-    vm.playFromLibrary("freno", PlayMode.DESAFIO)
-    assertEquals(DomainType.ATENCION, vm.libraryFocus.value.domain)
-    assertEquals("freno", vm.libraryFocus.value.gameId)
-    vm.setTab(AppTab.HOY) // como si se hubiera ido a otra pestaña mientras tanto
-    vm.playFromLibrary("freno", PlayMode.DESAFIO)
+    vm.setTab(AppTab.HOY)
+    vm.openHoyArea("ATENCION")
+    vm.playFromHome("freno", PlayMode.DESAFIO)
+    assertEquals("freno", vm.activeGame.value?.gameDef?.id)
+    assertEquals("la lámina espera abierta mientras se juega", "ATENCION", vm.hoyArea.value)
     vm.closeGameOrResult()
-    assertEquals(AppTab.JUEGOS, vm.currentTab.value)
-    assertEquals("freno", vm.libraryFocus.value.gameId)
+    assertEquals(AppTab.HOY, vm.currentTab.value)
+    assertEquals("ATENCION", vm.hoyArea.value)
+    assertNull("«Todos los juegos» no se abre solo", vm.allGames.value)
   }
 
   @Test
-  fun `desde una piedrita de Hoy, al cerrar el resultado se sigue en Hoy y Juegos no se toca`() {
+  fun `desde Todos los juegos, al cerrar el resultado se vuelve con el mismo filtro, la misma busqueda y la fila marcada`() {
     val vm = newViewModel()
-    // un «volver a Juegos» de una partida anterior lanzada desde Juegos no debe llevarse a Hoy
-    vm.playFromLibrary("freno", PlayMode.DESAFIO)
+    vm.openAllGames()
+    vm.setAllGamesArea("ATENCION")
+    vm.setAllGamesQuery("fre")
+    vm.playFromHome("freno", PlayMode.DESAFIO)
+    assertEquals("freno", vm.activeGame.value?.gameDef?.id)
     vm.closeGameOrResult()
-    vm.setTab(AppTab.HOY)
+    assertEquals(AppTab.HOY, vm.currentTab.value)
+    assertEquals(AllGamesState(area = "ATENCION", query = "fre", mark = "freno"), vm.allGames.value)
+    assertNull("la lámina de un lugar no se abre sola", vm.hoyArea.value)
+  }
+
+  @Test
+  fun `desde una piedrita de Hoy sin nada abierto, al cerrar el resultado se sigue en Hoy sin nada abierto`() {
+    val vm = newViewModel()
     vm.playFromHome("calculo", PlayMode.A_TU_MEDIDA)
     assertEquals("calculo", vm.activeGame.value?.gameDef?.id)
     vm.closeGameOrResult()
     assertEquals(AppTab.HOY, vm.currentTab.value)
-    assertFalse("Juegos no abre ningún área", vm.libraryFocus.value.open)
-    assertEquals("la casilla de Juegos no cambia", "freno", vm.libraryFocus.value.gameId)
+    assertNull(vm.hoyArea.value)
+    assertNull(vm.allGames.value)
   }
 
   @Test
-  fun `entrar a Juegos despues de jugar desde Juegos muestra las 4 areas`() {
+  fun `cerrar la lamina de Hoy o Todos los juegos los olvida y cambiar de pestana tampoco los reabre`() {
     val vm = newViewModel()
-    vm.playFromLibrary("freno", PlayMode.DESAFIO)
-    vm.closeGameOrResult()
-    assertTrue(vm.libraryFocus.value.open) // la excepción: se vuelve al área
+    vm.openHoyArea("MEMORIA")
+    vm.closeHoyArea()
+    assertNull(vm.hoyArea.value)
+    vm.openAllGames()
+    vm.closeAllGames()
+    assertNull(vm.allGames.value)
+    vm.openHoyArea("MEMORIA")
+    vm.setTab(AppTab.PROGRESO)
+    assertNull("al irse de Hoy la lámina se cierra", vm.hoyArea.value)
     vm.setTab(AppTab.HOY)
-    assertFalse("al salir de Juegos el área se cierra", vm.libraryFocus.value.open)
-    vm.setTab(AppTab.JUEGOS) // barra, deslizar o «Ir a Juegos»
-    assertFalse("al volver deben verse las 4 áreas", vm.libraryFocus.value.open)
-    assertEquals("la casilla se recuerda aunque el área esté cerrada", "freno", vm.libraryFocus.value.gameId)
+    assertNull("y no se reabre al volver", vm.hoyArea.value)
+    vm.openAllGames()
+    vm.setTab(AppTab.TU)
+    assertNull("lo mismo con Todos los juegos", vm.allGames.value)
   }
 
-  // ---- Avance: la misma regla que Juegos (Tarea 155): al terminar se vuelve a la pestaña desde donde se lanzó, con la lámina como se dejó
+  @Test
+  fun `un juego de la ruta de hoy lanzado tras la lamina de Hoy no la reabre`() {
+    val vm = newViewModel()
+    vm.openHoyArea("ATENCION")
+    vm.playFromHome("freno", PlayMode.DESAFIO)
+    vm.launchGame("calculo", isDailyFlow = true)           // «Siguiente: … · 2 de 3» en el final de la partida
+    vm.closeGameOrResult()
+    assertNull(vm.hoyArea.value)
+    assertNull(vm.allGames.value)
+  }
+
+  @Test
+  fun `un juego de Hoy no devuelve a la lamina de Avance aunque antes se jugara desde ella, y al reves`() {
+    val vm = newViewModel()
+    vm.setTab(AppTab.PROGRESO)
+    vm.openAvanceArea("ATENCION")
+    vm.playFromAvance("freno", PlayMode.DESAFIO)
+    vm.setTab(AppTab.HOY)                                   // salió sin cerrar el resultado
+    vm.playFromHome("calculo", PlayMode.A_TU_MEDIDA)
+    vm.closeGameOrResult()
+    assertEquals(AppTab.HOY, vm.currentTab.value)
+    assertNull(vm.avanceArea.value)
+    vm.openHoyArea("MEMORIA")
+    vm.playFromHome("freno", PlayMode.DESAFIO)
+    vm.setTab(AppTab.PROGRESO)
+    vm.playFromAvance("calculo", PlayMode.A_TU_MEDIDA)
+    vm.closeGameOrResult()
+    assertEquals(AppTab.PROGRESO, vm.currentTab.value)
+    assertNull("la lámina de Hoy no se reabre desde Avance", vm.hoyArea.value)
+  }
+
+  @Test
+  fun `la lamina de Hoy y Todos los juegos tambien se recuerdan si Android cierra la app a mitad del juego`() {
+    val first = newViewModel()
+    first.openAllGames()
+    first.setAllGamesQuery("tinta")
+    first.playFromHome("stroop", PlayMode.A_TU_MEDIDA)
+    val second = newViewModel()
+    assertEquals(AllGamesState(area = null, query = "tinta", mark = "stroop"), second.allGames.value)
+    assertEquals(AppTab.HOY, second.currentTab.value)
+    assertEquals("Todos los juegos sigue abierto como estaba (el resultado de Unity lo cierra con «Listo» y no lo borra)", "tinta", second.allGames.value?.query)
+    assertEquals("la fila marcada es el juego que se lanzó", "stroop", second.allGames.value?.mark)
+    val third = newViewModel()
+    third.openHoyArea("MEMORIA")
+    third.playFromHome("calculo", PlayMode.A_TU_MEDIDA)
+    assertEquals("MEMORIA", newViewModel().hoyArea.value)
+  }
+
+  @Test
+  fun `Nubi cuenta una sola vez que los juegos ahora estan en la isla`() {
+    val vm = newViewModel()
+    assertFalse("al principio todavía no se contó", vm.islandMapIntroSeen)
+    vm.markIslandMapIntroSeen()
+    assertTrue(vm.islandMapIntroSeen)
+    vm.openHoyArea("MEMORIA"); vm.closeHoyArea()
+    assertTrue("abrir y cerrar una lámina no lo borra: una sola vez", vm.islandMapIntroSeen)
+  }
+
+  // ---- Avance (Tarea 155): al terminar se vuelve a la pestaña desde donde se lanzó, con la lámina como se dejó
 
   @Test
   fun `desde la lamina de un area de Avance, al cerrar el resultado se vuelve a Avance con la lamina abierta`() {
@@ -252,7 +330,6 @@ class GameFlowTest {
     vm.closeGameOrResult()
     assertEquals(AppTab.PROGRESO, vm.currentTab.value)
     assertEquals("ATENCION", vm.avanceArea.value)
-    assertFalse("Juegos no abre ningún área", vm.libraryFocus.value.open)
   }
 
   @Test
@@ -313,68 +390,5 @@ class GameFlowTest {
     assertEquals("MEMORIA", second.avanceArea.value)
     second.setTab(AppTab.PROGRESO)                          // entrar a Avance por la barra: se ven las 4 áreas
     assertNull(second.avanceArea.value)
-  }
-
-  @Test
-  fun `Nubi cuenta una sola vez que los juegos de cada lugar se ven en la lamina de Juegos`() {
-    val vm = newViewModel()
-    assertFalse("al principio todavía no se contó", vm.areaSheetIntroSeen)
-    vm.markAreaSheetIntroSeen()
-    assertTrue(vm.areaSheetIntroSeen)
-    vm.setLibraryFocus(DomainType.ATENCION, null); vm.closeLibraryArea()
-    assertTrue("cerrar y abrir otra lámina no lo borra: una sola vez", vm.areaSheetIntroSeen)
-  }
-
-  @Test
-  fun `tocar Juegos estando en Juegos con un area abierta la cierra`() {
-    val vm = newViewModel()
-    vm.setTab(AppTab.JUEGOS)
-    vm.setLibraryFocus(DomainType.ATENCION, null)
-    assertTrue(vm.libraryFocus.value.open)
-    vm.setTab(AppTab.JUEGOS)
-    assertFalse(vm.libraryFocus.value.open)
-    assertEquals(AppTab.JUEGOS, vm.currentTab.value)
-  }
-
-  @Test
-  fun `salir de Juegos con un area abierta la cierra y no se reabre al volver`() {
-    val vm = newViewModel()
-    vm.setTab(AppTab.JUEGOS)
-    vm.setLibraryFocus(DomainType.ATENCION, "freno")
-    vm.setTab(AppTab.PROGRESO)
-    assertFalse(vm.libraryFocus.value.open)
-    vm.setTab(AppTab.JUEGOS)
-    assertFalse(vm.libraryFocus.value.open)
-  }
-
-  @Test
-  fun `un juego de Hoy no devuelve a Juegos aunque antes se jugara desde Juegos`() {
-    val vm = newViewModel()
-    vm.setTab(AppTab.JUEGOS)
-    vm.playFromLibrary("freno", PlayMode.DESAFIO)
-    vm.setTab(AppTab.HOY) // salió sin cerrar el resultado
-    vm.launchGame("freno", isDailyFlow = true)
-    vm.closeGameOrResult()
-    assertEquals(AppTab.HOY, vm.currentTab.value)
-    assertFalse(vm.libraryFocus.value.open)
-  }
-
-  @Test
-  fun `tras cerrar Android la app a mitad de un juego de Juegos, tocar Juegos muestra las 4 areas`() {
-    newViewModel().playFromLibrary("freno", PlayMode.A_TU_MEDIDA)
-    val second = newViewModel()
-    assertTrue(second.libraryFocus.value.open)
-    second.setTab(AppTab.JUEGOS)
-    assertFalse(second.libraryFocus.value.open)
-  }
-
-  @Test
-  fun `la casilla de Juegos tambien se recuerda si Android cierra la app`() {
-    val first = newViewModel()
-    first.playFromLibrary("freno", PlayMode.A_TU_MEDIDA)
-    val second = newViewModel()
-    assertEquals("freno", second.libraryFocus.value.gameId)
-    assertEquals(DomainType.ATENCION, second.libraryFocus.value.domain)
-    assertTrue("la ventana del área debía seguir abierta", second.libraryFocus.value.open)
   }
 }

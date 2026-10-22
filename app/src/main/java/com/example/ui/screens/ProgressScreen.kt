@@ -59,7 +59,7 @@ import kotlinx.coroutines.launch
 private val OnNight = Color(0xFFEAF0FF)
 
 /**
- * Avance (Tarea 125; antes la pestaña "Liga"; su ícono en la barra de abajo es el farol de la ruta). Sin tarjetas salvo las que se tocan, en secciones sueltas y en este orden (`auditoria-fable/spec-avance-juegos.md` §1): **tu semana** (el único número
+ * Avance (Tarea 125; antes la pestaña "Liga"; su ícono en la barra de abajo son tres barras que suben, Tarea 158). Sin tarjetas salvo las que se tocan, en secciones sueltas y en este orden (`auditoria-fable/spec-avance-juegos.md` §1): **tu semana** (el único número
  * grande: «3 de 4 días»), **tus áreas** (canal y churro del kit; tocar una abre su detalle), **lo que descubriste** (tus marcas en palabras, comparadas solo contigo), **tus medallas** (tres familias por conducta), **tu liga** (una fila con el escudo
  * chico y Compartir) y **tu punto de partida**. Lo demás, plegado en «Ver más»: tus últimas partidas, en palabras y sin puntos. Se quitaron el hero de la liga, los desafíos de la semana, el avance por juego, la maestría y la tendencia en puntos.
  */
@@ -84,7 +84,7 @@ fun ProgressScreen(
   var sheetFor by remember { mutableStateOf<com.example.model.GameDefinition?>(null) }   // la ficha de un juego tocado en la lámina de un área o en «Tus medidas»
   val scope = androidx.compose.runtime.rememberCoroutineScope()
   val reduceMotion = com.example.ui.components.rememberReduceMotion()
-  val fx = remember { PlaceFx(looks = false) }                  // la lámina de un área: la misma de Hoy y de Juegos (Tarea 155), con el gráfico de 4 semanas
+  val fx = remember { PlaceFx(looks = false) }                  // la lámina de un área: la misma de Hoy (Tarea 155), con el gráfico de 4 semanas
   val anchor = remember { NubiAnchor() }
   val avanceArea by viewModel.avanceArea.collectAsState()        // la lámina abierta: la recuerda el ViewModel porque el pager se retira mientras hay un juego encima
   val streak by viewModel.currentStreak.collectAsState()
@@ -103,9 +103,7 @@ fun ProgressScreen(
   val lamps = remember(history, now) { Week.lampsFor(history.map { it.timestamp }, now) }
   val areasPlayed = remember(history, now) { Week.areasPlayedFor(shownHistory.map { it.timestamp to areaNameOf(it.gameId) }, now) }
   val summary = remember(lamps, settings.weeklyGoal, streak, areasPlayed, shownHistory) { weekSummary(lamps, settings.weeklyGoal, streak, areasPlayed, noGamesAtAll = shownHistory.isEmpty()) }
-  val streakInfo = remember(history, now) { Streak.fromTimestamps(history.map { it.timestamp }, now) }
-  val streakNote = remember(streakInfo) { Streak.forgivenLine(streakInfo) ?: Streak.REST_LINE }
-  val nubiLine = remember(lamps, settings.weeklyGoal, streakInfo, areasPlayed, shownHistory) { nubiWeekLine(lamps, settings.weeklyGoal, streakInfo, areasPlayed, noGamesAtAll = shownHistory.isEmpty()) }
+  val nubiLine = remember(lamps, settings.weeklyGoal, areasPlayed, shownHistory) { nubiWeekLine(lamps, settings.weeklyGoal, areasPlayed, noGamesAtAll = shownHistory.isEmpty()) }
   val cards = remember(measures, now) { StarMeasures.cards(measures, now) }
   val nudge = remember(measures, cards) { if (cards.isEmpty()) StarMeasures.nudge(measures) else null }
   val dailySession by viewModel.dailySession.collectAsState()
@@ -123,7 +121,7 @@ fun ProgressScreen(
     fx.close(scope, reduceMotion)
     viewModel.closeAvanceArea()
   }
-  // Al volver de una partida lanzada desde la lámina de un área, esta queda abierta como se dejó (sin animar), igual que en Juegos; si se cierra por otro lado (cambiar de pestaña), se va de golpe
+  // Al volver de una partida lanzada desde la lámina de un área, esta queda abierta como se dejó (sin animar), igual que en Hoy; si se cierra por otro lado (cambiar de pestaña), se va de golpe
   androidx.compose.runtime.LaunchedEffect(avanceArea) {
     val key = avanceArea
     if (key != null && !fx.active) placeOf(key)?.let { fx.snapOpen(scope, it) }
@@ -138,7 +136,7 @@ fun ProgressScreen(
     modifier = modifier
   ) {
   Column(Modifier.fillMaxSize().padding(bottom = com.example.ui.components.LocalBarInset.current)) {      // la franja de la barra de pestañas queda libre; la lámina de un área, encima, la cubre
-  TabTopBar(viewModel) { OnBoardText("Tu avance", color = OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold) }
+  Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) { OnBoardText("Tu avance", color = OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold) }
   LazyColumn(
     modifier = Modifier
       .weight(1f)
@@ -146,7 +144,7 @@ fun ProgressScreen(
     contentPadding = PaddingValues(top = 8.dp, bottom = 28.dp),
     verticalArrangement = Arrangement.spacedBy(26.dp)
   ) {
-    item { AvanceWeek(summary, lamps, streakNote, if (shownHistory.isEmpty()) "" else nubiLine, anchor) }       // sin partidas habla UNA sola Nubi (la línea de abajo), no dos con lo mismo
+    item { AvanceWeek(summary, lamps, if (shownHistory.isEmpty()) "" else nubiLine, anchor) }       // sin partidas habla UNA sola Nubi (la línea de abajo), no dos con lo mismo
 
     if (shownHistory.isEmpty()) {
       // Sin ninguna partida (Tarea 147, P8): en vez de cuatro tarjetas de áreas vacías y «Lo que descubriste» sin nada, Nubi con UNA línea
@@ -163,7 +161,7 @@ fun ProgressScreen(
       }
     }
 
-    item { AvanceMedalsLink(medals.sumOf { it.level }) { viewModel.openTopPanel(com.example.viewmodel.TopPanel.PERFIL) } }          // las medallas viven en el Perfil (Tarea 152, B6.1)
+    item { AvanceMedalsLink(medals.sumOf { it.level }) { viewModel.setTab(com.example.viewmodel.AppTab.TU) } }          // las medallas viven en «Tú» (Tarea 152, B6.1; Tarea 158: el Perfil es la pestaña «Tú»)
 
     // «Tu liga» y su Compartir: fuera de la v1 (Tarea 149); se ven solo con `Features.LEAGUES`
     if (com.example.Features.LEAGUES) item {
@@ -237,7 +235,7 @@ fun ProgressScreen(
   }
   }
 
-  // La ficha del juego tocado: en la lámina de un área o en «Lo que descubriste». Jugar desde ella no recuerda casilla de Juegos y, al volver de la partida, la persona sigue en Avance (con la lámina abierta si venía de ella).
+  // La ficha del juego tocado: en la lámina de un área o en «Lo que descubriste». Al volver de la partida la persona sigue en Avance (con la lámina abierta si venía de ella).
   sheetFor?.let { g ->
     GameSheetHost(
       game = g, viewModel = viewModel,

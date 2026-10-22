@@ -19,7 +19,7 @@ import com.example.notification.ReminderInput
 import com.example.notification.buildReminder
 import com.example.ui.components.ShareCard
 import com.example.ui.screens.HomeScreen
-import com.example.ui.screens.ProfileScreen
+import com.example.ui.screens.TuScreen
 import com.example.ui.screens.ProgressScreen
 import com.example.ui.theme.NeuroVidaTheme
 import com.example.viewmodel.NeuroVidaViewModel
@@ -114,8 +114,6 @@ class LigasFueraDeLaVistaTest {
 
   @Test
   fun cada_sitio_de_liga_sigue_detras_de_la_bandera() {
-    assertGated("ui/screens/HomeScreen.kt", "LeagueShield(tier = ui.tier, size = 20.dp)")
-    assertGated("ui/screens/HomeScreen.kt", "\"Tu perfil, liga \${ui.tier.tierName}\"")
     assertGated("ui/screens/ProgressScreen.kt", "AvanceLeague(leagueRow(avg))")
     assertGated("ui/screens/ProfileScreen.kt", "SpaceSectionTitle(\"Tu liga\")")
     assertGated("ui/screens/DebugTools.kt", "[Debug] Ver celebración de ascenso de liga", window = 80)
@@ -172,9 +170,9 @@ class LigasFueraDeLaVistaTest {
     assertEquals("el avatar va solo con su inicial", 0, composeTestRule.onAllNodes(hasContentDescription("Tu perfil, liga Bronce")).fetchSemanticsNodes().size)
   }
 
-  @Test fun hoy_no_muestra_el_escudo_ni_habla_de_ligas() = assertNoLeagueOnScreen { vm -> HomeScreen(viewModel = vm, onNavigateToGames = {}) }
+  @Test fun hoy_no_muestra_el_escudo_ni_habla_de_ligas() = assertNoLeagueOnScreen { vm -> HomeScreen(viewModel = vm) }
 
   @Test fun avance_no_muestra_tu_liga_ni_compartir_la_liga() = assertNoLeagueOnScreen { vm -> ProgressScreen(viewModel = vm) }
 
-  @Test fun el_perfil_no_muestra_tu_liga() = assertNoLeagueOnScreen { vm -> ProfileScreen(viewModel = vm, onClose = {}) }
+  @Test fun tu_no_muestra_tu_liga() = assertNoLeagueOnScreen { vm -> TuScreen(viewModel = vm) }
 }

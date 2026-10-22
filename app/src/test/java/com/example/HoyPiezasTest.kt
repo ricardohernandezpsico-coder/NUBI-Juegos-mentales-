@@ -68,7 +68,7 @@ class HoyPiezasTest {
           Box(Modifier.width(393.dp).height(873.dp)) {
             BoardBackground()
             HomeContent(
-              ui = ui, onProfile = {}, onSettings = {}, onPlaceGame = {}, onPlaceGameCard = {}, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {},
+              ui = ui, onAllGames = {}, onPlaceGame = {}, onPlaceGameCard = {}, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {},
               modifier = Modifier.padding(top = 24.dp, bottom = 163.dp), pieceStore = store, holdPieces = hold, onPiecePlan = { plans += it }
             )
           }
@@ -165,7 +165,7 @@ class HoyPiezasTest {
         Box(Modifier.width(393.dp).height(873.dp)) {
           BoardBackground()
           HomeContent(
-            ui = ui(listOf(IslaPieza.C1, IslaPieza.V1)), onProfile = {}, onSettings = {}, onPlaceGame = {}, onPlaceGameCard = {}, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {},
+            ui = ui(listOf(IslaPieza.C1, IslaPieza.V1)), onAllGames = {}, onPlaceGame = {}, onPlaceGameCard = {}, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {},
             modifier = Modifier.padding(top = 24.dp, bottom = 163.dp), pieceStore = store, holdPieces = hold, onPiecePlan = { plans += it }
           )
         }
@@ -200,7 +200,7 @@ class HoyPiezasTest {
       NeuroVidaTheme {
         Box(Modifier.width(393.dp).height(873.dp)) {
           BoardBackground()
-          HomeContent(ui = current, onProfile = {}, onSettings = {}, onPlaceGame = {}, onPlaceGameCard = {}, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {}, modifier = Modifier.padding(top = 24.dp, bottom = 163.dp))
+          HomeContent(ui = current, onAllGames = {}, onPlaceGame = {}, onPlaceGameCard = {}, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {}, modifier = Modifier.padding(top = 24.dp, bottom = 163.dp))
         }
       }
     }

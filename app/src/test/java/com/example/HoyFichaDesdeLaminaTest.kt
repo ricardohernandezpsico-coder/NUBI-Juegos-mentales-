@@ -90,7 +90,7 @@ class HoyFichaDesdeLaminaTest {
         Box(Modifier.width(393.dp).height(873.dp)) {
           BoardBackground()
           CompositionLocalProvider(LocalTabSwipeLock provides remember { mutableIntStateOf(0) }) {
-            Box(Modifier.padding(top = 24.dp, bottom = 48.dp)) { HomeScreen(viewModel = vm, onNavigateToGames = {}) }
+            Box(Modifier.padding(top = 24.dp, bottom = 48.dp)) { HomeScreen(viewModel = vm) }
           }
         }
       }

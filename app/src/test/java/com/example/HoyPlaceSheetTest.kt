@@ -81,7 +81,7 @@ class HoyPlaceSheetTest {
           Box(Modifier.width(widthDp.dp).height(heightDp.dp)) {
             BoardBackground()
             HomeContent(
-              ui = ui, onProfile = {}, onSettings = {}, onPlaceGame = { played = it }, onPlaceGameCard = { cardOpened = it }, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {}, fx = fx,
+              ui = ui, onAllGames = {}, onPlaceGame = { played = it }, onPlaceGameCard = { cardOpened = it }, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {}, fx = fx,
               modifier = Modifier.padding(top = 24.dp, bottom = 48.dp)       // 24 dp de barra de estado y 48 de barra de navegación (con la lámina abierta la barra de pestañas se retira)
             )
           }
@@ -122,8 +122,6 @@ class HoyPlaceSheetTest {
     rule.onNodeWithText("Observatorio").assertExists()
     rule.onNodeWithTag("place_area").assertIsDisplayed()
     assertEquals("el avance en UNA línea", "Aprendiz · 22 de 100", textOf("place_stage"))
-    rule.onNodeWithTag("place_bar").assertIsDisplayed()
-    rule.onNodeWithTag("place_stages").assertIsDisplayed()
     rule.onNodeWithText("Esta semana avanzó de 18 a 22. Te faltan 18 para Hábil.").assertIsDisplayed()
     rule.onNodeWithText("Tus juegos aquí").assertExists()
     for (g in ui.places.getValue("MEMORIA").games) rule.onNodeWithTag("place_game_${g.gameId}").assertExists()
@@ -144,6 +142,21 @@ class HoyPlaceSheetTest {
     assertEquals("Inicio · 9 de 100", textOf("place_stage"))
     rule.onNodeWithText("Esta semana avanzó de 6 a 9. Te faltan 11 para Aprendiz.").assertIsDisplayed()
     rule.onNodeWithText("Jugar ${firstTitle("RAZONAMIENTO")}").assertIsDisplayed()
+  }
+
+  @Test
+  fun en_Hoy_el_avance_es_una_sola_linea_sin_la_barra_de_etapas_ni_el_grafico() {
+    // Tarea 158: el detalle del avance (la barra con sus 5 etapas y el gráfico de 4 semanas) vive solo en Avance; en Hoy, UNA línea («Hábil · 47 de 100»)
+    show()
+    for (key in listOf("observatorio", "antena", "hangar", "biblioteca")) {
+      open(key)
+      assertEquals("«$key»: la línea de avance está", 1, count("place_stage"))
+      assertEquals("«$key»: sin la barra", 0, count("place_bar"))
+      assertEquals("«$key»: sin los nombres de las etapas", 0, count("place_stages"))
+      assertEquals("«$key»: sin el gráfico de las 4 semanas", 0, count("place_chart"))
+      rule.onNodeWithTag("place_play").assertIsDisplayed()
+      pressBack()
+    }
   }
 
   @Test
@@ -238,12 +251,11 @@ class HoyPlaceSheetTest {
 
   @Test
   fun con_letra_1_3_lo_que_cede_es_siempre_lo_secundario_y_en_ese_orden() {
-    // el globo cede antes que los nombres de las etapas, y los nombres de las etapas antes que el rótulo «Tus juegos aquí»
+    // el globo cede antes que el rótulo «Tus juegos aquí» (en Hoy ya no hay barra ni nombres de etapas)
     show(360, 780, 1.3f); open("antena")
     if (count("place_globe") == 0) assertTrue("cede el globo: Nubi sigue ahí, muda, junto a la línea de avance", count("place_nubi_hole") == 1)
-    if (count("place_stages") == 1) assertEquals("si los nombres de las etapas se ven, el rótulo también", 1, count("place_games_label"))
     assertEquals("la línea de avance nunca cede", 1, count("place_stage"))
-    assertEquals("ni la barra", 1, count("place_bar"))
+    assertEquals("y en Hoy no hay barra que ceder (Tarea 158)", 0, count("place_bar"))
   }
 
   @Test

@@ -21,15 +21,24 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** Las 3 pestañas (29-sep): Hoy, Juegos y Avance (la liga vive dentro de Avance). */
+/**
+ * Las 3 pestañas (Tarea 158, 21-oct, «La isla es el mapa»): Hoy (jugar: la isla es el mapa de los juegos), Avance (ver cómo voy) y Tú (lo mío: tu isla, tu nombre, tus medallas y los Ajustes). Antes eran Hoy, Juegos y Avance (29-sep): Juegos repetía lo de Hoy y de Avance
+ * (las cuatro áreas con la misma lámina) y se fue; sus juegos se eligen en la isla o en «Todos los juegos» (Hoy).
+ */
 enum class AppTab(val title: String) {
   HOY("Hoy"),
-  JUEGOS("Juegos"),
-  PROGRESO("Avance")
+  PROGRESO("Avance"),
+  TU("Tú")
 }
 
-/** Lo que se abre con los botones de arriba a la derecha: tu perfil o las opciones (Ajustes). */
-enum class TopPanel { PERFIL, AJUSTES }
+/** Lo que se abre encima de una pestaña como panel: los Ajustes (desde «Tú»). El Perfil ya no es un panel: es la pestaña «Tú» (Tarea 158). */
+enum class TopPanel { AJUSTES }
+
+/**
+ * «Todos los juegos» (la ventana de Hoy con los 17): el filtro de área (la clave, `MEMORIA`…; null = Todas), lo escrito en el buscador y el juego marcado (el último que se abrió o se jugó desde ahí). Vive en el ViewModel porque el pager se retira mientras hay un juego encima:
+ * al volver de la partida la ventana queda como se dejó (mismo filtro, misma búsqueda y la fila marcada).
+ */
+data class AllGamesState(val area: String? = null, val query: String = "", val mark: String? = null)
 
 data class ActiveGameSession(
   val gameDef: GameDefinition,
@@ -398,16 +407,11 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   fun openTopPanel(panel: TopPanel?) { _topPanel.value = panel }
 
   /**
-   * Cambia de pestaña (barra de abajo, deslizar, «Ir a Juegos» desde Hoy). Juegos siempre se muestra con las 4 áreas:
-   * al entrar, al tocarla estando en ella y al salir se cierra la lámina del área; con la lámina de un área de Avance pasa lo mismo (Tarea 155). La única forma de volver a un área
-   * abierta es cerrar el resultado de un juego lanzado desde ella ([closeGameOrResult], que no pasa por aquí).
+   * Cambia de pestaña (barra de abajo, deslizar, «Ver en Tú» desde Avance). Lo abierto sobre una pestaña (la lámina de un lugar o «Todos los juegos» en Hoy, la lámina de un área en Avance) no sigue abierto al cambiar: la única forma de volver a ello es cerrar el resultado
+   * de un juego lanzado desde ahí ([closeGameOrResult], que no pasa por aquí).
    */
   fun setTab(tab: AppTab) {
-    if (tab == AppTab.JUEGOS || _currentTab.value == AppTab.JUEGOS) {
-      _libraryFocus.value = _libraryFocus.value.copy(open = false)
-      focusPrefs.edit().putBoolean("return", false).apply()
-    }
-    if (tab == AppTab.PROGRESO || _currentTab.value == AppTab.PROGRESO) clearAvanceArea()       // como Juegos: al entrar a Avance o al irse de él, la lámina de un área no sigue abierta (solo se vuelve a ella tras una partida: [closeGameOrResult])
+    clearOpenSheets()
     _currentTab.value = tab
     _activeGame.value = null
     _lastResult.value = null
@@ -440,11 +444,8 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   ) {
     // Si ese juego quedó en pausa ("Salir" del menú de pausa), se retoma en vez de empezar de cero. "Jugar de
     // nuevo" (customLevel) siempre es una partida nueva. Abrir otro juego descarta la pausa (Unity recarga).
-    // un juego de la sesión de Hoy nunca vuelve a Juegos, aunque quedara «volver» de una partida anterior lanzada desde Juegos
-    if (isDailyFlow) {
-      focusPrefs.edit().putBoolean("return", false).apply()
-      clearAvanceArea()
-    }
+    // un juego de la ruta de hoy no vuelve a una lámina abierta, aunque quedara «volver» de una partida anterior lanzada desde una
+    if (isDailyFlow) clearOpenSheets()
     val paused = pausedGame
     pausedGame = null
     if (paused != null && paused.first.gameDef.id == gameId && customLevel == null && paused.first.mode == mode && (customTimed == null || paused.first.timed == customTimed)) {
@@ -692,93 +693,105 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       now = System.currentTimeMillis()
     )
 
+  /**
+   * «Listo» del resultado: vuelve a la pestaña DESDE DONDE se lanzó la partida y la deja como estaba (Tarea 158: dos orígenes, Hoy y Avance; antes también Juegos). Desde Hoy, con la lámina del lugar o «Todos los juegos» abierta (mismo filtro, misma búsqueda y la fila marcada);
+   * desde Avance, con la lámina de su área. Si la partida no se lanzó desde una pestaña (el recordatorio, el inicio) no hay origen: se queda donde está y no queda nada abierto. También si Android cerró la app durante el juego y el ViewModel es nuevo (el origen vive en disco).
+   */
   fun closeGameOrResult() {
-    // Partida lanzada desde Juegos: al cerrar el resultado se vuelve a Juegos, al área y casilla de ese juego
-    // (también si Android cerró la app durante el juego y el ViewModel es nuevo).
     val gameId = _lastResult.value?.first?.gameId ?: _activeGame.value?.gameDef?.id
-    if (gameId != null && focusPrefs.getBoolean("return", false) && _libraryFocus.value.gameId == gameId) {
-      _currentTab.value = AppTab.JUEGOS
+    val origin = if (gameId != null && focusPrefs.getString("origin_game", null) == gameId) focusPrefs.getString("origin", null) else null
+    when (origin) {
+      ORIGIN_AVANCE -> { _currentTab.value = AppTab.PROGRESO; _hoyArea.value = null; _allGames.value = null }
+      ORIGIN_HOY -> { _currentTab.value = AppTab.HOY; _avanceArea.value = null }
+      else -> { _hoyArea.value = null; _allGames.value = null; _avanceArea.value = null }
     }
-    // Partida lanzada desde la lámina de un área de Avance (Tarea 155): se vuelve a Avance con la lámina como se dejó; si no, esa lámina no sigue abierta
-    val backToAvance = gameId != null && focusPrefs.getBoolean("avance_return", false) && focusPrefs.getString("avance_game", null) == gameId
-    if (backToAvance) _currentTab.value = AppTab.PROGRESO else _avanceArea.value = null
-    focusPrefs.edit().putBoolean("return", false).putBoolean("avance_return", false).apply()
+    focusPrefs.edit().remove("origin").remove("origin_game").apply()
     _activeGame.value = null
     _lastResult.value = null
   }
 
-  // Dónde quedó la pestaña Juegos (área y casilla), en disco: al volver de un juego se abre en el mismo lugar.
-  // [open] = la lámina del área está abierta (desde el 29-sep Juegos muestra las 4 áreas; desde la Tarea 155 cada una abre la misma lámina que Hoy y Avance);
-  // al arrancar la app solo sigue abierta si se vuelve de un juego lanzado desde ella.
-  data class LibraryFocus(val domain: DomainType? = null, val gameId: String? = null, val open: Boolean = false)
-
+  // Dónde se lanzó la última partida y lo que había abierto, en disco (`library_focus`: pasajero, no se respalda): al volver del juego se abre lo mismo, también si Android cerró la app.
   private val focusPrefs by lazy { getApplication<Application>().getSharedPreferences("library_focus", android.content.Context.MODE_PRIVATE) }
-  private val _libraryFocus = MutableStateFlow(
-    LibraryFocus(
-      focusPrefs.getString("domain", null)?.let { n -> DomainType.fromStored(n) },
-      focusPrefs.getString("gameId", null),
-      open = focusPrefs.getBoolean("return", false)
-    )
+  private val restoredOrigin: String? get() = focusPrefs.getString("origin", null)
+
+  // La lámina del lugar que se abrió en Hoy tocando un edificio de la isla (la clave del ÁREA: «MEMORIA»…).
+  private val _hoyArea = MutableStateFlow<String?>(if (restoredOrigin == ORIGIN_HOY) focusPrefs.getString("hoy_area", null) else null)
+  val hoyArea: StateFlow<String?> = _hoyArea.asStateFlow()
+
+  fun openHoyArea(areaKey: String) { _hoyArea.value = areaKey }
+
+  /** La X, Atrás o el velo de la lámina de un lugar de Hoy. */
+  fun closeHoyArea() { _hoyArea.value = null }
+
+  // «Todos los juegos» abierta desde Hoy (null = cerrada).
+  private val _allGames = MutableStateFlow<AllGamesState?>(
+    if (restoredOrigin == ORIGIN_HOY && focusPrefs.getBoolean("all_open", false))
+      AllGamesState(focusPrefs.getString("all_area", null), focusPrefs.getString("all_query", null).orEmpty(), focusPrefs.getString("all_mark", null))
+    else null
   )
-  val libraryFocus: StateFlow<LibraryFocus> = _libraryFocus.asStateFlow()
+  val allGames: StateFlow<AllGamesState?> = _allGames.asStateFlow()
 
-  /** Abre (o deja abierta) la ventana de [domain] en Juegos, recordando la casilla [gameId]. */
-  fun setLibraryFocus(domain: DomainType, gameId: String?) {
-    _libraryFocus.value = LibraryFocus(domain, gameId, open = true)
-    focusPrefs.edit().putString("domain", domain.name).putString("gameId", gameId).apply()
-  }
+  fun openAllGames() { _allGames.value = AllGamesState() }
 
-  /** La X (o Atrás) de la lámina de un área: vuelve a las 4 áreas. */
-  fun closeLibraryArea() {
-    _libraryFocus.value = _libraryFocus.value.copy(open = false)
-  }
+  /** El chip de área elegido (la clave del área; null = Todas). */
+  fun setAllGamesArea(areaKey: String?) { _allGames.value = _allGames.value?.copy(area = areaKey) }
 
-  // La lámina de un área abierta en Avance (la clave del área: «MEMORIA»…), con la MISMA regla que Juegos (Tarea 155): al terminar una partida lanzada desde ella se vuelve a Avance con la lámina como se dejó.
-  // El pager se retira mientras hay un juego encima, así que lo abierto no puede vivir en la pestaña: vive aquí y, mientras dura la partida, también en disco (`library_focus`: pasajero), por si Android cierra la app.
-  private val _avanceArea = MutableStateFlow<String?>(if (focusPrefs.getBoolean("avance_return", false)) focusPrefs.getString("avance_area", null) else null)
+  /** Lo escrito en el buscador (el campo guarda su propio texto; esto es para volver a él tras una partida). */
+  fun setAllGamesQuery(query: String) { _allGames.value = _allGames.value?.copy(query = query) }
+
+  /** La X o Atrás de «Todos los juegos». */
+  fun closeAllGames() { _allGames.value = null }
+
+  // La lámina de un área abierta en Avance (la clave del área: «MEMORIA»…): al terminar una partida lanzada desde ella se vuelve a Avance con la lámina como se dejó (Tarea 155).
+  private val _avanceArea = MutableStateFlow<String?>(if (restoredOrigin == ORIGIN_AVANCE) focusPrefs.getString("avance_area", null) else null)
   val avanceArea: StateFlow<String?> = _avanceArea.asStateFlow()
 
   fun openAvanceArea(areaKey: String) { _avanceArea.value = areaKey }
 
   /** La X, Atrás o el velo de la lámina de Avance. */
-  fun closeAvanceArea() = clearAvanceArea()
+  fun closeAvanceArea() { _avanceArea.value = null }
 
-  private fun clearAvanceArea() {
+  /** Nada abierto sobre las pestañas (y sin origen que recordar). */
+  private fun clearOpenSheets() {
+    _hoyArea.value = null
+    _allGames.value = null
     _avanceArea.value = null
-    focusPrefs.edit().putBoolean("avance_return", false).apply()
+    focusPrefs.edit().remove("origin").remove("origin_game").apply()
+  }
+
+  /** Anota de dónde sale esta partida y lo que hay abierto, para volver ahí al cerrar el resultado ([closeGameOrResult]). */
+  private fun rememberOrigin(origin: String, gameId: String) {
+    val all = _allGames.value?.let { it.copy(mark = gameId) }.also { _allGames.value = it }
+    focusPrefs.edit()
+      .putString("origin", origin).putString("origin_game", gameId)
+      .putString("hoy_area", _hoyArea.value).putBoolean("all_open", all != null).putString("all_area", all?.area).putString("all_query", all?.query.orEmpty()).putString("all_mark", all?.mark)
+      .putString("avance_area", _avanceArea.value)
+      .apply()
   }
 
   /**
-   * «Jugar» desde Avance (la lámina de un área, su ficha o «Lo que descubriste»): como [playFromHome] (nada de Juegos) y recuerda si había una lámina abierta para volver a ella al terminar.
+   * «Jugar» desde Avance (la lámina de un área, su ficha o «Lo que descubriste»): recuerda que se lanzó de aquí y si había una lámina abierta, para volver a ella al terminar.
    */
   fun playFromAvance(gameId: String, mode: com.example.data.PlayMode, timed: Boolean? = null) {
-    val area = _avanceArea.value
-    focusPrefs.edit().putString("avance_area", area).putString("avance_game", gameId).putBoolean("avance_return", area != null).apply()
-    playFromHome(gameId, mode, timed)
-  }
-
-  /** ¿Nubi ya contó, en su globo, que los juegos de cada lugar se ven en la lámina de Juegos (Tarea 155)? Una sola vez; vive en `library_focus` (pasajero: en un teléfono nuevo se vuelve a contar). */
-  val areaSheetIntroSeen: Boolean get() = focusPrefs.getBoolean("area_sheet_intro", false)
-
-  fun markAreaSheetIntroSeen() { focusPrefs.edit().putBoolean("area_sheet_intro", true).apply() }
-
-  /** "Jugar" en la ficha de Juegos: recuerda la casilla para volver a ella y lanza en el modo elegido. */
-  fun playFromLibrary(gameId: String, mode: com.example.data.PlayMode, timed: Boolean? = null) {
-    GameRegistry.getById(gameId)?.let { setLibraryFocus(it.domain, gameId) }
-    focusPrefs.edit().putBoolean("return", true).apply()
+    rememberOrigin(ORIGIN_AVANCE, gameId)
     if (timed != null) repository.setReto(gameId, timed)       // se recuerda por juego
     launchGame(gameId, mode = mode, customTimed = timed?.let { it && com.example.data.RetoChoice.supports(gameId) })
   }
 
   /**
-   * «Jugar» en la ficha que abre una piedrita de «Tu ruta de hoy» (Hoy): igual que [playFromLibrary] pero SIN recordar casilla ni área de Juegos y sin «volver» a Juegos: al terminar la partida la persona sigue en Hoy.
-   * Si el juego es el que sigue en el camino de hoy, su resultado lo avanza igual que desde Juegos (`recordGameResult` avanza el camino con el juego que toca).
+   * «Jugar» desde Hoy (una piedrita de «Tu ruta de hoy», una fila de la lámina de un lugar o de «Todos los juegos», o el «Jugar <el que sugiere Nubi>» de la lámina): recuerda que se lanzó de aquí y la lámina o «Todos los juegos» que había abiertos, para volver a ello al terminar.
+   * Si el juego es el que sigue en la ruta de hoy, su resultado la avanza igual (`recordGameResult` avanza la ruta con el juego que toca).
    */
   fun playFromHome(gameId: String, mode: com.example.data.PlayMode, timed: Boolean? = null) {
-    focusPrefs.edit().putBoolean("return", false).apply()
+    rememberOrigin(ORIGIN_HOY, gameId)
     if (timed != null) repository.setReto(gameId, timed)       // se recuerda por juego
     launchGame(gameId, mode = mode, customTimed = timed?.let { it && com.example.data.RetoChoice.supports(gameId) })
   }
+
+  /** ¿Nubi ya contó, en su globo, que los juegos ahora están en la isla (Tarea 158)? Una sola vez y solo a quien ya jugó; vive en `library_focus` (pasajero: en un teléfono nuevo se vuelve a contar). */
+  val islandMapIntroSeen: Boolean get() = focusPrefs.getBoolean("isla_mapa_intro", false)
+
+  fun markIslandMapIntroSeen() { focusPrefs.edit().putBoolean("isla_mapa_intro", true).apply() }
 
   /** La elección «Sin reloj / Contra el reloj» que vale hoy para [gameId] (la ficha de Juegos la muestra elegida). */
   fun retoFor(gameId: String): Boolean = repository.retoFor(gameId)
@@ -902,12 +915,17 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       setFlight(null)
       pausedGame = null
       GameSessionStore.clearAll()
-      clearAvanceArea()
+      clearOpenSheets()
       _currentTab.value = AppTab.HOY
     }
   }
 
   enum class HapticType { LIGHT, MEDIUM, SUCCESS, ERROR }
+
+  private companion object {
+    const val ORIGIN_HOY = "hoy"
+    const val ORIGIN_AVANCE = "avance"
+  }
 
   fun triggerHapticFeedback(type: HapticType = HapticType.LIGHT) {
     if (!userSettings.value.hapticsEnabled) return

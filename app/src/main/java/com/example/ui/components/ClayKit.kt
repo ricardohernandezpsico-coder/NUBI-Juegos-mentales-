@@ -233,11 +233,8 @@ enum class Glyph(val key: String, @DrawableRes val res: Int) {
   BELL("campana", R.drawable.kit_i_campana),
   PERSON("persona", R.drawable.kit_i_persona),
   UP("arriba", R.drawable.kit_i_arriba),
-  DOWN("abajo", R.drawable.kit_i_abajo),
-  // Tarea 156: los de la barra de pestañas (la isla con su banderita de Hoy, el cohete de Juegos y la farola de Avance)
-  ISLA("isla", R.drawable.kit_i_isla),
-  COHETE("cohete", R.drawable.kit_i_cohete),
-  FAROLA("farola", R.drawable.kit_i_farola)
+  DOWN("abajo", R.drawable.kit_i_abajo)
+  // (Tarea 158: los tres glifos de churro de la barra —isla, cohete y farola, de la Tarea 156— se fueron: la barra usa vectores, `NavIcons.kt`)
 }
 
 /** Un ícono de churro tinta en una caja de [size] × [size] dp (24 dp = el tamaño con que se renderizó; más grande se amplía de la misma imagen). */

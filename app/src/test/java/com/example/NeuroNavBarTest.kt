@@ -44,7 +44,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * La barra inferior del kit (Tarea 156, opción C de Fable): tres discos crema de 48 dp con un glifo de churro tinta (isla, cohete, farola), su rótulo de 16 sp debajo y la pestaña elegida sobre una losa sol, con el rótulo dentro, en tinta y negrita.
+ * La barra inferior del kit (Tarea 156, opción C de Fable): tres discos crema de 48 dp con un ícono vectorial de línea de tinta (isla, barras, persona; Tarea 158: Hoy · Avance · Tú), su rótulo de 16 sp debajo y la pestaña elegida sobre una losa sol, con el rótulo dentro, en tinta y negrita.
  * Se prueba que cada pestaña sea `Role.Tab` con `selected` y su nombre, que ocupe toda su columna (un tercio del ancho y todo el alto de la barra: ≥ 48 dp en los dos ejes), que la barra y sus rótulos queden DENTRO de la pantalla y sobre el inset de navegación
  * (48 dp, como con 3 botones), que a 393 dp mida ~89 dp (95 con letra 1,3), que los rótulos sean de 16 sp o más y de UNA línea hasta con letra 2,0, que SOLO la elegida lleve la losa, y que con «quitar animaciones» la elegida cambie de golpe; y se capturan las tres pestañas.
  */
@@ -76,7 +76,7 @@ class NeuroNavBarTest {
 
   private fun bounds(tag: String): Rect = rule.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
 
-  private val tabs = listOf("nav_item_hoy" to "Hoy", "nav_item_juegos" to "Juegos", "nav_item_progreso" to "Avance")
+  private val tabs = listOf("nav_item_hoy" to "Hoy", "nav_item_progreso" to "Avance", "nav_item_tu" to "Tú")
 
   private fun layoutOf(label: String): TextLayoutResult {
     val results = mutableListOf<TextLayoutResult>()
@@ -89,67 +89,67 @@ class NeuroNavBarTest {
 
   @Test
   fun cada_pestana_es_Role_Tab_con_su_nombre_y_solo_la_elegida_esta_selected() {
-    show(AppTab.JUEGOS)
+    show(AppTab.PROGRESO)
     for ((tag, name) in tabs) {
       val node = rule.onNodeWithTag(tag).fetchSemanticsNode()
       assertEquals("$tag es una pestaña", Role.Tab, node.config[SemanticsProperties.Role])
       assertEquals("$tag se llama $name", listOf(name), node.config[SemanticsProperties.ContentDescription])
     }
-    rule.onNodeWithTag("nav_item_juegos").assertIsSelected()
+    rule.onNodeWithTag("nav_item_progreso").assertIsSelected()
     rule.onNodeWithTag("nav_item_hoy").assertIsNotSelected()
-    rule.onNodeWithTag("nav_item_progreso").assertIsNotSelected()
+    rule.onNodeWithTag("nav_item_tu").assertIsNotSelected()
   }
 
   @Test
   fun tocar_una_pestana_la_elige() {
     show(AppTab.HOY)
+    rule.onNodeWithTag("nav_item_tu").performClick()
+    assertEquals(AppTab.TU, selected)
     rule.onNodeWithTag("nav_item_progreso").performClick()
     assertEquals(AppTab.PROGRESO, selected)
-    rule.onNodeWithTag("nav_item_juegos").performClick()
-    assertEquals(AppTab.JUEGOS, selected)
   }
 
   @Test
-  fun las_tres_etiquetas_son_Hoy_Juegos_y_Avance() {
-    show(AppTab.PROGRESO)
-    for (t in listOf("Hoy", "Juegos", "Avance")) rule.onNodeWithText(t, useUnmergedTree = true).assertIsDisplayed()
+  fun las_tres_etiquetas_son_Hoy_Avance_y_Tu() {
+    show(AppTab.TU)
+    for (t in listOf("Hoy", "Avance", "Tú")) rule.onNodeWithText(t, useUnmergedTree = true).assertIsDisplayed()
   }
 
   // ---- La elegida: forma (losa sol) y peso, nunca solo color
 
   @Test
   fun solo_la_elegida_lleva_la_losa_sol() {
-    show(AppTab.JUEGOS, reduce = true)
-    rule.onNodeWithTag("nav_slab_juegos", useUnmergedTree = true).assertExists()
+    show(AppTab.PROGRESO, reduce = true)
+    rule.onNodeWithTag("nav_slab_progreso", useUnmergedTree = true).assertExists()
     rule.onNodeWithTag("nav_slab_hoy", useUnmergedTree = true).assertDoesNotExist()
-    rule.onNodeWithTag("nav_slab_progreso", useUnmergedTree = true).assertDoesNotExist()
+    rule.onNodeWithTag("nav_slab_tu", useUnmergedTree = true).assertDoesNotExist()
   }
 
   @Test
   fun la_elegida_va_en_negrita_y_las_otras_no() {
-    show(AppTab.PROGRESO)
-    assertTrue("«Avance» elegida en negrita", (layoutOf("Avance").layoutInput.style.fontWeight?.weight ?: 400) >= 700)
+    show(AppTab.TU)
+    assertTrue("«Tú» elegida en negrita", (layoutOf("Tú").layoutInput.style.fontWeight?.weight ?: 400) >= 700)
     assertTrue("«Hoy» sin elegir no es negrita", (layoutOf("Hoy").layoutInput.style.fontWeight?.weight ?: 400) < 700)
-    assertTrue("«Juegos» sin elegir no es negrita", (layoutOf("Juegos").layoutInput.style.fontWeight?.weight ?: 400) < 700)
+    assertTrue("«Avance» sin elegir no es negrita", (layoutOf("Avance").layoutInput.style.fontWeight?.weight ?: 400) < 700)
   }
 
   @Test
   fun con_quitar_animaciones_la_losa_cambia_de_golpe() {
     show(AppTab.HOY, reduce = true)
     rule.onNodeWithTag("nav_slab_hoy", useUnmergedTree = true).assertExists()
-    shown = AppTab.PROGRESO
+    shown = AppTab.TU
     rule.waitForIdle()
     rule.onNodeWithTag("nav_slab_hoy", useUnmergedTree = true).assertDoesNotExist()
-    rule.onNodeWithTag("nav_slab_progreso", useUnmergedTree = true).assertExists()
+    rule.onNodeWithTag("nav_slab_tu", useUnmergedTree = true).assertExists()
   }
 
   @Test
   fun la_losa_se_funde_y_termina_en_la_nueva_elegida() {
     show(AppTab.HOY)
-    shown = AppTab.JUEGOS
+    shown = AppTab.PROGRESO
     rule.waitForIdle()
     rule.onNodeWithTag("nav_slab_hoy", useUnmergedTree = true).assertDoesNotExist()
-    rule.onNodeWithTag("nav_slab_juegos", useUnmergedTree = true).assertExists()
+    rule.onNodeWithTag("nav_slab_progreso", useUnmergedTree = true).assertExists()
   }
 
   // ---- Medidas: dentro de la pantalla, sobre el inset, toque amplio
@@ -173,8 +173,8 @@ class NeuroNavBarTest {
   }
 
   @Test fun la_barra_cabe_sobre_el_inset_a_393() { show(AppTab.HOY); assertFitsAboveNavigation(393, 873) }
-  @Test fun la_barra_cabe_sobre_el_inset_a_360() { show(AppTab.JUEGOS, 360, 780); assertFitsAboveNavigation(360, 780) }
-  @Test fun la_barra_cabe_sobre_el_inset_a_411() { show(AppTab.PROGRESO, 411, 914); assertFitsAboveNavigation(411, 914) }
+  @Test fun la_barra_cabe_sobre_el_inset_a_360() { show(AppTab.PROGRESO, 360, 780); assertFitsAboveNavigation(360, 780) }
+  @Test fun la_barra_cabe_sobre_el_inset_a_411() { show(AppTab.TU, 411, 914); assertFitsAboveNavigation(411, 914) }
   @Test fun la_barra_cabe_con_letra_1_3() { show(AppTab.HOY, fontScale = 1.3f); assertFitsAboveNavigation(393, 873) }
   @Test fun la_barra_cabe_con_letra_2_0_y_crece_en_vez_de_cortar() { show(AppTab.HOY, fontScale = 2f); assertFitsAboveNavigation(393, 873) }
 
@@ -209,7 +209,7 @@ class NeuroNavBarTest {
   // ---- Rótulos: 16 sp o más y una sola línea, hasta con letra 2,0
 
   private fun rotulosDe16SpYUnaLinea(scale: Float) {
-    show(AppTab.JUEGOS, fontScale = scale)
+    show(AppTab.PROGRESO, fontScale = scale)
     for ((tag, t) in tabs) {
       val layout = layoutOf(t)
       assertTrue("«$t» a letra $scale mide ≥ 16 sp: ${layout.layoutInput.style.fontSize}", layout.layoutInput.style.fontSize.value >= 16f)
@@ -226,21 +226,21 @@ class NeuroNavBarTest {
 
   @Test
   fun con_letra_2_0_la_barra_es_mas_alta_que_a_letra_normal() {
-    show(AppTab.JUEGOS, fontScale = 2f)
+    show(AppTab.PROGRESO, fontScale = 2f)
     assertTrue("a letra 2,0 la barra crece", bounds("bottom_nav_bar").height / rule.density.density > 100f)
   }
 
   // ---- Capturas de las tres pestañas
 
   @Test fun captura_hoy_393() { show(AppTab.HOY); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-hoy-393.png") }
-  @Test fun captura_juegos_393() { show(AppTab.JUEGOS); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-juegos-393.png") }
   @Test fun captura_avance_393() { show(AppTab.PROGRESO); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-avance-393.png") }
+  @Test fun captura_tu_393() { show(AppTab.TU); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-tu-393.png") }
   @Test fun captura_hoy_360() { show(AppTab.HOY, 360, 780); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-hoy-360.png") }
-  @Test fun captura_juegos_360() { show(AppTab.JUEGOS, 360, 780); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-juegos-360.png") }
   @Test fun captura_avance_360() { show(AppTab.PROGRESO, 360, 780); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-avance-360.png") }
+  @Test fun captura_tu_360() { show(AppTab.TU, 360, 780); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-tu-360.png") }
   @Test fun captura_hoy_411() { show(AppTab.HOY, 411, 914); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-hoy-411.png") }
   @Test fun captura_hoy_letra_1_3() { show(AppTab.HOY, fontScale = 1.3f); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-hoy-letra13.png") }
   @Test fun captura_hoy_letra_2_0() { show(AppTab.HOY, fontScale = 2f); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-hoy-letra20.png") }
-  @Test fun captura_juegos_letra_2_0() { show(AppTab.JUEGOS, fontScale = 2f); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-juegos-letra20.png") }
   @Test fun captura_avance_letra_2_0() { show(AppTab.PROGRESO, fontScale = 2f); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-avance-letra20.png") }
+  @Test fun captura_tu_letra_2_0() { show(AppTab.TU, fontScale = 2f); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-tu-letra20.png") }
 }
