@@ -50,7 +50,7 @@ class RescateTest {
 
   @Test
   fun `las rondas perfectas y la racha`() {
-    assertEquals("Rondas perfectas: 5 de 12 · más seguidos ×3", Rescate.perfectLine(5, 12, 3))
+    assertEquals("Rondas perfectas: 5 de 12 · más seguidos: 3", Rescate.perfectLine(5, 12, 3))
     assertEquals("Rondas perfectas: 3 de 12", Rescate.perfectLine(3, 12, 1))
     assertEquals("Rondas perfectas: 4 de 4", Rescate.perfectLine(9, 4, null))
     assertNull(Rescate.perfectLine(null, 12, 2))

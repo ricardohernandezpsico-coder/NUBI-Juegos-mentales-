@@ -103,7 +103,7 @@ class PuntaTest {
 
   @Test
   fun `el tiempo solo se dice con tres o mas encontradas solas`() {
-    assertEquals("Tardaste 4,2 s en decir «¡La tengo!» en las que salieron solas", Punta.speedLine(4200, 3))
+    assertEquals("Tardaste 4,2 segundos en decir «¡La tengo!» en las que salieron solas", Punta.speedLine(4200, 3))
     assertNull(Punta.speedLine(4200, 2))
     assertNull(Punta.speedLine(null, 5))
     assertNull(Punta.speedLine(0, 5))

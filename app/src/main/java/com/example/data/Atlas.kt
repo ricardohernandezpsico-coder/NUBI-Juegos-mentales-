@@ -165,10 +165,10 @@ object Atlas {
     return 100f * hits / seen
   }
 
-  /** Mediana del tiempo hasta el toque, dicha en segundos ("1,8 s"); null sin dato. */
+  /** Mediana del tiempo hasta el toque, dicha en segundos ("1,8 segundos"); null sin dato. */
   fun speedLine(ms: Int?): String? {
     if (ms == null || ms <= 0) return null
-    return "Mediana al tocar: " + String.format(java.util.Locale("es"), "%.1f", ms / 1000f).replace('.', ',') + " s"
+    return "Mediana al tocar: " + MeasurePhrases.secondsOf(String.format(java.util.Locale("es"), "%.1f", ms / 1000f).replace('.', ','))
   }
 
   /** Para lectores de pantalla. */

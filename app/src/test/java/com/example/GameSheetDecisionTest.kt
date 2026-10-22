@@ -91,7 +91,7 @@ class GameSheetDecisionTest {
   @Test
   fun la_ficha_parte_plegada_con_la_linea_de_resumen_y_las_secciones_ni_se_componen() {
     setSheet()
-    rule.onNodeWithTag("sheet_summary").assertTextEquals("A tu medida · con reloj (2 min)")
+    rule.onNodeWithTag("sheet_summary").assertTextEquals("A tu medida · con reloj (2 minutos)")
     rule.onNodeWithTag("sheet_change").assertTextEquals("Cambiar cómo jugar")
     for (tag in sections) rule.onNodeWithTag(tag).assertDoesNotExist()
     rule.onNodeWithText("¿Cómo quieres jugar?").assertDoesNotExist()
@@ -133,7 +133,7 @@ class GameSheetDecisionTest {
     rule.waitForIdle()
     rule.onNodeWithTag("mode_DESAFIO").assertIsSelected()
     for (tag in sections) rule.onNodeWithTag(tag).assertExists()                       // no se plegó sola
-    rule.onNodeWithTag("sheet_summary").assertTextEquals("Desafío · con reloj (2 min)")
+    rule.onNodeWithTag("sheet_summary").assertTextEquals("Desafío · con reloj (2 minutos)")
     rule.onNodeWithTag("sheet_play").assertContentDescriptionEquals("Jugar, en Desafío, con reloj")
     rule.onNodeWithTag("reto_sin").performClick()
     rule.waitForIdle()

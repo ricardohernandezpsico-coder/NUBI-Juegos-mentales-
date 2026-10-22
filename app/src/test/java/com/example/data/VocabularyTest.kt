@@ -64,7 +64,7 @@ class VocabularyTest {
 
   @Test
   fun `el tiempo de reconocimiento necesita las dos medianas`() {
-    assertEquals("Las comunes, en 0,7 s. Las raras, en 1,1 s.", Vocabulary.recognitionSentence(700, 1100))
+    assertEquals("Las comunes, en 0,7 segundos. Las raras, en 1,1 segundos.", Vocabulary.recognitionSentence(700, 1100))
     assertNull(Vocabulary.recognitionSentence(700, -1))
     assertNull(Vocabulary.recognitionSentence(null, 1100))
   }

@@ -21,7 +21,7 @@
 | 3 | **La cifra** (34 sp, Fredoka Bold, suelta, sin tarjeta) | `result_headline` |
 | 4 | **La unidad** (17 sp Nunito Regular, interlineado 24 sp) | `result_unit` |
 | 5 | **Tu avance en UNA frase**, con los dos números adentro (16 sp SemiBold); sin medida hoy no se dibuja | `progress_phrase` |
-| 6 | **Avisos** cuando pasan (píldoras; máximo 2): la etapa que subió, lo nuevo del juego («Modo nuevo: En marcha», «¡Despegó tu cohete n.º 3!»), la nota del modo | `result_notices` |
+| 6 | **Avisos** cuando pasan (píldoras; máximo 2): la etapa que subió, lo nuevo del juego («Modo nuevo: En marcha», «¡Despegó tu cohete número 3!»), la nota del modo | `result_notices` |
 | 7 | **Truco para la próxima** (el único recuadro) | `next_trick` |
 | 8 | **Botón principal**: «Siguiente: {juego} · N de 3» con el emblema del juego a la izquierda; en el último, «Terminar la ruta de hoy»; en partida libre, «Listo» | `btn_result_continue` |
 | 9 | «Jugar de nuevo» | `btn_result_replay` |
@@ -41,21 +41,21 @@
 | Rastro de luz | «5 luces» · «seguidas, bien repetidas» | la frase de `Trail.noTrailLine` |
 | Bodega de carga | «9 de 12 objetos» · «al primer intento» | — |
 | La estación de correo | «8 de 11 encargos» · «cumplidos a tiempo» (la frase de avance sigue en %) | «Sin encargos en esta partida.» |
-| Tinta o Palabra | «+0,4 s» (o «casi nada») · «te frenó la palabra» | «Esta vez no hubo aciertos suficientes para medirlo.» |
+| Tinta o Palabra | «0,4 segundos» (o «casi nada») · «de demora cuando la palabra te frenó» (con «casi nada», «te frenó la palabra») | «Esta vez no hubo aciertos suficientes para medirlo.» |
 | Piloto Estelar | «58 %» · «de las señales, a los mandos» | `Piloto.TOO_FEW_LINE` |
 | Freno de Emergencia | «zona firme» · «tu freno, en 5 partidas» / «tu freno, primera lectura» | «Sin estimación: hacen falta 6 altos y frenar entre 1 de cada 4 y 3 de cada 4.» |
 | Satélites | «2,6 satélites» · «a la vez, sin perderlos de vista» | «Sin rondas suficientes para medir tu seguimiento.» |
 | Rescate relámpago | «0,17 segundos» · «de vistazo te bastan» | «Sin rondas suficientes para medir tu vistazo.» |
 | Carga exacta | «5 de 8 cargas» · «sin pista» | — |
 | Engranajes | «7 de 10 máquinas» · «arregladas» | — |
-| Acoplamiento | «212° por segundo» · «de giro en tu mente» | «Se calcula con 8 aciertos en 3 ángulos y 7 de cada 10 bien.» |
+| Acoplamiento | «212 grados» · «por segundo, de giro en tu mente» | «Se calcula con 8 aciertos en 3 ángulos y 7 de cada 10 bien.» |
 | Aterrizaje Lunar | no se toca: «9 % de la regla» · «Como quedar a 9 en una regla de 0 a 100.» | — |
 | En la punta de la lengua | «5 de 8 palabras» · «por tu cuenta» | — |
 | Lluvia de meteoros | «51 %» · «de las palabras raras, reconocidas» | «Sin palabras suficientes para medir tu vocabulario.» |
 | ¿Verdad o disparate? | «142 palabras» · «por minuto, leyendo y decidiendo» (la frase usa «142 por minuto») | «Faltan unas 10 respuestas bien para medir tu lectura.» |
 | La estrella intrusa | «11 de 14 rondas» · «bien resueltas» | — |
 
-**Las frases de avance** (`FinalesConSentido.PHRASE_*` con `{promedio}` y `{mejor}`; `phraseWith` los llena con la unidad del juego: «4 luces», «70 %», «zona firme», «+0,3 s», «2,4 satélites», «0,18 segundos», «200 °/s», «140 por minuto»): primera partida «Primera partida: la próxima te comparas contigo.»; mejor «Mejor que tu promedio ({promedio}). Tu mejor: {mejor}.»; parejo «Como tu promedio ({promedio}): vas parejo. Tu mejor: {mejor}.»; bajo «Un poco bajo tu promedio ({promedio}): es normal que varíe.»; mejor que tu mejor «¡Tu mejor hasta ahora! Tu promedio: {promedio}.» — esta última solo cuando no hay sello propio: con sello (`recordNew`, o cualquier récord) el récord se dice UNA vez, arriba, y la frase usa la comparación con el promedio (`avoidBest`). Aterrizaje usa `Aterrizaje.phraseWith` con las mismas ideas. Las tolerancias de «parejo» (`FinalModels.TOLERANCE_*`) no cambiaron.
+**Las frases de avance** (`FinalesConSentido.PHRASE_*` con `{promedio}` y `{mejor}`; `phraseWith` los llena con la unidad del juego: «4 luces», «70 % de las veces» (cada medida de porcentaje dice su «de qué»: de los objetos, de los encargos, de las señales, de las cargas, de las máquinas, de las palabras, de aciertos), «zona firme», «0,3 segundos más», «2,4 satélites a la vez», «0,18 segundos», «200 grados por segundo», «140 palabras por minuto»): primera partida «Primera partida: la próxima te comparas contigo.»; mejor «Mejor que tu promedio ({promedio}). Tu mejor: {mejor}.»; parejo «Como tu promedio ({promedio}): vas parejo. Tu mejor: {mejor}.»; bajo «Un poco bajo tu promedio ({promedio}): es normal que varíe.»; mejor que tu mejor «¡Tu mejor hasta ahora! Tu promedio: {promedio}.» — esta última solo cuando no hay sello propio: con sello (`recordNew`, o cualquier récord) el récord se dice UNA vez, arriba, y la frase usa la comparación con el promedio (`avoidBest`). Aterrizaje usa `Aterrizaje.phraseWith` con las mismas ideas. Las tolerancias de «parejo» (`FinalModels.TOLERANCE_*`) no cambiaron.
 
 **La ficha del juego, «Qué pones en juego»** (`GameSheetContent`, tag `sheet_why`): después de la medida y antes de «A tu medida · con reloj», el mismo texto de «Por qué importa» pero en PRESENTE («Pones en juego la memoria de trabajo: …» / «Pones en juego lo que usas para recordar …», `Copy.sheetText`, misma regla del infinitivo) y «Fuente: …». Aterrizaje usa `Aterrizaje.SHEET_TEXT` y `Aterrizaje.SOURCE`.
 
@@ -170,7 +170,7 @@ El condicional del juego si aplica a esta partida (`Constelaciones.tip`, el modo
 
 | Juego | Medida (unidad) | Mejor es | Tolerancia | Por qué |
 |---|---|---|---|---|
-| Tinta o Palabra | cuánto te frenó la palabra (ms; se dice en palabras: «casi nada», «+0,4 s») | hacia abajo | 0,1 s (100 ms) | con pocos aciertos de cada tipo la diferencia varía 0,1 s o más, y en pantalla solo se ve en décimas de segundo |
+| Tinta o Palabra | cuánto te frenó la palabra (ms; se dice en palabras: «casi nada», «0,4 segundos más») | hacia abajo | 0,1 s (100 ms) | con pocos aciertos de cada tipo la diferencia varía 0,1 s o más, y en pantalla solo se ve en décimas de segundo |
 | Piloto Estelar | tus señales a los mandos (%) | hacia arriba | 5 puntos | de 8 a 25 señales de la misión por partida |
 | Freno de Emergencia | tu freno (ms; se dice en ZONAS: ágil, firme, pausado) | hacia abajo | 20 ms | una estimación sola trae pocos altos y varía unos 20 ms; la frase mira los milisegundos, pero NUNCA se muestran |
 | Satélites | cuántos seguiste de verdad a la vez (con un decimal) | hacia arriba | 0,3 | una partida varía de 0,3 a 0,6 de una a otra |
@@ -182,7 +182,7 @@ El condicional del juego si aplica a esta partida (`Constelaciones.tip`, el modo
 
 | Juego | Medida a la vista | UN dato tuyo |
 |---|---|---|
-| Tinta o Palabra | «+0,4 s» y la frase de siempre («cuánto más tardaste…») | «Cambiar de orilla te costó: +0,2 s» (desde el nivel 3) |
+| Tinta o Palabra | «0,4 segundos» y la frase de siempre («cuánto más tardaste…») | «Cambiar de orilla te costó: 0,2 segundos más» (desde el nivel 3) |
 | Piloto Estelar | «58 %» «de las señales de tu misión, a los mandos» | «Señales de tu misión: 14 de 18» |
 | Freno de Emergencia | «zona firme» y «promedio de tus últimas 5 partidas» (o «primera lectura») | «Frenaste 6 de 8 altos» |
 | Satélites | «2,6 a la vez» y «cuántos seguiste de verdad al mismo tiempo…» | «Encendiste 12 luces» (o las rondas perfectas) |
@@ -211,8 +211,8 @@ Los cuadros de Carga y Engranajes van en **%** aunque el recuadro diga «5 de 8�
 | Juego | Medida a la vista | UN dato tuyo |
 |---|---|---|
 | Carga exacta («Tu reactor») | «5 de 8» «cargas logradas sin pista» | «Camino corto en 3 de esas 5» (con 3 o más sin pista); si no, el desglose «2 sin pista · 3 con pista» |
-| Engranajes («Tu cohete») | «7 de 10 máquinas» «arregladas» | lo que pasó con el cohete: «¡Despegó tu cohete n.º 3!» o «Faltan 4 luces: tu cohete espera en el hangar» |
-| Acoplamiento («Tu giro mental») | «212° por segundo» «los grados que giras la pieza en tu mente cada segundo» (sin medida de giro, la frase sin culpa de siempre) | «24 módulos acoplados» (o el récord nuevo) |
+| Engranajes («Tu cohete») | «7 de 10 máquinas» «arregladas» | lo que pasó con el cohete: «¡Despegó tu cohete número 3!» o «Faltan 4 luces: tu cohete espera en el hangar» |
+| Acoplamiento («Tu giro mental») | «212 grados» «por segundo, de giro en tu mente: los grados que giras la pieza cada segundo» (sin medida de giro, la frase sin culpa de siempre) | «24 módulos acoplados» (o el récord nuevo) |
 
 **Detrás de «Ver el detalle de tu partida»:** Carga, el desglose, el camino corto y el tiempo por carga; Engranajes, la etapa más alta, los cohetes en órbita, las luces del hangar y el ritmo; Acoplamiento, los anillos completos, el récord, lo acoplado en toda la vida, la curva de giro y cómo leerla.
 

@@ -110,7 +110,7 @@ class FinalModelsTest {
     assertEquals("8 de 11 encargos", m.headline)
     assertEquals("cumplidos a tiempo", m.headlineUnit)
     // la frase de avance sigue en % (es lo que se guarda)
-    assertEquals("Como tu promedio (70 %): vas parejo. Tu mejor: 80 %.", FinalModels.forGame(correo, points("estacion", 60f, 70f, 80f))!!.progressPhrase)
+    assertEquals("Como tu promedio (70 % de los encargos): vas parejo. Tu mejor: 80 % de los encargos.", FinalModels.forGame(correo, points("estacion", 60f, 70f, 80f))!!.progressPhrase)
     assertEquals("Miradas al reloj cerca de la hora: 1 de 3", m.dataLine)
     assertEquals("se escapó una hora y miró poco el reloj", "Mira el reloj cuando se acerque la hora.", m.trick)
     // todo salió bien: el truco general
@@ -143,12 +143,12 @@ class FinalModelsTest {
   fun `Tinta o Palabra dice cuanto te freno la palabra en palabras, el costo de cambio y el truco condicional`() {
     val m = FinalModels.forGame(tinta, emptyList())!!
     assertEquals("Cuánto te frenó la palabra", m.boxTitle)
-    assertEquals("+0,4 s", m.headline)
-    assertEquals("te frenó la palabra", m.headlineUnit)
-    assertEquals("Cambiar de orilla te costó: +0,2 s", m.dataLine)
+    assertEquals("0,4 segundos", m.headline)
+    assertEquals("de demora cuando la palabra te frenó", m.headlineUnit)
+    assertEquals("Cambiar de orilla te costó: 0,2 segundos más", m.dataLine)
     assertEquals("la diferencia es de 0,3 s o más: el truco condicional", "Mira primero de qué orilla llega y recién después la palabra: la orilla te dice qué tocar.", m.trick)
     val small = FinalModels.forGame(tinta.copy(interferenceMs = 80, switchCostMs = null), emptyList())!!
-    assertEquals("+0,1 s", small.headline)
+    assertEquals("0,1 segundos", small.headline)
     assertNull(small.dataLine)
     assertEquals("Mira primero de qué orilla llega y recién después la palabra.", small.trick)
     assertEquals("casi nada", FinalModels.forGame(tinta.copy(interferenceMs = 20), emptyList())!!.headline)
@@ -160,12 +160,12 @@ class FinalModelsTest {
   fun `Tinta o Palabra compara en decimas de segundo, menos es mejor y la tolerancia es de 0,1 s`() {
     val prev = points("stroop", 300f, 500f, 400f)         // promedio 400 ms, mejor (más bajo) 300 ms
     val m = FinalModels.forGame(tinta, prev)!!              // hoy 420 ms
-    assertEquals("Como tu promedio: vas parejo. Tu mejor: +0,3 s.", m.progressPhrase)
+    assertEquals("Como tu promedio: vas parejo. Tu mejor: 0,3 segundos más.", m.progressPhrase)
     assertSealed(FinalModels.forGame(tinta.copy(interferenceMs = 250), prev)!!)
     // mejor que el promedio por más de 0,1 s, sin superar tu mejor: antes 250, 500, 600 y 400 ms (promedio 437 ms)
-    assertTrue(FinalModels.forGame(tinta.copy(interferenceMs = 300), points("stroop", 250f, 500f, 600f, 400f))!!.progressPhrase.startsWith("Mejor que tu promedio (+0,4 s)."))
-    assertTrue("a 0,08 s del promedio todavía es parejo", FinalModels.forGame(tinta.copy(interferenceMs = 320), prev)!!.progressPhrase.startsWith("Como tu promedio (+0,4 s): vas parejo."))
-    assertEquals("Un poco bajo tu promedio (+0,4 s): es normal que varíe.", FinalModels.forGame(tinta.copy(interferenceMs = 560), prev)!!.progressPhrase)
+    assertTrue(FinalModels.forGame(tinta.copy(interferenceMs = 300), points("stroop", 250f, 500f, 600f, 400f))!!.progressPhrase.startsWith("Mejor que tu promedio (0,4 segundos más)."))
+    assertTrue("a 0,08 s del promedio todavía es parejo", FinalModels.forGame(tinta.copy(interferenceMs = 320), prev)!!.progressPhrase.startsWith("Como tu promedio (0,4 segundos más): vas parejo."))
+    assertEquals("Un poco bajo tu promedio (0,4 segundos más): es normal que varíe.", FinalModels.forGame(tinta.copy(interferenceMs = 560), prev)!!.progressPhrase)
   }
 
   @Test
@@ -281,7 +281,7 @@ class FinalModelsTest {
   fun `Carga exacta compara en porcentaje con 10 puntos de tolerancia`() {
     val prev = points("carga", 50f, 75f, 62.5f)
     val m = FinalModels.forGame(carga, prev)!!               // hoy 62,5 %
-    assertEquals("Como tu promedio: vas parejo. Tu mejor: 75 %.", m.progressPhrase)
+    assertEquals("Como tu promedio: vas parejo. Tu mejor: 75 % de las cargas.", m.progressPhrase)
     assertSealed(FinalModels.forGame(carga.copy(correctAnswers = 7, cargaAlone = 7), prev)!!)
   }
 
@@ -291,7 +291,7 @@ class FinalModelsTest {
     assertEquals("Tu cohete", m.boxTitle)
     assertEquals("7 de 10 máquinas", m.headline)
     assertEquals("arregladas", m.headlineUnit)
-    assertEquals("el despegue es un AVISO (una píldora), no un dato del detalle", listOf("¡Despegó tu cohete n.º 3!"), m.notices)
+    assertEquals("el despegue es un AVISO (una píldora), no un dato del detalle", listOf("¡Despegó tu cohete número 3!"), m.notices)
     assertNull(m.dataLine)
     assertEquals("Faltan 4 luces: tu cohete espera en el hangar", FinalModels.forGame(engranajes.copy(engrLaunches = 0, engrLights = 6), emptyList())!!.dataLine)
     assertEquals(emptyList<String>(), FinalModels.forGame(engranajes.copy(engrLaunches = 0, engrLights = 6), emptyList())!!.notices)
@@ -304,12 +304,12 @@ class FinalModelsTest {
   fun `Acoplamiento dice el giro mental en grados por segundo y los modulos acoplados`() {
     val m = FinalModels.forGame(acoplamiento, points("rotation", 180f, 200f, 260f))!!
     assertEquals("Tu giro mental", m.boxTitle)
-    assertEquals("212° por segundo", m.headline)
+    assertEquals("212 grados", m.headline)
     assertEquals("24 módulos acoplados", m.dataLine)
-    assertEquals("de giro en tu mente", m.headlineUnit)
-    assertEquals("Como tu promedio (213 °/s): vas parejo. Tu mejor: 260 °/s.", m.progressPhrase)
+    assertEquals("por segundo, de giro en tu mente", m.headlineUnit)
+    assertEquals("Como tu promedio (213 grados por segundo): vas parejo. Tu mejor: 260 grados por segundo.", m.progressPhrase)
     assertEquals("Elige una parte que destaque, como una punta o un codo, y gira solo esa en tu mente.", m.trick)
-    assertEquals("Mejor que tu promedio (227 °/s). Tu mejor: 300 °/s.", FinalModels.forGame(acoplamiento.copy(rotationSpeedDps = 270), points("rotation", 180f, 200f, 300f))!!.progressPhrase)
+    assertEquals("Mejor que tu promedio (227 grados por segundo). Tu mejor: 300 grados por segundo.", FinalModels.forGame(acoplamiento.copy(rotationSpeedDps = 270), points("rotation", 180f, 200f, 300f))!!.progressPhrase)
     assertSealed(FinalModels.forGame(acoplamiento.copy(rotationSpeedDps = 320), points("rotation", 180f, 200f, 300f))!!)
     val none = FinalModels.forGame(acoplamiento.copy(rotationSpeedDps = null, rotationCurveMs = null), emptyList())!!
     assertEquals("—", none.headline)
@@ -353,7 +353,7 @@ class FinalModelsTest {
     assertEquals("Tu cielo de palabras", m.boxTitle)
     assertEquals("5 de 8 palabras", m.headline)
     assertEquals("por tu cuenta", m.headlineUnit)
-    assertEquals("Tardaste 6,5 s en decir «¡La tengo!» en las que salieron solas", m.dataLine)
+    assertEquals("Tardaste 6,5 segundos en decir «¡La tengo!» en las que salieron solas", m.dataLine)
     assertEquals("Si una no sale, piensa en cómo empieza o en otra parecida: suele destrabarla.", m.trick)
     assertEquals("las azules vuelven: es el dato cuando no hay tiempo que decir", "Las azules vuelven en otra partida.", FinalModels.forGame(punta.copy(puntaSolo = 1, puntaPista = 2, puntaVista = 1), emptyList())!!.dataLine)
     // todas solas: no hay nada que aconsejar y el truco que sale es el general de la tabla (el mismo texto: siempre hay truco)
@@ -372,7 +372,7 @@ class FinalModelsTest {
     assertEquals("de las palabras raras, reconocidas", m.headlineUnit)
     assertTrue(m.dataLine!!, m.dataLine!!.startsWith("Reconoces "))
     assertEquals("Las letras cambiadas de lugar engañan a casi todos: leemos la palabra entera. Mira el centro de la palabra para no caer.", m.trick)
-    assertEquals("Como tu promedio (50 %): vas parejo. Tu mejor: 60 %.", m.progressPhrase)
+    assertEquals("Como tu promedio (50 % de las palabras): vas parejo. Tu mejor: 60 % de las palabras.", m.progressPhrase)
     // sin lo que engaña: el truco general
     assertEquals("Si dudas, mira el centro de la palabra: ahí suelen esconderse las letras cambiadas.", FinalModels.forGame(meteoros.copy(lexFaSeen = listOf(7, 7, 7), lexFaHits = listOf(0, 0, 0)), emptyList())!!.trick)
     val few = FinalModels.forGame(meteoros.copy(lexBandSeen = listOf(2, 2, 2, 2, 2, 2), lexBandHits = listOf(2, 2, 2, 2, 2, 2)), emptyList())!!
@@ -386,9 +386,9 @@ class FinalModelsTest {
     assertEquals("Tu lectura con comprensión", m.boxTitle)
     assertEquals("142 palabras", m.headline)
     assertEquals("por minuto, leyendo y decidiendo", m.headlineUnit)
-    assertTrue(m.dataLine!!, m.dataLine!!.contains("te toman 0,6 s más que las frases simples"))
+    assertTrue(m.dataLine!!, m.dataLine!!.contains("te toman 0,6 segundos más que las frases simples"))
     assertTrue(m.trick, m.trick.isNotBlank() && m.trick != "Con un «no», lee la frase sin él y después dale la vuelta.")
-    assertEquals("Como tu promedio (140 por minuto): vas parejo. Tu mejor: 150 por minuto.", m.progressPhrase)
+    assertEquals("Como tu promedio (140 palabras por minuto): vas parejo. Tu mejor: 150 palabras por minuto.", m.progressPhrase)
     // sin tipo lento: el dato es tu mejor racha y el truco es el general
     val even = FinalModels.forGame(disparate.copy(svRtType = listOf(900, 900, 900, 900, 900, 900)), emptyList())!!
     assertEquals("Más seguidos: 14", even.dataLine)
@@ -404,7 +404,7 @@ class FinalModelsTest {
     assertEquals("bien resueltas", m.headlineUnit)
     assertEquals("Las trampas te engañaron 2 de 4", m.dataLine)
     assertEquals("Antes de tocar, pregúntate qué TIPO de cosa es cada una.", m.trick)
-    assertEquals("Como tu promedio (75 %): vas parejo. Tu mejor: 80 %.", m.progressPhrase)
+    assertEquals("Como tu promedio (75 % de aciertos): vas parejo. Tu mejor: 80 % de aciertos.", m.progressPhrase)
     // las resististe todas: el dato es el bonus
     assertEquals("¿Qué las une? Nombraste 3 de 5", FinalModels.forGame(intrusa.copy(intrHitsType = listOf(3, 3, 2, 2, 2, 2)), emptyList())!!.dataLine)
     assertEquals("Fuente: Mirman, Landrigan y Britt, 2017", m.source)
@@ -424,7 +424,7 @@ class FinalModelsTest {
     // Constelaciones: hoy 78 % (7 de 9); antes 60, 70 y 80 %
     val m = FinalModels.forGame(constelaciones, points("place", 60f, 70f, 80f))!!
     assertEquals("ya no hay tres cuadros: los dos números van DENTRO de la frase", emptyList<Any>(), m.chips)
-    assertEquals("Mejor que tu promedio (70 %). Tu mejor: 80 %.", m.progressPhrase)
+    assertEquals("Mejor que tu promedio (70 % de las veces). Tu mejor: 80 % de las veces.", m.progressPhrase)
     // Rastro: hoy 5 luces; antes 4, 5, 4, 5, 4 (promedio 4,4 → «4 luces» de promedio, redondeado; tu mejor 5)
     val r = FinalModels.forGame(rastro, points("trail", 4f, 5f, 4f, 5f, 4f))!!
     assertEquals("Mejor que tu promedio (4 luces).", r.progressPhrase)
@@ -503,7 +503,7 @@ class FinalModelsTest {
       Triple(rastro, "5 luces", "seguidas, bien repetidas"),
       Triple(bodega, "9 de 12 objetos", "al primer intento"),
       Triple(correo, "8 de 11 encargos", "cumplidos a tiempo"),
-      Triple(tinta, "+0,4 s", "te frenó la palabra"),
+      Triple(tinta, "0,4 segundos", "de demora cuando la palabra te frenó"),
       Triple(tinta.copy(interferenceMs = 20), "casi nada", "te frenó la palabra"),
       Triple(piloto, "58 %", "de las señales, a los mandos"),
       Triple(freno, "zona firme", "tu freno, primera lectura"),
@@ -511,7 +511,7 @@ class FinalModelsTest {
       Triple(rescate, "0,17 segundos", "de vistazo te bastan"),
       Triple(carga, "5 de 8 cargas", "sin pista"),
       Triple(engranajes, "7 de 10 máquinas", "arregladas"),
-      Triple(acoplamiento, "212° por segundo", "de giro en tu mente"),
+      Triple(acoplamiento, "212 grados", "por segundo, de giro en tu mente"),
       Triple(punta, "5 de 8 palabras", "por tu cuenta"),
       Triple(meteoros, "51 %", "de las palabras raras, reconocidas"),
       Triple(disparate, "142 palabras", "por minuto, leyendo y decidiendo"),

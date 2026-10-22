@@ -272,7 +272,7 @@ fun GameResultScreen(
         sat.lightsLine(result.satLights)?.let { "satelites_lights" to it },
         sat.perfectLine(result.satPerfect, result.totalTrials, result.satBestStreak)?.let { "satelites_perfect" to it },
         sat.recordLine(result.satBest, result.satNewRecord)?.let { "satelites_record" to it },
-        result.trackingSpeed?.let { "satelites_speed" to "Velocidad más alta superada: ${String.format(java.util.Locale("es"), "%.1f", it)}×" }
+        result.trackingSpeed?.let { speed -> "satelites_speed" to String.format(java.util.Locale("es"), "%.1f", speed).let { n -> if (n == "1,0") "Velocidad más alta superada: la inicial" else "Velocidad más alta superada: $n veces la inicial" } }
       ).filter { it.second != model.dataLine && it.second != model.recordSeal }
       MeaningfulResult(model, detail = {
         if (result.satLights != null) Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -334,6 +334,7 @@ fun GameResultScreen(
       val model = remember(result, starMeasures) { FinalModels.meteoros(result, starMeasures) }
       MeaningfulResult(model, detail = {
         DetailTitle("Por grupo de palabras")
+        DetailText("Cada barra es el porcentaje de palabras de ese grupo que reconociste.", "meteoros_groups_caption")
         Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp).semantics { contentDescription = "Tu vocabulario. $phrase" }, horizontalAlignment = Alignment.CenterHorizontally) {
           val lowGroup = vocab.lowestGroup(groups)
           vocab.GROUP_LABELS.forEachIndexed { i, label -> VocabBar(label, groups[i], i == lowGroup, Modifier.fillMaxWidth().padding(vertical = 4.dp)) }
@@ -351,7 +352,7 @@ fun GameResultScreen(
           Row(Modifier.fillMaxWidth().padding(start = 4.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             OnBoardText("Tu colección", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = AppFamily, modifier = Modifier.weight(1f))
             OnBoardText(
-              text = "+${words.size} palabra${if (words.size == 1) "" else "s"} rara${if (words.size == 1) "" else "s"}",
+              text = "${words.size} palabra${if (words.size == 1) "" else "s"} rara${if (words.size == 1) "" else "s"}",
               color = Clay.Lime, fontWeight = FontWeight.Bold, fontSize = 17.sp, fontFamily = AppFamily
             )
           }
@@ -560,6 +561,7 @@ fun GameResultScreen(
             Modifier.padding(horizontal = 40.dp).fillMaxWidth().height(110.dp)
               .semantics { contentDescription = "Tu curva de giro: tiempo de respuesta según cuán girada venía la pieza" }
           )
+          DetailLine("Abajo, los grados que venía girada la pieza; arriba, los segundos que tardaste en promedio.", "acoplamiento_curve_caption")
         }
         DetailLine(
           if (result.rotationSpeedDps != null) "Cuanto más girada viene la pieza, más tardamos: es la huella de girarla en la mente (Cooper y Shepard, 1973). Tu giro sale de cuánto sube tu tiempo por cada grado, solo con tus aciertos. Sin reloj, sin apuro de tiempo, la medida es más fiel."
@@ -909,13 +911,14 @@ private fun aterrizajeModel(
 // ---------- Acoplamiento: "tu curva de giro" ----------
 
 /**
- * Cinco columnas de arcilla (0°, 45°, 90°, 135°, 180°): la altura es el tiempo medio de respuesta a ese ángulo. Rótulo
- * del ángulo debajo y del tiempo (en segundos) encima: los valores se leen en texto, no solo por la altura.
+ * Cinco columnas de arcilla (0, 45, 90, 135 y 180 grados): la altura es el tiempo medio de respuesta a ese ángulo. Rótulo
+ * del ángulo debajo y del tiempo encima: los valores se leen en texto, no solo por la altura. La unidad (grados y segundos) va en la frase que
+ * está bajo el gráfico, no en cada cifra (Tarea 160: antes «45°» y «0,9 s»).
  */
 @Composable
 private fun RotationCurve(curve: List<Int?>, modifier: Modifier = Modifier) {
   val measurer = androidx.compose.ui.text.rememberTextMeasurer()
-  val labels = listOf("0°", "45°", "90°", "135°", "180°")
+  val labels = listOf("0", "45", "90", "135", "180")
   Canvas(modifier) {
     val maxMs = (curve.filterNotNull().maxOrNull() ?: 1).coerceAtLeast(1)
     val slot = size.width / 5f
@@ -935,7 +938,7 @@ private fun RotationCurve(curve: List<Int?>, modifier: Modifier = Modifier) {
         androidx.compose.ui.geometry.CornerRadius(6.dp.toPx()))
       drawRoundRect(Clay.Grape, Offset(cx - barW / 2f, top), androidx.compose.ui.geometry.Size(barW, h),
         androidx.compose.ui.geometry.CornerRadius(6.dp.toPx()))
-      val v = measurer.measure(String.format(java.util.Locale("es"), "%.1f s", ms / 1000f), small.copy(color = Clay.Cream))
+      val v = measurer.measure(String.format(java.util.Locale("es"), "%.1f", ms / 1000f), small.copy(color = Clay.Cream))
       drawText(v, topLeft = Offset(cx - v.size.width / 2f, top - v.size.height - 2.dp.toPx()))
     }
   }
@@ -958,7 +961,7 @@ private fun VocabBar(label: String, percent: Int, lowest: Boolean, modifier: Mod
     }
     Column(Modifier.width(if (percent >= 0) 76.dp else 92.dp), horizontalAlignment = Alignment.End) {
       Text(
-        text = if (percent >= 0) "$percent%" else "aún sin medir",
+        text = if (percent >= 0) "$percent %" else "aún sin medir",
         color = if (percent >= 0) Clay.Cream else TextSoft,
         fontWeight = FontWeight.Bold,
         fontSize = if (percent >= 0) 17.sp else 16.sp,

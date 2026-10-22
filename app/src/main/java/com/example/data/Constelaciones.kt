@@ -28,8 +28,8 @@ object Constelaciones {
     return 100f * hits.coerceIn(0, opps) / opps
   }
 
-  /** «Memoria de lugar: 70 %» o «—» si no hubo oportunidades. */
-  fun headline(hits: Int?, opps: Int?): String = percent(hits, opps)?.let { "Memoria de lugar: $it %" } ?: "Memoria de lugar: —"
+  /** «Memoria de lugar: 70 % de las veces» o «—» si no hubo oportunidades. */
+  fun headline(hits: Int?, opps: Int?): String = percent(hits, opps)?.let { "Memoria de lugar: $it % de las veces" } ?: "Memoria de lugar: —"
 
   /** «7 de 10 veces fuiste directo a una pareja que ya habías visto»; sin oportunidades, una frase que lo dice sin culpa. */
   fun detailLine(hits: Int?, opps: Int?): String =

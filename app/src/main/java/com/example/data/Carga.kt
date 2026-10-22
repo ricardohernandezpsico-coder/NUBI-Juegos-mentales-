@@ -41,10 +41,10 @@ object Carga {
     return parts.joinToString(" · ").ifEmpty { null }
   }
 
-  /** «Tardaste 14 s por carga, en promedio, en las que lograste sin pista»; solo con [MIN_ALONE_FOR_DETAILS] o más. */
+  /** «Tardaste 14 segundos por carga, en promedio, en las que lograste sin pista»; solo con [MIN_ALONE_FOR_DETAILS] o más. */
   fun speedLine(ms: Int?, alone: Int?): String? {
     if (ms == null || ms <= 0 || ms > MAX_MS || alone == null || alone < MIN_ALONE_FOR_DETAILS) return null
-    return "Tardaste " + String.format(Locale("es"), "%.0f", ms / 1000f) + " s por carga, en promedio, en las que lograste sin pista"
+    return "Tardaste " + MeasurePhrases.secondsOf(String.format(Locale("es"), "%.0f", ms / 1000f)) + " por carga, en promedio, en las que lograste sin pista"
   }
 
   /** «Camino corto en 3 de esas 5»: las que lograste con los pasos del camino más corto; solo con [MIN_ALONE_FOR_DETAILS] o más. */

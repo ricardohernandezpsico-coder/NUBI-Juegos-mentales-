@@ -61,10 +61,10 @@ object Bodega {
     return if (isNew == true) "¡Nuevo récord! " + objects(best) else "Tu récord: " + objects(best)
   }
 
-  /** «Tu ritmo: 4,5 s por objeto»; solo con [MIN_FOR_DETAILS] o más objetos. */
+  /** «Tu ritmo: 4,5 segundos por objeto»; solo con [MIN_FOR_DETAILS] o más objetos. */
   fun paceLine(ms: Int?, total: Int?): String? {
     if (ms == null || ms <= 0 || ms > MAX_MS || total == null || total < MIN_FOR_DETAILS) return null
-    return "Tu ritmo: " + String.format(Locale("es"), "%.1f", ms / 1000f) + " s por objeto"
+    return "Tu ritmo: " + MeasurePhrases.secondsOf(String.format(Locale("es"), "%.1f", ms / 1000f)) + " por objeto"
   }
 
   /** El consejo (con la marca «Truco: » que lee [ResultAdvice]): cuando algún objeto no se encontró al primer intento. null si todos salieron a la primera. */

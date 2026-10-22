@@ -99,10 +99,10 @@ object Punta {
     return parts.joinToString(" · ")
   }
 
-  /** «Tardaste 4,2 s en decir ¡La tengo! en las que salieron solas»; solo con [MIN_ALONE_FOR_SPEED] solas o más. */
+  /** «Tardaste 4,2 segundos en decir ¡La tengo! en las que salieron solas»; solo con [MIN_ALONE_FOR_SPEED] solas o más. */
   fun speedLine(ms: Int?, solo: Int?): String? {
     if (ms == null || ms <= 0 || ms > MAX_SPEED_MS || solo == null || solo < MIN_ALONE_FOR_SPEED) return null
-    return "Tardaste " + String.format(Locale("es"), "%.1f", ms / 1000f).replace('.', ',') + " s en decir «¡La tengo!» en las que salieron solas"
+    return "Tardaste " + MeasurePhrases.secondsOf(String.format(Locale("es"), "%.1f", ms / 1000f).replace('.', ',')) + " en decir «¡La tengo!» en las que salieron solas"
   }
 
   /** Si alguna necesitó ayuda o la mostró Nubi: normalizar que pasa, con el truco de la escalera. null si todas salieron solas. */

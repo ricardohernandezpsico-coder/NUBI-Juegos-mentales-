@@ -39,7 +39,7 @@ class RetoChoiceTest {
       assertNotNull("${g.id} no tiene duración de Reto", RetoChoice.seconds(g.id))
     }
     assertEquals("Constelaciones dura 3 min", 180, RetoChoice.seconds("parejas"))
-    assertEquals("Con reloj (3 min)", RetoChoice.timedLabel("parejas"))
+    assertEquals("Con reloj (3 minutos)", RetoChoice.timedLabel("parejas"))
   }
 
   @Test
@@ -71,11 +71,11 @@ class RetoChoiceTest {
 
   @Test
   fun `la linea de resumen dice el modo y el reloj con su duracion`() {
-    assertEquals("A tu medida · con reloj (2 min)", RetoChoice.summaryLabel(PlayMode.A_TU_MEDIDA, true, supportsReto = true, seconds = 120))
+    assertEquals("A tu medida · con reloj (2 minutos)", RetoChoice.summaryLabel(PlayMode.A_TU_MEDIDA, true, supportsReto = true, seconds = 120))
     assertEquals("A tu medida · sin reloj", RetoChoice.summaryLabel(PlayMode.A_TU_MEDIDA, false, supportsReto = true, seconds = 120))
     assertEquals("Suave · sin reloj", RetoChoice.summaryLabel(PlayMode.SUAVE, false, supportsReto = true, seconds = 120))
-    assertEquals("Desafío · con reloj (3 min)", RetoChoice.summaryLabel(PlayMode.DESAFIO, true, supportsReto = true, seconds = 180))
-    assertEquals("Al límite · con reloj (1 min 30 s)", RetoChoice.summaryLabel(PlayMode.EXPERTO, true, supportsReto = true, seconds = 90))
+    assertEquals("Desafío · con reloj (3 minutos)", RetoChoice.summaryLabel(PlayMode.DESAFIO, true, supportsReto = true, seconds = 180))
+    assertEquals("Al límite · con reloj (1 minuto y 30 segundos)", RetoChoice.summaryLabel(PlayMode.EXPERTO, true, supportsReto = true, seconds = 90))
     assertEquals("sin duración conocida, solo «con reloj»", "A tu medida · con reloj", RetoChoice.summaryLabel(PlayMode.A_TU_MEDIDA, true, supportsReto = true))
   }
 
@@ -96,12 +96,12 @@ class RetoChoiceTest {
 
   @Test
   fun `la duracion se dice en minutos`() {
-    assertEquals("1 min", RetoChoice.durationText(60))
-    assertEquals("1 min 30 s", RetoChoice.durationText(90))
-    assertEquals("2 min", RetoChoice.durationText(120))
-    assertEquals("3 min", RetoChoice.durationText(180))
-    assertEquals("45 s", RetoChoice.durationText(45))
-    assertEquals("Con reloj (2 min)", RetoChoice.timedLabel("bodega"))
+    assertEquals("1 minuto", RetoChoice.durationText(60))
+    assertEquals("1 minuto y 30 segundos", RetoChoice.durationText(90))
+    assertEquals("2 minutos", RetoChoice.durationText(120))
+    assertEquals("3 minutos", RetoChoice.durationText(180))
+    assertEquals("45 segundos", RetoChoice.durationText(45))
+    assertEquals("Con reloj (2 minutos)", RetoChoice.timedLabel("bodega"))
     assertEquals("Sin reloj", RetoChoice.UNTIMED_LABEL)
   }
 }

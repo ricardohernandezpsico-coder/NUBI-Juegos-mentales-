@@ -16,8 +16,8 @@ object Piloto {
   /** El valor de la medida para StarMeasures (0..100); null si Unity no la mandó (menos de 8 señales de la misión). */
   fun mark(signalPct: Int?): Float? = signalPct?.takeIf { it in 0..100 }?.toFloat()
 
-  /** «Tus señales a los mandos: 71 %»; null sin medida. */
-  fun measureLine(signalPct: Int?): String? = signalPct?.takeIf { it in 0..100 }?.let { "Tus señales a los mandos: $it %" }
+  /** «71 % de las señales de tu misión, a los mandos»; null sin medida. */
+  fun measureLine(signalPct: Int?): String? = signalPct?.takeIf { it in 0..100 }?.let { "$it % de las señales de tu misión, a los mandos" }
 
   /** Cómo leer la medida, en palabras de todos los días. */
   const val MEASURE_EXPLANATION =
@@ -26,8 +26,8 @@ object Piloto {
   /** Cuando hubo menos de 8 señales de la misión no se dice una proporción (con pocos casos no significa nada). */
   const val TOO_FEW_LINE = "Faltaron señales de tu misión para medir tus señales a los mandos (se necesitan 8)."
 
-  /** «En la ruta: 82 %»; null sin dato. */
-  fun laneLine(lanePct: Int?): String? = lanePct?.takeIf { it in 0..100 }?.let { "En la ruta: $it %" }
+  /** «En la ruta: 82 % del tiempo»; null sin dato. */
+  fun laneLine(lanePct: Int?): String? = lanePct?.takeIf { it in 0..100 }?.let { "En la ruta: $it % del tiempo" }
 
   /** «Señales de tu misión: 14 de 18»; null sin dato. */
   fun missionLine(hits: Int?, targets: Int?): String? {
@@ -41,8 +41,8 @@ object Piloto {
   /** «Tu nivel de señales: 6 de 9»; null sin dato. */
   fun levelLine(level: Int?): String? = level?.takeIf { it in 1..MAX_LEVEL }?.let { "Tu nivel de señales: $it de $MAX_LEVEL" }
 
-  /** «Más seguidos ×7» (solo desde 2); null sin dato. */
-  fun streakLine(best: Int?): String? = best?.takeIf { it >= 2 }?.let { "Más seguidos ×$it" }
+  /** «Más seguidos: 7» (solo desde 2); null sin dato. */
+  fun streakLine(best: Int?): String? = best?.takeIf { it >= 2 }?.let { "Más seguidos: $it" }
 
   /** Los puntos de la partida («1.250 puntos», con el punto de miles como se escribe en español); null sin dato. */
   fun pointsLine(points: Int?): String? = points?.takeIf { it >= 0 }?.let {

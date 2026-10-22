@@ -120,8 +120,8 @@ class GameSheetFitScreenshotTest {
   fun rescate_plegada_cabe_entera_en_393_por_873_sin_deslizar() {
     show(rescue(), commonW, commonH, "ficha-rescate-393x873")
     assertFoldedFitsWithoutScrolling()
-    // lo elegido se lee en la línea de resumen y en el botón: «A tu medida · con reloj (2 min)»
-    composeTestRule.onNodeWithTag("sheet_summary").assertTextEquals("A tu medida · con reloj (2 min)")
+    // lo elegido se lee en la línea de resumen y en el botón: «A tu medida · con reloj (2 minutos)»
+    composeTestRule.onNodeWithTag("sheet_summary").assertTextEquals("A tu medida · con reloj (2 minutos)")
   }
 
   @Test

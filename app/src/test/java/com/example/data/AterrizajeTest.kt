@@ -33,9 +33,9 @@ class AterrizajeTest {
 
   @Test
   fun `la linea de lo que paso nombra dianas, racha y cupulas`() {
-    assertEquals("2 dianas lunares · más seguidos ×4 · 1 cúpula", Aterrizaje.summaryLine(2, 4, 1))
-    assertEquals("1 diana lunar · más seguidos — · 0 cúpulas", Aterrizaje.summaryLine(1, 1, 0))
-    assertEquals("la racha se nombra desde 2", "0 dianas lunares · más seguidos ×2 · 3 cúpulas", Aterrizaje.summaryLine(0, 2, 3))
+    assertEquals("2 dianas lunares · más seguidos: 4 · 1 cúpula", Aterrizaje.summaryLine(2, 4, 1))
+    assertEquals("1 diana lunar · 0 cúpulas", Aterrizaje.summaryLine(1, 1, 0))
+    assertEquals("la racha se nombra desde 2", "0 dianas lunares · más seguidos: 2 · 3 cúpulas", Aterrizaje.summaryLine(0, 2, 3))
     assertNull("una partida sin esos datos no inventa la línea", Aterrizaje.summaryLine(null, null, null))
   }
 
@@ -47,7 +47,7 @@ class AterrizajeTest {
     assertNull(p.best)
     assertEquals("Juega otra vez para ver tu avance.", p.phrase)
     assertEquals("—", Aterrizaje.chipValue(p.average))
-    assertEquals("11 %", Aterrizaje.chipValue(p.today))
+    assertEquals("11 % de la regla", Aterrizaje.chipValue(p.today))
   }
 
   @Test

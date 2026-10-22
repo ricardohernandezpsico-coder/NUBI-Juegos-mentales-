@@ -52,11 +52,11 @@ object Reading {
     return rows.map { r -> if (!marked && r.ms == max) { marked = true; r.copy(slowest = true) } else r }
   }
 
-  /** "0,9 s" con coma decimal fija (sin las culturas del teléfono). */
-  fun seconds(ms: Int): String = String.format(Locale("es"), "%.1f", ms / 1000f) + " s"
+  /** "0,9 segundos" con coma decimal fija (sin las culturas del teléfono). */
+  fun seconds(ms: Int): String = MeasurePhrases.secondsOf(String.format(Locale("es"), "%.1f", ms / 1000f))
 
   /**
-   * Lo que frena, en palabras: "Las negaciones te toman 0,9 s más que las frases simples. Es normal." con el truco aparte.
+   * Lo que frena, en palabras: "Las negaciones te toman 0,9 segundos más que las frases simples. Es normal." con el truco aparte.
    * Se compara con las frases simples (cortas, o con complemento si no hay cortas). null si no hay con qué comparar, si lo más
    * lento ya es una frase simple o si la diferencia es menor de 0,3 s (entonces [balanced] dice que van parejas).
    */

@@ -35,18 +35,20 @@ object RetoChoice {
 
   fun seconds(gameId: String): Int? = SECONDS[gameId]
 
-  /** «1 min», «1 min 30 s», «2 min»: cómo se dice la duración en la ficha. */
+  /** «1 minuto», «1 minuto y 30 segundos», «2 minutos», «45 segundos»: cómo se dice la duración en la ficha (Tarea 160: antes «2 min» y «45 s»). */
   fun durationText(seconds: Int): String {
     val m = seconds / 60
     val s = seconds % 60
+    val minutes = if (m == 1) "1 minuto" else "$m minutos"
+    val secs = if (s == 1) "1 segundo" else "$s segundos"
     return when {
-      m == 0 -> "$s s"
-      s == 0 -> "$m min"
-      else -> "$m min $s s"
+      m == 0 -> secs
+      s == 0 -> minutes
+      else -> "$minutes y $secs"
     }
   }
 
-  /** Lo que dice la opción: «Con reloj (2 min)»; sin duración fija, solo «Con reloj». Un solo nombre en toda la app (Tarea 150, B1.2): ya no «Contra el reloj», «Reto» ni «Precisión». */
+  /** Lo que dice la opción: «Con reloj (2 minutos)»; sin duración fija, solo «Con reloj». Un solo nombre en toda la app (Tarea 150, B1.2): ya no «Contra el reloj», «Reto» ni «Precisión». */
   fun timedLabel(gameId: String): String = seconds(gameId)?.let { "Con reloj (${durationText(it)})" } ?: "Con reloj"
 
   const val UNTIMED_LABEL = "Sin reloj"

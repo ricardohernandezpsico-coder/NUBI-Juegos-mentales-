@@ -44,7 +44,7 @@ class BodegaTest {
     assertEquals("Más seguidos: 5 al primer intento", Bodega.streakLine(5, 10))
     assertNull("una racha de 1 no es una racha", Bodega.streakLine(1, 10))
     assertNull("con pocos objetos no se sacan conclusiones", Bodega.streakLine(3, 2))
-    assertEquals("Tu ritmo: 4,5 s por objeto", Bodega.paceLine(4500, 8))
+    assertEquals("Tu ritmo: 4,5 segundos por objeto", Bodega.paceLine(4500, 8))
     assertNull(Bodega.paceLine(4500, 2))
     assertNull(Bodega.paceLine(999_999, 8))
     assertNull(Bodega.paceLine(null, 8))

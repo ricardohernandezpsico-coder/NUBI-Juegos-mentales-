@@ -208,7 +208,7 @@ class VisibleTextsGuardTest {
     for (bad in listOf("Tu camino de hoy", "tu camino de cada día", "Empezar mi camino", "Para armar tu camino", "¡Sesión de hoy completa!", "Tu sesión de hoy", "Contra el reloj (2 min)", "Reto", "Modo Reto", "Precisión", "7 sesiones")) {
       assertTrue("no atrapa «$bad»", retiredNames.any { it.containsMatchIn(bad) })
     }
-    for (good in listOf("Tu ruta de hoy", "Empezar mi ruta", "Repite el camino de la chispa", "Camino corto en 3 de esas 5", "Con reloj (2 min)", "Sin reloj", "Al límite", "Ajustes")) {
+    for (good in listOf("Tu ruta de hoy", "Empezar mi ruta", "Repite el camino de la chispa", "Camino corto en 3 de esas 5", "Con reloj (2 minutos)", "Sin reloj", "Al límite", "Ajustes")) {
       assertTrue("atrapa «$good» sin motivo", retiredNames.none { it.containsMatchIn(good) })
     }
   }
@@ -219,7 +219,7 @@ class VisibleTextsGuardTest {
     assertTrue("«Experto» queda como la 4.ª etapa (Inicio · Aprendiz · Hábil · Experto · Maestro)", "Experto" in com.example.data.Skill.STAGES)
     assertEquals("al límite", com.example.data.RetoChoice.modeWords(com.example.data.PlayMode.EXPERTO))
     assertTrue("ningún nombre de modo coincide con el de una etapa", com.example.data.PlayMode.entries.none { it.label in com.example.data.Skill.STAGES })
-    assertEquals("Con reloj (2 min)", com.example.data.RetoChoice.timedLabel("calculo"))
+    assertEquals("Con reloj (2 minutos)", com.example.data.RetoChoice.timedLabel("calculo"))
   }
 
   // ---- Una sola escala de avance (Tarea 159; Ricardo: «sin palabras sueltas», una unidad clara: puntos por área)
@@ -262,6 +262,74 @@ class VisibleTextsGuardTest {
       val hit = visibleLiteralsOf("""Text("$good")""").any { Regex("(^|[\\s\\d}])ms\\b").containsMatchIn(it) || "milisegundo" in it.lowercase() }
       assertFalse("la guardia atrapa «$good» sin motivo", hit)
     }
+  }
+
+  // ---- Sin abreviaturas ni signos (Tarea 160; Opus, 22-oct, regla de Ricardo «sin palabras sueltas»)
+
+  private val templateBody = Regex("\\$\\{[^}]*\\}")
+  private val templateName = Regex("\\$[A-Za-z_][A-Za-z0-9_]*")
+  private val printfSpec = Regex("%[-0-9.,]*[dfsSxX]")
+
+  /** Lo que no puede verse en un texto, con su razón; las plantillas `${…}` y `$x` valen un número (lo que serán en pantalla) y los formatos `%.1f` / `%02d` no cuentan. */
+  private val looseRules = listOf(
+    "«s» en vez de «segundos»" to Regex("\\d\\s?s(?![\\p{L}])|^\\s+s(?![\\p{L}])"),
+    "«min» en vez de «minutos»" to Regex("\\bmins?\\b"),
+    "«°» en vez de «grados»" to Regex("[°º]"),
+    "«pts»" to Regex("\\bpts\\b"),
+    "«sem.», «seg.», «aprox.», «máx.» o «mín.»" to Regex("\\b(sem|seg|aprox|máx|mín)\\."),
+    "«n.º» en vez de «número»" to Regex("\\b[nN]\\.º|\\bnº"),
+    "una flecha" to Regex("[→←↑↓▲▼►◄↗↘]"),
+    "«×»" to Regex("×"),
+    "un «+N» o «−N»" to Regex("(^|[^\\p{L}\\d])[+−]\\s?\\d"),
+    "un «%» sin su «de qué» al lado" to Regex("%(?!\\s?(de|del)\\b)")
+  )
+
+  private fun looseHit(text: String): String? {
+    val t = printfSpec.replace(templateName.replace(templateBody.replace(text, "0"), "0"), "")
+    return looseRules.firstOrNull { it.second.containsMatchIn(t) }?.first
+  }
+
+  /**
+   * Excepciones, todas justificadas: `DebugTools.kt` (los botones «[Debug]» solo existen en las compilaciones de depuración, no los ve nadie más) y `StarMeasures.kt` (guarda la unidad INTERNA de cada medida —«°», «%», «ms»—, que
+   * nunca se dice: lo que se ve sale de `MeasurePhrases`). Y dos cifras con «%» cuyo «de qué» va pegado: la cifra grande de un final B (`FinalModels.kt`; su `unit` empieza con «de …», lo vigila `FinalModelsTest`) y el valor de cada barra del vocabulario
+   * (`GameResultScreen.kt`; la frase de arriba dice «el porcentaje de palabras de ese grupo que reconociste»).
+   */
+  private fun looseException(file: File, text: String): Boolean {
+    val path = file.path.replace('\\', '/')
+    val big = path.endsWith("games/FinalModels.kt") && text.trim() in setOf("\$it %", "\${it.roundToInt()} %")
+    val bar = path.endsWith("games/GameResultScreen.kt") && text.trim() == "\$percent %"
+    return path.endsWith("ui/screens/DebugTools.kt") || path.endsWith("data/StarMeasures.kt") || big || bar
+  }
+
+  @Test
+  fun `ningun texto visible lleva abreviaturas ni signos sueltos`() {
+    val found = mutableListOf<String>()
+    File("src/main/java").walkTopDown().filter { it.extension == "kt" }.forEach { f ->
+      f.readLines().forEachIndexed { i, raw ->
+        for (text in visibleLiteralsOf(raw)) {
+          if (looseException(f, text)) continue
+          looseHit(text)?.let { found += "${f.path.removePrefix("src/main/java/").replace('\\', '/')}:${i + 1} «$text» (por $it)" }
+        }
+      }
+    }
+    assertTrue(
+      "Sin palabras sueltas (Ricardo): «segundos», «minutos» y «grados» completos; nada de «×», «+N», «−N» ni flechas; un «%» con su «de qué» («9 % de la regla»):\n" + found.joinToString("\n"),
+      found.isEmpty()
+    )
+  }
+
+  @Test
+  fun `la guardia de abreviaturas atrapa lo que debe y deja pasar lo permitido`() {
+    val malos = listOf(
+      "Tu ritmo: \$x s por objeto", "Tardaste 14 s", " s", "0,4 s más", "Con reloj (2 min)", "1 min 30 s", "212 °/s", "45°", "5 pts", "hace 3 sem.", "n.º 3", "más seguidos ×4",
+      "+0,4 s", "+\${words.size} palabras", "\$it %", "Tu mejor: 78 %.", "→ siguiente", "▲ 12"
+    )
+    for (t in malos) assertTrue("la guardia no atrapa «$t»", looseHit(t) != null)
+    val buenos = listOf(
+      "Tu ritmo: 1,2 segundos por objeto", "Con reloj (2 minutos)", "1 minuto y 30 segundos", "212 grados por segundo", "9 % de la regla", "70 % de las veces", "a 18 % del blanco", "Recordatorio fijado a las %02d:%02d",
+      "%.1f", "más seguidos: 4", "0,4 segundos más", "los 3 sectores", "Ya reconoces palabras raras", "Etapa Hábil · 470 de 1000 puntos", "Juego \${i + 1} de 3", "hace 7 semanas", "0,17 segundos"
+    )
+    for (t in buenos) assertEquals("la guardia atrapa «$t» sin motivo", null, looseHit(t))
   }
 
   @Test

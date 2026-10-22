@@ -8,11 +8,12 @@ import org.junit.Test
 /** Las medidas de Tinta o Palabra («Dos orillas») en palabras, y su consejo («Truco para la próxima» de su final). */
 class DosOrillasTest {
   @Test
-  fun `la diferencia se dice en segundos con coma, y casi nada bajo 0,05 s`() {
-    assertEquals("+0,4 s", DosOrillas.cost(400))
-    assertEquals("+0,3 s", DosOrillas.cost(349))
-    assertEquals("+1,2 s", DosOrillas.cost(1210))
-    assertEquals("+0,1 s", DosOrillas.cost(50))
+  fun `la diferencia se dice en segundos con coma y palabras, y casi nada bajo 0,05 segundos`() {
+    assertEquals("0,4 segundos más", DosOrillas.cost(400))
+    assertEquals("0,3 segundos más", DosOrillas.cost(349))
+    assertEquals("1,2 segundos más", DosOrillas.cost(1210))
+    assertEquals("0,1 segundos más", DosOrillas.cost(50))
+    assertEquals("0,4 segundos", DosOrillas.seconds(400))
     assertEquals("casi nada", DosOrillas.cost(49))
     assertEquals("casi nada", DosOrillas.cost(0))
   }

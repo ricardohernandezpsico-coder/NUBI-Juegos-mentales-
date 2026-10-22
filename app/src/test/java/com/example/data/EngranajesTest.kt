@@ -43,7 +43,7 @@ class EngranajesTest {
     assertEquals("Falta 1 luz: tu cohete espera en el hangar", Engranajes.hangarLine(9))
     assertNull(Engranajes.hangarLine(0))
     assertNull(Engranajes.hangarLine(null))
-    assertEquals("¡Despegó tu cohete n.º 3!", Engranajes.launchLine(1, 3))
+    assertEquals("¡Despegó tu cohete número 3!", Engranajes.launchLine(1, 3))
     assertEquals("¡Despegaron 2 cohetes!", Engranajes.launchLine(2, 5))
     assertNull(Engranajes.launchLine(0, 3))
     assertEquals("1 cohete en órbita", Engranajes.orbitLine(1))
@@ -60,7 +60,7 @@ class EngranajesTest {
 
   @Test
   fun `el ritmo solo con tres o mas maquinas y el consejo solo si alguna fallo`() {
-    assertEquals("Tu ritmo: 7,5 s por máquina", Engranajes.paceLine(7500, 10))
+    assertEquals("Tu ritmo: 7,5 segundos por máquina", Engranajes.paceLine(7500, 10))
     assertNull(Engranajes.paceLine(7500, 2))
     assertNull(Engranajes.paceLine(0, 10))
     assertNull(Engranajes.paceLine(999_999, 10))

@@ -165,17 +165,14 @@ object FinalesConSentido {
     return phrase.replace("{promedio}", average).replace("{mejor}", best)
   }
 
-  /** «78 %» (redondeado); «—» sin dato. */
-  fun percentText(value: Float?): String = if (value == null || value.isNaN()) "—" else "${value.roundToInt()} %"
+  /** El valor de la medida [key] con su unidad y su «de qué», para la frase de tu avance («70 % de las veces», «212 grados por segundo», «142 palabras por minuto»; Tarea 160: antes «70 %», «212 °/s» y «142 por minuto»); «—» sin dato. */
+  fun shortText(key: String): (Float?) -> String {
+    val def = StarMeasures.def(key) ?: error("medida desconocida: $key")
+    return { v -> if (v == null || v.isNaN()) "—" else MeasurePhrases.short(def, v) }
+  }
 
   /** «0,17 segundos» (los milisegundos de Unity, dichos en segundos: Tarea 159); «—» sin dato. Se llama `msText` porque recibe milisegundos. */
   fun msText(value: Float?): String = if (value == null || value.isNaN()) "—" else MeasurePhrases.secondsWord(value)
-
-  /** «212 °/s» (grados por segundo, redondeado); «—» sin dato. */
-  fun degreesText(value: Float?): String = if (value == null || value.isNaN()) "—" else "${value.roundToInt()} °/s"
-
-  /** «142 por minuto» (palabras por minuto, redondeado; en la frase de tu avance); «—» sin dato. */
-  fun ppmText(value: Float?): String = if (value == null || value.isNaN()) "—" else "${value.roundToInt()} por minuto"
 
   /** «2,6 satélites» (coma decimal); «—» sin dato. */
   fun satellitesText(value: Float?): String = if (value == null || value.isNaN()) "—" else String.format(java.util.Locale("es"), "%.1f", value) + " satélites"

@@ -28,9 +28,9 @@ class SatelitesTest {
 
   @Test
   fun `las rondas perfectas y la racha`() {
-    assertEquals("Rondas perfectas: 5 de 8 · más seguidos ×3", Satelites.perfectLine(5, 8, 3))
+    assertEquals("Rondas perfectas: 5 de 8 · más seguidos: 3", Satelites.perfectLine(5, 8, 3))
     assertEquals("Rondas perfectas: 3 de 8", Satelites.perfectLine(3, 8, 1))
-    assertEquals("Rondas perfectas: 8 de 8 · más seguidos ×8", Satelites.perfectLine(8, 8, 8))
+    assertEquals("Rondas perfectas: 8 de 8 · más seguidos: 8", Satelites.perfectLine(8, 8, 8))
     assertEquals("Rondas perfectas: 4 de 4", Satelites.perfectLine(9, 4, null))
     assertNull(Satelites.perfectLine(null, 8, 2))
     assertNull(Satelites.perfectLine(2, 0, 2))

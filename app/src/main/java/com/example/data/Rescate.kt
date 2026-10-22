@@ -47,10 +47,10 @@ object Rescate {
   /** «Destello más corto resuelto: 0,15 segundos» (el de una ronda perfecta); null si ninguna lo fue. */
   fun shortestLine(ms: Int?): String? = if (ms == null || ms <= 0) null else "Destello más corto resuelto: ${MeasurePhrases.secondsWord(ms.toFloat())}"
 
-  /** «Rondas perfectas: 5 de 12 · más seguidos ×3» (la racha solo desde 2); null sin dato. */
+  /** «Rondas perfectas: 5 de 12 · más seguidos: 3» (la racha solo desde 2); null sin dato. */
   fun perfectLine(perfect: Int?, rounds: Int?, bestStreak: Int?): String? {
     if (perfect == null || rounds == null || rounds <= 0 || perfect < 0) return null
-    val streak = if (bestStreak != null && bestStreak >= 2) " · más seguidos ×$bestStreak" else ""
+    val streak = if (bestStreak != null && bestStreak >= 2) " · más seguidos: $bestStreak" else ""
     return "Rondas perfectas: ${perfect.coerceAtMost(rounds)} de $rounds$streak"
   }
 

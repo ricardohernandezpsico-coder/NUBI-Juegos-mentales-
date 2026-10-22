@@ -37,7 +37,7 @@ class CargaTest {
 
   @Test
   fun `el tiempo y los caminos cortos solo se muestran con 3 cargas sin pista o mas`() {
-    assertEquals("Tardaste 14 s por carga, en promedio, en las que lograste sin pista", Carga.speedLine(14_200, 4))
+    assertEquals("Tardaste 14 segundos por carga, en promedio, en las que lograste sin pista", Carga.speedLine(14_200, 4))
     assertNull(Carga.speedLine(14_200, 2))
     assertNull(Carga.speedLine(-1, 5))
     assertNull(Carga.speedLine(900_000, 5))

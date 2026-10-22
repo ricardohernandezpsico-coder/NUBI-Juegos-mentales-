@@ -59,7 +59,7 @@ object Engranajes {
   /** Lo que pasó con el cohete en la partida: «¡Despegó tu cohete n.º 3!» (con más de uno: «Despegaron 2 cohetes»); null si ninguno despegó. */
   fun launchLine(launches: Int?, orbit: Int?): String? {
     if (launches == null || launches <= 0 || orbit == null || orbit <= 0) return null
-    return if (launches == 1) "¡Despegó tu cohete n.º $orbit!" else "¡Despegaron $launches cohetes!"
+    return if (launches == 1) "¡Despegó tu cohete número $orbit!" else "¡Despegaron $launches cohetes!"
   }
 
   /** «3 cohetes en órbita»; null sin ninguno. */
@@ -68,10 +68,10 @@ object Engranajes {
     return if (orbit == 1) "1 cohete en órbita" else "$orbit cohetes en órbita"
   }
 
-  /** «Tu ritmo: 7,5 s por máquina»; solo con [MIN_FOR_DETAILS] o más máquinas. */
+  /** «Tu ritmo: 7,5 segundos por máquina»; solo con [MIN_FOR_DETAILS] o más máquinas. */
   fun paceLine(ms: Int?, total: Int?): String? {
     if (ms == null || ms <= 0 || ms > MAX_MS || total == null || total < MIN_FOR_DETAILS) return null
-    return "Tu ritmo: " + String.format(Locale("es"), "%.1f", ms / 1000f) + " s por máquina"
+    return "Tu ritmo: " + MeasurePhrases.secondsOf(String.format(Locale("es"), "%.1f", ms / 1000f)) + " por máquina"
   }
 
   /** El consejo (con la marca «Truco: » que lee [ResultAdvice]; en pantalla empieza «Antes de cambiar algo…»): cuando alguna máquina falló. null si todas salieron bien. */

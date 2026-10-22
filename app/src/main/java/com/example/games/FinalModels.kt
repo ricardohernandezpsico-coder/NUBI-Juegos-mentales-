@@ -118,7 +118,7 @@ object FinalModels {
     val opps = result.totalTrials
     val record = con.recordLine(result.conBest, result.conNewRecord)
     return build(
-      result, measures, key = "place", copy = FinalesConSentido.copy("parejas")!!, tolerance = TOLERANCE_PERCENT, format = FinalesConSentido::percentText,
+      result, measures, key = "place", copy = FinalesConSentido.copy("parejas")!!, tolerance = TOLERANCE_PERCENT, format = FinalesConSentido.shortText("place"),
       todayValue = con.mark(hits, opps),
       boxTitle = "Tu memoria de lugar",
       headline = con.percent(hits, opps)?.let { "$it %" } ?: "—",
@@ -157,7 +157,7 @@ object FinalModels {
     val firstTry = result.correctAnswers
     val record = bod.recordLine(result.bodBest, result.bodNewRecord)
     return build(
-      result, measures, key = "bodega", copy = FinalesConSentido.copy("bodega")!!, tolerance = TOLERANCE_PERCENT, format = FinalesConSentido::percentText,
+      result, measures, key = "bodega", copy = FinalesConSentido.copy("bodega")!!, tolerance = TOLERANCE_PERCENT, format = FinalesConSentido.shortText("bodega"),
       todayValue = bod.mark(firstTry, total),
       boxTitle = "Tu bodega",
       headline = if (total > 0) "${firstTry.coerceIn(0, total)} de $total objetos" else "—",
@@ -180,7 +180,7 @@ object FinalModels {
       result.mailGoldMissed, result.mailLazoMissed
     )
     return build(
-      result, measures, key = "estacion", copy = FinalesConSentido.copy("correo")!!, tolerance = TOLERANCE_PERCENT, format = FinalesConSentido::percentText,
+      result, measures, key = "estacion", copy = FinalesConSentido.copy("correo")!!, tolerance = TOLERANCE_PERCENT, format = FinalesConSentido.shortText("estacion"),
       todayValue = mail.mark(ok, all),
       boxTitle = "Tu memoria para lo pendiente",
       headline = if (mail.percent(ok, all) != null) "${ok.coerceIn(0, all)} de $all encargos" else "—",
@@ -193,7 +193,7 @@ object FinalModels {
 
   // ------------------------------------------------------------------ Grupo 2 (Atención)
 
-  /** Tinta o Palabra («Cuánto te frenó la palabra»): menos es mejor; se dice en palabras («casi nada», «+0,4 s»). */
+  /** Tinta o Palabra («Cuánto te frenó la palabra»): menos es mejor; se dice en palabras («casi nada», «0,4 segundos más»). */
   fun tinta(result: GamePlayResult, measures: List<MeasurePoint>): MeaningfulResultModel {
     val dos = DosOrillas
     val ms = result.interferenceMs
@@ -203,8 +203,12 @@ object FinalModels {
       format = { v -> if (v == null) "—" else dos.cost(v.roundToInt()) },
       todayValue = ms?.toFloat(),
       boxTitle = dos.INTERFERENCE_TITLE,
-      headline = ms?.let { dos.cost(it) } ?: "—",
-      unit = if (ms != null) "te frenó la palabra" else "Esta vez no hubo aciertos suficientes para medirlo.",
+      headline = ms?.let { if (it < dos.NEGLIGIBLE_MS) dos.cost(it) else dos.seconds(it) } ?: "—",
+      unit = when {
+        ms == null -> "Esta vez no hubo aciertos suficientes para medirlo."
+        ms < dos.NEGLIGIBLE_MS -> "te frenó la palabra"
+        else -> "de demora cuando la palabra te frenó"
+      },
       dataLine = switch?.let { dos.SWITCH_TITLE + ": " + dos.cost(it) },
       conditionalTrick = dos.tips(ms, switch).firstOrNull()?.let { ResultAdvice.tipOf(it) }
     )
@@ -214,7 +218,7 @@ object FinalModels {
   fun piloto(result: GamePlayResult, measures: List<MeasurePoint>): MeaningfulResultModel {
     val pct = result.pilSignalPct?.takeIf { it in 0..100 }
     return build(
-      result, measures, key = "mandos", copy = FinalesConSentido.copy("piloto")!!, tolerance = TOLERANCE_SIGNALS, format = FinalesConSentido::percentText,
+      result, measures, key = "mandos", copy = FinalesConSentido.copy("piloto")!!, tolerance = TOLERANCE_SIGNALS, format = FinalesConSentido.shortText("mandos"),
       todayValue = Piloto.mark(pct),
       boxTitle = "Tus señales a los mandos",
       headline = pct?.let { "$it %" } ?: "—",
@@ -286,7 +290,7 @@ object FinalModels {
     val alone = result.cargaAlone
     val total = result.totalTrials
     return build(
-      result, measures, key = "carga", copy = FinalesConSentido.copy("calculo")!!, tolerance = TOLERANCE_PERCENT_SHORT, format = FinalesConSentido::percentText,
+      result, measures, key = "carga", copy = FinalesConSentido.copy("calculo")!!, tolerance = TOLERANCE_PERCENT_SHORT, format = FinalesConSentido.shortText("carga"),
       todayValue = carga.mark(alone, total),
       boxTitle = "Tu reactor",
       headline = if (alone != null && total > 0) "${alone.coerceIn(0, total)} de $total cargas" else "—",
@@ -302,7 +306,7 @@ object FinalModels {
     val total = result.totalTrials
     val ok = result.correctAnswers
     return build(
-      result, measures, key = "taller", copy = FinalesConSentido.copy("engranajes")!!, tolerance = TOLERANCE_PERCENT_SHORT, format = FinalesConSentido::percentText,
+      result, measures, key = "taller", copy = FinalesConSentido.copy("engranajes")!!, tolerance = TOLERANCE_PERCENT_SHORT, format = FinalesConSentido.shortText("taller"),
       todayValue = eng.mark(ok, total),
       boxTitle = "Tu cohete",
       headline = if (total > 0) "${ok.coerceIn(0, total)} de $total máquinas" else "—",
@@ -318,11 +322,11 @@ object FinalModels {
     val dps = result.rotationSpeedDps
     val record = Acoplamiento.recordLine(result.dockBest, result.dockNewRecord)
     return build(
-      result, measures, key = "rotation", copy = FinalesConSentido.copy("acoplamiento")!!, tolerance = TOLERANCE_DPS, format = FinalesConSentido::degreesText,
+      result, measures, key = "rotation", copy = FinalesConSentido.copy("acoplamiento")!!, tolerance = TOLERANCE_DPS, format = FinalesConSentido.shortText("rotation"),
       todayValue = dps?.toFloat(),
       boxTitle = "Tu giro mental",
-      headline = dps?.let { "$it° por segundo" } ?: "—",
-      unit = if (dps != null) "de giro en tu mente" else "Se calcula con 8 aciertos en 3 ángulos y 7 de cada 10 bien.",
+      headline = dps?.let { "$it grados" } ?: "—",
+      unit = if (dps != null) "por segundo, de giro en tu mente" else "Se calcula con 8 aciertos en 3 ángulos y 7 de cada 10 bien.",
       dataLine = Acoplamiento.dockedLine(result.dockDocked) ?: record.takeUnless { result.dockNewRecord == true },
       conditionalTrick = null,
       recordNew = result.dockNewRecord == true, recordText = record
@@ -337,7 +341,7 @@ object FinalModels {
     val solo = result.puntaSolo
     val total = punta.total(solo, result.puntaPista, result.puntaLetras, result.puntaVista)
     return build(
-      result, measures, key = "punta", copy = FinalesConSentido.copy("anagramas")!!, tolerance = TOLERANCE_PERCENT_SHORT, format = FinalesConSentido::percentText,
+      result, measures, key = "punta", copy = FinalesConSentido.copy("anagramas")!!, tolerance = TOLERANCE_PERCENT_SHORT, format = FinalesConSentido.shortText("punta"),
       todayValue = punta.mark(solo, total),
       boxTitle = "Tu cielo de palabras",
       headline = if (solo != null && total > 0) "${solo.coerceIn(0, total)} de $total palabras" else "—",
@@ -354,7 +358,7 @@ object FinalModels {
     val groups = vocab.groupPercents(result.lexBandSeen, result.lexBandHits, result.lexFaSeen, result.lexFaHits)
     val mark = vocab.mark(bands, result.lexBandSeen)
     return build(
-      result, measures, key = "vocab", copy = FinalesConSentido.copy("meteoros")!!, tolerance = TOLERANCE_VOCAB, format = FinalesConSentido::percentText,
+      result, measures, key = "vocab", copy = FinalesConSentido.copy("meteoros")!!, tolerance = TOLERANCE_VOCAB, format = FinalesConSentido.shortText("vocab"),
       todayValue = mark,
       boxTitle = "Tu vocabulario",
       headline = mark?.let { "${it.roundToInt()} %" } ?: "—",
@@ -370,7 +374,7 @@ object FinalModels {
     val wpm = reading.wpm(result.svWpm)
     val rows = reading.typeRows(result.svRtType)
     return build(
-      result, measures, key = "wpm", copy = FinalesConSentido.copy("disparate")!!, tolerance = TOLERANCE_WPM, format = FinalesConSentido::ppmText,
+      result, measures, key = "wpm", copy = FinalesConSentido.copy("disparate")!!, tolerance = TOLERANCE_WPM, format = FinalesConSentido.shortText("wpm"),
       todayValue = reading.mark(wpm),
       boxTitle = "Tu lectura con comprensión",
       headline = wpm?.let { "$it palabras" } ?: "—",
@@ -385,7 +389,7 @@ object FinalModels {
     val atlas = Atlas
     val totals = atlas.totals(result.intrSeenType, result.intrHitsType)
     return build(
-      result, measures, key = "atlas", copy = FinalesConSentido.copy("intrusa")!!, tolerance = TOLERANCE_PERCENT_SHORT, format = FinalesConSentido::percentText,
+      result, measures, key = "atlas", copy = FinalesConSentido.copy("intrusa")!!, tolerance = TOLERANCE_PERCENT_SHORT, format = FinalesConSentido.shortText("atlas"),
       todayValue = atlas.mark(result.intrSeenType, result.intrHitsType),
       boxTitle = "Tu red de significados",
       headline = totals?.let { "${it.first} de ${it.second} rondas" } ?: "—",

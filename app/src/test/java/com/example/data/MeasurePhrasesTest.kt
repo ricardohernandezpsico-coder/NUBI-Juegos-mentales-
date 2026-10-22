@@ -41,9 +41,9 @@ class MeasurePhrasesTest {
     assertEquals("5 luces seguidas", MeasurePhrases.value(def("trail"), 5f)); assertEquals("1 luz seguida", MeasurePhrases.value(def("trail"), 1f))
     assertEquals("7 luces", MeasurePhrases.short(def("trail"), 7f))
     assertEquals("2,5 satélites a la vez", MeasurePhrases.value(def("tracking"), 2.5f))
-    assertEquals("a 3,8% del blanco", MeasurePhrases.value(def("numline"), 3.8f))
+    assertEquals("a 3,8 % del blanco", MeasurePhrases.value(def("numline"), 3.8f))
     assertEquals("180 palabras por minuto", MeasurePhrases.value(def("wpm"), 180f))
-    assertEquals("70% de las veces, directo a una pareja ya vista", MeasurePhrases.value(def("place"), 70f)); assertEquals("80% de las veces", MeasurePhrases.short(def("place"), 80f))
+    assertEquals("70 % de las veces, directo a una pareja ya vista", MeasurePhrases.value(def("place"), 70f)); assertEquals("80 % de las veces", MeasurePhrases.short(def("place"), 80f))
     assertEquals("Tinta o Palabra, en palabras como en su final", "la palabra te frena 0,4 segundos", MeasurePhrases.value(def("stroop"), 400f))
     assertEquals("la palabra casi no te frena", MeasurePhrases.value(def("stroop"), 30f))
   }

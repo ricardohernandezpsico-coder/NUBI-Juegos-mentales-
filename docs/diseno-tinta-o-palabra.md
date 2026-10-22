@@ -119,7 +119,7 @@ en el inicio.
 - Telemetría: `interference_ms` y `switch_cost_ms` en `StroopSessionMetrics` (lo leen `NativeReceiver` y `GamePlayResult.interferenceMs/switchCostMs`; solo para `stroop`).
   App: `data/DosOrillas.kt` (texto de las medidas y consejo), bloques en `GameResultScreen`, el consejo es el «Truco para la próxima» de su final con sentido (`FinalModels.tinta`; `ResultAdvice.tipOf` separa el «Truco: …»).
   La marca de evolución SÍ se guarda desde la Tarea 77 (10-oct): clave `stroop` en `StarMeasures` (los ms de interferencia; menos es mejor; `NeuroVidaRepository.starPoints` toma `interferenceMs`). Se dice en palabras
-  («casi nada», «+0,4 s»; `StarMeasures.zoneText` → `DosOrillas.cost`) en Hoy y en la ficha del juego, y alimenta «Tu avance» de su final con sentido.
+  («casi nada», «0,4 segundos más»; `StarMeasures.zoneText` → `DosOrillas.cost`) en Hoy y en la ficha del juego, y alimenta «Tu avance» de su final con sentido.
 - Pruebas: `StroopContractTests` (paleta, niveles, generación, medidas, guion), `DosOrillasTest`, `StroopTelemetryTest`; smoke `TutorialStroop` y `Stroop`.
 
 

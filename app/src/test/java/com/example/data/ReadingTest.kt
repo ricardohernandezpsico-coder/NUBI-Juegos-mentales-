@@ -41,11 +41,11 @@ class ReadingTest {
   @Test
   fun `la frase de lo que frena compara con las frases simples y da el truco por tipo`() {
     val rows = Reading.typeRows(rt)
-    assertEquals("Las negaciones te toman 0,9 s más que las frases simples. Es normal.", Reading.slowText(rows))
+    assertEquals("Las negaciones te toman 0,9 segundos más que las frases simples. Es normal.", Reading.slowText(rows))
     assertEquals("Truco: lee la frase sin el «no» y después dala vuelta.", Reading.tip(rows))
     // pausa
     val pause = Reading.typeRows(listOf(900, 1000, 1200, 2000, 1500, 1300))
-    assertEquals("Las frases con pausa te toman 1,1 s más que las frases simples. Es normal.", Reading.slowText(pause))
+    assertEquals("Las frases con pausa te toman 1,1 segundos más que las frases simples. Es normal.", Reading.slowText(pause))
     assertEquals("Truco: fíjate solo en lo que va después de la segunda coma.", Reading.tip(pause))
     // todos / algunos
     val quant = Reading.typeRows(listOf(900, 1000, 1200, 1500, 2100, 1300))
@@ -70,7 +70,7 @@ class ReadingTest {
   @Test
   fun `sin frases cortas se compara con las de complemento`() {
     val rows = Reading.typeRows(listOf(-1, 1000, 1900, -1, -1, -1))
-    assertEquals("Las negaciones te toman 0,9 s más que las frases simples. Es normal.", Reading.slowText(rows))
+    assertEquals("Las negaciones te toman 0,9 segundos más que las frases simples. Es normal.", Reading.slowText(rows))
     // sin ninguna simple no hay con qué comparar
     assertNull(Reading.slowText(Reading.typeRows(listOf(-1, -1, 1900, 1200, -1, -1))))
   }
@@ -98,8 +98,8 @@ class ReadingTest {
     assertEquals(1f, Reading.barFraction(1800, rows), 1e-4f)
     assertEquals(0.5f, Reading.barFraction(900, rows), 1e-4f)
     assertNotNull(Reading.seconds(900))
-    assertEquals("0,9 s", Reading.seconds(900))
-    assertEquals("1,2 s", Reading.seconds(1234))
+    assertEquals("0,9 segundos", Reading.seconds(900))
+    assertEquals("1,2 segundos", Reading.seconds(1234))
   }
 
   @Test

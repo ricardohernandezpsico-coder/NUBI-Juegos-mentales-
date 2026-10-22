@@ -17,7 +17,10 @@ object MeasurePhrases {
   }
 
   /** «1 segundo» / «0,16 segundos». */
-  fun secondsWord(ms: Float): String = seconds(ms).let { n -> if (n == "1") "1 segundo" else "$n segundos" }
+  fun secondsWord(ms: Float): String = seconds(ms).let { n -> secondsOf(n) }
+
+  /** Un número ya escrito («0,9», «14», «1») con su unidad, nunca «0,9 s» (Tarea 160): «0,9 segundos», «1 segundo». */
+  fun secondsOf(n: String): String = if (n == "1") "1 segundo" else "$n segundos"
 
   private fun num(def: MeasureDef, v: Float): String =
     if (def.decimals == 0) v.roundToInt().toString() else String.format(Locale.ROOT, "%.${def.decimals}f", v).replace('.', ',')
@@ -29,20 +32,20 @@ object MeasurePhrases {
     "glance" -> "${secondsWord(v)} de destello"
     "brake" -> "${secondsWord(v)} para frenar"
     "tracking" -> plural(num(def, v), "satélite a la vez", "satélites a la vez")
-    "numline" -> "a ${num(def, v)}% del blanco"
+    "numline" -> "a ${num(def, v)} % del blanco"
     "rotation" -> plural(num(def, v), "grado por segundo", "grados por segundo")
-    "mandos" -> "${num(def, v)}% de las señales de tu misión, a los mandos"
-    "vocab" -> "${num(def, v)}% de las palabras menos comunes, reconocidas"
+    "mandos" -> "${num(def, v)} % de las señales de tu misión, a los mandos"
+    "vocab" -> "${num(def, v)} % de las palabras menos comunes, reconocidas"
     "wpm" -> plural(num(def, v), "palabra por minuto", "palabras por minuto")
-    "atlas" -> "${num(def, v)}% de aciertos"
-    "punta" -> "${num(def, v)}% de las palabras, sin ayuda"
-    "carga" -> "${num(def, v)}% de las cargas, sin pista"
-    "taller" -> "${num(def, v)}% de las máquinas, arregladas"
-    "bodega" -> "${num(def, v)}% de los objetos, al primer intento"
-    "place" -> "${num(def, v)}% de las veces, directo a una pareja ya vista"
+    "atlas" -> "${num(def, v)} % de aciertos"
+    "punta" -> "${num(def, v)} % de las palabras, sin ayuda"
+    "carga" -> "${num(def, v)} % de las cargas, sin pista"
+    "taller" -> "${num(def, v)} % de las máquinas, arregladas"
+    "bodega" -> "${num(def, v)} % de los objetos, al primer intento"
+    "place" -> "${num(def, v)} % de las veces, directo a una pareja ya vista"
     "trail" -> plural(num(def, v), "luz seguida", "luces seguidas")
     "stroop" -> if (v < DosOrillas.NEGLIGIBLE_MS) "la palabra casi no te frena" else "la palabra te frena ${secondsWord(v)}"
-    "estacion" -> "${num(def, v)}% de los encargos, cumplidos"
+    "estacion" -> "${num(def, v)} % de los encargos, cumplidos"
     else -> measureText(def, v)
   }
 
@@ -52,18 +55,18 @@ object MeasurePhrases {
     "tracking" -> value(def, v)
     "numline" -> value(def, v)
     "rotation" -> value(def, v)
-    "mandos" -> "${num(def, v)}% de las señales"
-    "vocab" -> "${num(def, v)}% de las palabras"
+    "mandos" -> "${num(def, v)} % de las señales"
+    "vocab" -> "${num(def, v)} % de las palabras"
     "wpm" -> value(def, v)
     "atlas" -> value(def, v)
-    "punta" -> "${num(def, v)}% de las palabras"
-    "carga" -> "${num(def, v)}% de las cargas"
-    "taller" -> "${num(def, v)}% de las máquinas"
-    "bodega" -> "${num(def, v)}% de los objetos"
-    "place" -> "${num(def, v)}% de las veces"
+    "punta" -> "${num(def, v)} % de las palabras"
+    "carga" -> "${num(def, v)} % de las cargas"
+    "taller" -> "${num(def, v)} % de las máquinas"
+    "bodega" -> "${num(def, v)} % de los objetos"
+    "place" -> "${num(def, v)} % de las veces"
     "trail" -> plural(num(def, v), "luz", "luces")
     "stroop" -> if (v < DosOrillas.NEGLIGIBLE_MS) "casi nada" else secondsWord(v)
-    "estacion" -> "${num(def, v)}% de los encargos"
+    "estacion" -> "${num(def, v)} % de los encargos"
     else -> measureText(def, v)
   }
 

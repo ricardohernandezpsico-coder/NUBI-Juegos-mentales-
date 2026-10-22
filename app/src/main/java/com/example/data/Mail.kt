@@ -36,8 +36,8 @@ object Mail {
     return 100f * ok.coerceIn(0, all) / all
   }
 
-  /** «Tu memoria para lo pendiente: 73 %» o «—» si no hubo encargos. */
-  fun headline(ok: Int?, all: Int?): String = percent(ok, all)?.let { "Tu memoria para lo pendiente: $it %" } ?: "Tu memoria para lo pendiente: —"
+  /** «Tu memoria para lo pendiente: 73 % de los encargos» o «—» si no hubo encargos. */
+  fun headline(ok: Int?, all: Int?): String = percent(ok, all)?.let { "Tu memoria para lo pendiente: $it % de los encargos" } ?: "Tu memoria para lo pendiente: —"
 
   /** «8 de 11 encargos cumplidos»; sin encargos, una frase que lo dice sin culpa. */
   fun detailLine(ok: Int?, all: Int?): String =

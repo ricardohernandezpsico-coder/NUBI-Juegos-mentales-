@@ -111,11 +111,11 @@ object Vocabulary {
     return if (weight > 0f) sum / weight else null
   }
 
-  /** "Las comunes, en 0,7 s. Las raras, en 1,1 s.", o null si falta alguna de las dos medianas (-1 = pocas muestras). */
+  /** "Las comunes, en 0,7 segundos. Las raras, en 1,1 segundos.", o null si falta alguna de las dos medianas (-1 = pocas muestras). */
   fun recognitionSentence(commonMs: Int?, rareMs: Int?): String? {
     if (commonMs == null || rareMs == null || commonMs <= 0 || rareMs <= 0) return null
     fun s(ms: Int) = String.format(Locale("es"), "%.1f", ms / 1000f)
-    return "Las comunes, en ${s(commonMs)} s. Las raras, en ${s(rareMs)} s."
+    return "Las comunes, en ${MeasurePhrases.secondsOf(s(commonMs))}. Las raras, en ${MeasurePhrases.secondsOf(s(rareMs))}."
   }
 
   /** "Te engañaron 5 de 21 palabras inventadas:", o null si no se vio ninguna inventada. */

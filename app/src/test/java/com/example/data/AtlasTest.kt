@@ -114,7 +114,7 @@ class AtlasTest {
     assertEquals(9 to 14, Atlas.totals(seen, hits))
     assertEquals(64.29f, Atlas.mark(seen, hits)!!, 0.01f)
     assertNull(Atlas.mark(listOf(0, 0, 0, 0, 0, 0), listOf(0, 0, 0, 0, 0, 0)))
-    assertEquals("Mediana al tocar: 1,8 s", Atlas.speedLine(1800))
+    assertEquals("Mediana al tocar: 1,8 segundos", Atlas.speedLine(1800))
     assertNull(Atlas.speedLine(null))
     assertEquals("9 de 14 rondas bien", Atlas.spoken(seen, hits))
   }

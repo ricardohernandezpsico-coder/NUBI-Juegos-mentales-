@@ -29,7 +29,7 @@ class ConstelacionesTest {
 
   @Test
   fun `el titular y la frase de detalle dicen lo que se midio`() {
-    assertEquals("Memoria de lugar: 70 %", Constelaciones.headline(7, 10))
+    assertEquals("Memoria de lugar: 70 % de las veces", Constelaciones.headline(7, 10))
     assertEquals("7 de 10 veces fuiste directo a una pareja que ya habías visto", Constelaciones.detailLine(7, 10))
     assertEquals("10 de 10 veces fuiste directo a una pareja que ya habías visto", Constelaciones.detailLine(14, 10))
     assertEquals("No hubo parejas vistas que recordar", Constelaciones.detailLine(0, 0))

@@ -26,7 +26,7 @@ class MailTest {
     assertNull(Mail.percent(0, 0))
     assertNull(Mail.mark(0, 0))
     assertNull(Mail.percent(null, 5))
-    assertEquals("Tu memoria para lo pendiente: 63 %", Mail.headline(5, 8))
+    assertEquals("Tu memoria para lo pendiente: 63 % de los encargos", Mail.headline(5, 8))
     assertEquals("Tu memoria para lo pendiente: —", Mail.headline(0, 0))
   }
 

@@ -14,11 +14,11 @@ object DosOrillas {
   /** Desde esta diferencia (0,3 s) se ofrece un consejo concreto. */
   const val ADVICE_MS = 300
 
-  /** «+0,4 s» o «casi nada». */
-  fun cost(ms: Int): String = if (ms < NEGLIGIBLE_MS) "casi nada" else "+" + seconds(ms)
+  /** «0,4 segundos más» o «casi nada» (Tarea 160: antes «+0,4 s»). */
+  fun cost(ms: Int): String = if (ms < NEGLIGIBLE_MS) "casi nada" else seconds(ms) + " más"
 
-  /** «0,4 s» con coma decimal fija (sin las culturas del teléfono). */
-  fun seconds(ms: Int): String = String.format(java.util.Locale.ROOT, "%.1f", (ms / 100f).roundToInt() / 10f).replace('.', ',') + " s"
+  /** «0,4 segundos» con coma decimal fija (sin las culturas del teléfono). */
+  fun seconds(ms: Int): String = MeasurePhrases.secondsOf(String.format(java.util.Locale.ROOT, "%.1f", (ms / 100f).roundToInt() / 10f).replace('.', ','))
 
   const val INTERFERENCE_TITLE = "Cuánto te frenó la palabra"
   const val INTERFERENCE_LINE = "Cuánto más tardaste, en promedio, cuando la palabra decía un color y estaba escrita con otro, comparado con cuando coincidían."

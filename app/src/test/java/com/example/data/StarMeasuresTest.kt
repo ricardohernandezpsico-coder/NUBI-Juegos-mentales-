@@ -46,7 +46,7 @@ class StarMeasuresTest {
     assertEquals("84", StarMeasures.def("glance")!!.format(84.4f))
     // lo que se VE no lleva abreviaturas ni milisegundos (Tarea 159): ver MeasurePhrasesTest
     assertEquals("0,08 segundos de destello", measureText(StarMeasures.def("glance")!!, 84.4f))
-    assertEquals("a 18,0% del blanco", measureText(StarMeasures.def("numline")!!, 18f))
+    assertEquals("a 18,0 % del blanco", measureText(StarMeasures.def("numline")!!, 18f))
     assertEquals("96 grados por segundo", measureText(StarMeasures.def("rotation")!!, 96f))
     val pts = series("tracking", 2.5f, 2.75f, 3f)
     assertEquals(pts, StarMeasures.decode(StarMeasures.encode(pts)))
