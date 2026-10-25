@@ -221,9 +221,9 @@ namespace NeuroVida.Games.Engranajes
             v.Root.gameObject.SetActive(true);
         }
 
-        // el canto de cada engranaje: el color profundo (arriba, junto a la cara, el claro) de su rol: motor azul, camino lila y pieza dorada
-        private static readonly Color[] GearCantoLight = { new Color(0.08f, 0.27f, 0.54f), new Color(0.28f, 0.19f, 0.52f), new Color(0.54f, 0.32f, 0.03f) };
-        private static readonly Color[] GearCantoDeep = { new Color(0.05f, 0.17f, 0.35f), new Color(0.18f, 0.12f, 0.33f), new Color(0.35f, 0.21f, 0.02f) };
+        // el canto de cada engranaje: el color profundo (arriba, junto a la cara, el claro) de su rol; paleta «Madera clara» (Tarea 164): motor celeste, camino de madera y pieza en uva (el morado de Razonamiento)
+        private static readonly Color[] GearCantoLight = { new Color(0.06f, 0.37f, 0.50f), new Color(0.52f, 0.32f, 0.16f), new Color(0.29f, 0.20f, 0.54f) };
+        private static readonly Color[] GearCantoDeep = { new Color(0.04f, 0.23f, 0.32f), new Color(0.33f, 0.20f, 0.10f), new Color(0.19f, 0.13f, 0.34f) };
 
         /// <summary>El VOLUMEN de un engranaje de la máquina: su canto (la silueta corrida 4,5 dp hacia ABAJO en la pantalla, que no gira) y la sombra de contacto blanda (un poco más abajo), ambos en las capas de debajo de todos los engranajes.</summary>
         private void PlaceGearVolume(GearView v, EngranajesSprites.GearSize size, EngranajesSprites.Palette palette)
@@ -773,6 +773,16 @@ namespace NeuroVida.Games.Engranajes
             _sayRoot.gameObject.SetActive(on);
             if (!on) return;
             _sayGroup.alpha = Mathf.Clamp01(Mathf.Min(k * 8f, (1f - k) * 4f));
+            if (_sayCream)                                                  // la losa crema: letra en tinta y la moneda ✓ o ✗ (acierto y error nunca solo por color: la forma lo dice); el texto lo coloca LayoutSay
+            {
+                if (_sayLaidTitle != _sayTitleFull || _sayLaidSub != _saySubFull) LayoutSay();
+                _sayTitle.color = NeuroStyle.Ink;
+                _saySub.color = NeuroStyle.InkMuted;
+                _sayCoin.sprite = _sayGood ? EngranajesSprites.CheckBadge() : EngranajesSprites.CrossBadge();
+                _sayCoin.color = Color.white;
+                _saySub.gameObject.SetActive(_saySubFull.Length > 0);
+                return;
+            }
             _sayTitle.text = _sayTitleFull;
             _saySub.text = _saySubFull;
             _sayTitle.color = _sayGood ? Mint : WarnText;
@@ -1033,6 +1043,61 @@ namespace NeuroVida.Games.Engranajes
             return problems;
         }
 
+        // ------------------------------------------------------------------ la mesa de taller y el aviso crema (Tarea 164)
+
+        /// <summary>Para las pruebas: la mesa de taller (losa crema DEBAJO de todo, con la ventanilla noche del tamaño y en el lugar del panel de antes, un paso más clara que el cielo y hundida, y los cuatro tornillos en el marco, no sobre la ventanilla)
+        /// y el aviso crema (losa del kit, letra en tinta, la moneda ✓ o ✗ y la losa que no baja del alto mínimo).</summary>
+        public List<string> AuditTable()
+        {
+            var problems = new List<string>();
+            _s = 3f; _playW = 1080f; _playH = 1920f; _logicalH = 640f;
+            _lay = EngranajesLayout.Compute(_logicalH);
+            if (_rng == null) _rng = new System.Random(1);
+            var bake = EngranajesSprites.Prewarm();
+            while (bake.MoveNext()) { }
+            AssignSprites();
+            if (!_tableOn) { problems.Add("no hay mesa de taller (¿el atlas «comun» trae la losa crema mediana?)"); return problems; }
+            var table = _table.rectTransform;
+            float tw = EngranajesLayout.TableRight - EngranajesLayout.TableLeft;
+            if (Mathf.Abs(table.sizeDelta.x - tw * Su) > 0.01f || Mathf.Abs(table.sizeDelta.y - EngranajesLayout.SceneHeight * Su) > 0.01f) problems.Add("la mesa no mide " + tw + " × " + EngranajesLayout.SceneHeight + " dp del boceto: mide " + table.sizeDelta / Su);
+            if (_tableSlab == null || _tableSlab.sprite == null) problems.Add("la mesa no tiene su losa crema");
+            if (_table.color.a > 0.01f) problems.Add("el fondo de la mesa debe quedar invisible (la losa es la que se ve)");
+            var win = _room.rectTransform;
+            if (Mathf.Abs(win.sizeDelta.x - EngranajesLayout.WindowW * Su) > 0.01f || Mathf.Abs(win.sizeDelta.y - EngranajesLayout.WindowH * Su) > 0.01f) problems.Add("la ventanilla no mide lo mismo que el panel de antes (242 × 348 dp)");
+            if ((win.anchoredPosition - B(EngranajesLayout.WindowCx, EngranajesLayout.WindowCy)).magnitude > 0.01f) problems.Add("la ventanilla no está donde estaba el panel: la máquina se movería");
+            if (_room.sprite != EngranajesSprites.Window()) problems.Add("la sala no usa la ventanilla hundida");
+            float wl = EngranajesLayout.WindowCx - EngranajesLayout.WindowW / 2f, wr = EngranajesLayout.WindowCx + EngranajesLayout.WindowW / 2f, wt = EngranajesLayout.WindowCy - EngranajesLayout.WindowH / 2f, wb = EngranajesLayout.WindowCy + EngranajesLayout.WindowH / 2f;
+            if (wl - EngranajesLayout.TableLeft < 12f || EngranajesLayout.SceneTop + 12f > wt || EngranajesLayout.SceneBottom - wb < 12f) problems.Add("el marco crema de la mesa mide menos de 12 dp alrededor de la ventanilla");
+            if (EngranajesLayout.TableRight < EngranajesLayout.CartelRight + 4f) problems.Add("los carteles (hasta " + EngranajesLayout.CartelRight + ") se salen de la mesa");
+            for (int k = 0; k < _screws.Length; k++)
+            {
+                var p = _screws[k].rectTransform.anchoredPosition / Su;                                                    // en coordenadas del boceto relativas al centro de la escena
+                float bx = p.x + 180f, by = 280f - p.y;
+                if (bx > wl - 1f && bx < wr + 1f && by > wt - 1f && by < wb + 1f) problems.Add("el tornillo " + k + " cae sobre la ventanilla: va en el marco");
+                if (bx < EngranajesLayout.TableLeft || bx > EngranajesLayout.TableRight || by < EngranajesLayout.SceneTop || by > EngranajesLayout.SceneBottom) problems.Add("el tornillo " + k + " se sale de la mesa");
+            }
+            // el tono de la ventanilla: un paso más claro que el cielo (#1C1B52) y más oscuro que la mesa; hundida: más oscura junto al borde de arriba y de la izquierda que junto al de abajo y de la derecha
+            var tex = EngranajesSprites.Window().texture;
+            Color At(int x, int y) => tex.GetPixel(x, y);
+            var center = At(tex.width / 2, tex.height / 2);
+            var sky = NeuroStyle.NightBottom;
+            if (!(center.b > sky.b + 0.01f && center.r > sky.r + 0.01f && center.b < 0.5f)) problems.Add("la ventanilla debe ser un paso más clara que el cielo " + sky + " y seguir siendo noche: es " + center);
+            var left = At(5, tex.height / 2); var right = At(tex.width - 6, tex.height / 2);
+            if (!(left.r + left.g + left.b < right.r + right.g + right.b)) problems.Add("la ventanilla no se ve hundida: junto al borde izquierdo debía ser más oscura que junto al derecho (" + left + " contra " + right + ")");
+            // el aviso crema
+            if (!_sayCream) { problems.Add("el aviso no es la losa crema del kit"); return problems; }
+            Tell("La turbina giró al revés de su cartel", "Truco: cada engranaje que toca gira al revés", false);
+            AnimateSay(_sayAt + 1f);
+            if (_sayTitle.color != NeuroStyle.Ink || _saySub.color != NeuroStyle.InkMuted) problems.Add("el aviso lleva la letra en tinta y la pista en InkMuted");
+            if (!_sayCoin.gameObject.activeSelf || _sayCoin.sprite != EngranajesSprites.CrossBadge()) problems.Add("un error lleva la moneda ✗ a la izquierda");
+            if (_sayBg.rectTransform.sizeDelta.y < _lay.SayH * _s - 0.01f) problems.Add("la losa del aviso mide menos que el alto mínimo");
+            if (_sayRim.enabled) problems.Add("el aviso crema no lleva el borde de siempre");
+            Tell("¡Todo en orden!", null, true);
+            AnimateSay(_sayAt + 1f);
+            if (_sayCoin.sprite != EngranajesSprites.CheckBadge()) problems.Add("un acierto lleva la moneda ✓ a la izquierda");
+            return problems;
+        }
+
         // ------------------------------------------------------------------ verificación de que lo dibujado se ve
 
         /// <summary>Para las pruebas: arma una máquina de cada nivel y devuelve lo que NO se vería (pieza apagada, sin imagen o sin opacidad): la sala, el cohete, los engranajes con su cubo y su
@@ -1055,6 +1120,14 @@ namespace NeuroVida.Games.Engranajes
                 if (needsSprite && g is Image im && im.sprite == null) problems.Add(what + ": sin imagen");
             }
             Check("sala", _room, true);
+            if (_tableOn)
+            {
+                Check("mesa (losa crema)", _tableSlab, true);
+                for (int k = 0; k < _screws.Length; k++) Check("tornillo " + k, _screws[k], true);
+                if (_table.transform.GetSiblingIndex() >= _room.transform.GetSiblingIndex()) problems.Add("la mesa va DEBAJO de la sala");
+                if (_room.transform.GetSiblingIndex() >= _rocketRoot.GetSiblingIndex() || _rocketRoot.GetSiblingIndex() >= _machineLayer.GetSiblingIndex()) problems.Add("la sala va debajo del cohete y el cohete debajo de la máquina");
+                foreach (var screw in _screws) if (screw.transform.GetSiblingIndex() >= _rocketRoot.GetSiblingIndex()) problems.Add("un tornillo va encima del cohete");
+            }
             Check("cohete.casco", _hull, true);
             for (int k = 0; k < _windows.Length; k++) Check("cohete.ventanilla " + k, _windows[k], true, false);
             Check("antena.radar", _dish, true);

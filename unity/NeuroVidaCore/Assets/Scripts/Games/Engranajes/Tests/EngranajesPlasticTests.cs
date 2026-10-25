@@ -585,6 +585,57 @@ namespace NeuroVida.Games.Engranajes.Tests
             Assert.IsNull(EngranajesSprites.PulleyPressed());
         }
 
+        // ------------------------------------------------------------------ la paleta «Madera clara» (Tarea 164; auditoria-fable/engranajes-colores.md)
+
+        /// <summary>La cara de una pieza: el promedio del 30 % más claro de sus píxeles opacos (la luz de la cara, sin el bisel ni el relieve), como lo mide <c>tools/juegos/mide_engranajes.py</c>.</summary>
+        private static Color FaceOf(Img im)
+        {
+            var lit = new List<Color32>();
+            foreach (var p in im.Px) if (p.a > 250) lit.Add(p);
+            lit.Sort((a, b) => Luma(b).CompareTo(Luma(a)));
+            int n = Mathf.Max(1, lit.Count * 30 / 100); float r = 0, g = 0, b2 = 0;
+            for (int i = 0; i < n; i++) { r += lit[i].r; g += lit[i].g; b2 += lit[i].b; }
+            return new Color(r / n / 255f, g / n / 255f, b2 / n / 255f);
+        }
+
+        private static float HueDeg(Color c) { Color.RGBToHSV(c, out float h, out _, out _); return h * 360f; }
+
+        private static float HueGap(float a, float b) { float d = Mathf.Abs(a - b) % 360f; return d > 180f ? 360f - d : d; }
+
+        private static float Linear(float v) => v <= 0.04045f ? v / 12.92f : Mathf.Pow((v + 0.055f) / 1.055f, 2.4f);
+
+        private static float Relative(Color c) => 0.2126f * Linear(c.r) + 0.7152f * Linear(c.g) + 0.0722f * Linear(c.b);
+
+        private static float ContrastRatio(Color a, Color b) { float l1 = Relative(a), l2 = Relative(b); return (Mathf.Max(l1, l2) + 0.05f) / (Mathf.Min(l1, l2) + 0.05f); }
+
+        [Test]
+        public void ThePalette_IsMaderaClara_TheThreeRolesAreThreeFamilies_AndEachFaceContrastsWithTheWindowAtLeast3To1()
+        {
+            // el motor celeste (190-205°), el camino de madera clara (25-45°) y la pieza en uva, el morado de Razonamiento (250-270°)
+            var face = new[] { FaceOf(Load("gear_0_0")), FaceOf(Load("gear_0_1")), FaceOf(Load("gear_0_2")) };
+            var hue = new[] { HueDeg(face[0]), HueDeg(face[1]), HueDeg(face[2]) };
+            string[] role = { "motor", "camino", "pieza" };
+            Assert.That(hue[0], Is.InRange(185f, 205f), "el motor es celeste (tono " + hue[0].ToString("0") + "°)");
+            Assert.That(hue[1], Is.InRange(25f, 45f), "el camino es de madera clara (tono " + hue[1].ToString("0") + "°)");
+            Assert.That(hue[2], Is.InRange(250f, 270f), "la pieza es uva (tono " + hue[2].ToString("0") + "°)");
+            for (int i = 0; i < 3; i++)
+                for (int j = i + 1; j < 3; j++)
+                    Assert.GreaterOrEqual(HueGap(hue[i], hue[j]), 60f, role[i] + " y " + role[j] + " son de familias distintas (a más de 60° de tono)");
+            var window = EngranajesSprites.WindowTop;
+            for (int i = 0; i < 3; i++)
+                Assert.GreaterOrEqual(ContrastRatio(face[i], window), 3f, role[i] + ": el diente contra el hueco (la ventanilla noche) pasa de 3 : 1");
+        }
+
+        [Test]
+        public void TheFixedRocketPieces_FollowTheRoleRecipe_DoorAndRackInWood_BoxInSky_FrameAndPlateInGrape()
+        {
+            Assert.That(HueDeg(FaceOf(Load("porton"))), Is.InRange(25f, 45f), "el portón es de madera");
+            Assert.That(HueDeg(FaceOf(Load("barra"))), Is.InRange(25f, 45f), "la barra dentada es de madera");
+            Assert.That(HueDeg(FaceOf(Load("caja_carga"))), Is.InRange(185f, 205f), "la caja es celeste");
+            Assert.That(HueDeg(FaceOf(Load("plataforma"))), Is.InRange(250f, 270f), "la plataforma es uva");
+            Assert.That(HueDeg(FaceOf(Load("marco_carga"))), Is.InRange(250f, 270f), "el marco es uva");
+        }
+
         /// <summary>No mide nada: deja el dibujo PROCEDURAL (el de antes de la plasticina) en <c>unity/test-results/engranajes-antes/*.png</c> para que <c>tools/juegos/mide_engranajes.py</c> y <c>hoja_engranajes.py</c> comparen el antes y el después con píxeles reales.</summary>
         [Test]
         public void TheProceduralDrawing_IsSavedForTheMeasureScript()

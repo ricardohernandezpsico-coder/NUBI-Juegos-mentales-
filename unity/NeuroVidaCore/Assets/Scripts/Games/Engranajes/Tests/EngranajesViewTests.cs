@@ -25,7 +25,7 @@ namespace NeuroVida.Games.Engranajes.Tests
                 Assert.Greater(m.QuestionTop, m.StripTop + EngranajesLayout.StripH - 0.01f, where + ": la consigna va bajo la cabecera");
                 float sceneTop = m.SceneCenterLogicalY - EngranajesLayout.SceneHeight * m.SceneScale / 2f;
                 float sceneBottom = m.SceneCenterLogicalY + EngranajesLayout.SceneHeight * m.SceneScale / 2f;
-                Assert.GreaterOrEqual(sceneTop, m.QuestionTop + EngranajesLayout.QuestionH, where + ": la escena va bajo la consigna");
+                Assert.GreaterOrEqual(sceneTop, m.StripTop + EngranajesLayout.StripH - 2.5f, where + ": la mesa va bajo la cabecera «Cohete número N»");
                 Assert.LessOrEqual(sceneBottom, m.ButtonsTop, where + ": la cuenta de cambios y «Arrancar» van bajo la escena");
                 Assert.LessOrEqual(m.ButtonsTop + m.ButtonH, m.SayTop, where + ": el aviso va bajo la barra de abajo");
                 Assert.LessOrEqual(m.SayTop + m.SayH, h + 0.01f, where + ": el aviso cabe en la pantalla");
@@ -41,11 +41,50 @@ namespace NeuroVida.Games.Engranajes.Tests
             foreach (float h in Heights)
             {
                 var m = EngranajesLayout.Compute(h);
-                var left = EngranajesLayout.SceneToLogical(m, 8f, 280f);       // el borde izquierdo de la sala
-                var right = EngranajesLayout.SceneToLogical(m, 361f, 280f);    // la punta de la aleta derecha
-                Assert.GreaterOrEqual(left.x, 8f, "alto " + h + ": con margen para que la flecha del motor no se corte");
-                Assert.LessOrEqual(right.x, EngranajesLayout.W - 8f, "alto " + h);
+                var left = EngranajesLayout.SceneToLogical(m, EngranajesLayout.TableLeft, 280f);       // el borde izquierdo de la mesa (la flecha del motor y su rótulo caen adentro)
+                var right = EngranajesLayout.SceneToLogical(m, EngranajesLayout.TableRight, 280f);     // el borde derecho de la mesa (los carteles llegan a 369)
+                Assert.GreaterOrEqual(left.x, 8f, "alto " + h + ": la mesa deja 8 dp o más a la izquierda");
+                Assert.LessOrEqual(right.x, EngranajesLayout.W - 8f, "alto " + h + ": la mesa deja 8 dp o más a la derecha");
+                // el corrimiento de 4,5 dp es fijo (centra la escena a escala 1,0): a escala k la mesa queda 4,5 × (1 − k) dp descentrada, o sea que los dos márgenes difieren 9 × (1 − k) dp (a la escala máxima, 0,88, poco más de 1 dp)
+                Assert.AreEqual(left.x, EngranajesLayout.W - right.x, 9f * (1f - m.SceneScale) + 0.6f, "alto " + h + ": la mesa queda centrada en la pantalla");
             }
+        }
+
+        [Test]
+        public void TheWorkshopTable_StartsUnderTheRocketHeader_TheAirIsSpread_AndTheSayGoes10DpUnderTheButtons()
+        {
+            // Tarea 164 (partes E y «aire repartido»): la mesa empieza bajo «Cohete número N» (a 16 dp de él y, si sobra aire, hasta 36 dp más abajo), los botones van a 8 dp de la mesa más lo que se reparta y el aviso queda 10 dp bajo ellos
+            foreach (float h in Heights)
+            {
+                var m = EngranajesLayout.Compute(h);
+                string where = "alto " + h;
+                float tableTop = m.SceneCenterLogicalY - EngranajesLayout.SceneHeight * m.SceneScale / 2f;
+                Assert.GreaterOrEqual(tableTop, EngranajesLayout.TableTopDp - 0.01f, where + ": la mesa empieza bajo la cabecera");
+                Assert.LessOrEqual(tableTop, EngranajesLayout.TableTopDp + EngranajesLayout.MaxTopShift + 0.01f, where + ": la mesa no baja más de 36 dp de la cabecera");
+                Assert.AreEqual(EngranajesLayout.SayGap, m.SayTop - (m.ButtonsTop + m.ButtonH), 0.01f, where + ": el aviso queda 10 dp bajo los botones");
+                Assert.LessOrEqual(m.ButtonsTop - (tableTop + EngranajesLayout.SceneHeight * m.SceneScale), 8f + EngranajesLayout.MaxGap + 0.01f, where + ": los botones no se despegan de la mesa más de 72 dp");
+            }
+            // en un teléfono alto (800 dp) la escena empezaba antes hacia 174 dp (120 + el 40 % del aire que sobraba): sigue más de 30 dp más arriba
+            var tall = EngranajesLayout.Compute(800f);
+            float before = 174.4f, now = tall.SceneCenterLogicalY - EngranajesLayout.SceneHeight * tall.SceneScale / 2f;
+            Assert.GreaterOrEqual(before - now, 30f, "la escena sigue ~35 dp más arriba que antes de la Tarea 164 en un teléfono de 800 dp");
+            Assert.AreEqual(108f, EngranajesLayout.TableTopDp, 0.01f);
+            Assert.Greater(tall.SceneScale, 0.8f);
+            // el aire se reparte: bajo los botones queda menos cielo vacío (antes ~196 dp), los botones son más altos (≥ 110) y bajo el aviso quedan al menos 40 dp
+            Assert.LessOrEqual(800f - (tall.ButtonsTop + tall.ButtonH), 160f, "bajo los botones no quedan más de 160 dp vacíos");
+            Assert.GreaterOrEqual(tall.ButtonH, 110f, "los botones crecen con el aire");
+            Assert.GreaterOrEqual(800f - tall.Bottom, 40f, "bajo el aviso quedan al menos 40 dp");
+        }
+
+        [Test]
+        public void TheWindow_IsInsideTheTable_WithAFrameOfAtLeast12Dp_AndTheCartelsFit()
+        {
+            Assert.GreaterOrEqual((EngranajesLayout.WindowCx - EngranajesLayout.WindowW / 2f) - EngranajesLayout.TableLeft, 12f, "marco de la izquierda");
+            Assert.GreaterOrEqual(EngranajesLayout.SceneBottom - (EngranajesLayout.WindowCy + EngranajesLayout.WindowH / 2f), 12f, "marco de abajo");
+            Assert.GreaterOrEqual((EngranajesLayout.WindowCy - EngranajesLayout.WindowH / 2f) - EngranajesLayout.SceneTop, 12f, "marco de arriba");
+            Assert.GreaterOrEqual(EngranajesLayout.TableRight, EngranajesLayout.CartelRight + 4f, "los carteles, que llegan a 369, caben en la mesa");
+            Assert.AreEqual((EngranajesLayout.TableLeft + EngranajesLayout.TableRight) / 2f, 180f - EngranajesLayout.SceneShiftX, 0.01f, "la mesa está centrada en el eje de la escena");
+            Assert.AreEqual(280f, (EngranajesLayout.SceneTop + EngranajesLayout.SceneBottom) / 2f, 0.01f, "el centro de la escena sigue en 280 (el origen de B())");
         }
 
         [Test]
@@ -272,6 +311,22 @@ namespace NeuroVida.Games.Engranajes.Tests
                 build.Invoke(controller, null);
                 go.SetActive(true);
                 var problems = controller.AuditBlockedTouch();
+                Assert.IsEmpty(problems, string.Join(" | ", problems));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(go); }
+        }
+
+        [Test]
+        public void TheWorkshopTable_IsACreamSlabUnderEverything_TheWindowKeepsThePanelsPlace_AndTheSayIsCream()
+        {
+            var go = new GameObject("EngranajesTable");
+            try
+            {
+                var controller = go.AddComponent<EngranajesGameController>();
+                var build = typeof(EngranajesGameController).GetMethod("BuildUi", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                build.Invoke(controller, null);
+                go.SetActive(true);
+                var problems = controller.AuditTable();
                 Assert.IsEmpty(problems, string.Join(" | ", problems));
             }
             finally { UnityEngine.Object.DestroyImmediate(go); }

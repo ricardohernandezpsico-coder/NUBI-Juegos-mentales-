@@ -160,7 +160,7 @@ pr('| Engranaje | Paleta | Rayos contados | Hondura del rayo (luminosidad) | Ray
 pr('|---|---|---:|---:|---:|---:|---:|---:|')
 for size in (0, 1):
     root = TIP[size] - 6.0; rayos = 5 if size == 0 else 3
-    for pal, nom in ((0, 'motor (azul)'), (1, 'camino (lila)'), (2, 'pieza (dorada)')):
+    for pal, nom in ((0, 'motor (celeste)'), (1, 'camino (madera)'), (2, 'pieza (uva)')):
         a, ppu = recorte(f'gear_{size}_{pal}'); c, h = hondonadas(luma_alrededor(a, ppu, root * 0.5), 720 // rayos // 3, 0.035)
         ant = antes(f'gear_{size}_{pal}'); ca = ha = None
         if ant: ca, ha = hondonadas(luma_alrededor(ant[0], ant[1], root * 0.5), 720 // rayos // 3, 0.02)

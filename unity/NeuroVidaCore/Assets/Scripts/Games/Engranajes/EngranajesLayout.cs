@@ -18,11 +18,18 @@ namespace NeuroVida.Games.Engranajes
         public const float HudDp = 66f;
         public const float SideMargin = 14f;
 
-        // la escena, en coordenadas del boceto (x 0..360, y hacia abajo): la sala (8..250) y el cohete (aletas hasta 360), de la antena (92) a la llama (470)
-        public const float SceneTop = 88f, SceneBottom = 472f, SceneCenterY = 280f;
+        // la escena, en coordenadas del boceto (x 0..360, y hacia abajo): la MESA de taller (Tarea 164: una losa crema gruesa que lleva la sala, 8..250 × 114..462, como ventanilla noche, y el cohete, con aletas hasta 360 y carteles hasta 369), de 84 a 476 de alto
+        public const float SceneTop = 84f, SceneBottom = 476f, SceneCenterY = 280f;
         public const float SceneHeight = SceneBottom - SceneTop;
-        /// <summary>La escena (8..361 de ancho) se corre 4,5 dp a la izquierda para quedar con el mismo margen a cada lado.</summary>
+        /// <summary>La mesa (de -8 a 377, centrada en 184,5) se corre 4,5 dp a la izquierda para quedar con el mismo margen a cada lado.</summary>
+        public const float TableLeft = -8f, TableRight = 377f;
         public const float SceneShiftX = -4.5f;
+        /// <summary>La ventanilla noche (la sala de siempre: el mismo tamaño y lugar que el panel de antes; la máquina no se mueve ni un píxel dentro de ella).</summary>
+        public const float WindowCx = 129f, WindowCy = 288f, WindowW = 242f, WindowH = 348f;
+        /// <summary>La mesa empieza 16 dp bajo el texto de «Cohete número N» (que termina hacia 92 dp) y el aviso va 10 dp bajo los botones.</summary>
+        public const float TableTopDp = HudDp + 2f + StripH - 2f, SayGap = 10f;
+        /// <summary>Cuánto aire sobrante se reparte (dp): lo que crecen los botones, lo que baja la mesa y lo que se separan los botones de la mesa; el resto queda bajo el aviso.</summary>
+        public const float MaxButtonGrow = 26f, MaxTopShift = 36f, MaxGap = 64f;
 
         /// <summary>QuestionH = 0: la consigna ya no es una barra bajo la cabecera sino la fila de consigna del marcador común (Tarea 127); su alto lo aprovecha la escena.</summary>
         public const float StripH = 42f, QuestionH = 0f, MinScale = 0.55f;
@@ -38,38 +45,40 @@ namespace NeuroVida.Games.Engranajes
         }
 
         /// <summary>La altura que pide la pantalla con la escena a tamaño completo y los botones y el aviso más bajos que se permiten.</summary>
-        public static float FullHeight(float buttonH, float sayH) => HudDp + 2f + StripH + 4f + QuestionH + 6f + SceneHeight + 8f + buttonH + 6f + sayH + 6f;
+        public static float FullHeight(float buttonH, float sayH) => TableTopDp + SceneHeight + 8f + buttonH + SayGap + sayH + 6f;
 
         public static Metrics Compute(float height)
         {
             var m = new Metrics();
             float buttonH = 88f, sayH = 84f;
             // si ni así cabe a escala 0,6, el aviso y los botones se bajan al mínimo
-            float fixedTop = HudDp + 2f + StripH + 4f + QuestionH + 6f;
-            float fixedBottom = 8f + buttonH + 6f + sayH + 6f;
+            float fixedTop = TableTopDp;
+            float fixedBottom = 8f + buttonH + SayGap + sayH + 6f;
             float avail = height - fixedTop - fixedBottom;
             float scale = Math.Min(MaxScale, avail / SceneHeight);
             if (scale < MinScale)
             {
                 buttonH = 80f;
                 sayH = 72f;
-                fixedBottom = 8f + buttonH + 6f + sayH + 6f;
+                fixedBottom = 8f + buttonH + SayGap + sayH + 6f;
                 avail = height - fixedTop - fixedBottom;
                 scale = Math.Max(MinScale, Math.Min(MaxScale, avail / SceneHeight));
             }
             float sceneH = SceneHeight * scale;
-            float free = Math.Max(0f, avail - sceneH);              // aire que sobra: arriba y abajo de la escena y en los botones
-            float growButtons = Math.Min(14f, free * 0.4f);
+            float free = Math.Max(0f, avail - sceneH);              // aire que sobra (Tarea 164): en los botones (más altos), un poco sobre la mesa, entre la mesa y los botones y bajo el aviso; así no queda un tramo de cielo vacío de ~190 dp bajo los botones
+            float growButtons = Math.Min(MaxButtonGrow, free * 0.3f);
             buttonH += growButtons;
             free -= growButtons;
             m.StripTop = HudDp + 2f;
             m.QuestionTop = m.StripTop + StripH + 4f;
-            float sceneTop = m.QuestionTop + QuestionH + 6f + free * 0.4f;
+            float topShift = Math.Min(MaxTopShift, free * 0.25f);   // la mesa baja un poco de la cabecera (en un teléfono de 800 dp, ~31 dp: sigue ~40 dp más arriba que antes de la Tarea 164)
+            float gap = Math.Min(MaxGap, free * 0.35f);             // y los botones se separan de la mesa: quedan más a mano del pulgar
+            float sceneTop = TableTopDp + topShift;
             m.SceneScale = scale;
             m.SceneCenterLogicalY = sceneTop + sceneH / 2f;
             m.ButtonH = buttonH;
-            m.ButtonsTop = sceneTop + sceneH + 8f + free * 0.3f;
-            m.SayTop = m.ButtonsTop + buttonH + 6f;
+            m.ButtonsTop = sceneTop + sceneH + 8f + gap;
+            m.SayTop = m.ButtonsTop + buttonH + SayGap;
             m.SayH = sayH;
             m.Bottom = m.SayTop + sayH;
             return m;

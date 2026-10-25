@@ -812,9 +812,9 @@
  ],
  "medidas": [],
  "peso": {
-  "png_bytes": 1141393,
+  "png_bytes": 1126541,
   "crudo_rgba32": 8878080,
-  "deflate_rgba32": 1241102,
+  "deflate_rgba32": 1228422,
   "astc6x6": 987136
  }
 }

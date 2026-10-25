@@ -99,6 +99,8 @@ namespace NeuroVida.Games.Engranajes
         private static Color Sh(Color c, float f) => new Color(c.r * f, c.g * f, c.b * f, 1f);             // un tono más claro u oscuro SIN tocar el alfa
         private static readonly Color Ink2 = new Color(0.07f, 0.05f, 0.20f, 1f);               // el tono del relieve de las letras
         private static readonly Color CantoDeepViolet = new Color(0.38f, 0.30f, 0.62f, 1f), CantoLightViolet = new Color(0.58f, 0.48f, 0.82f, 1f);
+        /// <summary>El canto de la MADERA (Tarea 164, paleta «Madera clara»): el camino y las piezas de madera del cohete (portón, barra dentada); su visto contra la ventanilla noche mide ~1,7 : 1 (antes, el lila, 1,2 : 1).</summary>
+        private static readonly Color CantoDeepWood = new Color(0.33f, 0.20f, 0.10f, 1f), CantoLightWood = new Color(0.52f, 0.32f, 0.16f, 1f);
 
         private Image _blockCoin;                                                      // la moneda coral con la aspa de un toque bloqueado (con las llaves usadas)
         private const float BlockCoinDp = 30f, BlockCoinSeconds = 1f;
@@ -108,6 +110,13 @@ namespace NeuroVida.Games.Engranajes
         private CanvasGroup _machineGroup, _questionGroup, _sayGroup, _introGroup, _counterGroup;
         private Text _rocketTitle, _orbitText, _consigna1, _consigna2, _counterText, _counterNum, _sayTitle, _saySub, _introTitle, _introBody, _launchTitle, _launchLine1, _launchLine2;
         private Image _room, _hull, _motorArrow, _motorPulse, _sayBg, _sayRim, _dim, _flyerGlow, _flyerDot, _flame, _gateGlow, _stripGlow;
+        // la mesa de taller (Tarea 164): una losa crema gruesa del kit que lleva la sala como ventanilla noche hundida y el cohete; cuatro tornillos de plasticina en su marco. Sin plasticina, la sala de siempre.
+        private bool _tableOn, _sayCream;
+        private Image _table, _tableSlab, _saySlab, _sayCoin;
+        private readonly Image[] _screws = new Image[4];
+        private static readonly Color HullOnTable = new Color(0.74f, 0.68f, 0.95f);
+        private const float ScrewDp = 10f, ScrewLeftX = 0f, ScrewRightX = 258f, ScrewTopY = 99f, ScrewBottomY = 469f;      // en el marco, junto a las esquinas de la ventanilla (8..250 × 114..462)
+        private string _sayLaidTitle = "", _sayLaidSub = "";
         private Image _introCard, _introRim;
         private readonly Image[] _windows = new Image[EngranajesContract.RocketLights];
         private readonly Image[] _windowGlows = new Image[EngranajesContract.RocketLights];
@@ -309,7 +318,21 @@ namespace NeuroVida.Games.Engranajes
             sr.anchorMin = sr.anchorMax = sr.pivot = new Vector2(0.5f, 0.5f);
             sr.sizeDelta = Vector2.zero;
             _volume = EngranajesSprites.Plastic;
-            _room = SceneImage(sr, "Room", null, 129f, 288f, 242f, 348f);
+            _tableOn = _volume && PlasticSlab.Available(SlabSize.Button, SlabTone.Cream);
+            if (_tableOn)                                                                                                // la mesa va DEBAJO de la sala, del cohete y de la máquina
+            {
+                _table = SceneImage(sr, "Table", null, (EngranajesLayout.TableLeft + EngranajesLayout.TableRight) / 2f, (EngranajesLayout.SceneTop + EngranajesLayout.SceneBottom) / 2f,
+                    EngranajesLayout.TableRight - EngranajesLayout.TableLeft, EngranajesLayout.SceneHeight);
+                _tableSlab = PlasticSlab.TryStyle(_table, SlabSize.Button, SlabTone.Cream);
+                if (_tableSlab == null) { _table.gameObject.SetActive(false); _tableOn = false; }
+            }
+            _room = SceneImage(sr, "Room", null, EngranajesLayout.WindowCx, EngranajesLayout.WindowCy, EngranajesLayout.WindowW, EngranajesLayout.WindowH);
+            if (_tableOn)
+                for (int k = 0; k < _screws.Length; k++)
+                {
+                    _screws[k] = SceneImage(sr, "Screw" + k, null, k % 2 == 0 ? ScrewLeftX : ScrewRightX, k < 2 ? ScrewTopY : ScrewBottomY, ScrewDp, ScrewDp);
+                    PlasticCanto.Add(_screws[k], 1.3f * Su, new Color(0.34f, 0.28f, 0.46f), new Color(0.46f, 0.38f, 0.62f), 3);          // un tornillo de plasticina: una bolita con su canto
+                }
 
             // el cohete (todo junto: despega entero); la punta en 104
             _rocketRoot = SceneNode(sr, "Rocket", 180f, 280f);
@@ -350,7 +373,7 @@ namespace NeuroVida.Games.Engranajes
             for (int i = 0; i < _racks.Length; i++)
             {
                 _racks[i] = MakeImage(_machineLayer, "Rack" + i, null, false);
-                if (_volume) PlasticCanto.Add(_racks[i], 3f * Su, Sh(CantoDeepViolet, 0.55f), Sh(CantoLightViolet, 0.7f), 4);
+                if (_volume) PlasticCanto.Add(_racks[i], 3f * Su, Sh(CantoDeepWood, 0.8f), CantoLightWood, 4);              // la barra dentada es de madera (paleta «Madera clara»)
             }
             for (int i = 0; i < BeltPool; i++) _belts[i] = BuildBelt(_machineLayer, "Belt" + i);
             _motorPulse = MakeImage(_machineLayer, "MotorPulse", RoundedRectSprite.Get(24), false);
@@ -619,8 +642,13 @@ namespace NeuroVida.Games.Engranajes
             _sayRim = MakeImage(r, "Rim", RoundedRectSprite.Get(24));
             _sayBg = MakeImage(r, "Bg", RoundedRectSprite.Get(24));
             _sayBg.color = new Color(8f / 255f, 10f / 255f, 34f / 255f, 0.95f);
-            _sayTitle = MakeLabel(r, "Title", 16f, UiFonts.Bold, Mint, TextAnchor.MiddleCenter);
-            _saySub = MakeLabel(r, "Sub", 16f, UiFonts.Regular, Gold, TextAnchor.MiddleCenter);
+            // el aviso (Tarea 164, regla R2): una losa crema mediana del kit con la letra en tinta y la moneda ✓ (lima) o ✗ (coral) de lo común a la izquierda; sin plasticina o sin las monedas, la losa noche de siempre
+            _saySlab = _volume && EngranajesSprites.BadgesAreCoins ? PlasticSlab.TryStyle(_sayBg, SlabSize.Button, SlabTone.Cream) : null;
+            _sayCream = _saySlab != null;
+            if (_sayCream) _sayRim.enabled = false;
+            _sayCoin = MakeImage(r, "Coin", null, _sayCream);
+            _sayTitle = MakeLabel(r, "Title", _sayCream ? 20f : 16f, UiFonts.Bold, _sayCream ? NeuroStyle.Ink : Mint, _sayCream ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter);
+            _saySub = MakeLabel(r, "Sub", 16f, UiFonts.Regular, _sayCream ? NeuroStyle.InkMuted : Gold, _sayCream ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter);
             _sayTitle.horizontalOverflow = _saySub.horizontalOverflow = HorizontalWrapMode.Wrap;
             _sayTitle.verticalOverflow = _saySub.verticalOverflow = VerticalWrapMode.Overflow;
             go.SetActive(false);
@@ -737,8 +765,10 @@ namespace NeuroVida.Games.Engranajes
         /// <summary>Pone los sprites horneados (los que no llevan la máquina) y enciende la escena.</summary>
         private void AssignSprites()
         {
-            _room.sprite = EngranajesSprites.Room();
+            _room.sprite = _tableOn ? EngranajesSprites.Window() : EngranajesSprites.Room();
+            if (_tableOn) foreach (var screw in _screws) { screw.sprite = EngranajesSprites.Dome(); screw.color = new Color(0.64f, 0.60f, 0.80f); }
             _hull.sprite = EngranajesSprites.Hull();
+            if (_tableOn) _hull.color = HullOnTable;                                                                      // sobre la mesa crema el casco blanco lavanda se perdía (casi el mismo tono): un paso de lila, hasta que el cohete lila de la parte C (Blender) lo reemplace
             if (_volume)
             {
                 for (int k = 0; k < _windows.Length; k++) { _windows[k].sprite = EngranajesSprites.Dome(); _windowRings[k].sprite = EngranajesSprites.Coin(); }
@@ -746,10 +776,10 @@ namespace NeuroVida.Games.Engranajes
                 var deep = new Color(0.22f, 0.17f, 0.42f); var light = new Color(0.36f, 0.29f, 0.60f);
                 _dishCanto = PlasticCanto.Add(_dish, 2.2f * Su, deep, light, 3);                                                         // el radar y la turbina giran: su canto se refresca con su ángulo
                 _fanCanto = PlasticCanto.Add(_fan, 2.2f * Su, new Color(0.45f, 0.26f, 0.04f), new Color(0.62f, 0.40f, 0.08f), 3);
-                PlasticCanto.Add(_door, 2.4f * Su, deep, light, 3);
+                PlasticCanto.Add(_door, 2.4f * Su, CantoDeepWood, CantoLightWood, 3);                                                    // paleta «Madera clara»: portón de madera, marco y plataforma en uva, caja celeste
                 PlasticCanto.Add(_cargoFrame, 1.6f * Su, deep, light, 3);
-                PlasticCanto.Add(_cargoPlate, 2.0f * Su, new Color(0.48f, 0.34f, 0.08f), new Color(0.68f, 0.50f, 0.14f), 3);
-                PlasticCanto.Add(_cargoBox, 2.4f * Su, new Color(0.18f, 0.36f, 0.50f), new Color(0.30f, 0.52f, 0.68f), 3);
+                PlasticCanto.Add(_cargoPlate, 2.0f * Su, deep, light, 3);
+                PlasticCanto.Add(_cargoBox, 2.4f * Su, new Color(0.06f, 0.30f, 0.42f), new Color(0.10f, 0.42f, 0.56f), 3);
             }
             _dish.sprite = EngranajesSprites.Dish();
             _fan.sprite = EngranajesSprites.Fan();
@@ -953,6 +983,29 @@ namespace NeuroVida.Games.Engranajes
         private void LayoutSay()
         {
             float w = EngranajesLayout.W - 20f, h = _lay.SayH;
+            if (_sayCream)
+            {
+                // la moneda a la izquierda y el texto a su lado; la losa crece si una frase se parte en dos líneas
+                const float padX = 16f, coin = 34f, gap = 10f, padY = 10f;
+                float textW = w - padX - coin - gap - 14f;
+                bool sub = _saySubFull.Length > 0;
+                _sayTitle.text = _sayTitleFull;
+                _saySub.text = _saySubFull;
+                _sayTitle.rectTransform.sizeDelta = new Vector2(textW * _s, 200f * _s);
+                _saySub.rectTransform.sizeDelta = new Vector2(textW * _s, 200f * _s);
+                float th = Mathf.Max(26f, _sayTitle.preferredHeight / _s), sh = sub ? Mathf.Max(20f, _saySub.preferredHeight / _s) : 0f;
+                h = Mathf.Min(Mathf.Max(h, th + sh + 2f * padY), Mathf.Max(h, _logicalH - _lay.SayTop - 6f));
+                SetRect(_sayRoot, EngranajesLayout.W / 2f, _lay.SayTop + h / 2f, w, h);
+                SetChild(_sayRim.rectTransform, 0f, 0f, w, h);
+                SetChild(_sayBg.rectTransform, 0f, 0f, w, h);
+                SetChild(_sayCoin.rectTransform, -w / 2f + padX + coin / 2f, 0f, coin, coin);
+                float tx = -w / 2f + padX + coin + gap + textW / 2f, y0 = -(th + sh) / 2f;
+                SetChild(_sayTitle.rectTransform, tx, y0 + th / 2f, textW, th);
+                SetChild(_saySub.rectTransform, tx, y0 + th + sh / 2f, textW, Mathf.Max(1f, sh));
+                _sayLaidTitle = _sayTitleFull;
+                _sayLaidSub = _saySubFull;
+                return;
+            }
             SetRect(_sayRoot, EngranajesLayout.W / 2f, _lay.SayTop + h / 2f, w, h);
             SetChild(_sayRim.rectTransform, 0f, 0f, w + 3f, h + 3f);
             SetChild(_sayBg.rectTransform, 0f, 0f, w, h);

@@ -435,7 +435,7 @@ def grupo_engranajes():
     S.append(sprite('radar', vol.radar_volumen(carga_eng('radar', round(48 * PX_ENG), promedio=True)), ppu=PX_ENG))
     S.append(sprite('turbina', vol.turbina_volumen(carga_eng('turbina', round(40 * PX_ENG), promedio=True)), ppu=PX_ENG))
     for n, w in (('polea', 40), ('polea_p', 40)): S.append(sprite(n, vol.polea_volumen(carga_eng(n, round(w * PX_ENG))), ppu=PX_ENG))
-    for n, w, rol, bisel, base in (('porton', 44, 'lila', 2.2, 0.10), ('marco_carga', 48, 'lila', 1.6, 0.0), ('plataforma', 40, 'oro', 2.2, 0.10), ('caja_carga', 32, 'azul', 2.2, 0.06), ('barra', 20, 'lila', 2.2, -0.10)):       # Tarea 116: con la receta de color de los engranajes (`fija_rol`)
+    for n, w, rol, bisel, base in (('porton', 44, 'arena', 2.2, 0.10), ('marco_carga', 48, 'uva', 1.6, 0.0), ('plataforma', 40, 'uva', 2.2, 0.10), ('caja_carga', 32, 'cielo', 2.2, 0.06), ('barra', 20, 'arena', 2.2, -0.10)):       # Tarea 116: con la receta de color de los engranajes (`fija_rol`); Tarea 164, paleta «Madera clara»: portón y barra en madera, caja celeste, marco y plataforma en uva
         S.append(sprite(n, vol.fija_rol(carga_eng(n, round(w * PX_ENG)), rol, bisel, base, semilla=len(n)), ppu=PX_ENG))
     S.append(sprite('casco', vol.casco_volumen(carga_eng('casco', 348)), ppu=3.0))
     for n, box in (('grande', 2 * (33 + 8 + 14)), ('chico', 2 * (23 + 8 + 14))):

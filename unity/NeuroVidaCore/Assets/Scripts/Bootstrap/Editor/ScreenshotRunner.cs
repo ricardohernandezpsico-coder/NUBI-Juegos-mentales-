@@ -483,10 +483,13 @@ namespace NeuroVida.Bridge.EditorTools
         {
             Configure(id, tutorial: false, reduceMotion: false);
             yield return EnterPlay();
+            // Engranajes: el piloto automático toca «Arrancar» a los 1,5 s de empezar y atenúa los botones; las dos primeras tomas (la pantalla limpia y el aviso en reposo) se sacan con el piloto en pausa, para que se vean con los botones en su estado NORMAL (Tarea 164)
+            if (id == "engranajes") NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = false;
             yield return WaitPlayable();
             double playable = Now;
             Shot("primera");
             if (id == "anagramas") yield return PuntaHaveShot();
+            if (id == "engranajes") { yield return EngranajesIdleNoticeShot(); NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = AutoPlayGames.Contains(id); }                // el aviso con los botones de abajo en su estado NORMAL (todavía no se tocó «Arrancar»; Tarea 164)
             bool ended = false;
             foreach (var step in new[] { ("t08", 8.0), ("t20", 20.0), ("pausa", 21.0), ("aviso", 30.0), ("t40", 40.0) })
             {
@@ -518,7 +521,11 @@ namespace NeuroVida.Bridge.EditorTools
                 toast = (NeuroVida.Games.Shared.Toast)field.GetValue(mb);
                 if (toast != null) break;
             }
-            if (toast == null) yield break;
+            if (toast == null)
+            {
+                if (_gameId == "engranajes") yield return EngranajesNoticeShots();               // Engranajes lleva su propio aviso (la losa crema de abajo): se muestran el de «bien» y el de «mal», con su pista, para revisarlos a ojo (Tarea 164)
+                yield break;
+            }
             toast.Show("Aviso de prueba", "Una frase de dos renglones para probar dónde queda el aviso en esta pantalla", NeuroVida.Games.Shared.NeuroStyle.Sun, 7f);
             var group = toast.Rect.GetComponent<CanvasGroup>();
             double limit = Now + 5.5;
@@ -526,6 +533,42 @@ namespace NeuroVida.Bridge.EditorTools
             yield return Wait.For(0.3);
             Debug.Log("[Capturas] aviso de " + _gameId + ": a " + Mathf.RoundToInt(toast.PlacedTopU) + " u del borde de arriba, choque " + Mathf.RoundToInt(toast.PlacedOverlap));
             Shot("aviso");
+        }
+
+        /// <summary>Engranajes, en reposo y antes de tocar «Arrancar» (los botones de abajo en su estado normal, no atenuados): el aviso crema con una frase de error y su pista, como el de «engranaje trabado». Sale a los 0,5 s de nacer (el aviso ya se ve entero), con el piloto en pausa, y se deja ir antes de la toma de los 8 s.</summary>
+        private static IEnumerator EngranajesIdleNoticeShot()
+        {
+            object controller = null; System.Reflection.MethodInfo tell = null;
+            foreach (var mb in UnityEngine.Object.FindObjectsOfType<MonoBehaviour>())
+            {
+                if (mb.GetType().Name != "EngranajesGameController") continue;
+                tell = mb.GetType().GetMethod("Tell", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (tell != null) { controller = mb; break; }
+            }
+            if (controller == null) yield break;
+            tell.Invoke(controller, new object[] { "La compuerta se abrió en vez de cerrarse", "Tu cambio también movió la antena", false });
+            yield return Wait.For(0.5);
+            Shot("primera-aviso");
+        }
+
+        /// <summary>El aviso propio de Engranajes (<c>Tell</c>, privado): una toma con «¡Todo en orden!» y otra con la frase más larga de un error y su pista (las dos se ven del todo entre 0,5 y 2 s de nacer).</summary>
+        private static IEnumerator EngranajesNoticeShots()
+        {
+            object controller = null; System.Reflection.MethodInfo tell = null;
+            foreach (var mb in UnityEngine.Object.FindObjectsOfType<MonoBehaviour>())
+            {
+                if (mb.GetType().Name != "EngranajesGameController") continue;
+                tell = mb.GetType().GetMethod("Tell", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                if (tell != null) { controller = mb; break; }
+            }
+            if (controller == null) yield break;
+            tell.Invoke(controller, new object[] { "¡Todo en orden!", null, true });
+            yield return Wait.For(0.7);
+            Shot("aviso-bien");
+            yield return Wait.For(2.6);
+            tell.Invoke(controller, new object[] { "La compuerta se abrió en vez de cerrarse", "Tu cambio también movió la antena", false });
+            yield return Wait.For(0.7);
+            Shot("aviso-mal");
         }
 
         /// <summary>

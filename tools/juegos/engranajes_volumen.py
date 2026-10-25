@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """El VOLUMEN de Engranajes (Tarea 115; la propuesta aprobada por Ricardo en `docs/previews/plasticina/propuesta-volumen.png`): lo que se le hace al arte del atlas `engranajes` DESPUÉS del render de Blender y del promedio de cuatro luces, en numpy (se llama desde `empaqueta.py engranajes`).
-Receta (la de la hoja): color por ROL con un MAPA DE COLOR (la luz del render recorre una rampa de plasticina: motor azul, camino lila de verdad, pieza dorada), un bisel marcado y mate, y todo lo que se vea de frente con la luz fija arriba a la izquierda.
+Receta (la de la hoja): color por ROL con un MAPA DE COLOR (la luz del render recorre una rampa de plasticina: en la Tarea 115 motor azul, camino lila y pieza dorada; desde la Tarea 164, paleta «Madera clara»: motor celeste, camino de arena y pieza uva), un bisel marcado y mate, y todo lo que se vea de frente con la luz fija arriba a la izquierda.
   · Lo que GIRA (engranajes, radar, turbina) lleva un bisel ISÓTROPO (sin dirección: oscurece el borde por parejo): una luz horneada que gire con la pieza la delataría. Su CANTO y su sombra NO van aquí: son capas que no giran (`PlasticCanto` en Unity).
   · Lo que NO gira (polea, portón, marco, plataforma, caja, barra, casco) conserva sus colores, con más vida y un bisel con la luz de la pantalla; el casco gana cuerpo de cilindro y remaches de bolita.
   · Las flechas y los triángulos se tiñen con `Image.color`: van en gris claro con sombreado de tubo (bordes más oscuros) y un brillo arriba a la izquierda.
@@ -22,7 +22,13 @@ RAMPAS = {
     'perla': [(0.00, (96, 70, 132)), (0.30, (172, 142, 204)), (0.62, (226, 204, 238)), (0.85, (248, 236, 250)), (1.00, (255, 252, 255))],
     'noche': [(0.00, (8, 10, 34)),   (0.40, (28, 34, 88)),   (0.80, (50, 58, 132)),   (1.00, (84, 96, 176))],
 }
-ROL_PALETA = {0: 'azul', 1: 'lila', 2: 'oro'}                         # la paleta del engranaje (EngranajesSprites.Palette): motor, camino y ramas, piezas del cohete
+# Tarea 164, paleta 1 «Madera clara» (Ricardo, 24-oct; `auditoria-fable/engranajes-colores.md`): el camino en madera clara (arena), el motor en el celeste del kit y la pieza que mueve la antena o el cohete en el morado de Razonamiento (uva). Las rampas de arriba (lila, azul, oro) siguen siendo las del radar y la turbina.
+RAMPAS.update({
+    'arena': [(0.00, (92, 56, 28)),  (0.30, (150, 98, 52)),  (0.62, (212, 158, 96)),  (0.85, (238, 200, 146)), (1.00, (255, 238, 208))],
+    'cielo': [(0.00, (14, 80, 120)), (0.30, (22, 130, 178)), (0.62, (76, 201, 240)),  (0.85, (150, 226, 250)), (1.00, (224, 248, 255))],
+    'uva':   [(0.00, (70, 44, 140)), (0.30, (104, 72, 190)), (0.62, (138, 111, 216)), (0.85, (182, 160, 240)), (1.00, (226, 214, 255))],
+})
+ROL_PALETA = {0: 'cielo', 1: 'arena', 2: 'uva'}                       # la paleta del engranaje (EngranajesSprites.Palette): motor, camino y ramas, piezas del cohete
 PPD = 3.5                                                             # píxeles por dp de estos sprites
 
 def a_float(im):
@@ -86,7 +92,7 @@ def fija_volumen(im, bisel_dp=2.2, contraste=1.0, sat=1.14, aclara=0.0, semilla=
     return a_imagen(col, a)
 
 def fija_rol(im, rol, bisel_dp=2.2, base=0.10, semilla=3, fuerza=0.16):
-    """Lo que NO gira, con la MISMA receta de color de los engranajes (Tarea 116): la luz del render recorre la rampa de plasticina de su rol (portón y barra lila, caja azul, plataforma dorada), con el bisel y el grano de los engranajes. Antes (`fija_volumen`) conservaba el color gris lavanda del render y se leía más pálido y sucio que los engranajes y que los objetos de Bodega o Correo."""
+    """Lo que NO gira, con la MISMA receta de color de los engranajes (Tarea 116): la luz del render recorre la rampa de plasticina de su rol (Tarea 164: portón y barra en arena, caja en cielo, marco y plataforma en uva; antes lila, azul y dorada), con el bisel y el grano de los engranajes. Antes (`fija_volumen`) conservaba el color gris lavanda del render y se leía más pálido y sucio que los engranajes y que los objetos de Bodega o Correo."""
     rgb, a = a_float(im); t0 = luz_normalizada(rgb, a)
     t = t0 * 0.80 + 0.16 + almohada(a, bisel_dp, fuerza) + base
     g = grano(a.shape, semilla, 0.012, 0.9, 0.0) - 1.0

@@ -44,9 +44,9 @@ namespace NeuroVida.Games.Engranajes
         public static readonly Color GearInk = Ink;
         private static readonly Color[][] Pal =
         {
-            new[] { Hex(0xCFEFFF), Hex(0x5FA3E0) },   // motor
-            new[] { Hex(0xF1EDFF), Hex(0xA49BE0) },   // camino y ramas
-            new[] { Hex(0xFFF1C2), Hex(0xE2B24A) }    // piezas del cohete (engranaje dorado)
+            new[] { Hex(0xE0F8FF), Hex(0x4CC9F0) },   // motor: celeste (el Sky del kit); paleta «Madera clara» (Tarea 164), la misma del atlas
+            new[] { Hex(0xFFEED0), Hex(0xD49E60) },   // camino y ramas: madera clara (arena)
+            new[] { Hex(0xE2D6FF), Hex(0x8A6FD8) }    // piezas del cohete: uva (el morado de Razonamiento)
         };
 
         public static float TipOf(GearSize s) => s == GearSize.Big ? EngranajesContract.BigTip : EngranajesContract.SmallTip;
@@ -248,6 +248,24 @@ namespace NeuroVida.Games.Engranajes
             if (lx > 20f && lx < 235f && Mathf.Abs(y) < 170f) p.Over(new Color(127f / 255f, 216f / 255f, 1f, 0.05f), Cover(fold - 0.5f, aa));
             foreach (var (sx, sy) in new[] { (-109f, 162f), (109f, 162f), (-109f, -162f), (109f, -162f) })
                 p.Over(Hex(0x2C3566), Cover(Circle(x, y, sx, sy, 4f), aa));
+        });
+
+        /// <summary>El tono de la ventanilla noche de la mesa de taller (Tarea 164): un paso más claro que el cielo (19, 18, 64) y que el panel de antes (20, 27, 61): el (36, 34, 88) del boceto de Fable arriba y un punto más claro abajo. Más claro que esto el canto lila de los engranajes
+        /// (46, 31, 84 a 86, 62, 131) se confunde con el fondo; más oscuro es el panel de antes. Las razones de contraste medidas sobre las capturas reales están en `docs/diseno-engranajes.md` (Tarea 164).</summary>
+        public static readonly Color WindowTop = Hex(0x242258), WindowBottom = Hex(0x282660);
+
+        /// <summary>La ventanilla noche de la mesa de taller (242 × 348 dp, regla R4 del kit: lo calibrado sobre oscuro va en su ventanilla noche): HUNDIDA, con una sombra interior arriba y a la izquierda y un hilo claro abajo y a la derecha, sin rayas ni tornillos (los tornillos van en el marco crema).</summary>
+        public static Sprite Window() => Bake("window", 242f, 348f, 3f, (ref Px p, float x, float y) =>
+        {
+            const float aa = 1f / 3f;
+            float sdf = RoundBox(x, y, 0f, 0f, 121f, 174f, 18f);
+            float k = Mathf.Clamp01((174f - y) / 348f);          // 0 arriba, 1 abajo
+            p.Over(Color.Lerp(WindowTop, WindowBottom, k), Cover(sdf, aa));
+            float inside = Cover(sdf + 0.5f, aa);
+            float shade = 1f - Cover(RoundBox(x, y, 5f, -5f, 121f, 174f, 18f), 8f);          // lo que la misma ventanilla corrida 5 dp hacia abajo y a la derecha no cubre: una franja suave arriba y a la izquierda
+            p.Over(new Color(0.03f, 0.03f, 0.14f, 0.55f), shade * inside);
+            float lip = 1f - Cover(RoundBox(x, y, -2.5f, 2.5f, 121f, 174f, 18f), 1.2f);      // un hilo claro abajo y a la derecha: el labio de la ventanilla
+            p.Over(new Color(0.55f, 0.55f, 0.95f, 0.30f), lip * inside);
         });
 
         private const float HullX = 306f, HullY = 267f;                     // centro del sprite del casco, en coordenadas del boceto
@@ -529,7 +547,7 @@ namespace NeuroVida.Games.Engranajes
                 }
             }
             Hub(); yield return null;
-            Room(); yield return null;
+            Room(); Window(); yield return null;
             Hull(); yield return null;
             Dish(); Fan(); Door(); yield return null;
             CargoFrame(); CargoPlate(); CargoBox(); yield return null;
