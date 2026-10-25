@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -515,13 +516,14 @@ class HoyTarjetaTest {
   }
 
   @Test
-  fun superado_no_hay_boton_ni_sol_solo_el_visto_y_las_dos_frases() {
+  fun superado_no_hay_boton_ni_sol_solo_el_recuadro_con_el_visto_y_las_dos_frases() {
     val u = ui(completed = 3, challenge = stroop.copy(state = ChallengeState.SUPERADO))
     show(u)
     composeTestRule.onNodeWithText("Desafío superado: Tinta o Palabra.").assertIsDisplayed()
     composeTestRule.onNodeWithText("Mañana hay ruta y Desafío nuevos.").assertIsDisplayed()
     assertFalse("ningún botón de Desafío", exists("btn_challenge"))
     assertEquals("ningún sol: el día está hecho", Sun.NONE, sunOf(u))
+    composeTestRule.onNodeWithTag("home_challenge_done").assertIsDisplayed().assertHasNoClickAction()
     composeTestRule.onNodeWithTag("btn_all_games").assertIsDisplayed()
     composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-tarjeta-desafio-superado.png")
   }
@@ -532,6 +534,65 @@ class HoyTarjetaTest {
     composeTestRule.onNodeWithText("Desafío superado: Tinta o Palabra.").assertIsDisplayed()
     composeTestRule.onAllNodes(hasText("Mañana hay ruta y Desafío nuevos.")).assertCountEquals(0)
     assertEquals("la ruta sigue con el sol", Sun.ROUTE, sunOf(ui(completed = 1, challenge = stroop.copy(state = ChallengeState.SUPERADO))))
+  }
+
+  // ---- El recuadro del Desafío superado (Tarea 169)
+
+  /** El recuadro ocupa el lugar y el ancho del botón del Desafío con la ruta completa: justo bajo la tarjeta, de lado a lado, y no es tocable. */
+  @Test
+  fun el_recuadro_del_Desafio_superado_esta_donde_estaba_el_boton_y_al_mismo_ancho() {
+    show(ui(completed = 3, challenge = stroop))
+    val boton = bounds("btn_challenge")
+    show(ui(completed = 3, challenge = stroop.copy(state = ChallengeState.SUPERADO)))
+    val recuadro = bounds("home_challenge_done")
+    assertEquals("a la misma altura que el botón", boton.top, recuadro.top, 1f)
+    assertEquals("desde el mismo borde izquierdo", boton.left, recuadro.left, 1f)
+    assertEquals("al mismo ancho", boton.width, recuadro.width, 1f)
+    composeTestRule.onNodeWithTag("home_challenge_done").assertHasNoClickAction()
+    assertTrue("y «Todos los juegos» queda debajo de él", bounds("btn_all_games").top >= recuadro.bottom)
+  }
+
+  /** Con la ruta a medias el recuadro también va en el lugar del botón (a todo el ancho: ya no hay fila de dos botones). */
+  @Test
+  fun el_recuadro_con_la_ruta_a_medias_va_a_todo_el_ancho_y_sin_tocar() {
+    show(ui(completed = 1, challenge = stroop.copy(state = ChallengeState.SUPERADO)))
+    val recuadro = bounds("home_challenge_done")
+    assertEquals("como «Todos los juegos» a todo el ancho", bounds("btn_all_games").width, recuadro.width, 1f)
+    composeTestRule.onNodeWithTag("home_challenge_done").assertHasNoClickAction()
+  }
+
+  private fun contrast(a: androidx.compose.ui.graphics.Color, b: androidx.compose.ui.graphics.Color): Double {
+    val la = a.luminance().toDouble(); val lb = b.luminance().toDouble()
+    return (maxOf(la, lb) + 0.05) / (minOf(la, lb) + 0.05)
+  }
+
+  /** El lila claro del recuadro: la tinta y la tinta suave leen ≥ 4,5:1 sobre él, y no es ni el crema de «Todos los juegos» ni el lima de «Hecho». */
+  @Test
+  fun el_lila_claro_del_recuadro_se_lee_con_la_tinta_y_no_se_confunde_con_el_crema_ni_el_lima() {
+    val fill = com.example.ui.screens.ChallengeDoneFill
+    val ink = contrast(com.example.ui.theme.Clay.Ink, fill); val muted = contrast(com.example.ui.theme.Clay.InkMuted, fill)
+    println("RECUADRO tinta %.2f:1, tinta suave %.2f:1".format(ink, muted))
+    assertTrue("la tinta sobre el lila claro mide $ink:1 (mínimo 4,5)", ink >= 4.5)
+    assertTrue("la tinta suave sobre el lila claro mide $muted:1 (mínimo 4,5)", muted >= 4.5)
+    assertTrue("es más claro que el lila del botón", fill.luminance() > com.example.ui.theme.Clay.Grape.luminance())
+    assertTrue("y se distingue del crema de «Todos los juegos» (el azul domina al rojo)", fill.blue > fill.red + 0.1f)
+    assertTrue("y del lima de «Hecho» (el verde no domina)", fill.green < fill.blue && fill.green <= fill.red)
+  }
+
+  /** El recuadro es PLANO: su código no pide borde, sombra, losa, botón, cometa ni sol, y su radio es el del kit (22 dp). */
+  @Test
+  fun el_recuadro_es_plano_en_el_codigo_sin_borde_ni_sombra_ni_boton_ni_cometa() {
+    val src = java.io.File("src/main/java/com/example/ui/screens/HomeScreen.kt").readText().replace("\r\n", "\n")
+    val i = src.indexOf("private fun ChallengeDoneNote(")
+    assertTrue("no encontré ChallengeDoneNote", i > 0)
+    val body = src.substring(i, src.indexOf("\n}\n", i))
+    for (banned in listOf("border(", "shadow", "clickable", "KitButton", "ClayButton", "ClaySlab", "ClayCard", "Glyph.COMET", "SlabColor", "Clay.Sun", "toggleable", "selectable")) {
+      assertFalse("el recuadro del Desafío superado no usa `$banned`", body.contains(banned))
+    }
+    assertTrue("lleva el fondo lila claro", body.contains("background(ChallengeDoneFill)"))
+    assertTrue("con las esquinas del kit", body.contains("RoundedCornerShape(ChallengeDoneRadius)"))
+    assertEquals("22 dp, el radio de los botones y las tarjetas del kit", 22.dp, com.example.ui.screens.ChallengeDoneRadius)
+    assertTrue("lleva el visto de «Hecho»", body.contains("StopMark(StopState.DONE)"))
   }
 
   @Test

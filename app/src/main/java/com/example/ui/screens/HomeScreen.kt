@@ -433,16 +433,33 @@ private fun ChallengeButton(c: HomeChallenge, wide: Boolean, sun: Boolean, onCli
   )
 }
 
-/** El Desafío ya se superó: el visto y «Desafío superado: Tinta o Palabra.» y, si la ruta también está completa (el día está hecho), «Mañana hay ruta y Desafío nuevos.». Ningún sol. */
+/** El tono claro y suave del LILA del Desafío (el `#B8A4FF` del kit mezclado con blanco): el botón lila «se convierte» en su placa cuando el Desafío se supera. Con él, la tinta mide 11,8:1 y `InkMuted` 5,4:1 (`HoyTarjetaTest` los mide). */
+internal val ChallengeDoneFill = Color(0xFFD9CEFF)
+
+/** El radio de las esquinas del recuadro del Desafío superado: el de los botones y las tarjetas del kit (22 dp). */
+internal val ChallengeDoneRadius = 22.dp
+
+/**
+ * El Desafío ya se superó (Tarea 169): un recuadro PLANO —sin borde tinta grueso, sin sombra dura, sin losa: no es un botón, no se toca y no tiene sol— con el LILA del Desafío en un tono claro, en el mismo lugar y al mismo ancho que tenía el botón, con el radio del kit y el alto que le da el contenido.
+ * Adentro, el visto (la moneda lima) y «Desafío superado: Tinta o Palabra.» en tinta y, si la ruta también está completa (el día está hecho), «Mañana hay ruta y Desafío nuevos.» debajo. Sin cometa, para no cargarlo.
+ */
 @Composable
 private fun ChallengeDoneNote(c: HomeChallenge, dayDone: Boolean) {
-  Column(Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 2.dp).semantics(mergeDescendants = true) { contentDescription = challengeDoneLine(c.title) + if (dayDone) " $CHALLENGE_TOMORROW" else "" }.testTag("home_challenge_done")) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      StopMark(StopState.DONE)
-      Spacer(Modifier.width(8.dp))
-      OnBoardText(challengeDoneLine(c.title), color = HoyCream, fontSize = 17.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp, modifier = Modifier.weight(1f))
+  Row(
+    Modifier
+      .fillMaxWidth().padding(top = 8.dp)
+      .semantics(mergeDescendants = true) { contentDescription = challengeDoneLine(c.title) + if (dayDone) " $CHALLENGE_TOMORROW" else "" }
+      .testTag("home_challenge_done")
+      .clip(RoundedCornerShape(ChallengeDoneRadius)).background(ChallengeDoneFill)
+      .padding(horizontal = 14.dp, vertical = 12.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    StopMark(StopState.DONE)
+    Spacer(Modifier.width(10.dp))
+    Column(Modifier.weight(1f)) {
+      Text(challengeDoneLine(c.title), color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp)
+      if (dayDone) Text(CHALLENGE_TOMORROW, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 2.dp))
     }
-    if (dayDone) OnBoardText(CHALLENGE_TOMORROW, color = HoySoft, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 2.dp))
   }
 }
 
@@ -460,7 +477,7 @@ private fun AllGamesButton(onAllGames: () -> Unit, half: Boolean, modifier: Modi
  * Bajo la tarjeta (Tarea 167, «un solo sol a la vez»): el Desafío de hoy y «Todos los juegos».
  *  - La ruta sigue (o hay una partida en pausa): una fila con «Desafío de hoy» en LILA y el cometa, junto a «Todos los juegos» en crema; el sol está en la tarjeta.
  *  - La ruta completa: el Desafío toma todo el ancho en SOL («Tinta o Palabra · unos 2 minutos») y «Todos los juegos» baja; jugado sin superar, en crema («Tinta o Palabra · otra vez»).
- *  - Desafío superado: el visto con «Desafío superado: Tinta o Palabra.» (y «Mañana hay ruta y Desafío nuevos.» si la ruta también está completa) y NINGÚN sol: el día está hecho.
+ *  - Desafío superado: un recuadro plano en lila claro (`ChallengeDoneNote`, Tarea 169) con el visto y «Desafío superado: Tinta o Palabra.» (y «Mañana hay ruta y Desafío nuevos.» si la ruta también está completa), en el lugar del botón, sin tocar y SIN sol: el día está hecho.
  *  - Sin Desafío (todavía no hay un juego medido fuera de la ruta): Hoy queda como antes, solo «Todos los juegos» y, con la ruta completa, «Mañana te espera una ruta nueva.».
  * Y, si todavía no hizo la evaluación, la invitación a hacerla.
  */
