@@ -854,6 +854,10 @@ namespace NeuroVida.Games.Engranajes
                 p.Life = life * (0.6f + (float)_rng.NextDouble() * 0.7f);
                 p.Size = 0.8f + (float)_rng.NextDouble() * 1.8f;
                 p.Color = color;
+                // el primer cuadro ya sale con su posición, tamaño y color: si se activara antes, nacería con los de fábrica (100 × 100, blanco, en el centro) hasta el siguiente AnimateSparks (Tarea 170)
+                p.Img.rectTransform.anchoredPosition = P(p.Pos);
+                p.Img.rectTransform.sizeDelta = Vector2.one * (p.Size * 2f * _s);
+                p.Img.color = NeuroStyle.WithAlpha(p.Color, 0.9f);
                 p.Img.gameObject.SetActive(true);
             }
         }

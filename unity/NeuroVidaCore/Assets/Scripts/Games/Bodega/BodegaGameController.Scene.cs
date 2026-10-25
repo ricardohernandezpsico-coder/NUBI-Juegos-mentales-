@@ -561,6 +561,10 @@ namespace NeuroVida.Games.Bodega
                 f.From = new Vector2(p.x, p.y);
                 f.Out = false;
                 f.Obj.sprite = BodegaSprites.Object(obj);
+                // el primer cuadro ya con la posición y el tamaño de AnimateFlyers con k = 0: si no, el objeto nace con los de fábrica (100 × 100, en el centro) hasta el siguiente Update (Tarea 170)
+                f.Obj.rectTransform.anchoredPosition = f.Glow.rectTransform.anchoredPosition = P(L(f.From.x, f.From.y));
+                f.Obj.rectTransform.sizeDelta = Vector2.one * (34f * _lay.Scale * _s);
+                f.Glow.rectTransform.sizeDelta = Vector2.one * (48f * _s);
                 f.Obj.gameObject.SetActive(true);
                 f.Glow.gameObject.SetActive(Motion.Decorative);
                 f.Glow.color = first ? new Color(Gold.r, Gold.g, Gold.b, 0.7f) : new Color(200f / 255f, 200f / 255f, 1f, 0.7f);
@@ -656,6 +660,10 @@ namespace NeuroVida.Games.Bodega
                 p.Life = life * (0.6f + (float)_rng.NextDouble() * 0.7f);
                 p.Size = 0.8f + (float)_rng.NextDouble() * 1.8f;
                 p.Color = color;
+                // el primer cuadro ya sale con su posición, tamaño y color: si se activara antes, nacería con los de fábrica (100 × 100, blanco, en el centro) hasta el siguiente AnimateSparks (Tarea 170)
+                p.Img.rectTransform.anchoredPosition = P(p.Pos);
+                p.Img.rectTransform.sizeDelta = Vector2.one * (p.Size * 2f * _s);
+                p.Img.color = NeuroStyle.WithAlpha(p.Color, 0.9f);
                 p.Img.gameObject.SetActive(true);
             }
         }

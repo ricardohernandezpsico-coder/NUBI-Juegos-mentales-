@@ -876,6 +876,11 @@ namespace NeuroVida.Games.Secuencia
                 p.Vel = new Vector2(((float)_rng.NextDouble() - 0.5f) * spread, ((float)_rng.NextDouble() - 0.5f) * spread) * _s;
                 p.Size = 1.5f + (float)_rng.NextDouble() * 3.2f;
                 p.Col = col;
+                // el primer cuadro ya sale con su posición, tamaño y color (si no, nace con los de fábrica hasta el siguiente cuadro: Tarea 170)
+                p.Img.rectTransform.anchoredPosition = p.Pos;
+                float sz0 = p.Size * _s;
+                p.Img.rectTransform.sizeDelta = new Vector2(sz0, sz0);
+                p.Img.color = NeuroStyle.WithAlpha(p.Col, 0.9f);
                 p.Img.gameObject.SetActive(true);
             }
         }
@@ -889,6 +894,9 @@ namespace NeuroVida.Games.Secuencia
             b.Pos = at;
             b.Born = GameClock.Time;
             b.Col = ColorOf(hex);
+            b.Img.rectTransform.anchoredPosition = b.Pos;          // el primer cuadro ya sale con su posición, tamaño y color (el aro de k = 0: 40 dp; Tarea 170)
+            b.Img.rectTransform.sizeDelta = new Vector2(40f * _s, 40f * _s);
+            b.Img.color = NeuroStyle.WithAlpha(b.Col, 0.8f);
             b.Img.gameObject.SetActive(true);
         }
 

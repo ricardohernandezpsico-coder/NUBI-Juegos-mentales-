@@ -1014,6 +1014,15 @@ namespace NeuroVida.Games.Calculo
                 a.A = from;
                 a.B = to;
                 a.At = now;
+                // el primer cuadro ya con la posición, el tamaño y el color de AnimateArcs con k = 0: si no, los 14 puntos nacen con los de fábrica (100 × 100, blancos, en el centro) hasta el siguiente Update (Tarea 170)
+                var mid0 = new Vector2((from.x + to.x) / 2f, Mathf.Min(from.y, to.y) - 50f);
+                for (int i = 0; i < a.Dots.Length; i++)
+                {
+                    float t = i / (float)(a.Dots.Length - 1);
+                    a.Dots[i].rectTransform.anchoredPosition = P((1 - t) * (1 - t) * from + 2 * (1 - t) * t * mid0 + t * t * to);
+                    a.Dots[i].rectTransform.sizeDelta = Vector2.one * ((3.5f + 2f) * 2f * _s);
+                    a.Dots[i].color = NeuroStyle.WithAlpha(Gold, 1f);
+                }
                 foreach (var d in a.Dots) d.gameObject.SetActive(true);
                 return;
             }
@@ -1052,6 +1061,10 @@ namespace NeuroVida.Games.Calculo
                 p.Life = life * (0.6f + (float)_rng.NextDouble() * 0.7f);
                 p.Size = 0.8f + (float)_rng.NextDouble() * 1.8f;
                 p.Color = color;
+                // el primer cuadro ya sale con su posición, tamaño y color: si se activara antes, nacería con los de fábrica (100 × 100, blanco, en el centro) hasta el siguiente AnimateSparks (Tarea 170)
+                p.Img.rectTransform.anchoredPosition = P(p.Pos);
+                p.Img.rectTransform.sizeDelta = Vector2.one * (p.Size * 2f * _s);
+                p.Img.color = NeuroStyle.WithAlpha(p.Color, 0.9f);
                 p.Img.gameObject.SetActive(true);
             }
         }

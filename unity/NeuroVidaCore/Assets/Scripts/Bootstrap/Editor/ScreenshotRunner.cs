@@ -80,9 +80,14 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Modo «juice» (Tarea 130, NUBI_SHOTS_JUICE=1): en vez de la partida entera, cada juego (Carga, Tinta, Punta, Rastro) saca «antes · durante · después» de su efecto nuevo, con el juego REAL (la jugada se hace por reflexión).</summary>
         private static bool _juice;
 
+        /// <summary>Modo «cascada de Punta» (Tarea 170, NUBI_SHOTS_PUNTA_CASCADA=1, con NUBI_SHOTS_GAMES=anagramas): resuelve dos palabras con el juego REAL (una sola y otra con una ayuda) y saca la cascada cuadro a cuadro (cada 50 ms de juego) para ver qué son las «pelotitas».</summary>
+        private static bool _puntaCascada;
+
         public static void Run()
         {
             _juice = Environment.GetEnvironmentVariable("NUBI_SHOTS_JUICE") == "1";
+            _puntaCascada = Environment.GetEnvironmentVariable("NUBI_SHOTS_PUNTA_CASCADA") == "1";
+            if (_puntaCascada) _juice = true;
             var raw = (Environment.GetEnvironmentVariable("NUBI_SHOTS_GAMES") ?? "Correo").Trim();
             _root = Environment.GetEnvironmentVariable("NUBI_SHOTS_DIR");
             if (string.IsNullOrEmpty(_root)) _root = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "test-results", "capturas"));
@@ -233,7 +238,8 @@ namespace NeuroVida.Bridge.EditorTools
                 double t0 = Now;
                 Debug.Log("[Capturas] ---- " + id);
 
-                if (_juice) yield return JuiceShots(id);
+                if (_puntaCascada) yield return PuntaCascadaShots();
+                else if (_juice) yield return JuiceShots(id);
                 else if (id == "correo") yield return CorreoScript();
                 else if (id == "satelites") yield return SatelitesScript();
                 else if (id == "piloto") yield return PilotoScript();
@@ -361,6 +367,55 @@ namespace NeuroVida.Bridge.EditorTools
         {
             foreach (var mb in UnityEngine.Object.FindObjectsOfType<MonoBehaviour>()) if (mb != null && mb.GetType().Name == typeName) return mb;
             return null;
+        }
+
+        /// <summary>
+        /// Diagnóstico de la Tarea 170: la cascada de «En la punta de la lengua» cuadro a cuadro. Dos rondas con el juego real (por reflexión, como el resto del modo «juice»): una palabra armada sola (tier de oro) y otra con «Una ayuda» (tier de plata, casi blanco).
+        /// Con <c>Time.captureFramerate = 20</c> cada cuadro del juego dura 50 ms aunque la toma tarde; se saca una toma por cuadro desde que se coloca la última ficha hasta que la palabra se desvanece. El nombre de cada toma lleva la ronda, el número y el reloj del juego.
+        /// </summary>
+        private static IEnumerator PuntaCascadaShots()
+        {
+            Configure("anagramas", tutorial: false, reduceMotion: false);
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = false;
+            yield return EnterPlay();
+            MonoBehaviour c = null;
+            yield return Wait.Until(() => (c = FindController("PuntaGameController")) != null, 40);
+            if (c == null) { GameNotes.Add("no apareció PuntaGameController"); yield return ExitPlay(); yield break; }
+            yield return WaitPlayable();
+            for (int round = 0; round < 2; round++)
+            {
+                bool help = round == 1;
+                yield return Wait.Until(() => Convert.ToString(Member(c, "_phase")) == "Think", 60);
+                yield return Wait.For(2.8);
+                ((NeuroVida.Games.Anagramas.PuntaGameController)c).EditorHave();
+                yield return Wait.Until(() => Convert.ToString(Member(c, "_phase")) == "Build", 10);
+                yield return Wait.For(1.4);
+                if (help) { Call(c, "DoHelp"); yield return Wait.For(0.8); }
+                var word = Member(c, "_word");
+                string tiles = Convert.ToString(Member(word, "Tiles")), text = Convert.ToString(Member(word, "Word"));
+                GameNotes.Add("ronda " + round + ": «" + text + "» de " + tiles.Length + " letras" + (help ? " con una ayuda" : ", armada sola"));
+                for (int guard = 0; guard < 20 && Convert.ToString(Member(c, "_phase")) == "Build"; guard++)
+                {
+                    int k = (int)Call(c, "FirstEmptySlot");
+                    if (k < 0 || k >= tiles.Length) break;
+                    object tile = null;
+                    foreach (var t in (System.Collections.IList)Member(c, "_tiles"))
+                        if ((char)Member(t, "Char") == tiles[k] && (int)Member(t, "Slot") < 0 && !(bool)Member(t, "Gone")) { tile = t; break; }
+                    if (tile == null) { GameNotes.Add("no encontré la ficha de la letra " + k); break; }
+                    if (k == tiles.Length - 1) Time.captureFramerate = 20;          // desde la última ficha, cada cuadro del juego dura 50 ms
+                    Call(c, "TapTile", tile);
+                    if (k < tiles.Length - 1) yield return Wait.For(0.3);
+                }
+                float t0 = NeuroVida.Games.Shared.GameClock.Time;
+                for (int i = 0; i < 70; i++)
+                {
+                    Shot("r" + round + "-" + i.ToString("00") + "-t" + (NeuroVida.Games.Shared.GameClock.Time - t0).ToString("0.00"));
+                    yield return Wait.For(0.0);
+                }
+                Time.captureFramerate = 0;
+                yield return Wait.For(0.5);
+            }
+            yield return ExitPlay();
         }
 
         /// <summary>El efecto nuevo de cada juego, con el juego real: la jugada se hace por reflexión y se saca una toma antes, durante (~0,12 s) y después.</summary>

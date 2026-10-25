@@ -116,7 +116,6 @@ namespace NeuroVida.Games.Anagramas
             public bool Alive;
         }
 
-        private sealed class Particle { public Image Img; public Vector2 Pos, Vel; public float Age, Life, Size; public bool Alive; public Color Color; }
 
         private sealed class ButtonView
         {
@@ -198,7 +197,6 @@ namespace NeuroVida.Games.Anagramas
         private readonly List<Image> _slotFills = new List<Image>();
         private readonly List<Lucero> _luceros = new List<Lucero>();
         private readonly List<Flyer> _flyers = new List<Flyer>();
-        private readonly List<Particle> _particles = new List<Particle>();
         private readonly ButtonView[] _buttons = new ButtonView[2];
         private Text _ladderLabel;
         private readonly Image[] _ladderDots = new Image[3];
@@ -348,8 +346,9 @@ namespace NeuroVida.Games.Anagramas
             UpdateHud();
             if (change == DdaChange.Up)
             {
-                _toast.Show("¡Un paso más!", "Palabras menos comunes y más largas", NeuroStyle.Lime, 1.1f);
-                GameFeel.LevelUp();
+                _toast.Show("¡Un paso más!", "Palabras menos comunes y más largas", NeuroStyle.Lime, 1.1f, sound: false);          // el arpegio de abajo ya suena con él
+                WoodCore.Play(WoodSfx.LevelUp, gainDb: PuntaSounds.LevelUpGainDb);          // el arpegio de subir de etapa, 3 dB más bajo (25-oct: encima de la cascada llegaba a −2,5 dBFS); el háptico es el de siempre
+                GameFeel.Haptic(GameFeel.HapticKind.Firm);
             }
             else if (change == DdaChange.Down || _dda.Struggling)
                 _toast.Show("Con calma", "Pide una ayuda cuando la necesites", NeuroStyle.Sun, 0.9f);
@@ -679,8 +678,7 @@ namespace NeuroVida.Games.Anagramas
             t.Lit = true;
             t.LitColor = color;
             RefreshTileLook(t);
-            WoodCore.PlayNote(PuntaSounds.Penta[Mathf.Min(PuntaSounds.Penta.Length - 1, k + 1)], WoodVoice.Kalimba);   // la cascada: cada letra con la nota siguiente (el retardo k · 0,09 s no se toca)
-            Emit(t.Pos, 8, 70f, 0.6f, color, 10f);
+            WoodCore.PlayNote(PuntaSounds.Penta[Mathf.Min(PuntaSounds.Penta.Length - 1, k + 1)], WoodVoice.Kalimba, gainDb: PuntaSounds.CascadeGainDb);   // la cascada: cada letra con la nota siguiente, 6 dB más baja (25-oct); el retardo k · 0,09 s no se toca
         }
 
         private IEnumerator ChordAfter(float delay)
@@ -968,7 +966,6 @@ namespace NeuroVida.Games.Anagramas
             AnimateSlots();
             AnimateTiles(dt);
             AnimateFlyers();
-            AnimateParticles(dt);
             AnimateUi();
             if (_inputOn && dt > 0f) ReadPress();
         }
@@ -1445,6 +1442,10 @@ namespace NeuroVida.Games.Anagramas
             var c = TierColor(tier);
             f.Glow.color = NeuroStyle.WithAlpha(c, 0.6f);
             f.Core.color = c;
+            // el primer cuadro ya con su posición y tamaño (los de AnimateFlyers con k = 0): si no, nace con los de fábrica (100 × 100, en el centro) hasta el siguiente Update
+            f.Root.anchoredPosition = P(f.From);
+            f.Root.sizeDelta = Vector2.one * (2f * 10f * _s);
+            f.Glow.rectTransform.sizeDelta = Vector2.one * (6f * 10f * _s);
             f.Root.gameObject.SetActive(true);
         }
 
@@ -1463,7 +1464,6 @@ namespace NeuroVida.Games.Anagramas
                     f.Root.gameObject.SetActive(false);
                     FillLucero(f.Index, f.Tier);
                     WoodCore.Play(WoodSfx.New, gainDb: -3f);
-                    Emit(to, 14, 80f, 0.7f, TierColor(f.Tier), 0f);
                     continue;
                 }
                 float e = UiFx.EaseOutCubic(Mathf.Clamp01(k));
@@ -1472,41 +1472,6 @@ namespace NeuroVida.Games.Anagramas
                 float r = Mathf.Lerp(10f, 7f, e);
                 f.Root.sizeDelta = Vector2.one * (2f * r * _s);
                 f.Glow.rectTransform.sizeDelta = Vector2.one * (6f * r * _s);
-            }
-        }
-
-        // ---- chispas
-
-        private void Emit(Vector2 at, int n, float spread, float life, Color color, float up)
-        {
-            if (!Motion.Decorative) return;
-            for (int i = 0; i < n; i++)
-            {
-                var p = _particles.Find(x => !x.Alive);
-                if (p == null) return;
-                p.Alive = true;
-                p.Pos = at;
-                p.Vel = new Vector2(((float)_rng.NextDouble() - 0.5f) * spread, ((float)_rng.NextDouble() - 0.5f) * spread - up);
-                p.Age = 0f;
-                p.Life = life * (0.6f + (float)_rng.NextDouble() * 0.7f);
-                p.Size = 0.8f + (float)_rng.NextDouble() * 1.8f;
-                p.Color = color;
-                p.Img.gameObject.SetActive(true);
-            }
-        }
-
-        private void AnimateParticles(float dt)
-        {
-            foreach (var p in _particles)
-            {
-                if (!p.Alive) continue;
-                p.Age += dt;
-                if (p.Age >= p.Life) { p.Alive = false; p.Img.gameObject.SetActive(false); continue; }
-                p.Pos += p.Vel * dt;
-                float k = p.Age / p.Life;
-                p.Img.rectTransform.anchoredPosition = P(p.Pos);
-                p.Img.rectTransform.sizeDelta = Vector2.one * (p.Size * 2f * _s);
-                p.Img.color = NeuroStyle.WithAlpha(p.Color, 1f - k);
             }
         }
 
@@ -1841,11 +1806,6 @@ namespace NeuroVida.Games.Anagramas
                 f.Shine.gameObject.SetActive(true);
                 go.SetActive(false);
                 _flyers.Add(f);
-            }
-            for (int i = 0; i < 60; i++)
-            {
-                var img = MakeImage(_fxLayer, "Particle", DiscSprite.Get());
-                _particles.Add(new Particle { Img = img });
             }
         }
 

@@ -917,6 +917,10 @@ namespace NeuroVida.Games.Intrusa
                 float a = (float)_rng.NextDouble() * Mathf.PI * 2f;
                 p.Vel = new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * (10f + (float)_rng.NextDouble() * 26f) * _s;
                 p.Pos = at;
+                // el primer cuadro ya sale con su posición, tamaño y color (si no, nace con los de fábrica hasta el siguiente UpdateFx: Tarea 170)
+                p.Img.rectTransform.anchoredPosition = p.Pos;
+                p.Img.rectTransform.sizeDelta = new Vector2(5f * _s, 5f * _s);
+                p.Img.color = new Color(1f, 217f / 255f, 138f / 255f, 0.9f);
                 p.Img.gameObject.SetActive(true);
             }
         }
@@ -927,6 +931,9 @@ namespace NeuroVida.Games.Intrusa
             foreach (var q in _rings) if (!q.Alive) { r = q; break; }
             if (r == null) return;
             r.Alive = true; r.Age = 0f; r.Dur = 0.65f; r.Pos = at; r.Size = strong ? 1f : 0.7f;
+            r.Img.rectTransform.anchoredPosition = r.Pos;          // el primer cuadro ya sale con su posición, tamaño y color (el aro de k = 0; Tarea 170)
+            r.Img.rectTransform.sizeDelta = new Vector2(5f * r.Size * 2f * _s, 5f * r.Size * 2f * _s);
+            r.Img.color = new Color(1f, 0.93f, 0.78f, 0.85f * r.Size);
             r.Img.gameObject.SetActive(true);
         }
 
