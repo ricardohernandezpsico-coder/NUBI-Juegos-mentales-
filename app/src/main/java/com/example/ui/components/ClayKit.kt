@@ -321,7 +321,7 @@ internal fun KitButton(
   textColor: Color = Clay.Ink,
   wide: Boolean = true,
   forcePressed: Boolean = false,
-  /** Alto mínimo (56 por defecto; la ficha del juego usa 48 para «Cambiar cómo jugar»). */
+  /** Alto mínimo (56 por defecto; en la ficha del juego, «Desafío» y «Más opciones» también miden 56: Tarea 171). */
   minHeight: Dp = 56.dp,
   /** Una segunda línea más chica bajo [text] (el «Jugar» de la ficha con lo elegido, en pantallas angostas o con letra grande): dos textos, cada uno entero, y nunca se parte una palabra. */
   secondLine: String? = null,

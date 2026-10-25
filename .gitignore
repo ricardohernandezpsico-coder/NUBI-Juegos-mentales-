@@ -69,3 +69,4 @@ tools/juegos/out/
 # la página de escucha de sonido con los WAV adentro (se arma con tools/sonido/armar_escucha.py --incrustar; pesa ~11 MB)
 docs/previews/sonido-escucha-incrustado.html
 docs/previews/sonido-escucha-*-incrustado.html
+tools/previews/out/

@@ -383,5 +383,28 @@ class VisibleTextsGuardTest {
       assertTrue("«$p» no lleva signos sueltos ni flechas", p.none { it in "↑↓→←+−" })
     }
   }
-}
 
+  @Test
+  fun `las frases de la ficha portada son las de la spec, una sola palabra por concepto y sin lo que se fue`() {
+    // Tarea 171 (`auditoria-fable/ficha-juego.md` §6.5): «Jugar» · «a tu medida · sin reloj» (lo elegido, en la segunda línea) · «Desafío» · «Más opciones» · «¿Cómo quieres jugar?» · «¿Con reloj?» · «Sobre este juego» · «Qué pones en juego» · «Fuente: …» · «Cómo se juega»
+    val source = File("src/main/java/com/example/ui/screens/GameSheet.kt").readText()
+    val sheet = source.substring(source.indexOf("internal fun GameSheetContent("))
+    val texts = sheet.lines().flatMap { visibleLiteralsOf(it) }
+    for (phrase in listOf("Jugar", "Desafío", "Más opciones", "Menos opciones", "¿Cómo quieres jugar?", "¿Con reloj?", "Sobre este juego", "Qué pones en juego", "Cómo se juega", "Aún sin medir", "Sin reloj", "Con reloj")) {
+      assertTrue("falta «$phrase» en la ficha", phrase in texts)
+    }
+    assertEquals("Sobre este juego: qué pones en juego y su fuente", texts.first { it.startsWith("Sobre este juego:") })
+    // lo que se fue de la ficha no vuelve: el botón y la línea de «Cambiar cómo jugar», el «Listo» de plegarla, la marca con su chip, la constancia y «Te faltan N puntos»
+    for (gone in listOf("Cambiar cómo jugar", "Listo", "Tu récord", "Mejorando", "Se mantiene", "Jugaste", "Te faltan", "Etapas:", "Tu vistazo", "partidas en 2 semanas")) {
+      assertTrue("«$gone» no va en la ficha", texts.none { gone in it })
+    }
+    for (t in texts) {
+      assertFalse("«$t» usa «reto» o «modo difícil» (la palabra es «Desafío»)", Regex("""retos?|modo dif[ií]cil""", RegexOption.IGNORE_CASE).containsMatchIn(t))
+      assertTrue("«$t» no lleva signos sueltos ni flechas", t.none { it in "↑↓→←−" })
+    }
+    // los textos que arma `RetoChoice` para «Jugar» y su lector de pantalla
+    assertEquals("a tu medida · sin reloj", com.example.data.RetoChoice.playDetail(com.example.data.PlayMode.A_TU_MEDIDA, false, true))
+    assertEquals("a tu medida", com.example.data.RetoChoice.playDetail(com.example.data.PlayMode.A_TU_MEDIDA, true, false))
+    assertEquals("Un paso más difícil", com.example.data.PlayMode.DESAFIO.short)
+  }
+}

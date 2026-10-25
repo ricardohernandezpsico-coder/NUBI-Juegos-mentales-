@@ -456,7 +456,9 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     customLevel: Int? = null,
     customTimed: Boolean? = null,
     isDailyFlow: Boolean = false,
-    mode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA
+    mode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA,
+    // «Cómo se juega» de la ficha (Tarea 171): abre el tutorial guiado aunque la persona ya haya jugado el juego; nunca retoma una pausa (empieza por el tutorial).
+    tutorial: Boolean = false
   ) {
     // Si ese juego quedó en pausa ("Salir" del menú de pausa), se retoma en vez de empezar de cero. "Jugar de
     // nuevo" (customLevel) siempre es una partida nueva. Abrir otro juego descarta la pausa (Unity recarga).
@@ -464,7 +466,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     if (isDailyFlow) clearOpenSheets()
     val paused = pausedGame
     pausedGame = null
-    if (paused != null && paused.first.gameDef.id == gameId && customLevel == null && paused.first.mode == mode && (customTimed == null || paused.first.timed == customTimed)) {
+    if (!tutorial && paused != null && paused.first.gameDef.id == gameId && customLevel == null && paused.first.mode == mode && (customTimed == null || paused.first.timed == customTimed)) {
       _activeGame.value = paused.first.copy(
         isDailyFlow = isDailyFlow || paused.first.isDailyFlow,
         resumeLaunchId = paused.second
@@ -477,7 +479,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     // El camino diario de Hoy va siempre sin reloj; en Juegos vale la elección de la ficha de cada juego (data/RetoChoice.kt).
     val timed = if (isDailyFlow) false else customTimed ?: repository.retoFor(gameId)
     val intensity = if (lvl >= 5) getEffectiveIntensityForGame(gameId) else 0
-    _activeGame.value = ActiveGameSession(def, lvl, timed, isDailyFlow, intensity, mode = if (isDailyFlow) com.example.data.PlayMode.A_TU_MEDIDA else mode)
+    _activeGame.value = ActiveGameSession(def, lvl, timed, isDailyFlow, intensity, mode = if (isDailyFlow) com.example.data.PlayMode.A_TU_MEDIDA else mode, tutorial = tutorial)
     _lastResult.value = null
   }
 
@@ -780,6 +782,12 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     rememberOrigin(ORIGIN_HOY, gameId)
     if (timed != null) repository.setReto(gameId, timed)       // se recuerda por juego
     launchGame(gameId, mode = mode, customTimed = timed?.let { it && com.example.data.RetoChoice.supports(gameId) })
+  }
+
+  /** «Cómo se juega» de la ficha (Tarea 171): abre el juego con su tutorial guiado aunque la persona ya lo haya jugado (`show_tutorial` forzado; la ronda guiada no se guarda). A tu medida, con la elección de reloj que ya tenga el juego. */
+  fun playTutorialFromHome(gameId: String) {
+    rememberOrigin(ORIGIN_HOY, gameId)
+    launchGame(gameId, tutorial = true)
   }
 
   /** La elección «Sin reloj / Contra el reloj» que vale hoy para [gameId] (la ficha de Juegos la muestra elegida). */

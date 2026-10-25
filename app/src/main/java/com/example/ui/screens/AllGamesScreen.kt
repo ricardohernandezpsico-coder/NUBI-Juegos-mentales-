@@ -100,7 +100,10 @@ fun AllGamesScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier)
 
   // La ficha del juego tocado; al jugar desde ella la ventana se recuerda (con su búsqueda, su chip y la fila marcada) y se vuelve a ella al terminar.
   sheetFor?.let { g ->
-    GameSheetHost(game = g, viewModel = viewModel, onDismiss = { sheetFor = null }, onPlay = { m: PlayMode, timed: Boolean -> sheetFor = null; viewModel.playFromHome(g.id, m, timed) })
+    GameSheetHost(
+      game = g, viewModel = viewModel, onDismiss = { sheetFor = null }, onPlay = { m: PlayMode, timed: Boolean -> sheetFor = null; viewModel.playFromHome(g.id, m, timed) },
+      onTutorial = { sheetFor = null; viewModel.playTutorialFromHome(g.id) }           // «Cómo se juega» (Tarea 171): el tutorial otra vez
+    )
   }
 }
 

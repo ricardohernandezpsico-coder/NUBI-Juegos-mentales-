@@ -62,6 +62,7 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -164,7 +165,7 @@ data class GameCardData(
  * solo los botones grandes («Empezar la ruta», «Jugar en el …», «Jugar <juego>» del detalle de un área y el «Jugar · …» de la propia ficha) juegan directo (Tarea 87).
  */
 @Composable
-internal fun GameSheetHost(game: GameDefinition, viewModel: NeuroVidaViewModel, onDismiss: () -> Unit, onPlay: (PlayMode, Boolean) -> Unit) {
+internal fun GameSheetHost(game: GameDefinition, viewModel: NeuroVidaViewModel, onDismiss: () -> Unit, onPlay: (PlayMode, Boolean) -> Unit, onTutorial: () -> Unit = {}) {
   val history by viewModel.gameHistory.collectAsState()
   val settings by viewModel.userSettings.collectAsState()
   val measures by viewModel.starMeasures.collectAsState()
@@ -185,7 +186,8 @@ internal fun GameSheetHost(game: GameDefinition, viewModel: NeuroVidaViewModel, 
     selected = PlayMode.A_TU_MEDIDA,
     timed = viewModel.retoFor(game.id),
     onDismiss = onDismiss,
-    onPlay = onPlay
+    onPlay = onPlay,
+    onTutorial = onTutorial
   )
 }
 
@@ -234,10 +236,9 @@ internal fun cardData(
 }
 
 /**
- * Ficha del juego (ventana superpuesta, crema), propuesta «A · Compacta» (Ricardo la eligió el 10-oct, Tarea 74, para los 18 juegos; boceto: https://claude.ai/artifact/AhQyja6q32NChTLp6FfDHQ): el juego, tu avance con su etapa,
- * tu marca en UNA fila (con su gráfico), tu constancia, cómo quieres jugar (4 modos en una cuadrícula de 2 × 2 con sus aciertos esperados; Experto se abre al superar un Desafío), «Sin reloj / Con reloj» (se recuerda por juego:
- * data/RetoChoice.kt) y Jugar. Su meta: que quepa ENTERA en un teléfono común (393 × 873 dp) sin deslizar, con el botón siempre a la vista.
- * La tarjeta va CENTRADA en el espacio libre entre las barras del sistema (Tarea 140: Ricardo la quiso más arriba, no pegada abajo; sube desde abajo y con «quitar animaciones» aparece de una vez), dentro de ellas, mide como máximo el alto que queda (el contenido hace scroll solo si no cabe; al desplegar crece hacia arriba y hacia abajo) y «Jugar» va fijo abajo, fuera del scroll.
+ * Ficha del juego (ventana superpuesta, crema): desde la Tarea 171 (25-oct) es una PORTADA (ver [GameSheetContent]; antes fue la propuesta «A · Compacta» de la Tarea 74 y la ficha con UNA decisión visible de la Tarea 140). Vive aquí lo que no es de la ficha misma: la ventana, la elección
+ * («A tu medida» por defecto) y el reloj (se recuerda por juego: data/RetoChoice.kt), «Más opciones» y «Sobre este juego» abiertos o no (para volver de la lámina con la ficha como estaba) y los toques de fuera y Atrás, que cierran primero la lámina y luego la ficha.
+ * La tarjeta va CENTRADA en el espacio libre entre las barras del sistema (Tarea 140: Ricardo la quiso más arriba, no pegada abajo; sube desde abajo y con «quitar animaciones» aparece de una vez), dentro de ellas, y mide como máximo el alto que queda (el contenido hace scroll por dentro solo si no cabe).
  */
 @Composable
 internal fun GameSheet(
@@ -247,14 +248,20 @@ internal fun GameSheet(
   selected: PlayMode,
   timed: Boolean,
   onDismiss: () -> Unit,
-  onPlay: (PlayMode, Boolean) -> Unit
+  onPlay: (PlayMode, Boolean) -> Unit,
+  /** «Cómo se juega», en «Sobre este juego»: abre el tutorial del juego otra vez (Tarea 171). */
+  onTutorial: () -> Unit = {}
 ) {
   var choice by remember(data.game.id) { mutableStateOf(selected) }
   var withClock by remember(data.game.id) { mutableStateOf(timed) }
+  // «Sobre este juego» abierto (la lámina ocupa el lugar de la ficha) y «Más opciones» desplegadas: viven aquí para que volver de la lámina deje la ficha como estaba
+  var about by rememberSaveable(data.game.id) { mutableStateOf(false) }
+  val options = rememberSaveable(data.game.id) { mutableStateOf(false) }
+  val close: () -> Unit = { if (about) about = false else onDismiss() }              // Atrás y un toque fuera cierran la lámina primero y la ficha después
   val reduceMotion = com.example.ui.components.rememberReduceMotion()
   // `decorFitsSystemWindows = false` (Tarea 81): desde Android 15 la ventana de un diálogo ya va borde a borde, pero con el valor por defecto (true) los insets de las barras le llegan al contenido en CERO y `safeDrawing` no sirve de nada:
   // en el Motorola (Android 16, navegación de 3 botones) la barra se dibujaba ENCIMA de «Jugar». Con false la ventana es borde a borde a propósito y Compose recibe los insets reales de las barras.
-  Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
+  Dialog(onDismissRequest = close, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
     // Con `usePlatformDefaultWidth = false` Compose mide el contenido para TODA la pantalla, pero Android 15+ ajusta el marco de la ventana del diálogo DENTRO de las barras (`fitInsetsTypes`): la tarjeta se desbordaba y la barra tapaba «Jugar».
     // Se hace la ventana borde a borde de verdad para que `safeDrawing` reciba los insets reales (barra de 3 botones o de gestos) y la tarjeta quede dentro de ellos.
     val dialogWindow = (androidx.compose.ui.platform.LocalView.current.parent as? androidx.compose.ui.window.DialogWindowProvider)?.window
@@ -264,7 +271,7 @@ internal fun GameSheet(
     Box(
       Modifier
         .fillMaxSize()
-        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss)
+        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = close)
         .windowInsetsPadding(WindowInsets.safeDrawing)
         .padding(horizontal = 14.dp, vertical = 12.dp),
       contentAlignment = Alignment.Center
@@ -276,7 +283,11 @@ internal fun GameSheet(
         exit = ExitTransition.None
       ) {
         Box(Modifier.fillMaxWidth().pointerInput(Unit) { detectTapGestures { } }) {
-          GameSheetContent(data, age, expertOpen, choice, onChoose = { choice = it }, onPlay = { onPlay(choice, withClock) }, onClose = onDismiss, timed = withClock, onChooseTimed = { withClock = it })
+          if (about) GameAboutContent(data, onClose = { about = false }, onHowToPlay = onTutorial)
+          else GameSheetContent(
+            data, age, expertOpen, choice, onChoose = { choice = it }, onPlay = { onPlay(choice, withClock) }, onClose = onDismiss, timed = withClock, onChooseTimed = { withClock = it },
+            onPlayDesafio = { onPlay(PlayMode.DESAFIO, withClock) }, onAbout = { about = true }, options = options
+          )
         }
       }
     }
@@ -298,6 +309,33 @@ internal fun makeDialogWindowEdgeToEdge(window: android.view.Window) {
   }
 }
 
+/** La portada de la ficha (Tarea 171, 25-oct): una ventanilla noche de 150 dp con la escena real del juego; el emblema (a la izquierda) y «Sobre este juego» (a la derecha) asoman bajo su borde y el nombre va debajo, a todo el ancho. */
+private val CoverHeight = 150.dp
+private val EmblemSize = 56.dp
+private val EmblemDrop = 28.dp             // cuánto asoma el emblema bajo la ventanilla: la mitad
+private val CoverInset = 10.dp            // el aire entre la ventanilla y el borde de la tarjeta
+private val SideInset = 18.dp             // el margen del texto y de los botones
+
+/** El tamaño del nombre del juego: 24 sp, o menos (hasta 18) si UNA de sus palabras no cabe en [room]: nunca se parte una palabra («Constelacione/s»). */
+@Composable
+private fun titleSizeFor(title: String, room: Dp): Int {
+  val measurer = rememberTextMeasurer()
+  val base = androidx.compose.material3.LocalTextStyle.current
+  val density = androidx.compose.ui.platform.LocalDensity.current
+  val roomPx = with(density) { room.roundToPx() }
+  val longest = title.split(' ').maxByOrNull { it.length } ?: title
+  return listOf(24, 22, 20, 18).firstOrNull { sp ->
+    measurer.measure(longest, base.merge(TextStyle(fontSize = sp.sp, fontWeight = FontWeight.Bold)), softWrap = false, maxLines = 1).size.width <= roomPx
+  } ?: 18
+}
+
+/**
+ * La ficha del juego como la PORTADA de una tienda (Tarea 171; `auditoria-fable/ficha-juego.md`, opción 1, la que Ricardo eligió el 25-oct tras mostrarla a 3 personas: nadie la leía, todas tocaban «Jugar» o «Desafío», el texto cuesta con poca visión y se veía apagada).
+ * De arriba abajo: la ventanilla noche con la escena real del juego ([GameCover]; sobre ella la X, y en su borde de abajo ASOMAN el emblema, a la izquierda, y «Sobre este juego», a la derecha), el nombre y UNA línea, «Etapa Maestro · 230 de 250 puntos» con su barra (sin las 5 etiquetas), «Jugar» en sol con lo elegido en su segunda línea
+ * («a tu medida · sin reloj»), y una fila con «Desafío» (lila, con el cometa de Hoy) y «Más opciones», que despliega debajo las casillas de siempre: «¿Cómo quieres jugar?» (Suave · A tu medida · Desafío · Al límite, con su candado hasta superar un Desafío) y «¿Con reloj?» (no en un juego sin Reto).
+ * Ya no están, en la ficha: la marca con su gráfico y su chip, la constancia, las 5 etiquetas de las etapas, «Te faltan N puntos», «Qué pones en juego» (pasó a «Sobre este juego») ni «Cambiar cómo jugar». Un solo sol a la vez: el de «Jugar». Cabe sin deslizar con letra 1,3 mientras «Más opciones» está plegado; desplegado, la tarjeta se desliza sola.
+ * La tarjeta entera hace scroll si no cabe (con letra 2,0 en un teléfono común): «Jugar» ya no va fijo abajo porque está en la primera pantalla.
+ */
 @Composable
 internal fun GameSheetContent(
   data: GameCardData,
@@ -308,15 +346,21 @@ internal fun GameSheetContent(
   onPlay: () -> Unit,
   onClose: () -> Unit = {},
   timed: Boolean = false,
-  onChooseTimed: (Boolean) -> Unit = {}
+  onChooseTimed: (Boolean) -> Unit = {},
+  /** «Desafío»: juega ya en Desafío, con el reloj que esté elegido. */
+  onPlayDesafio: () -> Unit = {},
+  /** «Sobre este juego»: abre la lámina con «Qué pones en juego», su fuente y «Cómo se juega». */
+  onAbout: () -> Unit = {},
+  /** «Más opciones» desplegadas. La ventana la sube para que sobreviva a abrir «Sobre este juego» y volver; sola, vive mientras la ficha está abierta (por juego). */
+  options: MutableState<Boolean> = rememberSaveable(data.game.id) { mutableStateOf(false) }
 ) {
   val g = data.game
-  // Con letra muy grande (≥ 1,3) las casillas van de a UNA por fila y el título baja a su propia línea: así ninguna palabra se parte («Constelacione/s», «medid/a») ni se corta.
-  val largeText = androidx.compose.ui.platform.LocalDensity.current.fontScale > 1.3f
+  val density = androidx.compose.ui.platform.LocalDensity.current
+  // Con letra muy grande (> 1,3) las casillas van de a UNA por fila y los dos botones de abajo se apilan: así ninguna palabra se parte ni se corta.
+  val largeText = density.fontScale > 1.3f
   val supportsReto = RetoChoice.supports(g.id)
-  // Plegada por defecto (Tarea 140): la ficha dice lo elegido y un solo botón lo cambia. La ventana recuerda si está desplegada solo mientras está abierta (por juego), no entre fichas.
-  var opciones by rememberSaveable(g.id) { mutableStateOf(false) }
-  // Dónde cae el foco tras plegar o desplegar (solo cuando la persona toca el botón: una rotación con las opciones abiertas no le mueve el foco): 0 = nada, 1 = la casilla elegida, 2 = «Cambiar cómo jugar»
+  var opciones by options
+  // Dónde cae el foco tras plegar o desplegar (solo cuando la persona toca el botón: una rotación con las opciones abiertas no le mueve el foco): 0 = nada, 1 = la casilla elegida, 2 = «Más opciones»
   val focusChosen = remember { FocusRequester() }
   val focusChange = remember { FocusRequester() }
   var focusMove by remember { mutableIntStateOf(0) }
@@ -325,7 +369,7 @@ internal fun GameSheetContent(
   LaunchedEffect(focusMove) {
     if (focusMove != 0) {
       withFrameNanos { }                                  // espera a que las casillas recién compuestas estén puestas en pantalla antes de pedirles el foco
-      // Al desplegar la ficha se desliza hasta el final: con «Jugar» fijo abajo, en un teléfono común «¿Con reloj?» quedaba bajo el pliegue y nadie se enteraba de que estaba (con «quitar animaciones», de un salto)
+      // Al desplegar la ficha se desliza hasta el final: en un teléfono común «¿Con reloj?» quedaba bajo el pliegue y nadie se enteraba de que estaba (con «quitar animaciones», de un salto)
       if (focusMove == 1) {
         if (reduceMotion) scroll.scrollTo(scroll.maxValue)
         else { delay(NubiMotion.STATE_MS.toLong()); scroll.animateScrollTo(scroll.maxValue) }           // primero crece la tarjeta; al terminar, se desliza
@@ -337,219 +381,214 @@ internal fun GameSheetContent(
     }
   }
   ClayCard(color = CardCream, size = SlabSize.LARGE, contentPadding = 0.dp, modifier = Modifier.fillMaxWidth().testTag("game_sheet")) {
-    // Lo que hace scroll (todo menos «Jugar»): ocupa lo que haga falta y, si no cabe, se corta al alto disponible de la tarjeta.
-    Column(Modifier.weight(1f, fill = false).verticalScroll(scroll).padding(start = 18.dp, end = 18.dp, top = 12.dp, bottom = 6.dp)) {
-      // El juego: planeta de 48, título de 21 y subtítulo de 14
-      if (largeText) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-          GameEmblem(g.id, 48.dp)
-          Spacer(Modifier.weight(1f))
-          com.example.ui.components.KitCloseButton(onClose, Modifier.testTag("sheet_close"))
-        }
-        Text(data.title, color = Clay.Ink, fontSize = 21.sp, fontWeight = FontWeight.Bold, lineHeight = 24.sp)
-        Text(g.subtitle, color = CardMuted, fontSize = Small, lineHeight = 18.sp)
-      } else Row(verticalAlignment = Alignment.CenterVertically) {
-        GameEmblem(g.id, 48.dp)
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-          Text(data.title, color = Clay.Ink, fontSize = 21.sp, fontWeight = FontWeight.Bold, lineHeight = 24.sp)
-          Text(g.subtitle, color = CardMuted, fontSize = Small, lineHeight = 18.sp)
-        }
-        com.example.ui.components.KitCloseButton(onClose, Modifier.testTag("sheet_close"))
-      }
-
-      // Tu avance: «Etapa Experto · 180 de 250 puntos» en 20 con el color de su área y cuánto falta en 16 (Tarea 159: los puntos del juego, con los mismos tramos de la escala en proporción; antes «Hábil · 47 de 100»)
-      HorizontalLine()
-      if (data.points != null && data.points.measured) {
-        Text(data.points.stageLine, color = onCream(g.domain), fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 24.sp, modifier = Modifier.testTag("sheet_stage"))
-        Text(data.points.toNextLine ?: "La etapa más alta", color = CardMuted, fontSize = Small, modifier = Modifier.testTag("sheet_to_next"))
-        com.example.ui.components.StageScale(data.points.fill, onCard = true, modifier = Modifier.padding(top = 6.dp))
-      } else {
-        Text("Aún sin medir", color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Text("Juega a tu medida una vez y verás dónde estás.", color = CardMuted, fontSize = Small)
-      }
-
-      // Tu marca, en UNA fila: a la izquierda su nombre (14) y su valor (17, hasta 2 líneas); a la derecha la etiqueta y debajo el gráfico de 76 × 28
-      if (data.measureTitle != null && data.measureValue != null) {
-        HorizontalLine()
-        Row(verticalAlignment = Alignment.CenterVertically) {
-          Column(Modifier.weight(1f)) {
-            Text(data.measureTitle, color = CardMuted, fontSize = Small)
-            Text(data.measureValue, color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, maxLines = 2, lineHeight = 21.sp)
+    Column(Modifier.weight(1f, fill = false).verticalScroll(scroll).padding(bottom = 10.dp)) {
+      // La ventanilla con la escena del juego y la X arriba a la derecha; en su borde de abajo ASOMAN, el emblema a la izquierda y «Sobre este juego» a la derecha: así la escena queda libre arriba y al centro
+      Box(Modifier.fillMaxWidth().padding(start = CoverInset, end = CoverInset, top = CoverInset)) {
+        com.example.ui.components.GameCover(g.id, Modifier.testTag("sheet_cover"))
+        com.example.ui.components.KitCloseButton(onClose, Modifier.align(Alignment.TopEnd).padding(top = 8.dp, end = 8.dp).testTag("sheet_close"))
+        GameEmblem(g.id, EmblemSize, Modifier.align(Alignment.BottomStart).offset(x = 8.dp, y = EmblemDrop).testTag("sheet_emblem"))
+        ClaySlab(
+          SlabColor.CREAM, Modifier.align(Alignment.BottomEnd).padding(start = EmblemSize + 24.dp, end = 8.dp).offset(y = EmblemDrop).testTag("sheet_about").semantics { contentDescription = "Sobre este juego: qué pones en juego y su fuente" },
+          SlabSize.SMALL, onClick = onAbout, contentAlignment = Alignment.CenterStart, onClickLabel = "Abrir"
+        ) {
+          Row(Modifier.heightIn(min = 48.dp).padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            KitGlyph(Glyph.INFO, size = 24.dp)
+            Spacer(Modifier.width(8.dp))
+            Text("Sobre este juego", color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 20.sp, modifier = Modifier.weight(1f, fill = false))
           }
-          val hasChart = data.measureSeries.size >= 2
-          if (data.measureTag != null || hasChart) {
-            Column(horizontalAlignment = Alignment.End, modifier = Modifier.padding(start = 10.dp)) {
-              if (data.measureTag != null) Tag(data.measureTag, Clay.Lime)
-              if (hasChart) {
-                CreamSparkline(
-                  data.measureSeries, data.lowerIsBetter, g.domain.color,
-                  Modifier.padding(top = if (data.measureTag != null) 4.dp else 0.dp).size(width = 76.dp, height = 28.dp)
-                    .semantics { contentDescription = "Tus últimas partidas; mejor hacia arriba" }
-                )
+        }
+      }
+
+      // El nombre y UNA línea, a todo el ancho y debajo de lo que asoma
+      BoxWithConstraints(Modifier.fillMaxWidth().padding(top = EmblemDrop + 6.dp)) {
+        val titleSp = titleSizeFor(data.title, maxWidth - SideInset * 2)
+        Column(Modifier.padding(horizontal = SideInset)) {
+          Text(data.title, color = Clay.Ink, fontSize = titleSp.sp, fontWeight = FontWeight.Bold, lineHeight = (titleSp + 4).sp, modifier = Modifier.semantics { heading() }.testTag("sheet_title"))
+          Text(g.subtitle, color = CardMuted, fontSize = Small, lineHeight = 20.sp, modifier = Modifier.testTag("sheet_subtitle"))
+        }
+      }
+
+      Column(Modifier.fillMaxWidth().padding(horizontal = SideInset)) {
+        // Tu avance, en UNA línea con su barra (sin las 5 etiquetas de las etapas: la línea ya dice la etapa y Avance tiene la escala): «Etapa Maestro · 230 de 250 puntos» en 20 con el color de su área (Tarea 159: los puntos del juego)
+        if (data.points != null && data.points.measured) {
+          Text(data.points.stageLine, color = onCream(g.domain), fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 24.sp, modifier = Modifier.padding(top = 10.dp).testTag("sheet_stage"))
+          com.example.ui.components.StageScale(data.points.fill, onCard = true, showNames = false, modifier = Modifier.padding(top = 6.dp))
+        } else {
+          Text("Aún sin medir", color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 24.sp, modifier = Modifier.padding(top = 10.dp).testTag("sheet_stage"))
+          Text("Juega a tu medida una vez y verás dónde estás.", color = CardMuted, fontSize = Small, lineHeight = 20.sp)
+        }
+
+        // «Jugar»: el único sol de la ficha, con lo elegido dicho en su segunda línea («a tu medida · sin reloj»). Lo elegido se cambia en «Más opciones».
+        val spoken = RetoChoice.playSpoken(choice, timed, supportsReto)
+        KitButton(
+          text = "Jugar", secondLine = RetoChoice.playDetail(choice, timed, supportsReto), secondLineSize = 16.sp, onClick = onPlay, glyph = Glyph.PLAY, fontSize = 20.sp,
+          modifier = Modifier.padding(top = 12.dp).testTag("sheet_play").semantics { contentDescription = "Jugar, $spoken" }
+        )
+
+        // «Desafío» (lila, con el cometa de Hoy) y «Más opciones» (crema), lado a lado; apilados con letra muy grande o si una palabra no cabe en su media fila
+        val measurer = rememberTextMeasurer()
+        val base = androidx.compose.material3.LocalTextStyle.current
+        BoxWithConstraints(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+          val half = (maxWidth - 8.dp) / 2
+          val room = with(density) { (half - 24.dp - 34.dp).roundToPx() }              // lo que le queda al texto: 12 + 12 de aire y el ícono (24) con su espacio (10)
+          val style = base.merge(TextStyle(fontSize = 17.sp, fontWeight = FontWeight.Bold))
+          val sideBySide = !largeText && listOf("Desafío", "opciones").all { measurer.measure(it, style, softWrap = false, maxLines = 1).size.width <= room }
+          val desafio: @Composable (Modifier, Boolean) -> Unit = { m, stretch ->
+            KitButton(
+              text = "Desafío", onClick = onPlayDesafio, color = SlabColor.LILAC, glyph = Glyph.COMET, minHeight = 56.dp, centerContent = stretch,
+              modifier = m.testTag("sheet_desafio").semantics { contentDescription = "Desafío. ${PlayMode.DESAFIO.short}" }
+            )
+          }
+          val more: @Composable (Modifier, Boolean) -> Unit = { m, stretch ->
+            KitButton(
+              text = if (opciones) "Menos opciones" else "Más opciones", onClick = { opciones = !opciones; focusMove = if (opciones) 1 else 2 }, color = SlabColor.CREAM, glyph = if (opciones) Glyph.UP else Glyph.DOWN,
+              minHeight = 56.dp, centerContent = stretch, onClickLabel = if (opciones) "Ocultar opciones" else "Mostrar opciones",
+              modifier = m.focusRequester(focusChange).focusable().testTag("sheet_change").semantics {
+                contentDescription = (if (opciones) "Menos opciones" else "Más opciones") + ". Ahora: $spoken"
+                stateDescription = if (opciones) "opciones visibles" else "opciones ocultas"
+              }
+            )
+          }
+          if (sideBySide) {
+            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+              desafio(Modifier.weight(1f).fillMaxHeight(), true)
+              more(Modifier.weight(1f).fillMaxHeight(), true)
+            }
+          } else {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+              desafio(Modifier, false)
+              more(Modifier, false)
+            }
+          }
+        }
+
+        // Las dos secciones solo se componen con «Más opciones» desplegadas, y entran y salen cambiando de ALTURA con suavidad (la tarjeta, centrada en la ventana, crece hacia arriba y hacia abajo):
+        // 200 ms (NubiMotion: cambio de estado) y, con «quitar animaciones», de un salto
+        AnimatedVisibility(
+          visible = opciones,
+          enter = if (reduceMotion) EnterTransition.None else expandVertically(tween(NubiMotion.STATE_MS, easing = NubiMotion.Standard)) + fadeIn(tween(NubiMotion.STATE_MS, easing = NubiMotion.Standard)),
+          exit = if (reduceMotion) ExitTransition.None else shrinkVertically(tween(NubiMotion.STATE_MS, easing = NubiMotion.Standard)) + fadeOut(tween(NubiMotion.STATE_MS, easing = NubiMotion.Standard))
+        ) {
+          Column(Modifier.fillMaxWidth()) {
+            // Cómo quieres jugar: cuadrícula de 2 × 2 (cada cuadro, al menos 64 de alto); la explicación solo del elegido
+            HorizontalLine()
+            Text("¿Cómo quieres jugar?", color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp).semantics { liveRegion = LiveRegionMode.Polite })
+            PlayMode.entries.chunked(if (largeText) 1 else 2).forEachIndexed { rowIndex, pair ->
+              Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(top = if (rowIndex == 0) 0.dp else 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                pair.forEach { m ->
+                  val open = Skill.isOpen(m, g.id, if (expertOpen) setOf(g.id) else emptySet())
+                  ChoiceCell(
+                    selected = m == choice,
+                    enabled = open,
+                    minHeight = 64.dp,
+                    description = m.label + (if (open) ", ${m.short}" else ", bloqueado: supera un Desafío"),
+                    tag = "mode_${m.name}",
+                    onClick = { onChoose(m) },
+                    modifier = Modifier.weight(1f).then(if (m == choice) Modifier.focusRequester(focusChosen) else Modifier)
+                  ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                      ModeBars(m.ordinal + 1, if (m == choice) Clay.Sun else g.domain.color, 20.dp)
+                      Spacer(Modifier.width(8.dp))
+                      // el nombre ocupa lo que queda y pasa a 2 líneas entre palabras («A tu / medida»); la insignia ✓ va al final de ESTA fila (su lugar queda reservado: el cuadro no salta al elegir)
+                      Text(m.label, color = if (open) Clay.Ink else CardMuted, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 19.sp, modifier = Modifier.weight(1f))
+                      if (open) SelectedMark(m == choice)
+                    }
+                    if (open) {
+                      Text(m.short, color = Clay.Ink, fontSize = Small, modifier = Modifier.padding(top = 2.dp))                  // el nombre y una frase corta; los aciertos esperados son del DDA, no de la ficha (Tarea 151, B4.4)
+                    } else {
+                      Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                        KitGlyph(Glyph.LOCK, size = 20.dp)
+                        Spacer(Modifier.width(2.dp))
+                        Text("Supera un Desafío", color = CardMuted, fontSize = Small)
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            Text(choice.what, color = CardMuted, fontSize = Small, lineHeight = 19.sp, modifier = Modifier.padding(top = 8.dp))
+
+            // ¿Con o sin reloj? Se recuerda por juego; la ruta diaria de Hoy va siempre sin reloj. Dos cuadros lado a lado.
+            if (supportsReto) {
+              HorizontalLine()
+              Text("¿Con reloj?", color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+              val duration = RetoChoice.seconds(g.id)?.let { RetoChoice.durationText(it) } ?: "con tiempo"
+              // Lado a lado mientras CADA palabra quepa en su media fila («segundos» no: en un teléfono angosto o con letra 1,3 se partía en «segund / os»); si no, de a UNA por fila
+              BoxWithConstraints(Modifier.fillMaxWidth()) {
+                val cellText = with(density) { (((maxWidth - 8.dp) / 2) - 80.dp).roundToPx() }                    // la media fila menos 10 + 10 de aire, el ícono (24) con su espacio (8) y la insignia ✓ (6 + 22)
+                val style = base.merge(TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold))
+                val side = !largeText && listOf("Sin reloj", "a tu ritmo", "Con reloj", duration).flatMap { it.split(' ') }.all { measurer.measure(it, style, softWrap = false, maxLines = 1).size.width <= cellText }
+              Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(false to ("Sin reloj" to "a tu ritmo"), true to ("Con reloj" to duration)).chunked(if (side) 2 else 1).forEach { group ->
+                  Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    group.forEach { (value, texts) ->
+                      ChoiceCell(
+                        selected = timed == value,
+                        enabled = true,
+                        minHeight = 56.dp,
+                        description = texts.first + ", " + texts.second,
+                        tag = if (value) "reto_con" else "reto_sin",
+                        onClick = { onChooseTimed(value) },
+                        modifier = Modifier.weight(1f)
+                      ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                          KitGlyph(if (value) Glyph.CLOCK else Glyph.CLOCK_OFF)
+                          Spacer(Modifier.width(8.dp))
+                          Column(Modifier.weight(1f)) {
+                            Text(texts.first, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 19.sp)
+                            Text(texts.second, color = CardMuted, fontSize = Small)
+                          }
+                          SelectedMark(timed == value)
+                        }
+                      }
+                    }
+                  }
+                }
+              }
               }
             }
           }
         }
       }
-      Text(
-        "${data.lastPlayed} · " + when (data.playsLast14) {
-          0 -> "sin partidas en 2 semanas"
-          1 -> "1 partida en 2 semanas"
-          else -> "${data.playsLast14} partidas en 2 semanas"
-        },
-        color = CardMuted, fontSize = Small, modifier = Modifier.padding(top = 6.dp)
-      )
+    }
+  }
+}
 
-      // Qué pones en juego (final «B», Tarea 146): lo que antes iba en «¿Por qué importa?» al pie de cada final ahora vive aquí, en presente («Pones en juego…»), con su fuente. El final solo lo muestra en las 3 primeras partidas de cada juego.
+/**
+ * «Sobre este juego» (Tarea 171): la lámina que abre el botón de la portada, en el lugar de la ficha y con la X para volver a ella. Lleva lo que la ficha tenía de «leer»: la frase del juego, «Qué pones en juego» con su fuente (la regla de Ricardo: la explicación y su fuente van juntas y siempre a un toque; nadie tiene que leerlas para jugar)
+ * y, fijo abajo, «Cómo se juega», que abre el tutorial del juego otra vez aunque la persona ya lo haya jugado. El final de partida sigue mostrando «¿Por qué importa?» en las 3 primeras partidas de cada juego.
+ */
+@Composable
+internal fun GameAboutContent(data: GameCardData, onClose: () -> Unit = {}, onHowToPlay: () -> Unit = {}) {
+  val g = data.game
+  val scroll = rememberScrollState()
+  ClayCard(color = CardCream, size = SlabSize.LARGE, contentPadding = 0.dp, modifier = Modifier.fillMaxWidth().testTag("game_about")) {
+    Column(Modifier.weight(1f, fill = false).verticalScroll(scroll).padding(start = SideInset, end = SideInset, top = 14.dp, bottom = 6.dp)) {
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        GameEmblem(g.id, 48.dp)
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+          Text("Sobre este juego", color = CardMuted, fontSize = Small, lineHeight = 20.sp, modifier = Modifier.testTag("about_caption"))
+          Text(data.title, color = Clay.Ink, fontSize = 21.sp, fontWeight = FontWeight.Bold, lineHeight = 25.sp, modifier = Modifier.semantics { heading() }.testTag("about_title"))
+        }
+        Spacer(Modifier.width(8.dp))
+        com.example.ui.components.KitCloseButton(onClose, Modifier.testTag("about_close"), label = "Cerrar y volver a la ficha")
+      }
+      HorizontalLine()
+      Text(g.subtitle, color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp, modifier = Modifier.testTag("about_subtitle"))
       FinalesConSentido.sheetFor(g.id)?.let { (whyText, whySource) ->
-        HorizontalLine()
-        Column(Modifier.testTag("sheet_why")) {
+        Column(Modifier.padding(top = 12.dp).testTag("sheet_why")) {
           Text("Qué pones en juego", color = Clay.InkMuted, fontSize = 16.sp, fontWeight = FontWeight.Bold)
           Text(whyText, color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 4.dp))
           Text(whySource, color = Clay.InkSoft, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 6.dp))
         }
       }
-
-      // Lo elegido, dicho en una línea, y el botón que lo cambia: «Cambiar cómo jugar» (plegada) / «Listo» (desplegada). El mismo botón, en el mismo lugar: las opciones se abren debajo y nada de lo de arriba se mueve.
-      HorizontalLine()
-      val spoken = RetoChoice.playSpoken(choice, timed, supportsReto)
-      Text(
-        RetoChoice.summaryLabel(choice, timed, supportsReto, RetoChoice.seconds(g.id)),
-        color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("sheet_summary")
-      )
-      KitButton(
-        text = if (opciones) "Listo" else "Cambiar cómo jugar",
-        onClick = { opciones = !opciones; focusMove = if (opciones) 1 else 2 },
-        color = SlabColor.CREAM,
-        glyph = if (opciones) Glyph.UP else Glyph.DOWN,
-        fontSize = 16.sp,
-        minHeight = 48.dp,
-        onClickLabel = if (opciones) "Ocultar opciones" else "Mostrar opciones",
-        modifier = Modifier.padding(top = 8.dp).focusRequester(focusChange).focusable().testTag("sheet_change").semantics {
-          contentDescription = if (opciones) "Listo. Ahora: $spoken" else "Cambiar cómo jugar. Ahora: $spoken"
-          stateDescription = if (opciones) "opciones visibles" else "opciones ocultas"
-        }
-      )
-
-      // Las dos secciones solo se componen con las opciones desplegadas, y entran y salen cambiando de ALTURA con suavidad (la tarjeta, centrada en la ventana, crece hacia arriba y hacia abajo):
-      // 200 ms (NubiMotion: cambio de estado) y, con «quitar animaciones», de un salto
-      AnimatedVisibility(
-        visible = opciones,
-        enter = if (reduceMotion) EnterTransition.None else expandVertically(tween(NubiMotion.STATE_MS, easing = NubiMotion.Standard)) + fadeIn(tween(NubiMotion.STATE_MS, easing = NubiMotion.Standard)),
-        exit = if (reduceMotion) ExitTransition.None else shrinkVertically(tween(NubiMotion.STATE_MS, easing = NubiMotion.Standard)) + fadeOut(tween(NubiMotion.STATE_MS, easing = NubiMotion.Standard))
-      ) {
-        Column(Modifier.fillMaxWidth()) {
-          // Cómo quieres jugar: cuadrícula de 2 × 2 (cada cuadro, al menos 64 de alto); la explicación solo del elegido
-          HorizontalLine()
-          Text("¿Cómo quieres jugar?", color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp).semantics { liveRegion = LiveRegionMode.Polite })
-          PlayMode.entries.chunked(if (largeText) 1 else 2).forEachIndexed { rowIndex, pair ->
-            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(top = if (rowIndex == 0) 0.dp else 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-              pair.forEach { m ->
-                val open = Skill.isOpen(m, g.id, if (expertOpen) setOf(g.id) else emptySet())
-                ChoiceCell(
-                  selected = m == choice,
-                  enabled = open,
-                  minHeight = 64.dp,
-                  description = m.label + (if (open) ", ${m.short}" else ", bloqueado: supera un Desafío"),
-                  tag = "mode_${m.name}",
-                  onClick = { onChoose(m) },
-                  modifier = Modifier.weight(1f).then(if (m == choice) Modifier.focusRequester(focusChosen) else Modifier)
-                ) {
-                  Row(verticalAlignment = Alignment.CenterVertically) {
-                    ModeBars(m.ordinal + 1, if (m == choice) Clay.Sun else g.domain.color, 20.dp)
-                    Spacer(Modifier.width(8.dp))
-                    // el nombre ocupa lo que queda y pasa a 2 líneas entre palabras («A tu / medida»); la insignia ✓ va al final de ESTA fila (su lugar queda reservado: el cuadro no salta al elegir)
-                    Text(m.label, color = if (open) Clay.Ink else CardMuted, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 19.sp, modifier = Modifier.weight(1f))
-                    if (open) SelectedMark(m == choice)
-                  }
-                  if (open) {
-                    Text(m.short, color = Clay.Ink, fontSize = Small, modifier = Modifier.padding(top = 2.dp))                  // el nombre y una frase corta; los aciertos esperados son del DDA, no de la ficha (Tarea 151, B4.4)
-                  } else {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-                      KitGlyph(Glyph.LOCK, size = 20.dp)
-                      Spacer(Modifier.width(2.dp))
-                      Text("Supera un Desafío", color = CardMuted, fontSize = Small)
-                    }
-                  }
-                }
-              }
-            }
-          }
-          Text(choice.what, color = CardMuted, fontSize = Small, lineHeight = 19.sp, modifier = Modifier.padding(top = 8.dp))
-
-          // ¿Con o sin reloj? Se recuerda por juego; la ruta diaria de Hoy va siempre sin reloj. Dos cuadros lado a lado.
-          if (com.example.data.RetoChoice.supports(g.id)) {
-            HorizontalLine()
-            Text("¿Con reloj?", color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
-            val duration = com.example.data.RetoChoice.seconds(g.id)?.let { com.example.data.RetoChoice.durationText(it) } ?: "con tiempo"
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-             listOf(false to ("Sin reloj" to "a tu ritmo"), true to ("Con reloj" to duration)).chunked(if (largeText) 1 else 2).forEach { group ->
-              Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-              group.forEach { (value, texts) ->
-                ChoiceCell(
-                  selected = timed == value,
-                  enabled = true,
-                  minHeight = 56.dp,
-                  description = texts.first + ", " + texts.second,
-                  tag = if (value) "reto_con" else "reto_sin",
-                  onClick = { onChooseTimed(value) },
-                  modifier = Modifier.weight(1f)
-                ) {
-                  Row(verticalAlignment = Alignment.CenterVertically) {
-                    KitGlyph(if (value) Glyph.CLOCK else Glyph.CLOCK_OFF)
-                    Spacer(Modifier.width(8.dp))
-                    Column(Modifier.weight(1f)) {
-                      Text(texts.first, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 19.sp)
-                      Text(texts.second, color = CardMuted, fontSize = Small)
-                    }
-                    SelectedMark(timed == value)
-                  }
-                }
-              }
-              }
-             }
-            }
-          }
-        }
-      }
     }
-    // «Jugar»: FUERA del scroll, fijo abajo, siempre a la vista: una línea fina arriba y el botón sol de 56 con borde de tinta, sombra dura y su play.
-    Box(Modifier.fillMaxWidth().padding(horizontal = 18.dp).height(1.dp).background(CardTrack))
-    SheetPlayButton(choice, timed, supportsReto, detailed = opciones, onPlay = onPlay)
-  }
-}
-
-/**
- * El botón grande de la ficha, con lo elegido en palabras (Tarea 140): «Jugar · a tu medida · con reloj», «Jugar · suave · sin reloj», «Jugar · en Desafío · con reloj»; en un juego sin Reto, «Jugar · a tu medida».
- * Va en UNA línea mientras la más larga de las posibles quepa en lo que queda del botón (18, 17 o 16 sp: así el botón no cambia de forma al elegir) y en DOS líneas, «Jugar» y debajo «a tu medida · con reloj» a 16 sp, con letra ≥ 1,3, en
- * una ficha de teléfono de 360 dp o menos o si ni a 16 sp cabe en una. Nunca se parte una palabra. El lector de pantalla lo lee con comas: «Jugar, a tu medida, con reloj».
- */
-@Composable
-private fun SheetPlayButton(choice: PlayMode, timed: Boolean, supportsReto: Boolean, detailed: Boolean, onPlay: () -> Unit) {
-  val density = androidx.compose.ui.platform.LocalDensity.current
-  val measurer = rememberTextMeasurer()
-  val base = androidx.compose.material3.LocalTextStyle.current
-  BoxWithConstraints(Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 10.dp, bottom = 8.dp)) {
-    val room = maxWidth - 58.dp                       // lo que le queda al texto dentro del botón: 12 + 12 de aire y el ícono (24) con su espacio (10)
-    val oneLine: TextUnit? = remember(maxWidth, density.fontScale, supportsReto) {
-      if (density.fontScale >= 1.3f || maxWidth <= 297.dp) null
-      else listOf(18, 17, 16).firstOrNull { sp ->
-        val style = base.merge(TextStyle(fontSize = sp.sp, fontWeight = FontWeight.Bold))
-        PlayMode.entries.all { m ->
-          measurer.measure(text = AnnotatedString(RetoChoice.playLabel(m, true, supportsReto)), style = style, softWrap = false, maxLines = 1).size.width <= with(density) { room.roundToPx() }
-        }
-      }?.sp
-    }
-    val modifier = Modifier.testTag("sheet_play").semantics { contentDescription = "Jugar, " + RetoChoice.playSpoken(choice, timed, supportsReto) }
-    if (!detailed) {
-      // Plegada (Tarea 152, C5): la línea de arriba («A tu medida · con reloj (2 min)») ya dice lo elegido; el botón dice «Jugar» a secas. Con las opciones desplegadas lleva lo elegido, que cambia al tocar.
-      KitButton(text = "Jugar", onClick = onPlay, glyph = Glyph.PLAY, fontSize = 18.sp, modifier = modifier)
-    } else if (oneLine != null) {
-      KitButton(text = RetoChoice.playLabel(choice, timed, supportsReto), onClick = onPlay, glyph = Glyph.PLAY, fontSize = oneLine, modifier = modifier)
-    } else {
-      KitButton(text = "Jugar", secondLine = RetoChoice.playDetail(choice, timed, supportsReto), secondLineSize = 16.sp, onClick = onPlay, glyph = Glyph.PLAY, fontSize = 18.sp, modifier = modifier)
-    }
+    Box(Modifier.fillMaxWidth().padding(horizontal = SideInset).height(1.dp).background(CardTrack))
+    KitButton(
+      text = "Cómo se juega", onClick = onHowToPlay, color = SlabColor.CREAM, glyph = Glyph.PLAY, fontSize = 18.sp,
+      modifier = Modifier.padding(start = SideInset, end = SideInset, top = 10.dp, bottom = 8.dp).testTag("about_how")
+    )
   }
 }
 

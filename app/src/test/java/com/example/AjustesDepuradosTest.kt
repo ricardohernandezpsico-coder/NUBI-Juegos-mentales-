@@ -64,10 +64,12 @@ class AjustesDepuradosTest {
   }
 
   @Test
-  fun `el boton de la ficha plegada dice Jugar a secas`() {
-    val library = src("ui/screens/GameSheet.kt")
-    assertTrue(library.contains("SheetPlayButton(choice, timed, supportsReto, detailed = opciones"))
-    assertTrue("plegada: «Jugar» y nada más (C5: la línea de arriba ya dice lo elegido)", library.contains("KitButton(text = \"Jugar\", onClick = onPlay"))
+  fun `el boton Jugar de la ficha dice Jugar y lo elegido en su segunda linea`() {
+    // Tarea 152 (C5) lo dejaba «Jugar» a secas con las opciones plegadas, porque la línea de resumen ya decía lo elegido; la Tarea 171 (portada) quitó esa línea: «Jugar» lleva SIEMPRE lo elegido debajo («a tu medida · sin reloj»)
+    val sheet = src("ui/screens/GameSheet.kt").lines().filter { l -> l.trim().let { !it.startsWith("*") && !it.startsWith("//") && !it.startsWith("/*") } }.joinToString(" ")          // solo el código: los comentarios cuentan lo que se fue
+    assertFalse("el botón con una o dos líneas según el ancho ya no existe", sheet.contains("SheetPlayButton"))
+    assertTrue("«Jugar» y debajo lo elegido, plegada o desplegada", sheet.contains("text = \"Jugar\", secondLine = RetoChoice.playDetail(choice, timed, supportsReto)"))
+    assertFalse("sin la línea de resumen ni «Cambiar cómo jugar»", sheet.contains("sheet_summary") || sheet.contains("Cambiar cómo jugar"))
   }
 
   @Test

@@ -224,6 +224,29 @@ class GameFlowTest {
     assertNull(vm.allGames.value)
   }
 
+  // ---- «Cómo se juega» de la ficha (Tarea 171)
+
+  @Test
+  fun `Como se juega, en Sobre este juego, abre el juego con su tutorial aunque ya se haya jugado y al volver deja Todos los juegos como estaba`() {
+    val vm = newViewModel()
+    vm.openAllGames()
+    vm.setAllGamesQuery("pil")
+    vm.playTutorialFromHome("piloto")
+    val session = vm.activeGame.value!!
+    assertEquals("piloto", session.gameDef.id)
+    assertTrue("el tutorial forzado (show_tutorial)", session.tutorial)
+    assertFalse(session.isDailyFlow)
+    assertEquals(PlayMode.A_TU_MEDIDA, session.mode)
+    assertNull(vm.lastResult.value)
+    vm.closeGameOrResult()
+    assertEquals(AppTab.HOY, vm.currentTab.value)
+    assertEquals("pil", vm.allGames.value?.query)
+    assertEquals("piloto", vm.allGames.value?.mark)
+    // jugar a secas NO lleva el tutorial: solo «Cómo se juega» lo pide
+    vm.playFromHome("piloto", PlayMode.A_TU_MEDIDA)
+    assertFalse(vm.activeGame.value!!.tutorial)
+  }
+
   // ---- El Desafío de hoy (Tarea 167)
 
   /** Todos los juegos ya medidos: el Desafío solo sale de los medidos. */
