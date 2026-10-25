@@ -55,7 +55,7 @@
   - el resumen para compartir.
 - **Pagado:**
   - juego libre fuera de la ruta sin tope; el gratis tiene un **tope con número**, por definir;
-  - los modos Desafío y Experto;
+  - el Desafío y «Al límite» (antes «Experto») **en cualquier juego y a cualquier hora**. **El Desafío de hoy es la excepción y es GRATIS** (decisión de Ricardo, 25-oct; Tarea 167): uno al día, elegido por Nubi, que se puede repetir si no se supera; no cuenta para el tope de partidas libres (`DailyChallenge.COUNTS_FOR_FREE_CAP = false`). El cobro de Plus no se construye todavía (etapa de publicar, con Play Billing y el abogado: regla permanente 3);
   - la reparación mensual de la racha;
   - decoraciones extra;
   - el plan familiar.

@@ -224,6 +224,95 @@ class GameFlowTest {
     assertNull(vm.allGames.value)
   }
 
+  // ---- El Desafío de hoy (Tarea 167)
+
+  /** Todos los juegos ya medidos: el Desafío solo sale de los medidos. */
+  private fun measureEverything() {
+    app.getSharedPreferences("skill", android.content.Context.MODE_PRIVATE).edit()
+      .putString("state", com.example.model.GameRegistry.allGames.joinToString("\n") { "m|${it.id}" }).commit()
+  }
+
+  private fun challengeResult(gameId: String, passed: Boolean, timed: Boolean) =
+    GamePlayResult(gameId = gameId, score = if (passed) 85 else 40, correctAnswers = if (passed) 12 else 4, totalTrials = 12, timed = timed, level = 2, endRating = 0.5f, modeHits = if (passed) 12 else 4, modeTrials = 12)
+
+  @Test
+  fun `el Desafio de hoy se elige entre los medidos y fuera de la ruta, lanza ese juego en modo Desafio y vuelve a Hoy`() {
+    measureEverything()
+    val vm = newViewModel()
+    TestSupport.awaitUntil(message = "No se eligió el Desafío de hoy") { vm.refreshChallenge(); vm.challengeToday.value != null }
+    val c = vm.challengeToday.value!!
+    assertEquals(com.example.data.ChallengeState.PENDIENTE, c.state)
+    assertFalse("nunca es un juego de la ruta de hoy", c.gameId in vm.dailySession.value.gameIds)
+    vm.startDailyChallenge()
+    val session = vm.activeGame.value!!
+    assertEquals(c.gameId, session.gameDef.id)
+    assertEquals("en modo Desafío", PlayMode.DESAFIO, session.mode)
+    assertFalse("no es la ruta: no avanza el camino de hoy", session.isDailyFlow)
+    assertEquals("con el reloj que la persona tiene elegido en la ficha de ese juego", vm.retoFor(c.gameId), session.timed)
+    vm.closeGameOrResult()
+    assertEquals("al terminar se vuelve a Hoy", AppTab.HOY, vm.currentTab.value)
+    assertNull("sin Todos los juegos abierto", vm.allGames.value)
+  }
+
+  @Test
+  fun `una partida de Desafio del juego elegido lo deja jugado y, si se supera, superado y repetir no lo pierde`() {
+    measureEverything()
+    val vm = newViewModel()
+    TestSupport.awaitUntil(message = "No se eligió el Desafío de hoy") { vm.refreshChallenge(); vm.challengeToday.value != null }
+    val id = vm.challengeToday.value!!.gameId
+    val before = vm.dailySession.value
+    fun play(passed: Boolean, launch: String) {
+      vm.startDailyChallenge()
+      vm.onUnityLaunched(launch)
+      vm.onUnityResult(challengeResult(id, passed, vm.activeGame.value!!.timed), launch)
+    }
+    play(passed = false, launch = "LD1")
+    TestSupport.awaitUntil(message = "El Desafío no pasó a jugado") { vm.challengeToday.value?.state == com.example.data.ChallengeState.JUGADO }
+    play(passed = true, launch = "LD2")
+    TestSupport.awaitUntil(message = "El Desafío no pasó a superado") { vm.challengeToday.value?.state == com.example.data.ChallengeState.SUPERADO }
+    play(passed = false, launch = "LD3")
+    TestSupport.awaitUntil(message = "Repetir el Desafío no se guardó") { savedResults() == 3 }
+    assertEquals("lo superado no se pierde al repetir", com.example.data.ChallengeState.SUPERADO, vm.challengeToday.value?.state)
+    assertEquals("el Desafío no avanza la ruta de hoy", before.completedCount, vm.dailySession.value.completedCount)
+    assertEquals("y sigue siendo el mismo juego todo el día", id, vm.challengeToday.value?.gameId)
+  }
+
+  @Test
+  fun `una partida a tu medida del mismo juego no cuenta como el Desafio de hoy`() {
+    measureEverything()
+    val vm = newViewModel()
+    TestSupport.awaitUntil(message = "No se eligió el Desafío de hoy") { vm.refreshChallenge(); vm.challengeToday.value != null }
+    val id = vm.challengeToday.value!!.gameId
+    vm.playFromHome(id, PlayMode.A_TU_MEDIDA)
+    vm.onUnityLaunched("LM1")
+    vm.onUnityResult(challengeResult(id, passed = true, timed = false), "LM1")
+    TestSupport.awaitUntil(message = "La partida no quedó guardada") { savedResults() == 1 }
+    assertEquals(com.example.data.ChallengeState.PENDIENTE, vm.challengeToday.value?.state)
+  }
+
+  @Test
+  fun `sin ningun juego medido no hay Desafio de hoy y Hoy queda sin la losa`() {
+    val vm = newViewModel()
+    TestSupport.awaitUntil(message = "El camino de hoy no se cargó") { vm.dailySession.value.gameIds.isNotEmpty() }
+    vm.refreshChallenge()
+    assertNull(vm.challengeToday.value)
+  }
+
+  @Test
+  fun `el Desafio de hoy se recuerda aunque Android cierre la app`() {
+    measureEverything()
+    val first = com.example.data.NeuroVidaRepository(app)           // el repositorio de «antes» y el de «después»: dos arranques de la app
+    try {
+      TestSupport.awaitUntil(message = "No se eligió el Desafío de hoy") { first.refreshChallenge() != null }
+      val id = first.challengeToday.value!!.gameId
+      val second = com.example.data.NeuroVidaRepository(app)
+      try {
+        assertEquals("el juego de hoy se recuerda al abrir la app de nuevo", id, second.challengeToday.value?.gameId)
+        assertEquals(com.example.data.ChallengeState.PENDIENTE, second.challengeToday.value?.state)
+      } finally { TestSupport.release(second) }
+    } finally { TestSupport.release(first) }
+  }
+
   @Test
   fun `cerrar Todos los juegos lo olvida y cambiar de pestana tampoco lo reabre`() {
     val vm = newViewModel()

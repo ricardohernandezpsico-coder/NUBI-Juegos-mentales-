@@ -361,5 +361,27 @@ class VisibleTextsGuardTest {
     assertEquals("Sigue varios satélites a la vez", bySubtitle["satelites"])
     assertEquals("Acuérdate a tiempo de cada encargo", bySubtitle["correo"])
   }
+
+  @Test
+  fun `las frases del Desafio de hoy son las de la spec, con una sola palabra por concepto`() {
+    // Tarea 167 (`auditoria-fable/hoy-desafio-y-dia-completo.md` §6.6): «Desafío» es la palabra (no «reto» ni «modo difícil»), y ningún texto baja de lo dicho
+    val c = com.example.ui.screens.HomeChallenge("stroop", "Tinta o Palabra", com.example.data.ChallengeState.PENDIENTE)
+    assertEquals("Desafío de hoy", com.example.ui.screens.CHALLENGE_LABEL)
+    assertEquals("Tinta o Palabra · unos 2 minutos", com.example.ui.screens.challengeSecondLine(c, wide = true, large = false))
+    assertEquals("Tinta o Palabra", com.example.ui.screens.challengeSecondLine(c, wide = true, large = true))
+    assertEquals("Tinta o Palabra · otra vez", com.example.ui.screens.challengeSecondLine(c.copy(state = com.example.data.ChallengeState.JUGADO), wide = true, large = false))
+    assertEquals("Desafío superado: Tinta o Palabra.", com.example.ui.screens.challengeDoneLine("Tinta o Palabra"))
+    assertEquals("Mañana hay ruta y Desafío nuevos.", com.example.ui.screens.CHALLENGE_TOMORROW)
+    assertEquals("Mañana te espera una ruta nueva.", com.example.ui.screens.ROUTE_TOMORROW)
+    assertEquals("Desafío de hoy, Tinta o Palabra, un paso más difícil, unos 2 minutos", com.example.ui.screens.challengeDescription(c))
+    val stops = com.example.ui.screens.homeStops(listOf("bodega", "calculo", "intrusa"), 3, AppLanguage.SPANISH)
+    val ui = com.example.ui.screens.HomeUi(name = "R", now = 0L, tier = com.example.model.RankTier.fromRating(0), streak = 0, weeklyGoal = 4, lamps = com.example.data.Week.Lamps(List(7) { false }, 6), stops = stops, pausedTitle = null, flightDay = false, hasBaseline = true)
+    assertEquals("3 de 3 · ruta completa", com.example.ui.screens.routeMeta(ui))
+    val phrases = listOf(com.example.ui.screens.CHALLENGE_LABEL, com.example.ui.screens.CHALLENGE_TOMORROW, com.example.ui.screens.ROUTE_TOMORROW, com.example.ui.screens.challengeDoneLine("Tinta o Palabra"), com.example.ui.screens.routeMeta(ui))
+    for (p in phrases) {
+      assertFalse("«$p» usa «reto» o «modo difícil»", Regex("""\bretos?\b|modo dif[ií]cil""", RegexOption.IGNORE_CASE).containsMatchIn(p))
+      assertTrue("«$p» no lleva signos sueltos ni flechas", p.none { it in "↑↓→←+−" })
+    }
+  }
 }
 

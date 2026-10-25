@@ -13,6 +13,8 @@ sys.stdout.reconfigure(encoding='utf-8')
 from PIL import Image
 
 CON_AVATARES = '--con-avatares' in sys.argv
+SOLO_ICONOS = [a.split('=', 1)[1] for a in sys.argv[1:] if a.startswith('--solo-iconos=')]                # Tarea 167: `--solo-iconos=cometa` suma ÍCONOS al kit.json que ya está en la app sin rehacer las losas ni los discos
+SOLO_ICONOS = SOLO_ICONOS[0].split(',') if SOLO_ICONOS else None
 args = [a for a in sys.argv[1:] if not a.startswith('--')]
 src = args[0]
 dst = args[1] if len(args) > 1 else os.path.join(src, 'app')
@@ -30,7 +32,7 @@ COLORES = {'sol': '#FFCB45', 'crema': '#F5EBDB', 'lima': '#9BE564', 'cielo': '#4
 DISCO = {'margen': (6, 4, 10, 12), 'cuerpo': (48, 48)}
 DISCOS = ('kit_cerrar', 'kit_disco_crema', 'kit_disco_cielo')
 ICONOS = ('volver', 'visto', 'izq', 'der', 'compartir', 'candado', 'engranaje',
-          'globo', 'altavoz', 'vibracion', 'reloj', 'sin_reloj', 'escudo', 'info', 'campana', 'persona', 'arriba', 'abajo')      # los últimos once son de la Tarea 91 (reemplazan los de Material de los paneles)
+          'globo', 'altavoz', 'vibracion', 'reloj', 'sin_reloj', 'escudo', 'info', 'campana', 'persona', 'arriba', 'abajo', 'cometa')      # los últimos doce son de la Tarea 91 (y el cometa, de la 167) (reemplazan los de Material de los paneles)
 AVATARES = ('cohete', 'farol', 'isla', 'engranaje', 'planeta', 'lucero', 'gota')                                        # Tarea 91 (quitados de la app en la 93): objetos de plasticina de 48 dp para los avatares de Opciones
 ICONO = {'margen': (4, 3, 6, 7), 'cuerpo': (24, 24)}        # el lienzo de cada ícono (dp); el cuerpo real se mide en la imagen
 JUGAR = {'margen': (4, 3, 6, 7), 'cuerpo': (20, 22)}
@@ -83,12 +85,13 @@ def save(im, name):
 
 
 total = 0
-kit = {'px_por_dp': PX, 'nota': 'Kit de plasticina (Tareas 89 y 90), renderizado en Blender con `tools/isla/isla.py --kit`; `tools/isla/kit.py` lo normaliza. Los WebP viven en drawable-nodpi (a 3 px por dp, sin que Android los reescale).', 'colores': COLORES}
+RAIZ_KIT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'app', 'src', 'main', 'res', 'raw', 'kit.json')
+kit = json.load(open(RAIZ_KIT, encoding='utf-8')) if SOLO_ICONOS else {'px_por_dp': PX, 'nota': 'Kit de plasticina (Tareas 89 y 90), renderizado en Blender con `tools/isla/isla.py --kit`; `tools/isla/kit.py` lo normaliza. Los WebP viven en drawable-nodpi (a 3 px por dp, sin que Android los reescale).', 'colores': COLORES}
 reporte = []
 
 # ---- las losas (nine-slice), una clase por radio
-kit['losas'] = {}
-for clase, (R, pref, colores) in LOSAS.items():
+if not SOLO_ICONOS: kit['losas'] = {}
+for clase, (R, pref, colores) in (LOSAS.items() if not SOLO_ICONOS else ()):
     spec = {'margen': MARGEN, 'cuerpo': (2 * R + CENTRO[0], 2 * R + CENTRO[1])}
     first = None
     for color in colores:
@@ -109,19 +112,19 @@ for clase, (R, pref, colores) in LOSAS.items():
         'presionada': {'texto_baja_dp': 2.0, 'borde_baja_dp': b},
         'colores': list(colores)
     }
-kit['losas']['nota'] = 'la losa presionada es más baja (la mitad de alto), más oscura y de sombra más chica; el texto y el contenido bajan `texto_baja_dp` al apoyar el dedo'
+if not SOLO_ICONOS: kit['losas']['nota'] = 'la losa presionada es más baja (la mitad de alto), más oscura y de sombra más chica; el texto y el contenido bajan `texto_baja_dp` al apoyar el dedo'
 
 # ---- los discos (el cuerpo de 48 dp con sus márgenes; el ícono o la inicial va encima, en Compose)
-kit['discos'] = {}
-for nombre in DISCOS:
+if not SOLO_ICONOS: kit['discos'] = {}
+for nombre in (DISCOS if not SOLO_ICONOS else ()):
     ims, size = normalize([load(nombre), load(nombre + '_p')], DISCO)
     for im, suf in zip(ims, ('', '_p')): total += save(im, nombre + suf)
     marg, cuerpo = measured(ims[0])
     kit['discos'][nombre.replace('kit_', '')] = {'imagen_px': list(ims[0].size), 'margenes_dp': marg, 'cuerpo_dp': cuerpo, 'presionada': {'texto_baja_dp': 2.0, 'borde_baja_dp': baja(ims)}}
 
 # ---- los íconos de churro tinta (el cuerpo real se mide con lo muy opaco; se dibujan centrados en su caja)
-kit['piezas'] = {}
-for nombre in ('jugar',) + ICONOS:
+if not SOLO_ICONOS: kit['piezas'] = {}
+for nombre in (SOLO_ICONOS if SOLO_ICONOS else ('jugar',) + ICONOS):
     arch = 'kit_jugar' if nombre == 'jugar' else 'kit_i_' + nombre
     if nombre == 'jugar':
         (im,), _ = normalize([load(arch)], JUGAR)
@@ -140,12 +143,12 @@ for nombre in (AVATARES if CON_AVATARES else ()):
 
 if not kit['avatares']: del kit['avatares']
 json.dump(kit, open(os.path.join(dst, 'kit.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
-for clase, d in kit['losas'].items():
+for clase, d in (kit['losas'].items() if not SOLO_ICONOS else ()):
     if clase == 'nota': continue
     print('losa %s: imagen %dx%d px; centro que se estira %dx%d px; insets %s' % (clase, d['imagen_px'][0], d['imagen_px'][1], d['centro_px'][0], d['centro_px'][1], d['insets_px']))
-for clase, color, sz, rs, cs in reporte:
+for clase, color, sz, rs, cs in (reporte if not SOLO_ICONOS else ()):
     print('  %s/%-6s cuerpo %dx%d px (%.1fx%.1f dp); desviación del centro: a lo ancho %.2f, a lo alto %.2f (de 255)' % (clase, color, sz[0], sz[1], sz[0] / PX, sz[1] / PX, rs, cs))
-for n, d in kit['discos'].items(): print('disco %s: cuerpo %s, baja %s dp' % (n, d['cuerpo_dp'], d['presionada']['borde_baja_dp']))
-for n, d in kit['piezas'].items(): print('pieza %s: cuerpo %s, margenes %s' % (n, d['cuerpo_dp'], d['margenes_dp']))
+for n, d in (kit['discos'].items() if not SOLO_ICONOS else ()): print('disco %s: cuerpo %s, baja %s dp' % (n, d['cuerpo_dp'], d['presionada']['borde_baja_dp']))
+for n, d in (kit['piezas'].items() if not SOLO_ICONOS else {k: kit['piezas'][k] for k in SOLO_ICONOS}.items()): print('pieza %s: cuerpo %s, margenes %s' % (n, d['cuerpo_dp'], d['margenes_dp']))
 for n, d in kit.get('avatares', {}).items(): print('avatar %s: %s px' % (n, d['imagen_px']))
 print('peso total de los WebP: %.1f KB (%d archivos)' % (total / 1024, len(os.listdir(dst)) - 1))

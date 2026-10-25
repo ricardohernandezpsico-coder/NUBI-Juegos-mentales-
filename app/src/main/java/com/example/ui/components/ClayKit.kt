@@ -233,7 +233,9 @@ enum class Glyph(val key: String, @DrawableRes val res: Int) {
   BELL("campana", R.drawable.kit_i_campana),
   PERSON("persona", R.drawable.kit_i_persona),
   UP("arriba", R.drawable.kit_i_arriba),
-  DOWN("abajo", R.drawable.kit_i_abajo)
+  DOWN("abajo", R.drawable.kit_i_abajo),
+  // Tarea 167: el cometa del «Desafío de hoy» (una gota alargada en diagonal con dos estelas; sin puntas: docs/simbolos-neutros.md)
+  COMET("cometa", R.drawable.kit_i_cometa)
   // (Tarea 158: los tres glifos de churro de la barra —isla, cohete y farola, de la Tarea 156— se fueron: la barra usa vectores, `NavIcons.kt`)
 }
 
@@ -327,9 +329,11 @@ internal fun KitButton(
   /** Lo que dice el lector de pantalla que pasa al tocar («Mostrar opciones»). */
   onClickLabel: String? = null,
   /** Un dibujo propio a la izquierda del texto (con [glyph] nulo): el emblema del juego que sigue en el final de partida. */
-  leading: (@Composable () -> Unit)? = null
+  leading: (@Composable () -> Unit)? = null,
+  /** Centra el contenido a lo alto de la losa: cuando quien llama la estira (dos botones de una fila con el alto del más alto, «Desafío de hoy» y «Todos los juegos» de Hoy, Tarea 167). */
+  centerContent: Boolean = false
 ) {
-  ClaySlab(color, if (wide) modifier.fillMaxWidth() else modifier, onClick = onClick, forcePressed = forcePressed, onClickLabel = onClickLabel) {
+  ClaySlab(color, if (wide) modifier.fillMaxWidth() else modifier, onClick = onClick, forcePressed = forcePressed, onClickLabel = onClickLabel, contentAlignment = if (centerContent) Alignment.Center else Alignment.TopStart) {
     Row(
       (if (wide) Modifier.fillMaxWidth() else Modifier).heightIn(min = minHeight).padding(horizontal = if (wide) 12.dp else 20.dp, vertical = if (minHeight < 56.dp) 4.dp else 8.dp),
       horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically

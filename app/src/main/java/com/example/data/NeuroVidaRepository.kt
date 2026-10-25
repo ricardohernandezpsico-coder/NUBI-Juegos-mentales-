@@ -661,9 +661,40 @@ class NeuroVidaRepository(
   )
   val dailySession: StateFlow<DailySessionState> = _dailySession.asStateFlow()
 
+  // El Desafío de hoy (Tarea 167, `DailyChallenge`): UN juego al día que Nubi elige entre los ya medidos, fuera de la ruta y del área que la ruta dejó fuera primero. PASAJERO (`desafio_hoy`, fuera del respaldo): se elige UNA vez al día y se recuerda cómo va.
+  private val challengeStore: ChallengeStore = PrefsChallengeStore(context)
+  private var challengeLog: ChallengeLog = challengeStore.load()
+  private val _challengeToday = MutableStateFlow(challengeLog.today?.takeIf { it.day == getTodayDateKey() })
+  val challengeToday: StateFlow<ChallengeToday?> = _challengeToday.asStateFlow()
+  /** El camino de hoy ya se leyó de la base: antes, `_dailySession` trae un camino de relleno y el Desafío se elegiría contra una ruta falsa. */
+  @Volatile private var routeLoaded = false
+
+  /**
+   * Elige (si todavía no) y devuelve el Desafío de hoy con lo que hay AHORA: la ruta de hoy y los juegos medidos. Se llama al abrir Hoy y después de cada partida; el juego elegido no cambia durante el día. Sin candidato no hay Desafío (null) y Hoy queda sin la losa.
+   */
+  @Synchronized
+  fun refreshChallenge(): ChallengeToday? {
+    if (!routeLoaded) return _challengeToday.value
+    val (today, log) = DailyChallenge.resolve(challengeLog, getTodayDateKey(), epochDay(System.currentTimeMillis()), _skill.value.measured, _dailySession.value.gameIds)
+    if (log != challengeLog) { challengeLog = log; challengeStore.save(log) }
+    if (_challengeToday.value != today) _challengeToday.value = today
+    return today
+  }
+
+  /** Una partida terminó: si era el Desafío de hoy en modo Desafío, pasa a «jugado» o «superado» (no se pierde al repetir). */
+  @Synchronized
+  private fun challengeAfter(dateKey: String, gameId: String, mode: PlayMode, passed: Boolean) {
+    val updated = DailyChallenge.after(challengeLog.today, dateKey, gameId, mode, passed) ?: return
+    challengeLog = challengeLog.copy(today = updated)
+    challengeStore.save(challengeLog)
+    _challengeToday.value = updated
+  }
+
   init {
     repositoryScope.launch {
       initializeDatabaseDefaults()
+      routeLoaded = true
+      refreshChallenge()
       observeDailySession()
       seedAchievementsIfNeeded()
     }
@@ -931,6 +962,10 @@ class NeuroVidaRepository(
         }
       }
     }
+
+    // El Desafío de hoy (Tarea 167): una partida de ese juego en modo Desafío lo pasa a «jugado» o, si se superó, a «superado»; y lo recién medido puede ser el Desafío de mañana.
+    challengeAfter(today, result.gameId, result.playMode, modePassed)
+    refreshChallenge()
 
     val allResults = gameResultDao.getAllResultsSync().map { it.toDomain() }
 

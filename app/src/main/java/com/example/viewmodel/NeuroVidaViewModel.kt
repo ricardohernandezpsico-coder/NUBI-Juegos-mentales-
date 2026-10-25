@@ -417,6 +417,22 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     _lastResult.value = null
   }
 
+  /** El Desafío de hoy (`data/DailyChallenge.kt`): el juego que Nubi eligió y cómo va; null = no hay candidato todavía (Hoy queda sin la losa). */
+  val challengeToday = repository.challengeToday
+
+  /** Hoy lo llama al abrirse (y al cambiar el día): elige el Desafío de hoy si todavía no hay uno. */
+  fun refreshChallenge() { repository.refreshChallenge() }
+
+  /**
+   * «Desafío de hoy» (Tarea 167): el juego elegido, en modo Desafío, con el reloj que la persona tenga elegido en su ficha; al terminar vuelve a Hoy. NO es la ruta: no la avanza (el elegido nunca es un juego de la ruta) y no cambia lo elegido en la ficha.
+   * Gratis y se puede repetir el mismo día; no cuenta para el futuro tope de partidas libres (`DailyChallenge.COUNTS_FOR_FREE_CAP`).
+   */
+  fun startDailyChallenge() {
+    val c = repository.challengeToday.value ?: return
+    rememberOrigin(ORIGIN_HOY, c.gameId)
+    launchGame(c.gameId, mode = com.example.data.PlayMode.DESAFIO)
+  }
+
   fun startDailySession() {
     val session = dailySession.value
     val nextGameId = if (session.completedCount < session.gameIds.size) {

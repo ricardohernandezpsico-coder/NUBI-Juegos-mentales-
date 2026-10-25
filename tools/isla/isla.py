@@ -1225,7 +1225,39 @@ def ic_farola():
     pie = [(-5.4, -6.9, 5.4, -6.9)]
     return churros(tapa + cuerpo + pie, radio=1.6) + [aro(1.7, 0, 8.4, r=1.3), punto(0, -0.2, 2.3)]
 
-ICONOS_T91 = {'isla': ic_isla, 'cohete': ic_cohete, 'farola': ic_farola, 'globo': ic_globo, 'altavoz': ic_altavoz, 'vibracion': ic_vibracion, 'reloj': ic_reloj, 'sin_reloj': ic_sin_reloj, 'escudo': ic_escudo, 'info': ic_info, 'campana': ic_campana, 'persona': ic_persona, 'arriba': ic_arriba, 'abajo': ic_abajo}
+# ---- Tarea 167 (el Desafío de hoy): el COMETA, el glifo del botón «Desafío de hoy». Ricardo (25-oct) eligió la «cola ancha» y, entre dos variantes (`docs/previews/cometa-t167b.png`), la (b): una gota alargada en diagonal (la cabeza abajo a la derecha, la punta arriba a la izquierda; la cola NACE del ancho completo de la cabeza y se afina) con dos estelas finas y cortas por fuera, paralelas a la cola, SIN luceros. Sin puntas de estrella (`docs/simbolos-neutros.md`). Descartados: la cabeza con una cuña delgada (se leía como cuchara o sartén), la gota con dos luceros y las estelas como cuñas (parecían aletas).
+def prisma_poli(pts, h, ancho_bisel=0.7, name='kit_ch_cuna'):
+    """Un polígono (puntos en dp, en el plano del suelo) extruido [h] dp hacia arriba, con bisel gordo: una pieza plana de plasticina tinta."""
+    me = bpy.data.meshes.new(name); bm = bmesh.new()
+    f = bm.faces.new([bm.verts.new((x / KIT_DPU, y / KIT_DPU, 0.0)) for (x, y) in pts]); r = bmesh.ops.extrude_face_region(bm, geom=[f])
+    bmesh.ops.translate(bm, vec=(0, 0, h / KIT_DPU), verts=[v for v in r['geom'] if isinstance(v, bmesh.types.BMVert)]); bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+    bm.to_mesh(me); bm.free(); me.update()
+    o = bpy.data.objects.new(name, me); scene.collection.objects.link(o); place(o, coll='iconos', name=name)
+    bevel(o, ancho_bisel * h / KIT_DPU, 6, ang=80); smooth(o); mat(o, mat_tinta()); return o
+
+def gota_poli(hx, hy, R, L, r, ang_d, paso=6.0, paso_punta=12.0):
+    """El contorno de una gota alargada (en dp): la cabeza (círculo de radio [R] en (hx, hy)) y, a [L] dp en la dirección [ang_d] (radianes), una punta redondeada de radio [r]; las dos rectas son las tangentes comunes (la envolvente de los dos círculos)."""
+    phi = math.acos((R - r) / L)                                              # el ángulo entre el eje y la normal de las tangentes
+    pts = []
+    n = max(8, int(round(math.degrees(math.tau - 2 * phi) / paso)))           # el arco largo de la cabeza, por atrás
+    for k in range(n + 1):
+        a = ang_d + phi + (math.tau - 2 * phi) * k / n; pts.append((hx + R * math.cos(a), hy + R * math.sin(a)))
+    cx, cy = hx + L * math.cos(ang_d), hy + L * math.sin(ang_d)
+    m = max(4, int(round(math.degrees(2 * phi) / paso_punta)))                # el arco corto de la punta
+    for k in range(m + 1):
+        a = ang_d - phi + 2 * phi * k / m; pts.append((cx + r * math.cos(a), cy + r * math.sin(a)))
+    return pts
+
+def ic_cometa():
+    hx, hy, R = 3.8, -3.8, 5.3                                               # la cabeza: círculo de 10,6 dp abajo a la derecha
+    dx, dy = -math.sqrt(0.5), math.sqrt(0.5)                                 # la cola va hacia arriba a la izquierda
+    px, py = -dy, dx
+    def en(t, s): return (hx + dx * t + px * s, hy + dy * t + py * s)        # t = a lo largo del eje desde el centro de la cabeza; s > 0 = el lado de abajo a la izquierda
+    gota = prisma_poli(gota_poli(hx, hy, R, 18.0, 0.9, math.atan2(dy, dx)), 3.6)         # ~18,7 dp de punta a punta; la punta redondeada de 1,8 dp
+    estelas = churros([(*en(7.5, -5.8), *en(14.0, -5.8)), (*en(6.5, 6.2), *en(10.5, 6.2))], radio=0.75)   # dos churros finos (1,5 dp) de 6,5 y 4 dp, uno a cada lado de la cola
+    return [gota] + estelas
+
+ICONOS_T91 = {'isla': ic_isla, 'cohete': ic_cohete, 'farola': ic_farola, 'globo': ic_globo, 'altavoz': ic_altavoz, 'vibracion': ic_vibracion, 'reloj': ic_reloj, 'sin_reloj': ic_sin_reloj, 'escudo': ic_escudo, 'info': ic_info, 'campana': ic_campana, 'persona': ic_persona, 'arriba': ic_arriba, 'abajo': ic_abajo, 'cometa': ic_cometa}
 
 def icono_kit(nombre):
     objs = []
@@ -1347,6 +1379,7 @@ def render_kit():
     scene.view_settings.exposure = float(arg('--kit-exp','-0.42'))   # la plasticina clara se quemaba (crema y lima a 255) con el sol desde arriba
     if KIT_SOLO == 'avance':   # Tarea 124: canal, churro, bolita, 17 emblemas, farola, pedestal, cola del globo, medallas y escudos (`kit_avance.py`; solo si se pide: no entra en 'todo')
         exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'kit_avance.py'), encoding='utf-8').read(), 'kit_avance.py', 'exec'), globals()); render_kit_avance()
+    if KIT_SOLO == 'cometa': render_iconos_kit(solo=('cometa',))          # Tarea 167: solo el cometa del Desafío de hoy
     if KIT_SOLO == 'barra': render_iconos_kit(solo=('isla', 'cohete', 'farola'))          # Tarea 156: solo los tres glifos de la barra de pestañas
     if KIT_SOLO in ('todo', 'losas'): render_losas()
     if KIT_SOLO in ('todo', 'discos'): render_discos()

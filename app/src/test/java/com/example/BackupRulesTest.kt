@@ -11,8 +11,8 @@ import org.junit.Test
  */
 class BackupRulesTest {
   // Estado pasajero: se pierde a propósito al cambiar de teléfono (una partida o un recorrido del inicio «fantasma» a medias no sirven).
-  // `first_flight` = «Primer vuelo con Nubi» en curso (data/FirstFlight.kt). `route_celebrations` = qué farolas de la ruta y qué ruta completa ya se celebraron HOY (data/RouteLamps.kt; Tarea 88). `isla_piezas` = qué piezas de la isla (las que dan las medallas) Hoy ya mostró (data/IslaPiezasSeen.kt; Tarea 136): las piezas se DERIVAN de las medallas, que sí se respaldan, así que al restaurar solo se pierde el «ya la vi» y Hoy siembra en silencio. color_vision NO es pasajero: vive en profile_extra, que sí se respalda (igual que lo que quedó guardado de result_focus / coach_tone, que ya no se lee).
-  private val transient = setOf("paused_game", "game_session", "unity_results", "library_focus", "first_flight", "route_celebrations", "isla_piezas")
+  // `first_flight` = «Primer vuelo con Nubi» en curso (data/FirstFlight.kt). `route_celebrations` = qué farolas de la ruta y qué ruta completa ya se celebraron HOY (data/RouteLamps.kt; Tarea 88). `desafio_hoy` = cuál es el Desafío de hoy y cómo va, más el último día de cada juego como Desafío (data/DailyChallenge.kt; Tarea 167): el modo de cada partida no se guarda en la base y, si se pierde, Nubi elige de nuevo. `isla_piezas` = qué piezas de la isla (las que dan las medallas) Hoy ya mostró (data/IslaPiezasSeen.kt; Tarea 136): las piezas se DERIVAN de las medallas, que sí se respaldan, así que al restaurar solo se pierde el «ya la vi» y Hoy siembra en silencio. color_vision NO es pasajero: vive en profile_extra, que sí se respalda (igual que lo que quedó guardado de result_focus / coach_tone, que ya no se lee).
+  private val transient = setOf("paused_game", "game_session", "unity_results", "library_focus", "first_flight", "route_celebrations", "isla_piezas", "desafio_hoy")
 
   private fun xml(name: String) = File("src/main/res/xml/$name").readText()
 

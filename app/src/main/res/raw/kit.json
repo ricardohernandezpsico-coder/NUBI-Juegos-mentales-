@@ -487,6 +487,22 @@
     "ancho": 16.67,
     "alto": 10.33
    }
+  },
+  "cometa": {
+   "imagen_px": [
+    102,
+    102
+   ],
+   "margenes_dp": {
+    "izq": 6.33,
+    "arr": 4.0,
+    "der": 9.0,
+    "abajo": 10.33
+   },
+   "cuerpo_dp": {
+    "ancho": 18.67,
+    "alto": 19.67
+   }
   }
  }
 }
