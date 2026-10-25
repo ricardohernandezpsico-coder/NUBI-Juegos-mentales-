@@ -31,9 +31,10 @@ import com.example.model.AppLanguage
 import com.example.model.DomainType
 import com.example.ui.components.BoardBackground
 import com.example.ui.screens.AvanceAreaPage
-import com.example.ui.screens.AvanceAreaRows
+import com.example.ui.screens.AvanceAreaGrid
 import com.example.ui.screens.AvanceBestMarks
 import com.example.ui.screens.AvanceWeekLine
+import com.example.ui.theme.AvanceTitleFamily
 import com.example.ui.theme.NeuroVidaTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -47,7 +48,7 @@ import org.robolectric.annotation.GraphicsMode
 import java.util.Calendar
 
 /**
- * Avance con PUNTOS por área (Tarea 159; `auditoria-fable/avance-b-puntos.md` §3 y §4), con sus piezas reales y datos fijos: las cuatro filas (puntos grandes, «de 1000 puntos», etapa, barra y frase de la semana; alto de 110 dp o más; con letra de 1,3 y 2,0 nada se corta ni se pisa),
+ * Avance con PUNTOS por área (Tarea 159; `auditoria-fable/avance-b-puntos.md` §3 y §4; los cuatro cuadros de 2 × 2 y Rubik, Tarea 174), con sus piezas reales y datos fijos: los cuatro cuadros (nombre en Rubik, puntos con «de 1000 puntos» o «Aún sin medir» y una barra del color del área; con letra de 1,3 y 2,0 nada se corta ni se pisa),
  * la línea de la semana, «Tus mejores marcas» y la página de un área (nombre, puntos, etapa, lo que falta, el gráfico de semanas o la frase de cuándo aparece, una tarjeta por juego con su nivel en palabras y su medida, y la nota honesta). Sin «Jugar» en ningún sitio y sin palabras sueltas.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -112,67 +113,153 @@ class AvancePuntosTest {
     assertEquals("Tu semana empieza hoy", textOf("avance_week_line"))
   }
 
-  // ---- Las cuatro filas
-
-  @Test
-  fun cada_fila_dice_sus_puntos_su_etapa_y_su_semana_con_unidad() {
-    var opened: String? = null
-    show { AvanceAreaRows(areas, names) { opened = it } }
-    assertEquals("470", textOf("area_points_memoria")); assertEquals("Etapa Hábil", textOf("area_stage_memoria"))
-    assertEquals("Esta semana sumaste 12 puntos.", textOf("area_line_memoria"))
-    assertEquals("310", textOf("area_points_atencion")); assertEquals("Etapa Aprendiz", textOf("area_stage_atencion"))
-    assertEquals("Esta semana te mantuviste.", textOf("area_line_atencion"))
-    assertEquals("Etapa Hábil", textOf("area_stage_razonamiento"))
-    assertEquals("la bajada se dice con la mejor marca al lado, sin rojo ni flechas", "Esta semana bajaste 8 puntos. Tu mejor marca sigue en 520 puntos.", textOf("area_line_razonamiento"))
-    assertEquals("un área sin partidas", "Aún sin medir", textOf("area_stage_lenguaje")); assertEquals("0", textOf("area_points_lenguaje"))
-    assertEquals("Todavía sin puntos: juega un juego de Lenguaje.", textOf("area_line_lenguaje"))
-    assertEquals("cada cifra grande lleva su «de cuánto»", 4, textCount("de 1000 puntos"))
-    for (bad in listOf(" de 100 ", "pts", "→", "▲", "▼", "sem.")) assertEquals("«$bad» no va", 0, textCount(bad))
-    rule.onNodeWithTag("progress_area_atencion").performClick()
-    assertEquals("la fila entera se toca y abre su página", "ATENCION", opened)
-  }
-
-  @Test
-  fun la_fila_mide_110_dp_o_mas_y_se_lee_completa() {
-    show { AvanceAreaRows(areas, names) {} }
-    for (a in areas) {
-      val b = bounds("progress_area_${a.area.lowercase()}")
-      assertTrue("${a.area} mide ${b.height / rule.density.density} dp", b.height >= 110 * rule.density.density - 1f)
-    }
-    val desc = rule.onNodeWithTag("progress_area_memoria").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].joinToString(" ")
-    assertEquals("Memoria: etapa Hábil, 470 de 1000 puntos. Esta semana sumaste 12 puntos", desc)
-  }
+  // ---- Los cuatro cuadros (Tarea 174: antes eran cuatro filas con la etapa, la barra de las 5 etapas y la frase de la semana)
 
   /** Ninguna palabra del texto de [tag] queda partida entre dos líneas (se mira el diseño real del texto). */
   private fun assertNoWordSplit(tag: String, note: String) {
-    val node = rule.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode()
-    val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
-    node.config[androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult].action?.invoke(results)
-    val layout = results.firstOrNull() ?: error("«$tag» no entregó su diseño de texto: la prueba no estaría mirando nada")
+    val layout = layoutOf(tag)
     val text = layout.layoutInput.text.text
     Regex("\\S+").findAll(text).forEach { m ->
       assertEquals("$note: la palabra «${m.value}» de «$text» quedó partida entre dos líneas", layout.getLineForOffset(m.range.first), layout.getLineForOffset(m.range.last))
     }
   }
 
-  private fun assertRowsFit(fontScale: Float) {
-    show(fontScale) { AvanceAreaRows(areas, names) {} }
-    for (a in areas) {
-      val k = a.area.lowercase()
-      val card = bounds("progress_area_$k"); val name = bounds("area_name_$k"); val pts = bounds("area_points_$k"); val stage = bounds("area_stage_$k"); val line = bounds("area_line_$k")
-      for ((label, b) in listOf("nombre" to name, "puntos" to pts, "etapa" to stage, "frase" to line)) assertTrue("$k ($fontScale): el $label $b queda dentro de la fila $card", b.left >= card.left - 1f && b.right <= card.right + 1f)
-      assertTrue("$k ($fontScale): los puntos no pisan el nombre ni la etapa", pts.left >= name.right - 1f && pts.left >= stage.right - 1f || pts.top >= stage.bottom - 1f)
-      assertTrue("$k ($fontScale): la frase de la semana va debajo de todo", line.top >= pts.bottom - 1f && line.top >= stage.bottom - 1f)
-      for (t in listOf("area_name_$k", "area_stage_$k", "area_line_$k")) assertNoWordSplit(t, "fila de $k a letra $fontScale")
+  private fun layoutOf(tag: String): androidx.compose.ui.text.TextLayoutResult {
+    val node = rule.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode()
+    val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+    node.config[androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+    return results.firstOrNull() ?: error("«$tag» no entregó su diseño de texto")
+  }
+
+  private fun layoutOfText(text: String): androidx.compose.ui.text.TextLayoutResult {
+    val node = rule.onNode(hasText(text), useUnmergedTree = true).fetchSemanticsNode()
+    val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+    node.config[androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+    return results.firstOrNull() ?: error("«$text» no entregó su diseño de texto")
+  }
+
+  private val keys = areas.map { it.area.lowercase() }
+
+  @Test
+  fun cada_cuadro_dice_su_nombre_sus_puntos_y_su_barra_y_nada_mas() {
+    var opened: String? = null
+    show { AvanceAreaGrid(areas, names) { opened = it } }
+    assertEquals("Memoria", textOf("area_name_memoria")); assertEquals("Atención", textOf("area_name_atencion")); assertEquals("Razonamiento", textOf("area_name_razonamiento")); assertEquals("Lenguaje", textOf("area_name_lenguaje"))
+    assertEquals("470", textOf("area_points_memoria")); assertEquals("310", textOf("area_points_atencion")); assertEquals("440", textOf("area_points_razonamiento"))
+    assertEquals("cada cifra lleva su «de cuánto»: «de 1000 puntos» en los tres que ya suman", 3, textCount("de 1000 puntos"))
+    assertEquals("un área sin partidas no dice «0 de 1000 puntos»: dice lo mismo que el resto de la app", "Aún sin medir", textOf("area_unmeasured_lenguaje"))
+    assertEquals("y no lleva cifra", 0, count("area_points_lenguaje"))
+    for (k in keys) rule.onNodeWithTag("area_bar_$k", useUnmergedTree = true).assertExists()
+    // lo que se fue de la vista principal (vive en la página del área): la etapa, lo que falta, la frase de la semana y la mejor marca
+    for (gone in listOf("Etapa", "Esta semana", "Te faltan", "Tu mejor marca", "Todavía sin puntos", "Hábil", "Aprendiz")) assertEquals("«$gone» ya no va en el cuadro", 0, textCount(gone))
+    for (bad in listOf(" de 100 ", "pts", "→", "▲", "▼", "sem.")) assertEquals("«$bad» no va", 0, textCount(bad))
+    rule.onNodeWithTag("progress_area_atencion").performClick()
+    assertEquals("el cuadro entero se toca y abre su página", "ATENCION", opened)
+  }
+
+  @Test
+  fun el_lector_de_pantalla_lee_cada_cuadro_entero() {
+    show { AvanceAreaGrid(areas, names) {} }
+    fun desc(k: String) = rule.onNodeWithTag("progress_area_$k").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.ContentDescription].joinToString(" ")
+    assertEquals("Memoria, 470 de 1000 puntos", desc("memoria"))
+    assertEquals("Razonamiento, 440 de 1000 puntos", desc("razonamiento"))
+    assertEquals("Lenguaje, aún sin medir", desc("lenguaje"))
+  }
+
+  @Test
+  fun la_barra_llena_lo_que_dicen_los_puntos_y_un_area_sin_jugar_la_lleva_vacia() {
+    show { AvanceAreaGrid(areas, names) {} }
+    for ((k, pts) in listOf("memoria" to 470, "atencion" to 310, "razonamiento" to 440)) {
+      val bar = bounds("area_bar_$k"); val fill = bounds("area_bar_fill_$k")
+      assertEquals("$k: la barra llena ${pts / 10} % del riel", pts / 1000f, fill.width / bar.width, 0.01f)
+      assertTrue("$k: el relleno queda dentro del riel", fill.left >= bar.left - 1f && fill.right <= bar.right + 1f && Math.abs(fill.height - bar.height) < 2f)
+    }
+    assertEquals("un área sin jugar lleva la barra vacía: solo el riel", 0, count("area_bar_fill_lenguaje"))
+    assertTrue("el riel mide 16 dp de alto", Math.abs(bounds("area_bar_memoria").height / rule.density.density - 16f) < 1f)
+  }
+
+  /** La cuadrícula: dos por fila con letra hasta 1,3, uno por fila con letra mayor; el nombre, los puntos y la barra de cada cuadro, a la misma altura en los de una misma fila y en el mismo orden; nada se parte ni se sale. */
+  private fun assertGridFits(fontScale: Float, columns: Int) {
+    show(fontScale) { AvanceAreaGrid(areas, names) {} }
+    val cards = keys.map { bounds("progress_area_$it") }
+    val screen = Rect(0f, 0f, 393f * rule.density.density, 3800f * rule.density.density)
+    for ((k, c) in keys.zip(cards)) {
+      assertTrue("$k ($fontScale): el cuadro $c cabe en el ancho", c.left >= screen.left && c.right <= screen.right)
+      assertTrue("$k ($fontScale): el cuadro mide 48 dp de alto o más para tocarlo", c.height >= 48 * rule.density.density)
+      val name = bounds("area_name_$k"); val bar = bounds("area_bar_$k")
+      assertTrue("$k ($fontScale): el nombre queda dentro del cuadro", name.left >= c.left - 1f && name.right <= c.right + 1f && name.top >= c.top - 1f)
+      assertTrue("$k ($fontScale): la barra queda dentro del cuadro y debajo del nombre", bar.left >= c.left - 1f && bar.right <= c.right + 1f && bar.top >= name.bottom - 1f && bar.bottom <= c.bottom + 1f)
+      val nameLayout = layoutOf("area_name_$k")
+      assertEquals("$k ($fontScale): el nombre va en UNA línea, entero", 1, nameLayout.lineCount)
+      assertTrue("$k ($fontScale): el nombre no se corta (la caja mide ${name.width} px y el texto entero ${nameLayout.getLineRight(0)})", name.width >= nameLayout.getLineRight(0) - 1f)
+      assertTrue("$k ($fontScale): el nombre mide 16 sp o más (${nameLayout.layoutInput.style.fontSize})", nameLayout.layoutInput.style.fontSize.value >= 16f)
+      assertEquals("$k ($fontScale): el nombre va en Rubik", AvanceTitleFamily, nameLayout.layoutInput.style.fontFamily)
+      if (count("area_points_$k") > 0) {
+        val pts = bounds("area_points_$k"); val label = bounds("area_label_$k")
+        assertTrue("$k ($fontScale): nombre, cifra, «de 1000 puntos» y barra, en ese orden", name.bottom <= pts.top + 1f && pts.bottom <= label.top + 1f && label.bottom <= bar.top + 1f)
+        assertNoWordSplit("area_label_$k", "cuadro de $k a letra $fontScale")
+      }
+    }
+    assertEquals("los cuatro nombres, del mismo tamaño", 1, keys.map { layoutOf("area_name_$it").layoutInput.style.fontSize.value }.toSet().size)
+    // la rejilla: 2 × 2 (Memoria y Atención arriba, Razonamiento y Lenguaje abajo) o una columna
+    val m = cards[0]; val a = cards[1]; val r = cards[2]; val l = cards[3]
+    if (columns == 2) {
+      assertTrue("2 × 2 ($fontScale): Memoria y Atención en la misma fila, Atención a la derecha", Math.abs(m.top - a.top) < 2f && a.left >= m.right - 1f)
+      assertTrue("2 × 2 ($fontScale): Razonamiento y Lenguaje en la fila de abajo", Math.abs(r.top - l.top) < 2f && r.top >= m.bottom - 1f && l.left >= r.right - 1f)
+      for ((x, y) in listOf(keys[0] to keys[1], keys[2] to keys[3])) {
+        assertTrue("2 × 2 ($fontScale): el nombre de $x y el de $y a la misma altura", Math.abs(bounds("area_name_$x").top - bounds("area_name_$y").top) < 2f)
+        assertTrue("2 × 2 ($fontScale): la barra de $x y la de $y a la misma altura (${bounds("area_bar_$x").top} y ${bounds("area_bar_$y").top})", Math.abs(bounds("area_bar_$x").top - bounds("area_bar_$y").top) < 2f)
+      }
+    } else {
+      assertTrue("un cuadro por fila ($fontScale): uno debajo de otro, del mismo ancho", m.bottom <= a.top + 1f && a.bottom <= r.top + 1f && r.bottom <= l.top + 1f && Math.abs(m.width - l.width) < 2f)
     }
   }
 
-  @Test fun las_filas_caben_con_letra_1_0() = assertRowsFit(1f)
-  @Test fun las_filas_caben_con_letra_1_3() = assertRowsFit(1.3f)
-  @Test fun las_filas_caben_con_letra_2_0_con_los_puntos_bajo_el_nombre() {
-    assertRowsFit(2f)
-    val name = bounds("area_name_razonamiento"); val pts = bounds("area_points_razonamiento")
-    assertTrue("con letra 2,0 los puntos bajan bajo el nombre y la etapa", pts.top >= name.bottom - 1f)
+  @Test fun los_cuadros_caben_dos_por_fila_con_letra_1_0() = assertGridFits(1f, 2)
+  @Test fun los_cuadros_caben_dos_por_fila_con_letra_1_3_y_razonamiento_entra_entero() = assertGridFits(1.3f, 2)
+  @Test fun con_letra_2_0_va_un_cuadro_por_fila_y_ninguna_palabra_se_parte() = assertGridFits(2f, 1)
+
+  @Test
+  fun la_cuadricula_con_letra_1_3_mide_poco_y_deja_el_resto_de_avance_a_la_vista() {
+    show(1.3f) { AvanceAreaGrid(areas, names) {} }
+    val top = bounds("progress_area_memoria").top; val bottom = bounds("progress_area_lenguaje").bottom
+    val h = (bottom - top) / rule.density.density
+    assertTrue("las 4 áreas miden $h dp con letra 1,3 (a 393 × 873 caben con el título y la semana sin deslizar si no pasan de ~330)", h <= 330f)
+  }
+
+  // ---- Rubik: solo en Avance, a prueba
+
+  @Test
+  fun rubik_es_la_fuente_open_font_license_y_solo_la_usa_avance() {
+    val ttf = java.io.File("src/main/res/font/rubik_bold.ttf")
+    assertTrue("la fuente está en res/font", ttf.exists())
+    val bytes = ttf.readBytes()
+    assertTrue("es un TrueType", bytes[0].toInt() == 0 && bytes[1].toInt() == 1)
+    val text = String(bytes, Charsets.ISO_8859_1) + String(bytes, Charsets.UTF_16BE)
+    assertTrue("trae su nombre «Rubik» y la licencia SIL Open Font License en la tabla de nombres", text.contains("Rubik") && text.contains("SIL Open Font License"))
+    assertTrue("pesa menos de 200 KB (${bytes.size / 1024} KB)", bytes.size < 200 * 1024)
+    // quién la usa: la familia de los títulos de Avance, y solo los archivos de Avance
+    val allowed = setOf("Type.kt", "ProgressScreen.kt", "AvanceAreas.kt", "AvanceAreaPage.kt")          // SpaceSections.kt solo recibe «una familia» (null por defecto): no nombra a Rubik
+    val users = java.io.File("src/main/java").walkTopDown().filter { f -> f.extension == "kt" && f.readText().let { it.contains("AvanceTitleFamily") || it.contains("R.font.rubik") } }.map { it.name }.toSet()
+    assertEquals("Rubik solo en Avance (Ricardo, 25-oct: a prueba)", allowed, users)
+    val type = java.io.File("src/main/java/com/example/ui/theme/Type.kt").readText().replace("\r\n", "\n")
+    val start = type.indexOf("val AppFamily = FontFamily(")
+    val appFamily = type.substring(start, type.indexOf("\n)\n", start))
+    assertFalse("AppFamily (la de toda la app) no cambia: sigue Nunito y Fredoka", appFamily.contains("rubik"))
+    assertTrue(appFamily.contains("R.font.nunito_regular") && appFamily.contains("fredoka("))
+  }
+
+  @Test
+  fun el_titulo_de_las_secciones_de_avance_va_en_rubik_y_el_cuerpo_no() {
+    show {
+      Column {
+        AvanceAreaGrid(areas, names) {}
+        AvanceBestMarks(emptyList(), now)
+      }
+    }
+    for (t in listOf("Tus áreas", "Tus mejores marcas")) assertEquals("«$t» en Rubik", AvanceTitleFamily, layoutOfText(t).layoutInput.style.fontFamily)
+    assertTrue("la ayuda bajo el título sigue en el cuerpo (no Rubik)", layoutOfText("Toca un área para ver sus juegos y tus marcas").layoutInput.style.fontFamily != AvanceTitleFamily)
+    assertTrue("y la cifra de los puntos, que es de Fredoka", layoutOf("area_points_memoria").layoutInput.style.fontFamily != AvanceTitleFamily)
   }
 
   // ---- Tus mejores marcas
@@ -340,7 +427,8 @@ class AvancePuntosTest {
   @Test
   fun un_area_sin_partidas_dice_que_todavia_no_hay_puntos_y_que_cada_juego_suma_desde_su_primera_partida() {
     page(emptyList())
-    assertEquals("0 puntos de 1000 · Aún sin medir", textOf("page_points"))
+    assertEquals("un área sin medir no dice «0 puntos de 1000»: dice solo «Aún sin medir»", "Aún sin medir", textOf("page_points"))
+    assertEquals("y no lleva etapa aparte", 0, count("page_stage"))
     assertEquals("Todavía sin puntos en Memoria: cada juego suma desde su primera partida a tu medida.", textOf("page_to_next"))
     assertEquals("Todavía no hay semanas en Memoria. El gráfico aparece cuando tengas 4.", textOf("page_weeks_empty"))
     for (g in memoria) assertEquals("Todavía sin partidas. Este juego aporta hasta 250 puntos.", textOf("page_game_empty_$g"))

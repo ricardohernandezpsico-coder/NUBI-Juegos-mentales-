@@ -32,9 +32,9 @@ import com.example.model.RankTier
 private val OnNight = Color(0xFFEAF0FF)
 private val OnNightDim = com.example.ui.theme.NubiTokens.OnNightDim
 
-/** Titulo de seccion sin recuadro: texto claro con una linea fina encima que separa del bloque anterior. */
+/** Titulo de seccion sin recuadro: texto claro con una linea fina encima que separa del bloque anterior. [fontFamily] = otra familia para el título (Avance usa Rubik: Tarea 174); sin valor, la de siempre. */
 @Composable
-fun SpaceSectionTitle(text: String, modifier: Modifier = Modifier, hint: String? = null) {
+fun SpaceSectionTitle(text: String, modifier: Modifier = Modifier, hint: String? = null, fontFamily: androidx.compose.ui.text.font.FontFamily? = null) {
   Column(modifier = modifier.fillMaxWidth().padding(top = 8.dp)) {
     Box(
       modifier = Modifier
@@ -42,7 +42,7 @@ fun SpaceSectionTitle(text: String, modifier: Modifier = Modifier, hint: String?
         .height(1.dp)
         .background(Color.White.copy(alpha = 0.10f))
     )
-    OnBoardText(text, color = OnNight, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 14.dp))
+    OnBoardText(text, color = OnNight, fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = fontFamily, modifier = Modifier.padding(top = 14.dp))
     if (hint != null) OnBoardText(hint, color = OnNightDim, fontSize = 16.sp, modifier = Modifier.padding(top = 2.dp))
   }
 }

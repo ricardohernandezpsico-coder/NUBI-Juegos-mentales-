@@ -48,6 +48,12 @@ val AppFamily = FontFamily(
   fredoka(FontWeight.Black, 700)
 )
 
+/**
+ * Los títulos de la pestaña AVANCE (Tarea 174, 25-oct, pedido de Ricardo, a prueba): Rubik Bold (700, OFL; `res/font/rubik_bold.ttf`). Solo la usan el título «Avance», los títulos de sección, los nombres de área de los cuadros y los títulos de la página de un área; el cuerpo sigue en Nunito
+ * y los botones en Fredoka ([AppFamily] no cambia). Si la prueba no convence, se quita esta familia y Avance vuelve a Fredoka sin tocar nada más.
+ */
+val AvanceTitleFamily = FontFamily(Font(R.font.rubik_bold, FontWeight.Bold), Font(R.font.rubik_bold, FontWeight.SemiBold))
+
 private val Base = Typography()
 
 // Títulos y encabezados: siempre Fredoka. Cuerpo y etiquetas: AppFamily (Nunito, o Fredoka si van en negrita), con

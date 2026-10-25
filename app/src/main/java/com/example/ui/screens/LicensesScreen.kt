@@ -34,7 +34,7 @@ private val Body = com.example.ui.theme.Clay.InkMuted
  * - SPALEX (datos de las palabras de Lluvia de meteoros y En la punta de la lengua): CC BY 4.0, con su atribución y el cambio que se le hizo en cada juego.
  * - EsPal (Duchon et al., 2013): la frecuencia de uso que trae SPALEX y que En la punta de la lengua usa para el nivel de cada palabra. Se CITA por cortesía (decisión de Ricardo, Tarea 80); su licencia propia NO está confirmada y no se escribe ninguna (consulta a los autores o al abogado pendiente antes de publicar).
  * - Hunspell es_ES de LibreOffice (diccionario que sirvió para armar y filtrar esas palabras; solo al generar): GPL 3+, LGPL 3+ o MPL 1.1+, a elección (LICENSE.md del repositorio LibreOffice/dictionaries, carpeta es).
- * - Tipografías (Fredoka, Nunito, Atkinson Hyperlegible y Fraunces): SIL Open Font License 1.1, con los avisos de copyright de cada una y el texto completo de la licencia (desplegable; vive en `res/raw/ofl.txt`, no en un string).
+ * - Tipografías (Fredoka, Nunito, Atkinson Hyperlegible, Fraunces y Rubik): SIL Open Font License 1.1, con los avisos de copyright de cada una y el texto completo de la licencia (desplegable; vive en `res/raw/ofl.txt`, no en un string).
  * - Unity (el motor de los juegos).
  */
 @Composable
@@ -88,12 +88,13 @@ fun LicensesContent(modifier: Modifier = Modifier) {
     )
 
     Section("Tipografías")
-    Para("Fredoka, de Milena Brandão y Hafontia; Nunito, de Vernon Adams y Jacques Le Bailly; y Atkinson Hyperlegible, del Braille Institute of America, usada para las palabras de Lluvia de meteoros; y Fraunces SemiBold Italic, de Undercase Type (Phaedra Charles y Flora Lucini), usada para el nombre de cada figura en La estrella intrusa.")
-    Para("Las cuatro bajo la licencia SIL Open Font License 1.1 (openfontlicense.org). Avisos de copyright:")
+    Para("Fredoka, de Milena Brandão y Hafontia; Nunito, de Vernon Adams y Jacques Le Bailly; y Atkinson Hyperlegible, del Braille Institute of America, usada para las palabras de Lluvia de meteoros; y Fraunces SemiBold Italic, de Undercase Type (Phaedra Charles y Flora Lucini), usada para el nombre de cada figura en La estrella intrusa; y Rubik Bold, de Hubert & Fischer (con Meir Sadan para el hebreo), usada para los títulos de Avance.")
+    Para("Las cinco bajo la licencia SIL Open Font License 1.1 (openfontlicense.org). Avisos de copyright:")
     Para("Fredoka: Copyright 2016 The Fredoka Project Authors (github.com/hafontia/Fredoka-One).")
     Para("Nunito: Copyright 2014 The Nunito Project Authors (github.com/googlefonts/nunito).")
     Para("Atkinson Hyperlegible: Copyright 2020 Braille Institute of America, Inc.")
     Para("Fraunces: Copyright 2018 The Fraunces Project Authors (github.com/undercasetype/Fraunces).")
+    Para("Rubik: Copyright (c) 2015 by Hubert & Fischer. All rights reserved. Hebrew characters (c) 2016 by Meir Sadan.")
     OflText()
 
     Section("Hecho con Unity")

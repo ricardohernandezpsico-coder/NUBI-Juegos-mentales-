@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -19,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -38,13 +40,14 @@ import com.example.ui.components.StageScale
 import com.example.ui.components.WeekLampRendered
 import com.example.ui.components.areaDescription
 import com.example.ui.theme.Clay
+import com.example.ui.theme.AvanceTitleFamily
 import com.example.ui.theme.ClayCard
 
 private val OnNight = androidx.compose.ui.graphics.Color(0xFFEAF0FF)
 private val OnNightDim = com.example.ui.theme.NubiTokens.OnNightDim
 
 /**
- * Avance con PUNTOS por área (Tarea 159; Ricardo, 22-oct: «con puntos por área»; `auditoria-fable/avance-b-puntos.md` §3): el título, UNA línea de la semana, cuatro filas de área a todo el ancho con sus puntos y «Tus mejores marcas». Lo largo de la semana
+ * Avance con PUNTOS por área (Tarea 159; Ricardo, 22-oct: «con puntos por área»; `auditoria-fable/avance-b-puntos.md` §3): el título, UNA línea de la semana, las cuatro áreas con sus puntos (desde la Tarea 174, una cuadrícula de 2 × 2: [AvanceAreaGrid]) y «Tus mejores marcas». Lo largo de la semana
  * (farolas grandes, racha, globo de Nubi) vive en Hoy y no se repite aquí; los detalles de cada área, en su página ([AvanceAreaPage]). Cada número lleva su unidad y su «de cuánto»; nada de flechas, signos más o menos ni abreviaturas.
  */
 
@@ -71,57 +74,86 @@ internal fun AvanceWeekLine(lamps: Week.Lamps, goal: Int, empty: Boolean, modifi
   }
 }
 
+/** El margen de adentro de un cuadro de área a cada lado: lo justo para que «Razonamiento» (Rubik Bold a 16 sp, unos 151 dp con letra 1,3) entre entero en un cuadro de unos 172 dp. */
+private val CellPad = 8.dp
+private val AreaTrack = androidx.compose.ui.graphics.Color(0xFFE2DAC8)
+
 /**
- * Tus áreas: cuatro filas a todo el ancho (la fila entera se toca y abre la página del área; alto de 110 dp o más). Cada una: el nombre con el punto del color del área, «Etapa Hábil» debajo, a la derecha los puntos grandes («470») con «de 1000 puntos», la barra de las 5 etapas
- * (lo ganado esta semana, más claro) y la frase de la semana («Esta semana sumaste 12 puntos.» / «Esta semana te mantuviste.» / «Esta semana bajaste 8 puntos. Tu mejor marca sigue en 520 puntos.»). Con letra de 1,3 o más los puntos bajan bajo el nombre.
+ * Tus áreas (Tarea 174, 25-oct; Ricardo, sobre un boceto de Opus, después de que 5 personas dijeran que la lista era «monótona» y de descartar los edificios de la isla y el radar de Fable): las cuatro áreas en una CUADRÍCULA de 2 × 2. Cada cuadro es una losa crema de arcilla que se toca y abre la página
+ * del área ([AvanceAreaPage], que no cambia) y lleva SOLO tres cosas, siempre en el mismo lugar: el NOMBRE (Rubik Bold, [AvanceTitleFamily], con un solo tamaño para los cuatro: el mayor, de 20 a 16 sp, al que el nombre más largo cabe entero), los PUNTOS («730» grande y debajo «de 1000 puntos»; un área
+ * sin medir dice «Aún sin medir», como el resto de la app) y una BARRA del color del área sobre su riel (de 0 a 1000 puntos; con el contorno de tinta, para que se vea sin depender del color). Con letra mayor que 1,3, o si «Razonamiento» no cabe entero a 16 sp en media fila, va un cuadro por fila. La etapa, lo que falta,
+ * la frase de la semana y «tu mejor marca sigue en N puntos» ya no están aquí: viven en la página del área. Nada se distingue solo por color: el nombre identifica cada área.
  */
 @Composable
-internal fun AvanceAreaRows(areas: List<AreaPoints>, names: Map<String, String>, onArea: (String) -> Unit) {
+internal fun AvanceAreaGrid(areas: List<AreaPoints>, names: Map<String, String>, onArea: (String) -> Unit) {
   val measurer = androidx.compose.ui.text.rememberTextMeasurer()
   val base = androidx.compose.material3.LocalTextStyle.current
   val density = LocalDensity.current
   Column {
-    SpaceSectionTitle("Tus áreas", hint = "Toca un área para ver sus juegos y tus marcas")
+    SpaceSectionTitle("Tus áreas", hint = "Toca un área para ver sus juegos y tus marcas", fontFamily = AvanceTitleFamily)
     Spacer(Modifier.height(8.dp))
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-      areas.forEach { p ->
-        val key = p.area.lowercase()
-        val name = names[p.area] ?: p.area
-        ClayCard(
-          modifier = Modifier.fillMaxWidth().heightIn(min = 110.dp).semantics(mergeDescendants = true) { contentDescription = areaDescription(name, p) }.testTag("progress_area_$key"),
-          onClick = { onArea(p.area) }, contentPadding = 0.dp
-        ) {
-          androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-            // Los puntos van al lado del nombre solo si caben los dos ENTEROS (nombre a 20 sp, cifra de 34 sp y «de 1000 puntos»); si no, bajan bajo el nombre: ninguna palabra se parte (Razonamiento a 1,3)
-            fun px(text: String, sp: Int, bold: Boolean) = measurer.measure(text, base.merge(androidx.compose.ui.text.TextStyle(fontSize = sp.sp, fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal)), softWrap = false, maxLines = 1).size.width
-            val dotPx = with(density) { 20.dp.toPx() }
-            val pointsPx = maxOf(px(p.total.toString(), 34, true), px("de ${AreaPoints.SCALE} puntos", 16, false))
-            val stacked = px(name, 20, true) + dotPx + with(density) { 8.dp.toPx() } + pointsPx > constraints.maxWidth
-            // el nombre baja de 20 a 16 sp si ni solo cabe en su línea (letra muy grande en un teléfono angosto)
-            val nameSp = (20 downTo 16).firstOrNull { px(name, it, true) + dotPx <= constraints.maxWidth } ?: 16
-            Column(Modifier.fillMaxWidth()) {
-            @Composable
-            fun NameAndStage(m: Modifier) = Column(m) {
-              Row(verticalAlignment = Alignment.CenterVertically) {
-                AreaDot(p.area)
-                Spacer(Modifier.width(8.dp))
-                Text(name, color = Clay.Ink, fontSize = nameSp.sp, fontWeight = FontWeight.Bold, lineHeight = (nameSp + 4).sp, modifier = Modifier.testTag("area_name_$key"))
-              }
-              Text(if (p.measured) "Etapa ${p.stageName}" else "Aún sin medir", color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.testTag("area_stage_$key"))
-            }
-            @Composable
-            fun Points(m: Modifier, end: Boolean) = Column(m, horizontalAlignment = if (end) Alignment.End else Alignment.Start) {
-              Text(p.total.toString(), color = Clay.Ink, fontSize = 34.sp, fontWeight = FontWeight.Bold, lineHeight = 36.sp, modifier = Modifier.testTag("area_points_$key"))
-              Text("de ${AreaPoints.SCALE} puntos", color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 20.sp)
-            }
-            if (stacked) { NameAndStage(Modifier); Points(Modifier.padding(top = 4.dp), end = false) }
-            else Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) { NameAndStage(Modifier.weight(1f)); Spacer(Modifier.width(8.dp)); Points(Modifier, end = true) }
-            StageScale(if (p.measured) p.fill else null, onCard = true, modifier = Modifier.padding(top = 8.dp), change = p.change, barTag = "area_bar_$key", showNames = false)
-            Text(AreaPoints.weekLine(p, name), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 6.dp).testTag("area_line_$key"))
-            }
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
+      val gapPx = with(density) { 8.dp.roundToPx() }
+      val padPx = with(density) { CellPad.roundToPx() }
+      fun namePx(text: String, sp: Int) = measurer.measure(text, base.merge(androidx.compose.ui.text.TextStyle(fontSize = sp.sp, fontWeight = FontWeight.Bold, fontFamily = AvanceTitleFamily)), softWrap = false, maxLines = 1).size.width
+      val nameOf = { p: AreaPoints -> names[p.area] ?: p.area }
+      val twoPx = (constraints.maxWidth - gapPx) / 2 - 2 * padPx
+      val cols = if (density.fontScale <= 1.3f && areas.all { namePx(nameOf(it), 16) <= twoPx }) 2 else 1
+      val innerPx = (constraints.maxWidth - gapPx * (cols - 1)) / cols - 2 * padPx
+      val nameSp = (20 downTo 16).firstOrNull { sp -> areas.all { namePx(nameOf(it), sp) <= innerPx } } ?: 16
+      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        areas.chunked(cols).forEach { row ->
+          Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            row.forEach { p -> AreaCell(p, nameOf(p), nameSp, { onArea(p.area) }, Modifier.weight(1f)) }
           }
         }
       }
+    }
+  }
+}
+
+/** Un cuadro de área: nombre, puntos y barra (de arriba abajo, siempre en ese orden y a la misma altura en los cuatro). El lector de pantalla lo lee entero: «Memoria, 470 de 1000 puntos». */
+@Composable
+private fun AreaCell(p: AreaPoints, name: String, nameSp: Int, onClick: () -> Unit, modifier: Modifier) {
+  val key = p.area.lowercase()
+  val density = LocalDensity.current
+  ClayCard(
+    modifier = modifier.semantics(mergeDescendants = true) { contentDescription = AreaPoints.cardSpoken(p, name) }.testTag("progress_area_$key"),
+    onClick = onClick, contentPadding = 0.dp
+  ) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = CellPad, vertical = 12.dp)) {
+      Text(name, color = Clay.Ink, fontSize = nameSp.sp, fontWeight = FontWeight.Bold, fontFamily = AvanceTitleFamily, lineHeight = (nameSp + 4).sp, maxLines = 1, softWrap = false, modifier = Modifier.testTag("area_name_$key"))
+      // los puntos: la cifra grande y debajo «de 1000 puntos»; SIEMPRE la misma altura (la de las dos líneas más un respiro), haya cifra o no, para que la barra quede a la misma altura en los cuatro
+      Column(Modifier.padding(top = 6.dp).height(with(density) { 36.sp.toDp() + 20.sp.toDp() + 6.dp })) {
+        if (p.measured) {
+          Text(p.total.toString(), color = Clay.Ink, fontSize = 32.sp, fontWeight = FontWeight.Bold, lineHeight = 36.sp, modifier = Modifier.testTag("area_points_$key"))
+          Text("de ${AreaPoints.SCALE} puntos", color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.testTag("area_label_$key"))
+        } else {
+          Text("Aún sin medir", color = Clay.InkMuted, fontSize = 18.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp, modifier = Modifier.testTag("area_unmeasured_$key"))
+        }
+      }
+      Spacer(Modifier.height(8.dp))
+      AreaBar(if (p.measured) p.total / AreaPoints.SCALE.toFloat() else 0f, DomainType.fromStored(p.area)?.color ?: Clay.Ink, key)
+    }
+  }
+}
+
+/**
+ * La barra de un área: un riel crema con contorno de tinta y, encima, el relleno del color del área hasta [fill] (0 a 1) con un canto de tinta en su punta; una barra vacía es solo el riel. Mide 16 dp de alto. Con puntos, el relleno mide al menos 12 dp (una rayita se vería como un defecto).
+ * Decorativa para el lector de pantalla: el cuadro ya dice los puntos.
+ */
+@Composable
+private fun AreaBar(fill: Float, color: androidx.compose.ui.graphics.Color, key: String) {
+  val shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+  androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().height(16.dp).clip(shape).background(AreaTrack).border(2.dp, Clay.Ink, shape).testTag("area_bar_$key")) {
+    if (fill > 0f) {
+      val w = (maxWidth * fill.coerceIn(0f, 1f)).coerceAtLeast(12.dp)
+      Box(
+        Modifier.width(w).fillMaxHeight().drawBehind {
+          drawRect(color)
+          if (w < maxWidth) drawRect(Clay.Ink, topLeft = androidx.compose.ui.geometry.Offset(size.width - 2.dp.toPx(), 0f), size = androidx.compose.ui.geometry.Size(2.dp.toPx(), size.height))
+        }.testTag("area_bar_fill_$key")
+      )
     }
   }
 }
@@ -140,7 +172,7 @@ internal fun AreaDot(areaKey: String) {
 @Composable
 internal fun AvanceBestMarks(marks: List<BestMark>, now: Long) {
   Column {
-    SpaceSectionTitle("Tus mejores marcas", hint = "Cada una con la unidad de su juego, comparada solo contigo")
+    SpaceSectionTitle("Tus mejores marcas", hint = "Cada una con la unidad de su juego, comparada solo contigo", fontFamily = AvanceTitleFamily)
     Spacer(Modifier.height(8.dp))
     if (marks.isEmpty()) {
       OnBoardText("Cuando juegues tres partidas de un mismo juego, aquí aparece tu mejor marca.", color = OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.testTag("best_marks_empty"))

@@ -135,12 +135,13 @@ class VisibleTextsGuardTest {
       "Copyright 2016 The Fredoka Project Authors",
       "Copyright 2014 The Nunito Project Authors",
       "Copyright 2020 Braille Institute of America, Inc.",
-      "Copyright 2018 The Fraunces Project Authors"
+      "Copyright 2018 The Fraunces Project Authors",
+      "Copyright (c) 2015 by Hubert & Fischer"                      // Rubik (Tarea 174): el aviso tal como lo trae la fuente
     )) assertTrue(aviso, text.contains(aviso))
     // la pantalla lo lee del recurso, no de un string gigante
     val screen = File("src/main/java/com/example/ui/screens/LicensesScreen.kt").readText()
     assertTrue(screen.contains("R.raw.ofl"))
-    for (nombre in listOf("Fredoka", "Nunito", "Atkinson Hyperlegible", "Fraunces")) assertTrue(nombre, screen.contains(nombre))
+    for (nombre in listOf("Fredoka", "Nunito", "Atkinson Hyperlegible", "Fraunces", "Rubik")) assertTrue(nombre, screen.contains(nombre))
   }
 
   /**

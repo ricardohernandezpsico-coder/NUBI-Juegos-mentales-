@@ -135,10 +135,19 @@ class AreaPointsTest {
     assertEquals(-10, a.weekDelta)
     assertEquals("la mejor marca fue la del lunes (350)", 350, a.best); assertTrue(a.belowBest)
     assertEquals("Esta semana bajaste 10 puntos. Tu mejor marca sigue en 350 puntos.", AreaPoints.weekLine(a, "Memoria"))
+    // Tarea 174: la fila de Avance ya no lleva la frase de la semana; lo que decía (con la mejor marca al lado) vive en la página del área, en la frase de «lo que falta»
+    assertTrue("«lo que falta» y, con la bajada, la mejor marca al lado: ${AreaPoints.toNextSentence(a, "Memoria")}", AreaPoints.toNextSentence(a, "Memoria").let { it.startsWith("Te faltan ") && it.endsWith(" Esta semana bajaste 10 puntos. Tu mejor marca sigue en 350 puntos.") })
     val all = AreaPoints.weekLine(a, "Memoria") + AreaPoints.toNextSentence(a, "Memoria")
     for (bad in listOf("perdiste", "−", "▼", "↓", "↑", "+")) assertFalse("«$bad» no va", bad in all)
     assertEquals("Esta semana sumaste 1 punto.", AreaPoints.weekLine(a.copy(weekDelta = 1, best = a.total), "Memoria"))
     assertEquals("Todavía sin puntos: juega un juego de Memoria.", AreaPoints.weekLine(AreaPoints.compute("MEMORIA", memoria, emptyList(), now), "Memoria"))
+  }
+
+  @Test
+  fun `el cuadro de un area en Avance se lee con su nombre y sus puntos, o aun sin medir`() {
+    val a = AreaPoints.compute("MEMORIA", memoria, listOf(p("parejas", now, 0.72f), p("secuencia", now, 0.48f), p("bodega", now, 0.44f), p("correo", now, 0.24f)), now)
+    assertEquals("Memoria, 470 de 1000 puntos", AreaPoints.cardSpoken(a, "Memoria"))
+    assertEquals("Memoria, aún sin medir", AreaPoints.cardSpoken(AreaPoints.compute("MEMORIA", memoria, emptyList(), now), "Memoria"))
   }
 
   @Test

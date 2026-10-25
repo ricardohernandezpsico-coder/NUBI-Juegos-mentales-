@@ -1,6 +1,6 @@
 Tipografías de Nubi y su licencia
 
-Fredoka, Nunito, Atkinson Hyperlegible y Fraunces se usan bajo la licencia SIL Open Font License, Version 1.1 (texto completo más abajo, también disponible con sus preguntas frecuentes en https://openfontlicense.org).
+Fredoka, Nunito, Atkinson Hyperlegible, Fraunces y Rubik se usan bajo la licencia SIL Open Font License, Version 1.1 (texto completo más abajo, también disponible con sus preguntas frecuentes en https://openfontlicense.org).
 Avisos de copyright de cada una:
 
 Fredoka
@@ -14,6 +14,9 @@ Copyright 2020 Braille Institute of America, Inc.
 
 Fraunces
 Copyright 2018 The Fraunces Project Authors (https://github.com/undercasetype/Fraunces)
+
+Rubik (peso Bold, 700; se usa en los títulos de Avance)
+Copyright (c) 2015 by Hubert & Fischer. All rights reserved. Hebrew characters (c) 2016 by Meir Sadan.
 
 -----------------------------------------------------------
 SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007

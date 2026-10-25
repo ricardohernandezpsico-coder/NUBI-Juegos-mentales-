@@ -34,6 +34,7 @@ import com.example.ui.components.AREA_ORDER
 import com.example.ui.components.OnBoardText
 import com.example.ui.components.SpaceSectionTitle
 import com.example.ui.i18n.LocalAppLanguage
+import com.example.ui.theme.AvanceTitleFamily
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
 import com.example.viewmodel.NeuroVidaViewModel
@@ -43,7 +44,7 @@ private val OnNight = Color(0xFFEAF0FF)
 
 /**
  * Avance con PUNTOS por área (Tarea 159; antes la pestaña con tu semana, tus áreas, tus medidas, tus medallas y tus últimas partidas; Ricardo, 22-oct: «con puntos por área», «sin palabras sueltas»; `auditoria-fable/avance-b-puntos.md`). De arriba abajo: el título, UNA línea de la semana,
- * **tus áreas** (cuatro filas a todo el ancho con sus puntos de 0 a 1000, su etapa, la barra y la frase de la semana; tocar una abre su PÁGINA, [AvanceAreaPage]), **tus mejores marcas** y **tu punto de partida**. Salieron «Tus medidas» (pasaron a la página del área), «Descubrimientos» con su «Jugar» (Avance mira, Hoy juega),
+ * **tus áreas** (desde la Tarea 174, cuatro cuadros en 2 × 2 con el nombre, los puntos de 0 a 1000 y una barra del color del área; tocar uno abre su PÁGINA, [AvanceAreaPage], donde viven la etapa, lo que falta y la semana; el título y los títulos de sección van en Rubik: [AvanceTitleFamily]), **tus mejores marcas** y **tu punto de partida**. Salieron «Tus medidas» (pasaron a la página del área), «Descubrimientos» con su «Jugar» (Avance mira, Hoy juega),
  * el enlace a las medallas (viven en «Tú») y «Tus últimas partidas». La página del área reemplaza a la lista mientras está abierta y Atrás vuelve a la lista en el mismo lugar (el estado de la lista vive aquí). La barra de pestañas sigue visible y «Avance» sigue elegida.
  */
 @Composable
@@ -88,12 +89,12 @@ fun ProgressScreen(
       )
       return@Column
     }
-    Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) { OnBoardText("Avance", color = OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("avance_title")) }
+    Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) { OnBoardText("Avance", color = OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold, fontFamily = AvanceTitleFamily, modifier = Modifier.testTag("avance_title")) }
     LazyColumn(
       state = listState,
       modifier = Modifier
         .weight(1f)
-        .padding(horizontal = 22.dp),
+        .padding(horizontal = 20.dp),                                       // 20 como el título; los cuadros de las áreas necesitan el ancho (Tarea 174)
       contentPadding = PaddingValues(top = 8.dp, bottom = 28.dp),
       verticalArrangement = Arrangement.spacedBy(22.dp)
     ) {
@@ -103,7 +104,7 @@ fun ProgressScreen(
         // Sin ninguna partida (Tarea 147, P8): en vez de cuatro filas vacías, Nubi con UNA línea
         item { com.example.ui.components.NubiEmptyLine(com.example.ui.components.EMPTY_AVANCE_LINE) }
       } else {
-        item { AvanceAreaRows(areaPoints, names) { viewModel.openAvanceArea(it) } }
+        item { AvanceAreaGrid(areaPoints, names) { viewModel.openAvanceArea(it) } }
         item { AvanceBestMarks(bestMarks, now) }
       }
 
@@ -136,7 +137,8 @@ fun ProgressScreen(
         Column {
           SpaceSectionTitle(
             "Tu punto de partida",
-            hint = if (baseline == null) "4 juegos cortos para que cada juego empiece a tu medida" else "Puedes repetirlo cuando quieras"
+            hint = if (baseline == null) "4 juegos cortos para que cada juego empiece a tu medida" else "Puedes repetirlo cuando quieras",
+            fontFamily = AvanceTitleFamily
           )
           Spacer(Modifier.height(12.dp))
           ClayButton(

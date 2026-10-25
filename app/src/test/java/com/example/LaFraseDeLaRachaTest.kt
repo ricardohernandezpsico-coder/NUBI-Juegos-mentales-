@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.dp
 import com.example.data.Streak
 import com.example.data.Week
 import com.example.model.DomainType
-import com.example.ui.screens.AvanceAreaRows
+import com.example.ui.screens.AvanceAreaGrid
 import com.example.ui.screens.AvanceWeekLine
 import com.example.ui.theme.NeuroVidaTheme
 import org.junit.Assert.assertEquals
@@ -42,7 +42,7 @@ class LaFraseDeLaRachaTest {
     val l = Week.Lamps(List(7) { it < 5 }, todayIndex = 3)
     val names = DomainType.values().associate { it.name to it.displayName }
     val areas = listOf(PlaceTestData.points("MEMORIA", 470, 12), PlaceTestData.points("ATENCION", 310, -8, best = 400), PlaceTestData.points("RAZONAMIENTO", 440, 0), PlaceTestData.points("LENGUAJE", 0, 0, measured = false))
-    rule.setContent { NeuroVidaTheme { Box(Modifier.width(393.dp)) { Column { AvanceWeekLine(l, goal = 4, empty = false); AvanceAreaRows(areas, names) {} } } } }
+    rule.setContent { NeuroVidaTheme { Box(Modifier.width(393.dp)) { Column { AvanceWeekLine(l, goal = 4, empty = false); AvanceAreaGrid(areas, names) {} } } } }
     rule.onNodeWithTag("avance_week_line").assertIsDisplayed()
     assertEquals("0 de 0: ni la pastilla de la racha", 0, rule.onAllNodes(androidx.compose.ui.test.hasTestTag("avance_streak_pill")).fetchSemanticsNodes().size)
     for (frase in listOf("Descansaste", "descanso", Streak.REST_LINE, "tu racha sigue", "racha", "Racha")) assertEquals("«$frase» no debe verse en Avance", 0, rule.onAllNodes(hasText(frase, substring = true)).fetchSemanticsNodes().size)

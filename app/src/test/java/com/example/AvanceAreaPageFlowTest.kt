@@ -99,11 +99,11 @@ class AvanceAreaPageFlowTest {
     return vm
   }
 
-  private fun show(vm: NeuroVidaViewModel) {
+  private fun show(vm: NeuroVidaViewModel, heightDp: Int = 873) {
     rule.setContent {
       NeuroVidaTheme {
         CompositionLocalProvider(LocalReduceMotion provides true, com.example.ui.components.LocalTabSwipeLock provides remember { mutableIntStateOf(0) }) {
-          Box(Modifier.width(393.dp).height(873.dp)) { ProgressScreen(viewModel = vm) }
+          Box(Modifier.width(393.dp).height(heightDp.dp)) { ProgressScreen(viewModel = vm) }
         }
       }
     }
@@ -122,7 +122,7 @@ class AvanceAreaPageFlowTest {
     rule.onNodeWithTag("avance_title").assertIsDisplayed()
     rule.onNodeWithTag("avance_week").assertIsDisplayed()
     for (a in listOf("memoria", "atencion", "razonamiento", "lenguaje")) rule.onNodeWithTag("progress_area_$a").assertExists()
-    assertEquals("las cuatro áreas dicen «de 1000 puntos»", 4, textCount("de 1000 puntos"))
+    assertEquals("las cuatro áreas dicen sus puntos: «de 1000 puntos» las que ya suman y «Aún sin medir» las que no", 4, textCount("de 1000 puntos") + textCount("Aún sin medir"))
     assertEquals("ya no hay «Tus medidas», «Tus últimas partidas» ni el enlace a las medallas", 0, textCount("Tus medidas") + textCount("Tus últimas partidas") + textCount("ver en Tú") + textCount("Ver más"))
     assertEquals(0, count("btn_discovery_play"))
   }
@@ -159,7 +159,7 @@ class AvanceAreaPageFlowTest {
   @Test
   fun al_volver_de_la_pagina_la_lista_esta_donde_estaba() {
     val vm = withData()
-    show(vm)
+    show(vm, heightDp = 520)                                          // con los cuatro cuadros de 2 × 2 (Tarea 174) toda la lista cabe en 873 dp: una ventana baja para que haya algo que deslizar
     rule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("btn_profile_baseline")); rule.waitForIdle()
     assertOffscreen("avance_week")                                    // la línea de la semana quedó arriba, fuera de la vista
     rule.onNodeWithTag("progress_area_lenguaje").performClick(); rule.waitForIdle()

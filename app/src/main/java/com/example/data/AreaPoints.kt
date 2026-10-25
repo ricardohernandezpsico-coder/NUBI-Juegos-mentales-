@@ -181,13 +181,16 @@ data class AreaPoints(
     /** Lo mismo para el resumen de la ruta de hoy, que mide desde su comienzo: «Hoy sumaste 12 puntos.» (el cambio de [AreaPoints] se calculó «desde» el comienzo de la ruta). */
     fun todayLine(p: AreaPoints, areaName: String): String = weekLine(p, areaName, period = "Hoy")
 
-    /** Lo mismo en la página del área, junto a lo que falta: «Te faltan 130 puntos para Experto. Esta semana sumaste 12 puntos.»; en Maestro, «Llegaste al último tramo. …». Sin puntos todavía, una invitación. */
+    /**
+     * Lo mismo en la página del área, junto a lo que falta: «Te faltan 130 puntos para Experto. Esta semana sumaste 12 puntos.»; en Maestro, «Llegaste al último tramo. …». Si bajó, con la mejor marca al lado, sin rojo ni flechas («Esta semana bajaste 8 puntos. Tu mejor marca sigue en 520 puntos.»:
+     * desde la Tarea 174 la fila de Avance ya no lleva la frase de la semana y lo que decía vive aquí). Sin puntos todavía, una invitación.
+     */
     fun toNextSentence(p: AreaPoints, areaName: String): String {
       if (!p.measured) return "Todavía sin puntos en $areaName: cada juego suma desde su primera partida a tu medida."
       val first = p.toNext?.let { if (it == 1) "Te falta 1 punto para ${p.nextName}." else "Te faltan $it puntos para ${p.nextName}." } ?: "Llegaste al último tramo."
       val second = when {
         p.weekDelta > 0 -> "Esta semana sumaste ${pointsText(p.weekDelta)}."
-        p.weekDelta < 0 -> "Esta semana bajaste ${pointsText(-p.weekDelta)}."
+        p.weekDelta < 0 -> "Esta semana bajaste ${pointsText(-p.weekDelta)}. Tu mejor marca sigue en ${pointsText(p.best)}."
         else -> "Esta semana te mantuviste."
       }
       return "$first $second"
@@ -195,6 +198,9 @@ data class AreaPoints(
 
     /** «Etapa Hábil · 470 de 1000 puntos» (la lámina de Hoy), o «Aún sin medir» si todavía no hay ninguna partida. */
     fun stageLine(p: AreaPoints): String = if (p.measured) "Etapa ${p.stageName} · ${p.total} de $SCALE puntos" else "Aún sin medir"
+
+    /** Lo que lee el lector de pantalla del CUADRO de un área en Avance (Tarea 174), que solo muestra el nombre, los puntos y la barra: «Memoria, 470 de 1000 puntos»; sin medir, «Memoria, aún sin medir». */
+    fun cardSpoken(p: AreaPoints, areaName: String): String = if (p.measured) "$areaName, ${p.total} de $SCALE puntos" else "$areaName, aún sin medir"
 
     /** «Memoria: etapa Hábil, 470 de 1000 puntos, esta semana sumaste 12 puntos»: lo que lee el lector de pantalla de una fila. */
     fun spoken(p: AreaPoints, areaName: String): String = when {
