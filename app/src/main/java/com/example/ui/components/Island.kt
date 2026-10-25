@@ -56,17 +56,16 @@ private const val SHADOW_REST_SIZE = 0.925f
 private const val SHADOW_REST_ALPHA = 0.83f
 
 /**
- * La isla de plasticina de Hoy (`docs/diseno-isla.md` §6). Se arma con capas renderizadas una sola vez en Blender, apiladas con la misma cámara y la misma luz (`tools/isla/`). Viven en `drawable-nodpi` a 2×: en una carpeta de densidad Android las reescala al decodificar (un teléfono de 420 dpi las achicaba a 0,66 y se veían borrosas).
- * Capas, de abajo arriba: `isla_base` (losa, base de tierra, ruta y farolas) → la sombra de Nubi sobre la losa → `isla_edificios` → los halos de la torre y de las farolas → el brillo del lugar tocado → Nubi (`hola`, o `mira_<lugar>` mientras mira un edificio; una imagen aparte, en su caja del JSON).
- * Lo que se dibuja encima (sombra, halos y brillo) son degradados vectoriales sobre las coordenadas de `isla.json`.
+ * La isla de plasticina (`docs/diseno-isla.md` §6; desde la Tarea 165 vive en Tú, en el Primer vuelo y, una vez al día, dentro de la tarjeta de Hoy cuando la ruta queda completa). Se arma con capas renderizadas una sola vez en Blender, apiladas con la misma cámara y la misma luz (`tools/isla/`). Viven en `drawable-nodpi` a 2×: en una carpeta de densidad Android las reescala al decodificar (un teléfono de 420 dpi las achicaba a 0,66 y se veían borrosas).
+ * Capas, de abajo arriba: `isla_base` (losa, base de tierra, ruta y farolas) → la sombra de Nubi sobre la losa → `isla_edificios` → los halos de la torre y de las farolas → Nubi (`hola`, o `mira_<lugar>` mientras mira una farola que se enciende; una imagen aparte, en su caja del JSON).
+ * Lo que se dibuja encima (sombra y halos) son degradados vectoriales sobre las coordenadas de `isla.json`.
  *
  * Mide lo que le deja su espacio: alto = el del contenedor, y el ancho sale de la proporción de la imagen (hasta el ancho de la pantalla más 28 dp de sangrado, con tope de 480 dp). Es DECORATIVA para el lector de pantalla:
- * las imágenes no tienen descripción y el grupo lleva [description]; los edificios son botones con el nombre del lugar solo si hay [onPlace] (abre la lámina de ese lugar; ver `ui/screens/HoyPlace.kt`).
- * [doneAreas] = áreas de las paradas de hoy ya cumplidas (el edificio dice «hecho hoy»).
+ * las imágenes no tienen descripción y el grupo lleva [description]. NO es tocable: desde la Tarea 165 los edificios no son botones (la prueba con personas del 22-oct mostró que nadie los leía como áreas).
+ * [doneAreas] = áreas de las paradas de hoy ya cumplidas (su farola está encendida).
  *
- * La lámina del lugar (Tarea 85) mueve a Nubi y la sombra; todo lo que cambia cuadro a cuadro llega como lambda y se lee al DIBUJAR, así que no recompone la isla:
- * [lookKey] = el lugar al que mira Nubi (null = de frente) y [lookAmount] cuánto (0 → 1: fundido a `mira_<lugar>`, corrimiento y ladeo; con [lookMoves] en false, solo el fundido); [nubiAlpha] = 0 mientras Nubi vuela por encima (la dibuja la capa de la lámina);
- * [shadowAlpha] apaga la sombra mientras Nubi no está; [glowKey]/[glowAlpha] = el brillo sol suave del edificio tocado; [onDrawnRect] avisa dónde quedó la isla en la ventana (para que la capa de la lámina sepa dónde está Nubi).
+ * Nubi mira una farola que se enciende (Tarea 88) y se mueve con la sombra; todo lo que cambia cuadro a cuadro llega como lambda y se lee al DIBUJAR, así que no recompone la isla:
+ * [lookKey] = el lugar al que mira Nubi (null = de frente) y [lookAmount] cuánto (0 → 1: fundido a `mira_<lugar>`, corrimiento y ladeo; con [lookMoves] en false, solo el fundido).
  *
  * Las piezas por medallas (Tarea 136, «Tu isla crece»; `data/IslaPiezas.kt`): [pieces] = las que la persona ya ganó, cada una una capa transparente con el MISMO recorte que la base (`isla_deco_<id>`: trae su propia posición). Las de SUELO se dibujan después de la base y de la sombra de Nubi y ANTES de los edificios
  * (el Hangar y la Biblioteca las tapan donde corresponde); las de AIRE (banderines), encima de los edificios. [pieceReveal] = cuánto lleva revelada cada una (0 → 1; 1 = puesta; alfa y escala 0,9 → 1 desde su ancla; se lee al dibujar). No cambian el tamaño de la isla ni los toques: son decorativas
@@ -81,15 +80,9 @@ fun Island(
   modifier: Modifier = Modifier,
   layout: IslaLayout = rememberIslaLayout(),
   doneAreas: Set<String> = emptySet(),
-  onPlace: ((area: String) -> Unit)? = null,
   lookKey: String? = null,
   lookAmount: () -> Float = { 0f },
   lookMoves: Boolean = true,
-  nubiAlpha: () -> Float = { 1f },
-  shadowAlpha: () -> Float = { 1f },
-  glowKey: String? = null,
-  glowAlpha: () -> Float = { 0f },
-  onDrawnRect: ((Rect) -> Unit)? = null,
   lampProgress: (placeKey: String) -> Float = { 1f },
   sparks: () -> Float = { 1f },
   nubiLiftDp: () -> Float = { 0f },
@@ -110,7 +103,6 @@ fun Island(
     Box(
       Modifier
         .requiredSize(width, height)
-        .onGloballyPositioned { onDrawnRect?.invoke(it.boundsInWindow()) }
         .semantics { contentDescription = description }
         .testTag("isla")
     ) {
@@ -119,7 +111,7 @@ fun Island(
         val h = NubiIdle.height01(idle.floatDp)
         drawNubiShadow(
           layout, shiftX = if (lookMoves) look.shift * size.width * lookAmount() else 0f,
-          strength = shadowAlpha() * (1f - 0.25f * (nubiLiftDp() / RouteMotion.JUMP_DP).coerceIn(0f, 1f)) * NubiIdle.shadowAlpha(h) / SHADOW_REST_ALPHA, sizeScale = NubiIdle.shadowSize(h)
+          strength = (1f - 0.25f * (nubiLiftDp() / RouteMotion.JUMP_DP).coerceIn(0f, 1f)) * NubiIdle.shadowAlpha(h) / SHADOW_REST_ALPHA, sizeScale = NubiIdle.shadowSize(h)
         )
         drawLitFootGlows(layout, lit, lampProgress)      // debajo de los edificios: el del Hangar tapa el resplandor de las farolas de adelante
       }
@@ -131,7 +123,6 @@ fun Island(
         drawHalo(layout.lampHalos, skip = lit.map { it.index }.toSet())
         drawLitLamps(layout, lit, lampProgress)
         drawSparks(layout, lit, sparks())
-        glowKey?.let { drawPlaceGlow(layout.place(it).center, glowAlpha()) }
       }
       // Nubi de frente; si mira un lugar, se funde con su imagen de mirada y las dos se corren y se ladean juntas.
       Image(
@@ -141,7 +132,7 @@ fun Island(
           .size(width * (layout.nubiBottomRight.x - layout.nubiTopLeft.x), height * (layout.nubiBottomRight.y - layout.nubiTopLeft.y))
           .graphicsLayer {
             val amount = lookAmount()
-            alpha = (1f - if (miraBox != null) PlaceMotion.lookFade(amount) else 0f) * nubiAlpha()
+            alpha = 1f - if (miraBox != null) PlaceMotion.lookFade(amount) else 0f
             translationX = if (lookMoves) look.shift * widthPx * amount else 0f
             translationY = -(nubiLiftDp() + idle.floatDp) * density
             rotationZ = (if (lookMoves) look.tiltDeg * amount else 0f) + nubiTiltDeg()
@@ -156,7 +147,7 @@ fun Island(
           .size(width * (layout.nubiBottomRight.x - layout.nubiTopLeft.x), height * (layout.nubiBottomRight.y - layout.nubiTopLeft.y))
           .graphicsLayer {
             val amount = lookAmount()
-            alpha = idle.eyesClosed * (1f - if (miraBox != null) PlaceMotion.lookFade(amount) else 0f) * nubiAlpha()
+            alpha = idle.eyesClosed * (1f - if (miraBox != null) PlaceMotion.lookFade(amount) else 0f)
             translationX = if (lookMoves) look.shift * widthPx * amount else 0f
             translationY = -(nubiLiftDp() + idle.floatDp) * density
             rotationZ = (if (lookMoves) look.tiltDeg * amount else 0f) + nubiTiltDeg()
@@ -171,32 +162,13 @@ fun Island(
             .size(width * miraBox.width, height * miraBox.height)
             .graphicsLayer {
               val amount = lookAmount()
-              alpha = PlaceMotion.lookFade(amount) * nubiAlpha()
+              alpha = PlaceMotion.lookFade(amount)
               translationX = if (lookMoves) look.shift * widthPx * amount else 0f
               translationY = -nubiLiftDp() * density
               rotationZ = (if (lookMoves) look.tiltDeg * amount else 0f) + nubiTiltDeg()
             },
           contentScale = ContentScale.FillBounds
         )
-      }
-      if (onPlace != null) {
-        // Un toque centrado en cada edificio (del tamaño del edificio, 48 dp como mínimo), en el orden del rombo (Observatorio, Antena, Biblioteca, Hangar).
-        val hit = maxOf(48.dp, width * 0.2f)
-        layout.places.forEach { p ->
-          val spoken = IslaLugar.spoken(p.area).orEmpty()
-          val done = p.area in doneAreas
-          Box(
-            Modifier
-              .offset(x = width * p.center.x - hit / 2, y = height * p.center.y - hit / 2)
-              .size(hit)
-              .semantics(mergeDescendants = true) {
-                contentDescription = spoken
-                if (done) stateDescription = "hecho hoy"
-              }
-              .clickable(role = Role.Button, onClickLabel = "Ver $spoken") { onPlace(p.area) }
-              .testTag("isla_${p.key}")
-          )
-        }
       }
     }
   }
@@ -333,12 +305,4 @@ private fun DrawScope.drawSparks(layout: IslaLayout, lit: List<LitLamp>, progres
   }
 }
 
-private val GlowSun = Color(0xFFFFCB45)
 
-/** El brillo sol suave del edificio tocado (del boceto: un círculo de 130 dp a 421 dp de ancho, del 50 % de sol al centro a transparente al 68 %). */
-private fun DrawScope.drawPlaceGlow(center: IslaPoint, strength: Float) {
-  if (strength <= 0f) return
-  val c = Offset(size.width * center.x, size.height * center.y)
-  val r = size.width * 0.154f
-  drawCircle(Brush.radialGradient(0f to GlowSun.copy(alpha = 0.5f * strength), 0.68f to Color.Transparent, center = c, radius = r), radius = r, center = c)
-}

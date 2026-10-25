@@ -136,11 +136,11 @@ class StageScaleTest {
 
   @Test
   fun la_escala_es_la_misma_en_la_lamina_el_detalle_y_la_ficha() {
-    // Tarea 143, ítem 12: tres dibujos distintos pasaron a uno solo; desde la Tarea 155 el «detalle» ya no existe (la lámina de un área es la misma de Hoy en las tres pestañas): quedan la lámina y la ficha
+    // Tarea 143, ítem 12: tres dibujos distintos pasaron a uno solo; desde la Tarea 155 el «detalle» ya no existe y desde la 165 tampoco la lámina de Hoy: quedan la página de un área de Avance (Tarea 159) y la ficha
     val read = { path: String -> java.io.File("src/main/java/com/example/ui/screens/$path").readText() }
-    assertTrue(read("HoyPlace.kt").contains("StageScale("))
+    assertTrue(read("AvanceAreaPage.kt").contains("StageScale("))
     assertTrue(read("GameSheet.kt").contains("StageScale("))
-    assertFalse("ya no hay una barra propia en la lámina", read("HoyPlace.kt").contains("private fun StageBar"))
+    assertFalse("ya no hay una barra propia en la página del área", read("AvanceAreaPage.kt").contains("private fun StageBar"))
     assertFalse("ya no hay rótulos de 13 sp en el detalle", read("HomeScreen.kt").contains("st, fontSize = 13.sp"))
     assertFalse("ya no hay una línea de puntos en la ficha", read("GameSheet.kt").contains("private fun StageLine"))
   }

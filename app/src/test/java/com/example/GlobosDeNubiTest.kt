@@ -1,11 +1,5 @@
 package com.example
 
-import com.example.data.PlaceSheets
-import com.example.data.Streak
-import com.example.data.Suggestion
-import com.example.data.Week
-import com.example.model.AppLanguage
-import com.example.model.DailySessionState
 import com.example.ui.components.EMPTY_AVANCE_LINE
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -13,7 +7,7 @@ import org.junit.Test
 
 /**
  * La regla para TODOS los globos de Nubi (Opus, 21-oct): como mucho DOS frases y sin repetir lo que la pantalla ya dice (antes, el globo del detalle de un área tenía 6 líneas y repetía la línea de avance que está justo debajo).
- * Aquí se cuentan las frases de cada texto que Nubi dice en un globo: la semana de Avance, el avance de la lámina del lugar, el detalle de un área, el encabezado de Juegos, la ventana de un área y el Avance vacío.
+ * Aquí se cuentan las frases de cada texto que Nubi dice en un globo: el Avance vacío (desde la Tarea 165 ya no hay globo en Hoy ni lámina del lugar: Nubi va posada en la tarjeta de la ruta, sin globo).
  */
 class GlobosDeNubiTest {
   /** Las frases de un texto: se separan donde un punto, un «?» o un «!» van seguidos de un espacio (los dos puntos y las comas no cortan: «Te sugiero X: hace 4 días…» es UNA frase). */
@@ -33,15 +27,7 @@ class GlobosDeNubiTest {
   }
 
   @Test
-  fun la_lamina_del_area_dice_dos_frases_como_mucho() {
-    for ((total, change, measured) in listOf(Triple(470, 100, true), Triple(380, -20, true), Triple(470, 0, true), Triple(910, 0, true), Triple(0, 0, false), Triple(50, 50, true))) {
-      assertGlobe(PlaceSheets.bubble(PlaceTestData.points("MEMORIA", total, change, measured), "Memoria"), "lámina ($total, $change, $measured)")
-    }
-  }
-
-  @Test
-  fun la_isla_como_mapa_y_el_avance_vacio_tambien_cumplen() {
-    assertGlobe(com.example.ui.screens.ISLAND_NOTE, "el globo de «los juegos ahora están en la isla» (Tarea 158)")
+  fun el_avance_vacio_tambien_cumple() {
     assertGlobe(EMPTY_AVANCE_LINE, "Avance vacío")
   }
 }

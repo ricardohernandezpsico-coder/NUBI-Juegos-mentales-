@@ -120,7 +120,6 @@ class Tarea159CapturasTest {
   private fun viewModel(n: Int): NeuroVidaViewModel {
     val vm = NeuroVidaViewModel(app).also { viewModels.add(it) }
     if (n > 0) TestSupport.awaitUntil(60_000) { vm.gameHistory.value.size >= n }
-    vm.markIslandMapIntroSeen()
     return vm
   }
 

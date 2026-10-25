@@ -2,7 +2,7 @@ package com.example
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -12,18 +12,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import com.example.data.IslaPieza
 import com.example.data.IslaPiezasStore
-import com.example.data.Week
-import com.example.model.AppLanguage
-import com.example.model.RankTier
+import com.example.data.IslaPiezas
 import com.example.ui.components.BoardBackground
+import com.example.ui.components.Island
 import com.example.ui.components.LocalReduceMotion
-import com.example.ui.screens.HomeContent
-import com.example.ui.screens.HomeUi
-import com.example.ui.screens.homeStops
+import com.example.ui.components.rememberPieceFx
 import com.example.ui.theme.NeuroVidaTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -32,26 +30,17 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import java.util.Calendar
 
 /**
- * Las piezas de la isla en Hoy (Tarea 136, «Tu isla crece»), con `HomeContent` y un almacén de prueba: sin almacén las piezas están puestas y no hay revelación; la primera vez (almacén vacío) se siembra en silencio; una pieza nueva se revela UNA vez y se anota;
- * al volver a Hoy no se repite; con «quitar animaciones» se anota igual; mientras una celebración de medalla está encima, la pieza espera; la descripción de la isla las nombra; y diez piezas más no cambian el tamaño de la isla ni de sus toques.
+ * Las piezas de la isla de Tú (Tarea 136, «Tu isla crece»; desde la Tarea 165 la revelación pasó de Hoy a Tú: Hoy ya no lleva isla salvo al completar la ruta), con la isla de Tú (`Island` + `rememberPieceFx`, lo mismo que arma `TuScreen`) y un almacén de prueba: sin almacén las piezas están puestas y no hay revelación;
+ * la primera vez (almacén vacío) se siembra en silencio; una pieza nueva se revela UNA vez y se anota; al volver a Tú no se repite; con «quitar animaciones» se anota igual; mientras una celebración de medalla está encima, la pieza espera; la descripción de la isla las nombra;
+ * y diez piezas más no cambian el tamaño de la isla.
  */
 @RunWith(RobolectricTestRunner::class)
 @org.robolectric.annotation.GraphicsMode(org.robolectric.annotation.GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w393dp-h873dp-xxhdpi", sdk = [36])
-class HoyPiezasTest {
+class TuPiezasTest {
   @get:Rule val rule = createComposeRule()
-
-  private val now = Calendar.getInstance().apply { set(2026, Calendar.OCTOBER, 19, 16, 30, 0) }.timeInMillis
-  private val lamps = Week.Lamps(listOf(true, true, false, false, false, false, true), todayIndex = 6)
-  private val ids = listOf("bodega", "calculo", "intrusa")
-
-  private fun ui(pieces: List<IslaPieza>) = HomeUi(
-    name = "Ricardo", now = now, tier = RankTier.fromRating(0), streak = 3, weeklyGoal = 4, lamps = lamps,
-    stops = homeStops(ids, 0, AppLanguage.SPANISH), pausedTitle = null, flightDay = false, hasBaseline = true, islandPieces = pieces
-  )
 
   private class FakeStore(var saved: Set<String>? = null) : IslaPiezasStore {
     var saves = 0
@@ -61,21 +50,25 @@ class HoyPiezasTest {
 
   private val plans = mutableListOf<List<IslaPieza>>()
 
-  private fun show(ui: HomeUi, store: IslaPiezasStore? = null, reduce: Boolean = false, hold: Boolean = false) {
+  /** Lo que arma `TuScreen` para su isla: las piezas ganadas, su revelación y la descripción para el lector de pantalla. */
+  private fun show(pieces: List<IslaPieza>, store: IslaPiezasStore? = null, reduce: Boolean = false, hold: Boolean = false) {
     rule.setContent {
       CompositionLocalProvider(LocalReduceMotion provides reduce) {
         NeuroVidaTheme {
           Box(Modifier.width(393.dp).height(873.dp)) {
             BoardBackground()
-            HomeContent(
-              ui = ui, onAllGames = {}, onPlaceGame = {}, onPlaceGameCard = {}, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {},
-              modifier = Modifier.padding(top = 24.dp, bottom = 163.dp), pieceStore = store, holdPieces = hold, onPiecePlan = { plans += it }
-            )
+            TuIsla(pieces, store, hold)
           }
         }
       }
     }
     rule.waitForIdle()
+  }
+
+  @androidx.compose.runtime.Composable
+  private fun TuIsla(pieces: List<IslaPieza>, store: IslaPiezasStore?, hold: Boolean) {
+    val fx = rememberPieceFx(pieces, store, hold, onPlan = { plans += it })
+    Island(description = "Tu isla" + IslaPiezas.description(pieces), modifier = Modifier.fillMaxWidth().height(150.dp).testTag("profile_island"), pieces = pieces, pieceReveal = { fx.progress(it) })
   }
 
   private fun drawn(): List<String> = IslaPieza.entries.map { it.id }.filter { rule.onAllNodes(hasTestTag("isla_pieza_$it")).fetchSemanticsNodes().isNotEmpty() }
@@ -84,19 +77,19 @@ class HoyPiezasTest {
 
   @Test
   fun sin_piezas_no_se_dibuja_ninguna() {
-    show(ui(emptyList()))
+    show(emptyList())
     assertTrue(drawn().isEmpty())
   }
 
   @Test
   fun cada_pieza_ganada_se_dibuja_y_las_demas_no() {
-    show(ui(listOf(IslaPieza.C1, IslaPieza.V1, IslaPieza.VO1)))
+    show(listOf(IslaPieza.C1, IslaPieza.V1, IslaPieza.VO1))
     assertEquals(listOf("c1", "v1", "vo1"), drawn())
   }
 
   @Test
   fun las_diez_piezas_se_dibujan() {
-    show(ui(IslaPieza.entries))
+    show(IslaPieza.entries)
     assertEquals(IslaPieza.entries.map { it.id }, drawn())
   }
 
@@ -104,7 +97,7 @@ class HoyPiezasTest {
 
   @Test
   fun sin_almacen_no_hay_revelacion_y_las_piezas_estan_puestas() {
-    show(ui(listOf(IslaPieza.C1, IslaPieza.V1)), store = null)
+    show(listOf(IslaPieza.C1, IslaPieza.V1), store = null)
     assertTrue("sin almacén no hay plan que animar", plans.isEmpty())
     assertEquals(listOf("c1", "v1"), drawn())
   }
@@ -112,7 +105,7 @@ class HoyPiezasTest {
   @Test
   fun la_primera_vez_con_el_almacen_vacio_se_siembra_en_silencio() {
     val store = FakeStore(saved = null)
-    show(ui(listOf(IslaPieza.C1, IslaPieza.C3, IslaPieza.V1)), store)
+    show(listOf(IslaPieza.C1, IslaPieza.C3, IslaPieza.V1), store)
     assertTrue("quien ya tenía medallas no ve que «llueva» nada", plans.isEmpty())
     assertEquals(setOf("c1", "c3", "v1"), store.saved)
   }
@@ -120,14 +113,14 @@ class HoyPiezasTest {
   @Test
   fun la_primera_vez_sin_piezas_tambien_deja_sembrado_para_que_la_primera_si_se_revele() {
     val store = FakeStore(saved = null)
-    show(ui(emptyList()), store)
+    show(emptyList(), store)
     assertEquals("sembrado vacío (no null): la próxima pieza sí entra con su animación", emptySet<String>(), store.saved)
   }
 
   @Test
   fun una_pieza_nueva_se_revela_una_vez_y_se_anota() {
     val store = FakeStore(saved = setOf("c1"))
-    show(ui(listOf(IslaPieza.C1, IslaPieza.V1)), store)
+    show(listOf(IslaPieza.C1, IslaPieza.V1), store)
     assertEquals(listOf(listOf(IslaPieza.V1)), plans)
     assertEquals(setOf("c1", "v1"), store.saved)
   }
@@ -135,14 +128,14 @@ class HoyPiezasTest {
   @Test
   fun las_piezas_nuevas_se_revelan_en_el_orden_de_dibujo() {
     val store = FakeStore(saved = emptySet())
-    show(ui(listOf(IslaPieza.C1, IslaPieza.V1, IslaPieza.VO1)), store)
+    show(listOf(IslaPieza.C1, IslaPieza.V1, IslaPieza.VO1), store)
     assertEquals(listOf(listOf(IslaPieza.C1, IslaPieza.V1, IslaPieza.VO1)), plans)
   }
 
   @Test
-  fun al_volver_a_Hoy_no_se_repite() {
+  fun al_volver_a_Tu_no_se_repite() {
     val store = FakeStore(saved = setOf("c1", "v1"))
-    show(ui(listOf(IslaPieza.C1, IslaPieza.V1)), store)
+    show(listOf(IslaPieza.C1, IslaPieza.V1), store)
     assertTrue("ya estaban vistas: sin plan", plans.isEmpty())
     assertEquals("y no se vuelve a guardar nada", 0, store.saves)
   }
@@ -150,7 +143,7 @@ class HoyPiezasTest {
   @Test
   fun con_quitar_animaciones_se_anota_igual_y_no_hay_segunda_vez() {
     val store = FakeStore(saved = emptySet())
-    show(ui(listOf(IslaPieza.C1, IslaPieza.VO1)), store, reduce = true)
+    show(listOf(IslaPieza.C1, IslaPieza.VO1), store, reduce = true)
     assertEquals(listOf(listOf(IslaPieza.C1, IslaPieza.VO1)), plans)
     assertEquals(setOf("c1", "vo1"), store.saved)
     assertEquals("nacen puestas", listOf("c1", "vo1"), drawn())
@@ -164,15 +157,12 @@ class HoyPiezasTest {
       NeuroVidaTheme {
         Box(Modifier.width(393.dp).height(873.dp)) {
           BoardBackground()
-          HomeContent(
-            ui = ui(listOf(IslaPieza.C1, IslaPieza.V1)), onAllGames = {}, onPlaceGame = {}, onPlaceGameCard = {}, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {},
-            modifier = Modifier.padding(top = 24.dp, bottom = 163.dp), pieceStore = store, holdPieces = hold, onPiecePlan = { plans += it }
-          )
+          TuIsla(listOf(IslaPieza.C1, IslaPieza.V1), store, hold)
         }
       }
     }
     rule.waitForIdle()
-    assertTrue("con la medalla encima, Hoy no revela ni anota", plans.isEmpty() && store.saves == 0)
+    assertTrue("con la medalla encima, Tú no revela ni anota", plans.isEmpty() && store.saves == 0)
     hold = false
     rule.waitForIdle()
     assertEquals(listOf(listOf(IslaPieza.V1)), plans)
@@ -183,33 +173,32 @@ class HoyPiezasTest {
 
   @Test
   fun la_descripcion_de_la_isla_nombra_las_piezas() {
-    show(ui(listOf(IslaPieza.C1, IslaPieza.V1, IslaPieza.VO1)))
-    rule.onNodeWithContentDescription("Tu isla: hoy la ruta pasa por el Observatorio, el Hangar y la Biblioteca · Tu isla tiene: dos arbustos, banderines y un muelle").assertExists()
+    show(listOf(IslaPieza.C1, IslaPieza.V1, IslaPieza.VO1))
+    rule.onNodeWithContentDescription("Tu isla · Tu isla tiene: dos arbustos, banderines y un muelle").assertExists()
   }
 
   @Test
   fun la_descripcion_sin_piezas_es_la_de_siempre() {
-    show(ui(emptyList()))
-    rule.onNodeWithContentDescription("Tu isla: hoy la ruta pasa por el Observatorio, el Hangar y la Biblioteca").assertExists()
+    show(emptyList())
+    rule.onNodeWithContentDescription("Tu isla").assertExists()
   }
 
   @Test
-  fun diez_piezas_mas_no_cambian_el_tamano_de_la_isla_ni_de_sus_toques() {
-    var current by mutableStateOf(ui(emptyList()))
+  fun diez_piezas_mas_no_cambian_el_tamano_de_la_isla() {
+    var current by mutableStateOf(emptyList<IslaPieza>())
     rule.setContent {
       NeuroVidaTheme {
         Box(Modifier.width(393.dp).height(873.dp)) {
           BoardBackground()
-          HomeContent(ui = current, onAllGames = {}, onPlaceGame = {}, onPlaceGameCard = {}, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {}, modifier = Modifier.padding(top = 24.dp, bottom = 163.dp))
+          TuIsla(current, null, false)
         }
       }
     }
     rule.waitForIdle()
-    val tags = listOf("home_isla", "isla_observatorio", "isla_antena", "isla_biblioteca", "isla_hangar")
-    val before = tags.associateWith { rule.onNodeWithTag(it).fetchSemanticsNode().boundsInRoot }
-    current = ui(IslaPieza.entries)
+    val before = rule.onNodeWithTag("profile_island").fetchSemanticsNode().boundsInRoot
+    current = IslaPieza.entries
     rule.waitForIdle()
     assertEquals(IslaPieza.entries.map { it.id }, drawn())
-    for (tag in tags) assertEquals("«$tag» no cambia con las piezas", before.getValue(tag), rule.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot)
+    assertEquals("la isla no cambia con las piezas", before, rule.onNodeWithTag("profile_island").fetchSemanticsNode().boundsInRoot)
   }
 }

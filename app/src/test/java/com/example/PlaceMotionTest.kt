@@ -1,42 +1,19 @@
 package com.example
 
-import androidx.compose.ui.graphics.Color
 import com.example.ui.components.PlaceMotion
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.abs
 
-/** Las curvas y los tiempos de la lámina del lugar (Tarea 85), sin pantalla. */
+/** Los tiempos y la mirada de Nubi cuando se toca un edificio de la isla (Tarea 85; desde la Tarea 163 no hay lámina: se fueron el velo, el vuelo y el globo), sin pantalla. */
 class PlaceMotionTest {
   @Test
   fun los_tiempos_son_los_del_boceto() {
     assertEquals(180, PlaceMotion.LOOK_FADE_MS)
-    assertEquals(650, PlaceMotion.LOOK_HOLD_MS)
-    assertEquals("el velo es un cambio de estado (escala única, Tarea 123)", 200, PlaceMotion.VEIL_MS)
-    assertEquals("la lámina es un cambio de lugar: 400", 400, PlaceMotion.SHEET_MS)
-    assertEquals("y sale al toque, sin espera", 0, PlaceMotion.SHEET_DELAY_MS)
-    assertEquals(820, PlaceMotion.FLIGHT_MS)
-    assertEquals(620, PlaceMotion.BACK_FLIGHT_MS)
-    assertEquals(320, PlaceMotion.GLOBE_MS)
-  }
-
-  /** El velo de la lámina (Tarea 122) sobre el cielo «Espacio profundo»: no lo aclara (el de antes, `#211C45` al 50 %, era más claro que el cielo) y sigue apagando la crema de la isla. */
-  @Test
-  fun el_velo_no_aclara_el_cielo_y_apaga_la_crema_de_la_isla() {
-    fun lum(c: Int): Double {
-      fun ch(v: Int): Double { val x = v / 255.0; return if (x <= 0.03928) x / 12.92 else Math.pow((x + 0.055) / 1.055, 2.4) }
-      return 0.2126 * ch((c shr 16) and 0xFF) + 0.7152 * ch((c shr 8) and 0xFF) + 0.0722 * ch(c and 0xFF)
-    }
-    fun over(bg: Int): Int {
-      val v = PlaceMotion.VEIL; val a = v.alpha
-      fun mix(shift: Int, vc: Float) = Math.round(vc * 255f * a + ((bg shr shift) and 0xFF) * (1f - a))
-      return (mix(16, v.red) shl 16) or (mix(8, v.green) shl 8) or mix(0, v.blue)
-    }
-    val sky = 0x151539; val cream = 0xF6EBD3
-    assertTrue("el velo cae al ~45 %", PlaceMotion.VEIL.alpha in 0.35f..0.55f)
-    assertTrue("el velo no aclara el cielo (%.4f → %.4f)".format(lum(sky), lum(over(sky))), lum(over(sky)) <= lum(sky))
-    assertTrue("el velo apaga la crema de la isla (de %.2f a %.2f)".format(lum(cream), lum(over(cream))), lum(over(cream)) <= 0.35 * lum(cream))
+    assertEquals(260, PlaceMotion.LOOK_SHIFT_MS)
+    assertEquals("Nubi se queda mirando ~650 ms antes de que se abra «Todos los juegos»", 650, PlaceMotion.LOOK_HOLD_MS)
+    assertEquals(320, PlaceMotion.GLOW_MS)
   }
 
   @Test
@@ -61,38 +38,13 @@ class PlaceMotionTest {
   }
 
   @Test
-  fun el_vuelo_de_ida_hace_un_arco_hacia_arriba_y_se_posa_en_su_sitio() {
-    val start = PlaceMotion.flight(0f, outbound = true)
-    val mid = PlaceMotion.flight(0.35f, outbound = true)
-    val end = PlaceMotion.flight(1f, outbound = true)
-    assertEquals(0f, start.arcDp, 1e-4f)
-    assertEquals(0f, start.tiltDeg, 1e-4f)
-    assertEquals(0f, start.easedPosition, 1e-4f)
-    assertEquals(-92f, mid.arcDp, 1e-3f)            // sube ~92 dp a un tercio del camino, como el boceto
-    assertEquals(-10f, mid.tiltDeg, 1e-3f)
-    assertEquals(0f, end.arcDp, 1e-4f)
-    assertEquals(0f, end.tiltDeg, 1e-4f)
-    assertEquals(1f, end.easedPosition, 1e-3f)
-    assertTrue("la ida avanza sin retroceder", (0..20).map { PlaceMotion.flight(it / 20f, true).easedPosition }.zipWithNext().all { (a, b) -> b >= a - 1e-4f })
-  }
-
-  @Test
-  fun el_vuelo_de_vuelta_tambien_hace_arco_y_termina_en_la_isla() {
-    val mid = PlaceMotion.flight(0.6f, outbound = false)   // posición 0,6 de vuelta = tiempo 0,4 del arco
-    assertEquals(-70f, mid.arcDp, 1e-3f)
-    assertEquals(8f, mid.tiltDeg, 1e-3f)
-    val end = PlaceMotion.flight(0f, outbound = false)
-    assertEquals(0f, end.arcDp, 1e-4f)
-    assertEquals(0f, end.easedPosition, 1e-4f)
-    assertEquals(0f, PlaceMotion.flight(1f, outbound = false).arcDp, 1e-4f)
-  }
-
-  @Test
   fun el_muestreo_pasa_por_los_cuadros_clave_y_no_se_sale_de_rango() {
-    val keys = PlaceMotion.OUT_ARC_DP
-    for ((p, v) in keys) assertEquals(v, PlaceMotion.sample(keys, p), 1e-3f)
-    assertEquals(0f, PlaceMotion.sample(keys, -1f), 0f)
-    assertEquals(0f, PlaceMotion.sample(keys, 2f), 0f)
-    assertTrue((0..100).all { PlaceMotion.sample(keys, it / 100f) in -92.01f..6.01f })
+    val keys = listOf(0f to 0f, 0.5f to 10f, 1f to 4f)                    // las farolas de la ruta lo usan (`RouteMotion`)
+    assertEquals(0f, PlaceMotion.sample(keys, 0f), 1e-5f)
+    assertEquals(10f, PlaceMotion.sample(keys, 0.5f), 1e-5f)
+    assertEquals(4f, PlaceMotion.sample(keys, 1f), 1e-5f)
+    assertEquals("fuera de rango se acota", 4f, PlaceMotion.sample(keys, 7f), 1e-5f)
+    assertEquals(0f, PlaceMotion.sample(keys, -3f), 1e-5f)
+    assertTrue("entre dos cuadros queda entre sus valores", PlaceMotion.sample(keys, 0.25f) in 0f..10f)
   }
 }

@@ -1,4 +1,4 @@
-# La app de hoy, en capturas reales (21-oct-2026, hasta la Tarea 158)
+# La app de hoy, en capturas reales (24-oct-2026, hasta la Tarea 165)
 
 Capturas REALES de Roborazzi (`AppActualScreenshotTest`) con unos 20 días de uso de ejemplo, a 393 dp de ancho (1080 px) y 873 dp de alto (las pantallas que se deslizan, enteras en una sola imagen alta). Se regeneran con
 `./gradlew.bat :app:recordRoborazziDebug --tests "*AppActualScreenshotTest*"` y `python tools/previews/app_actual.py`. Las pantallas principales también con la letra del sistema al 130 % (`-letra13`). Los juegos de Unity están en
@@ -7,10 +7,8 @@ Capturas REALES de Roborazzi (`AppActualScreenshotTest`) con unos 20 días de us
 | Lo que se ve | Archivos |
 |---|---|
 | Lámina resumen de TODO lo de abajo | `lamina.png` |
-| Hoy: la isla, la ruta, la losa «Todos los juegos» y la barra | `hoy.png`, `hoy-letra13.png` |
-| Hoy con el globo de Nubi, una sola vez (Tarea 158: «Los juegos ahora están en la isla…») | `hoy-globo.png`, `hoy-globo-letra13.png` |
-| La isla sin piezas y con las 10 piezas («Tu isla crece») | `hoy-isla-0.png`, `hoy-isla-10.png`, `hoy-isla-10-letra13.png` |
-| La lámina del lugar (al tocar un edificio; en Hoy, una sola línea de avance, Tarea 158) | `hoy-lamina.png`, `hoy-lamina-letra13.png` |
+| Hoy con UNA sola tarjeta (Tarea 165): el saludo, la semana, la tarjeta de la ruta con Nubi y el botón, la losa «Todos los juegos» y la barra; con letra 1,3 y 2,0 | `hoy.png`, `hoy-letra13.png`, `hoy-letra20.png` |
+| La isla de Tú sin piezas y con las 10 («Tu isla crece»; desde la Tarea 165 la isla y la revelación de las piezas viven en Tú) | `tu-isla-0.png`, `tu-isla-10.png`, `tu-isla-10-letra13.png` |
 | «Todos los juegos» (Tarea 158; antes la pestaña Juegos): sin filtro, con «Memoria» y con letra 1,3 | `todos-los-juegos.png`, `todos-los-juegos-memoria.png`, `todos-los-juegos-letra13.png` |
 | La ficha del juego (Tarea 140): plegada y desplegada | `ficha.png`, `ficha-desplegada.png`, `ficha-letra13.png`, `ficha-desplegada-letra13.png` |
 | Avance con puntos por área (Tarea 159): arriba, entero y su pie | `avance.png`, `avance-letra13.png`, `avance-completa.png`, `avance-abajo.png` |
@@ -26,8 +24,8 @@ Cómo se arman las tomas: la barra de pestañas se mide como en `MainActivity` (
 
 ## Lo que se vio al revisarlas (sin arreglar: solo anotado)
 
-- **Hoy con letra 1,3:** el botón grande «Seguir la ruta» queda bajo el pliegue y la tercera parada asoma tapada por la barra (hay que deslizar; la regla de Hoy lo permite, pero el botón principal no se ve).
-- **Lámina de un área, con letra 1,3:** la cuadrícula de los números de la semana pasa a 2 × 2 y la segunda fila («37» y «Esta semana») queda a medio ver bajo el botón fijo «Jugar en el Observatorio». La burbuja de Nubi cubre el saludo y la fecha (con las dos letras).
+(Hoy con letra 1,3 ya cabe entero sin deslizar desde la Tarea 165, y la lámina de un área de Hoy se borró.)
+
 - **Detalle de un área en Avance:** la burbuja de Nubi de arriba dice «Esta semana Memoria avanzó» y parece cortarse (¿falta «de 46 a 52»?), con letra 1,0 y 1,3. Con letra 1,3, bajo «Tus juegos de memoria» no se ve ningún juego: la zona fija de abajo («¿Le damos un empujón a tu memoria?», «¡Sí, vamos!» y la frase de Nubi) ocupa casi todo el alto.
 - **Ajustes:** dos títulos seguidos, «Opciones» (barra de arriba) y «Ajustes y Preferencias» (cabecera).
 - **Primer vuelo:** las preguntas de edad y de metas dicen «Paso 2 de 6 · Memoria» (Memoria es el área del juego anterior, no de la pregunta).

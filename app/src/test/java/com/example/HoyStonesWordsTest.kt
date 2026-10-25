@@ -24,7 +24,6 @@ import com.example.ui.components.BoardBackground
 import com.example.ui.i18n.getGameTitle
 import com.example.ui.screens.HomeContent
 import com.example.ui.screens.HomeUi
-import com.example.ui.screens.StoneFit
 import com.example.ui.screens.homeStops
 import com.example.ui.theme.NeuroVidaTheme
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
@@ -39,8 +38,8 @@ import org.robolectric.annotation.GraphicsMode
 import java.util.Calendar
 
 /**
- * Tarea 87: en las piedritas de «Tu ruta de hoy» NUNCA se parte una palabra a la mitad («Constelacione / s» a 411 dp). Se prueba con los nombres de TODOS los juegos de la app, de a tres (como en la ruta), a 360, 393 y 411 dp:
- * cada nombre se lee con sus saltos de línea solo entre palabras, a 14 sp o más; y `StoneFit` elige la primera medida en la que cabe la palabra más larga (o pasa a filas).
+ * Tarea 87 (y 165): en las filas de «Tu ruta de hoy» NUNCA se parte una palabra a la mitad («Constelacione / s» a 411 dp). Se prueba con los nombres de TODOS los juegos de la app, de a tres (como en la ruta), a 360, 393 y 411 dp:
+ * cada nombre se lee con sus saltos de línea solo entre palabras y a 16 sp o más (la fila de la tarjeta de Hoy lo lleva a 17 sp).
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -69,13 +68,16 @@ class HoyStonesWordsTest {
     return out
   }
 
-  private fun checkWidth(widthDp: Int, heightDp: Int) {
+  private fun checkWidth(widthDp: Int, heightDp: Int, fontScale: Float = 1f) {
     var current by mutableStateOf(uiFor(ids.take(3)))
     rule.setContent {
-      NeuroVidaTheme {
-        Box(Modifier.width(widthDp.dp).height(heightDp.dp)) {
-          BoardBackground()
-          HomeContent(ui = current, onAllGames = {}, onPlaceGame = {}, onPlaceGameCard = {}, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {}, modifier = Modifier.padding(top = 24.dp, bottom = 163.dp))
+      val base = androidx.compose.ui.platform.LocalDensity.current
+      androidx.compose.runtime.CompositionLocalProvider(androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(base.density, fontScale)) {
+        NeuroVidaTheme {
+          Box(Modifier.width(widthDp.dp).height(heightDp.dp)) {
+            BoardBackground()
+            HomeContent(ui = current, onAllGames = {}, onPlay = {}, onResume = {}, onBaseline = {}, modifier = Modifier.padding(top = 24.dp, bottom = 163.dp))
+          }
         }
       }
     }
@@ -94,9 +96,16 @@ class HoyStonesWordsTest {
           val breaks = midWordBreaks(layout)
           if (breaks.isNotEmpty()) problems += "$widthDp dp: «${title(id)}» se parte a media palabra $breaks"
           val sp = layout.layoutInput.style.fontSize.value
-          if (sp < 14f) problems += "$widthDp dp: «${title(id)}» baja de 14 sp ($sp)"
+          if (sp < 16f) problems += "$widthDp dp: «${title(id)}» baja de 16 sp ($sp)"
         }
       }
+    }
+    // el estado de cada fila («Hecho», «Sigue», «Después») tampoco se parte: se mira en la última ruta armada
+    for (word in listOf("Sigue", "Después")) for (node in rule.onAllNodes(hasText(word), useUnmergedTree = true).fetchSemanticsNodes()) {
+      val results = mutableListOf<TextLayoutResult>()
+      node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+      val layout = results.firstOrNull() ?: continue
+      if (layout.lineCount > 1 || midWordBreaks(layout).isNotEmpty()) problems += "$widthDp dp letra $fontScale: «$word» se parte (${layout.lineCount} líneas)"
     }
     assertTrue("hay ${ids.size} juegos en la app (≥ 17)", ids.size >= 17)
     assertTrue("se revisaron los nombres de todos los juegos ($checked)", checked >= ids.size)
@@ -115,16 +124,9 @@ class HoyStonesWordsTest {
   @Test fun ningun_nombre_se_parte_a_360_dp() = checkWidth(360, 780)
   @Test fun ningun_nombre_se_parte_a_393_dp() = checkWidth(393, 873)
   @Test fun ningun_nombre_se_parte_a_411_dp() = checkWidth(411, 914)
-
-  @Test
-  fun StoneFit_elige_la_primera_medida_en_la_que_cabe_la_palabra_mas_larga_o_pasa_a_filas() {
-    val d = 1f
-    // palabra más larga de 100 px a 15 sp y de 94 a 14 sp
-    val widest = { sp: Int -> if (sp == 15) 100f else 94f }
-    assertEquals("sobra: lo normal (15 sp, relleno 9)", StoneFit.NORMAL, StoneFit.pick(140f, d, widest))
-    assertEquals("justo: 15 sp con relleno chico (6)", StoneFit.TIGHT_PADDING, StoneFit.pick(115f, d, widest))
-    assertEquals("más justo: 14 sp con relleno chico", StoneFit.SMALL_TEXT, StoneFit.pick(107f, d, widest))
-    assertEquals("ni a 14 sp cabe: filas", null, StoneFit.pick(100f, d, widest))
-    assertEquals("el relleno de las tres medidas: 9, 6 y 6 dp; nombre de 15, 15 y 14 sp", listOf(9, 6, 6) to listOf(15, 15, 14), StoneFit.entries.map { it.padding.value.toInt() } to StoneFit.entries.map { it.titleSp })
-  }
+  @Test fun ningun_nombre_se_parte_a_360_dp_con_letra_1_3() = checkWidth(360, 780, 1.3f)
+  @Test fun ningun_nombre_se_parte_a_393_dp_con_letra_1_6() = checkWidth(393, 873, 1.6f)
+  @Test fun ningun_nombre_se_parte_a_360_dp_con_letra_2_0() = checkWidth(360, 780, 2f)
+  @Test fun ningun_nombre_se_parte_a_393_dp_con_letra_2_0() = checkWidth(393, 873, 2f)
+  @Test fun ningun_nombre_se_parte_a_411_dp_con_letra_2_0() = checkWidth(411, 914, 2f)
 }

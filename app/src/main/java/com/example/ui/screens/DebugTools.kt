@@ -110,7 +110,7 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
   val context = LocalContext.current
   // Dibuja encima del tutorial los rectángulos del foco y el último toque (se pide a Unity con `debug_overlay`): para mandar una captura si un tutorial se traba.
   var tutorialOverlay by remember { mutableStateOf(false) }
-  // «Tu isla crece»: simula 0, 3 o las 10 piezas SIN tocar las medallas. Lo ya mostrado ([IslaPiezasStore]) pasa a ser lo que estaba a la vista antes de cambiar, así Hoy revela (con su animación) solo lo que se SUMA.
+  // «Tu isla crece»: simula 0, 3 o las 10 piezas SIN tocar las medallas. Lo ya mostrado ([IslaPiezasStore]) pasa a ser lo que estaba a la vista antes de cambiar, así Tú revela (con su animación) solo lo que se SUMA.
   val unlocks by viewModel.achievementUnlocks.collectAsState()
   val shown by viewModel.debugIslaPieces.collectAsState()
   val pieceStore = remember { PrefsIslaPiezasStore(context) }

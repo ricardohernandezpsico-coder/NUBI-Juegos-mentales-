@@ -67,16 +67,13 @@ class SuggestionTest {
   }
 
   @Test
-  fun en_el_area_de_la_sugerencia_el_boton_juega_esa_y_en_las_otras_el_mas_olvidado_sin_chip() {
+  fun solo_el_area_de_la_sugerencia_lleva_el_chip() {
     val route = listOf("calculo", "secuencia", "stroop")
     val last = playedAll(2).toMutableMap().apply { put("anagramas", now - 8 * day) }
     val global = Suggestion.next(route, 0, last, now, dayOf)                       // sigue «calculo» (Razonamiento)
-    val razonamiento = Suggestion.forArea("RAZONAMIENTO", global, gamesOf("RAZONAMIENTO"), last, now, dayOf)!!
-    assertEquals("calculo", razonamiento.gameId); assertTrue(Suggestion.suggestedHere("RAZONAMIENTO", global))
-    val lenguaje = Suggestion.forArea("LENGUAJE", global, gamesOf("LENGUAJE"), last, now, dayOf)!!
-    assertEquals("el más olvidado de Lenguaje", "anagramas", lenguaje.gameId)
+    assertTrue(Suggestion.suggestedHere("RAZONAMIENTO", global))
     assertTrue("en otra área no hay chip: Nubi sugiere UNA sola cosa", !Suggestion.suggestedHere("LENGUAJE", global))
-    assertNull(Suggestion.forArea("MEMORIA", global, emptyList(), last, now, dayOf))
+    assertTrue(!Suggestion.suggestedHere("MEMORIA", null))
   }
 
   @Test

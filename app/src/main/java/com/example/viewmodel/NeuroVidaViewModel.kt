@@ -701,7 +701,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     val origin = if (gameId != null && focusPrefs.getString("origin_game", null) == gameId) focusPrefs.getString("origin", null) else null
     when (origin) {
       ORIGIN_HOY -> { _currentTab.value = AppTab.HOY; _avanceArea.value = null }
-      else -> { _hoyArea.value = null; _allGames.value = null; _avanceArea.value = null }
+      else -> { _allGames.value = null; _avanceArea.value = null }
     }
     focusPrefs.edit().remove("origin").remove("origin_game").apply()
     _activeGame.value = null
@@ -711,15 +711,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   // Dónde se lanzó la última partida y lo que había abierto, en disco (`library_focus`: pasajero, no se respalda): al volver del juego se abre lo mismo, también si Android cerró la app.
   private val focusPrefs by lazy { getApplication<Application>().getSharedPreferences("library_focus", android.content.Context.MODE_PRIVATE) }
   private val restoredOrigin: String? get() = focusPrefs.getString("origin", null)
-
-  // La lámina del lugar que se abrió en Hoy tocando un edificio de la isla (la clave del ÁREA: «MEMORIA»…).
-  private val _hoyArea = MutableStateFlow<String?>(if (restoredOrigin == ORIGIN_HOY) focusPrefs.getString("hoy_area", null) else null)
-  val hoyArea: StateFlow<String?> = _hoyArea.asStateFlow()
-
-  fun openHoyArea(areaKey: String) { _hoyArea.value = areaKey }
-
-  /** La X, Atrás o el velo de la lámina de un lugar de Hoy. */
-  fun closeHoyArea() { _hoyArea.value = null }
 
   // «Todos los juegos» abierta desde Hoy (null = cerrada).
   private val _allGames = MutableStateFlow<AllGamesState?>(
@@ -751,7 +742,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   /** Nada abierto sobre las pestañas (y sin origen que recordar). */
   private fun clearOpenSheets() {
-    _hoyArea.value = null
     _allGames.value = null
     _avanceArea.value = null
     focusPrefs.edit().remove("origin").remove("origin_game").apply()
@@ -762,7 +752,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     val all = _allGames.value?.let { it.copy(mark = gameId) }.also { _allGames.value = it }
     focusPrefs.edit()
       .putString("origin", origin).putString("origin_game", gameId)
-      .putString("hoy_area", _hoyArea.value).putBoolean("all_open", all != null).putString("all_area", all?.area).putString("all_query", all?.query.orEmpty()).putString("all_mark", all?.mark)
+      .putBoolean("all_open", all != null).putString("all_area", all?.area).putString("all_query", all?.query.orEmpty()).putString("all_mark", all?.mark)
       .apply()
   }
 
@@ -775,11 +765,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     if (timed != null) repository.setReto(gameId, timed)       // se recuerda por juego
     launchGame(gameId, mode = mode, customTimed = timed?.let { it && com.example.data.RetoChoice.supports(gameId) })
   }
-
-  /** ¿Nubi ya contó, en su globo, que los juegos ahora están en la isla (Tarea 158)? Una sola vez y solo a quien ya jugó; vive en `library_focus` (pasajero: en un teléfono nuevo se vuelve a contar). */
-  val islandMapIntroSeen: Boolean get() = focusPrefs.getBoolean("isla_mapa_intro", false)
-
-  fun markIslandMapIntroSeen() { focusPrefs.edit().putBoolean("isla_mapa_intro", true).apply() }
 
   /** La elección «Sin reloj / Contra el reloj» que vale hoy para [gameId] (la ficha de Juegos la muestra elegida). */
   fun retoFor(gameId: String): Boolean = repository.retoFor(gameId)

@@ -117,6 +117,15 @@ fun TuScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) {
   var familyOpen by remember { mutableStateOf<com.example.data.AchievementFamily?>(null) }
   val medals = remember(unlocks, achStats) { com.example.data.AchievementFamily.entries.map { Achievements.familyState(it, unlocks.keys, achStats) } }
 
+  // Las piezas de la isla («Tu isla crece»; Tarea 165: la revelación pasó de Hoy a Tú): la primera vez con esta versión (o en un teléfono nuevo) lo que ya se tiene se siembra en silencio; una pieza nueva entra UNA vez al abrir Tú (de a una, sin sonido ni vibración:
+  // ya los dio la celebración de la medalla, que la anuncia con «Y en tu isla aparece: …») y se anota al empezar. Con «quitar animaciones» nace puesta. Si la celebración de una medalla está encima de Tú, la pieza espera a que se cierre.
+  val debugPieces by viewModel.debugIslaPieces.collectAsState()
+  val achievementQueue by viewModel.achievementQueue.collectAsState()
+  val earnedPieces = debugPieces ?: com.example.data.IslaPiezas.earned(unlocks.keys)
+  val appContext = androidx.compose.ui.platform.LocalContext.current
+  val pieceStore = remember { com.example.data.PrefsIslaPiezasStore(appContext) }
+  val pieceFx = com.example.ui.components.rememberPieceFx(earnedPieces, pieceStore, hold = achievementQueue.isNotEmpty())
+
   val avg = if (ranks.isEmpty()) 0 else ranks.sumOf { it.rating } / ranks.size
   val tier = RankTier.fromRating(avg)
   val index = overallIndex(levels)
@@ -140,9 +149,10 @@ fun TuScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) {
       Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         // La isla en miniatura con las piezas que la persona ya ganó (Tarea 147, P3: antes Nubi sobre el nombre, que parecía su avatar)
         com.example.ui.components.Island(
-          description = "Tu isla" + com.example.data.IslaPiezas.description(com.example.data.IslaPiezas.earned(unlocks.keys)),
+          description = "Tu isla" + com.example.data.IslaPiezas.description(earnedPieces),
           modifier = Modifier.fillMaxWidth().height(150.dp).testTag("profile_island"),
-          pieces = com.example.data.IslaPiezas.earned(unlocks.keys)
+          pieces = earnedPieces,
+          pieceReveal = { pieceFx.progress(it) }
         )
         // El nombre en GRANDE, como siempre, y un botón chico del kit «Cambiar» (Opus, 21-oct: un campo siempre abierto bajo la isla se leía como un formulario, sin rótulo, y le quitaba el protagonismo al nombre; es el mismo patrón de «Cambiar cómo jugar» de la ficha).
         // Al tocarlo, el nombre pasa a un campo con el rótulo «Tu nombre» y el teclado abierto; se guarda con «Listo» del teclado, al salir del campo o al salir del Perfil, y vuelve a texto (Tarea 153; antes de la 152 estaba en Ajustes con un botón «Guardar»).

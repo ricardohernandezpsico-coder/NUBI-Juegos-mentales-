@@ -35,7 +35,7 @@ object PlaceTestData {
 
   fun places(now: Long, suggestion: Suggestion.Pick? = this.suggestion): Map<String, PlaceSheetUi> = areaPoints.mapValues { (area, pts) ->
     PlaceSheets.build(
-      area = area, points = pts, games = GameRegistry.allGames.filter { it.domain.name == area }, titleOf = { it.title },
+      area = area, games = GameRegistry.allGames.filter { it.domain.name == area }, titleOf = { it.title },
       history = emptyList(), measures = emptyList(), now = now, suggestion = suggestion
     )
   }

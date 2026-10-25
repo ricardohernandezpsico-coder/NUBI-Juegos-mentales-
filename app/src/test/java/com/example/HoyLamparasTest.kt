@@ -41,7 +41,8 @@ import java.util.Calendar
 
 /**
  * Las farolas de la ruta en Hoy (Tarea 88), con `HomeContent` y un almacén de prueba: la descripción de la isla para el lector de pantalla, que cada farola pulse una sola vez por parada y por día, que la ruta completa se celebre una vez al día y que con «quitar animaciones»
- * se anote igual (la farola nace encendida y no hay segunda vez). Capturas de la isla con 0, 1, 2 y 3 paradas hechas y de dos cuadros del encendido y del saltito.
+ * se anote igual (la farola nace encendida y no hay segunda vez). Desde la Tarea 165 la isla solo se ve en Hoy con la ruta COMPLETA (dentro de la tarjeta, con Nubi celebrando): las descripciones de 0 a 2 paradas se prueban sobre `RouteLamps.description` (la isla grande ya no está) y las capturas son de la ruta completa
+ * y de dos cuadros del encendido y del saltito.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -74,7 +75,7 @@ class HoyLamparasTest {
           Box(Modifier.width(393.dp).height(873.dp)) {
             BoardBackground()
             HomeContent(
-              ui = ui, onAllGames = {}, onPlaceGame = {}, onPlaceGameCard = {}, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {},
+              ui = ui, onAllGames = {}, onPlay = {}, onResume = {}, onBaseline = {},
               modifier = Modifier.padding(top = 24.dp, bottom = 163.dp), routeStore = store, onRoutePlan = { plans += it }
             )
           }
@@ -86,10 +87,18 @@ class HoyLamparasTest {
 
   // ---- La descripción de la isla (lector de pantalla)
 
-  @Test fun descripcion_con_0_paradas_hechas() { show(ui(0)); rule.onNodeWithContentDescription("Tu isla: hoy la ruta pasa por el Observatorio, el Hangar y la Biblioteca").assertExists() }
-  @Test fun descripcion_con_1_parada_hecha() { show(ui(1)); rule.onNodeWithContentDescription("Tu isla: hecho el Observatorio; faltan el Hangar y la Biblioteca").assertExists() }
-  @Test fun descripcion_con_2_paradas_hechas() { show(ui(2)); rule.onNodeWithContentDescription("Tu isla: hechos el Observatorio y el Hangar; falta la Biblioteca").assertExists() }
+  private fun spoken(completed: Int) = RouteLamps.description(ui(completed).stops.mapNotNull { s -> com.example.data.IslaLugar.withArticle(s.area)?.let { it to (s.state == com.example.ui.screens.StopState.DONE) } })
+
+  @Test fun descripcion_con_0_paradas_hechas() = assertEquals("Tu isla: hoy la ruta pasa por el Observatorio, el Hangar y la Biblioteca", spoken(0))
+  @Test fun descripcion_con_1_parada_hecha() = assertEquals("Tu isla: hecho el Observatorio; faltan el Hangar y la Biblioteca", spoken(1))
+  @Test fun descripcion_con_2_paradas_hechas() = assertEquals("Tu isla: hechos el Observatorio y el Hangar; falta la Biblioteca", spoken(2))
   @Test fun descripcion_con_3_paradas_hechas() { show(ui(3)); rule.onNodeWithContentDescription("Tu isla: ruta completa, hechos el Observatorio, el Hangar y la Biblioteca").assertExists() }
+
+  // la isla solo se ve con la ruta completa (un solo montaje por prueba: `setContent` no se repite)
+  @Test fun isla_no_se_ve_con_0_paradas() { show(ui(0)); assertEquals(0, rule.onAllNodes(androidx.compose.ui.test.hasTestTag("home_isla")).fetchSemanticsNodes().size) }
+  @Test fun isla_no_se_ve_con_1_parada() { show(ui(1)); assertEquals(0, rule.onAllNodes(androidx.compose.ui.test.hasTestTag("home_isla")).fetchSemanticsNodes().size) }
+  @Test fun isla_no_se_ve_con_2_paradas() { show(ui(2)); assertEquals(0, rule.onAllNodes(androidx.compose.ui.test.hasTestTag("home_isla")).fetchSemanticsNodes().size) }
+  @Test fun isla_si_se_ve_con_3_paradas() { show(ui(3)); rule.onNodeWithTag("home_isla").assertExists() }
 
   // ---- Una vez por parada y por día
 
@@ -156,9 +165,6 @@ class HoyLamparasTest {
 
   // ---- Capturas
 
-  @Test fun captura_isla_0_paradas_hechas() { show(ui(0)); rule.onNodeWithTag("home_isla").captureRoboImage(filePath = "src/test/screenshots/lamparas-0.png") }
-  @Test fun captura_isla_1_parada_hecha() { show(ui(1)); rule.onNodeWithTag("home_isla").captureRoboImage(filePath = "src/test/screenshots/lamparas-1.png") }
-  @Test fun captura_isla_2_paradas_hechas() { show(ui(2)); rule.onNodeWithTag("home_isla").captureRoboImage(filePath = "src/test/screenshots/lamparas-2.png") }
   @Test fun captura_isla_3_paradas_hechas() { show(ui(3)); rule.onNodeWithTag("home_isla").captureRoboImage(filePath = "src/test/screenshots/lamparas-3.png") }
 
   @Test
@@ -170,7 +176,7 @@ class HoyLamparasTest {
       NeuroVidaTheme {
         Box(Modifier.width(393.dp).height(873.dp)) {
           BoardBackground()
-          HomeContent(ui = current, onAllGames = {}, onPlaceGame = {}, onPlaceGameCard = {}, onStop = {}, onPlay = {}, onResume = {}, onBaseline = {}, modifier = Modifier.padding(top = 24.dp, bottom = 163.dp), routeStore = store, onRoutePlan = { plans += it })
+          HomeContent(ui = current, onAllGames = {}, onPlay = {}, onResume = {}, onBaseline = {}, modifier = Modifier.padding(top = 24.dp, bottom = 163.dp), routeStore = store, onRoutePlan = { plans += it })
         }
       }
     }

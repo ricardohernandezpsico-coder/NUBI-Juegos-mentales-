@@ -604,7 +604,7 @@ private fun ReminderPage(s: FlightState, a: FlightActions) {
 
 /**
  * El último paso: los 3 juegos de hoy, elegidos por las metas y el punto de partida. «Empezar mi ruta» entra a Hoy.
- * Tarea 145 (ítem 23 de la revisión del 19-oct): antes Nubi y dos líneas con la mitad de la pantalla vacía; ahora la ISLA, la misma que se ve mañana en Hoy (el mismo render, con Nubi encima), a un tamaño que entra sin desplazar, y las dos líneas de siempre (sin texto nuevo que prometa algo).
+ * Tarea 145 (ítem 23 de la revisión del 19-oct): antes Nubi y dos líneas con la mitad de la pantalla vacía; ahora la ISLA, la misma de Tú (el mismo render, con Nubi encima; desde la Tarea 165 Hoy ya no lleva isla salvo al completar la ruta), a un tamaño que entra sin desplazar, y las dos líneas de siempre (sin texto nuevo que prometa algo).
  * La isla se queda con lo que sobra de alto después de las dos líneas (se miden con la letra del sistema); con letra muy grande, donde ni así entra, la página se desliza como las demás.
  */
 @Composable
@@ -627,7 +627,7 @@ private fun TodayPathPage(todayGames: List<String>, a: FlightActions) {
       val islandHeight = (maxHeight - textHeight).coerceAtLeast(MIN_ISLAND_HEIGHT)
       Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         com.example.ui.components.Island(
-          description = "Tu isla, la que verás mañana en Hoy",
+          description = "Tu isla, la que verás en Tú",
           modifier = Modifier.fillMaxWidth().height(islandHeight).testTag("flight_island")
         )
         Title(title, center = true)

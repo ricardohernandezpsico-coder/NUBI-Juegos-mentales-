@@ -199,21 +199,7 @@ class GameFlowTest {
     assertEquals(0, savedResults())
   }
 
-  // ---- Hoy (Tarea 158): al terminar se vuelve a la pestaña desde donde se lanzó, con lo que había abierto (la lámina de un lugar o «Todos los juegos») como se dejó
-
-  @Test
-  fun `desde la lamina de un lugar de Hoy, al cerrar el resultado se vuelve a Hoy con la lamina abierta`() {
-    val vm = newViewModel()
-    vm.setTab(AppTab.HOY)
-    vm.openHoyArea("ATENCION")
-    vm.playFromHome("freno", PlayMode.DESAFIO)
-    assertEquals("freno", vm.activeGame.value?.gameDef?.id)
-    assertEquals("la lámina espera abierta mientras se juega", "ATENCION", vm.hoyArea.value)
-    vm.closeGameOrResult()
-    assertEquals(AppTab.HOY, vm.currentTab.value)
-    assertEquals("ATENCION", vm.hoyArea.value)
-    assertNull("«Todos los juegos» no se abre solo", vm.allGames.value)
-  }
+  // ---- Hoy (Tarea 158; Tarea 165: sin la lámina de un lugar): al terminar se vuelve a la pestaña desde donde se lanzó, con lo que había abierto («Todos los juegos») como se dejó
 
   @Test
   fun `desde Todos los juegos, al cerrar el resultado se vuelve con el mismo filtro, la misma busqueda y la fila marcada`() {
@@ -226,52 +212,46 @@ class GameFlowTest {
     vm.closeGameOrResult()
     assertEquals(AppTab.HOY, vm.currentTab.value)
     assertEquals(AllGamesState(area = "ATENCION", query = "fre", mark = "freno"), vm.allGames.value)
-    assertNull("la lámina de un lugar no se abre sola", vm.hoyArea.value)
   }
 
   @Test
-  fun `desde una piedrita de Hoy sin nada abierto, al cerrar el resultado se sigue en Hoy sin nada abierto`() {
+  fun `desde un juego de Hoy sin nada abierto, al cerrar el resultado se sigue en Hoy sin nada abierto`() {
     val vm = newViewModel()
     vm.playFromHome("calculo", PlayMode.A_TU_MEDIDA)
     assertEquals("calculo", vm.activeGame.value?.gameDef?.id)
     vm.closeGameOrResult()
     assertEquals(AppTab.HOY, vm.currentTab.value)
-    assertNull(vm.hoyArea.value)
     assertNull(vm.allGames.value)
   }
 
   @Test
-  fun `cerrar la lamina de Hoy o Todos los juegos los olvida y cambiar de pestana tampoco los reabre`() {
+  fun `cerrar Todos los juegos lo olvida y cambiar de pestana tampoco lo reabre`() {
     val vm = newViewModel()
-    vm.openHoyArea("MEMORIA")
-    vm.closeHoyArea()
-    assertNull(vm.hoyArea.value)
     vm.openAllGames()
     vm.closeAllGames()
     assertNull(vm.allGames.value)
-    vm.openHoyArea("MEMORIA")
+    vm.openAllGames()
     vm.setTab(AppTab.PROGRESO)
-    assertNull("al irse de Hoy la lámina se cierra", vm.hoyArea.value)
+    assertNull("al irse de Hoy «Todos los juegos» se cierra", vm.allGames.value)
     vm.setTab(AppTab.HOY)
-    assertNull("y no se reabre al volver", vm.hoyArea.value)
+    assertNull("y no se reabre al volver", vm.allGames.value)
     vm.openAllGames()
     vm.setTab(AppTab.TU)
-    assertNull("lo mismo con Todos los juegos", vm.allGames.value)
+    assertNull("lo mismo yendo a Tú", vm.allGames.value)
   }
 
   @Test
-  fun `un juego de la ruta de hoy lanzado tras la lamina de Hoy no la reabre`() {
+  fun `un juego de la ruta de hoy lanzado tras Todos los juegos no lo reabre`() {
     val vm = newViewModel()
-    vm.openHoyArea("ATENCION")
+    vm.openAllGames()
     vm.playFromHome("freno", PlayMode.DESAFIO)
     vm.launchGame("calculo", isDailyFlow = true)           // «Siguiente: … · 2 de 3» en el final de la partida
     vm.closeGameOrResult()
-    assertNull(vm.hoyArea.value)
     assertNull(vm.allGames.value)
   }
 
   @Test
-  fun `la lamina de Hoy y Todos los juegos tambien se recuerdan si Android cierra la app a mitad del juego`() {
+  fun `Todos los juegos tambien se recuerda si Android cierra la app a mitad del juego`() {
     val first = newViewModel()
     first.openAllGames()
     first.setAllGamesQuery("tinta")
@@ -281,20 +261,6 @@ class GameFlowTest {
     assertEquals(AppTab.HOY, second.currentTab.value)
     assertEquals("Todos los juegos sigue abierto como estaba (el resultado de Unity lo cierra con «Listo» y no lo borra)", "tinta", second.allGames.value?.query)
     assertEquals("la fila marcada es el juego que se lanzó", "stroop", second.allGames.value?.mark)
-    val third = newViewModel()
-    third.openHoyArea("MEMORIA")
-    third.playFromHome("calculo", PlayMode.A_TU_MEDIDA)
-    assertEquals("MEMORIA", newViewModel().hoyArea.value)
-  }
-
-  @Test
-  fun `Nubi cuenta una sola vez que los juegos ahora estan en la isla`() {
-    val vm = newViewModel()
-    assertFalse("al principio todavía no se contó", vm.islandMapIntroSeen)
-    vm.markIslandMapIntroSeen()
-    assertTrue(vm.islandMapIntroSeen)
-    vm.openHoyArea("MEMORIA"); vm.closeHoyArea()
-    assertTrue("abrir y cerrar una lámina no lo borra: una sola vez", vm.islandMapIntroSeen)
   }
 
   // ---- Avance (Tarea 159): la página de un área no lanza juegos; se abre y se cierra, y cambiar de pestaña la cierra

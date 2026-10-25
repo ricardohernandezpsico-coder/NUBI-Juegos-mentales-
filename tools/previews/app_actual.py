@@ -76,8 +76,8 @@ def lamina():
     GAP = 22
     H_PHONE = int(W * 2401 / 1080)           # alto de un teléfono entero
     sections = [
-        ("Hoy (la isla con 0 y con 10 piezas, con letra 1,3 y la lámina de un área)", [("Hoy", [load("hoy")]), ("Hoy con letra 1,3", [load("hoy-letra13")]), ("Con el globo de Nubi (una vez)", [load("hoy-globo")]), ("Isla sin piezas", [load("hoy-isla-0")]), ("Isla con las 10 piezas", [load("hoy-isla-10")]),
-                    ("Lámina de un área", [load("hoy-lamina")]), ("Lámina con letra 1,3", [load("hoy-lamina-letra13")])]),
+        ("Hoy con UNA sola tarjeta (Tarea 165: sin isla; con letra 1,3 y 2,0) y la isla de Tú con 0 y con 10 piezas", [("Hoy", [load("hoy")]), ("Hoy con letra 1,3", [load("hoy-letra13")]), ("Hoy con letra 2,0", [load("hoy-letra20")]),
+                    ("Tú: isla sin piezas", [load("tu-isla-0")]), ("Tú: isla con las 10 piezas", [load("tu-isla-10")]), ("Tú: las 10, letra 1,3", [load("tu-isla-10-letra13")])]),
         ("Todos los juegos (Tarea 158: la ventana de Hoy con los 17, el buscador y los chips de área)", [("Sin filtro", [load("todos-los-juegos")]), ("Letra 1,3", [load("todos-los-juegos-letra13")]), ("Con «Memoria»", [load("todos-los-juegos-memoria")])]),
         ("La ficha del juego (Tarea 140)", [("Plegada", [load("ficha")]), ("Desplegada", [load("ficha-desplegada")]), ("Plegada, letra 1,3", [load("ficha-letra13")]), ("Desplegada, letra 1,3", [load("ficha-desplegada-letra13")])]),
         ("Avance con puntos por área (arriba, con letra 1,3, entera en tiras y la página de un área, Tarea 159)", [("Avance", [load("avance")]), ("Con letra 1,3", [load("avance-letra13")]), ("Avance (entera, en tiras)", strips(cropped("avance-completa"), W, H_PHONE)),

@@ -10,7 +10,7 @@ import com.example.model.GameRegistry
  * - **Mientras la ruta de hoy tenga paradas pendientes**, Nubi sugiere SIEMPRE la que sigue ([Why.ROUTE]), en Juegos (su área), en la lámina y en el detalle de esa área.
  * - **Terminada la ruta** (o sin ruta), el juego que más tiempo lleva sin jugarse: uno que nunca se jugó gana ([Why.NEVER]; entre varios, el primero del catálogo) y, si no, el que lleva más días ([Why.DAYS]; ante empate, el primero del catálogo). En Juegos, su área.
  * - **La razón va en palabras de tiempo** («hace 4 días que no lo juegas», «sigue en tu ruta de hoy»): nunca «es el área que más puede crecer», que significaba «la más baja» y nadie lo entendía.
- * - En el área de una sugerencia, el chip «Nubi sugiere» marca ESE juego; en las demás áreas el botón «Jugar …» de la lámina propone el que más tiempo lleva sin jugarse ([forArea]) pero sin el chip: Nubi sugiere una sola cosa.
+ * - En el área de una sugerencia, el chip «Nubi sugiere» marca ESE juego; en las demás áreas no hay chip: Nubi sugiere una sola cosa.
  */
 object Suggestion {
   enum class Why { ROUTE, NEVER, DAYS }
@@ -53,13 +53,7 @@ object Suggestion {
     return Pick(g.id, g.domain.name, Why.DAYS, away.getValue(g).toInt().coerceAtLeast(0))
   }
 
-  /**
-   * El juego que propone la lámina o el detalle de [area] (su botón «Jugar …»): la sugerencia de Nubi si es de esa área; si no, el que más tiempo lleva sin jugarse en ella.
-   * [Pick.why] dice qué pasó; [suggestedHere] = si es LA sugerencia de Nubi (lleva el chip).
-   */
-  fun forArea(area: String, global: Pick?, areaGames: List<GameDefinition>, lastPlayed: Map<String, Long>, now: Long, dayOf: (Long) -> Long): Pick? =
-    if (global != null && global.area == area) global else longestAway(areaGames, lastPlayed, now, dayOf)
-
+  /** ¿Es LA sugerencia de Nubi de esta [area]? (lleva el chip «Nubi sugiere» en «Todos los juegos»). */
   fun suggestedHere(area: String, global: Pick?): Boolean = global != null && global.area == area
 
   /** La razón de un juego sugerido, en palabras de tiempo: «sigue en tu ruta de hoy», «aún no lo has jugado», «hace 4 días que no lo juegas». */

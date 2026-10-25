@@ -1,138 +1,81 @@
 package com.example.ui.screens
 
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInWindow
-import com.example.ui.components.Glyph
-import com.example.ui.components.KitGlyph
-import com.example.ui.components.SlabSize
-import com.example.ui.components.OnBoardText
-import com.example.ui.components.PieceFx
-import com.example.ui.components.RouteFx
-import com.example.ui.components.RouteMotion
-import com.example.data.IslaPieza
-import com.example.data.IslaPiezas
-import com.example.data.IslaPiezasStore
-import com.example.data.PiezasPlan
-import com.example.data.PrefsIslaPiezasStore
-import com.example.data.PrefsRouteCelebrationStore
-import com.example.data.RouteCelebrationStore
-import com.example.data.RouteLamps
-import com.example.data.RoutePlan
-import com.example.ui.components.rememberIslaLayout
-import com.example.ui.components.rememberReduceMotion
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.layout.Layout
-import androidx.compose.ui.unit.Constraints
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import com.example.data.AreaProgress
-import com.example.data.MeasurePoint
-import com.example.data.Skill
-import com.example.data.StarMeasures
 import com.example.data.IslaLugar
+import com.example.data.IslaPiezas
+import com.example.data.PrefsRouteCelebrationStore
+import com.example.data.RouteCelebrationStore
+import com.example.data.RouteLamps
+import com.example.data.RoutePlan
 import com.example.data.Streak
 import com.example.data.Week
-import com.example.model.DomainType
-import com.example.model.GamePlayResult
 import com.example.model.GameRegistry
 import com.example.model.RankTier
 import com.example.ui.components.AREA_ORDER
-import com.example.ui.components.AreaBar
-import com.example.ui.components.AreaBarColor
-import com.example.ui.components.LeagueShield
-import com.example.ui.components.LockTabSwipe
-import com.example.ui.components.MiniPlanet
-import com.example.ui.components.NubiBubble
+import com.example.ui.components.GameEmblem
+import com.example.ui.components.Glyph
 import com.example.ui.components.Island
+import com.example.ui.components.KitGlyph
 import com.example.ui.components.NubiClay
-import com.example.ui.components.areaDescription
-import com.example.ui.components.domainOf
-import com.example.ui.components.overallIndex
+import com.example.ui.components.OnBoardText
+import com.example.ui.components.RouteFx
+import com.example.ui.components.RouteMotion
+import com.example.ui.components.SlabSize
+import com.example.ui.components.rememberIslaLayout
+import com.example.ui.components.rememberReduceMotion
 import com.example.ui.i18n.LocalAppLanguage
 import com.example.ui.i18n.getGameTitle
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
 import com.example.ui.theme.ClayCard
 import com.example.viewmodel.NeuroVidaViewModel
-import java.util.TimeZone
-
-private const val DAY_MS = 86_400_000L
-private val OnNight = Color(0xFFEAF0FF)
-private val OnNightDim = com.example.ui.theme.NubiTokens.OnNightDim
-private val OnNightSoft = Color(0xFF9AA3D6)
-
-private fun dayIndex(ts: Long): Long = (ts + TimeZone.getDefault().getOffset(ts)) / DAY_MS
 
 /**
- * Inicio ("Hoy") con LA ISLA protagonista (Tarea 82, fase 1 de `docs/diseno-isla.md`; distribución «A» de la Tarea 84, aprobada por Ricardo el 12-oct): saludo con tu perfil y la meta de la semana, los farolitos y la racha, la isla de plasticina con
- * Nubi (toma TODO lo que sobra), «Tu ruta de hoy» con tres piedritas (una por juego; tocarlas abre la ficha del juego) y UN solo botón grande. Regla que manda: en 393 × 873 dp con letra normal las tres piedritas y el botón se ven SIN deslizar;
- * con letra grande o pantalla chica la isla se queda en su mínimo y lo demás se desliza, sin cortarse ni superponerse. El globo de Nubi ya no está: lo que decía (partida en pausa, camino cumplido, Primer vuelo) va debajo del botón.
- *
-
- * Qué pasó con lo que Hoy tenía antes: las cuatro barras de área (con su etapa y el cambio de la semana) ya no están sueltas; cada una vive en la LÁMINA de su área ([PlaceSheetContent]: etapa, cuánto avanzó, sus juegos y «Jugar»; la misma que abre Avance, con más detalle, Tarea 155; en Hoy, con UNA línea de avance, Tarea 158), que se abre TOCANDO
- * el edificio de esa área en la isla (Observatorio = Memoria, Antena = Atención, Hangar = Razonamiento, Biblioteca = Lenguaje; hasta la fase 2, que lo cambia a «Juegos con ese lugar elegido»). La liga y la racha pasaron al lado de los farolitos. Tarea 158 («La isla es el mapa»): arriba a la derecha ya no hay botones (el perfil es la pestaña «Tú»), y bajo la ruta y su botón va la losa crema «Todos los juegos» (el buscador de los 17).
+ * Inicio («Hoy») con UNA sola tarjeta (Tarea 165, 24-oct; `auditoria-fable/hoy-reestructura.md`, opción 3, elegida por Ricardo después de ver los letreros de la isla de la Tarea 163, que NO se instalaron: «esa pantalla se ve muy sobrecargada, demasiada sobrecarga de
+ * estímulos, de botones»). Hoy tenía 12 toques y once focos para una sola tarea (jugar la ruta): ahora queda el saludo, la semana (las farolas, la llama y la frase de la racha) y UNA tarjeta crema con todo lo de la ruta de hoy —«Tu ruta de hoy», «1 de 3 · unos 4 minutos», los tres
+ * juegos con su estado en palabras (no se tocan: informan) y el botón sol ADENTRO, el único sol de Hoy—, con Nubi posada en su esquina; debajo, solo «Todos los juegos». SIN isla: la isla vive en Tú (con las piezas que ganas) y aparece en Hoy UNA vez al día, dentro de la tarjeta,
+ * cuando la ruta queda completa, con Nubi celebrando (el premio). Se fueron la isla grande, los edificios como botones, la lámina del edificio, Nubi volando, las piedritas y el globo de la isla. Con letra del sistema de 1,3 todo cabe en 393 × 873 dp sin deslizar.
  */
 @Composable
 fun HomeScreen(
@@ -142,15 +85,12 @@ fun HomeScreen(
   val dailySession by viewModel.dailySession.collectAsState()
   val history by viewModel.gameHistory.collectAsState()
   val ranks by viewModel.gameRanks.collectAsState()
-  val progressLog by viewModel.progressLog.collectAsState()
   val pausedGameId by viewModel.pausedGameId.collectAsState()
   val baseline by viewModel.baseline.collectAsState()
-  val measures by viewModel.starMeasures.collectAsState()
   val settings by viewModel.userSettings.collectAsState()
   val unlocks by viewModel.achievementUnlocks.collectAsState()
-  val achievementQueue by viewModel.achievementQueue.collectAsState()
   val debugPieces by viewModel.debugIslaPieces.collectAsState()
-  // Reloj de la semana de cada área: cada 30 s.
+  // Reloj de Hoy (la fecha, la semana y la racha): cada 30 s.
   var clock by remember { mutableStateOf(System.currentTimeMillis()) }
   LaunchedEffect(Unit) {
     while (true) {
@@ -159,21 +99,8 @@ fun HomeScreen(
     }
   }
   val lang = LocalAppLanguage.current
-
-  var sheetFor by remember { mutableStateOf<com.example.model.GameDefinition?>(null) }
-  val skill by viewModel.skill.collectAsState()
-  val lastPlayed = remember(history) { history.groupBy { it.gameId }.mapValues { (_, l) -> l.maxOf { it.timestamp } } }
-
   val avg = if (ranks.isEmpty()) 0 else ranks.sumOf { it.rating } / ranks.size
   val tier = RankTier.fromRating(avg)
-
-  val names = remember { DomainType.values().associate { it.name to it.displayName } }
-  val areaPoints = remember(progressLog, clock) { com.example.data.AreaPoints.forAreas(AREA_ORDER, progressLog, clock) }
-
-  // UNA sola sugerencia de Nubi para toda la app (Tarea 150, B2): lo que sigue en la ruta de hoy y, terminada, el juego que más tiempo lleva sin jugarse.
-  val suggestion = remember(dailySession, lastPlayed, clock) { com.example.data.Suggestion.next(dailySession.gameIds, dailySession.completedCount, lastPlayed, clock, Streak::dayOf) }
-  // La lámina de cada lugar: el avance de su área y sus juegos (la lógica del antiguo detalle de área).
-  val places = rememberAreaPlaces(areaPoints, history, measures, clock, lang, suggestion, dailySession.gameIds, dailySession.completedCount)
   val completed = dailySession.completedCount
   // La racha que perdona (Tarea 124): con el día de descanso, si lo hubo esta semana.
   val streakInfo = remember(history, clock) { Streak.fromTimestamps(history.map { it.timestamp }, clock) }
@@ -190,63 +117,26 @@ fun HomeScreen(
     flightDay = dailySession.gameIds.isNotEmpty() && completed >= dailySession.gameIds.size && dailySession.scores.isEmpty(),
     hasBaseline = baseline != null,
     baselineInvite = com.example.data.BaselinePlan.showHomeInvite(baseline != null, history.size, history.minOfOrNull { it.timestamp }, clock),
-    places = places,
-    islandPieces = debugPieces ?: IslaPiezas.earned(unlocks.keys)          // «Tu isla crece»: todo se deriva de las medallas (solo el botón [Debug] de Ajustes lo cambia)
+    islandPieces = debugPieces ?: IslaPiezas.earned(unlocks.keys)          // la isla chica de la ruta completa lleva las piezas que ganaste (solo el botón [Debug] de Ajustes lo cambia)
   )
   val appContext = androidx.compose.ui.platform.LocalContext.current
   val routeStore = remember { PrefsRouteCelebrationStore(appContext) }
-  val pieceStore = remember { PrefsIslaPiezasStore(appContext) }
-  // La lámina de un lugar abierta: la recuerda el ViewModel porque el pager se retira mientras hay un juego encima; al volver de una partida lanzada desde ella (Tarea 158) queda abierta como se dejó (sin animar). Si se cierra por otro lado (cambiar de pestaña), se va de golpe.
-  val hoyArea by viewModel.hoyArea.collectAsState()
-  val scope = androidx.compose.runtime.rememberCoroutineScope()
-  val fx = remember { PlaceFx() }
-  LaunchedEffect(hoyArea) {
-    val key = hoyArea
-    if (key != null && !fx.active) IslaLugar.nameOfArea(key)?.lowercase()?.let { fx.snapOpen(scope, it) }
-    else if (key == null && fx.active && !fx.closing) fx.reset(scope)
-  }
-  // El globo de Nubi, UNA sola vez y solo para quien ya jugó: los juegos ahora están en la isla (Tarea 158). Se anota al mostrarlo; se cierra tocándolo o al abrir un lugar o «Todos los juegos».
-  var islandNote by remember { mutableStateOf(false) }
-  LaunchedEffect(history.isNotEmpty()) {
-    if (history.isNotEmpty() && !viewModel.islandMapIntroSeen) { islandNote = true; viewModel.markIslandMapIntroSeen() }
-  }
   HomeContent(
     ui = ui,
-    fx = fx,
-    onAllGames = { islandNote = false; viewModel.openAllGames() },
-    onPlaceOpened = { islandNote = false; viewModel.openHoyArea(it) },
-    onPlaceClosed = { viewModel.closeHoyArea() },
-    islandNote = islandNote,
-    onIslandNoteDismiss = { islandNote = false },
-    onPlaceGame = { id -> viewModel.playFromHome(id, com.example.data.PlayMode.A_TU_MEDIDA) },
-    onPlaceGameCard = { id -> GameRegistry.getById(id)?.let { sheetFor = it } },
-    onStop = { stop -> GameRegistry.getById(stop.gameId)?.let { sheetFor = it } },
+    onAllGames = { viewModel.openAllGames() },
     onPlay = { viewModel.startDailySession() },
     onResume = { viewModel.resumePausedGame() },
     onBaseline = { viewModel.startBaseline() },
     modifier = modifier,
-    routeStore = routeStore,
-    pieceStore = pieceStore,
-    holdPieces = achievementQueue.isNotEmpty()          // la celebración de la medalla está encima: la pieza nueva espera a que se cierre para entrar
+    routeStore = routeStore
   )
-
-  // La ficha del juego que se tocó (una piedrita de «Tu ruta de hoy» o una fila de la lámina de un lugar): la misma de Juegos (avance, marca, constancia, cómo jugar y Jugar). Al volver de la partida se queda en Hoy.
-  sheetFor?.let { g ->
-    GameSheetHost(
-      game = g, viewModel = viewModel,
-      onDismiss = { sheetFor = null },
-      onPlay = { m, timed ->
-        sheetFor = null
-        viewModel.playFromHome(g.id, m, timed)
-      }
-    )
-  }
 }
 
-// ------------------------------------------------------------------ Hoy con la isla
+// ------------------------------------------------------------------ Hoy con una sola tarjeta
 
 private val HoyCream = Color(0xFFF6EBD3)
 private val HoySoft = Color(0xFFD6D1F0)
+private val HoyMuted = Color(0xFF4A4470)
 
 /** Lo que Hoy muestra, ya calculado (así `HomeContent` no depende del ViewModel y se prueba y se captura con datos fijos). */
 internal data class HomeUi(
@@ -266,10 +156,8 @@ internal data class HomeUi(
   val hasBaseline: Boolean,
   /** Si Hoy invita a «Encuentra tu punto de partida»: por omisión, mientras no lo haya; Hoy la apaga pasadas 5 partidas o 7 días (Tarea 152, B6.2). */
   val baselineInvite: Boolean = !hasBaseline,
-  /** La lámina de cada lugar (por área: `MEMORIA`…) que se abre al tocar su edificio. */
-  val places: Map<String, com.example.data.PlaceSheetUi> = emptyMap(),
-  /** Las piezas de la isla que dan las medallas ganadas («Tu isla crece»; `data/IslaPiezas.kt`), en el orden de dibujo. */
-  val islandPieces: List<IslaPieza> = emptyList()
+  /** Las piezas de la isla que dan las medallas ganadas («Tu isla crece»; `data/IslaPiezas.kt`), en el orden de dibujo: las lleva la isla chica de la ruta completa. */
+  val islandPieces: List<com.example.data.IslaPieza> = emptyList()
 ) {
   val completed: Int get() = stops.count { it.state == StopState.DONE }
 }
@@ -296,61 +184,49 @@ internal fun greetingWord(now: Long): String {
   return when { h < 12 -> "Buenos días"; h < 20 -> "Buenas tardes"; else -> "Buenas noches" }
 }
 
-/** «Domingo 11 oct.» (con el mes abreviado: a 16 sp, «Miércoles 21 de octubre · 2 de 4 días de tu meta» no cabía en una línea a 393 dp y le quitaba alto a la isla; Tarea 153). */
+/** ¿Es de noche? (de las 20 a las 6): Nubi duerme en la tarjeta (`asleep`: ojos cerrados) en lugar de mirar de frente. */
+internal fun isNight(now: Long): Boolean {
+  val h = java.util.Calendar.getInstance().apply { timeInMillis = now }.get(java.util.Calendar.HOUR_OF_DAY)
+  return h >= 20 || h < 6
+}
+
+/** «Domingo 11 oct.» (con el mes abreviado: a 16 sp, «Miércoles 21 de octubre · 2 de 4 días de tu meta» no cabía en una línea a 393 dp; Tarea 153). */
 internal fun dateText(now: Long): String =
   java.text.SimpleDateFormat("EEEE d MMM", java.util.Locale("es")).format(java.util.Date(now)).replaceFirstChar { it.uppercase() }
 
 /**
- * El nombre que dice el lector de pantalla para la isla, con el estado de la ruta de hoy (Tarea 88): «Tu isla: hoy la ruta pasa por el Observatorio, la Antena y el Hangar» (nada hecho), «Tu isla: hecho el Observatorio; faltan la Antena y el Hangar»
- * (algo hecho) o «Tu isla: ruta completa, hechos …». Las farolas y su animación son decorativas: lo que importa para el lector es esto.
+ * El nombre que dice el lector de pantalla para la isla chica de la ruta completa, con el estado de la ruta de hoy (Tarea 88): «Tu isla: ruta completa, hechos el Observatorio, la Antena y el Hangar». Las farolas y su animación son decorativas.
  */
 internal fun islandDescription(ui: HomeUi): String =
   RouteLamps.description(ui.stops.mapNotNull { s -> IslaLugar.withArticle(s.area)?.let { it to (s.state == StopState.DONE) } }) + IslaPiezas.description(ui.islandPieces)
 
+/** Lo que dice la derecha de «Tu ruta de hoy»: cuántos juegos van y cuánto falta («0 de 3 · unos 6 minutos»). */
+internal fun routeMeta(ui: HomeUi): String {
+  val total = ui.stops.size
+  val pending = ui.stops.count { it.state != StopState.DONE }
+  return if (pending == 0) "$total de $total · completa" else "${total - pending} de $total · ${com.example.data.DailyPath.minutesText(pending)}"
+}
+
 /**
- * El contenido de Hoy sin ViewModel (Tarea 84, distribución «A» aprobada por Ricardo el 12-oct): saludo, la fecha con la meta de la semana, los siete farolitos con tu racha, LA ISLA (la protagonista: toma todo lo que sobra),
- * «Tu ruta de hoy» con tres piedritas (una por juego; tocarlas abre la ficha del juego) y UN solo botón grande. La isla ocupa lo que SOBRA entre los demás elementos,
- * con un mínimo de [ISLAND_MIN_HEIGHT] ([HoyColumn]): si lo demás no cabe (letra grande, pantalla chica) la isla se queda en su mínimo y toda la pantalla se desliza. Con letra grande (≥ 1,3) las tres piedritas pasan a una lista de filas, porque en tres columnas no caben las palabras.
- * [onStop] = se tocó la piedrita de un juego del camino; [onPlaceGame] = se pidió jugar un juego desde la lámina de un lugar (Tarea 85: tocar un edificio abre esa lámina con el avance del área; ver `HoyPlace.kt`).
- * [fx] = el estado de esa lámina (se pasa solo en pruebas).
+ * El contenido de Hoy sin ViewModel (Tarea 165): saludo, la fecha con la meta de la semana, los siete farolitos con tu racha, UNA tarjeta con la ruta de hoy y, debajo, «Todos los juegos» (y la invitación al punto de partida, si toca). Si algo no cabe (letra del sistema muy grande),
+ * toda la pantalla se desliza; con 1,3 cabe entera en 393 × 873 dp. [routeStore] = dónde se guarda lo celebrado hoy (la ruta completa): con null (pruebas de dibujo) no hay celebración y las farolas de la isla chica ya están encendidas y quietas.
+ * [onRoutePlan] avisa qué se va a animar (pruebas): se llama una vez por plan no vacío, justo antes de animar.
  */
 @Composable
 internal fun HomeContent(
   ui: HomeUi,
   /** La losa «Todos los juegos»: abre la ventana con los 17 y su buscador (Tarea 158). */
   onAllGames: () -> Unit,
-  /** El botón grande «Jugar en el …» de la lámina: juega directo el juego que elige Nubi. */
-  onPlaceGame: (gameId: String) -> Unit,
-  /** Tocar el nombre (la fila) de un juego en la lámina: abre la ficha de ese juego encima de ella (Tarea 87). */
-  onPlaceGameCard: (gameId: String) -> Unit,
-  onStop: (HomeStop) -> Unit,
   onPlay: () -> Unit,
   onResume: () -> Unit,
   onBaseline: () -> Unit,
   modifier: Modifier = Modifier,
-  fx: PlaceFx = remember { PlaceFx() },
-  /** Se abrió la lámina del lugar de esta área (`MEMORIA`…) / se cerró: el ViewModel lo recuerda para volver a ella tras una partida. */
-  onPlaceOpened: (area: String) -> Unit = {},
-  onPlaceClosed: () -> Unit = {},
-  /** El globo de Nubi «Los juegos ahora están en la isla…» (una sola vez, solo a quien ya jugó) y cómo se cierra. */
-  islandNote: Boolean = false,
-  onIslandNoteDismiss: () -> Unit = {},
-  /** Dónde se guarda lo celebrado hoy (las farolas que ya pulsaron y la ruta completa). Con null (pruebas de dibujo) no hay celebración: las farolas de las paradas hechas están encendidas y quietas. */
   routeStore: RouteCelebrationStore? = null,
-  /** Avisa qué se va a animar (pruebas): se llama una vez por plan no vacío, justo antes de animar. */
-  onRoutePlan: (RoutePlan) -> Unit = {},
-  /** Dónde se guardan las piezas de la isla que Hoy ya mostró (pasajero). Con null (pruebas de dibujo) no hay revelación: las piezas están puestas. */
-  pieceStore: IslaPiezasStore? = null,
-  /** Hay una celebración de medalla encima de Hoy: las piezas nuevas esperan (sin aparecer) hasta que se cierre. */
-  holdPieces: Boolean = false,
-  /** Avisa qué piezas se van a revelar (pruebas): se llama una vez por plan no vacío, justo antes de animar. */
-  onPiecePlan: (List<IslaPieza>) -> Unit = {}
+  onRoutePlan: (RoutePlan) -> Unit = {}
 ) {
-  val scope = rememberCoroutineScope()
   val reduceMotion = rememberReduceMotion()
   val confirm = com.example.ui.components.rememberKitConfirm()       // el «listo» háptico al completar la ruta (KitHaptics)
-  val layout = rememberIslaLayout()
-  // Las farolas de la ruta (Tarea 88): qué se enciende ahora por primera vez hoy y si la ruta quedó completa. El plan sale de lo celebrado; se guarda al empezar a animar, así cada farola pulsa UNA vez por parada y por día.
+  // La celebración de la ruta completa (Tarea 88): el plan sale de lo celebrado y se guarda al empezar a animar, así Nubi salta UNA vez por día. La isla chica solo se ve con la ruta completa; mientras no, lo que se enciende no tiene dónde verse y queda anotado igual.
   val doneKeys = ui.stops.filter { it.state == StopState.DONE }.mapNotNull { RouteLamps.placeKey(it.area) }
   val allDone = ui.stops.isNotEmpty() && ui.stops.all { it.state == StopState.DONE }
   val day = RouteLamps.dayKey(ui.now)
@@ -365,275 +241,192 @@ internal fun HomeContent(
       routeFx.run()
     }
   }
-  // Las piezas de la isla («Tu isla crece»): la primera vez con esta versión (o en un teléfono nuevo) lo que ya se tiene se siembra en silencio; una pieza nueva entra UNA vez (de a una, sin sonido ni vibración: ya los dio la celebración de la medalla)
-  // y se anota al empezar. Con «quitar animaciones» nace puesta y se anota igual (sin segunda vez).
-  val pieceFx = remember(ui.islandPieces, pieceStore, reduceMotion) {
-    PieceFx(plan = if (pieceStore == null) PiezasPlan.NONE else IslaPiezas.plan(ui.islandPieces, pieceStore.load()), reduceMotion = reduceMotion)
-  }
-  LaunchedEffect(pieceFx, holdPieces) {
-    if (pieceStore != null && !holdPieces) {
-      val seen = pieceStore.load()
-      val next = IslaPiezas.consume(ui.islandPieces, seen)
-      if (next != seen) pieceStore.save(next)
-      if (!pieceFx.plan.isEmpty) {
-        onPiecePlan(pieceFx.plan.reveal)
-        pieceFx.run()
+  // La barra de pestañas es una capa fija (`LocalBarInset`, Tarea 123): Hoy deja esa franja abajo.
+  val barInset = com.example.ui.components.LocalBarInset.current
+  BoxWithConstraints(modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().padding(bottom = barInset).verticalScroll(rememberScrollState())) {
+      // Saludo. Todo el texto va a la IZQUIERDA y desde 28 dp bajo la barra: la zona del fondo sin luceros (`ZONAS_HOY` en `tools/isla/isla.py`; la vigila `HoyIslaScreenshotTest`).
+      Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 28.dp), verticalAlignment = Alignment.CenterVertically) {
+        OnBoardText(
+          if (ui.name.isBlank()) greetingWord(ui.now) else "${greetingWord(ui.now)}, ${ui.name.trim()}",
+          color = HoyCream, fontSize = 22.sp, fontWeight = FontWeight.Bold, lineHeight = 27.sp, modifier = Modifier.weight(1f).testTag("home_greeting")
+        )
       }
+      // Una sola línea con la fecha y la meta de la semana.
+      OnBoardText(
+        "${dateText(ui.now)} · ${Week.caption(ui.lamps.daysPlayed, ui.weeklyGoal)}",
+        color = HoySoft, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 2.dp).testTag("home_date")
+      )
+      com.example.ui.components.HoyWeek(ui.lamps, ui.streak, ui.streakNote)
+      Spacer(Modifier.height(14.dp))
+      if (ui.stops.isNotEmpty() || ui.pausedTitle != null) HoyCard(ui, routeFx, onPlay = onPlay, onResume = onResume, modifier = Modifier.padding(horizontal = 16.dp))
+      HoyBelow(ui, onAllGames = onAllGames, onBaseline = onBaseline)
     }
   }
-  var rootOffset by remember { mutableStateOf(Offset.Zero) }
-  var islandWindow by remember { mutableStateOf(Rect.Zero) }
-  // La barra de pestañas es una capa fija (`LocalBarInset`, Tarea 123): la página de Hoy ya no cambia de alto al abrir o cerrar la lámina (antes se congelaba el alto y se soltaba 450 ms después de cerrar), y la lámina cubre la barra.
-  val barInset = com.example.ui.components.LocalBarInset.current
-  if (fx.active) {
-    LockTabSwipe()                                            // las pestañas no se deslizan con la lámina abierta (y la barra se retira)
-    BackHandler { fx.close(scope, reduceMotion); onPlaceClosed() }             // Atrás la cierra
-  }
-  BoxWithConstraints(modifier.fillMaxSize().onGloballyPositioned { rootOffset = it.positionInWindow() }) {
-    val viewportHeight = maxHeight - barInset                  // lo que ve la isla: el alto de la página sin la franja de la barra
-    Box(Modifier.fillMaxSize().padding(bottom = barInset).verticalScroll(rememberScrollState(), enabled = !fx.active)) {
-      HoyColumn(
-        viewportHeight = viewportHeight,
-        top = {
-          Column(Modifier.fillMaxWidth()) {
-            // Saludo (Tarea 158: arriba a la derecha ya no hay botones; el perfil es la pestaña «Tú»). Todo el texto va a la IZQUIERDA y desde 28 dp bajo la barra: la zona del fondo sin luceros (`ZONAS_HOY` en `tools/isla/isla.py`;
-            // la vigila `HoyIslaScreenshotTest`). Con 24 dp, en una pantalla de 411 × 914 dp, el lucero de arriba a la izquierda rozaba la caja del saludo.
-            Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 28.dp), verticalAlignment = Alignment.CenterVertically) {
-              OnBoardText(
-                if (ui.name.isBlank()) greetingWord(ui.now) else "${greetingWord(ui.now)}, ${ui.name.trim()}",
-                color = HoyCream, fontSize = 22.sp, fontWeight = FontWeight.Bold, lineHeight = 27.sp, modifier = Modifier.weight(1f).testTag("home_greeting")
-              )
-            }
-            // Una sola línea con la fecha y la meta de la semana.
-            OnBoardText(
-              "${dateText(ui.now)} · ${Week.caption(ui.lamps.daysPlayed, ui.weeklyGoal)}",
-              color = HoySoft, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 2.dp).testTag("home_date")
-            )
-            com.example.ui.components.HoyWeek(ui.lamps, ui.streak, ui.streakNote)
+}
+
+/** Qué se ve de la tarjeta: la ruta con sus tres juegos, o la isla chica con Nubi celebrando (la ruta completa). */
+private enum class CardMode { ROUTE, CELEBRATION }
+
+/**
+ * LA tarjeta de Hoy: una losa crema con «Tu ruta de hoy» y su meta («1 de 3 · unos 4 minutos») a la izquierda y Nubi posada en su esquina de arriba a la derecha (`hola` de día; de noche duerme, con los ojos cerrados); debajo, los tres juegos de la ruta, cada uno con su emblema, su nombre y su estado en
+ * palabras con su marca («Hecho» con el visto sobre lima, «Sigue» con un punto de tinta, «Después» con un aro vacío): NO se tocan —informan; un juego concreto se abre desde «Todos los juegos»—, y el botón sol ADENTRO («Empezar la ruta · 3 juegos», «Seguir la ruta · 2 juegos» o «Seguir tu partida»),
+ * el único sol de la tarjeta. Con la ruta completa, en lugar de Nubi y de las filas, la isla chica de Tú con Nubi celebrando (el premio) y «Ruta completa» en lima. Las filas se leen una a una («Bodega de carga, hecho»); el botón es el único toque de la tarjeta.
+ */
+@Composable
+private fun HoyCard(ui: HomeUi, routeFx: RouteFx, onPlay: () -> Unit, onResume: () -> Unit, modifier: Modifier = Modifier) {
+  val pending = ui.stops.count { it.state != StopState.DONE }
+  val paused = ui.pausedTitle != null
+  val mode = if (ui.stops.isNotEmpty() && pending == 0 && !paused) CardMode.CELEBRATION else CardMode.ROUTE
+  ClayCard(modifier = modifier.fillMaxWidth().testTag("home_card"), color = Clay.Cream, size = SlabSize.LARGE, contentPadding = 0.dp) {
+    Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 14.dp)) {
+      if (ui.stops.isNotEmpty()) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+          Column(Modifier.weight(1f)) {
+            Text("Tu ruta de hoy", color = Clay.Ink, fontSize = 22.sp, fontWeight = FontWeight.Bold, lineHeight = 27.sp, modifier = Modifier.testTag("home_route_title"))
+            Text(routeMeta(ui), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.testTag("home_route_meta"))
           }
-        },
-        island = {
-          Island(
-            description = islandDescription(ui),
-            layout = layout,
-            doneAreas = ui.stops.filter { it.state == StopState.DONE }.map { it.area }.toSet(),
-            onPlace = { area ->
-              val key = IslaLugar.nameOfArea(area)?.lowercase()
-              if (key != null && ui.places.containsKey(area) && !fx.active) {
-                fx.open(scope, key, reduceMotion)
-                onPlaceOpened(area)
-              }
-            },
-            lookKey = fx.key ?: routeFx.lookKey,
-            lookAmount = { if (fx.key != null) fx.look.value else routeFx.look.value },
-            lookMoves = if (fx.key != null) fx.moves else routeFx.moves,
-            lampProgress = { routeFx.pulseProgress(it) },
-            sparks = { routeFx.sparks.value },
-            nubiLiftDp = { RouteMotion.jumpLiftDp(routeFx.jump.value) },
-            nubiTiltDeg = { RouteMotion.jumpTiltDeg(routeFx.jump.value) },
-            pieces = ui.islandPieces,
-            pieceReveal = { pieceFx.progress(it) },
-            nubiAlpha = { if (fx.flight.value > 0f) 0f else 1f },
-            shadowAlpha = { fx.shadow.value },
-            glowKey = fx.key,
-            glowAlpha = { fx.glow.value },
-            onDrawnRect = { islandWindow = it },
-            modifier = Modifier.fillMaxWidth().testTag("home_isla")
-          )
-        },
-        bottom = {
-          Column(Modifier.fillMaxWidth()) {
-            // Con letra grande (> 1,15) lo principal va primero (Tarea 143, ítem 3): el botón «Seguir la ruta» antes de la lista de paradas, que es la explicación y puede quedar bajo el pliegue
-            if (LocalDensity.current.fontScale > 1.15f) {
-              HoyAction(ui, onPlay = onPlay, onResume = onResume, onBaseline = onBaseline, onAllGames = onAllGames)
-              HoyRoute(ui, onStop)
-            } else {
-              HoyRoute(ui, onStop)
-              HoyAction(ui, onPlay = onPlay, onResume = onResume, onBaseline = onBaseline, onAllGames = onAllGames)
-            }
+          if (mode == CardMode.ROUTE) {
+            Spacer(Modifier.width(8.dp))
+            NubiClay(width = 84.dp, asleep = isNight(ui.now), modifier = Modifier.testTag("home_nubi"))
           }
         }
-      )
-    }
-
-    // La lámina del lugar tocado (velo, lámina, Nubi volando y su globo) va encima de todo Hoy.
-    val density = LocalDensity.current
-    val island = Rect(islandWindow.left - rootOffset.x, islandWindow.top - rootOffset.y, islandWindow.right - rootOffset.x, islandWindow.bottom - rootOffset.y)
-    // El globo de Nubi de «los juegos ahora están en la isla»: sobre la isla, arriba; tocarlo lo cierra (Tarea 158)
-    if (islandNote && !fx.active && island.height > 1f) {
-      Box(Modifier.fillMaxWidth().padding(top = with(density) { island.top.toDp() } + 8.dp, start = 28.dp, end = 28.dp), contentAlignment = Alignment.TopCenter) {
-        com.example.ui.components.NubiBubble(
-          text = ISLAND_NOTE, modifier = Modifier.clickable(role = androidx.compose.ui.semantics.Role.Button, onClickLabel = "Cerrar el aviso", onClick = onIslandNoteDismiss).testTag("home_island_note")
+        if (mode == CardMode.CELEBRATION) HoyCelebration(ui, routeFx)
+        else HoyStops(ui)
+      }
+      Spacer(Modifier.height(10.dp))
+      when {
+        paused -> ClayButton(text = "Seguir tu partida", onClick = onResume, glyph = Glyph.PLAY, fontSize = 18.sp, modifier = Modifier.testTag("btn_resume_paused"))
+        pending > 0 -> {
+          val label = if (ui.completed == 0) "Empezar la ruta · ${ui.stops.size} juegos" else "Seguir la ruta · $pending ${if (pending == 1) "juego" else "juegos"}"
+          ClayButton(text = label, onClick = onPlay, glyph = Glyph.PLAY, fontSize = 18.sp, modifier = Modifier.testTag("btn_home_play"))
+        }
+        else -> ClayCard(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = "Ruta completa" }.testTag("home_route_done"), color = Clay.Lime, contentPadding = 0.dp) {
+          Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 8.dp, vertical = 6.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+            KitGlyph(Glyph.CHECK)
+            Spacer(Modifier.width(8.dp))
+            Text("Ruta completa", color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+          }
+        }
+      }
+      captionLine(ui)?.let { line ->
+        Text(
+          line, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 21.sp, textAlign = TextAlign.Center,
+          modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag(if (ui.flightDay) "home_flight_day" else "home_caption")
         )
       }
     }
-    PlaceLayer(
-      fx = fx,
-      place = fx.key?.let { k -> ui.places.values.firstOrNull { it.key == k } },
-      rest = placeNubiRest(island, layout),
-      lookShiftBase = island.width,
-      onClose = { fx.close(scope, reduceMotion); onPlaceClosed() },
-      onPlay = onPlaceGame,
-      onGame = onPlaceGameCard,
-      showProgress = false                                  // en Hoy, UNA línea de avance («Etapa Hábil · 470 de 1000 puntos»): la barra y el gráfico viven en la página del área de Avance (Tareas 158 y 159)
+  }
+}
+
+/** El alto de la isla chica de la ruta completa (dp): el de la miniatura de Tú. */
+private val HOY_CELEBRATION_ISLAND_HEIGHT = 150.dp
+
+/**
+ * El premio de la ruta completa: la isla chica (la de Tú, con las piezas que ganaste) con Nubi celebrando, en su ventanilla noche (la isla se calibró sobre el cielo oscuro) dentro de la tarjeta crema. Las farolas, el saltito de Nubi y las chispas son las de la Tarea 88: una sola vez al día,
+ * y con «quitar animaciones» la isla está quieta.
+ */
+@Composable
+private fun HoyCelebration(ui: HomeUi, routeFx: RouteFx) {
+  val layout = rememberIslaLayout()
+  Box(
+    Modifier.fillMaxWidth().padding(top = 8.dp).height(HOY_CELEBRATION_ISLAND_HEIGHT).clip(RoundedCornerShape(18.dp))
+      .background(Brush.verticalGradient(listOf(Color(0xFF100F3A), Color(0xFF1C1B52)))),
+    contentAlignment = Alignment.Center
+  ) {
+    Island(
+      description = islandDescription(ui),
+      layout = layout,
+      doneAreas = ui.stops.filter { it.state == StopState.DONE }.map { it.area }.toSet(),
+      lookKey = routeFx.lookKey,
+      lookAmount = { routeFx.look.value },
+      lookMoves = routeFx.moves,
+      lampProgress = { routeFx.pulseProgress(it) },
+      sparks = { routeFx.sparks.value },
+      nubiLiftDp = { RouteMotion.jumpLiftDp(routeFx.jump.value) },
+      nubiTiltDeg = { RouteMotion.jumpTiltDeg(routeFx.jump.value) },
+      pieces = ui.islandPieces,
+      modifier = Modifier.fillMaxSize().testTag("home_isla")
     )
   }
 }
 
-/**
- * Las tres partes de Hoy una debajo de otra: lo de arriba, la isla y lo de abajo. Lo de arriba y lo de abajo miden lo que necesiten y la isla toma TODO lo que sobra de la pantalla ([viewportHeight]), con un mínimo de [ISLAND_MIN_HEIGHT]:
- * si lo demás no cabe, la isla se queda en su mínimo y el total pasa de la pantalla (la columna de afuera se desliza). Se mide así, y no con un `weight`, porque un hijo con `weight` recibe un alto exacto: un mínimo no puede agrandarlo
- * y la isla se dibujaba más grande que su caja, encima de lo de abajo.
- */
+/** Lo que dice el lector de pantalla de un juego de la ruta: «Bodega de carga, hecho / es el que sigue / después». */
+private fun stopDescription(stop: HomeStop): String =
+  "${stop.title}, " + when (stop.state) { StopState.DONE -> "hecho"; StopState.NEXT -> "es el que sigue"; StopState.LATER -> "después" }
+
+/** La palabra de cada estado (la marca sola no basta: acierto y estado nunca solo por forma o color). */
+internal fun stopStatusWord(state: StopState): String = when (state) { StopState.DONE -> "Hecho"; StopState.NEXT -> "Sigue"; StopState.LATER -> "Después" }
+
+/** La marca del estado de un juego: «Hecho» = un visto de tinta sobre un disco lima; «Sigue» = un punto crema en un disco de tinta; «Después» = un aro vacío. Crece con la letra del sistema (hasta 1,6). */
 @Composable
-private fun HoyColumn(viewportHeight: Dp, top: @Composable () -> Unit, island: @Composable () -> Unit, bottom: @Composable () -> Unit) {
-  val density = LocalDensity.current
-  val viewportPx = with(density) { viewportHeight.roundToPx() }
-  val minIslandPx = with(density) { ISLAND_MIN_HEIGHT.roundToPx() }
-  Layout(content = { top(); island(); bottom() }, modifier = Modifier.fillMaxWidth()) { measurables, constraints ->
-    val loose = Constraints(constraints.minWidth, constraints.maxWidth, 0, Constraints.Infinity)
-    val t = measurables[0].measure(loose)
-    val b = measurables[2].measure(loose)
-    val islandHeight = maxOf(minIslandPx, viewportPx - t.height - b.height)
-    val i = measurables[1].measure(Constraints(constraints.minWidth, constraints.maxWidth, islandHeight, islandHeight))
-    layout(constraints.maxWidth, t.height + i.height + b.height) {
-      t.place(0, 0)
-      i.place(0, t.height)
-      b.place(0, t.height + i.height)
-    }
-  }
-}
-
-/** Alto mínimo de la isla en Hoy: debajo de esto se ve chica, y la pantalla se desliza antes de achicarla más. A 393 × 873 dp con letra normal la isla pasa de 400 dp. */
-internal val ISLAND_MIN_HEIGHT = 220.dp
-
-/** Lo que dice la derecha de «Tu ruta de hoy»: cuántos juegos van y cuánto falta («0 de 3 · unos 6 minutos»). */
-internal fun routeMeta(ui: HomeUi): String {
-  val total = ui.stops.size
-  val pending = ui.stops.count { it.state != StopState.DONE }
-  return if (pending == 0) "$total de $total · completa" else "${total - pending} de $total · ${com.example.data.DailyPath.minutesText(pending)}"
-}
-
-/** «Tu ruta de hoy» y, debajo, una piedrita por juego del camino. Tocar una abre la ficha del juego. */
-@Composable
-private fun HoyRoute(ui: HomeUi, onStop: (HomeStop) -> Unit) {
-  if (ui.stops.isEmpty()) return
-  Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-    val bigFont = LocalDensity.current.fontScale > 1.15f
-    if (bigFont) {
-      // Con letra grande el título y su meta no caben lado a lado: uno debajo del otro.
-      Column {
-        OnBoardText("Tu ruta de hoy", color = HoyCream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.testTag("home_route_title"))
-        OnBoardText(routeMeta(ui), color = HoySoft, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.testTag("home_route_meta"))
-      }
-    } else {
-      Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OnBoardText("Tu ruta de hoy", color = HoyCream, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.testTag("home_route_title"))
-        OnBoardText(routeMeta(ui), color = HoySoft, fontSize = 16.sp, lineHeight = 20.sp, textAlign = TextAlign.End, modifier = Modifier.weight(1f).testTag("home_route_meta"))
-      }
-    }
-    HoyStops(ui, onStop, bigFont)
-  }
-}
-
-/** Cómo van los nombres en las piedritas: de lo más cómodo a lo más justo (nombre en 15 o 14 sp, relleno interno de 9 o 6 dp). Si ni la última cabe, las paradas pasan a filas. */
-internal enum class StoneFit(val titleSp: Int, val padding: Dp) {
-  NORMAL(15, 9.dp), TIGHT_PADDING(15, 6.dp), SMALL_TEXT(14, 6.dp);
-
-  companion object {
-    /** La primera medida en la que la palabra MÁS LARGA de cada nombre cabe entera en la piedrita; `null` si en ninguna (entonces: filas). [widestWordPx] = ancho de la palabra más larga de todos los nombres a [titleSp] sp. */
-    fun pick(stoneWidthPx: Float, density: Float, widestWordPx: (titleSp: Int) -> Float): StoneFit? =
-      entries.firstOrNull { f -> widestWordPx(f.titleSp) + 2f * f.padding.value * density + 1f * density <= stoneWidthPx }
+private fun StopMark(state: StopState) {
+  val scale = LocalDensity.current.fontScale.coerceIn(1f, 1.6f)
+  val s = 24.dp * scale
+  when (state) {
+    StopState.DONE -> Box(Modifier.size(s).clip(CircleShape).background(Clay.Lime).border(2.dp, Clay.Ink, CircleShape), contentAlignment = Alignment.Center) { KitGlyph(Glyph.CHECK, size = 15.dp * scale) }
+    StopState.NEXT -> Box(Modifier.size(s).clip(CircleShape).background(Clay.Ink), contentAlignment = Alignment.Center) { Box(Modifier.size(s * 0.36f).clip(CircleShape).background(HoyCream)) }
+    StopState.LATER -> Box(Modifier.size(s).border(2.dp, HoyMuted, CircleShape))
   }
 }
 
 /**
- * Las tres paradas del camino: piedritas en una fila o, con letra grande o si ni a 14 sp cabe la palabra más larga de un nombre, una fila por juego. Nunca se parte una palabra a la mitad (Tarea 87): antes de achicar nada se mide el nombre
- * («Constelaciones» a 411 dp) y se elige [StoneFit]; el mínimo de texto es 14 sp.
+ * Las tres filas de la tarjeta. Si la palabra MÁS LARGA de algún nombre («Constelaciones», «Acoplamiento») no cabe junto a su estado («Después» con su marca), las TRES filas ponen el estado DEBAJO del nombre (con letra 2,0, o 1,3 en un teléfono de 360 dp, el nombre y el estado lado a lado
+ * partían las palabras a la mitad): se mide con la letra del sistema, igual que se hacía con las piedritas.
  */
 @Composable
-private fun HoyStops(ui: HomeUi, onStop: (HomeStop) -> Unit, bigFont: Boolean) {
+private fun HoyStops(ui: HomeUi) {
   val measurer = androidx.compose.ui.text.rememberTextMeasurer()
   val base = androidx.compose.material3.LocalTextStyle.current
   val density = LocalDensity.current
-  BoxWithConstraints(Modifier.fillMaxWidth()) {
-    val stoneWidthPx = with(density) { ((maxWidth - 16.dp) / 3).toPx() }          // tres piedritas y dos separaciones de 8 dp
-    val titles = ui.stops.map { it.title }
-    val fit = if (bigFont) null else StoneFit.pick(stoneWidthPx, density.density) { sp ->
-      val style = base.merge(androidx.compose.ui.text.TextStyle(fontSize = sp.sp, fontWeight = FontWeight.SemiBold, lineHeight = 17.sp))
-      titles.maxOf { t -> t.split(' ').maxOf { w -> measurer.measure(w, style = style, softWrap = false, maxLines = 1).size.width } }.toFloat()
-    }
-    if (fit == null) {
-      // Con letra grande (o si la palabra no cabe ni a 14 sp) no caben las palabras en tres columnas: una fila por juego.
-      Column(verticalArrangement = Arrangement.spacedBy(2.dp)) { ui.stops.forEachIndexed { i, s -> HoyStopRow(s, i + 1, onClick = { onStop(s) }) } }
-    } else {
-      Row(Modifier.fillMaxWidth().height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        ui.stops.forEachIndexed { i, s -> HoyStone(s, i + 1, fit, onClick = { onStop(s) }, modifier = Modifier.weight(1f).fillMaxHeight()) }
+  val scale = density.fontScale.coerceIn(1f, 1.6f)
+  BoxWithConstraints(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+    val titleStyle = base.merge(androidx.compose.ui.text.TextStyle(fontSize = 17.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp))
+    val statusStyle = base.merge(androidx.compose.ui.text.TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 20.sp))
+    val longestPx = ui.stops.maxOf { s -> s.title.split(' ').maxOf { w -> measurer.measure(w, titleStyle, softWrap = false, maxLines = 1).size.width } }
+    val statusPx = ui.stops.maxOf { s -> measurer.measure(stopStatusWord(s.state), statusStyle, softWrap = false, maxLines = 1).size.width } + with(density) { (24.dp * scale + 6.dp).toPx() }
+    val availablePx = with(density) { (maxWidth - 36.dp - 10.dp - 8.dp).toPx() }                       // el ancho sin el emblema, su aire y el aire entre el nombre y el estado
+    val stacked = longestPx + statusPx > availablePx
+    Column(Modifier.fillMaxWidth()) {
+      ui.stops.forEachIndexed { i, s ->
+        if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Clay.Ink.copy(alpha = 0.12f)))
+        HoyStopRow(s, i + 1, stacked)
       }
     }
-  }
-}
-
-private val HoyStoneMuted = Color(0xFF4A4470)
-
-/** Lo que dice el lector de pantalla de una parada: «Bodega de carga, Observatorio, hecho / es la que sigue / después». */
-private fun stopDescription(stop: HomeStop): String =
-  "${stop.title}, ${stop.place}, " + when (stop.state) { StopState.DONE -> "hecho"; StopState.NEXT -> "es la que sigue"; StopState.LATER -> "después" }
-
-/** El número de una parada (o el visto bueno si ya está hecha: forma, no solo color). */
-@Composable
-private fun StopNumber(stop: HomeStop, number: Int) {
-  val scale = LocalDensity.current.fontScale.coerceIn(1f, 1.6f)   // el círculo crece con la letra: con letra 2,0 el número no cabría en 24 dp
-  Box(Modifier.size(24.dp * scale).clip(RoundedCornerShape(50)).background(Color(0xFFFFF8EC)).border(2.dp, Clay.Ink, RoundedCornerShape(50)), contentAlignment = Alignment.Center) {
-    if (stop.state == StopState.DONE) com.example.ui.components.KitGlyph(com.example.ui.components.Glyph.CHECK, size = 15.dp * scale)
-    else Text("$number", color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold)
   }
 }
 
 /**
- * Una piedrita de plasticina: su número (o el visto bueno), el lugar en la isla y el nombre del juego. La que sigue va en sol y dice «Sigue» en lugar del lugar; las hechas, en lima con el visto y «Hecho»; el resto, en crema con su lugar.
- * Mide 88 dp como mínimo (84 + la sombra dura) y las tres miden lo mismo.
+ * Un juego de la ruta como fila de la tarjeta (48 dp como mínimo): su emblema (36 dp), su nombre y su estado con su marca; el estado va a la derecha o, si no cabe ([HoyStops]), debajo del nombre. NO es un botón (ni `onClick` ni `Role.Button`): informa.
+ * El nombre pasa a dos líneas antes que partirse una palabra (`HoyStonesWordsTest`, con letra hasta 2,0); la que sigue va en negrita (el sol es solo del botón de la tarjeta).
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun HoyStone(stop: HomeStop, number: Int, fit: StoneFit, onClick: () -> Unit, modifier: Modifier = Modifier) {
-  val color = when (stop.state) { StopState.DONE -> Clay.Lime; StopState.NEXT -> Clay.Sun; StopState.LATER -> HoyCream }
-  val tag = when (stop.state) { StopState.DONE -> "Hecho"; StopState.NEXT -> "Sigue"; StopState.LATER -> "Después" }      // (Tarea 143, ítem 18) antes la tercera decía el lugar y las otras dos el estado; el lugar ya se ve en la isla
-  ClayCard(
-    modifier = modifier.heightIn(min = 90.dp).semantics(mergeDescendants = true) { contentDescription = stopDescription(stop) }.testTag("home_stop_$number"),   // 84 dp de losa + 6 de arranque de sombra
-    color = color, size = SlabSize.MEDIUM, onClick = onClick, contentPadding = 0.dp
-  ) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = fit.padding, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-      // El número y el lugar van en una línea; si el lugar («Biblioteca») no cabe al lado (pantallas de ~360 dp), baja a la línea de abajo en vez de partirse a media palabra.
-      FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        StopNumber(stop, number)
-        Box(Modifier.heightIn(min = 24.dp), contentAlignment = Alignment.CenterStart) {
-          Text(tag, color = if (stop.state == StopState.LATER) HoyStoneMuted else Clay.Ink, fontSize = 16.sp, fontWeight = if (stop.state == StopState.LATER) FontWeight.Normal else FontWeight.Bold, lineHeight = 20.sp)
-        }
-      }
-      Text(stop.title, color = Clay.Ink, fontSize = fit.titleSp.sp, fontWeight = FontWeight.SemiBold, lineHeight = 17.sp, modifier = Modifier.testTag("home_stop_title_$number"))
+private fun HoyStopRow(stop: HomeStop, number: Int, stacked: Boolean) {
+  @Composable fun Status(modifier: Modifier = Modifier) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
+      StopMark(stop.state)
+      Spacer(Modifier.width(6.dp))
+      Text(
+        stopStatusWord(stop.state), color = if (stop.state == StopState.LATER) HoyMuted else Clay.Ink, fontSize = 16.sp,
+        fontWeight = if (stop.state == StopState.LATER) FontWeight.Normal else FontWeight.Bold, lineHeight = 20.sp, softWrap = false, modifier = Modifier.testTag("home_stop_state_$number")
+      )
     }
   }
-}
-
-/** La parada como fila (letra grande): su número (o el visto bueno), el juego, su lugar y si está hecha, es la que sigue o viene después. La que sigue va en sol; las hechas, en lima con visto. */
-@Composable
-private fun HoyStopRow(stop: HomeStop, number: Int, onClick: () -> Unit) {
-  val color = when (stop.state) { StopState.DONE -> Clay.Lime; StopState.NEXT -> Clay.Sun; StopState.LATER -> HoyCream }
-  val status = when (stop.state) { StopState.DONE -> "Hecho"; StopState.NEXT -> "Sigue"; StopState.LATER -> "Después" }
-  ClayCard(
-    modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = stopDescription(stop) }.testTag("home_stop_$number"),
-    color = color, size = SlabSize.SMALL, onClick = onClick, contentPadding = 0.dp
+  Row(
+    Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = stopDescription(stop) }.testTag("home_stop_$number").heightIn(min = 52.dp).padding(vertical = 4.dp),
+    verticalAlignment = Alignment.CenterVertically
   ) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(horizontal = 10.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-      StopNumber(stop, number)
-      Spacer(Modifier.width(10.dp))
-      Column(Modifier.weight(1f)) {
-        Text(stop.title, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 19.sp)
-        Text(stop.place, color = Clay.Ink, fontSize = 16.sp, lineHeight = 20.sp)
+    GameEmblem(stop.gameId, 36.dp)
+    Spacer(Modifier.width(10.dp))
+    if (stacked) {
+      Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(stop.title, color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp, modifier = Modifier.testTag("home_stop_title_$number"))
+        Status()
       }
+    } else {
+      Text(stop.title, color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp, modifier = Modifier.weight(1f).testTag("home_stop_title_$number"))
       Spacer(Modifier.width(8.dp))
-      Text(status, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 20.sp, textAlign = TextAlign.End, modifier = Modifier.widthIn(max = 112.dp))
+      Status()
     }
   }
 }
@@ -641,10 +434,7 @@ private fun HoyStopRow(stop: HomeStop, number: Int, onClick: () -> Unit) {
 /** El rótulo de la losa que abre la ventana con los 17 juegos. */
 internal const val ALL_GAMES_LABEL = "Todos los juegos"
 
-/** Lo que dice el globo de Nubi, una sola vez (Tarea 158): dos frases. */
-internal const val ISLAND_NOTE = "Los juegos ahora están en la isla. Toca un edificio o «Todos los juegos»."
-
-/** Lo que Hoy dice debajo del botón cuando hay algo que decir: la partida en pausa, la ruta ya cumplida o el Primer vuelo. Antes lo decía el globo de Nubi. */
+/** Lo que Hoy dice dentro de la tarjeta, bajo el botón, cuando hay algo que decir: la partida en pausa, la ruta ya cumplida o el Primer vuelo. */
 internal fun captionLine(ui: HomeUi): String? {
   val pending = ui.stops.count { it.state != StopState.DONE }
   return when {
@@ -655,41 +445,17 @@ internal fun captionLine(ui: HomeUi): String? {
   }
 }
 
-/** UN solo botón grande: seguir la partida en pausa, empezar o seguir la ruta de hoy, o «Ruta completa» cuando ya no queda nada; debajo, lo que haya que decir ([captionLine]) y, si todavía no hizo la evaluación, la invitación a hacerla. */
+/** Bajo la tarjeta, solo «Todos los juegos» (una losa crema, visible y ancha, con las cuatro casillas: Tarea 158) y, si todavía no hizo la evaluación, la invitación a hacerla. Es crema para que el único sol de Hoy sea el botón de la tarjeta. */
 @Composable
-private fun HoyAction(ui: HomeUi, onPlay: () -> Unit, onResume: () -> Unit, onBaseline: () -> Unit, onAllGames: () -> Unit) {
-  val pending = ui.stops.count { it.state != StopState.DONE }
-  Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 2.dp)) {
-    when {
-      ui.pausedTitle != null ->
-        ClayButton(text = "Seguir tu partida", onClick = onResume, glyph = Glyph.PLAY, fontSize = 18.sp, modifier = Modifier.testTag("btn_resume_paused"))
-      pending > 0 -> {
-        val label = if (ui.completed == 0) "Empezar la ruta · ${ui.stops.size} juegos" else "Seguir la ruta · $pending ${if (pending == 1) "juego" else "juegos"}"
-        ClayButton(text = label, onClick = onPlay, glyph = Glyph.PLAY, fontSize = 18.sp, modifier = Modifier.testTag("btn_home_play"))
-      }
-      ui.stops.isNotEmpty() ->
-        ClayCard(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = "Ruta completa" }.testTag("home_route_done"), color = Clay.Lime, contentPadding = 0.dp) {
-          Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 8.dp, vertical = 6.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            KitGlyph(Glyph.CHECK)
-            Spacer(Modifier.width(8.dp))
-            Text("Ruta completa", color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-          }
-        }
-    }
-    captionLine(ui)?.let { line ->
-      OnBoardText(
-        line, color = HoySoft, fontSize = 16.sp, lineHeight = 21.sp, textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth().padding(top = 4.dp).testTag(if (ui.flightDay) "home_flight_day" else "home_caption")
-      )
-    }
-    // «Todos los juegos» (Tarea 158): una losa crema, visible y ancha, con las cuatro casillas; NO es un enlace chico. Es crema para que el único sol de Hoy siga siendo el botón de la ruta.
+private fun HoyBelow(ui: HomeUi, onAllGames: () -> Unit, onBaseline: () -> Unit) {
+  Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 4.dp)) {
     com.example.ui.components.KitButton(
       text = ALL_GAMES_LABEL, onClick = onAllGames, color = com.example.ui.components.SlabColor.CREAM, fontSize = 17.sp, minHeight = 48.dp,
       leading = { com.example.ui.components.NavIconImage(com.example.ui.components.NavIcon.CASILLAS, size = 32.dp) },
       modifier = Modifier.padding(top = 8.dp).testTag("btn_all_games")
     )
     if (ui.baselineInvite) {
-      // Un solo sol en Hoy (Tarea 147, P7): el enlace sigue siendo un enlace pero en crema tenue (`OnNightDim`) con su chevrón, para que no compita con el botón grande, que lleva el único sol
+      // El enlace sigue siendo un enlace pero en crema tenue (`OnNightDim`) con su chevrón, para que no compita con el botón de la tarjeta, que lleva el único sol
       Row(
         Modifier
           .padding(top = 4.dp)

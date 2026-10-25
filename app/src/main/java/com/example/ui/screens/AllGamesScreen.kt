@@ -77,15 +77,13 @@ fun AllGamesScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier)
   val s = state ?: return
   BackHandler { viewModel.closeAllGames() }
   val history by viewModel.gameHistory.collectAsState()
-  val progressLog by viewModel.progressLog.collectAsState()
   val measures by viewModel.starMeasures.collectAsState()
   val daily by viewModel.dailySession.collectAsState()
   val lang = LocalAppLanguage.current
   val now = remember(history) { System.currentTimeMillis() }
   val lastPlayed = remember(history) { history.groupBy { it.gameId }.mapValues { (_, l) -> l.maxOf { it.timestamp } } }
-  val areaPoints = remember(progressLog, now) { com.example.data.AreaPoints.forAreas(AREA_ORDER, progressLog, now) }
   val pick = remember(daily, lastPlayed, now) { Suggestion.next(daily.gameIds, daily.completedCount, lastPlayed, now, com.example.data.Streak::dayOf) }
-  val places = rememberAreaPlaces(areaPoints, history, measures, now, lang, pick, daily.gameIds, daily.completedCount)
+  val places = rememberAreaPlaces(history, measures, now, lang, pick, daily.gameIds, daily.completedCount)
 
   // Lo escrito vive en el campo (para que el teclado no salte) y se avisa al ViewModel en cada cambio, para volver a ello tras una partida.
   var query by rememberSaveable { mutableStateOf(s.query) }

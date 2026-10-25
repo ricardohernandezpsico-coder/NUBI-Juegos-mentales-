@@ -272,11 +272,10 @@ class AppActualScreenshotTest {
     }
   }
 
-  private fun viewModel(withNote: Boolean = false): NeuroVidaViewModel {
+  private fun viewModel(): NeuroVidaViewModel {
     seed()
     val vm = NeuroVidaViewModel(app).also { viewModels.add(it) }
     TestSupport.awaitUntil(30_000) { vm.gameHistory.value.size >= 40 }
-    if (!withNote) vm.markIslandMapIntroSeen()                  // el globo «Los juegos ahora están en la isla» solo sale en su propia toma
     return vm
   }
 
@@ -287,33 +286,19 @@ class AppActualScreenshotTest {
     val r = Rig(viewModel(), Scene.HOY)
     r.settle(); r.shot("hoy", 873)
     r.shot("hoy-letra13", 873, 1.3f)
-    r.go(Scene.HOY, 873)
-    // la lámina de un área: se abre al tocar un edificio de la isla (con la lámina abierta la barra de pestañas se retira)
-    composeTestRule.runOnIdle { r.sheetOpen = true }
-    composeTestRule.onNodeWithTag("isla_observatorio").performClick()
-    r.settle()
-    r.shot("hoy-lamina", 873)
-    r.shot("hoy-lamina-letra13", 873, 1.3f)
+    r.shot("hoy-letra20", 873, 2f)                                                  // Tarea 165: con letra 2,0 Hoy se desliza (la tarjeta no se corta)
   }
 
-  /** La isla sin piezas y con las diez («Tu isla crece», Tarea 136): se fijan con el mismo gancho que los botones «[Debug]» de Ajustes. */
+  /** La isla de Tú sin piezas y con las diez («Tu isla crece», Tarea 136; desde la Tarea 165 la isla y su revelación viven en Tú): se fijan con el mismo gancho que los botones «[Debug]» de Ajustes. */
   @Test
-  fun hoy_isla_con_0_y_con_10_piezas() {
-    val r = Rig(viewModel(), Scene.HOY)
+  fun tu_isla_con_0_y_con_10_piezas() {
+    val r = Rig(viewModel(), Scene.TU)
     r.settle()
     composeTestRule.runOnIdle { r.vm!!.debugSetIslaPieces(emptyList()) }
-    r.settle(); r.shot("hoy-isla-0", 873)
+    r.settle(); r.shot("tu-isla-0", 873)
     composeTestRule.runOnIdle { r.vm!!.debugSetIslaPieces(IslaPieza.entries) }
-    r.settle(); r.shot("hoy-isla-10", 873)
-    r.shot("hoy-isla-10-letra13", 873, 1.3f)
-  }
-
-  /** El globo de Nubi, una sola vez (Tarea 158): «Los juegos ahora están en la isla. Toca un edificio o «Todos los juegos».» */
-  @Test
-  fun hoy_con_el_globo_de_nubi() {
-    val r = Rig(viewModel(withNote = true), Scene.HOY)
-    r.settle(); r.shot("hoy-globo", 873)
-    r.shot("hoy-globo-letra13", 873, 1.3f)
+    r.settle(); r.shot("tu-isla-10", 873)
+    r.shot("tu-isla-10-letra13", 873, 1.3f)
   }
 
   // ---------------------------------------------------------------- Todos los juegos
