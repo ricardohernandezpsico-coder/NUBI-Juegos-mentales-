@@ -14,7 +14,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.R
 
@@ -40,14 +42,21 @@ private val CoverSky = Brush.verticalGradient(listOf(Color(0xFF07071F), Color(0x
 private val CoverRim = Color(0xFF3A3875)
 
 /**
- * La ventanilla de la ficha de un juego: 150 dp de alto, a todo el ancho que le dé quien la pone, con la esquina redondeada y un borde fino; la imagen se recorta por los lados si el teléfono es angosto (la escena va al centro). No es tocable: informa (lo informativo es plano).
+ * El alto de la ventanilla, ADAPTATIVO (Tarea 172; eran 150 dp en la Tarea 171 y los objetos de varios juegos no cabían enteros): 200 dp con letra hasta 1,3 y 180 dp con letra mayor, para que la ficha plegada a 2,0 siga cabiendo (771 dp de los 777 que deja la ventana de un teléfono de 393 × 873).
+ * Es el mismo umbral con que la ficha apila sus botones y baja el nombre (`fontScale > 1,3`). UNA imagen de 1200 × 626 px (la proporción de 345 × 180 dp) sirve a las dos: a 180 dp se ve entera y a 200 dp se recorta un 5 % a cada lado; `tools/previews/portadas.py` pone los objetos dentro de lo que se ve de las dos.
+ */
+internal fun coverHeight(fontScale: Float): Dp = if (fontScale > 1.3f) 180.dp else 200.dp
+
+/**
+ * La ventanilla de la ficha de un juego: [coverHeight] de alto, a todo el ancho que le dé quien la pone, con la esquina redondeada y un borde fino; la imagen se recorta por los lados si el teléfono es angosto (la escena va al centro). No es tocable: informa (lo informativo es plano).
  * Decorativa para el lector de pantalla: el nombre del juego ya está dicho en el título.
  */
 @Composable
 internal fun GameCover(gameId: String, modifier: Modifier = Modifier) {
   val shape = RoundedCornerShape(22.dp)
+  val height = coverHeight(LocalDensity.current.fontScale)
   val res = coverRes(gameId)
-  Box(modifier.fillMaxWidth().height(150.dp).clip(shape).background(CoverSky).border(1.5.dp, CoverRim, shape)) {
+  Box(modifier.fillMaxWidth().height(height).clip(shape).background(CoverSky).border(1.5.dp, CoverRim, shape)) {
     if (res != null) Image(painterResource(res), contentDescription = null, contentScale = ContentScale.Crop, alignment = Alignment.Center, modifier = Modifier.matchParentSize())
   }
 }

@@ -309,8 +309,7 @@ internal fun makeDialogWindowEdgeToEdge(window: android.view.Window) {
   }
 }
 
-/** La portada de la ficha (Tarea 171, 25-oct): una ventanilla noche de 150 dp con la escena real del juego; el emblema (a la izquierda) y «Sobre este juego» (a la derecha) asoman bajo su borde y el nombre va debajo, a todo el ancho. */
-private val CoverHeight = 150.dp
+/** La portada de la ficha (Tarea 171, 25-oct): una ventanilla noche de 200 dp con letra hasta 1,3 y de 180 con letra mayor ([com.example.ui.components.coverHeight]; 150 en la Tarea 171) con la escena real del juego; el emblema (a la izquierda) y «Sobre este juego» (a la derecha) asoman bajo su borde y el nombre va debajo, a todo el ancho. */
 private val EmblemSize = 56.dp
 private val EmblemDrop = 28.dp             // cuánto asoma el emblema bajo la ventanilla: la mitad
 private val CoverInset = 10.dp            // el aire entre la ventanilla y el borde de la tarjeta

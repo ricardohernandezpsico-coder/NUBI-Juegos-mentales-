@@ -318,18 +318,20 @@ class GameSheetDecisionTest {
     val d = rule.density.density
     assertTrue("el emblema tiene 56 dp", Math.abs(emblem.width / d - 56f) < 1f)
     assertTrue("la X queda dentro de la ventanilla, arriba a la derecha", close.top >= cover.top && close.right <= cover.right && close.bottom < cover.top + cover.height / 2)
-    assertTrue("la ventanilla mide 150 dp (${cover.height / d})", Math.abs(cover.height / d - 150f) < 1f)
+    assertTrue("la ventanilla mide 200 dp con letra 1,0 (${cover.height / d})", Math.abs(cover.height / d - 200f) < 1f)
   }
 
   @Test
-  fun con_letra_130_lo_que_asoma_no_se_pisa() {
+  fun con_letra_130_lo_que_asoma_no_se_pisa_y_la_ventanilla_sigue_en_200_dp() {
     setSheet(fontScale = 1.3f)
     assertPeekingPiecesAreClear("letra 1,3")
+    assertTrue("con letra 1,3 la ventanilla mide 200 dp (${boundsOf("sheet_cover").height / rule.density.density})", Math.abs(boundsOf("sheet_cover").height / rule.density.density - 200f) < 1f)
   }
 
   @Test
-  fun con_letra_200_lo_que_asoma_no_se_pisa_y_sobre_este_juego_puede_pasar_a_dos_lineas() {
+  fun con_letra_200_la_ventanilla_baja_a_180_dp_lo_que_asoma_no_se_pisa_y_sobre_este_juego_puede_pasar_a_dos_lineas() {
     setSheet(fontScale = 2f)
+    assertTrue("con letra 2,0 la ventanilla baja a 180 dp para que la ficha plegada siga cabiendo (${boundsOf("sheet_cover").height / rule.density.density})", Math.abs(boundsOf("sheet_cover").height / rule.density.density - 180f) < 1f)
     assertPeekingPiecesAreClear("letra 2,0")
     assertEquals(listOf("Sobre este juego"), textsOf("sheet_about"))                // un solo texto: si no cabe en una línea, pasa a dos entre palabras, nunca se parte una
   }
