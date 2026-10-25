@@ -382,6 +382,16 @@ class GameSheetDecisionTest {
     rule.onNodeWithTag("mode_EXPERTO").assertContentDescriptionEquals("Al límite, bloqueado: supera un Desafío")
   }
 
+  /** Tarea 173: con letra 2,0 el candado de «Al límite» quedaba pegado a «Supera» (2 dp): 6 dp de aire entre el candado y su texto. */
+  @Test
+  fun el_candado_de_al_limite_deja_seis_dp_de_aire_antes_de_supera() {
+    val source = java.io.File("src/main/java/com/example/ui/screens/GameSheet.kt").readText()
+    val i = source.indexOf("KitGlyph(Glyph.LOCK, size = 20.dp)")
+    assertTrue("el candado de la casilla bloqueada está en la ficha", i > 0)
+    val after = source.substring(i, source.indexOf("Text(\"Supera un Desafío\"", i))
+    assertTrue("entre el candado y «Supera un Desafío» hay un Spacer de 6 dp, no de 2: $after", after.contains("Spacer(Modifier.width(6.dp))"))
+  }
+
   @Test
   fun una_ficha_sin_medir_dice_aun_sin_medir_y_sigue_con_los_tres_botones() {
     val g = GameRegistry.getById("stroop")!!

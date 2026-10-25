@@ -109,13 +109,18 @@ if [ "$SOLO_APP" = 0 ]; then
   [ -n "$FILTRO" ] && ARGS+=(-testFilter "$FILTRO")
   rm -f "$RESULTS/v-2-tests.xml"
   "$UNITY" "${ARGS[@]}" || true
-  RES="$(grep -o 'result="[A-Za-z]*" total="[0-9]*" passed="[0-9]*" failed="[0-9]*"' "$RESULTS/v-2-tests.xml" 2>/dev/null | head -1)"
-  TOTAL="$(echo "$RES" | sed -n 's/.*total="\([0-9]*\)".*/\1/p')"; FALLIDAS="$(echo "$RES" | sed -n 's/.*failed="\([0-9]*\)".*/\1/p')"
-  if [ -z "$RES" ] || [ "${FALLIDAS:-1}" != "0" ] || [ "${TOTAL:-0}" = "0" ]; then
+  # La linea <test-run ...> del informe NUnit. El resultado puede ser «Passed», «Failed» o «Skipped:Ignored» (con dos puntos: una prueba con Assert.Ignore, o un filtro cuyas pruebas quedan todas saltadas), asi que NO se lee el resultado de la linea sino los CONTADORES:
+  # corrida valida = al menos una prueba paso o se salto, y ninguna fallo (T173: antes «Skipped:Ignored» se leia como «sin resultados»).
+  RES="$(grep -o '<test-run [^>]*' "$RESULTS/v-2-tests.xml" 2>/dev/null | head -1)"
+  attr() { echo "$RES" | sed -n "s/.* $1=\"\([0-9]*\)\".*/\1/p"; }
+  TOTAL="$(attr total)"; PASADAS="$(attr passed)"; FALLIDAS="$(attr failed)"; SALTADAS="$(attr skipped)"
+  if [ -z "$RES" ] || [ -z "$FALLIDAS" ] || [ "$FALLIDAS" != "0" ] || [ "$(( ${PASADAS:-0} + ${SALTADAS:-0} ))" = "0" ]; then
     grep -o 'name="[^"]*" [^>]*result="Failed"' "$RESULTS/v-2-tests.xml" 2>/dev/null | head -5
-    fallo "2 EditMode${FILTRO:+ (filtro)}" "${RES:-sin resultados}" "$RESULTS/v-2-tests.log"
+    DETALLE="sin resultados"; [ -n "$RES" ] && DETALLE="total=$TOTAL pasadas=$PASADAS saltadas=$SALTADAS fallidas=$FALLIDAS"
+    fallo "2 EditMode${FILTRO:+ (filtro)}" "$DETALLE" "$RESULTS/v-2-tests.log"
   fi
-  linea "2 EditMode${FILTRO:+ (filtro)}" "OK $TOTAL pruebas, 0 fallos" "$((SECONDS - T))"
+  EXTRA=""; [ "${SALTADAS:-0}" != "0" ] && EXTRA=", $SALTADAS saltadas"
+  linea "2 EditMode${FILTRO:+ (filtro)}" "OK $TOTAL pruebas, 0 fallos$EXTRA" "$((SECONDS - T))"
 fi
 
   # --- smoke: UN solo Unity para todos los juegos pedidos (o los 23)

@@ -497,7 +497,7 @@ internal fun GameSheetContent(
                     } else {
                       Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
                         KitGlyph(Glyph.LOCK, size = 20.dp)
-                        Spacer(Modifier.width(2.dp))
+                        Spacer(Modifier.width(6.dp))                    // aire entre el candado y «Supera»: con 2 dp quedaban pegados con letra 2,0 (Tarea 173)
                         Text("Supera un Desafío", color = CardMuted, fontSize = Small)
                       }
                     }
