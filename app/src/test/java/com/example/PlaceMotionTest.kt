@@ -39,7 +39,7 @@ class PlaceMotionTest {
 
   @Test
   fun el_muestreo_pasa_por_los_cuadros_clave_y_no_se_sale_de_rango() {
-    val keys = listOf(0f to 0f, 0.5f to 10f, 1f to 4f)                    // las farolas de la ruta lo usan (`RouteMotion`)
+    val keys = listOf(0f to 0f, 0.5f to 10f, 1f to 4f)                    // cuadros clave: progreso → valor
     assertEquals(0f, PlaceMotion.sample(keys, 0f), 1e-5f)
     assertEquals(10f, PlaceMotion.sample(keys, 0.5f), 1e-5f)
     assertEquals(4f, PlaceMotion.sample(keys, 1f), 1e-5f)

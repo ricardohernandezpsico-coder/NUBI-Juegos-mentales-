@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 
 /**
  * La entrada de las piezas nuevas de la isla (Tarea 136, «Tu isla crece»; desde la Tarea 165 se revela al abrir Tú, no en Hoy): cada pieza del [plan] pasa de 0 a 1 ([progress]) en [NubiMotion.CELEBRATE_MS] (600 ms, un resorte suave: `EaseOutBack`), de a una con [STAGGER_MS] ms de separación
- * (como las farolas, `RouteMotion.STAGGER_MS`). Quien dibuja (`Island`) lee [progress] al DIBUJAR (alfa 0 → 1 y escala 0,9 → 1 desde el ancla de la pieza), así que nada recompone cuadro a cuadro. Las piezas que no están en el plan valen 1 (puestas).
+ * (cada 250 ms: [STAGGER_MS]). Quien dibuja (`Island`) lee [progress] al DIBUJAR (alfa 0 → 1 y escala 0,9 → 1 desde el ancla de la pieza), así que nada recompone cuadro a cuadro. Las piezas que no están en el plan valen 1 (puestas).
  * **Sin sonido ni vibración**: ya los dio la celebración de la medalla. Con [reduceMotion] («quitar animaciones») las piezas nacen puestas y [run] no hace nada.
  */
 @Stable

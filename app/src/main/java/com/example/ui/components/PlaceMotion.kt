@@ -2,7 +2,7 @@ package com.example.ui.components
 
 /**
  * Los tiempos y la mirada de Nubi cuando se toca un edificio de la isla (Tarea 85; boceto «A», artboard `Main.dc.html`): Nubi mira hacia el edificio tocado y, a los ~650 ms, se abre «Todos los juegos» en esa área ([IslaLook]). Desde la Tarea 163 no hay lámina del edificio: se fueron el velo, la lámina,
- * el vuelo de Nubi hasta posarse en ella y su globo; queda la mirada, el brillo del edificio y los tiempos que comparten la barra de pestañas y las farolas de la ruta. Todo es matemática pura (se prueba sin pantalla); lo anima [IslaLook].
+ * el vuelo de Nubi hasta posarse en ella y su globo; queda la mirada, el brillo del edificio y los tiempos de la barra de pestañas. Todo es matemática pura (se prueba sin pantalla); lo anima [IslaLook].
  * Con «quitar animaciones» nada de esto se usa: la mirada solo cambia la imagen.
  */
 object PlaceMotion {
@@ -34,7 +34,7 @@ object PlaceMotion {
   /** El fundido de la imagen (`hola` → `mira`) sobre el avance [look] del corrimiento (0 → 1 en [LOOK_SHIFT_MS]): el fundido dura [LOOK_FADE_MS], menos. */
   fun lookFade(look: Float): Float = (look * LOOK_SHIFT_MS / LOOK_FADE_MS).coerceIn(0f, 1f)
 
-  /** Valor en [p] (0..1) de una lista de cuadros clave (progreso → valor), suavizado entre cuadro y cuadro (lo usan las farolas de la ruta: [RouteMotion]). */
+  /** Valor en [p] (0..1) de una lista de cuadros clave (progreso → valor), suavizado entre cuadro y cuadro (las farolas de la ruta lo usaban: se retiraron en la Tarea 168). */
   fun sample(keys: List<Pair<Float, Float>>, p: Float): Float {
     val x = p.coerceIn(0f, 1f)
     for (i in 1 until keys.size) {

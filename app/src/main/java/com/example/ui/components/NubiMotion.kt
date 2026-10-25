@@ -15,7 +15,7 @@ import androidx.compose.animation.core.tween
  * | Respuesta al dedo | 80 al apretar, 140 al soltar | suave | losas y discos del kit (`ClayKit`): la plasticina real se hunde rápido y recupera su forma un poco más lento |
  * | Cambio de estado | 150-200 | estándar | losa de la barra (150), interruptor (150), velo de la lámina (200) |
  * | Cambio de lugar | 300 pestaña · 400 lámina | enfatizada (arranca rápido, frena suave) | `animateScrollToPage`, la lámina de un lugar (sin espera) y los pasos del Primer vuelo (300) |
- * | Celebración | 600-900 | resorte suave | pulso de farola 600 y saltito 900 (`RouteMotion`) |
+ * | Celebración | 600-900 | resorte suave | pulso 600 (entra una pieza de la isla, `PieceFx`) y saltito 900 (`NubiHop`) |
  *
  * Con «quitar animaciones» ([rememberReduceMotion]) todo cae a `snap()` y la lámina aparece en su sitio con un fundido de [REDUCED_FADE_MS]. `NubiMotionTest` fija la tabla.
  */
@@ -35,7 +35,7 @@ object NubiMotion {
   /** La lámina de un lugar sube (y baja). Sin espera: sale al toque. */
   const val SHEET_MS = 400
 
-  /** Pulso de una farola de la ruta. */
+  /** El pulso de una celebración chica: entra una pieza de la isla (`PieceFx`). */
   const val CELEBRATE_MS = 600
   /** El saltito de Nubi al completar la ruta. */
   const val CELEBRATE_LONG_MS = 900

@@ -19,12 +19,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
-import com.example.data.IslaPoint
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -40,7 +38,6 @@ import com.example.data.IslaLayout
 import com.example.data.IslaCapa
 import com.example.data.IslaLugar
 import com.example.data.IslaPieza
-import com.example.data.RouteLamps
 
 /** Carga y lee `res/raw/isla.json` una sola vez (son 4 KB). */
 @Composable
@@ -62,44 +59,33 @@ private const val SHADOW_REST_ALPHA = 0.83f
  *
  * Mide lo que le deja su espacio: alto = el del contenedor, y el ancho sale de la proporción de la imagen (hasta el ancho de la pantalla más 28 dp de sangrado, con tope de 480 dp). Es DECORATIVA para el lector de pantalla:
  * las imágenes no tienen descripción y el grupo lleva [description]. NO es tocable: desde la Tarea 165 los edificios no son botones (la prueba con personas del 22-oct mostró que nadie los leía como áreas).
- * [doneAreas] = áreas de las paradas de hoy ya cumplidas (su farola está encendida).
  *
- * Nubi mira una farola que se enciende (Tarea 88) y se mueve con la sombra; todo lo que cambia cuadro a cuadro llega como lambda y se lee al DIBUJAR, así que no recompone la isla:
+ * Nubi puede mirar un lugar (Tarea 88; hoy nadie la maneja: el encendido de las farolas de la ruta que la usaba se borró en la Tarea 168) y se mueve con la sombra; todo lo que cambia cuadro a cuadro llega como lambda y se lee al DIBUJAR, así que no recompone la isla:
  * [lookKey] = el lugar al que mira Nubi (null = de frente) y [lookAmount] cuánto (0 → 1: fundido a `mira_<lugar>`, corrimiento y ladeo; con [lookMoves] en false, solo el fundido).
  *
  * Las piezas por medallas (Tarea 136, «Tu isla crece»; `data/IslaPiezas.kt`): [pieces] = las que la persona ya ganó, cada una una capa transparente con el MISMO recorte que la base (`isla_deco_<id>`: trae su propia posición). Las de SUELO se dibujan después de la base y de la sombra de Nubi y ANTES de los edificios
  * (el Hangar y la Biblioteca las tapan donde corresponde); las de AIRE (banderines), encima de los edificios. [pieceReveal] = cuánto lleva revelada cada una (0 → 1; 1 = puesta; alfa y escala 0,9 → 1 desde su ancla; se lee al dibujar). No cambian el tamaño de la isla ni los toques: son decorativas
  * y el lector de pantalla las nombra en [description].
- *
- * Las farolas de la ruta (Tarea 88): la farola de cada lugar de [doneAreas] (parada hecha hoy) está ENCENDIDA: un disco sol en su tope, un halo cálido de 2× el de las apagadas y un leve resplandor en la losa a su pie. [lampProgress] = cuánto lleva encendida
- * la farola de un lugar (0 → 1, con un pulso suave; 1 = encendida y quieta), [sparks] = el progreso de las chispas de la ruta completa (1 = no se ven) y [nubiLiftDp]/[nubiTiltDeg] = el saltito de Nubi. Las farolas de lugares que no están en la ruta de hoy, o que aún no se hacen, quedan como siempre.
  */
 @Composable
 fun Island(
   description: String,
   modifier: Modifier = Modifier,
   layout: IslaLayout = rememberIslaLayout(),
-  doneAreas: Set<String> = emptySet(),
   lookKey: String? = null,
   lookAmount: () -> Float = { 0f },
   lookMoves: Boolean = true,
-  lampProgress: (placeKey: String) -> Float = { 1f },
-  sparks: () -> Float = { 1f },
-  nubiLiftDp: () -> Float = { 0f },
-  nubiTiltDeg: () -> Float = { 0f },
   pieces: List<IslaPieza> = emptyList(),
   pieceReveal: (id: String) -> Float = { 1f }
 ) {
   // Nubi viva (Tarea 148, P1): flota y parpadea en reposo; quieta y sin parpadear si mira un lugar o salta (o con «quitar animaciones»). Su sombra se achica y se aclara cuando sube (`docs/diseno-isla.md` §6).
-  val idle = rememberNubiIdle { lookKey == null && nubiLiftDp() <= 0f }
+  val idle = rememberNubiIdle { lookKey == null }
   BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
     val width = minOf(maxHeight * layout.aspect, maxWidth + 28.dp, 480.dp)
     val height = width / layout.aspect
     val widthPx = with(LocalDensity.current) { width.toPx() }
     val look = PlaceMotion.look(lookKey)
     val miraBox = lookKey?.let { layout.miraBoxes[it] }
-    // (lugar, farola, tope) de cada parada hecha hoy: esas farolas están encendidas.
-    val lit = remember(layout, doneAreas) { doneAreas.mapNotNull { a -> RouteLamps.placeKey(a)?.let { k -> layout.lampIndex(k)?.let { i -> LitLamp(k, i, layout.lamps[i]) } } }.sortedBy { it.index } }
     Box(
       Modifier
         .requiredSize(width, height)
@@ -111,18 +97,15 @@ fun Island(
         val h = NubiIdle.height01(idle.floatDp)
         drawNubiShadow(
           layout, shiftX = if (lookMoves) look.shift * size.width * lookAmount() else 0f,
-          strength = (1f - 0.25f * (nubiLiftDp() / RouteMotion.JUMP_DP).coerceIn(0f, 1f)) * NubiIdle.shadowAlpha(h) / SHADOW_REST_ALPHA, sizeScale = NubiIdle.shadowSize(h)
+          strength = NubiIdle.shadowAlpha(h) / SHADOW_REST_ALPHA, sizeScale = NubiIdle.shadowSize(h)
         )
-        drawLitFootGlows(layout, lit, lampProgress)      // debajo de los edificios: el del Hangar tapa el resplandor de las farolas de adelante
       }
       pieces.filter { it.capa == IslaCapa.SUELO }.forEach { IslaPieceImage(it, layout, pieceReveal) }
       Image(painterResource(R.drawable.isla_edificios), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
       pieces.filter { it.capa == IslaCapa.AIRE }.forEach { IslaPieceImage(it, layout, pieceReveal) }
       Canvas(Modifier.fillMaxSize()) {
         drawHalo(layout.antennaHalo)
-        drawHalo(layout.lampHalos, skip = lit.map { it.index }.toSet())
-        drawLitLamps(layout, lit, lampProgress)
-        drawSparks(layout, lit, sparks())
+        drawHalo(layout.lampHalos)
       }
       // Nubi de frente; si mira un lugar, se funde con su imagen de mirada y las dos se corren y se ladean juntas.
       Image(
@@ -134,8 +117,8 @@ fun Island(
             val amount = lookAmount()
             alpha = 1f - if (miraBox != null) PlaceMotion.lookFade(amount) else 0f
             translationX = if (lookMoves) look.shift * widthPx * amount else 0f
-            translationY = -(nubiLiftDp() + idle.floatDp) * density
-            rotationZ = (if (lookMoves) look.tiltDeg * amount else 0f) + nubiTiltDeg()
+            translationY = -idle.floatDp * density
+            rotationZ = if (lookMoves) look.tiltDeg * amount else 0f
           }.testTag("isla_nubi"),
         contentScale = ContentScale.FillBounds
       )
@@ -149,8 +132,8 @@ fun Island(
             val amount = lookAmount()
             alpha = idle.eyesClosed * (1f - if (miraBox != null) PlaceMotion.lookFade(amount) else 0f)
             translationX = if (lookMoves) look.shift * widthPx * amount else 0f
-            translationY = -(nubiLiftDp() + idle.floatDp) * density
-            rotationZ = (if (lookMoves) look.tiltDeg * amount else 0f) + nubiTiltDeg()
+            translationY = -idle.floatDp * density
+            rotationZ = if (lookMoves) look.tiltDeg * amount else 0f
           }.testTag("isla_nubi_ojos_cerrados"),
         contentScale = ContentScale.FillBounds
       )
@@ -164,8 +147,7 @@ fun Island(
               val amount = lookAmount()
               alpha = PlaceMotion.lookFade(amount)
               translationX = if (lookMoves) look.shift * widthPx * amount else 0f
-              translationY = -nubiLiftDp() * density
-              rotationZ = (if (lookMoves) look.tiltDeg * amount else 0f) + nubiTiltDeg()
+              rotationZ = if (lookMoves) look.tiltDeg * amount else 0f
             },
           contentScale = ContentScale.FillBounds
         )
@@ -242,67 +224,11 @@ private fun DrawScope.drawNubiShadow(layout: IslaLayout, shiftX: Float = 0f, str
 }
 
 /** Halos de luz cálida (degradado radial de [IslaHalo.colorHex], opaco al centro y transparente en el borde): el de la torre y los de las farolas. El radio es una fracción del ancho de la isla. */
-private fun DrawScope.drawHalo(halo: IslaHalo, skip: Set<Int> = emptySet()) {
+private fun DrawScope.drawHalo(halo: IslaHalo) {
   val color = Color(android.graphics.Color.parseColor(halo.colorHex))
   val r = size.width * halo.radius
-  halo.centers.forEachIndexed { i, p ->
-    if (i in skip) return@forEachIndexed          // las farolas encendidas dibujan su propio halo, más grande
+  halo.centers.forEach { p ->
     val c = Offset(size.width * p.x, size.height * p.y)
     drawCircle(Brush.radialGradient(listOf(color.copy(alpha = halo.opacity), color.copy(alpha = halo.opacity * 0.35f), Color.Transparent), center = c, radius = r), radius = r, center = c)
   }
 }
-
-/** Una farola encendida: el lugar al que pertenece, su índice en `lamps` y su tope. */
-private data class LitLamp(val place: String, val index: Int, val top: IslaPoint)
-
-private fun hex(c: String) = Color(android.graphics.Color.parseColor(c))
-
-/** El leve resplandor en la losa a pie de cada farola encendida (una elipse achatada: el suelo está en perspectiva). Va DEBAJO de los edificios. */
-private fun DrawScope.drawLitFootGlows(layout: IslaLayout, lit: List<LitLamp>, progress: (String) -> Float) {
-  val st = layout.litLamp
-  val color = hex(st.footGlowColorHex)
-  lit.forEach { l ->
-    val p = progress(l.place)
-    val a = st.footGlowOpacity * RouteMotion.pulseAlpha(p)
-    if (a <= 0f) return@forEach
-    val c = Offset(size.width * l.top.x, size.height * (l.top.y + st.footDy))
-    val r = size.width * st.footGlowRadius * RouteMotion.pulseScale(p)
-    withTransform({ translate(c.x, c.y); scale(1f, 0.55f, Offset.Zero) }) {
-      drawCircle(Brush.radialGradient(0f to color.copy(alpha = a), 1f to Color.Transparent, center = Offset.Zero, radius = r), radius = r, center = Offset.Zero)
-    }
-  }
-}
-
-/** El halo cálido (2× el de las apagadas, alfa 0,8) y el disco sol en el tope de cada farola encendida; crecen con el pulso del encendido. */
-private fun DrawScope.drawLitLamps(layout: IslaLayout, lit: List<LitLamp>, progress: (String) -> Float) {
-  val st = layout.litLamp
-  val halo = hex(st.haloColorHex)
-  val disc = hex(st.discColorHex)
-  lit.forEach { l ->
-    val p = progress(l.place)
-    val scale = RouteMotion.pulseScale(p)
-    if (scale <= 0f) return@forEach
-    val alpha = RouteMotion.pulseAlpha(p)
-    val c = Offset(size.width * l.top.x, size.height * l.top.y)
-    val r = size.width * st.haloRadius * scale
-    drawCircle(Brush.radialGradient(listOf(halo.copy(alpha = st.haloOpacity * alpha), halo.copy(alpha = st.haloOpacity * alpha * 0.35f), Color.Transparent), center = c, radius = r), radius = r, center = c)
-    drawCircle(disc.copy(alpha = 0.95f * alpha), radius = size.width * st.discRadius * scale.coerceAtMost(1.1f), center = c)
-  }
-}
-
-/** Las chispas redondas color sol que salen de las farolas encendidas al completar la ruta y se apagan ([progress] 0 → 1; en 1 no se ven). Nada de estrellas con puntas. */
-private fun DrawScope.drawSparks(layout: IslaLayout, lit: List<LitLamp>, progress: Float) {
-  if (progress >= 1f) return
-  val alpha = RouteMotion.sparkAlpha(progress)
-  if (alpha <= 0f) return
-  val color = hex(layout.litLamp.discColorHex)
-  val r = size.width * RouteMotion.SPARK_RADIUS * (1f - 0.4f * progress)
-  lit.forEach { l ->
-    RouteMotion.sparkAngles(l.index).forEach { angle ->
-      val (dx, dy) = RouteMotion.sparkOffset(angle, progress)
-      drawCircle(color.copy(alpha = alpha), radius = r, center = Offset(size.width * (l.top.x + dx), size.height * l.top.y + size.width * dy))
-    }
-  }
-}
-
-

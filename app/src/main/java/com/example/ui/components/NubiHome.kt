@@ -101,19 +101,19 @@ fun NubiClay(width: Dp, modifier: Modifier = Modifier, celebrate: Boolean = fals
   LaunchedEffect(celebrate, reduceMotion) {
     if (celebrate && !reduceMotion) {
       hop.snapTo(0f)
-      hop.animateTo(1f, tween(RouteMotion.JUMP_MS, easing = LinearEasing))
+      hop.animateTo(1f, tween(NubiHop.JUMP_MS, easing = LinearEasing))
     }
   }
   val p = hop.value
-  val lift = RouteMotion.jumpLiftDp(p)
-  val tilt = RouteMotion.jumpTiltDeg(p)
+  val lift = NubiHop.jumpLiftDp(p)
+  val tilt = NubiHop.jumpTiltDeg(p)
   val body = width / NUBI_ASPECT
   // Nubi viva (Tarea 148, P1): flota y parpadea en reposo (nunca mientras salta); con «quitar animaciones», quieta y con los ojos abiertos
   val idle = rememberNubiIdle { !hop.isRunning }
   Box(modifier.size(width, body + width * NUBI_SHADOW_ROOM), contentAlignment = Alignment.TopCenter) {
     Canvas(Modifier.fillMaxSize()) {
       val h = NubiIdle.height01(idle.floatDp)
-      drawNubiGroundShadow(body.toPx(), strength = (1f - 0.3f * (lift / RouteMotion.JUMP_DP).coerceIn(0f, 1f)) * NubiIdle.shadowAlpha(h), sizeScale = NubiIdle.shadowSize(h))
+      drawNubiGroundShadow(body.toPx(), strength = (1f - 0.3f * (lift / NubiHop.JUMP_DP).coerceIn(0f, 1f)) * NubiIdle.shadowAlpha(h), sizeScale = NubiIdle.shadowSize(h))
     }
     Box(Modifier.size(width, body).graphicsLayer { translationY = -(lift + idle.floatDp) * density; rotationZ = tilt }) {
       Image(painter = painterResource(R.drawable.nubi_3d), contentDescription = "Nubi", modifier = Modifier.fillMaxSize().testTag("nubi_ojos_abiertos"))

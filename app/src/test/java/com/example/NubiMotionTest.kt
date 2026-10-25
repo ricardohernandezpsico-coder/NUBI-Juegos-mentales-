@@ -2,14 +2,14 @@ package com.example
 
 import com.example.ui.components.NubiMotion
 import com.example.ui.components.PlaceMotion
-import com.example.ui.components.RouteMotion
+import com.example.ui.components.NubiHop
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
  * La escala de movimiento ÚNICA (Tarea 123, `NubiMotion`): rápido para lo que responde al dedo, medio para cambiar de lugar y largo solo para celebrar. Esta prueba fija la tabla y que lo que ya existía (el velo y la lámina de un lugar, la barra,
- * las farolas de la ruta) salga de ella, para que nadie vuelva a inventar un tiempo suelto.
+ * el saltito de Nubi) salga de ella, para que nadie vuelva a inventar un tiempo suelto.
  */
 class NubiMotionTest {
   @Test
@@ -21,7 +21,7 @@ class NubiMotionTest {
     assertEquals(200, NubiMotion.STATE_MS)
     assertEquals("pestaña", 300, NubiMotion.TAB_MS)
     assertEquals("lámina", 400, NubiMotion.SHEET_MS)
-    assertEquals("pulso de farola", 600, NubiMotion.CELEBRATE_MS)
+    assertEquals("pulso de celebración", 600, NubiMotion.CELEBRATE_MS)
     assertEquals("saltito", 900, NubiMotion.CELEBRATE_LONG_MS)
     assertEquals(150, NubiMotion.REDUCED_FADE_MS)
   }
@@ -37,8 +37,7 @@ class NubiMotionTest {
   fun lo_que_ya_existia_sale_de_la_escala() {
     assertEquals(NubiMotion.STATE_FAST_MS, PlaceMotion.TAB_FADE_MS)
     assertEquals(NubiMotion.REDUCED_FADE_MS, PlaceMotion.REDUCED_FADE_MS)
-    assertEquals(NubiMotion.CELEBRATE_MS, RouteMotion.PULSE_MS)
-    assertEquals(NubiMotion.CELEBRATE_LONG_MS, RouteMotion.JUMP_MS)
+    assertEquals(NubiMotion.CELEBRATE_LONG_MS, NubiHop.JUMP_MS)
   }
 
   @Test

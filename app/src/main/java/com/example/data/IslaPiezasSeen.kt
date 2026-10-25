@@ -10,7 +10,7 @@ interface IslaPiezasStore {
 }
 
 /**
- * En preferencias propias y pasajeras (`isla_piezas`, clave `vistas`: no entra en `backup_rules.xml`; `BackupRulesTest` lo lista como pasajero, igual que `route_celebrations`; patrón de `RouteLamps.kt`).
+ * En preferencias propias y pasajeras (`isla_piezas`, clave `vistas`: no entra en `backup_rules.xml`; `BackupRulesTest` lo lista como pasajero).
  * Lo único que se pierde al cambiar de teléfono es «ya la vi»: Hoy siembra en silencio y las piezas aparecen puestas, sin animación.
  */
 class PrefsIslaPiezasStore(context: Context) : IslaPiezasStore {

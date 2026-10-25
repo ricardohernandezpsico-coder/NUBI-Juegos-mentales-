@@ -56,6 +56,6 @@ class PieceFxTest {
   @Test
   fun la_entrada_dura_lo_que_celebrar_y_las_piezas_entran_de_a_una() {
     assertEquals(600, NubiMotion.CELEBRATE_MS)
-    assertEquals("la misma separación que las farolas de la ruta", com.example.ui.components.RouteMotion.STAGGER_MS.toLong(), PieceFx.STAGGER_MS)
+    assertEquals("una tras otra, cada 250 ms", 250L, PieceFx.STAGGER_MS)
   }
 }
