@@ -12,6 +12,7 @@ import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
@@ -356,7 +357,9 @@ class HoyTarjetaTest {
     composeTestRule.onNodeWithTag("home_route_done").assertExists()
     composeTestRule.onNodeWithText("Ruta completa").assertExists()
     composeTestRule.onNodeWithText("3 de 3 · completa").assertExists()
-    composeTestRule.onNodeWithText("Ya pasaste por la isla hoy. Mañana sigo aquí.").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Mañana te espera una ruta nueva.").assertIsDisplayed()
+    composeTestRule.onNodeWithTag("home_route_done").assertHasNoClickAction()                     // «Ruta completa» es un rótulo: no se toca ni parece botón
+    composeTestRule.onNodeWithContentDescription("Ruta completa").assertExists()                  // y conserva su descripción
     assertEquals(0, composeTestRule.onAllNodes(hasTestTag("btn_home_play")).fetchSemanticsNodes().size)
     for (n in 1..3) assertFalse("con la isla no se repiten las filas", exists("home_stop_$n"))
     assertFalse("y Nubi no va en la esquina: está en la isla", exists("home_nubi"))

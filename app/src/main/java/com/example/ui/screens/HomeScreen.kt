@@ -271,7 +271,7 @@ private enum class CardMode { ROUTE, CELEBRATION }
 /**
  * LA tarjeta de Hoy: una losa crema con «Tu ruta de hoy» y su meta («1 de 3 · unos 4 minutos») a la izquierda y Nubi posada en su esquina de arriba a la derecha (`hola` de día; de noche duerme, con los ojos cerrados); debajo, los tres juegos de la ruta, cada uno con su emblema, su nombre y su estado en
  * palabras con su marca («Hecho» con el visto sobre lima, «Sigue» con un punto de tinta, «Después» con un aro vacío): NO se tocan —informan; un juego concreto se abre desde «Todos los juegos»—, y el botón sol ADENTRO («Empezar la ruta · 3 juegos», «Seguir la ruta · 2 juegos» o «Seguir tu partida»),
- * el único sol de la tarjeta. Con la ruta completa, en lugar de Nubi y de las filas, la isla chica de Tú con Nubi celebrando (el premio) y «Ruta completa» en lima. Las filas se leen una a una («Bodega de carga, hecho»); el botón es el único toque de la tarjeta.
+ * el único sol de la tarjeta. Con la ruta completa, en lugar de Nubi y de las filas, la isla chica de Tú con Nubi celebrando (el premio) y «Ruta completa» como rótulo en tinta (sin losa: no es un botón). Las filas se leen una a una («Bodega de carga, hecho»); el botón es el único toque de la tarjeta.
  */
 @Composable
 private fun HoyCard(ui: HomeUi, routeFx: RouteFx, onPlay: () -> Unit, onResume: () -> Unit, modifier: Modifier = Modifier) {
@@ -301,12 +301,14 @@ private fun HoyCard(ui: HomeUi, routeFx: RouteFx, onPlay: () -> Unit, onResume: 
           val label = if (ui.completed == 0) "Empezar la ruta · ${ui.stops.size} juegos" else "Seguir la ruta · $pending ${if (pending == 1) "juego" else "juegos"}"
           ClayButton(text = label, onClick = onPlay, glyph = Glyph.PLAY, fontSize = 18.sp, modifier = Modifier.testTag("btn_home_play"))
         }
-        else -> ClayCard(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = "Ruta completa" }.testTag("home_route_done"), color = Clay.Lime, contentPadding = 0.dp) {
-          Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 8.dp, vertical = 6.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-            KitGlyph(Glyph.CHECK)
-            Spacer(Modifier.width(8.dp))
-            Text("Ruta completa", color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-          }
+        // «Ruta completa» es un ROTULO, no un botón: el visto y el texto en tinta, centrados bajo la isla, sin losa, borde ni sombra (la losa lima con borde se leía como un botón que no hace nada)
+        else -> Row(
+          Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = "Ruta completa" }.testTag("home_route_done").heightIn(min = 40.dp).padding(vertical = 4.dp),
+          horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically
+        ) {
+          KitGlyph(Glyph.CHECK)
+          Spacer(Modifier.width(8.dp))
+          Text("Ruta completa", color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         }
       }
       captionLine(ui)?.let { line ->
@@ -440,7 +442,7 @@ internal fun captionLine(ui: HomeUi): String? {
   return when {
     ui.pausedTitle != null -> "Tienes una partida en pausa: ${ui.pausedTitle}."
     ui.flightDay -> "Tu primer vuelo fue tu ruta de hoy. Mañana empieza tu ruta."
-    ui.stops.isNotEmpty() && pending == 0 -> "Ya pasaste por la isla hoy. Mañana sigo aquí."
+    ui.stops.isNotEmpty() && pending == 0 -> "Mañana te espera una ruta nueva."
     else -> null
   }
 }
