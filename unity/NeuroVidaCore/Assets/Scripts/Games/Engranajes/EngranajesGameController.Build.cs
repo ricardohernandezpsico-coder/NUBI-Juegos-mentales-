@@ -567,7 +567,7 @@ namespace NeuroVida.Games.Engranajes
         }
 
         private const float CartelW = 104f, CartelH = 44f;                                                           // Tarea 129: 96 × 38 → 104 × 44 para la letra de 16 dp (el neutro es una losa chica crema)
-        private const float MotorW = 66f, MotorH = 30f;                                                               // el rótulo MOTOR: la losa chica del kit pide al menos ~28 dp de alto (radio 14)
+        private const float MotorW = EngranajesLayout.MotorPillW, MotorH = EngranajesLayout.MotorPillH;                                                               // el rótulo MOTOR: la losa chica del kit pide al menos ~28 dp de alto (radio 14)
 
         // ------------------------------------------------------------------ abajo: la cuenta de cambios y «Arrancar»; aviso, efectos, despegue y tarjeta «NUEVO»
 
@@ -643,7 +643,7 @@ namespace NeuroVida.Games.Engranajes
             _sayBg = MakeImage(r, "Bg", RoundedRectSprite.Get(24));
             _sayBg.color = new Color(8f / 255f, 10f / 255f, 34f / 255f, 0.95f);
             // el aviso (Tarea 164, regla R2): una losa crema mediana del kit con la letra en tinta y la moneda ✓ (lima) o ✗ (coral) de lo común a la izquierda; sin plasticina o sin las monedas, la losa noche de siempre
-            _saySlab = _volume && EngranajesSprites.BadgesAreCoins ? PlasticSlab.TryStyle(_sayBg, SlabSize.Button, SlabTone.Cream) : null;
+            _saySlab = _volume && EngranajesSprites.BadgesAreCoins ? (PlasticSlab.TryStyleCustom(_sayBg, EngranajesSprites.PlasticGroup, "aviso_crema") ?? PlasticSlab.TryStyle(_sayBg, SlabSize.Button, SlabTone.Cream)) : null;          // Tarea 166: la losa crema SIN su sombra dura (`aviso_crema`, del atlas del juego); sin ella, la del kit
             _sayCream = _saySlab != null;
             if (_sayCream) _sayRim.enabled = false;
             _sayCoin = MakeImage(r, "Coin", null, _sayCream);

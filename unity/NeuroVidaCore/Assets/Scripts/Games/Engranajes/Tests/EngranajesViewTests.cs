@@ -53,27 +53,58 @@ namespace NeuroVida.Games.Engranajes.Tests
         [Test]
         public void TheWorkshopTable_StartsUnderTheRocketHeader_TheAirIsSpread_AndTheSayGoes10DpUnderTheButtons()
         {
-            // Tarea 164 (partes E y «aire repartido»): la mesa empieza bajo «Cohete número N» (a 16 dp de él y, si sobra aire, hasta 36 dp más abajo), los botones van a 8 dp de la mesa más lo que se reparta y el aviso queda 10 dp bajo ellos
+            // Tarea 164 (partes E y «aire repartido») y 166 (botones de 88 dp: el aire va a la mesa y a la separación): la mesa empieza bajo «Cohete número N» (a 16 dp de él y, si sobra aire, hasta 44 dp más abajo), los botones van a 8 dp de la mesa más lo que se reparta y el aviso queda 10 dp bajo ellos
             foreach (float h in Heights)
             {
                 var m = EngranajesLayout.Compute(h);
                 string where = "alto " + h;
                 float tableTop = m.SceneCenterLogicalY - EngranajesLayout.SceneHeight * m.SceneScale / 2f;
                 Assert.GreaterOrEqual(tableTop, EngranajesLayout.TableTopDp - 0.01f, where + ": la mesa empieza bajo la cabecera");
-                Assert.LessOrEqual(tableTop, EngranajesLayout.TableTopDp + EngranajesLayout.MaxTopShift + 0.01f, where + ": la mesa no baja más de 36 dp de la cabecera");
+                Assert.LessOrEqual(tableTop, EngranajesLayout.TableTopDp + EngranajesLayout.MaxTopShift + 0.01f, where + ": la mesa no baja más de 44 dp de la cabecera");
                 Assert.AreEqual(EngranajesLayout.SayGap, m.SayTop - (m.ButtonsTop + m.ButtonH), 0.01f, where + ": el aviso queda 10 dp bajo los botones");
                 Assert.LessOrEqual(m.ButtonsTop - (tableTop + EngranajesLayout.SceneHeight * m.SceneScale), 8f + EngranajesLayout.MaxGap + 0.01f, where + ": los botones no se despegan de la mesa más de 72 dp");
             }
-            // en un teléfono alto (800 dp) la escena empezaba antes hacia 174 dp (120 + el 40 % del aire que sobraba): sigue más de 30 dp más arriba
+            // en un teléfono alto (800 dp) la escena empezaba antes hacia 174 dp (120 + el 40 % del aire que sobraba): sigue más de 20 dp más arriba
             var tall = EngranajesLayout.Compute(800f);
             float before = 174.4f, now = tall.SceneCenterLogicalY - EngranajesLayout.SceneHeight * tall.SceneScale / 2f;
-            Assert.GreaterOrEqual(before - now, 30f, "la escena sigue ~35 dp más arriba que antes de la Tarea 164 en un teléfono de 800 dp");
+            Assert.GreaterOrEqual(before - now, 20f, "la escena sigue ~22 dp más arriba que antes de la Tarea 164 en un teléfono de 800 dp");
             Assert.AreEqual(108f, EngranajesLayout.TableTopDp, 0.01f);
             Assert.Greater(tall.SceneScale, 0.8f);
-            // el aire se reparte: bajo los botones queda menos cielo vacío (antes ~196 dp), los botones son más altos (≥ 110) y bajo el aviso quedan al menos 40 dp
-            Assert.LessOrEqual(800f - (tall.ButtonsTop + tall.ButtonH), 160f, "bajo los botones no quedan más de 160 dp vacíos");
-            Assert.GreaterOrEqual(tall.ButtonH, 110f, "los botones crecen con el aire");
+            // el aire se reparte sin agrandar los botones (Ricardo: «para este juego no requiere que sean tan grandes»): miden 88 dp como antes, bajo ellos queda menos cielo vacío (antes ~196 dp) y bajo el aviso quedan al menos 40 dp
+            Assert.LessOrEqual(800f - (tall.ButtonsTop + tall.ButtonH), 145f, "bajo los botones no quedan más de 145 dp vacíos");
+            Assert.AreEqual(88f, tall.ButtonH, 0.01f, "los botones miden 88 dp");
             Assert.GreaterOrEqual(800f - tall.Bottom, 40f, "bajo el aviso quedan al menos 40 dp");
+            foreach (float h in Heights) Assert.AreEqual(Math.Min(88f, EngranajesLayout.Compute(h).ButtonH), EngranajesLayout.Compute(h).ButtonH, 0.01f, "alto " + h + ": los botones no pasan de 88 dp");
+        }
+
+        [Test]
+        public void TheMotorLabel_NeverCoversTheMotor_IsInsideTheWindow_AndTouchesNoOtherGear_InEveryMachineOfEveryStage()
+        {
+            // Tarea 166: el rótulo «Motor» tapaba media rueda del motor («Toca el motor»). En cada máquina de cada etapa va FUERA del círculo del motor (sus dientes llegan a la punta), DENTRO de la ventanilla y sin pisar otra rueda
+            int machines = 0, withTouches = 0; float worst = 0f;
+            for (int level = 1; level <= EngranajesContract.MaxLevel; level++)
+            {
+                var rng = new System.Random(level * 7919 + 166);
+                for (int k = 0; k < 400; k++)
+                {
+                    var m = EngranajesContract.Generate(level, rng);
+                    var c = EngranajesLayout.MotorPillCenter(m, out float touches);
+                    string where = "etapa/nivel " + level + ", máquina " + k + ": ";
+                    Assert.Less(touches, float.MaxValue, where + "hay lugar para el rótulo");
+                    float hw = EngranajesLayout.MotorPillW / 2f, hh = EngranajesLayout.MotorPillH / 2f;
+                    var g0 = m.Gears[0];
+                    float dx = Math.Max(Math.Abs(g0.X - c.x) - hw, 0f), dy = Math.Max(Math.Abs(g0.Y - c.y) - hh, 0f);
+                    Assert.GreaterOrEqual(Mathf.Sqrt(dx * dx + dy * dy), g0.Tip + 3.9f, where + "el rótulo queda fuera del círculo del motor (sus dientes llegan a " + g0.Tip + " dp)");
+                    Assert.GreaterOrEqual(c.x - hw, EngranajesLayout.WindowCx - EngranajesLayout.WindowW / 2f, where + "el rótulo no sale por la izquierda de la ventanilla");
+                    Assert.LessOrEqual(c.x + hw, EngranajesLayout.WindowCx + EngranajesLayout.WindowW / 2f, where + "ni por la derecha");
+                    Assert.GreaterOrEqual(c.y - hh, EngranajesLayout.WindowCy - EngranajesLayout.WindowH / 2f, where + "ni por arriba");
+                    Assert.LessOrEqual(c.y + hh, EngranajesLayout.WindowCy + EngranajesLayout.WindowH / 2f, where + "ni por abajo");
+                    machines++;
+                    if (touches > 0f) { withTouches++; worst = Math.Max(worst, touches); }
+                }
+            }
+            Debug.Log("[Engranajes] rótulo Motor: " + machines + " máquinas, " + withTouches + " pisan algo de otra pieza (lo peor: " + worst + " dp)");
+            Assert.AreEqual(0, withTouches, "en ninguna máquina el rótulo pisa otra rueda, barra, correa o eje (" + withTouches + " de " + machines + "; lo peor " + worst + " dp)");
         }
 
         [Test]

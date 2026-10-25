@@ -37,6 +37,22 @@ def limpia_bruma(im):
     a[..., 3] = al
     return Image.fromarray(a.astype(np.uint8), 'RGBA')
 
+def quita_sombra(im, umbral=0.90, sigma=0.8):
+    """Quita la SOMBRA DURA horneada fuera del cuerpo de una ficha o una losa del kit (Tarea 166, pedido de Ricardo: «aparece una sombra atrás de eso, elimínala»): la sombra es negra y semitransparente (alfa ~0,6 junto al cuerpo) y el cuerpo, con su canto y su bisel, es opaco (alfa > 0,9).
+    El cuerpo queda EXACTO; el borde se rehace con un desenfoque corto (sigma [sigma] px: un antialias de ~1 px) y el color del borde es el del cuerpo más cercano (no el negro de la sombra). El tamaño del lienzo y los márgenes no cambian: la ficha o la losa no se mueve."""
+    from propuesta_util import blur
+    a = np.asarray(im.convert('RGBA')).astype(np.float64) / 255.0
+    rgb, al = a[..., :3], a[..., 3]
+    cuerpo = (al > umbral).astype(np.float64)
+    suave = np.clip(blur(cuerpo, sigma), 0.0, 1.0)
+    nueva = np.where(cuerpo > 0.5, al, np.clip((suave - 0.25) / 0.5, 0.0, 1.0))
+    den = blur(cuerpo, 1.5)
+    cerca = np.stack([blur(rgb[..., k] * cuerpo, 1.5) for k in range(3)], axis=2) / np.maximum(den[..., None], 1e-6)
+    color = np.where(cuerpo[..., None] > 0.5, rgb, cerca)
+    out = np.concatenate([np.clip(color, 0, 1), nueva[..., None]], axis=2)
+    out[nueva < 1e-3] = 0
+    return Image.fromarray((out * 255.0 + 0.5).astype(np.uint8), 'RGBA')
+
 def cuerpo_bbox(im, umbral=235):
     a = np.asarray(im)[..., 3]; ys, xs = np.where(a >= umbral)
     return int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
@@ -451,6 +467,10 @@ def grupo_engranajes():
     ims = alinea_losa([carga_render('engranajes_botones', n) for n in nombres], (m['izq'], m['arr']), W, H, Image.open(os.path.join(RES_APP, 'drawable-nodpi', 'kit_losa_ch_crema.webp')).convert('RGBA'))
     for n, im in zip(nombres, ims): S.append(sprite(n, im, borde=borde, margen=margen, baja=d['presionada']['texto_baja_dp'] * PX_DP))
     for n in ('ico_play', 'llave_libre', 'llave_usada'): S.append(sprite(n, carga_render('engranajes_botones', n, 128)))
+    # Tarea 166: el aviso crema de abajo (`aviso_crema`) es la `losa_md_crema` del kit SIN su sombra dura (Ricardo: «aparece una sombra atrás de eso»); mismos márgenes y mismo nine-slice: la losa no se mueve. Sale del atlas `comun` ya empacado
+    cm = json.load(open(os.path.join(UNITY, 'comun', 'manifest.json'), encoding='utf-8')); e = next(x for x in cm['sprites'] if x['n'] == 'losa_md_crema')
+    at = Image.open(os.path.join(UNITY, 'comun', 'atlas.png')).convert('RGBA'); top = at.height - e['y'] - e['h']
+    S.append(sprite('aviso_crema', quita_sombra(at.crop((e['x'], top, e['x'] + e['w'], top + e['h']))), ppu=e['ppu'], borde=tuple(e['borde']), margen=tuple(e['margen']), baja=e['baja']))
     return S, med
 
 def grupo_acoplamiento():
@@ -496,13 +516,13 @@ def grupo_comun():
 EMBLEMAS = ('parejas', 'secuencia', 'bodega', 'correo', 'stroop', 'piloto', 'freno', 'satelites', 'radar', 'calculo', 'engranajes', 'acoplamiento', 'aterrizaje', 'anagramas', 'meteoros', 'disparate', 'intrusa')
 
 def grupo_emblemas():
-    """Los 17 emblemas de juego (la ficha del pastel de su área con el objeto del juego; `tools/isla/kit_avance.py`, la misma pieza de la app) para la cortina del final (`FinishCurtain`, Tarea 126). Se renderizan a 6 px por dp
+    """Los 17 emblemas de juego (la ficha del pastel de su área con el objeto del juego; `tools/isla/kit_avance.py`, la misma pieza de la app) para la cortina del final y la cuenta regresiva (`FinishCurtain`, Tarea 126; SIN la sombra dura horneada desde la Tarea 166). Se renderizan a 6 px por dp
     (`isla.py --kit --kit-solo avance --kit-px 6 --pieza emblema_`, en `tools/isla/out/kit-avance-emb6/`): 432 px de lienzo, para que la ficha se vea nítida a ~500 unidades del lienzo de 1080."""
     base = os.path.join(REPO, 'tools', 'isla', 'out', 'kit-avance-emb6')
     S = []
     for j in EMBLEMAS:
         im = Image.open(os.path.join(base, f'kit_pz_emblema_{j}.png')).convert('RGBA')
-        S.append(sprite('emb_' + j, quita_ruido_alfa(limpia_bruma(im), 6)))
+        S.append(sprite('emb_' + j, quita_ruido_alfa(limpia_bruma(quita_sombra(im)), 6)))          # Tarea 166: la ficha sin su sombra dura (la misma de la app, que no cambia)
     return S, [('px_por_dp', 6.0)]
 
 ANCHO_NUBI = 720                      # px del cuerpo en Unity: la Nubi mide 360 unidades en el foco y 620 en la tarjeta de entrada (sobra un 16 % sobre la mayor); la de la app es de 1080
@@ -725,4 +745,4 @@ def main():
         for k in total: total[k] += p[k]
     if len(nombres) > 1: print(f'TOTAL: PNG {total["png_bytes"] / 1024:.0f} KB; en el APK sin compresión de textura ≈ {total["deflate_rgba32"] / 1024:.0f} KB')
 
-main()
+if __name__ == '__main__': main()

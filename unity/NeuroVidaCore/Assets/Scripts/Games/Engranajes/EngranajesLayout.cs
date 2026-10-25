@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace NeuroVida.Games.Engranajes
@@ -28,8 +29,9 @@ namespace NeuroVida.Games.Engranajes
         public const float WindowCx = 129f, WindowCy = 288f, WindowW = 242f, WindowH = 348f;
         /// <summary>La mesa empieza 16 dp bajo el texto de «Cohete número N» (que termina hacia 92 dp) y el aviso va 10 dp bajo los botones.</summary>
         public const float TableTopDp = HudDp + 2f + StripH - 2f, SayGap = 10f;
-        /// <summary>Cuánto aire sobrante se reparte (dp): lo que crecen los botones, lo que baja la mesa y lo que se separan los botones de la mesa; el resto queda bajo el aviso.</summary>
-        public const float MaxButtonGrow = 26f, MaxTopShift = 36f, MaxGap = 64f;
+        /// <summary>Cuánto aire sobrante se reparte (dp): lo que crecen los botones (nada: Ricardo, 25-oct, «para este juego no requiere que sean tan grandes»: se quedan en 88 dp), lo que baja la mesa y lo que se separan los botones de la mesa; el resto queda bajo el aviso.
+        /// La escena no crece con la altura: su ancho ya llega a 10 dp de cada borde de la pantalla (<see cref="MaxScale"/>).</summary>
+        public const float MaxButtonGrow = 0f, MaxTopShift = 44f, MaxGap = 72f;
 
         /// <summary>QuestionH = 0: la consigna ya no es una barra bajo la cabecera sino la fila de consigna del marcador común (Tarea 127); su alto lo aprovecha la escena.</summary>
         public const float StripH = 42f, QuestionH = 0f, MinScale = 0.55f;
@@ -71,8 +73,8 @@ namespace NeuroVida.Games.Engranajes
             free -= growButtons;
             m.StripTop = HudDp + 2f;
             m.QuestionTop = m.StripTop + StripH + 4f;
-            float topShift = Math.Min(MaxTopShift, free * 0.25f);   // la mesa baja un poco de la cabecera (en un teléfono de 800 dp, ~31 dp: sigue ~40 dp más arriba que antes de la Tarea 164)
-            float gap = Math.Min(MaxGap, free * 0.35f);             // y los botones se separan de la mesa: quedan más a mano del pulgar
+            float topShift = Math.Min(MaxTopShift, free * 0.30f);   // la mesa baja un poco de la cabecera (en un teléfono de 800 dp, 44 dp: sigue ~20 dp más arriba que antes de la Tarea 164)
+            float gap = Math.Min(MaxGap, free * 0.45f);             // y los botones se separan de la mesa: quedan más a mano del pulgar
             float sceneTop = TableTopDp + topShift;
             m.SceneScale = scale;
             m.SceneCenterLogicalY = sceneTop + sceneH / 2f;
@@ -82,6 +84,61 @@ namespace NeuroVida.Games.Engranajes
             m.SayH = sayH;
             m.Bottom = m.SayTop + sayH;
             return m;
+        }
+
+        // ------------------------------------------------------------------ el rótulo «Motor» (Tarea 166)
+
+        /// <summary>El rótulo «Motor» (boceto, dp): la losa chica del kit, de 66 × 30. Antes colgaba 16 dp bajo el centro del motor y le tapaba media rueda.</summary>
+        public const float MotorPillW = 66f, MotorPillH = 30f;
+        /// <summary>Lo que el rótulo deja libre del círculo del motor (sus dientes llegan a la punta), de otras ruedas y del borde de la ventanilla (dp del boceto).</summary>
+        public const float MotorPillClearMotor = 4f, MotorPillClearGear = 3f, MotorPillClearWindow = 4f;
+
+        private static float DistToRect(float px, float py, float cx, float cy, float hw, float hh)
+        {
+            float dx = Math.Max(Math.Abs(px - cx) - hw, 0f), dy = Math.Max(Math.Abs(py - cy) - hh, 0f);
+            return (float)Math.Sqrt(dx * dx + dy * dy);
+        }
+
+        /// <summary>
+        /// Dónde va el rótulo «Motor» de esta máquina (centro, en coordenadas del boceto): FUERA del círculo del motor (la consigna dice «Toca el motor» y el rótulo le tapaba media rueda), DENTRO de la ventanilla y, si hay lugar, sin tocar otra rueda, una barra dentada,
+        /// una correa ni un eje. Como el motor cambia de lugar en cada máquina, se busca en una rejilla de 2 dp el lugar más cercano al motor (mejor debajo que arriba: ahí cae la flecha del giro) que cumpla; si ninguno está del todo libre se toma el que menos choca, pero
+        /// nunca sobre el motor. <paramref name="touches"/> = cuántos dp de otras piezas pisa (0 = libre).
+        /// </summary>
+        public static Vector2 MotorPillCenter(Machine m, out float touches)
+        {
+            float hw = MotorPillW / 2f, hh = MotorPillH / 2f;
+            var g0 = m.Gears[0];
+            float wl = WindowCx - WindowW / 2f + MotorPillClearWindow + hw, wr = WindowCx + WindowW / 2f - MotorPillClearWindow - hw;
+            float wt = WindowCy - WindowH / 2f + MotorPillClearWindow + hh, wb = WindowCy + WindowH / 2f - MotorPillClearWindow - hh;
+            var best = new Vector2(g0.X, g0.Y + g0.Tip + MotorPillClearMotor + hh);
+            float bestScore = float.MaxValue; touches = float.MaxValue; bool found = false;
+            for (float py = wt; py <= wb + 0.01f; py += 2f)
+                for (float px = wl; px <= wr + 0.01f; px += 2f)
+                {
+                    if (DistToRect(g0.X, g0.Y, px, py, hw, hh) < g0.Tip + MotorPillClearMotor) continue;          // nunca sobre el motor
+                    float over = 0f;
+                    for (int i = 1; i < m.Gears.Count; i++)
+                    {
+                        var g = m.Gears[i];
+                        over += Math.Max(0f, g.Tip + MotorPillClearGear - DistToRect(g.X, g.Y, px, py, hw, hh));
+                        if (m.Stations.TryGetValue(Station.Compuerta, out int gc) && gc == i || m.Stations.TryGetValue(Station.Carga, out int gk) && gk == i)    // la barra dentada, a la derecha de su engranaje (20 × 84)
+                            over += Math.Max(0f, Math.Min(px + hw, g.X + g.Pitch + 17.5f) - Math.Max(px - hw, g.X + g.Pitch - 2.5f)) > 0f && Math.Abs(py - g.Y) < hh + 42f ? 8f : 0f;
+                        if (g.HasStation && (g.Station == Station.Antena || g.Station == Station.Turbina))                // el eje hasta la pieza, en horizontal a la altura del engranaje
+                            over += px + hw > g.X && Math.Abs(py - g.Y) < hh + 4f ? 6f : 0f;
+                    }
+                    foreach (var l in m.Links)                                                                          // las correas: la tira entre las dos poleas
+                    {
+                        if (l.Type != LinkType.Belt) continue;
+                        var a = m.Gears[l.A]; var b = m.Gears[l.B];
+                        for (int k = 0; k <= 8; k++)
+                            if (DistToRect(Mathf.Lerp(a.X, b.X, k / 8f), Mathf.Lerp(a.Y, b.Y, k / 8f), px, py, hw, hh) < 8f) { over += 5f; break; }
+                    }
+                    float dist = Mathf.Sqrt((px - g0.X) * (px - g0.X) + (py - g0.Y) * (py - g0.Y));
+                    float score = over * 400f + dist + (py < g0.Y ? 12f : 0f);
+                    if (score < bestScore) { bestScore = score; best = new Vector2(px, py); touches = over; found = true; }
+                }
+            if (!found) touches = float.MaxValue;
+            return best;
         }
 
         /// <summary>De un punto del boceto (dentro de la escena) a dp lógicos.</summary>

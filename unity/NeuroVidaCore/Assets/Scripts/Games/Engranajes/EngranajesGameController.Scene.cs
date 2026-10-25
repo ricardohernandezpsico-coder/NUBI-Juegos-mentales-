@@ -116,11 +116,12 @@ namespace NeuroVida.Games.Engranajes
             _motorArrowRect.localEulerAngles = Vector3.zero;
             _motorArrowDir = 0;                                        // fuerza a poner el sprite en el primer cuadro
             _motorArrow.gameObject.SetActive(true);
-            _motorPill.Root.anchoredPosition = B(g0.X, g0.Y + 16f);
+            var pill = EngranajesLayout.MotorPillCenter(m, out _);                // Tarea 166: el rótulo «Motor» ya no tapa media rueda: va fuera del círculo del motor (debajo o al costado)
+            _motorPill.Root.anchoredPosition = B(pill.x, pill.y);
             _motorPill.Root.gameObject.SetActive(true);
             _motorPill.Root.sizeDelta = new Vector2(MotorW * Su, MotorH * Su);
             SetRadius(_motorPill.Bg, MotorH * Su / 2f);
-            _motorPulse.rectTransform.anchoredPosition = B(g0.X, g0.Y + 16f);
+            _motorPulse.rectTransform.anchoredPosition = B(pill.x, pill.y);
             _motorPulse.rectTransform.sizeDelta = new Vector2((MotorW + 10f) * Su, (MotorH + 10f) * Su);
             SetRadius(_motorPulse, (MotorH + 10f) * Su / 2f);
             // piezas y carteles: solo las piezas activas llevan cartel; las demás se ven atenuadas
