@@ -156,6 +156,14 @@ namespace NeuroVida.Games.Radar
         private void UpdateHud()
         {
             if (_guided) return;
+            if (_tt != null)
+            {
+                // Contrarreloj: «N aciertos» (rondas logradas) en el chip y el tiempo que queda en la fila de consigna
+                _hud.SetLevel(_tt.Level);
+                _tt.UpdateHud(_hud, _clock != null ? _clock.Remaining(GameClock.Time) : TimeTrial.TotalSeconds);
+                UpdateHudExtras();
+                return;
+            }
             _hud.SetLevel(_dda.PresentedLevel);
             int round = _run.RoundsPlayed + 1;
             _hud.SetInfo(RadarContract.RoundChip(round, Endless ? 0 : RoundsTotal));
@@ -166,7 +174,7 @@ namespace NeuroVida.Games.Radar
         {
             _hudCount.text = _shownRescued.ToString();
             int streak = _run != null ? _run.Streak : 0;
-            _hud.SetPhase(_guided ? "" : RadarContract.RescuedPhase(_shownRescued));           // «40 rescatadas» a la derecha de la consigna
+            if (_tt == null) _hud.SetPhase(_guided ? "" : RadarContract.RescuedPhase(_shownRescued));           // «40 rescatadas» a la derecha de la consigna (en el Contrarreloj, ahí va el tiempo que queda)
             _hud.SetStreak(_guided || (_msgPill != null && _msgPill.gameObject.activeSelf) ? 0 : streak);     // el chip común «×N seguidos» (desde 2); se aparta mientras la franja de avisos está a la vista
         }
 

@@ -3,7 +3,8 @@
     "rootNamespace": "NeuroVida.Bridge.EditorTools",
     "references": [
         "NeuroVida.Bootstrap",
-        "NeuroVida.Games"
+        "NeuroVida.Games",
+        "NeuroVida.Contracts"
     ],
     "includePlatforms": [
         "Editor"

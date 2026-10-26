@@ -56,6 +56,10 @@ namespace NeuroVida.Bridge
         /// <summary>Solo para el smoke y las capturas: arranca la partida en modo Reto (con reloj) aunque el campo <c>timed</c> de la escena esté apagado.</summary>
         public static bool TimedOverride;
 
+        /// <summary>Solo para el smoke y las capturas: arranca la partida como CONTRARRELOJ (<c>time_trial</c> y <c>track_seed</c> de la config; Tarea 176), con la fecha de la pista que se pida (por omisión, la del día de la prueba).</summary>
+        public static bool TimeTrialOverride;
+        public static int TrackSeedOverride = 20261026;
+
         private void Start()
         {
 #if UNITY_EDITOR
@@ -90,7 +94,9 @@ namespace NeuroVida.Bridge
                     sat_surprise = SatSurpriseOverride,
                     pil_stage = PilStageOverride,
                     pil_sector_s = PilSectorOverride,
-                    resc_stage = RescStageOverride
+                    resc_stage = RescStageOverride,
+                    time_trial = TimeTrialOverride,
+                    track_seed = TimeTrialOverride ? TrackSeedOverride : 0
                 }
             };
 

@@ -33,6 +33,13 @@ namespace NeuroVida.Contracts
         /// Experto se superó (Skill.passed). 0 = no aplica.</summary>
         public int mode_trials;
         public int mode_hits;
+        /// <summary>CONTRARRELOJ (Tarea 176; <c>docs/contrarreloj.md</c>): -1 = la partida no fue un Contrarreloj. Aciertos (la marca: «N aciertos en 2 minutos»), errores, el paso más alto de la pista que se alcanzó (1..N), los segundos de la partida (120) y la VERSIÓN de la pista
+        /// de ese juego (si cambia, el récord empieza de nuevo). En un Contrarreloj <c>end_rating</c> es el de la partida anterior sin tocar (la dificultad adaptativa está apagada) y <c>mode_trials</c>/<c>mode_hits</c> son 0: la app no debe mover el nivel de la persona con él.</summary>
+        public int tt_hits = -1;
+        public int tt_errors = -1;
+        public int tt_peak_level = -1;
+        public int tt_seconds = -1;
+        public int tt_track_version = -1;
         /// <summary>Solo Tinta o Palabra («Dos orillas»): «Cuánto te frenó la palabra», en ms: promedio de tiempo de los aciertos con palabra que CHOCA menos el de los que COINCIDEN
         /// (interferencia de Stroop). -1 con menos de 3 aciertos de cada tipo o en otro juego.</summary>
         public int interference_ms = -1;

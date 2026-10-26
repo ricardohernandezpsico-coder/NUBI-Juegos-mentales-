@@ -96,6 +96,11 @@ namespace NeuroVida.Contracts
         public int resc_stage;
         /// <summary>Solo «Acoplamiento» (id <c>acoplamiento</c>): el récord de módulos acoplados en una partida (progreso: la app lo guarda, lo manda aquí y Unity devuelve el nuevo en <c>dock_best</c>).</summary>
         public int dock_best;
+        /// <summary>CONTRARRELOJ (Tarea 176, 26-oct; <c>docs/contrarreloj.md</c>): la partida es «La escalera de 2 minutos» de Tinta o Palabra (<c>stroop</c>), ¿Verdad o disparate? (<c>disparate</c>), Rescate relámpago (<c>radar</c>) o Acoplamiento (<c>acoplamiento</c>): 120 s fijos,
+        /// dificultad adaptativa APAGADA y una pista fija que parte siempre del paso 1 y sube un paso cada N aciertos. <c>track_seed</c> es la FECHA del día como número (aaaammdd, p. ej. 20261026): con la versión de la pista de cada juego (<c>TimeTrial.TrackVersion</c>)
+        /// y su id fija la semilla, así que todos los teléfonos ven la misma pista ese día. El Contrarreloj siempre corre con reloj (<c>timed</c> se fuerza a true en Unity). Una app vieja no lo manda: false.</summary>
+        public bool time_trial;
+        public int track_seed;
         public string play_mode = "";
         public float mode_floor = -1f;
         public float mode_ceiling = -1f;

@@ -21,6 +21,8 @@ namespace NeuroVida.Games.Disparate
         /// <summary>Frases normales sacadas (las de ráfaga no cuentan).</summary>
         public int Spawned { get; private set; }
         public bool InBurst => _burstLeft > 0;
+        /// <summary>true = sin Ráfagas (el Contrarreloj: la pista es una escalera pura de frases normales).</summary>
+        public bool NoBursts { get; set; }
         public int BurstLeft => _burstLeft;
         /// <summary>Ids de todas las frases de la partida, en orden (para evitarlas en las próximas).</summary>
         public List<string> UsedInOrder { get; } = new List<string>();
@@ -32,17 +34,19 @@ namespace NeuroVida.Games.Disparate
             _avoid = avoid != null ? new HashSet<string>(avoid) : new HashSet<string>();
         }
 
-        public SentenceSpec Next(int level, bool precision, bool senior)
+        /// <summary>La frase que sigue. Con <paramref name="rng"/> el azar sale de ese generador y no del de la partida (el Contrarreloj siembra cada frase: <c>TimeTrial.TrialRng</c>).</summary>
+        public SentenceSpec Next(int level, bool precision, bool senior, Random rng = null)
         {
-            if (_burstLeft == 0 && DisparateContract.BurstDue(Spawned, _burstsDone))
+            var r = rng ?? _rng;
+            if (!NoBursts && _burstLeft == 0 && DisparateContract.BurstDue(Spawned, _burstsDone))
             {
                 _burstsDone++;
                 _burstLeft = DisparateContract.BurstSize;
             }
             bool burst = _burstLeft > 0;
             int type = burst ? (int)SentenceType.Short : (int)DisparateContract.TypeForLevel(level);
-            bool truth = _answers.Next(_rng);
-            var s = _bank.Pick(type, truth, _rng, _used, _avoid, burst ? 3 : 0);
+            bool truth = _answers.Next(r);
+            var s = _bank.Pick(type, truth, r, _used, _avoid, burst ? 3 : 0);
             if (s == null) return null;
             // si no había de la respuesta pedida (banco chico), se registra la que salió de verdad
             _answers.Record(s.v);

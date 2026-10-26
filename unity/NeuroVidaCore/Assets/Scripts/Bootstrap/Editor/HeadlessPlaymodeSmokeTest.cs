@@ -219,6 +219,19 @@ namespace NeuroVida.Bridge.EditorTools
             ("SeguidosDisparate", "disparate", 10.5f), ("SeguidosIntrusa", "intrusa", 10.5f),
         };
 
+        /// <summary>
+        /// Una corrida «Contrarreloj*» por juego de la primera tanda (Tarea 176): el juego como CONTRARRELOJ (<c>time_trial</c> con la pista de un día fijo), en forma de teléfono (20:9 y 16:9) y con el reloj acortado a <see cref="TimeTrialSmokeSeconds"/> s para llegar al final dentro de la corrida. Se juega solo (acierta y de vez en cuando
+        /// se equivoca, para pasar por la pausa del error) y se comprueba que el marcador dice «N aciertos» y el tiempo («1:12») sin que nada lo tape (las guardias de siempre), que la partida termina y que la telemetría trae la marca del Contrarreloj (<c>tt_*</c>) con el DDA sin tocar.
+        /// </summary>
+        private static readonly (string Name, string Id, float Seconds)[] ContrarrelojCatalog =
+        {
+            ("ContrarrelojStroop", "stroop", 34f), ("ContrarrelojDisparate", "disparate", 34f), ("ContrarrelojRadar", "radar", 38f), ("ContrarrelojAcoplamiento", "acoplamiento", 36f),
+        };
+
+        /// <summary>El reloj del Contrarreloj en el smoke (el de verdad dura 120 s; <c>TimeTrial.SecondsOverride</c> solo existe en el Editor).</summary>
+        private const int TimeTrialSmokeSeconds = 16;
+        private static bool _ttTelemetrySeen;
+
         private static bool _sampleStreakShown;
         private static readonly HashSet<string> _streakNow = new HashSet<string>();
         private static readonly HashSet<string> _streakPrev = new HashSet<string>();
@@ -381,6 +394,7 @@ namespace NeuroVida.Bridge.EditorTools
                 foreach (var g in AvisoCatalog) Enqueue(g);
                 foreach (var g in SeguidosCatalog) Enqueue(g);
                 foreach (var g in HowToCatalog) Enqueue(g);
+                foreach (var g in ContrarrelojCatalog) Enqueue(g);
             }
             else
             {
@@ -405,6 +419,14 @@ namespace NeuroVida.Bridge.EditorTools
                         }
                     if (!found)
                         foreach (var g in SeguidosCatalog)
+                        {
+                            if (!string.Equals(g.Name, name, StringComparison.OrdinalIgnoreCase)) continue;
+                            Enqueue(g);
+                            found = true;
+                            break;
+                        }
+                    if (!found)
+                        foreach (var g in ContrarrelojCatalog)
                         {
                             if (!string.Equals(g.Name, name, StringComparison.OrdinalIgnoreCase)) continue;
                             Enqueue(g);
@@ -467,7 +489,7 @@ namespace NeuroVida.Bridge.EditorTools
                 }
                 return;
             }
-            if (g.Name.StartsWith("Aviso") || g.Name.StartsWith("Seguidos"))
+            if (g.Name.StartsWith("Aviso") || g.Name.StartsWith("Seguidos") || g.Name.StartsWith("Contrarreloj"))
             {
                 foreach (var h in new[] { 2400, 1920 }) { _queue.Enqueue(g); _heights.Enqueue(h); }
                 return;
@@ -508,6 +530,7 @@ namespace NeuroVida.Bridge.EditorTools
             _touchSeen.Clear(); _touchBadSince.Clear();
             _howToStarted = _howToDone = false;
             _staleDone = false;
+            _ttTelemetrySeen = false;
             NeuroVida.Games.Shared.NubiCoach.EditorProbe = _current.Name.StartsWith("Tutorial");        // toque «de verdad» en el hueco de cada paso de Tocar (Tarea 58)
             NeuroVida.Games.Shared.NubiCoach.ProbeFailures.Clear();
             NeuroVida.Games.Shared.NubiCoach.RealTouchesAccepted = 0;
@@ -529,13 +552,16 @@ namespace NeuroVida.Bridge.EditorTools
             bool tutorial = _current.Name.StartsWith("Tutorial");
             EditorPlaytestBootstrap.ShowTutorialOverride = tutorial;
             EditorPlaytestBootstrap.TimedOverride = _current.Name == "PilotoReto" || _current.Name == "RadarReto" || _current.Name == "AcoplamientoReto" || _current.Name == "AterrizajeReto";            // el Reto (con reloj) de Piloto; las demás corridas son Precisión
+            bool timeTrial = _current.Name.StartsWith("Contrarreloj");
+            EditorPlaytestBootstrap.TimeTrialOverride = timeTrial;                                                            // «Contrarreloj*»: la partida es un Contrarreloj de 16 s (Tarea 176)
+            NeuroVida.Games.Shared.TimeTrial.SecondsOverride = timeTrial ? TimeTrialSmokeSeconds : 0;
             EditorPlaytestBootstrap.SoundOffOverride = _current.Name.EndsWith("Mudo");                                       // «…Mudo»: con «Efectos de sonido» apagado no tiene que sonar NADA (Tarea 64)
             _audioSampleAt = 0.0;
             _audioHeard = _audioReported = false;
             NeuroVida.Games.Shared.WoodCore.ResetCounters();                                                                 // lo que suena por partida (Fase B): los sonidos, los omitidos y los finales
             EditorPlaytestBootstrap.AssessmentOverride = _current.Name.StartsWith("Corto");
             NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial || _current.Name.StartsWith("HowTo");      // «HowTo*» no arranca con tutorial: lo abre el smoke desde la partida
-            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = _current.Name == "PilotoMudo" || _current.Name == "RadarMudo" || _current.Name == "Engranajes" || _current.Name == "Bodega" || _current.Name == "Parejas" || _current.Name == "Correo" || _current.Name == "Satelites" || _current.Name == "PantallaSatelites" || _current.Name == "Piloto" || _current.Name == "PilotoReto" || _current.Name == "PantallaPiloto" || _current.Name == "Radar" || _current.Name == "RadarReto" || _current.Name == "PantallaRadar" || _current.Name == "PantallaCorreo" || _current.Name == "PantallaEngranajes" || _current.Name == "PantallaBodega" || _current.Name == "PantallaParejas" || _current.Name == "Acoplamiento" || _current.Name == "AcoplamientoReto" || _current.Name == "AcoplamientoMudo" || _current.Name == "PantallaAcoplamiento" || _current.Name == "Aterrizaje" || _current.Name == "AterrizajeReto" || _current.Name == "AterrizajeMudo" || _current.Name == "PantallaAterrizaje";      // la partida de Engranajes se juega sola (máquinas pares: la solución; impares: sin tocar)
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = _current.Name == "PilotoMudo" || _current.Name == "RadarMudo" || _current.Name == "Engranajes" || _current.Name == "Bodega" || _current.Name == "Parejas" || _current.Name == "Correo" || _current.Name == "Satelites" || _current.Name == "PantallaSatelites" || _current.Name == "Piloto" || _current.Name == "PilotoReto" || _current.Name == "PantallaPiloto" || _current.Name == "Radar" || _current.Name == "RadarReto" || _current.Name == "PantallaRadar" || _current.Name == "PantallaCorreo" || _current.Name == "PantallaEngranajes" || _current.Name == "PantallaBodega" || _current.Name == "PantallaParejas" || _current.Name == "Acoplamiento" || _current.Name == "AcoplamientoReto" || _current.Name == "AcoplamientoMudo" || _current.Name == "PantallaAcoplamiento" || _current.Name == "Aterrizaje" || _current.Name == "AterrizajeReto" || _current.Name == "AterrizajeMudo" || _current.Name == "PantallaAterrizaje" || timeTrial;      // la partida de Engranajes se juega sola (máquinas pares: la solución; impares: sin tocar)
             EditorApplication.EnterPlaymode();
         }
 
@@ -1186,6 +1212,43 @@ namespace NeuroVida.Bridge.EditorTools
             if (CountdownSoundExpected() && played < 4) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: en {_current.Name} no sonaron ni la cuenta regresiva ni «¡Ya!» (salieron {played} sonidos)"); }
         }
 
+        /// <summary>
+        /// Contrarreloj (Tarea 176): al terminar la corrida el marcador dice «N aciertos» (o solo el número si no cabe) y el tiempo como «m:ss»; la partida llegó a su final y mandó su telemetría con la marca (<c>tt_*</c>: aciertos, errores, paso, 16 s del smoke y la versión de la pista) con la dificultad adaptativa sin tocar (<c>mode_trials</c> 0).
+        /// </summary>
+        private static void CheckTimeTrial()
+        {
+            if (!_current.Name.StartsWith("Contrarreloj")) return;
+            var hud = FindGameHud();
+            if (hud == null) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: Contrarreloj de {_current.Id}: no se encontró el marcador"); }
+            else
+            {
+                string chip = hud.InfoText ?? "", phase = hud.PhaseText ?? "";
+                if (!System.Text.RegularExpressions.Regex.IsMatch(chip, @"^\d+( acierto(s)?)?$")) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: Contrarreloj de {_current.Id}: el chip del marcador dice «{chip}» y debía decir «N aciertos»"); }
+                if (!System.Text.RegularExpressions.Regex.IsMatch(phase, @"^\d:\d\d$")) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: Contrarreloj de {_current.Id}: la fase del marcador dice «{phase}» y debía ser el tiempo («1:12»)"); }
+                else Debug.Log($"[SmokeTest] Contrarreloj de {_current.Id}, 1080x{_currentHeight}: el marcador dice «{chip}» y «{phase}»");
+            }
+            if (!_ttTelemetrySeen) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: Contrarreloj de {_current.Id}: la partida no llegó a mandar su telemetría dentro de la corrida"); }
+        }
+
+        /// <summary>La telemetría del Editor («[Mock Editor] Telemetry Dispatch: {json}») de un Contrarreloj lleva su marca y no mueve el nivel de la persona; la de una partida de siempre dice -1.</summary>
+        private static void CheckTelemetryLine(string line)
+        {
+            const string marker = "[Mock Editor] Telemetry Dispatch: ";
+            if (!line.StartsWith(marker) || _current.Name == null) return;
+            var t = JsonUtility.FromJson<NeuroVida.Contracts.StroopTelemetry>(line.Substring(marker.Length));
+            var m = t != null ? t.session_metrics : null;
+            bool timeTrial = _current.Name.StartsWith("Contrarreloj");
+            if (m == null) return;
+            if (timeTrial)
+            {
+                _ttTelemetrySeen = true;
+                bool bad = m.tt_hits < 0 || m.tt_errors < 0 || m.tt_peak_level < 1 || m.tt_seconds != TimeTrialSmokeSeconds || m.tt_track_version != NeuroVida.Games.Shared.TimeTrial.TrackVersion(_current.Id) || m.mode_trials != 0 || m.mode_hits != 0;
+                if (bad) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: la telemetría del Contrarreloj de {_current.Id} no trae la marca bien: tt_hits {m.tt_hits}, tt_errors {m.tt_errors}, tt_peak_level {m.tt_peak_level}, tt_seconds {m.tt_seconds}, tt_track_version {m.tt_track_version}, mode_trials {m.mode_trials}, mode_hits {m.mode_hits}"); }
+                else Debug.Log($"[SmokeTest] telemetría del Contrarreloj de {_current.Id}: {m.tt_hits} aciertos, {m.tt_errors} errores, paso {m.tt_peak_level}, pista v{m.tt_track_version}");
+            }
+            else if (m.tt_hits != -1) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: una partida de siempre ({_current.Name}) mandó tt_hits {m.tt_hits}: debía decir -1"); }
+        }
+
         private static void PauseFail(string what)
         {
             _errorCount++;
@@ -1218,6 +1281,7 @@ namespace NeuroVida.Bridge.EditorTools
                 Debug.Log($"[SmokeTest] tiempo {_current.Name} ({(_currentHeight > 0 ? "1080x" + _currentHeight : "ventana")}): {Mathf.RoundToInt((float)(EditorApplication.timeSinceStartup - _entryStartAt))} s");
                 CheckCoachAudit();
                 CheckHowTo();
+                CheckTimeTrial();
                 CheckSound();
                 if (_current.Name == "Piloto" || _current.Name == "Radar" || _current.Name == "Acoplamiento" || _current.Name == "Aterrizaje")
                     Debug.Log("[SmokeTest] control de audio de " + _current.Name + ": " + (_audioHeard ? "se oyó sonido (el instrumento sirve)" : "NO se detectó ningún sonido: la prueba de «sonido apagado» no sería concluyente"));
@@ -1289,6 +1353,7 @@ namespace NeuroVida.Bridge.EditorTools
 
         private static void OnLog(string condition, string stackTrace, LogType type)
         {
+            if (type == LogType.Log && _listRunning && condition != null && condition.StartsWith("[Mock Editor] Telemetry Dispatch: ")) CheckTelemetryLine(condition);
             if (type == LogType.Error || type == LogType.Exception)
             {
                 _errorCount++;

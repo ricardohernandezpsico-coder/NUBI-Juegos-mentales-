@@ -150,3 +150,7 @@ Ricardo: todos los juegos en plasticina. Es SOLO arte: las reglas, el DDA, los t
 
 Como en los demás juegos, la respuesta lleva una marca con forma: al ACERTAR, la moneda ✓ (`marca_ok` del kit, 40 dp) en la esquina de arriba a la derecha del botón tocado; al ERRAR, ✗ (`marca_no`) en el tocado y ✓ en el correcto. Entra con `PopIn` (0,30 s) y se va con el deslizamiento de la tarjeta (fundido de 0,15 s).
 Las monedas viven EN EL BOTÓN, no en la tarjeta: no demoran el ensayo siguiente ni tocan `ArrivalSeconds`. **Nunca se tiñe la losa** (la tinta es el estímulo: ΔE ≤ 1,6, §9). Sin sonido nuevo (`SoundRulesTests` sigue verde) y ninguna medida ni tiempo de ensayo cambia. Con «quitar animaciones» cada cosa va a su estado final de una vez, con la misma duración.
+
+## Contrarreloj (Tarea 176, 26-oct-2026)
+
+Con `time_trial` en la config, Tinta o Palabra se juega como **Contrarreloj** (`docs/contrarreloj.md`): 120 s, la pista fija del día (`TimeTrial`: 5 pasos, uno cada 8 aciertos; el 5.º llega al acierto 32; versión de la pista 1), cada palabra con su propia semilla (`Sequencer.Next(level, rng)`), la dificultad adaptativa apagada y la **pausa del error de 3 s** (×2 al segundo error seguido, ×3 desde el tercero) que SÍ corre en el reloj (en el Reto de siempre no). El marcador dice «N aciertos» y el tiempo («1:12»). La tarjeta «Ahora: PALABRA» sigue sin gastar tiempo. Tinta no necesita mínimo antes de responder (cuatro opciones: adivinar acierta el 25 %): azar 5,5 contra cuidado 54,8 aciertos en la prueba (`TimeTrialFairnessTests`).

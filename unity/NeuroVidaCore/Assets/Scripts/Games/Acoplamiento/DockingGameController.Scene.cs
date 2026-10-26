@@ -133,7 +133,7 @@ namespace NeuroVida.Games.Acoplamiento
         /// <summary>El módulo de un intento nuevo (en el Editor, las capturas pueden forzar el espejo y el giro).</summary>
         private DockingTrial NewTrial(int level)
         {
-            var trial = DockingContract.NextTrial(level, _rng);
+            var trial = DockingContract.NextTrial(level, _tt != null ? _tt.Rng() : _rng);          // Contrarreloj: el azar de CADA módulo sale de la semilla del día y de su número
 #if UNITY_EDITOR
             if (_editorMirror >= 0) trial.Mirrored = _editorMirror == 1;                         // las capturas fuerzan el módulo (espejo o igual, y su giro)
             if (_editorAngle != NoAngle) trial.AngleDeg = _editorAngle;
@@ -159,7 +159,7 @@ namespace NeuroVida.Games.Acoplamiento
         {
             bool over = Precision ? _trials >= _trialsTotal : _endsAt > 0f && Now >= _endsAt;               // (antes de la cuenta regresiva el Reto todavía no tiene su fin)
             if (_preTrial != null || _dda == null || _rng == null || over) return;
-            var trial = NewTrial(_dda.PresentedLevel);
+            var trial = NewTrial(_tt != null ? _tt.Level : _dda.PresentedLevel);
             _preTrial = trial;
             _preReady = false;
             _preRoutine = StartCoroutine(PrebakeRoutine(trial));
@@ -358,7 +358,7 @@ namespace NeuroVida.Games.Acoplamiento
         /// <summary>Los botones: la losa del kit (lima y uva) apagada (45 %) mientras llega el módulo, viva al decidir y en la revelación; al tocarla pasa a su imagen presionada, el texto baja lo del kit y al soltar rebota; y el tocado muestra ✓ o ✗ en la revelación.</summary>
         private void RefreshButtons(float now)
         {
-            bool live = _phase == Phase.Decide || _phase == Phase.Reveal;
+            bool live = (_phase == Phase.Decide && (_tt == null || _guided || _inputOn)) || _phase == Phase.Reveal;          // Contrarreloj: apagados hasta que el puerto se abre
             for (int i = 0; i < 2; i++)
             {
                 var v = _buttons[i];
@@ -472,7 +472,7 @@ namespace NeuroVida.Games.Acoplamiento
         private void UpdateHud()
         {
             if (_guided) return;
-            _hud.SetLevel(_dda.PresentedLevel);
+            _hud.SetLevel(_tt != null ? _tt.Level : _dda.PresentedLevel);
             if (!_guided) _hud.SetPromptFit(null, DockingContract.Rule, DockingContract.RuleShort);
             UpdateHudExtras();
         }
@@ -480,7 +480,8 @@ namespace NeuroVida.Games.Acoplamiento
         /// <summary>El chip de avance (módulo + cuántos van a bordo) y el chip común de «seguidos» (Tarea 144: ya no hay contador ni chip propios).</summary>
         private void UpdateHudExtras()
         {
-            if (!_guided && _moduleNo > 0) _hud.SetInfoFit(DockingContract.InfoChips(_moduleNo, Endless ? 0 : _trialsTotal, _docked));
+            if (_tt != null) { if (!_guided) _tt.UpdateHud(_hud, _endsAt > 0f ? _endsAt - Now : TimeTrial.TotalSeconds); }          // Contrarreloj: «N aciertos» y el tiempo que queda
+            else if (!_guided && _moduleNo > 0) _hud.SetInfoFit(DockingContract.InfoChips(_moduleNo, Endless ? 0 : _trialsTotal, _docked));
             _hud.SetStreak(_guided ? 0 : _streak);
         }
 

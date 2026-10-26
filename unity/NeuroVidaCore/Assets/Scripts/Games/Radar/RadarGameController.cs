@@ -33,6 +33,8 @@ namespace NeuroVida.Games.Radar
 
         private System.Random _rng;
         private AdaptiveDifficulty _dda;
+        /// <summary>El CONTRARRELOJ (Tarea 176; <c>docs/contrarreloj.md</c>): si no es null, la pista es fija (la dicta <c>_tt</c> por rondas logradas), sin lluvias, con el azar de cada ronda sembrado por el día y el DDA apagado; el reloj es el de la partida (120 s) y el viaje de la nave a la estación sigue sin descontarle tiempo. null = juega como siempre.</summary>
+        private TimeTrial.Run _tt;
         private RadarRun _run = new RadarRun();
         private RadarRound _round;
         private Phase _phase = Phase.Idle;
@@ -61,6 +63,7 @@ namespace NeuroVida.Games.Radar
         public void StartSession(SequenceInitConfig config)
         {
             _config = config;
+            _tt = TimeTrial.Begin(config);
             _rng = new System.Random();
 #if UNITY_EDITOR
             // el smoke juega una partida corta (4 rondas, la última una lluvia) desde el nivel 7 (cuatro cápsulas y una roca)
@@ -127,14 +130,14 @@ namespace NeuroVida.Games.Radar
                 ResetViews();
             }
             _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play(RadarContract.Title, Assessment.Subtitle(RadarContract.CountdownSub), () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(_countdown.Play(RadarContract.Title, _tt != null ? TimeTrial.CountdownSub : Assessment.Subtitle(RadarContract.CountdownSub), () => _safe.gameObject.SetActive(true)));
             while (!_baked) yield return null;
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
-            _clock = new RetoClock(GameClock.Time, _retoSeconds);
+            _clock = new RetoClock(GameClock.Time, ClockSeconds);
             _timerTrack.gameObject.SetActive(Endless);
             _timerFill.gameObject.SetActive(Endless);
             UpdateHud();
@@ -156,6 +159,9 @@ namespace NeuroVida.Games.Radar
 
         private bool Finished() => Endless ? _clock != null && _clock.Finished(GameClock.Time) : _run.RoundsPlayed >= _roundsTotal;
 
+        /// <summary>Lo que dura la partida contra el reloj: 120 s en el Reto (en el Editor el smoke la acorta) y 120 s en el Contrarreloj (el smoke puede acortar este último con <c>TimeTrial.SecondsOverride</c>).</summary>
+        private float ClockSeconds => _tt != null ? TimeTrial.TotalSeconds : _retoSeconds;
+
         /// <summary>Hornea los sprites y sintetiza los sonidos durante la cuenta regresiva, de a poco por cuadro (así nada se traba).</summary>
         private IEnumerator Prewarm()
         {
@@ -176,13 +182,17 @@ namespace NeuroVida.Games.Radar
 
         private IEnumerator PlayRound()
         {
-            bool rain = RadarContract.IsRainRound(_run.RoundsPlayed);
-            int level = _dda.PresentedLevel;
+            bool rain = _tt == null && RadarContract.IsRainRound(_run.RoundsPlayed);                        // el Contrarreloj es una escalera pura de rondas: sin lluvias
+            int level = _tt != null ? _tt.Level : _dda.PresentedLevel;
+            var rng = _tt != null ? _tt.Rng() : _rng;                                                        // Contrarreloj: el azar de CADA ronda sale de la semilla del día y de su número
             _geo = RadarGeometry.For(_plan.GlassR);
-            var round = rain ? RadarContract.RainRound(level, _rng, _geo) : RadarContract.NextRound(level, _rng, _geo);
+            var round = rain ? RadarContract.RainRound(level, rng, _geo) : RadarContract.NextRound(level, rng, _geo);
             BeginRoundObjects(round);
             UpdateHud();
-            yield return StartCoroutine(DoWatch(_watchMin + (_watchMax - _watchMin) * (float)_rng.NextDouble(), rain));
+            // la espera antes del relámpago sale de OTRO flujo de la semilla: la geometría de la pantalla cambia cuántos números gasta el acomodo de las cápsulas y no debe mover la espera
+            double waitPick = _tt != null ? _tt.Rng(1).NextDouble() : _rng.NextDouble();
+            yield return StartCoroutine(DoWatch(_watchMin + (_watchMax - _watchMin) * (float)waitPick, rain));
+            if (TimeIsUp) { AbortRound(); yield break; }                      // Contrarreloj: el reloj terminó antes del relámpago: la ronda no cuenta
             yield return StartCoroutine(DoFlash());
             yield return StartCoroutine(DoMask());
             if (_flashPaused)
@@ -196,8 +206,23 @@ namespace NeuroVida.Games.Radar
                 yield break;
             }
             yield return StartCoroutine(DoAnswer());
+            if (_tt != null && !_rescueTapped) { AbortRound(); yield break; }       // Contrarreloj: el reloj terminó antes de rescatar: la ronda no cuenta (ni como error)
             yield return StartCoroutine(DoReveal());
             HideRoundObjects();
+        }
+
+        /// <summary>Contrarreloj: ya no queda tiempo.</summary>
+        private bool TimeIsUp => _tt != null && _clock != null && _clock.Finished(GameClock.Time);
+
+        /// <summary>Una ronda que el reloj cortó: se limpia lo que se veía y no suma nada.</summary>
+        private void AbortRound()
+        {
+            _phase = Phase.Idle;
+            _picks.Clear();
+            HideRoundObjects();
+            _mask.gameObject.SetActive(false);
+            SetBoard(BoardMode.Dim);
+            SetMessage("", "");
         }
 
         /// <summary>Atento: el haz del radar gira y suena un «ping» por vuelta; el relámpago llega sin aviso.</summary>
@@ -275,7 +300,7 @@ namespace NeuroVida.Games.Radar
 #endif
             SetBoard(BoardMode.Live);
             SetMessage(RadarContract.AskMessage(_round.Count), RadarContract.AskHint, Cyan);
-            while (!_rescueTapped && Now - _answerStartedAt < RadarContract.AnswerTimeoutSeconds) yield return null;
+            while (!_rescueTapped && Now - _answerStartedAt < RadarContract.AnswerTimeoutSeconds && !TimeIsUp) yield return null;
         }
 
         /// <summary>La revelación (2,3 s): lo que pasó, con el rayo tractor, los avisos del tablero y el mensaje de la franja.</summary>
@@ -293,7 +318,8 @@ namespace NeuroVida.Games.Radar
             if (!_guided)
             {
                 var outcome = _run.Add(_round, answer.Hits, answer.Extras, _actualMs);
-                if (!_round.Rain) _dda.Register(outcome.Success);          // las lluvias quedan fuera del motor
+                if (_tt != null) _tt.Register(outcome.Success);                  // Contrarreloj: la pista sube por rondas logradas y el DDA no corre
+                else if (!_round.Rain) _dda.Register(outcome.Success);          // las lluvias quedan fuera del motor
 #if UNITY_EDITOR
                 Debug.Log("[SmokeTest] Radar: ronda " + _run.RoundsPlayed + (_round.Rain ? " (lluvia)" : " nivel " + _round.Level) + ": " + answer.Hits + " de " + _round.Count + ", " + answer.Extras + " de más, destello real " + _actualMs.ToString("0") + " ms de " + _round.ExposureMs + ", racha " + _run.Streak);
 #endif
@@ -383,6 +409,7 @@ namespace NeuroVida.Games.Radar
             _phase = Phase.Done;
             int record = Mathf.Max(_bestRecord, _run.Rescued);
             bool broke = _run.Rescued > _bestRecord;
+            if (_tt != null) { record = _bestRecord; broke = false; }                // las cápsulas del Contrarreloj no tocan el récord de cápsulas de la partida de siempre
 #if UNITY_EDITOR
             // el contador de arriba, las cápsulas de la nave y el título «N cápsulas a salvo» tienen que decir lo mismo (cada cápsula rescatada sube a la nave y suma una sola vez): si no, el smoke falla
             if (!EditorShotMode && (_shownRescued != _run.Rescued || _seats.Count != _run.Rescued))
@@ -392,11 +419,13 @@ namespace NeuroVida.Games.Radar
             HideRoundObjects();
             _exit.Show();
             // el final de la partida lo suena ExitButton (GameFeel.Finish): UNO por partida, ningún juego suena uno propio
+            var metrics = RadarMetrics.Build(_dda, _run, record, broke, _config.config);
+            _tt?.Fill(metrics);                                                       // Contrarreloj: «N aciertos en 2 minutos» y el paso alcanzado (el DDA no corrió: end_rating queda como estaba)
             var telemetry = new StroopTelemetry
             {
                 user_id = _config.user_id,
                 game_id = _config.game_id,
-                session_metrics = RadarMetrics.Build(_dda, _run, record, broke, _config.config)
+                session_metrics = metrics
             };
             NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
             yield break;
@@ -460,7 +489,8 @@ namespace NeuroVida.Games.Radar
             if (!Endless || _clock == null || _guided || !_loopOn || _phase == Phase.Done) return;
             if (_phase == Phase.Trip) _clock.Shift(GameClock.DeltaTime);                // el viaje a la estación no descuenta tiempo del Reto
             float left = _clock.Remaining(GameClock.Time);
-            SetTimer(left / _retoSeconds);
+            SetTimer(left / ClockSeconds);
+            _tt?.UpdateHud(_hud, left);
             int whole = Mathf.CeilToInt(left);
             if (whole <= 5 && whole >= 1 && whole != _lastTickSecond)
             {

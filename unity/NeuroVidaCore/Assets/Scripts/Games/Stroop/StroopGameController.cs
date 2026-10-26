@@ -65,6 +65,8 @@ namespace NeuroVida.Games.Stroop
         private StroopTrial _trial;
         private int _totalAnswered;
         private AdaptiveDifficulty _dda; // DDA común (ver docs/DDA-comun.md)
+        /// <summary>El CONTRARRELOJ (Tarea 176; <c>docs/contrarreloj.md</c>): si no es null, la pista es fija (la dicta <c>_tt</c> por aciertos), el DDA no corre y el error cuesta su pausa en el reloj; null = juega como siempre.</summary>
+        private TimeTrial.Run _tt;
         private int _effLevel = 1;
         private int _points;
         private float _roundEndsAt;
@@ -109,6 +111,7 @@ namespace NeuroVida.Games.Stroop
         public void StartSession(SequenceInitConfig config)
         {
             _config = config;
+            _tt = TimeTrial.Begin(config);
             _rng = new System.Random();
             _seq = new StroopContract.Sequencer(_rng);
             _trialIndex = 0;
@@ -130,7 +133,7 @@ namespace NeuroVida.Games.Stroop
             _dda = new AdaptiveDifficulty(StroopContract.MaxLevel, DdaUserProfileConfig.ParseAgeBand(config.config.age_band),
                 AdaptiveDifficulty.StartRating(config.config, StroopContract.MaxLevel),
                 stepUp: config.config.timed ? 0.12f : 0.2f, useReaction: config.config.timed);
-            _effLevel = _dda.PresentedLevel;
+            _effLevel = _tt != null ? _tt.Level : _dda.PresentedLevel;
             _lastTickSecond = -1;
 
             _exit.Hide();
@@ -165,14 +168,14 @@ namespace NeuroVida.Games.Stroop
                 yield return StartCoroutine(RunTutorialIfNeeded());
             }
             _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Tinta o Palabra", Assessment.Subtitle(StroopContract.CountdownSub), () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(_countdown.Play("Tinta o Palabra", _tt != null ? TimeTrial.CountdownSub : Assessment.Subtitle(StroopContract.CountdownSub), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
             yield return null; // deja que el Canvas calcule el rect del Safe Area antes de medir
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
 
-            _roundEndsAt = GameClock.Time + StroopContract.EndlessSeconds;
+            _roundEndsAt = GameClock.Time + RoundSeconds;
             _trialIndex = 0;
             _loopOn = true;
             yield return StartCoroutine(MainLoop());
@@ -205,9 +208,15 @@ namespace NeuroVida.Games.Stroop
                 _responseMsSum += (long)ms;
                 _responseCount++;
                 _responses.Add(new StroopResponse(correct, ms, _trial.Clash, _trial.Switched));
-                var change = _dda.Register(correct, ms);
+                // Contrarreloj: la pista sube por aciertos y el DDA no corre (la pausa del error se calcula con este registro, ANTES de resolver)
+                bool stepUp = _tt != null && _tt.Register(correct);
+                var change = _tt != null ? DdaChange.None : _dda.Register(correct, ms);
                 yield return StartCoroutine(ResolveTrial(correct));
-                if (change == DdaChange.Up)
+                if (_tt != null)
+                {
+                    if (stepUp) { _toast.Show("¡Un paso más!", _tt.Level == 3 ? "Ahora llegan por las dos orillas" : "Más difícil", GoodColor, 1.0f); GameFeel.LevelUp(); }
+                }
+                else if (change == DdaChange.Up)
                 {
                     _toast.Show("¡Un paso más!", _dda.Level == 3 ? "Ahora llegan por las dos orillas" : "Más difícil", GoodColor, 1.0f);
                     GameFeel.LevelUp();
@@ -225,8 +234,8 @@ namespace NeuroVida.Games.Stroop
         private IEnumerator PresentTrial()
         {
             _answerIndex = (int)NoAnswer;
-            _effLevel = _dda.PresentedLevel;
-            _trial = _seq.Next(_effLevel);
+            _effLevel = _tt != null ? _tt.Level : _dda.PresentedLevel;
+            _trial = _tt != null ? _seq.Next(_effLevel, _tt.Rng()) : _seq.Next(_effLevel);      // Contrarreloj: el azar de CADA palabra sale de la semilla del día y de su número
             UpdateHudText();
             if (!Endless) SetTimerFraction(1f);
             ClearRings();
@@ -285,7 +294,7 @@ namespace NeuroVida.Games.Stroop
                 _pill.Set("¡Bien!", GoodColor);
                 GameFeel.Correct(_streak);
                 ShowMark(_answerIndex, true);                                                            // la moneda ✓ en el botón tocado (Tarea 130)
-                _markFade = StartCoroutine(FadeMarksAfter(Mathf.Max(0f, (Endless ? 0.17f : 0.24f + 0.08f) - 0.15f), 0.15f));        // se va con el deslizamiento de la tarjeta, sin demorar el ensayo siguiente
+                _markFade = StartCoroutine(FadeMarksAfter(Mathf.Max(0f, (Endless ? StroopContract.RetoSlideOutSeconds : 0.24f + 0.08f) - 0.15f), 0.15f));        // se va con el deslizamiento de la tarjeta, sin demorar el ensayo siguiente
                 StartCoroutine(Flash(GoodColor, 0.08f, 0.24f));
                 if (Motion.Decorative)
                 {
@@ -296,7 +305,7 @@ namespace NeuroVida.Games.Stroop
                     _toast.Show($"{_streak} seguidos", "Sigue así", GoodColor, 0.9f);
 
                 // la tarjeta sale hacia la orilla CONTRARIA a la de la que llegó
-                yield return StartCoroutine(SlideOut(Endless ? 0.17f : 0.24f, -_shownCardSide));
+                yield return StartCoroutine(SlideOut(Endless ? StroopContract.RetoSlideOutSeconds : 0.24f, -_shownCardSide));
                 if (!Endless) yield return Motion.Hold(0.08f);
             }
             else
@@ -314,9 +323,13 @@ namespace NeuroVida.Games.Stroop
                 if (Motion.Decorative) StartCoroutine(UiFx.RingBurst(_fxRect, LocalIn(_fxRect, _buttonRects[correctIndex]), Color.white, 140f, 460f, 0.55f));
                 if (_answerIndex >= 0 && _answerIndex < _markImages.Count && _answerIndex != correctIndex) ShowMark(_answerIndex, false);          // ✗ en el tocado y ✓ en el correcto (Tarea 130)
                 ShowMark(correctIndex, true);
-                // una pausa para leer la explicación; no le gasta tiempo al Reto
-                yield return Motion.Hold(StroopContract.ErrorPauseSeconds);
-                if (Endless) _roundEndsAt += StroopContract.ErrorPauseSeconds;
+                // una pausa para leer la explicación; no le gasta tiempo al Reto. En el Contrarreloj el error CUESTA su pausa (3 s; el doble al segundo error seguido y el triple desde el tercero): el reloj sigue corriendo
+                if (_tt != null) yield return Motion.Hold(Mathf.Min(_tt.ErrorPauseSeconds, Mathf.Max(0.5f, _roundEndsAt - GameClock.Time)));       // sin pasar de los 120 s: la partida termina con el reloj
+                else
+                {
+                    yield return Motion.Hold(StroopContract.ErrorPauseSeconds);
+                    if (Endless) _roundEndsAt += StroopContract.ErrorPauseSeconds;
+                }
                 _markFade = StartCoroutine(FadeMarksAfter(0f, 0.15f));
                 yield return StartCoroutine(FadeCardOut());
             }
@@ -344,7 +357,7 @@ namespace NeuroVida.Games.Stroop
         private IEnumerator FadeCardOut()
         {
             float t = 0f;
-            const float seconds = 0.16f;
+            const float seconds = StroopContract.FadeOutSeconds;
             float from = _cardGroup.alpha;
             while (t < seconds)
             {
@@ -355,12 +368,15 @@ namespace NeuroVida.Games.Stroop
             _cardGroup.alpha = 0f;
         }
 
+        /// <summary>Lo que dura la ronda contra el reloj: 60 s en el Reto y 120 s en el Contrarreloj.</summary>
+        private float RoundSeconds => _tt != null ? TimeTrial.TotalSeconds : StroopContract.EndlessSeconds;
+
         /// <summary>Actualiza la barra del reloj global; devuelve true cuando se acabó el tiempo.
         /// En los últimos 5 segundos suena un tic por segundo.</summary>
         private bool UpdateRoundClock()
         {
             float left = _roundEndsAt - GameClock.Time;
-            SetTimerFraction(Mathf.Clamp01(left / StroopContract.EndlessSeconds));
+            SetTimerFraction(Mathf.Clamp01(left / RoundSeconds));
             int whole = Mathf.CeilToInt(left);
             if (whole <= 5 && whole >= 1 && whole != _lastTickSecond)
             {
@@ -424,6 +440,7 @@ namespace NeuroVida.Games.Stroop
                     switch_cost_ms = StroopContract.SwitchCostMs(_responses)
                 }
             };
+            _tt?.Fill(telemetry.session_metrics);                                      // Contrarreloj: «N aciertos en 2 minutos» y el paso alcanzado (el DDA no corrió: end_rating queda como estaba)
             NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
             yield break;
         }
@@ -441,7 +458,31 @@ namespace NeuroVida.Games.Stroop
         private void Update()
         {
             if (PollTutorialSkip()) return;                              // un toque en «Saltar tutorial» no es un toque a un botón
+#if UNITY_EDITOR
+            AutoPlayTimeTrial();
+#endif
+            if (_tt != null && _loopOn && !_ended)
+            {
+                UpdateRoundClock();                                      // el reloj, su barra y los tics siguen mientras corre la pausa de un error (el bucle solo los mira cuando espera la respuesta)
+                _tt.UpdateHud(_hud, _roundEndsAt - GameClock.Time);
+            }
         }
+
+#if UNITY_EDITOR
+        private float _botT = -1f;
+
+        /// <summary>SOLO EN EL EDITOR (smoke «Contrarreloj*»): juega solo. Toca el color correcto 0,5 s después de que llega la palabra y una de cada tres se equivoca a propósito (para pasar por la pausa del error). En el teléfono no existe.</summary>
+        private void AutoPlayTimeTrial()
+        {
+            if (_tt == null || !GuidedTutorial.EditorAutoPlayGame || _guided || !_acceptInput || _ended) { _botT = -1f; return; }
+            if (_botT < 0f) _botT = 0f;
+            _botT += GameClock.DeltaTime;
+            if (_botT < 0.5f) return;
+            _botT = -1f;
+            bool wrong = _tt.Trials % 3 == 1;
+            OnColorTapped(wrong ? (_trial.CorrectIndex + 1) % StroopContract.Names.Length : _trial.CorrectIndex);
+        }
+#endif
 
         // ------------------------------------------------------------------ construcción de UI
 
@@ -957,8 +998,13 @@ namespace NeuroVida.Games.Stroop
 
         private void UpdateHudText()
         {
-            // Marcador común (GameHud): nivel + puntos que cuentan (Reto) o avance "3 de 16" (Precisión).
-            if (Endless)
+            // Marcador común (GameHud): nivel + puntos que cuentan (Reto) o avance "3 de 16" (Precisión). Contrarreloj: «N aciertos» y el tiempo que queda.
+            if (_tt != null)
+            {
+                _hud.SetLevel(_tt.Level);
+                _tt.UpdateHud(_hud, _roundEndsAt > 0f ? _roundEndsAt - GameClock.Time : TimeTrial.TotalSeconds);
+            }
+            else if (Endless)
             {
                 _hud.SetLevel(_effLevel);
                 _hud.SetPoints(_points);

@@ -55,6 +55,10 @@ namespace NeuroVida.Games.Acoplamiento
         /// <summary>Los tiempos de la revelación (ms): el módulo gira hasta quedar derecho, se da vuelta (solo si era espejo), baja al puerto, espera y vuela a su casillero; si no acertó, se aleja.</summary>
         public const int ArriveMs = 420, UpMs = 320, FlipMs = 300, DownMs = 380, HoldMs = 220, FlyMs = 520, GoneMs = 600, AfterDockMs = 380;
 
+        /// <summary>Lo que dura la revelación de un módulo (s): si acertó (gira, se da vuelta si era espejo, baja, espera, vuela a su casillero y queda a ras) y si no (gira, baja y se aleja). El Contrarreloj mide con estos tiempos lo que ya pasó antes de la pausa del error (<c>TimeTrialFairnessTests</c>).</summary>
+        public static float OkRevealSeconds(bool mirrored) => (UpMs + (mirrored ? FlipMs : 0) + DownMs + HoldMs + FlyMs + AfterDockMs) / 1000f;
+        public static float MissRevealSeconds(bool mirrored) => (UpMs + (mirrored ? FlipMs : 0) + DownMs + GoneMs + 200) / 1000f;
+
         /// <summary>El anillo que completa el módulo número <paramref name="dockedAfter"/> (1, 2, 3…): cada 8.</summary>
         public static bool CompletesRing(int dockedAfter) => dockedAfter > 0 && dockedAfter % Slots == 0;
 

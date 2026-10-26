@@ -34,6 +34,9 @@ namespace NeuroVida.Games.Acoplamiento
 
         private System.Random _rng;
         private AdaptiveDifficulty _dda;
+        /// <summary>El CONTRARRELOJ (Tarea 176; <c>docs/contrarreloj.md</c>): si no es null, la pista es fija (la dicta <c>_tt</c> por aciertos: un paso cada 2), el azar de cada módulo sale de la semilla del día y de su número, el DDA no corre, el puerto se abre a los 1,2 s (antes no se acepta respuesta)
+        /// y el error cuesta su pausa en el reloj (3 s; el doble al segundo seguido, el triple desde el tercero). null = juega como siempre.</summary>
+        private TimeTrial.Run _tt;
         private Phase _phase = Phase.Idle;
         /// <summary>true mientras corre <see cref="RevealRoutine"/> (la fase sigue siendo «Reveal» hasta que alguien pasa a la siguiente: el juego en <c>EndTrial</c>, la práctica del tutorial por su cuenta).</summary>
         private bool _revealing;
@@ -71,6 +74,7 @@ namespace NeuroVida.Games.Acoplamiento
         public void StartSession(SequenceInitConfig config)
         {
             _config = config;
+            _tt = TimeTrial.Begin(config);
             _rng = new System.Random();
             var age = DdaUserProfileConfig.ParseAgeBand(config.config.age_band);
             float start = AdaptiveDifficulty.StartRating(config.config, DockingContract.MaxLevel);
@@ -136,7 +140,7 @@ namespace NeuroVida.Games.Acoplamiento
             }
             _safe.gameObject.SetActive(false);
             StartPrebake();                                                                    // el primer módulo se hornea de a poco durante la cuenta regresiva
-            yield return StartCoroutine(_countdown.Play(DockingContract.Title, Assessment.Subtitle(DockingContract.CountdownSub), () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(_countdown.Play(DockingContract.Title, _tt != null ? TimeTrial.CountdownSub : Assessment.Subtitle(DockingContract.CountdownSub), () => _safe.gameObject.SetActive(true)));
             while (!_baked) yield return null;
             while (_preTrial != null && !_preReady) yield return null;
             _safe.gameObject.SetActive(true);
@@ -144,7 +148,7 @@ namespace NeuroVida.Games.Acoplamiento
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
-            _endsAt = Now + _retoSeconds;
+            _endsAt = Now + ClockSeconds;
             _timerTrack.gameObject.SetActive(Endless);
             _timerFill.gameObject.SetActive(Endless);
             UpdateHud();
@@ -161,6 +165,9 @@ namespace NeuroVida.Games.Acoplamiento
         }
 
         private bool Finished() => Precision ? _trials >= _trialsTotal : Now >= _endsAt;
+
+        /// <summary>Lo que dura la partida contra el reloj: 120 s en el Reto (en el Editor el smoke la acorta) y 120 s en el Contrarreloj (el smoke puede acortar este último con <c>TimeTrial.SecondsOverride</c>).</summary>
+        private float ClockSeconds => _tt != null ? TimeTrial.TotalSeconds : _retoSeconds;
 
         /// <summary>Hornea los sprites y sintetiza los sonidos durante la cuenta regresiva, de a poco por cuadro (así nada se traba).</summary>
         private IEnumerator Prewarm()
@@ -182,7 +189,7 @@ namespace NeuroVida.Games.Acoplamiento
 
         private IEnumerator PlayTrial()
         {
-            int level = _dda.PresentedLevel;
+            int level = _tt != null ? _tt.Level : _dda.PresentedLevel;
             DockingTrial trial = null;
             if (_preTrial != null && PrebakeStillValid())
             {
@@ -200,9 +207,22 @@ namespace NeuroVida.Games.Acoplamiento
             UpdateHud();
             yield return StartCoroutine(DoArrive());
             yield return StartCoroutine(DoDecide(level));
+            if (_tt != null && _answer == NoAnswer && Now >= _endsAt)
+            {
+                // Contrarreloj: el reloj terminó antes de que se contestara este módulo: no cuenta (ni como error) y la partida termina
+                DiscardPrebake();
+                EndTrial();
+                yield break;
+            }
             EvaluateAnswer(level, out bool correct, out int answer);
             StartPrebake();                                                                    // el módulo que sigue se hornea de a poco mientras se revela este
             yield return StartCoroutine(RevealRoutine(correct, answer));
+            if (_tt != null && !correct)
+            {
+                // Contrarreloj: el error CUESTA su pausa (3, 6 o 9 s en total, contando lo que ya duró la revelación): el reloj sigue corriendo
+                float extra = Mathf.Min(_tt.ErrorPauseSeconds - DockingContract.MissRevealSeconds(_trial.Mirrored), _endsAt - Now);      // sin pasar de los 120 s: la partida termina con el reloj
+                if (extra > 0f) yield return Wait(extra);
+            }
             EndTrial();
         }
 
@@ -229,11 +249,13 @@ namespace NeuroVida.Games.Acoplamiento
             if (GuidedTutorial.EditorAutoPlayGame && !EditorShotMode) _deadline = Mathf.Min(_deadline, 1.6f);                  // el smoke no espera 6 s para ver «Sin tiempo»
             if (_editorDeadline > 0f) _deadline = _editorDeadline;                                                         // y las capturas, tampoco
 #endif
-            _inputOn = true;
+            float minThink = _tt != null ? TimeTrial.MinThinkSeconds(GameId) : 0f;               // Contrarreloj: el puerto se abre a los 1,2 s; antes los botones están apagados y no se acepta respuesta (adivinar no gana)
+            _inputOn = minThink <= 0f;
             SetFuelVisible(Endless);
             _hint.gameObject.SetActive(false);                                         // la consigna vive en la fila del marcador (Tarea 127)
-            while (_answer == NoAnswer && Now - _decideAt < _deadline)
+            while (_answer == NoAnswer && Now - _decideAt < _deadline && !(_tt != null && Now >= _endsAt))
             {
+                if (!_inputOn && Now - _decideAt >= minThink) _inputOn = true;
                 SetFuel(1f - (Now - _decideAt) / _deadline);
                 yield return null;
             }
@@ -256,7 +278,8 @@ namespace NeuroVida.Games.Acoplamiento
             if (correct) _correct++;
             _streak = correct ? _streak + 1 : 0;
             _bestStreak = Mathf.Max(_bestStreak, _streak);
-            _dda.Register(correct);
+            if (_tt != null) _tt.Register(correct);                      // Contrarreloj: la pista sube por aciertos y el DDA no corre (ANTES de elegir el módulo que sigue)
+            else _dda.Register(correct);
             UpdateHud();
 #if UNITY_EDITOR
             Debug.Log("[SmokeTest] Acoplamiento: módulo " + _trials + " nivel " + level + (_trial.Mirrored ? " espejo" : " igual") + " " + _trial.AngleDeg + "°: " + (timedOut ? "sin tiempo" : answer == DockingContract.AnswerFits ? "dijo «Encaja»" : "dijo «Espejo»") + " → " + (correct ? "acierto" : "error") + ", " + rtMs.ToString("0") + " ms, racha " + _streak);
@@ -368,6 +391,7 @@ namespace NeuroVida.Games.Acoplamiento
             _phase = Phase.Done;
             int record = Mathf.Max(_bestRecord, _docked);
             bool broke = _docked > _bestRecord;
+            if (_tt != null) { record = _bestRecord; broke = false; }            // los módulos del Contrarreloj no tocan el récord de módulos acoplados de la partida de siempre
             float accuracy = _trials > 0 ? (float)_correct / _trials : 0f;
             int speed = DockingContract.RotationSpeed(_disparities, _rts, _corrects);
             int[] curve = DockingContract.Curve(_disparities, _rts, _corrects);
@@ -408,6 +432,7 @@ namespace NeuroVida.Games.Acoplamiento
                     dock_new = broke ? 1 : 0,
                 }
             };
+            _tt?.Fill(telemetry.session_metrics);                                      // Contrarreloj: «N aciertos en 2 minutos» y el paso alcanzado (el DDA no corrió: end_rating queda como estaba)
             NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
             yield break;
         }
@@ -464,7 +489,8 @@ namespace NeuroVida.Games.Acoplamiento
         {
             if (!Endless || _guided || !_loopOn || _phase == Phase.Done || _endsAt <= 0f) return;
             float left = _endsAt - Now;
-            SetTimer(left / _retoSeconds);
+            SetTimer(left / ClockSeconds);
+            _tt?.UpdateHud(_hud, left);
             int whole = Mathf.CeilToInt(left);
             if (whole <= 5 && whole >= 1 && whole != _lastTickSecond)
             {
@@ -529,6 +555,7 @@ namespace NeuroVida.Games.Acoplamiento
         private void AutoPlay(float dt)
         {
             if (EditorShotMode || !GuidedTutorial.EditorAutoPlayGame || _trial == null || _answer != NoAnswer) return;
+            if (_tt != null && !_inputOn) return;                                                  // Contrarreloj: el puerto todavía no se abrió (los botones no aceptan respuesta)
             if (_botPick == NoAnswer)
             {
                 bool silent = _trials % 5 == 4;
@@ -537,7 +564,8 @@ namespace NeuroVida.Games.Acoplamiento
                 _botT = 0f;
             }
             _botT += dt;
-            if (_botT < 0.5f || _botPick < 0) return;
+            if (_botPick < 0) return;
+            if (_tt != null ? Now - _decideAt < TimeTrial.MinThinkSeconds(GameId) + 0.15f : _botT < 0.5f) return;      // Contrarreloj: apenas se abre el puerto
             int pick = _botPick;
             _botPick = NoAnswer;
             PressButton(pick);

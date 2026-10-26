@@ -136,6 +136,8 @@ namespace NeuroVida.Games.Stroop
         public const float GuidedArrivalSeconds = 0.7f;
         /// <summary>Segundos que se espera tras un error (para leer «La tinta era azul») y tras un acierto de la ronda guiada.</summary>
         public const float ErrorPauseSeconds = 1.5f;
+        /// <summary>Lo que dura la tarjeta en salir tras un acierto en el Reto y en el Contrarreloj, y en desvanecerse tras un error (después de su pausa): el reloj no corre distinto en ninguno de los dos (<c>TimeTrialFairnessTests</c> los usa).</summary>
+        public const float RetoSlideOutSeconds = 0.17f, FadeOutSeconds = 0.16f;
         public const float GuidedErrorPauseSeconds = 1.6f;
         public const float GuidedOkPauseSeconds = 0.9f;
 
@@ -176,8 +178,10 @@ namespace NeuroVida.Games.Stroop
             /// <summary>Palabras que ya salieron.</summary>
             public int Count => _index;
 
-            public StroopTrial Next(int level)
+            /// <summary>La palabra que sigue. Con <paramref name="rng"/> el azar sale de ese generador y no del de la partida (el Contrarreloj siembra cada ensayo: <c>TimeTrial.TrialRng</c>).</summary>
+            public StroopTrial Next(int level, System.Random rng = null)
             {
+                var r = rng ?? _rng;
                 var spec = Spec(level);
                 var rule = StroopRule.Ink;
                 if (spec.BothRules && _index >= OpeningInkTrials)
@@ -188,22 +192,22 @@ namespace NeuroVida.Games.Stroop
                         {
                             // un tramo nuevo de la otra regla (el primer tramo de PALABRA arranca recién pasadas las de apertura)
                             rule = _index == OpeningInkTrials ? StroopRule.Word : (_previous == StroopRule.Ink ? StroopRule.Word : StroopRule.Ink);
-                            _runLeft = 4 + _rng.Next(3);
+                            _runLeft = 4 + r.Next(3);
                         }
                         else rule = _previous;
                     }
                     else
                     {
-                        rule = _rng.NextDouble() < spec.SwitchChance ? (_previous == StroopRule.Ink ? StroopRule.Word : StroopRule.Ink) : _previous;
+                        rule = r.NextDouble() < spec.SwitchChance ? (_previous == StroopRule.Ink ? StroopRule.Word : StroopRule.Ink) : _previous;
                     }
                 }
                 if (spec.Blocks && _runLeft > 0) _runLeft--;
                 bool switched = _index > 0 && rule != _previous;
-                int word = _rng.Next(Names.Length);
+                int word = r.Next(Names.Length);
                 int ink = word;
-                if (_rng.NextDouble() < spec.ClashShare)
+                if (r.NextDouble() < spec.ClashShare)
                 {
-                    ink = _rng.Next(Names.Length - 1);
+                    ink = r.Next(Names.Length - 1);
                     if (ink >= word) ink++;
                 }
                 _previous = rule;

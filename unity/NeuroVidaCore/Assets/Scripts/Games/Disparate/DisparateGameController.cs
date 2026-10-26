@@ -55,6 +55,9 @@ namespace NeuroVida.Games.Disparate
 
         private System.Random _rng;
         private AdaptiveDifficulty _dda;
+        /// <summary>El CONTRARRELOJ (Tarea 176; <c>docs/contrarreloj.md</c>): si no es null, la pista es fija (la dicta <c>_tt</c> por aciertos), sin Ráfagas, sin señal que se apaga y sin evitar las frases de las últimas partidas, el DDA no corre, el error cuesta su pausa en el reloj y la respuesta se acepta recién tras un mínimo (la frase se lee). null = juega como siempre.</summary>
+        private TimeTrial.Run _tt;
+        private float _unlockAt;
         private SentenceBank _bank;
         private DisparateDirector _director;
         private DisparateTally _tally;
@@ -107,6 +110,7 @@ namespace NeuroVida.Games.Disparate
         public void StartSession(SequenceInitConfig config)
         {
             _config = config;
+            _tt = TimeTrial.Begin(config);
             _rng = new System.Random();
             var age = DdaUserProfileConfig.ParseAgeBand(config.config.age_band);
             Senior = age == AgeBand.Senior;
@@ -116,7 +120,8 @@ namespace NeuroVida.Games.Disparate
             _bank = SentenceBank.Load();
             string recent = "";
             try { recent = PlayerPrefs.GetString(RecentKey, ""); } catch (System.Exception) { }
-            _director = new DisparateDirector(_bank, _rng, DisparateContract.RecentIds(recent));
+            _director = new DisparateDirector(_bank, _rng, _tt != null ? null : DisparateContract.RecentIds(recent));       // la pista del día es la misma para todos: no evita las frases que cada persona vio en sus últimas partidas
+            _director.NoBursts = _tt != null;
             _tally = new DisparateTally();
 
             _previousFrameRate = Application.targetFrameRate;
@@ -136,8 +141,9 @@ namespace NeuroVida.Games.Disparate
 
             _exit.Hide();
             _timerBg.gameObject.SetActive(Endless);
-            _sigBar.gameObject.SetActive(!Precision);
-            _sigLabel.gameObject.SetActive(!Precision);
+            _sigBar.gameObject.SetActive(!Precision && _tt == null);                  // el Contrarreloj no tiene la señal que se apaga: el reloj es el de la partida
+            _sigLabel.gameObject.SetActive(!Precision && _tt == null);
+            SetButtonsLive(true);
             _hud.SetStreak(0);
             _hint.gameObject.SetActive(false);
             _plate.gameObject.SetActive(false);
@@ -175,7 +181,7 @@ namespace NeuroVida.Games.Disparate
                 ClearStage();
                 _safe.gameObject.SetActive(false);
             }
-            yield return StartCoroutine(_countdown.Play("¿Verdad o disparate?", Assessment.Subtitle(DisparateContract.Rule), () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(_countdown.Play("¿Verdad o disparate?", _tt != null ? TimeTrial.CountdownSub : Assessment.Subtitle(DisparateContract.Rule), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
@@ -183,7 +189,7 @@ namespace NeuroVida.Games.Disparate
             Layout();
             UpdateHud();
 
-            _endsAt = GameClock.Time + DisparateContract.RetoSeconds;
+            _endsAt = GameClock.Time + RoundSeconds;
             _phase = Phase.Playing;
             _hud.SetPrompt(DisparateContract.Rule);                    // la consigna vive en la fila del marcador (Tarea 127); el letrero flotante de antes («Responde rápido») ya no se usa
             _loopOn = true;
@@ -236,8 +242,19 @@ namespace NeuroVida.Games.Disparate
 
         // ------------------------------------------------------------------ preparar y mostrar la frase
 
+        /// <summary>Lo que dura la ronda contra el reloj: 120 s en el Reto y en el Contrarreloj (en el Editor, el smoke puede acortar este último).</summary>
+        private float RoundSeconds => _tt != null ? TimeTrial.TotalSeconds : DisparateContract.RetoSeconds;
+
         private SentenceSpec TakeNext()
         {
+            if (_tt != null)
+            {
+                // Contrarreloj: la frase de este número sale de la semilla del día y del paso en que va la persona; nada se prepara de antemano (el siguiente paso aún no se sabe)
+                _next = null;
+                var fixedSpec = _director.Next(_tt.Level, false, Senior, _tt.Rng());
+                if (fixedSpec != null) fixedSpec.SignalSeconds = 0f;
+                return fixedSpec;
+            }
             int level = _dda.PresentedLevel;
             var spec = _next;
             _next = null;
@@ -330,9 +347,12 @@ namespace NeuroVida.Games.Disparate
             _plate.localScale = Vector3.one;
             _label.text = spec.S.f;
             _legibleAt = GameClock.Time;              // el reloj de respuesta arranca recién ahora: la frase ya es nítida
-            _answerable = true;
-            // la siguiente se prepara mientras esta se lee (en la práctica no: no se gasta ninguna frase del banco)
-            if (!_guided) PrefetchNext();
+            bool locked = _tt != null && !_guided;
+            _unlockAt = locked ? _legibleAt + TimeTrial.MinThinkSeconds(GameId, spec.S.n) : 0f;      // Contrarreloj: la respuesta se acepta tras un mínimo (la frase se lee): adivinar no gana
+            _answerable = !locked;
+            SetButtonsLive(!locked);
+            // la siguiente se prepara mientras esta se lee (en la práctica no: no se gasta ninguna frase del banco; en el Contrarreloj tampoco: no se sabe el paso)
+            if (!_guided && _tt == null) PrefetchNext();
         }
 
         private void ApplyLayout(PlateLayout l, string text)
@@ -403,6 +423,7 @@ namespace NeuroVida.Games.Disparate
             while (!_answerGiven)
             {
                 if (Finished() && Endless) yield break;
+                if (_tt != null && !_answerable && !_guided && GameClock.Time >= _unlockAt) { _answerable = true; SetButtonsLive(true); }     // pasó el mínimo: los botones se encienden
                 if (_signalSeconds > 0f)
                 {
                     float elapsed = GameClock.Time - _legibleAt;
@@ -420,6 +441,18 @@ namespace NeuroVida.Games.Disparate
             _tremble = 0f;
             _staticAlpha = 0f;
             SetEdgeStatic(0f);
+            SetButtonsLive(true);
+        }
+
+        /// <summary>Los dos botones se ven apagados (45 %) mientras el Contrarreloj no acepta todavía la respuesta (la frase se lee) y encendidos después.</summary>
+        private void SetButtonsLive(bool live)
+        {
+            foreach (var b in new[] { _btnTrue, _btnFalse })
+            {
+                if (b == null) continue;
+                var g = b.GetComponent<CanvasGroup>();
+                if (g != null) g.alpha = live ? 1f : 0.45f;
+            }
         }
 
         // ------------------------------------------------------------------ entrada (botones, deslizar y mantener)
@@ -430,9 +463,27 @@ namespace NeuroVida.Games.Disparate
             UpdateClock();
             AnimateAmbient();
             if (_phase != Phase.Playing) return;
+#if UNITY_EDITOR
+            AutoPlayTimeTrial();
+#endif
             UpdatePlateMotion();
             HandleInput();
         }
+
+#if UNITY_EDITOR
+        private float _botAt = -1f;
+
+        /// <summary>SOLO EN EL EDITOR (smoke «Contrarreloj*»): juega solo. Responde bien 0,4 s después de que se aceptan las respuestas y una de cada tres se equivoca a propósito (para pasar por la pausa del error). En el teléfono no existe.</summary>
+        private void AutoPlayTimeTrial()
+        {
+            if (_tt == null || !GuidedTutorial.EditorAutoPlayGame || _guided || !_answerable || _answerGiven || _cur == null) { _botAt = -1f; return; }
+            if (_botAt < 0f) _botAt = GameClock.Time + 0.4f;
+            if (GameClock.Time < _botAt) return;
+            _botAt = -1f;
+            bool wrong = _tt.Trials % 3 == 1;
+            RequestAnswer(wrong ? !_cur.S.v : _cur.S.v);
+        }
+#endif
 
         private void HandleInput()
         {
@@ -576,6 +627,12 @@ namespace NeuroVida.Games.Disparate
 
         private void Register(bool correct)
         {
+            if (_tt != null)
+            {
+                // Contrarreloj: la pista sube por aciertos y el DDA no corre
+                if (_tt.Register(correct)) _toast.Show("¡Un paso más!", DisparateContract.LevelNews(_tt.Level), GoodColor, 1.1f);
+                return;
+            }
             var change = _dda.Register(correct);
             if (change == DdaChange.Up) _toast.Show("¡Un paso más!", DisparateContract.LevelNews(_dda.Level), GoodColor, 1.1f);
             else if (change == DdaChange.Down || _dda.Struggling) _toast.Show("Con calma", "Lee la frase hasta el final", AmberColor, 0.9f);
@@ -584,7 +641,7 @@ namespace NeuroVida.Games.Disparate
         private IEnumerator CorrectFeedback(SentenceSpec spec)
         {
             _streak++;
-            int pts = DisparateContract.Points(_dda.PresentedLevel, _streak, spec.Burst);
+            int pts = DisparateContract.Points(_tt != null ? _tt.Level : _dda.PresentedLevel, _streak, spec.Burst);
             _points += pts;
             GameFeel.Correct(_streak);                                  // queda SOLO el acierto común (la onda de la antena, que sonaba encima, se quitó)
             _hud.SetStreak(_streak);
@@ -648,6 +705,7 @@ namespace NeuroVida.Games.Disparate
             _fix.canvasRenderer.SetAlpha(1f);
             _shaking = false;
             float hold = Senior ? 1.9f : 1.4f;
+            if (_tt != null) hold = Mathf.Min(Mathf.Max(0.3f, _tt.ErrorPauseSeconds - fade), Mathf.Max(0.5f, _endsAt - GameClock.Time));              // Contrarreloj: el error cuesta su pausa en el reloj (3 s; el doble al segundo seguido, el triple desde el tercero)
             t = 0f;
             while (t < hold) { t += GameClock.DeltaTime; yield return null; }
             // despedida
@@ -913,7 +971,8 @@ namespace NeuroVida.Games.Disparate
         {
             if (_guided || !Endless || _phase != Phase.Playing || _endsAt <= 0f) return;
             float left = _endsAt - GameClock.Time;
-            SetTimerFraction(Mathf.Clamp01(left / DisparateContract.RetoSeconds));
+            SetTimerFraction(Mathf.Clamp01(left / RoundSeconds));
+            if (_tt != null) _tt.UpdateHud(_hud, left);
             int whole = Mathf.CeilToInt(left);
             if (whole <= 5 && whole >= 1 && whole != _lastTickSecond)
             {
@@ -924,6 +983,12 @@ namespace NeuroVida.Games.Disparate
 
         private void UpdateHud()
         {
+            if (_tt != null)
+            {
+                _hud.SetLevel(_tt.Level);
+                _tt.UpdateHud(_hud, _endsAt > 0f ? _endsAt - GameClock.Time : TimeTrial.TotalSeconds);
+                return;
+            }
             _hud.SetLevel(_dda.PresentedLevel);
             if (Endless) _hud.SetPoints(_points);
             else _hud.SetInfo($"{Mathf.Min(_resolved + 1, DisparateContract.PrecisionSentences)} de {DisparateContract.PrecisionSentences}");
@@ -1146,8 +1211,11 @@ namespace NeuroVida.Games.Disparate
             _plate.gameObject.SetActive(false);
             _warpTarget = 0f;
             SetEdgeStatic(0f);
-            try { PlayerPrefs.SetString(RecentKey, DisparateContract.PushRecent(PlayerPrefs.GetString(RecentKey, ""), _director.UsedInOrder)); PlayerPrefs.Save(); }
-            catch (System.Exception) { }
+            if (_tt == null)                                                                         // las frases del Contrarreloj no cuentan como «vistas» para evitarlas en las partidas de siempre
+            {
+                try { PlayerPrefs.SetString(RecentKey, DisparateContract.PushRecent(PlayerPrefs.GetString(RecentKey, ""), _director.UsedInOrder)); PlayerPrefs.Save(); }
+                catch (System.Exception) { }
+            }
 
             int total = _tally.Total, correct = _tally.Correct;
             float acc = total > 0 ? (float)correct / total : 0f;
@@ -1185,6 +1253,7 @@ namespace NeuroVida.Games.Disparate
                     sv_unclear = _tally.UnclearCsv
                 }
             };
+            _tt?.Fill(telemetry.session_metrics);                                             // Contrarreloj: «N aciertos en 2 minutos» y el paso alcanzado (el DDA no corrió: end_rating queda como estaba)
             NativeBridge.ForwardTelemetryToPlatform(JsonUtility.ToJson(telemetry));
             yield break;
         }
@@ -1440,6 +1509,7 @@ namespace NeuroVida.Games.Disparate
             var r = go.AddComponent<RectTransform>();
             r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
             r.pivot = new Vector2(0.5f, 0.5f);
+            go.AddComponent<CanvasGroup>();                                                        // apaga el botón al 45 % mientras el Contrarreloj no acepta todavía la respuesta (SetButtonsLive)
             var img = go.AddComponent<Image>();
             var tone = PlasticSlab.Nearest(color);
             var slab = PlasticSlab.TryStyle(img, SlabSize.Button, tone);                           // plasticina: losa lima (VERDAD) o coral (DISPARATE) del kit
