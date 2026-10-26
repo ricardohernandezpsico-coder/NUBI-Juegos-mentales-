@@ -6,6 +6,7 @@ import com.example.TestSupport
 import com.example.bridge.GameSessionStore
 import com.example.data.PlayMode
 import com.example.data.local.NeuroVidaDatabase
+import com.example.data.local.toDomain
 import com.example.model.DomainType
 import com.example.model.GamePlayResult
 import com.example.viewmodel.AllGamesState
@@ -247,93 +248,146 @@ class GameFlowTest {
     assertFalse(vm.activeGame.value!!.tutorial)
   }
 
-  // ---- El Desafío de hoy (Tarea 167)
+  // ---- El Contrarreloj de hoy (Tarea 177; antes, el Desafío de hoy de la Tarea 167)
 
-  /** Todos los juegos ya medidos: el Desafío solo sale de los medidos. */
-  private fun measureEverything() {
-    app.getSharedPreferences("skill", android.content.Context.MODE_PRIVATE).edit()
-      .putString("state", com.example.model.GameRegistry.allGames.joinToString("\n") { "m|${it.id}" }).commit()
-  }
+  /** Lo que Unity devuelve de un Contrarreloj: la marca (`tt_hits`), los errores, el paso, los segundos y la versión de la pista; el nivel de la persona sale sin tocar (`endRating` 0,5) y `modeTrials` en 0. */
+  private fun timeTrialResult(gameId: String, hits: Int, errors: Int = 4, peak: Int = 2) =
+    GamePlayResult(
+      gameId = gameId, score = 50, correctAnswers = hits, totalTrials = hits + errors, timed = true, level = 2, endRating = 0.5f, modeTrials = 0, modeHits = 0,
+      ttHits = hits, ttErrors = errors, ttPeakLevel = peak, ttSeconds = 120, ttTrackVersion = 1
+    )
 
-  private fun challengeResult(gameId: String, passed: Boolean, timed: Boolean) =
-    GamePlayResult(gameId = gameId, score = if (passed) 85 else 40, correctAnswers = if (passed) 12 else 4, totalTrials = 12, timed = timed, level = 2, endRating = 0.5f, modeHits = if (passed) 12 else 4, modeTrials = 12)
+  private fun savedTimeTrials(): List<com.example.data.TimeTrialResult> =
+    runBlocking { NeuroVidaDatabase.getDatabase(app).timeTrialResultDao().getAllSync().map { it.toDomain() } }
 
   @Test
-  fun `el Desafio de hoy se elige entre los medidos y fuera de la ruta, lanza ese juego en modo Desafio y vuelve a Hoy`() {
-    measureEverything()
+  fun `el Contrarreloj de hoy lanza el juego de la fecha con su pista, sin ser la ruta, y vuelve a Hoy`() {
     val vm = newViewModel()
-    TestSupport.awaitUntil(message = "No se eligió el Desafío de hoy") { vm.refreshChallenge(); vm.challengeToday.value != null }
-    val c = vm.challengeToday.value!!
-    assertEquals(com.example.data.ChallengeState.PENDIENTE, c.state)
-    assertFalse("nunca es un juego de la ruta de hoy", c.gameId in vm.dailySession.value.gameIds)
-    vm.startDailyChallenge()
+    vm.startTimeTrial()
+    val day = vm.todayKey()
     val session = vm.activeGame.value!!
-    assertEquals(c.gameId, session.gameDef.id)
-    assertEquals("en modo Desafío", PlayMode.DESAFIO, session.mode)
+    assertEquals("el juego sale de la fecha", com.example.data.TimeTrialDay.gameFor(day), session.gameDef.id)
+    assertEquals("la pista de ese día", day, session.timeTrialDay)
+    assertTrue("siempre contra el reloj", session.timed)
+    assertEquals("sin modos: la dificultad adaptativa está apagada", PlayMode.A_TU_MEDIDA, session.mode)
     assertFalse("no es la ruta: no avanza el camino de hoy", session.isDailyFlow)
-    assertEquals("con el reloj que la persona tiene elegido en la ficha de ese juego", vm.retoFor(c.gameId), session.timed)
     vm.closeGameOrResult()
     assertEquals("al terminar se vuelve a Hoy", AppTab.HOY, vm.currentTab.value)
     assertNull("sin Todos los juegos abierto", vm.allGames.value)
   }
 
   @Test
-  fun `una partida de Desafio del juego elegido lo deja jugado y, si se supera, superado y repetir no lo pierde`() {
-    measureEverything()
-    val vm = newViewModel()
-    TestSupport.awaitUntil(message = "No se eligió el Desafío de hoy") { vm.refreshChallenge(); vm.challengeToday.value != null }
-    val id = vm.challengeToday.value!!.gameId
-    val before = vm.dailySession.value
-    fun play(passed: Boolean, launch: String) {
-      vm.startDailyChallenge()
-      vm.onUnityLaunched(launch)
-      vm.onUnityResult(challengeResult(id, passed, vm.activeGame.value!!.timed), launch)
-    }
-    play(passed = false, launch = "LD1")
-    TestSupport.awaitUntil(message = "El Desafío no pasó a jugado") { vm.challengeToday.value?.state == com.example.data.ChallengeState.JUGADO }
-    play(passed = true, launch = "LD2")
-    TestSupport.awaitUntil(message = "El Desafío no pasó a superado") { vm.challengeToday.value?.state == com.example.data.ChallengeState.SUPERADO }
-    play(passed = false, launch = "LD3")
-    TestSupport.awaitUntil(message = "Repetir el Desafío no se guardó") { savedResults() == 3 }
-    assertEquals("lo superado no se pierde al repetir", com.example.data.ChallengeState.SUPERADO, vm.challengeToday.value?.state)
-    assertEquals("el Desafío no avanza la ruta de hoy", before.completedCount, vm.dailySession.value.completedCount)
-    assertEquals("y sigue siendo el mismo juego todo el día", id, vm.challengeToday.value?.gameId)
-  }
-
-  @Test
-  fun `una partida a tu medida del mismo juego no cuenta como el Desafio de hoy`() {
-    measureEverything()
-    val vm = newViewModel()
-    TestSupport.awaitUntil(message = "No se eligió el Desafío de hoy") { vm.refreshChallenge(); vm.challengeToday.value != null }
-    val id = vm.challengeToday.value!!.gameId
-    vm.playFromHome(id, PlayMode.A_TU_MEDIDA)
-    vm.onUnityLaunched("LM1")
-    vm.onUnityResult(challengeResult(id, passed = true, timed = false), "LM1")
-    TestSupport.awaitUntil(message = "La partida no quedó guardada") { savedResults() == 1 }
-    assertEquals(com.example.data.ChallengeState.PENDIENTE, vm.challengeToday.value?.state)
-  }
-
-  @Test
-  fun `sin ningun juego medido no hay Desafio de hoy y Hoy queda sin la losa`() {
+  fun `una partida de Contrarreloj se guarda en su tabla, no mueve el avance ni la ruta, y abre su final`() {
     val vm = newViewModel()
     TestSupport.awaitUntil(message = "El camino de hoy no se cargó") { vm.dailySession.value.gameIds.isNotEmpty() }
-    vm.refreshChallenge()
-    assertNull(vm.challengeToday.value)
+    val before = vm.dailySession.value
+    vm.startTimeTrial()
+    val id = vm.activeGame.value!!.gameDef.id
+    vm.onUnityLaunched("LT1")
+    vm.onUnityResult(timeTrialResult(id, hits = 38), "LT1")
+    TestSupport.awaitUntil(message = "El Contrarreloj no se guardó") { savedTimeTrials().size == 1 }
+    val saved = savedTimeTrials().single()
+    assertEquals(listOf<Any>(id, 38, 4, 2, 120, 1), listOf(saved.gameId, saved.hits, saved.errors, saved.level, saved.seconds, saved.trackVersion))
+    assertEquals("con el día de la pista", vm.todayKey(), saved.day)
+    assertEquals("NO es una partida de siempre: no entra en game_results", 0, savedResults())
+    assertEquals("no mueve la ruta de hoy", before.completedCount, vm.dailySession.value.completedCount)
+    TestSupport.awaitUntil(message = "No se abrió el final del Contrarreloj") { vm.lastTimeTrial.value != null }
+    val o = vm.lastTimeTrial.value!!
+    assertTrue("la primera partida de un juego es «primera»: no hay récord que superar", o.isFirst && !o.isRecord)
+    assertEquals(38, o.result.hits)
+    assertTrue("y hay un final abierto (la barra y las pestañas se esconden como con cualquier final)", vm.lastResult.value?.first?.isTimeTrial == true)
+    assertNull("la sesión terminó", vm.activeGame.value)
   }
 
   @Test
-  fun `el Desafio de hoy se recuerda aunque Android cierre la app`() {
-    measureEverything()
-    val first = com.example.data.NeuroVidaRepository(app)           // el repositorio de «antes» y el de «después»: dos arranques de la app
-    try {
-      TestSupport.awaitUntil(message = "No se eligió el Desafío de hoy") { first.refreshChallenge() != null }
-      val id = first.challengeToday.value!!.gameId
-      val second = com.example.data.NeuroVidaRepository(app)
-      try {
-        assertEquals("el juego de hoy se recuerda al abrir la app de nuevo", id, second.challengeToday.value?.gameId)
-        assertEquals(com.example.data.ChallengeState.PENDIENTE, second.challengeToday.value?.state)
-      } finally { TestSupport.release(second) }
-    } finally { TestSupport.release(first) }
+  fun `el estado de Hoy se deriva de lo guardado, la marca nueva se reconoce y repetir no la pierde`() {
+    val vm = newViewModel()
+    val day = vm.todayKey()
+    val id = com.example.data.TimeTrialDay.gameFor(day)
+    fun play(hits: Int, launch: String) {
+      vm.startTimeTrial()
+      vm.onUnityLaunched(launch)
+      vm.onUnityResult(timeTrialResult(id, hits), launch)
+    }
+    assertEquals(com.example.data.TimeTrialState.PENDIENTE, com.example.data.TimeTrialDay.stateOf(vm.timeTrialResults.value, day, id))
+    play(30, "LS1")
+    TestSupport.awaitUntil(message = "La primera partida no se guardó") { vm.timeTrialResults.value.size == 1 }
+    assertEquals("la primera vez se juega pero no es marca nueva", com.example.data.TimeTrialState.JUGADO, com.example.data.TimeTrialDay.stateOf(vm.timeTrialResults.value, day, id))
+    Thread.sleep(5)
+    play(41, "LS2")
+    TestSupport.awaitUntil(message = "La segunda partida no se guardó") { vm.timeTrialResults.value.size == 2 }
+    TestSupport.awaitUntil(message = "No pasó a marca nueva") { com.example.data.TimeTrialDay.stateOf(vm.timeTrialResults.value, day, id) == com.example.data.TimeTrialState.MARCA_NUEVA }
+    TestSupport.awaitUntil(message = "El final no se abrió") { vm.lastTimeTrial.value?.result?.hits == 41 }
+    assertTrue("el final lo dice", vm.lastTimeTrial.value!!.isRecord)
+    assertEquals(30, vm.lastTimeTrial.value!!.previousRecord)
+    Thread.sleep(5)
+    play(35, "LS3")
+    TestSupport.awaitUntil(message = "La tercera partida no se guardó") { vm.timeTrialResults.value.size == 3 }
+    assertEquals("la marca nueva no se pierde al repetir sin superarla", com.example.data.TimeTrialState.MARCA_NUEVA, com.example.data.TimeTrialDay.stateOf(vm.timeTrialResults.value, day, id))
+    assertEquals(41, com.example.data.TimeTrialStats.record(vm.timeTrialResults.value, id))
+    assertEquals("y sigue siendo el mismo juego todo el día", id, com.example.data.TimeTrialDay.gameFor(vm.todayKey()))
+  }
+
+  @Test
+  fun `un Contrarreloj cuenta como dia jugado para la racha y las farolas pero no para el avance ni lo medido`() {
+    val vm = newViewModel()
+    val measuredBefore = vm.skill.value.measured
+    assertEquals("sin partidas no hay racha", 0, vm.currentStreak.value)
+    vm.startTimeTrial()
+    val id = vm.activeGame.value!!.gameDef.id
+    vm.onUnityLaunched("LR1")
+    vm.onUnityResult(timeTrialResult(id, hits = 20), "LR1")
+    TestSupport.awaitUntil(message = "El Contrarreloj no se guardó") { vm.timeTrialResults.value.size == 1 }
+    TestSupport.awaitUntil(message = "No llegó la actividad") { vm.activityTimestamps.value.size == 1 }
+    TestSupport.awaitUntil(message = "El Contrarreloj no sumó a la racha") { vm.currentStreak.value >= 1 }
+    assertEquals("no mueve lo medido", measuredBefore, vm.skill.value.measured)
+    assertTrue("ni suma una partida de siempre al historial", vm.gameHistory.value.isEmpty())
+  }
+
+  @Test
+  fun `una partida de Contrarreloj en pausa se retoma como Contrarreloj y una de siempre no la reemplaza`() {
+    val vm = newViewModel()
+    vm.startTimeTrial()
+    val id = vm.activeGame.value!!.gameDef.id
+    val day = vm.activeGame.value!!.timeTrialDay
+    vm.onUnityLaunched("LP1")
+    vm.onReturnedFromGame("LP1", null, paused = true)
+    assertEquals("Hoy ofrece seguir la partida", id, vm.pausedGameId.value)
+    vm.resumePausedGame()
+    val resumed = vm.activeGame.value!!
+    assertEquals("se retoma con la MISMA partida de Unity", "LP1", resumed.resumeLaunchId)
+    assertEquals("y sigue siendo un Contrarreloj del mismo día", day, resumed.timeTrialDay)
+    // una partida de siempre del mismo juego NO retoma la del Contrarreloj: empieza una nueva
+    vm.onReturnedFromGame("LP1", null, paused = true)
+    vm.launchGame(id)
+    assertNull(vm.activeGame.value!!.resumeLaunchId)
+    assertNull(vm.activeGame.value!!.timeTrialDay)
+  }
+
+  @Test
+  fun `si Android cierra la app durante un Contrarreloj, el ViewModel nuevo lo reconoce y abre su final`() {
+    val first = newViewModel()
+    first.startTimeTrial()
+    val id = first.activeGame.value!!.gameDef.id
+    val day = first.activeGame.value!!.timeTrialDay!!
+    first.onUnityLaunched("LK1")
+    // Android cierra la app: el ViewModel de antes se pierde y lo anotado en disco queda
+    val inFlight = GameSessionStore.inFlight("LK1")!!
+    assertEquals("la partida en curso recuerda el día de su pista", day, inFlight.timeTrialDay)
+    val second = newViewModel()
+    second.onUnityResult(timeTrialResult(id, hits = 27), "LK1")
+    TestSupport.awaitUntil(message = "El Contrarreloj no se guardó") { savedTimeTrials().size == 1 }
+    assertEquals("con el día de la pista de la sesión", day, savedTimeTrials().single().day)
+    TestSupport.awaitUntil(message = "No se abrió el final") { second.lastTimeTrial.value != null }
+  }
+
+  @Test
+  fun `Otra vez repite el mismo juego y la misma pista aunque el dia haya cambiado`() {
+    val vm = newViewModel()
+    vm.startTimeTrial("radar", "2026-10-26")
+    val s = vm.activeGame.value!!
+    assertEquals("radar", s.gameDef.id)
+    assertEquals("2026-10-26", s.timeTrialDay)
   }
 
   @Test

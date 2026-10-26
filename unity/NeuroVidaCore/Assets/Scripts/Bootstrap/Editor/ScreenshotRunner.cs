@@ -83,15 +83,20 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Modo «cascada de Punta» (Tarea 170, NUBI_SHOTS_PUNTA_CASCADA=1, con NUBI_SHOTS_GAMES=anagramas): resuelve dos palabras con el juego REAL (una sola y otra con una ayuda) y saca la cascada cuadro a cuadro (cada 50 ms de juego) para ver qué son las «pelotitas».</summary>
         private static bool _puntaCascada;
 
+        /// <summary>Modo «Contrarreloj» (Tarea 177, NUBI_SHOTS_TT=1): los cuatro juegos de la primera tanda corren como CONTRARRELOJ (la pista del día fijo, el reloj de 120 s) y juegan solos con su piloto del Editor (<c>AutoPlayTimeTrial</c>): la cuenta regresiva, la primera pantalla (0 aciertos, 2:00) y tomas a los 10, 30 y 60 s para ver el chip «N aciertos» y el tiempo sin que tapen nada.</summary>
+        private static bool _timeTrial;
+
         public static void Run()
         {
             _juice = Environment.GetEnvironmentVariable("NUBI_SHOTS_JUICE") == "1";
             _puntaCascada = Environment.GetEnvironmentVariable("NUBI_SHOTS_PUNTA_CASCADA") == "1";
             if (_puntaCascada) _juice = true;
+            _timeTrial = Environment.GetEnvironmentVariable("NUBI_SHOTS_TT") == "1";
             var raw = (Environment.GetEnvironmentVariable("NUBI_SHOTS_GAMES") ?? "Correo").Trim();
             _root = Environment.GetEnvironmentVariable("NUBI_SHOTS_DIR");
             if (string.IsNullOrEmpty(_root)) _root = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "test-results", "capturas"));
             var ids = Resolve(raw);
+            if (_timeTrial) ids.RemoveAll(i => !NeuroVida.Games.Shared.TimeTrial.Supports(i));
             if (ids.Count == 0)
             {
                 Debug.Log("[Capturas] FALLÓ -- no reconozco «" + raw + "» (usa: todos, o nombres como Correo, Radar, Freno, ...)");
@@ -238,7 +243,8 @@ namespace NeuroVida.Bridge.EditorTools
                 double t0 = Now;
                 Debug.Log("[Capturas] ---- " + id);
 
-                if (_puntaCascada) yield return PuntaCascadaShots();
+                if (_timeTrial) yield return TimeTrialShots(id);
+                else if (_puntaCascada) yield return PuntaCascadaShots();
                 else if (_juice) yield return JuiceShots(id);
                 else if (id == "correo") yield return CorreoScript();
                 else if (id == "satelites") yield return SatelitesScript();
@@ -247,9 +253,9 @@ namespace NeuroVida.Bridge.EditorTools
                 else if (id == "acoplamiento") { yield return AcoplamientoScript(); yield return AcoplamientoScript16(); }
                 else if (id == "aterrizaje") { yield return AterrizajeScript(); yield return AterrizajeScript16(); }
                 else yield return PlayShots(id);
-                if (!_juice && id != "correo" && id != "satelites" && id != "piloto" && id != "radar" && id != "acoplamiento" && id != "aterrizaje") yield return ReduceMotionShot(id);          // los guiones de Correo, Satélites, Piloto, Rescate y Acoplamiento ya traen su toma con «quitar animaciones»
-                if (!_juice && TutorialGames.Contains(id)) yield return TutorialShots(id);
-                if (!_juice && (id == "acoplamiento" || id == "radar")) yield return TutorialShots(id, 1920, "-16x9");          // la práctica en la pantalla más baja: ahí la fila fija de arriba aprieta más (Tarea 128)
+                if (!_juice && !_timeTrial && id != "correo" && id != "satelites" && id != "piloto" && id != "radar" && id != "acoplamiento" && id != "aterrizaje") yield return ReduceMotionShot(id);          // los guiones de Correo, Satélites, Piloto, Rescate y Acoplamiento ya traen su toma con «quitar animaciones»
+                if (!_juice && !_timeTrial && TutorialGames.Contains(id)) yield return TutorialShots(id);
+                if (!_juice && !_timeTrial && (id == "acoplamiento" || id == "radar")) yield return TutorialShots(id, 1920, "-16x9");          // la práctica en la pantalla más baja: ahí la fila fija de arriba aprieta más (Tarea 128)
                 yield return Stopped();
 
                 int shots = _count;
@@ -281,6 +287,8 @@ namespace NeuroVida.Bridge.EditorTools
             EditorPlaytestBootstrap.PilSectorOverride = 0;
             EditorPlaytestBootstrap.TimedOverride = false;
             EditorPlaytestBootstrap.RescStageOverride = 0;
+            EditorPlaytestBootstrap.TimeTrialOverride = false;
+            NeuroVida.Games.Shared.TimeTrial.SecondsOverride = 0;
             NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial;
             NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = !tutorial && AutoPlayGames.Contains(id);
             NeuroVida.Games.Shared.NubiCoach.AuditEnabled = tutorial;
@@ -559,6 +567,29 @@ namespace NeuroVida.Bridge.EditorTools
             if (ended || CurtainUp()) yield return EndShots();
             else yield return ForcedEndShots(id);
             if (_count < 4) GameNotes.Add("solo " + _count + " toma(s) de la partida (¿terminó muy pronto o no arrancó?)");
+            yield return ExitPlay();
+        }
+
+        /// <summary>
+        /// Contrarreloj (Tarea 177): el juego corre como la partida de las 2 minutos, con su piloto del Editor, y se fotografía la cuenta regresiva, la primera pantalla (0 aciertos, «2:00»), y a los 10, 30 y 60 s de juego (el chip «N aciertos» y el tiempo que baja). El piloto se equivoca una de cada tres veces: en alguna toma cae la pausa del error.
+        /// </summary>
+        private static IEnumerator TimeTrialShots(string id)
+        {
+            Configure(id, tutorial: false, reduceMotion: false);
+            EditorPlaytestBootstrap.TimeTrialOverride = true;
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = true;
+            yield return EnterPlay();
+            yield return WaitPlayable();
+            double playable = Now;
+            Shot("primera");
+            foreach (var step in new[] { ("t10", 10.0), ("t30", 30.0), ("t60", 60.0) })
+            {
+                double at = playable + step.Item2;
+                yield return Wait.Until(() => Now >= at || CurtainUp(), step.Item2 + 30);
+                if (CurtainUp()) break;
+                Shot(step.Item1);
+            }
+            EditorPlaytestBootstrap.TimeTrialOverride = false;
             yield return ExitPlay();
         }
 

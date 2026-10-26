@@ -120,6 +120,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   val currentTab by viewModel.currentTab.collectAsState()
   val activeGame by viewModel.activeGame.collectAsState()
   val lastResult by viewModel.lastResult.collectAsState()
+  val lastTimeTrial by viewModel.lastTimeTrial.collectAsState()      // el final del Contrarreloj (Tarea 177): con él, `lastResult` es la marca de ese Contrarreloj
   val modeNote by viewModel.modeNote.collectAsState()
   val atlas by viewModel.atlas.collectAsState()
   val starMeasures by viewModel.starMeasures.collectAsState()
@@ -226,6 +227,17 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
 
         // Last Result Screen Overlay
         lastResult?.let { (result, didLevelUp) ->
+          val timeTrial = lastTimeTrial?.takeIf { result.isTimeTrial && it.result.gameId == result.gameId }
+          if (timeTrial != null) {
+            // el Contrarreloj tiene su propio final: la marca, el récord, las últimas 5 y la mejor de la semana; «Otra vez» repite el mismo juego y la misma pista
+            com.example.games.TimeTrialResultScreen(
+              outcome = timeTrial,
+              onAgain = { viewModel.startTimeTrial(timeTrial.result.gameId, timeTrial.result.day) },
+              onDone = { viewModel.closeGameOrResult() },
+              soundEnabled = userSettings.soundEnabled
+            )
+            return@let
+          }
           // cuántas partidas de este juego hubo antes de esta: «¿Por qué importa?» se ve en el final solo en las 3 primeras (de lo guardado, sin preferencias nuevas)
           val history by viewModel.gameHistory.collectAsState()
           val playsBefore = com.example.data.FinalesConSentido.playsBefore(history, result.gameId, result.timestamp)

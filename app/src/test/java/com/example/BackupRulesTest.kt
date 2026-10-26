@@ -11,8 +11,8 @@ import org.junit.Test
  */
 class BackupRulesTest {
   // Estado pasajero: se pierde a propósito al cambiar de teléfono (una partida o un recorrido del inicio «fantasma» a medias no sirven).
-  // `first_flight` = «Primer vuelo con Nubi» en curso (data/FirstFlight.kt). (`route_celebrations`, qué farolas de la ruta y qué ruta completa se celebraron hoy —Tarea 88—, se RETIRÓ en la Tarea 168: ya no se escribe; si un teléfono conserva el archivo, queda sin uso y no se respalda.) `desafio_hoy` = cuál es el Desafío de hoy y cómo va, más el último día de cada juego como Desafío (data/DailyChallenge.kt; Tarea 167): el modo de cada partida no se guarda en la base y, si se pierde, Nubi elige de nuevo. `isla_piezas` = qué piezas de la isla (las que dan las medallas) Hoy ya mostró (data/IslaPiezasSeen.kt; Tarea 136): las piezas se DERIVAN de las medallas, que sí se respaldan, así que al restaurar solo se pierde el «ya la vi» y Hoy siembra en silencio. color_vision NO es pasajero: vive en profile_extra, que sí se respalda (igual que lo que quedó guardado de result_focus / coach_tone, que ya no se lee).
-  private val transient = setOf("paused_game", "game_session", "unity_results", "library_focus", "first_flight", "isla_piezas", "desafio_hoy")
+  // `first_flight` = «Primer vuelo con Nubi» en curso (data/FirstFlight.kt). (`route_celebrations`, qué farolas de la ruta y qué ruta completa se celebraron hoy —Tarea 88—, se RETIRÓ en la Tarea 168: ya no se escribe; si un teléfono conserva el archivo, queda sin uso y no se respalda.) (`desafio_hoy`, cuál era el Desafío de hoy y cómo iba —Tarea 167—, se RETIRÓ en la Tarea 177 con `DailyChallenge`: el Contrarreloj de hoy se DERIVA de la tabla `time_trial_results`, que va en la base y sí se respalda; si un teléfono conserva el archivo, queda sin uso y no se respalda.) `isla_piezas` = qué piezas de la isla (las que dan las medallas) Hoy ya mostró (data/IslaPiezasSeen.kt; Tarea 136): las piezas se DERIVAN de las medallas, que sí se respaldan, así que al restaurar solo se pierde el «ya la vi» y Hoy siembra en silencio. color_vision NO es pasajero: vive en profile_extra, que sí se respalda (igual que lo que quedó guardado de result_focus / coach_tone, que ya no se lee).
+  private val transient = setOf("paused_game", "game_session", "unity_results", "library_focus", "first_flight", "isla_piezas")
 
   private fun xml(name: String) = File("src/main/res/xml/$name").readText()
 
@@ -58,6 +58,17 @@ class BackupRulesTest {
         "Súmalas a backup_rules.xml y data_extraction_rules.xml, o a la lista `transient` de esta prueba.",
       undecided.isEmpty()
     )
+  }
+
+  @Test
+  fun `las partidas del Contrarreloj viven en la base y por eso se respaldan, y no hay preferencia pasajera del dia`() {
+    // Tarea 177: el estado de Hoy (pendiente, jugado, marca nueva) se deriva de `time_trial_results`; la base entera va en el respaldo
+    val db = includes(xml("backup_rules.xml"), "database")
+    assertTrue(db.contains("neurovida_database"))
+    val schema = File("schemas/com.example.data.local.NeuroVidaDatabase/16.json").readText()
+    assertTrue("la tabla del Contrarreloj está en el esquema de la base", schema.contains("\"tableName\": \"time_trial_results\""))
+    val sources = File("src/main/java").walkTopDown().filter { it.extension == "kt" }.joinToString("\n") { it.readText() }
+    assertTrue("el Desafío de hoy ya no escribe su preferencia pasajera", !sources.contains("\"desafio_hoy\""))
   }
 
   @Test

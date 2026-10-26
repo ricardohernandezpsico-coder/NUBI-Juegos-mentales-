@@ -13,9 +13,10 @@ import com.example.BuildConfig
     DailySessionEntity::class,
     UserProfileEntity::class,
     DomainMasteryEntity::class,
-    ClaimedWeeklyChallengeEntity::class
+    ClaimedWeeklyChallengeEntity::class,
+    TimeTrialResultEntity::class
   ],
-  version = 15,
+  version = 16,
   exportSchema = true
 )
 abstract class NeuroVidaDatabase : RoomDatabase() {
@@ -25,6 +26,7 @@ abstract class NeuroVidaDatabase : RoomDatabase() {
   abstract fun userProfileDao(): UserProfileDao
   abstract fun domainMasteryDao(): DomainMasteryDao
   abstract fun claimedWeeklyChallengeDao(): ClaimedWeeklyChallengeDao
+  abstract fun timeTrialResultDao(): TimeTrialResultDao
 
   companion object {
     @Volatile
@@ -94,6 +96,15 @@ abstract class NeuroVidaDatabase : RoomDatabase() {
       object : androidx.room.migration.Migration(14, 15) {
         override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
           db.execSQL("UPDATE game_progress SET ddaRating = ddaRating * 0.75 WHERE gameId = 'satelites' AND ddaRating >= 0")
+        }
+      },
+      // 15 -> 16 (26-oct): el Contrarreloj (Tarea 177) guarda sus partidas en su propia tabla (`time_trial_results`: un día, un juego, la versión de la pista, los aciertos, los errores, el paso y los segundos). Nada de lo que ya había cambia.
+      object : androidx.room.migration.Migration(15, 16) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+          db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `time_trial_results` (`id` TEXT NOT NULL, `gameId` TEXT NOT NULL, `day` TEXT NOT NULL, `trackVersion` INTEGER NOT NULL, `hits` INTEGER NOT NULL, " +
+              "`errors` INTEGER NOT NULL, `level` INTEGER NOT NULL, `seconds` INTEGER NOT NULL, `timestamp` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+          )
         }
       }
     )

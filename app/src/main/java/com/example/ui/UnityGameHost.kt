@@ -73,7 +73,9 @@ fun UnityGameHost(
         assessmentStep = session.assessmentStep,
         assessmentTotal = if (session.assessmentStep > 0) com.example.data.BaselinePlan.steps.size else 0,
         mode = session.mode,
-        forceTutorial = session.tutorial
+        forceTutorial = session.tutorial,
+        timeTrial = session.timeTrialDay != null,
+        trackSeed = session.timeTrialDay?.let { com.example.data.TimeTrialDay.trackSeed(it) } ?: 0
       )
     )
     onLaunched(launchId)

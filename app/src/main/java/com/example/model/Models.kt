@@ -403,8 +403,18 @@ data class GamePlayResult(
   val rasModesSeen: Int? = null,
   val rasNewModes: Int? = null,
   // «Confusión de modo» tomada por familia (a lo más 1 por modo y partida; no cuenta como error). Se lee, no se muestra.
-  val rasModeConfusions: List<Int>? = null
-)
+  val rasModeConfusions: List<Int>? = null,
+  // CONTRARRELOJ (Tarea 177; `data/TimeTrialDay.kt`): si la partida fue un Contrarreloj, sus aciertos (la marca), errores, el paso más alto de la pista, los segundos y la versión de la pista con que se jugó; null = una partida de siempre. Una partida así NO se guarda en Room como
+  // las demás (tiene su tabla, `time_trial_results`) ni mueve el nivel, los puntos ni lo «medido»: `endRating`, `modeTrials` y `modeHits` salen sin tocar de Unity.
+  val ttHits: Int? = null,
+  val ttErrors: Int? = null,
+  val ttPeakLevel: Int? = null,
+  val ttSeconds: Int? = null,
+  val ttTrackVersion: Int? = null
+) {
+  /** ¿Es un Contrarreloj? (Unity manda `tt_hits` en las partidas de ese modo y -1 en las demás.) */
+  val isTimeTrial: Boolean get() = ttHits != null
+}
 
 data class DailySessionState(
   val dateKey: String,

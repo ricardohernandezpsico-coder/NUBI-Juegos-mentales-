@@ -364,23 +364,29 @@ class VisibleTextsGuardTest {
   }
 
   @Test
-  fun `las frases del Desafio de hoy son las de la spec, con una sola palabra por concepto`() {
-    // Tarea 167 (`auditoria-fable/hoy-desafio-y-dia-completo.md` §6.6): «Desafío» es la palabra (no «reto» ni «modo difícil»), y ningún texto baja de lo dicho
-    val c = com.example.ui.screens.HomeChallenge("stroop", "Tinta o Palabra", com.example.data.ChallengeState.PENDIENTE)
-    assertEquals("Desafío de hoy", com.example.ui.screens.CHALLENGE_LABEL)
-    assertEquals("Tinta o Palabra · unos 2 minutos", com.example.ui.screens.challengeSecondLine(c, wide = true, large = false))
-    assertEquals("Tinta o Palabra", com.example.ui.screens.challengeSecondLine(c, wide = true, large = true))
-    assertEquals("Tinta o Palabra · otra vez", com.example.ui.screens.challengeSecondLine(c.copy(state = com.example.data.ChallengeState.JUGADO), wide = true, large = false))
-    assertEquals("Desafío superado: Tinta o Palabra.", com.example.ui.screens.challengeDoneLine("Tinta o Palabra"))
-    assertEquals("Mañana hay ruta y Desafío nuevos.", com.example.ui.screens.CHALLENGE_TOMORROW)
+  fun `las frases del Contrarreloj de hoy son las de la spec, con una sola palabra por concepto`() {
+    // Tarea 177 (`auditoria-fable/contrarreloj.md` §5 y §9.8, con «Acoplamiento» en lugar de «Carga exacta»): «Contrarreloj» es la palabra (no «reto», «Desafío» ni «Con reloj» para esto), «aciertos» la unidad, y ningún texto baja de lo dicho
+    val t = com.example.ui.screens.HomeTimeTrial("stroop", "Tinta o Palabra", com.example.data.TimeTrialState.PENDIENTE, record = 41)
+    assertEquals("Contrarreloj de hoy", com.example.ui.screens.TIME_TRIAL_LABEL)
+    assertEquals("Tinta o Palabra · 2 minutos", com.example.ui.screens.timeTrialSecondLine(t, wide = true, large = false))
+    assertEquals("Tinta o Palabra", com.example.ui.screens.timeTrialSecondLine(t, wide = true, large = true))
+    val played = t.copy(state = com.example.data.TimeTrialState.JUGADO, todayHits = 38)
+    assertEquals("Tinta o Palabra · hoy 38 aciertos", com.example.ui.screens.timeTrialSecondLine(played, wide = true, large = false))
+    assertEquals("Tu récord: 41 aciertos.", com.example.data.TimeTrialDay.recordLine(41))
+    assertEquals("Marca nueva: 43 aciertos en Tinta o Palabra.", com.example.data.TimeTrialDay.newMarkLine(43, "Tinta o Palabra"))
+    assertEquals("Otra vez", com.example.ui.screens.TIME_TRIAL_AGAIN)
     assertEquals("Mañana te espera una ruta nueva.", com.example.ui.screens.ROUTE_TOMORROW)
-    assertEquals("Desafío de hoy, Tinta o Palabra, un paso más difícil, unos 2 minutos", com.example.ui.screens.challengeDescription(c))
+    assertEquals("Contrarreloj de hoy, Tinta o Palabra, 2 minutos, tu récord 41 aciertos", com.example.ui.screens.timeTrialDescription(t))
     val stops = com.example.ui.screens.homeStops(listOf("bodega", "calculo", "intrusa"), 3, AppLanguage.SPANISH)
     val ui = com.example.ui.screens.HomeUi(name = "R", now = 0L, tier = com.example.model.RankTier.fromRating(0), streak = 0, weeklyGoal = 4, lamps = com.example.data.Week.Lamps(List(7) { false }, 6), stops = stops, pausedTitle = null, flightDay = false, hasBaseline = true)
     assertEquals("3 de 3 · ruta completa", com.example.ui.screens.routeMeta(ui))
-    val phrases = listOf(com.example.ui.screens.CHALLENGE_LABEL, com.example.ui.screens.CHALLENGE_TOMORROW, com.example.ui.screens.ROUTE_TOMORROW, com.example.ui.screens.challengeDoneLine("Tinta o Palabra"), com.example.ui.screens.routeMeta(ui))
+    val phrases = listOf(
+      com.example.ui.screens.TIME_TRIAL_LABEL, com.example.ui.screens.TIME_TRIAL_AGAIN, com.example.ui.screens.ROUTE_TOMORROW, com.example.data.TimeTrialDay.recordLine(41), com.example.data.TimeTrialDay.newMarkLine(43, "Tinta o Palabra"),
+      com.example.data.TimeTrialStats.SEAL, com.example.data.TimeTrialStats.UNIT, com.example.data.TimeTrialStats.FIRST_PHRASE, com.example.data.TimeTrialStats.NOTE, com.example.data.TimeTrialStats.LAST_TITLE, com.example.ui.screens.routeMeta(ui)
+    )
     for (p in phrases) {
-      assertFalse("«$p» usa «reto» o «modo difícil»", Regex("""\bretos?\b|modo dif[ií]cil""", RegexOption.IGNORE_CASE).containsMatchIn(p))
+      assertFalse("«$p» usa «reto» o «modo difícil»", Regex("""retos?|modo dif[ií]cil""", RegexOption.IGNORE_CASE).containsMatchIn(p))
+      assertFalse("«$p» usa «Desafío» (el Contrarreloj no es el modo Desafío de la ficha)", p.contains("Desafío"))
       assertTrue("«$p» no lleva signos sueltos ni flechas", p.none { it in "↑↓→←+−" })
     }
   }

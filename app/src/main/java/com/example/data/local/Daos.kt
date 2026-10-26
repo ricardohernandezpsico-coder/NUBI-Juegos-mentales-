@@ -81,6 +81,21 @@ interface DomainMasteryDao {
 }
 
 @Dao
+interface TimeTrialResultDao {
+  @Query("SELECT * FROM time_trial_results ORDER BY timestamp DESC")
+  fun getAll(): Flow<List<TimeTrialResultEntity>>
+
+  @Query("SELECT * FROM time_trial_results ORDER BY timestamp DESC")
+  suspend fun getAllSync(): List<TimeTrialResultEntity>
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  suspend fun insert(result: TimeTrialResultEntity)
+
+  @Query("DELETE FROM time_trial_results")
+  suspend fun deleteAll()
+}
+
+@Dao
 interface ClaimedWeeklyChallengeDao {
   @Query("SELECT id FROM claimed_weekly_challenges")
   suspend fun getAllClaimedSync(): List<String>

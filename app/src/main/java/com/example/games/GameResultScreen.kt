@@ -624,7 +624,7 @@ fun GameResultScreen(
  * La placa del juego, arriba del final (Tarea 126; compacta desde el final «B», Tarea 146): una fila con su emblema (la ficha con el objeto del juego, a 72 dp), el nombre y el área. Entra con un rebote corto (con «quitar animaciones», ya quieta).
  */
 @Composable
-private fun ResultPlaque(gameId: String, title: String, domainName: String?, domainColor: Color, pop: Animatable<Float, AnimationVector1D>) {
+internal fun ResultPlaque(gameId: String, title: String, domainName: String?, domainColor: Color, pop: Animatable<Float, AnimationVector1D>) {
   Row(Modifier.fillMaxWidth().testTag("result_plaque"), verticalAlignment = Alignment.CenterVertically) {
     Box(Modifier.scale(pop.value)) { com.example.ui.components.GameEmblem(gameId, 72.dp) }
     Spacer(Modifier.width(14.dp))
@@ -643,7 +643,7 @@ private fun ResultPlaque(gameId: String, title: String, domainName: String?, dom
 
 /** «¡Récord nuevo!» con su sello (un disco sol con el ✓ de plasticina: forma, no solo color), a la izquierda bajo la placa, a 20 sp. */
 @Composable
-private fun RecordLine(text: String) {
+internal fun RecordLine(text: String) {
   Row(
     Modifier.padding(top = 12.dp).semantics(mergeDescendants = true) { contentDescription = text }.testTag("result_record"),
     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Start

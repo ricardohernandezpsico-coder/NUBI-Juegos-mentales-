@@ -12,6 +12,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
@@ -25,14 +26,15 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
-import com.example.data.ChallengeState
+import com.example.data.TimeTrialState
 import com.example.data.Week
 import com.example.model.AppLanguage
 import com.example.model.RankTier
 import com.example.ui.components.BoardBackground
-import com.example.ui.screens.HomeChallenge
+import com.example.ui.screens.HomeTimeTrial
 import com.example.ui.screens.HomeContent
 import com.example.ui.screens.HomeUi
 import com.example.ui.screens.Sun
@@ -55,8 +57,8 @@ import org.robolectric.annotation.GraphicsMode
 import java.util.Calendar
 
 /**
- * Hoy con UNA sola tarjeta y el Desafío de hoy (Tareas 165 y 167; `auditoria-fable/hoy-reestructura.md` y `hoy-desafio-y-dia-completo.md`, opción 1 «Dos botones, un solo sol a la vez»): saludo, la semana, UNA tarjeta crema con la ruta de hoy (título, «1 de 3 · unos 4 minutos», los tres juegos como filas con su estado en palabras que NO se tocan, y el botón sol ADENTRO), Nubi posada en
- * su esquina (de noche duerme) y, debajo, «Desafío de hoy» (lila, con el cometa) junto a «Todos los juegos»; con la ruta completa la tarjeta se cierra sola (sin botón ni rótulo) y el sol pasa al Desafío, a todo el ancho. **Un solo sol a la vez.** Ya NO hay isla en Hoy. Capturas a 393 × 873 dp (el teléfono de referencia), a 360 dp de ancho, con letra 1,3 y con letra 2,0,
+ * Hoy con UNA sola tarjeta y el Contrarreloj de hoy (Tareas 165, 167 y 177; `auditoria-fable/hoy-reestructura.md`, `hoy-desafio-y-dia-completo.md` y `contrarreloj.md`, opción 1 «Dos botones, un solo sol a la vez»): saludo, la semana, UNA tarjeta crema con la ruta de hoy (título, «1 de 3 · unos 4 minutos», los tres juegos como filas con su estado en palabras que NO se tocan, y el botón sol ADENTRO), Nubi posada en
+ * su esquina (de noche duerme) y, debajo, «Contrarreloj de hoy» (lila, con el reloj) junto a «Todos los juegos»; con la ruta completa la tarjeta se cierra sola (sin botón ni rótulo) y el sol pasa al Contrarreloj, a todo el ancho. **Un solo sol a la vez.** Ya NO hay isla en Hoy. Capturas a 393 × 873 dp (el teléfono de referencia), a 360 dp de ancho, con letra 1,3 y con letra 2,0,
  * sobre el fondo en dos capas y con las barras del sistema simuladas por margen (24 dp arriba; abajo 163: la barra de Android y la de pestañas con su aire). La regla que manda: con letra 1,0 y 1,3 TODO Hoy cabe sin deslizar a 393 × 873 en los cuatro estados (y la pausa); con letra más grande se desliza pero nada se corta, se superpone ni parte una palabra.
  * Ningún texto que va directo sobre el fondo cae sobre un lucero.
  */
@@ -71,19 +73,22 @@ class HoyTarjetaTest {
   private val night = Calendar.getInstance().apply { set(2026, Calendar.OCTOBER, 11, 22, 10, 0) }.timeInMillis
   private val lamps = Week.Lamps(listOf(true, true, false, false, false, false, true), todayIndex = 6)
 
-  private val stroop = HomeChallenge("stroop", "Tinta o Palabra", ChallengeState.PENDIENTE)
+  // el Contrarreloj de hoy: Tinta o Palabra, con un récord de 41 aciertos (la línea «Tu récord» sale solo con el botón ancho)
+  private val stroop = HomeTimeTrial("stroop", "Tinta o Palabra", TimeTrialState.PENDIENTE, todayHits = null, record = 41)
+  private val stroopJugado = stroop.copy(state = TimeTrialState.JUGADO, todayHits = 38)
+  private val stroopMarca = stroop.copy(state = TimeTrialState.MARCA_NUEVA, todayHits = 43, record = 43)
 
   private fun ui(
-    completed: Int = 1, ids: List<String> = listOf("bodega", "calculo", "intrusa"), paused: String? = null, flightDay: Boolean = false, hasBaseline: Boolean = true, name: String = "Ricardo", at: Long = now, challenge: HomeChallenge? = null
+    completed: Int = 1, ids: List<String> = listOf("bodega", "calculo", "intrusa"), paused: String? = null, flightDay: Boolean = false, hasBaseline: Boolean = true, name: String = "Ricardo", at: Long = now, timeTrial: HomeTimeTrial? = null
   ) =
     HomeUi(
       name = name, now = at, tier = RankTier.fromRating(0), streak = 3, weeklyGoal = 4, lamps = lamps,
-      stops = homeStops(ids, completed, AppLanguage.SPANISH), pausedTitle = paused, flightDay = flightDay, hasBaseline = hasBaseline, challenge = challenge
+      stops = homeStops(ids, completed, AppLanguage.SPANISH), pausedTitle = paused, flightDay = flightDay, hasBaseline = hasBaseline, timeTrial = timeTrial
     )
 
   private var played = 0
   private var resumed = 0
-  private var challenged = 0
+  private var trialed = 0
 
   private class Shown(val ui: HomeUi, val widthDp: Int, val heightDp: Int, val fontScale: Float, val reduce: Boolean)
   private var shown: androidx.compose.runtime.MutableState<Shown>? = null
@@ -104,7 +109,7 @@ class HoyTarjetaTest {
           Box(Modifier.width(a.widthDp.dp).height(a.heightDp.dp)) {
             BoardBackground()
             HomeContent(
-              ui = a.ui, onAllGames = { allGamesCallback() }, onPlay = { played++ }, onResume = { resumed++ }, onBaseline = {}, onChallenge = { challenged++ },
+              ui = a.ui, onAllGames = { allGamesCallback() }, onPlay = { played++ }, onResume = { resumed++ }, onBaseline = {}, onTimeTrial = { trialed++ },
               modifier = Modifier.padding(top = 24.dp, bottom = 163.dp)
             )
           }
@@ -114,7 +119,14 @@ class HoyTarjetaTest {
     if (wait) composeTestRule.waitForIdle() else composeTestRule.mainClock.advanceTimeBy(100)
   }
 
+  /** «Contrarreloj de hoy», con el espacio duro de la media fila o con el normal del botón ancho. */
+  private val labelMatcher = androidx.compose.ui.test.SemanticsMatcher("el rótulo del Contrarreloj") { n ->
+    n.config.getOrNull(SemanticsProperties.Text)?.any { it.text.replace('\u00A0', ' ') == "Contrarreloj de hoy" } == true
+  }
+
   private fun bounds(tag: String): Rect = composeTestRule.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
+  /** El borde de abajo de un nodo SIN recortar por la ventana de deslizar, en dp (`boundsInRoot` sí se recorta). */
+  private fun unclippedBottomDp(tag: String): Float { val n = composeTestRule.onNodeWithTag(tag).fetchSemanticsNode(); return dp(n.layoutInfo.coordinates.positionInRoot().y + n.layoutInfo.height) }
   private fun exists(tag: String) = composeTestRule.onAllNodes(hasTestTag(tag)).fetchSemanticsNodes().isNotEmpty()
   private fun dp(px: Float) = px / composeTestRule.density.density
 
@@ -123,49 +135,92 @@ class HoyTarjetaTest {
   /** Todo lo de Hoy se ve entero sin deslizar: lo último, «Todos los juegos» (o la invitación al punto de partida, si toca), termina antes de la barra (a 163 dp del borde de abajo). */
   private fun assertFitsWithoutScrolling(widthDp: Int, heightDp: Int, fontScale: Float, ui: HomeUi, label: String = "") {
     show(ui, widthDp, heightDp, fontScale)
+    assertNoWordSplit()
     val viewportBottom = (heightDp - 163) * composeTestRule.density.density
     val pending = ui.stops.any { it.state != com.example.ui.screens.StopState.DONE }
     val tags = mutableListOf("home_greeting", "home_date", "home_week", "home_card", "home_route_title", "home_route_meta", "home_stop_1", "home_stop_2", "home_stop_3", "btn_all_games")
     if (pending || ui.pausedTitle != null) tags += if (ui.pausedTitle != null) "btn_resume_paused" else "btn_home_play"
-    if (ui.challenge != null && ui.challenge.state != ChallengeState.SUPERADO) tags += "btn_challenge"
-    if (ui.challenge?.state == ChallengeState.SUPERADO) tags += "home_challenge_done"
+    if (ui.timeTrial != null) tags += "btn_timetrial"
+    if (ui.timeTrial?.state == TimeTrialState.MARCA_NUEVA) tags += "home_timetrial_done"
+    if (ui.timeTrial?.record != null && ui.timeTrial.state != TimeTrialState.MARCA_NUEVA && pending.not() && ui.pausedTitle == null) tags += "home_timetrial_record"
     for (tag in tags) {
-      try { composeTestRule.onNodeWithTag(tag).assertIsDisplayed() } catch (e: AssertionError) { throw AssertionError("«$tag» no se ve sin deslizar a $widthDp × $heightDp con letra $fontScale ($label): ${bounds(tag)}", e) }
+      try { composeTestRule.onNodeWithTag(tag).assertIsDisplayed() } catch (e: AssertionError) { val n = composeTestRule.onNodeWithTag(tag).fetchSemanticsNode(); val top = dp(n.layoutInfo.coordinates.positionInRoot().y); throw AssertionError("«$tag» no se ve sin deslizar a $widthDp × $heightDp con letra $fontScale ($label): empieza en %.0f dp, mide %.0f dp y la barra empieza en %.0f dp".format(top, dp(n.layoutInfo.height.toFloat()), (heightDp - 163).toFloat()), e) }
     }
-    val last = bounds(if (ui.baselineInvite) "btn_home_baseline" else "btn_all_games")
-    assertTrue("$label: lo último de Hoy termina en ${dp(last.bottom)} dp y la barra empieza en ${dp(viewportBottom)} dp: Hoy se desliza", last.bottom <= viewportBottom + 1f)
-    println("HOY %d×%d letra %.1f %s: termina en %.0f dp de %.0f".format(widthDp, heightDp, fontScale, label, dp(last.bottom), dp(viewportBottom)))
+    // `boundsInRoot` está RECORTADO por la ventana de deslizar: un botón a medio salir daría «termina justo en el borde». Se mide con la posición SIN recortar; la losa del kit lleva 6 dp de sombra abajo que no cuentan.
+    val lastTag = if (ui.baselineInvite) "btn_home_baseline" else "btn_all_games"
+    val last = unclippedBottomDp(lastTag) - (if (ui.baselineInvite) 0f else 6f)
+    assertTrue("$label: lo último de Hoy termina en $last dp y la barra empieza en ${dp(viewportBottom)} dp: Hoy se desliza", last <= dp(viewportBottom) + 1f)
+    val tt = if (ui.timeTrial != null && exists("btn_timetrial")) (if (Math.abs(bounds("btn_timetrial").top - bounds("btn_all_games").top) < 2f) "media fila" else "apilados") else "sin Contrarreloj"
+    println("HOY %d×%d letra %.1f %s: termina en %.0f dp de %.0f (%s)".format(widthDp, heightDp, fontScale, label, last, dp(viewportBottom), tt))
   }
 
-  /** Los cuatro estados del día más la pausa (Tarea 167): la primera hora, a mitad de ruta, la ruta completa con el Desafío por jugar, jugado sin superar y superado, y una partida en pausa. */
+  /** Los estados del día más la pausa (Tareas 167 y 177): la primera hora, a mitad de ruta, la ruta completa con el Contrarreloj por jugar, jugado sin marca nueva y con marca nueva (con la ruta completa y a medias), y una partida en pausa. */
   private val dayStates: List<Pair<String, HomeUi>> by lazy {
     listOf(
-      "primera hora" to ui(completed = 0, challenge = stroop),
-      "a mitad de ruta" to ui(completed = 1, challenge = stroop),
-      "ruta completa" to ui(completed = 3, challenge = stroop),
-      "Desafío jugado" to ui(completed = 3, challenge = stroop.copy(state = ChallengeState.JUGADO)),
-      "Desafío superado" to ui(completed = 3, challenge = stroop.copy(state = ChallengeState.SUPERADO)),
-      "partida en pausa" to ui(completed = 1, paused = "Carga exacta", challenge = stroop),
-      "ruta completa sin Desafío" to ui(completed = 3)
+      "primera hora" to ui(completed = 0, timeTrial = stroop),
+      "a mitad de ruta" to ui(completed = 1, timeTrial = stroop),
+      "ruta completa" to ui(completed = 3, timeTrial = stroop),
+      "Contrarreloj jugado" to ui(completed = 3, timeTrial = stroopJugado),
+      "marca nueva" to ui(completed = 3, timeTrial = stroopMarca),
+      "marca nueva con la ruta a medias" to ui(completed = 1, timeTrial = stroopMarca),
+      "partida en pausa" to ui(completed = 1, paused = "Carga exacta", timeTrial = stroop),
+      "ruta completa sin Contrarreloj" to ui(completed = 3)
     )
   }
 
   @Test fun hoy_a_393_por_873_con_letra_1_0_todo_cabe_sin_deslizar_en_los_estados_del_dia() { for ((name, u) in dayStates) assertFitsWithoutScrolling(393, 873, 1f, u, name) }
   @Test fun hoy_a_393_por_873_con_letra_1_3_todo_cabe_sin_deslizar_en_los_estados_del_dia() { for ((name, u) in dayStates) assertFitsWithoutScrolling(393, 873, 1.3f, u, name) }
-  @Test fun hoy_a_393_por_873_con_letra_1_0_captura() { show(ui(challenge = stroop)); composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-tarjeta-393.png") }
-  @Test fun hoy_a_393_por_873_con_letra_1_3_captura() { show(ui(challenge = stroop), fontScale = 1.3f); composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-tarjeta-letra13.png") }
-  @Test fun hoy_a_393_por_873_con_letra_1_3_y_con_la_invitacion_al_punto_de_partida_en_la_primera_hora() = assertFitsWithoutScrolling(393, 873, 1.3f, ui(completed = 0, challenge = stroop).copy(baselineInvite = true), "con la invitación")
+  /** Las capturas de la lámina de la Tarea 177 (solo al grabar): Hoy en sus estados del día, la pausa con letra 1,0 y 1,3, la fila apilada con letra 2,0 y el rincón de 360 dp. En `src/test/screenshots/tarea-177/`. */
+  @Test
+  fun tarea_177_capturas() {
+    org.junit.Assume.assumeTrue("solo al grabar capturas", System.getProperty("roborazzi.test.record") == "true")
+    val out = "src/test/screenshots/tarea-177"
+    fun shot(name: String, u: HomeUi, w: Int = 393, h: Int = 873, fs: Float = 1f) { show(u, w, h, fs); composeTestRule.onRoot().captureRoboImage(filePath = "$out/$name.png") }
+    shot("hoy-a-media-ruta", ui(completed = 1, timeTrial = stroop))
+    shot("hoy-ruta-completa", ui(completed = 3, timeTrial = stroop))
+    shot("hoy-jugado", ui(completed = 3, timeTrial = stroopJugado))
+    shot("hoy-marca-nueva", ui(completed = 3, timeTrial = stroopMarca))
+    shot("hoy-pausa-1_0", ui(completed = 1, paused = "Carga exacta", timeTrial = stroop))
+    shot("hoy-pausa-1_3", ui(completed = 1, paused = "Carga exacta", timeTrial = stroop), fs = 1.3f)
+    shot("hoy-a-media-ruta-1_3", ui(completed = 1, timeTrial = stroop), fs = 1.3f)
+    shot("hoy-a-media-ruta-2_0", ui(completed = 1, timeTrial = stroop), fs = 2f)
+    shot("hoy-marca-con-ruta-a-medias-360", ui(completed = 1, timeTrial = stroopMarca), w = 360, h = 780)
+    show(ui(completed = 1, timeTrial = stroop), 393, 873, 2f)                                   // lo último: deslizar deja la página corrida
+    composeTestRule.onNodeWithTag("btn_all_games").performScrollTo(); composeTestRule.waitForIdle()
+    composeTestRule.onRoot().captureRoboImage(filePath = "$out/hoy-a-media-ruta-2_0-abajo.png")
+  }
+
+  @Test fun hoy_a_393_por_873_con_letra_1_0_captura() { show(ui(timeTrial = stroop)); composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-tarjeta-393.png") }
+  @Test fun hoy_a_393_por_873_con_letra_1_3_captura() { show(ui(timeTrial = stroop), fontScale = 1.3f); composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-tarjeta-letra13.png") }
+  @Test fun hoy_a_393_por_873_con_letra_1_3_y_con_la_invitacion_al_punto_de_partida_en_la_primera_hora() = assertFitsWithoutScrolling(393, 873, 1.3f, ui(completed = 0, timeTrial = stroop).copy(baselineInvite = true), "con la invitación")
+
+  /**
+   * A 360 × 780 (el teléfono más chico que se mira) Hoy NO cabe entero en dos de los ocho estados del día (la partida en pausa y la marca nueva con la ruta a medias): se pasa de la barra y se desliza. Cuánto se mide (dp; Tarea 177, con la posición SIN recortar: `boundsInRoot` recorta y antes «termina justo en el borde» no probaba nada) y cuánto se tolera. La ruta completa y el Contrarreloj jugado (los de todos los días) caben desde que se apretó el ritmo vertical de Hoy 16 dp.
+   * Lo que no está aquí tiene que caber. A 393 × 873 todos caben con letra 1,0 y 1,3.
+   */
+  private val scrollsAt360 = mapOf("partida en pausa" to 35f, "marca nueva con la ruta a medias" to 50f)
 
   @Test
-  fun hoy_a_360_por_780_con_letra_1_0_todo_cabe_sin_deslizar() {
-    for ((name, u) in dayStates) assertFitsWithoutScrolling(360, 780, 1f, u, name)
+  fun hoy_a_360_por_780_cuanto_se_pasa_de_la_barra_en_cada_estado() {
+    val pasan = mutableListOf<String>()
+    for ((name, u) in dayStates) {
+      show(u, widthDp = 360, heightDp = 780, fontScale = 1f)
+      assertNoWordSplit(); assertNothingCutOrOverlapping(360)
+      val over = unclippedBottomDp("btn_all_games") - 6f - (780 - 163)
+      println("HOY360 %s: se pasa %.0f dp".format(name, over))
+      val limit = scrollsAt360[name] ?: 0f
+      if (over > limit + 1f) pasan += "$name: se pasa %.0f dp (se tolera %.0f)".format(over, limit)
+    }
+    // lo que se pasa, se alcanza deslizando (después de medir todo: deslizar deja la página corrida y movería lo que se mide del estado que sigue)
+    for ((name, u) in dayStates) { show(u, widthDp = 360, heightDp = 780, fontScale = 1f); composeTestRule.onNodeWithTag("btn_all_games").performScrollTo().assertIsDisplayed() }
+    assertTrue("A 360 × 780 se pasan de la barra: $pasan", pasan.isEmpty())
     composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-tarjeta-360.png")
   }
 
   @Test
   fun hoy_con_letra_2_0_se_desliza_pero_nada_se_corta_ni_se_superpone() {
     for ((name, u) in dayStates) { show(u.copy(hasBaseline = false, baselineInvite = true), fontScale = 2f); assertNothingCutOrOverlapping(393); assertNoWordSplit() }
-    show(ui(hasBaseline = false, challenge = stroop), fontScale = 2f)
+    show(ui(hasBaseline = false, timeTrial = stroop), fontScale = 2f)
     composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-tarjeta-letra20.png")
   }
 
@@ -234,7 +289,7 @@ class HoyTarjetaTest {
         assertTrue("$label: «${names[i]}» $a se superpone con «${names[j]}» $b", w <= 1f || h <= 1f)
       }
     }
-    check(listOf("home_greeting", "home_date", "home_week", "home_card", "btn_challenge", "home_challenge_done", "home_route_tomorrow", "btn_all_games", "btn_home_baseline"), "afuera de la tarjeta")
+    check(listOf("home_greeting", "home_date", "home_week", "home_card", "btn_timetrial", "home_timetrial_done", "home_timetrial_record", "home_route_tomorrow", "btn_all_games", "btn_home_baseline"), "afuera de la tarjeta")
     check(listOf("home_route_title", "home_route_meta", "home_nubi", "home_stop_1", "home_stop_2", "home_stop_3", "btn_home_play", "btn_resume_paused"), "adentro de la tarjeta")
   }
 
@@ -370,8 +425,8 @@ class HoyTarjetaTest {
   }
 
   /**
-   * UN SOLO SOL A LA VEZ (Tarea 167; antes, «el único sol»): el sol está en la acción del momento. [sunOf] decide quién lo tiene (la ruta mientras sigue o hay una pausa; el Desafío con la ruta completa y sin jugar; nadie con el Desafío jugado o superado) y NUNCA son dos. Robolectric no deja leer píxeles
-   * aquí (`captureToImage` se cuelga; ver `OnBoardTextTest`), así que además se vigila el CÓDIGO: `HomeScreen.kt` no pide `Clay.Sun`, `SlabColor.SUN` aparece UNA sola vez (el botón ancho del Desafío) y los únicos `ClayButton` (el sol por omisión) son «Seguir tu partida» y la ruta, en ramas distintas.
+   * UN SOLO SOL A LA VEZ (Tarea 167; antes, «el único sol»): el sol está en la acción del momento. [sunOf] decide quién lo tiene (la ruta mientras sigue o hay una pausa; el Contrarreloj con la ruta completa y sin jugar hoy; nadie con el Contrarreloj jugado o con marca nueva) y NUNCA son dos. Robolectric no deja leer píxeles
+   * aquí (`captureToImage` se cuelga; ver `OnBoardTextTest`), así que además se vigila el CÓDIGO: `HomeScreen.kt` no pide `Clay.Sun`, `SlabColor.SUN` aparece UNA sola vez (el botón ancho del Contrarreloj) y los únicos `ClayButton` (el sol por omisión) son «Seguir tu partida» y la ruta, en ramas distintas.
    */
   @Test
   fun un_solo_sol_a_la_vez() {
@@ -380,14 +435,14 @@ class HoyTarjetaTest {
       val pending = u.stops.any { it.state != com.example.ui.screens.StopState.DONE }
       when {
         u.pausedTitle != null || pending -> assertEquals("$name: mientras la ruta sigue, el sol es de la ruta", Sun.ROUTE, sun)
-        u.challenge?.state == ChallengeState.PENDIENTE -> assertEquals("$name: con la ruta completa, el sol pasa al Desafío", Sun.CHALLENGE, sun)
-        else -> assertEquals("$name: con el Desafío jugado o superado (o sin Desafío) no queda ningún sol", Sun.NONE, sun)
+        u.timeTrial?.state == TimeTrialState.PENDIENTE -> assertEquals("$name: con la ruta completa, el sol pasa al Contrarreloj", Sun.TIME_TRIAL, sun)
+        else -> assertEquals("$name: con el Contrarreloj jugado o con marca nueva (o sin Contrarreloj) no queda ningún sol", Sun.NONE, sun)
       }
     }
     val src = java.io.File("src/main/java/com/example/ui/screens/HomeScreen.kt").readText()
     val code = src.lines().filterNot { it.trim().startsWith("*") || it.trim().startsWith("/**") || it.trim().startsWith("//") }.joinToString("\n")
     assertFalse("Hoy no pide el sol con Clay.Sun", code.contains("Clay.Sun"))
-    assertEquals("el sol del Desafío sale de un solo lugar (el botón ancho, decidido por sunOf)", 1, Regex("""SlabColor\.SUN""").findAll(code).count())
+    assertEquals("el sol del Contrarreloj sale de un solo lugar (el botón ancho, decidido por sunOf)", 1, Regex("""SlabColor\.SUN""").findAll(code).count())
     val buttons = Regex("""ClayButton\(([^\n]*)""").findAll(code).map { it.groupValues[1] }.toList()
     assertEquals("dos botones de la tarjeta («Seguir tu partida» y la ruta), en ramas distintas de un `when`", 2, buttons.size)
     for (b in buttons) assertFalse("el botón de la ruta lleva el color por omisión (el sol): $b", b.contains("color ="))
@@ -418,7 +473,7 @@ class HoyTarjetaTest {
 
   @Test
   fun con_la_ruta_completa_la_tarjeta_se_cierra_sola_sin_boton_ni_rotulo_y_sin_isla() {
-    show(ui(completed = 3, challenge = stroop))
+    show(ui(completed = 3, timeTrial = stroop))
     for (n in 1..3) composeTestRule.onNodeWithTag("home_stop_$n").assertIsDisplayed()
     composeTestRule.onAllNodes(hasText("Hecho")).assertCountEquals(3)
     composeTestRule.onNodeWithText("3 de 3 · ruta completa").assertIsDisplayed()
@@ -438,127 +493,155 @@ class HoyTarjetaTest {
 
   @Test
   fun con_la_ruta_completa_y_letra_1_3_todo_cabe_sin_deslizar() {
-    show(ui(completed = 3, challenge = stroop), fontScale = 1.3f)
+    show(ui(completed = 3, timeTrial = stroop), fontScale = 1.3f)
     val viewportBottom = (873 - 163) * composeTestRule.density.density
     assertTrue("«Todos los juegos» termina en ${dp(bounds("btn_all_games").bottom)} dp de ${dp(viewportBottom)}", bounds("btn_all_games").bottom <= viewportBottom + 1f)
     composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-tarjeta-completa-letra13.png")
   }
 
-  // ---- El Desafío de hoy (Tarea 167)
+  // ---- El Contrarreloj de hoy (Tarea 177; antes, el Desafío de hoy de las Tareas 167 y 169)
 
   @Test
-  fun mientras_la_ruta_sigue_el_Desafio_va_en_lila_junto_a_Todos_los_juegos_y_justo_debajo_de_la_tarjeta() {
+  fun mientras_la_ruta_sigue_el_Contrarreloj_va_en_lila_junto_a_Todos_los_juegos_y_justo_debajo_de_la_tarjeta() {
     for (done in 0..2) {
-      show(ui(completed = done, challenge = stroop))
-      composeTestRule.onNodeWithText("Desafío de hoy").assertIsDisplayed()
-      val card = bounds("home_card"); val c = bounds("btn_challenge"); val all = bounds("btn_all_games")
+      show(ui(completed = done, timeTrial = stroop))
+      composeTestRule.onNode(labelMatcher).assertIsDisplayed()
+      val card = bounds("home_card"); val c = bounds("btn_timetrial"); val all = bounds("btn_all_games")
       assertTrue("va DEBAJO de la tarjeta y junto a «Todos los juegos» ($c / $all)", c.top >= card.bottom - 1f && all.top >= card.bottom - 1f && Math.abs(c.top - all.top) < 2f && c.right <= all.left + 1f)
       assertTrue("en media fila: cada uno ocupa la mitad (${dp(c.width)} y ${dp(all.width)} dp)", dp(c.width) >= 150f && dp(all.width) >= 150f)
-      assertEquals("la ruta tiene el sol", Sun.ROUTE, sunOf(ui(completed = done, challenge = stroop)))
+      assertEquals("la ruta tiene el sol", Sun.ROUTE, sunOf(ui(completed = done, timeTrial = stroop)))
       assertTrue("y el botón de la ruta sigue dentro de la tarjeta", exists("btn_home_play"))
+      assertFalse("en media fila no hay lugar para el récord (va bajo el botón ancho)", exists("home_timetrial_record"))
     }
   }
 
   @Test
-  fun con_letra_1_0_Todos_los_juegos_y_Desafio_de_hoy_caben_en_UNA_linea_cada_uno() {
-    show(ui(completed = 1, challenge = stroop))
-    for (text in listOf("Desafío de hoy", "Todos los juegos")) {
-      val node = composeTestRule.onNodeWithText(text, useUnmergedTree = true).fetchSemanticsNode()
+  fun con_letra_1_0_Todos_los_juegos_cabe_en_UNA_linea_y_Contrarreloj_de_hoy_en_dos_sin_partir_ninguna_palabra() {
+    show(ui(completed = 1, timeTrial = stroop))
+    fun lines(text: String): Int {
+      val node = composeTestRule.onNode(if (text == "Contrarreloj de hoy") labelMatcher else hasText(text), useUnmergedTree = true).fetchSemanticsNode()
       val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
       node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(results)
-      assertEquals("«$text» cabe en una línea con letra 1,0", 1, results.first().lineCount)
+      return results.first().lineCount
     }
+    assertEquals("«Todos los juegos» cabe en una línea con letra 1,0", 1, lines("Todos los juegos"))
+    assertTrue("«Contrarreloj de hoy» va en una o dos líneas en media fila (${lines("Contrarreloj de hoy")})", lines("Contrarreloj de hoy") in 1..2)
+    assertNoWordSplit()
   }
 
   @Test
-  fun tocar_el_Desafio_lo_lanza_y_no_toca_la_ruta() {
-    show(ui(completed = 1, challenge = stroop))
-    composeTestRule.onNodeWithTag("btn_challenge").performClick()
-    assertEquals(1, challenged)
+  fun tocar_el_Contrarreloj_lo_lanza_y_no_toca_la_ruta() {
+    show(ui(completed = 1, timeTrial = stroop))
+    composeTestRule.onNodeWithTag("btn_timetrial").performClick()
+    assertEquals(1, trialed)
     assertEquals("no es la ruta", 0, played)
   }
 
   @Test
-  fun el_lector_de_pantalla_dice_todo_del_Desafio_aunque_a_la_vista_solo_diga_Desafio_de_hoy() {
-    show(ui(completed = 1, challenge = stroop))
-    composeTestRule.onNodeWithContentDescription("Desafío de hoy, Tinta o Palabra, un paso más difícil, unos 2 minutos").assertExists()
-    show(ui(completed = 3, challenge = stroop.copy(state = ChallengeState.JUGADO)))
-    composeTestRule.onNodeWithContentDescription("Desafío de hoy, Tinta o Palabra, un paso más difícil, otra vez").assertExists()
+  fun el_lector_de_pantalla_dice_todo_del_Contrarreloj_aunque_a_la_vista_solo_diga_Contrarreloj_de_hoy() {
+    show(ui(completed = 3, timeTrial = stroop))
+    composeTestRule.onNodeWithContentDescription("Contrarreloj de hoy, Tinta o Palabra, 2 minutos, tu récord 41 aciertos").assertExists()
+    show(ui(completed = 3, timeTrial = stroopJugado))
+    composeTestRule.onNodeWithContentDescription("Contrarreloj de hoy, Tinta o Palabra, 2 minutos, hoy 38 aciertos, otra vez, tu récord 41 aciertos").assertExists()
   }
 
   @Test
-  fun con_la_ruta_completa_el_Desafio_toma_todo_el_ancho_en_sol_con_el_juego_y_los_minutos() {
-    show(ui(completed = 3, challenge = stroop))
-    composeTestRule.onNodeWithText("Desafío de hoy").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Tinta o Palabra · unos 2 minutos").assertIsDisplayed()
-    val c = bounds("btn_challenge"); val all = bounds("btn_all_games"); val card = bounds("home_card")
+  fun con_la_ruta_completa_el_Contrarreloj_toma_todo_el_ancho_en_sol_con_el_juego_los_minutos_y_el_record_debajo() {
+    show(ui(completed = 3, timeTrial = stroop))
+    composeTestRule.onNode(labelMatcher).assertIsDisplayed()
+    composeTestRule.onNodeWithText("Tinta o Palabra · 2 minutos").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Tu récord: 41 aciertos.").assertIsDisplayed()
+    val c = bounds("btn_timetrial"); val all = bounds("btn_all_games"); val card = bounds("home_card"); val rec = bounds("home_timetrial_record")
     assertTrue("a todo el ancho (${dp(c.width)} dp) y «Todos los juegos» baja ($all)", dp(c.width) >= 300f && all.top >= c.bottom - 1f && c.top >= card.bottom - 1f)
-    assertEquals("el sol pasa al Desafío", Sun.CHALLENGE, sunOf(ui(completed = 3, challenge = stroop)))
-    assertFalse("y la frase de mañana no está todavía", exists("home_route_tomorrow") || composeTestRule.onAllNodes(hasText("Mañana hay ruta y Desafío nuevos.")).fetchSemanticsNodes().isNotEmpty())
+    assertTrue("el récord va en una línea PLANA entre el botón y «Todos los juegos» ($rec)", rec.top >= c.bottom - 1f && rec.bottom <= all.top + 1f)
+    composeTestRule.onNodeWithTag("home_timetrial_record").assertHasNoClickAction()
+    assertEquals("el sol pasa al Contrarreloj", Sun.TIME_TRIAL, sunOf(ui(completed = 3, timeTrial = stroop)))
+    assertFalse("y la frase de mañana no está todavía", exists("home_route_tomorrow"))
+  }
+
+  @Test
+  fun la_primera_vez_no_hay_record_y_la_linea_no_se_dibuja() {
+    show(ui(completed = 3, timeTrial = stroop.copy(record = null)))
+    assertFalse(exists("home_timetrial_record"))
+    composeTestRule.onAllNodes(hasText("Tu récord", substring = true)).assertCountEquals(0)
+    composeTestRule.onNodeWithContentDescription("Contrarreloj de hoy, Tinta o Palabra, 2 minutos").assertExists()
   }
 
   @Test
   fun con_letra_1_3_o_mas_la_segunda_linea_del_boton_ancho_dice_solo_el_juego() {
-    show(ui(completed = 3, challenge = stroop), fontScale = 1.3f)
+    show(ui(completed = 3, timeTrial = stroop), fontScale = 1.3f)
     composeTestRule.onNodeWithText("Tinta o Palabra").assertIsDisplayed()
-    composeTestRule.onAllNodes(hasText("Tinta o Palabra · unos 2 minutos")).assertCountEquals(0)
+    composeTestRule.onAllNodes(hasText("Tinta o Palabra · 2 minutos")).assertCountEquals(0)
   }
 
   @Test
-  fun jugado_sin_superar_el_Desafio_queda_en_crema_con_otra_vez_y_ya_no_tiene_el_sol() {
-    val u = ui(completed = 3, challenge = stroop.copy(state = ChallengeState.JUGADO))
+  fun jugado_sin_marca_nueva_el_Contrarreloj_queda_en_crema_con_hoy_N_aciertos_y_ya_no_tiene_el_sol() {
+    val u = ui(completed = 3, timeTrial = stroopJugado)
     show(u)
-    composeTestRule.onNodeWithText("Tinta o Palabra · otra vez").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Tinta o Palabra · hoy 38 aciertos").assertIsDisplayed()
+    composeTestRule.onNodeWithText("Tu récord: 41 aciertos.").assertIsDisplayed()
     assertEquals(Sun.NONE, sunOf(u))
-    composeTestRule.onNodeWithTag("btn_challenge").performClick()
-    assertEquals("se puede repetir", 1, challenged)
-    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-tarjeta-desafio-otra-vez.png")
+    composeTestRule.onNodeWithTag("btn_timetrial").performClick()
+    assertEquals("se puede repetir las veces que se quiera", 1, trialed)
+    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-tarjeta-contrarreloj-jugado.png")
   }
 
   @Test
-  fun superado_no_hay_boton_ni_sol_solo_el_recuadro_con_el_visto_y_las_dos_frases() {
-    val u = ui(completed = 3, challenge = stroop.copy(state = ChallengeState.SUPERADO))
+  fun jugado_con_la_ruta_a_medias_la_media_fila_dice_otra_vez() {
+    show(ui(completed = 1, timeTrial = stroopJugado))
+    composeTestRule.onNodeWithText("otra vez").assertIsDisplayed()
+    assertEquals("la ruta sigue con el sol", Sun.ROUTE, sunOf(ui(completed = 1, timeTrial = stroopJugado)))
+  }
+
+  @Test
+  fun con_marca_nueva_no_hay_sol_solo_el_recuadro_con_el_visto_y_Otra_vez_en_crema_junto_a_Todos_los_juegos() {
+    val u = ui(completed = 3, timeTrial = stroopMarca)
     show(u)
-    composeTestRule.onNodeWithText("Desafío superado: Tinta o Palabra.").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Mañana hay ruta y Desafío nuevos.").assertIsDisplayed()
-    assertFalse("ningún botón de Desafío", exists("btn_challenge"))
+    composeTestRule.onNodeWithText("Marca nueva: 43 aciertos en Tinta o Palabra.").assertIsDisplayed()
+    composeTestRule.onNodeWithTag("home_timetrial_done").assertIsDisplayed().assertHasNoClickAction()
+    composeTestRule.onNodeWithText("Otra vez").assertIsDisplayed()
     assertEquals("ningún sol: el día está hecho", Sun.NONE, sunOf(u))
-    composeTestRule.onNodeWithTag("home_challenge_done").assertIsDisplayed().assertHasNoClickAction()
-    composeTestRule.onNodeWithTag("btn_all_games").assertIsDisplayed()
-    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-tarjeta-desafio-superado.png")
+    val note = bounds("home_timetrial_done"); val again = bounds("btn_timetrial"); val all = bounds("btn_all_games")
+    assertTrue("«Otra vez» y «Todos los juegos» van en media fila bajo el recuadro ($again / $all)", again.top >= note.bottom - 1f && all.top >= note.bottom - 1f && Math.abs(again.top - all.top) < 2f && again.right <= all.left + 1f)
+    assertFalse("sin la línea del récord (la marca nueva ya lo dice)", exists("home_timetrial_record"))
+    composeTestRule.onNodeWithTag("btn_timetrial").performClick()
+    assertEquals("«Otra vez» lanza el Contrarreloj de nuevo", 1, trialed)
+    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-tarjeta-contrarreloj-marca-nueva.png")
   }
 
   @Test
-  fun superado_con_la_ruta_a_medias_dice_solo_el_visto_y_no_anuncia_el_mañana() {
-    show(ui(completed = 1, challenge = stroop.copy(state = ChallengeState.SUPERADO)))
-    composeTestRule.onNodeWithText("Desafío superado: Tinta o Palabra.").assertIsDisplayed()
-    composeTestRule.onAllNodes(hasText("Mañana hay ruta y Desafío nuevos.")).assertCountEquals(0)
-    assertEquals("la ruta sigue con el sol", Sun.ROUTE, sunOf(ui(completed = 1, challenge = stroop.copy(state = ChallengeState.SUPERADO))))
+  fun con_marca_nueva_y_la_ruta_a_medias_el_recuadro_va_a_todo_el_ancho_y_la_ruta_sigue_con_el_sol() {
+    val u = ui(completed = 1, timeTrial = stroopMarca)
+    show(u)
+    composeTestRule.onNodeWithText("Marca nueva: 43 aciertos en Tinta o Palabra.").assertIsDisplayed()
+    assertEquals("la ruta sigue con el sol", Sun.ROUTE, sunOf(u))
+    assertEquals("a todo el ancho, sobre la fila de dos botones", bounds("home_card").width, bounds("home_timetrial_done").width, 40f)
+    composeTestRule.onNodeWithTag("home_timetrial_done").assertHasNoClickAction()
   }
 
-  // ---- El recuadro del Desafío superado (Tarea 169)
-
-  /** El recuadro ocupa el lugar y el ancho del botón del Desafío con la ruta completa: justo bajo la tarjeta, de lado a lado, y no es tocable. */
   @Test
-  fun el_recuadro_del_Desafio_superado_esta_donde_estaba_el_boton_y_al_mismo_ancho() {
-    show(ui(completed = 3, challenge = stroop))
-    val boton = bounds("btn_challenge")
-    show(ui(completed = 3, challenge = stroop.copy(state = ChallengeState.SUPERADO)))
-    val recuadro = bounds("home_challenge_done")
+  fun la_marca_nueva_cabe_en_UNA_linea_con_letra_1_0_y_1_3_y_nunca_parte_una_palabra() {
+    for (scale in listOf(1f, 1.3f)) {
+      show(ui(completed = 3, timeTrial = stroopMarca), fontScale = scale)
+      val node = composeTestRule.onNodeWithText("Marca nueva: 43 aciertos en Tinta o Palabra.", useUnmergedTree = true).fetchSemanticsNode()
+      val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+      node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+      println("MARCA NUEVA letra $scale: ${results.first().lineCount} renglón(es)")
+      assertNoWordSplit()
+    }
+  }
+
+  /** El recuadro ocupa el lugar y el ancho del botón del Contrarreloj con la ruta completa: justo bajo la tarjeta, de lado a lado, y no es tocable. */
+  @Test
+  fun el_recuadro_de_la_marca_nueva_esta_donde_estaba_el_boton_y_al_mismo_ancho() {
+    show(ui(completed = 3, timeTrial = stroop))
+    val boton = bounds("btn_timetrial")
+    show(ui(completed = 3, timeTrial = stroopMarca))
+    val recuadro = bounds("home_timetrial_done")
     assertEquals("a la misma altura que el botón", boton.top, recuadro.top, 1f)
     assertEquals("desde el mismo borde izquierdo", boton.left, recuadro.left, 1f)
     assertEquals("al mismo ancho", boton.width, recuadro.width, 1f)
-    composeTestRule.onNodeWithTag("home_challenge_done").assertHasNoClickAction()
-    assertTrue("y «Todos los juegos» queda debajo de él", bounds("btn_all_games").top >= recuadro.bottom)
-  }
-
-  /** Con la ruta a medias el recuadro también va en el lugar del botón (a todo el ancho: ya no hay fila de dos botones). */
-  @Test
-  fun el_recuadro_con_la_ruta_a_medias_va_a_todo_el_ancho_y_sin_tocar() {
-    show(ui(completed = 1, challenge = stroop.copy(state = ChallengeState.SUPERADO)))
-    val recuadro = bounds("home_challenge_done")
-    assertEquals("como «Todos los juegos» a todo el ancho", bounds("btn_all_games").width, recuadro.width, 1f)
-    composeTestRule.onNodeWithTag("home_challenge_done").assertHasNoClickAction()
+    composeTestRule.onNodeWithTag("home_timetrial_done").assertHasNoClickAction()
   }
 
   private fun contrast(a: androidx.compose.ui.graphics.Color, b: androidx.compose.ui.graphics.Color): Double {
@@ -569,7 +652,7 @@ class HoyTarjetaTest {
   /** El lila claro del recuadro: la tinta y la tinta suave leen ≥ 4,5:1 sobre él, y no es ni el crema de «Todos los juegos» ni el lima de «Hecho». */
   @Test
   fun el_lila_claro_del_recuadro_se_lee_con_la_tinta_y_no_se_confunde_con_el_crema_ni_el_lima() {
-    val fill = com.example.ui.screens.ChallengeDoneFill
+    val fill = com.example.ui.screens.TimeTrialDoneFill
     val ink = contrast(com.example.ui.theme.Clay.Ink, fill); val muted = contrast(com.example.ui.theme.Clay.InkMuted, fill)
     println("RECUADRO tinta %.2f:1, tinta suave %.2f:1".format(ink, muted))
     assertTrue("la tinta sobre el lila claro mide $ink:1 (mínimo 4,5)", ink >= 4.5)
@@ -579,36 +662,44 @@ class HoyTarjetaTest {
     assertTrue("y del lima de «Hecho» (el verde no domina)", fill.green < fill.blue && fill.green <= fill.red)
   }
 
-  /** El recuadro es PLANO: su código no pide borde, sombra, losa, botón, cometa ni sol, y su radio es el del kit (22 dp). */
+  /** El recuadro es PLANO: su código no pide borde, sombra, losa, botón, reloj ni sol, y su radio es el del kit (22 dp). */
   @Test
-  fun el_recuadro_es_plano_en_el_codigo_sin_borde_ni_sombra_ni_boton_ni_cometa() {
+  fun el_recuadro_es_plano_en_el_codigo_sin_borde_ni_sombra_ni_boton_ni_reloj() {
     val src = java.io.File("src/main/java/com/example/ui/screens/HomeScreen.kt").readText().replace("\r\n", "\n")
-    val i = src.indexOf("private fun ChallengeDoneNote(")
-    assertTrue("no encontré ChallengeDoneNote", i > 0)
+    val i = src.indexOf("private fun TimeTrialDoneNote(")
+    assertTrue("no encontré TimeTrialDoneNote", i > 0)
     val body = src.substring(i, src.indexOf("\n}\n", i))
-    for (banned in listOf("border(", "shadow", "clickable", "KitButton", "ClayButton", "ClaySlab", "ClayCard", "Glyph.COMET", "SlabColor", "Clay.Sun", "toggleable", "selectable")) {
-      assertFalse("el recuadro del Desafío superado no usa `$banned`", body.contains(banned))
+    for (banned in listOf("border(", "shadow", "clickable", "KitButton", "ClayButton", "ClaySlab", "ClayCard", "Glyph.", "SlabColor", "Clay.Sun", "toggleable", "selectable")) {
+      assertFalse("el recuadro de la marca nueva no usa `$banned`", body.contains(banned))
     }
-    assertTrue("lleva el fondo lila claro", body.contains("background(ChallengeDoneFill)"))
-    assertTrue("con las esquinas del kit", body.contains("RoundedCornerShape(ChallengeDoneRadius)"))
-    assertEquals("22 dp, el radio de los botones y las tarjetas del kit", 22.dp, com.example.ui.screens.ChallengeDoneRadius)
+    assertTrue("lleva el fondo lila claro", body.contains("background(TimeTrialDoneFill)"))
+    assertTrue("con las esquinas del kit", body.contains("RoundedCornerShape(TimeTrialDoneRadius)"))
+    assertEquals("22 dp, el radio de los botones y las tarjetas del kit", 22.dp, com.example.ui.screens.TimeTrialDoneRadius)
     assertTrue("lleva el visto de «Hecho»", body.contains("StopMark(StopState.DONE)"))
   }
 
   @Test
-  fun con_una_partida_en_pausa_el_Desafio_sigue_en_lila_y_el_sol_es_de_seguir_la_partida() {
-    val u = ui(completed = 1, paused = "Carga exacta", challenge = stroop)
-    show(u)
-    assertEquals(Sun.ROUTE, sunOf(u))
-    composeTestRule.onNodeWithText("Desafío de hoy").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Seguir tu partida").assertIsDisplayed()
-    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-tarjeta-pausa-con-desafio.png")
+  fun el_boton_lleva_el_reloj_del_kit_y_no_el_cometa() {
+    val src = java.io.File("src/main/java/com/example/ui/screens/HomeScreen.kt").readText().replace("\r\n", "\n")
+    assertTrue("el reloj del kit", src.contains("glyph = Glyph.CLOCK"))
+    assertFalse("el cometa es del modo Desafío de la ficha, no del Contrarreloj", src.contains("Glyph.COMET"))
+    assertFalse("ni queda nada del Desafío de hoy", src.contains("ChallengeState") || src.contains("DailyChallenge") || src.contains("HomeChallenge"))
   }
 
   @Test
-  fun sin_Desafio_Hoy_queda_como_antes_y_con_la_ruta_completa_dice_que_manana_hay_una_ruta_nueva() {
+  fun con_una_partida_en_pausa_el_Contrarreloj_sigue_en_lila_y_el_sol_es_de_seguir_la_partida() {
+    val u = ui(completed = 1, paused = "Carga exacta", timeTrial = stroop)
+    show(u)
+    assertEquals(Sun.ROUTE, sunOf(u))
+    composeTestRule.onNode(labelMatcher).assertIsDisplayed()
+    composeTestRule.onNodeWithText("Seguir tu partida").assertIsDisplayed()
+    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-tarjeta-pausa-con-contrarreloj.png")
+  }
+
+  @Test
+  fun sin_Contrarreloj_Hoy_queda_como_antes_y_con_la_ruta_completa_dice_que_manana_hay_una_ruta_nueva() {
     show(ui(completed = 1))
-    assertFalse("sin losa de Desafío", exists("btn_challenge") || exists("home_challenge_done"))
+    assertFalse("sin losa de Contrarreloj", exists("btn_timetrial") || exists("home_timetrial_done"))
     composeTestRule.onNodeWithTag("btn_all_games").assertIsDisplayed()
     assertTrue("«Todos los juegos» a todo el ancho", dp(bounds("btn_all_games").width) >= 300f)
     show(ui(completed = 3))

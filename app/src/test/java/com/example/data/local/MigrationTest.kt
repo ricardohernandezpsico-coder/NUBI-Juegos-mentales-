@@ -137,6 +137,26 @@ class MigrationTest {
   }
 
   @Test
+  fun `de la version 15 a la 16 aparece la tabla del Contrarreloj y todo lo que habia se conserva`() {
+    helper.createDatabase("migracion16", 15).apply {
+      execSQL("INSERT INTO game_progress (gameId, currentLevel, highestScore, totalGamesPlayed, lastPlayedTimestamp, masteryStreak, eloRating, ddaRating) VALUES ('stroop', 3, 80, 9, 1700000000000, 1, 1100, 0.6)")
+      execSQL("INSERT INTO game_results (id, gameId, score, correctAnswers, totalTrials, timed, level, timestamp) VALUES ('a', 'stroop', 80, 10, 12, 1, 3, 1700000000000)")
+      close()
+    }
+    val db = helper.runMigrationsAndValidate("migracion16", 16, true, *NeuroVidaDatabase.MIGRATIONS)
+    db.query("SELECT ddaRating, totalGamesPlayed FROM game_progress WHERE gameId = 'stroop'").use { c ->
+      assertTrue("la fila del juego desapareció con la migración", c.moveToFirst())
+      assertEquals(0.6, c.getDouble(0), 1e-6)
+      assertEquals(9, c.getInt(1))
+    }
+    db.query("SELECT COUNT(*) FROM game_results").use { c -> assertTrue(c.moveToFirst()); assertEquals(1, c.getInt(0)) }
+    db.query("SELECT COUNT(*) FROM time_trial_results").use { c -> assertTrue(c.moveToFirst()); assertEquals("la tabla nace vacía", 0, c.getInt(0)) }
+    db.execSQL("INSERT INTO time_trial_results (id, gameId, day, trackVersion, hits, errors, level, seconds, timestamp) VALUES ('x', 'stroop', '2026-10-26', 1, 38, 6, 4, 120, 1700000000000)")
+    db.query("SELECT hits, level FROM time_trial_results WHERE id = 'x'").use { c -> assertTrue(c.moveToFirst()); assertEquals(38, c.getInt(0)); assertEquals(4, c.getInt(1)) }
+    db.close()
+  }
+
+  @Test
   fun `cada version exportada tiene su migracion a la siguiente`() {
     val versions = File("schemas").walkTopDown().filter { it.extension == "json" }.map { it.nameWithoutExtension.toInt() }.toList().sorted()
     assertTrue("no encontré los esquemas exportados en app/schemas", versions.isNotEmpty())

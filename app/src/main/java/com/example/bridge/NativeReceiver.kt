@@ -118,6 +118,12 @@ object NativeReceiver {
     val mode_trials: Int = 0,
     val mode_hits: Int = 0,
     val peak_level: Int = 0,
+    // CONTRARRELOJ (Tarea 176 de Unity; ver StroopTelemetry.cs): aciertos (la marca), errores, el paso más alto de la pista, los segundos y la versión de la pista. -1 = la partida no fue un Contrarreloj.
+    val tt_hits: Int = -1,
+    val tt_errors: Int = -1,
+    val tt_peak_level: Int = -1,
+    val tt_seconds: Int = -1,
+    val tt_track_version: Int = -1,
     // Solo Piloto Estelar («la ruta de las balizas», 9-oct; TODO medido con las dos tareas a la vez): % en la ruta, señales de la misión atrapadas / resueltas, toques equivocados, «tus señales a los mandos» (%; -1 con menos de 8 señales
     // de la misión), nivel de señales y de pilotaje, racha mayor, puntos e hiperimpulsos (-1 = no aplica / sin datos).
     val pil_lane_pct: Int = -1,
@@ -496,6 +502,11 @@ object NativeReceiver {
       endRating = metrics.end_rating?.toFloat(),
       modeTrials = metrics.mode_trials,
       modeHits = metrics.mode_hits,
+      ttHits = metrics.tt_hits.takeIf { it >= 0 },
+      ttErrors = metrics.tt_errors.takeIf { metrics.tt_hits >= 0 && it >= 0 },
+      ttPeakLevel = metrics.tt_peak_level.takeIf { metrics.tt_hits >= 0 && it >= 1 },
+      ttSeconds = metrics.tt_seconds.takeIf { metrics.tt_hits >= 0 && it > 0 },
+      ttTrackVersion = metrics.tt_track_version.takeIf { metrics.tt_hits >= 0 && it >= 1 },
       pilLanePct = metrics.pil_lane_pct.takeIf { it >= 0 },
       pilHits = metrics.pil_hits.takeIf { it >= 0 },
       pilTargets = metrics.pil_targets.takeIf { it >= 0 },

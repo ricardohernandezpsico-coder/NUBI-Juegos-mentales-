@@ -661,40 +661,30 @@ class NeuroVidaRepository(
   )
   val dailySession: StateFlow<DailySessionState> = _dailySession.asStateFlow()
 
-  // El Desafío de hoy (Tarea 167, `DailyChallenge`): UN juego al día que Nubi elige entre los ya medidos, fuera de la ruta y del área que la ruta dejó fuera primero. PASAJERO (`desafio_hoy`, fuera del respaldo): se elige UNA vez al día y se recuerda cómo va.
-  private val challengeStore: ChallengeStore = PrefsChallengeStore(context)
-  private var challengeLog: ChallengeLog = challengeStore.load()
-  private val _challengeToday = MutableStateFlow(challengeLog.today?.takeIf { it.day == getTodayDateKey() })
-  val challengeToday: StateFlow<ChallengeToday?> = _challengeToday.asStateFlow()
-  /** El camino de hoy ya se leyó de la base: antes, `_dailySession` trae un camino de relleno y el Desafío se elegiría contra una ruta falsa. */
-  @Volatile private var routeLoaded = false
+  // El Contrarreloj de hoy (Tarea 177, `TimeTrialDay`): sus partidas viven en su propia tabla (`time_trial_results`, en el respaldo) y el estado de Hoy se DERIVA de ellas: no hay preferencia pasajera ni elección por persona (el juego del día sale de la fecha).
+  private val timeTrialResultDao = database.timeTrialResultDao()
+  val timeTrialResults: StateFlow<List<TimeTrialResult>> = timeTrialResultDao.getAll()
+    .map { list -> list.map { it.toDomain() } }
+    .stateIn(scope = repositoryScope, started = SharingStarted.Eagerly, initialValue = emptyList())
+
+  /** El día de hoy como «yyyy-MM-dd» (hora local): la clave del Contrarreloj de hoy. */
+  fun todayKey(): String = getTodayDateKey()
+
+  /** El día («yyyy-MM-dd», hora local) de una marca de tiempo. */
+  fun dateKeyOf(timestamp: Long): String = formatDate(timestamp)
 
   /**
-   * Elige (si todavía no) y devuelve el Desafío de hoy con lo que hay AHORA: la ruta de hoy y los juegos medidos. Se llama al abrir Hoy y después de cada partida; el juego elegido no cambia durante el día. Sin candidato no hay Desafío (null) y Hoy queda sin la losa.
+   * Guarda una partida de Contrarreloj y devuelve lo que el final necesita (récord de antes, últimas 5, mejor de la semana). NO toca el nivel, los puntos, lo medido ni la ruta de hoy: es otra cosa que una partida de siempre (cuenta como día jugado para la racha y las farolas).
    */
-  @Synchronized
-  fun refreshChallenge(): ChallengeToday? {
-    if (!routeLoaded) return _challengeToday.value
-    val (today, log) = DailyChallenge.resolve(challengeLog, getTodayDateKey(), epochDay(System.currentTimeMillis()), _skill.value.measured, _dailySession.value.gameIds)
-    if (log != challengeLog) { challengeLog = log; challengeStore.save(log) }
-    if (_challengeToday.value != today) _challengeToday.value = today
-    return today
-  }
-
-  /** Una partida terminó: si era el Desafío de hoy en modo Desafío, pasa a «jugado» o «superado» (no se pierde al repetir). */
-  @Synchronized
-  private fun challengeAfter(dateKey: String, gameId: String, mode: PlayMode, passed: Boolean) {
-    val updated = DailyChallenge.after(challengeLog.today, dateKey, gameId, mode, passed) ?: return
-    challengeLog = challengeLog.copy(today = updated)
-    challengeStore.save(challengeLog)
-    _challengeToday.value = updated
+  suspend fun recordTimeTrial(result: TimeTrialResult): TimeTrialStats.Outcome = withContext(Dispatchers.IO) {
+    timeTrialResultDao.insert(result.toEntity())
+    val all = timeTrialResultDao.getAllSync().map { it.toDomain() }
+    TimeTrialStats.outcome(all, result)
   }
 
   init {
     repositoryScope.launch {
       initializeDatabaseDefaults()
-      routeLoaded = true
-      refreshChallenge()
       observeDailySession()
       seedAchievementsIfNeeded()
     }
@@ -963,10 +953,6 @@ class NeuroVidaRepository(
       }
     }
 
-    // El Desafío de hoy (Tarea 167): una partida de ese juego en modo Desafío lo pasa a «jugado» o, si se superó, a «superado»; y lo recién medido puede ser el Desafío de mañana.
-    challengeAfter(today, result.gameId, result.playMode, modePassed)
-    refreshChallenge()
-
     val allResults = gameResultDao.getAllResultsSync().map { it.toDomain() }
 
     // 4. Maestría por dominio (etapa 4): XP sin techo por CUALQUIER partida del
@@ -1052,6 +1038,9 @@ class NeuroVidaRepository(
    */
   fun calculateStreak(history: List<GamePlayResult>): Int = streakInfo(history).current
 
+  /** La racha a partir de las marcas de tiempo de lo jugado (las partidas de siempre y las del Contrarreloj). */
+  fun streakOfTimestamps(timestamps: List<Long>, now: Long = System.currentTimeMillis()): Streak.StreakInfo = Streak.fromTimestamps(timestamps, now)
+
   /** La racha con su día perdonado (para «Descansaste el martes: tu racha sigue»). */
   fun streakInfo(history: List<GamePlayResult>, now: Long = System.currentTimeMillis()): Streak.StreakInfo =
     Streak.fromTimestamps(history.map { it.timestamp }, now)
@@ -1063,6 +1052,7 @@ class NeuroVidaRepository(
     userProfileDao.deleteAll()
     domainMasteryDao.deleteAll()
     claimedWeeklyChallengeDao.deleteAll()
+    timeTrialResultDao.deleteAll()
     _claimedChallenges.value = emptySet()
     // Lo guardado fuera de Room también (si no, tras borrar quedaban logros, ascensos y el mapa de antes).
     leaguePrefs.edit().clear().apply()

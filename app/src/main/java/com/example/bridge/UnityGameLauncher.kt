@@ -83,6 +83,9 @@ object UnityGameLauncher {
     val resc_stage: Int = 0,
     // Solo «Acoplamiento» (id acoplamiento): el récord de módulos acoplados en una partida (progreso: la app lo guarda y Unity devuelve el nuevo).
     val dock_best: Int = 0,
+    // CONTRARRELOJ (Tarea 177; `docs/contrarreloj.md`): la partida es «La escalera de 2 minutos» (120 s, dificultad adaptativa apagada, pista fija) y `track_seed` es la FECHA del día como número (aaaammdd: la pista es la misma para todos ese día). Unity pone la versión de la pista.
+    val time_trial: Boolean = false,
+    val track_seed: Int = 0,
     val play_mode: String = "",
     val mode_floor: Float = -1f,
     val mode_ceiling: Float = -1f
@@ -131,8 +134,10 @@ object UnityGameLauncher {
     satSurprise: Int = 0,           // solo las herramientas de prueba: Satélites trae esta sorpresa en todas las rondas (1 órbita, 2 nube, 4 rápidas; 0 = las de siempre)
     pilStage: Int = 0,              // solo las herramientas de prueba: Piloto empieza en este nivel (0 = normal)
     pilSectorS: Int = 0,            // solo las herramientas de prueba: segundos por sector de Piloto (0 = 30)
-    rescStage: Int = 0              // solo las herramientas de prueba: Rescate relámpago empieza en este nivel (0 = normal)
-  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, mode, forceTutorial, debugOverlay, conStage, mailStage, satStage, satSurprise, pilStage, pilSectorS, rescStage)
+    rescStage: Int = 0,             // solo las herramientas de prueba: Rescate relámpago empieza en este nivel (0 = normal)
+    timeTrial: Boolean = false,     // el Contrarreloj de hoy (Tarea 177): la pista fija del día (la fecha va en track_seed), 120 s y sin dificultad adaptativa
+    trackSeed: Int = 0              // la fecha del Contrarreloj (aaaammdd); solo se lee con timeTrial
+  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, mode, forceTutorial, debugOverlay, conStage, mailStage, satStage, satSurprise, pilStage, pilSectorS, rescStage, timeTrial, trackSeed)
 
   private fun buildIntent(
     context: Context,
@@ -155,7 +160,9 @@ object UnityGameLauncher {
     satSurprise: Int = 0,
     pilStage: Int = 0,
     pilSectorS: Int = 0,
-    rescStage: Int = 0
+    rescStage: Int = 0,
+    timeTrial: Boolean = false,
+    trackSeed: Int = 0
   ): Intent {
     val assessment = assessmentStep > 0
     val savedRating = if (assessment) -1f else com.example.NeuroVidaApplication.instance.repository.gameDdaRating.value[gameId] ?: -1f
@@ -197,6 +204,8 @@ object UnityGameLauncher {
         resc_best = if (gameId == "radar") com.example.NeuroVidaApplication.instance.repository.rescateRecord.value else 0,
         resc_stage = if (gameId == "radar") rescStage.coerceIn(0, 12) else 0,
         dock_best = if (gameId == "acoplamiento") com.example.NeuroVidaApplication.instance.repository.acoplamientoRecord.value else 0,
+        time_trial = timeTrial && com.example.data.TimeTrialDay.supports(gameId),
+        track_seed = if (timeTrial && com.example.data.TimeTrialDay.supports(gameId)) trackSeed else 0,
         play_mode = if (assessment) "" else mode.name,
         mode_floor = bounds.floor ?: -1f,
         mode_ceiling = bounds.ceiling ?: -1f

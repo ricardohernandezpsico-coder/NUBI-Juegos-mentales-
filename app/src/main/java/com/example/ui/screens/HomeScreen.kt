@@ -43,10 +43,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.data.ChallengeState
-import com.example.data.DailyChallenge
 import com.example.data.IslaLugar
 import com.example.data.Streak
+import com.example.data.TimeTrialDay
+import com.example.data.TimeTrialState
+import com.example.data.TimeTrialStats
 import com.example.data.Week
 import com.example.model.GameRegistry
 import com.example.model.RankTier
@@ -69,9 +70,9 @@ import com.example.viewmodel.NeuroVidaViewModel
 /**
  * Inicio («Hoy»): el saludo, la semana (las farolas, la llama y la frase de la racha) y UNA tarjeta crema con todo lo de la ruta de hoy (Tarea 165, 24-oct; `auditoria-fable/hoy-reestructura.md`, opción 3, elegida por Ricardo después de ver los letreros de la isla de la Tarea 163, que NO se instalaron:
  * «esa pantalla se ve muy sobrecargada, demasiada sobrecarga de estímulos, de botones»): «Tu ruta de hoy», «1 de 3 · unos 4 minutos», los tres juegos con su estado en palabras (no se tocan: informan) y el botón sol ADENTRO, con Nubi posada en su esquina; debajo, «Todos los juegos».
- * Desde la Tarea 167 (25-oct; `auditoria-fable/hoy-desafio-y-dia-completo.md`, opción 1 «Dos botones, un solo sol a la vez», elegida por Ricardo) hay un segundo botón, **«Desafío de hoy»** (un juego al día que Nubi elige, en modo Desafío, con un cometa): lila junto a «Todos los juegos» mientras la ruta sigue y
- * sol a todo el ancho con la ruta completa. **Un solo sol a la vez**: el sol está en la acción del momento (la ruta, después el Desafío) y con el Desafío superado no queda ninguno: el día está hecho. Con la ruta completa la tarjeta se cierra sola (tres «Hecho», «3 de 3 · ruta completa» en negrita, sin botón ni rótulo) y ya NO hay isla en Hoy:
- * la isla vive en Tú. Con letra del sistema de 1,3 todo cabe en 393 × 873 dp sin deslizar.
+ * Desde la Tarea 167 (25-oct; `auditoria-fable/hoy-desafio-y-dia-completo.md`, opción 1 «Dos botones, un solo sol a la vez», elegida por Ricardo) hay un segundo botón; desde la Tarea 177 (26-oct; `auditoria-fable/contrarreloj.md`) es **«Contrarreloj de hoy»** (el mismo juego para todas las personas, 2 minutos contra el
+ * reloj, con el reloj del kit; reemplaza al «Desafío de hoy»): lila junto a «Todos los juegos» mientras la ruta sigue y sol a todo el ancho con la ruta completa. **Un solo sol a la vez**: el sol está en la acción del momento (la ruta, después el Contrarreloj); jugado sin marca nueva queda en crema («otra vez») y con la marca nueva
+ * ningún sol: el día está hecho. Con la ruta completa la tarjeta se cierra sola (tres «Hecho», «3 de 3 · ruta completa» en negrita, sin botón ni rótulo) y ya NO hay isla en Hoy: la isla vive en Tú. Con letra del sistema de 1,3 todo cabe en 393 × 873 dp sin deslizar.
  */
 @Composable
 fun HomeScreen(
@@ -85,7 +86,8 @@ fun HomeScreen(
   val baseline by viewModel.baseline.collectAsState()
   val settings by viewModel.userSettings.collectAsState()
   val skill by viewModel.skill.collectAsState()
-  val challenge by viewModel.challengeToday.collectAsState()
+  val timeTrialResults by viewModel.timeTrialResults.collectAsState()
+  val activity by viewModel.activityTimestamps.collectAsState()          // cuándo se jugó: las partidas de siempre Y el Contrarreloj (cuenta como día jugado, no como puntos)
   // Reloj de Hoy (la fecha, la semana y la racha): cada 30 s.
   var clock by remember { mutableStateOf(System.currentTimeMillis()) }
   LaunchedEffect(Unit) {
@@ -94,14 +96,12 @@ fun HomeScreen(
       clock = System.currentTimeMillis()
     }
   }
-  // El Desafío de hoy se elige una vez al día, con la ruta de hoy y lo que ya está medido: se mira al abrir Hoy, al cambiar el día y al medirse un juego.
-  LaunchedEffect(dailySession.dateKey, skill.measured) { viewModel.refreshChallenge() }
   val lang = LocalAppLanguage.current
   val avg = if (ranks.isEmpty()) 0 else ranks.sumOf { it.rating } / ranks.size
   val tier = RankTier.fromRating(avg)
   val completed = dailySession.completedCount
   // La racha que perdona (Tarea 124): con el día de descanso, si lo hubo esta semana.
-  val streakInfo = remember(history, clock) { Streak.fromTimestamps(history.map { it.timestamp }, clock) }
+  val streakInfo = remember(activity, clock) { Streak.fromTimestamps(activity, clock) }
   val ui = HomeUi(
     name = settings.name,
     now = clock,
@@ -109,13 +109,13 @@ fun HomeScreen(
     streak = streakInfo.current,
     streakNote = Streak.forgivenLine(streakInfo) ?: Streak.REST_LINE,
     weeklyGoal = settings.weeklyGoal,
-    lamps = Week.lampsFor(history.map { it.timestamp }, clock),
+    lamps = Week.lampsFor(activity, clock),
     stops = homeStops(dailySession.gameIds, completed, lang),
     pausedTitle = pausedGameId?.let { GameRegistry.getById(it) }?.let { getGameTitle(it.id, lang, it.title) },
     flightDay = dailySession.gameIds.isNotEmpty() && completed >= dailySession.gameIds.size && dailySession.scores.isEmpty(),
     hasBaseline = baseline != null,
     baselineInvite = com.example.data.BaselinePlan.showHomeInvite(baseline != null, history.size, history.minOfOrNull { it.timestamp }, clock),
-    challenge = challenge?.let { c -> GameRegistry.getById(c.gameId)?.let { HomeChallenge(c.gameId, getGameTitle(c.gameId, lang, it.title), c.state) } }
+    timeTrial = timeTrialOf(timeTrialResults, viewModel.todayKey(), lang)
   )
   HomeContent(
     ui = ui,
@@ -123,7 +123,7 @@ fun HomeScreen(
     onPlay = { viewModel.startDailySession() },
     onResume = { viewModel.resumePausedGame() },
     onBaseline = { viewModel.startBaseline() },
-    onChallenge = { viewModel.startDailyChallenge() },
+    onTimeTrial = { viewModel.startTimeTrial() },
     modifier = modifier
   )
 }
@@ -152,16 +152,29 @@ internal data class HomeUi(
   val hasBaseline: Boolean,
   /** Si Hoy invita a «Encuentra tu punto de partida»: por omisión, mientras no lo haya; Hoy la apaga pasadas 5 partidas o 7 días (Tarea 152, B6.2). */
   val baselineInvite: Boolean = !hasBaseline,
-  /** El Desafío de hoy (Tarea 167): el juego que Nubi eligió y cómo va; null = no hay candidato (todavía no hay un juego medido fuera de la ruta): Hoy queda sin la losa. */
-  val challenge: HomeChallenge? = null
+  /** El Contrarreloj de hoy (Tarea 177): el juego de la fecha (el mismo para todas las personas) y cómo va; null solo si el juego del día no está en el catálogo (no pasa). */
+  val timeTrial: HomeTimeTrial? = null
 ) {
   val completed: Int get() = stops.count { it.state == StopState.DONE }
 }
 
 internal enum class StopState { DONE, NEXT, LATER }
 
-/** El Desafío de hoy tal como lo muestra Hoy: el juego (con su nombre visible) y si falta jugarlo, se jugó sin superarlo («otra vez») o ya se superó. */
-internal data class HomeChallenge(val gameId: String, val title: String, val state: ChallengeState)
+/**
+ * El Contrarreloj de hoy tal como lo muestra Hoy: el juego del día (con su nombre visible), cómo va (pendiente, jugado sin marca nueva —«otra vez»— o con marca nueva), la mejor marca de HOY y el récord de la persona en ese juego (los dos null si no hay).
+ */
+internal data class HomeTimeTrial(val gameId: String, val title: String, val state: TimeTrialState, val todayHits: Int? = null, val record: Int? = null)
+
+/** El Contrarreloj de hoy con lo guardado: el juego sale de la FECHA ([TimeTrialDay.gameFor]); el estado, de las partidas de hoy ([TimeTrialDay.stateOf]); el récord, de todas las de ese juego con la pista de hoy ([TimeTrialStats.record]). */
+internal fun timeTrialOf(results: List<com.example.data.TimeTrialResult>, dateKey: String, lang: com.example.model.AppLanguage): HomeTimeTrial? {
+  val gameId = TimeTrialDay.gameFor(dateKey)
+  val def = GameRegistry.getById(gameId) ?: return null
+  val state = TimeTrialDay.stateOf(results, dateKey, gameId)
+  return HomeTimeTrial(
+    gameId = gameId, title = getGameTitle(gameId, lang, def.title), state = state,
+    todayHits = TimeTrialDay.ofGame(results, gameId).filter { it.day == dateKey }.maxOfOrNull { it.hits }, record = TimeTrialStats.record(results, gameId)
+  )
+}
 
 /** Una parada del camino de hoy: el juego, su lugar en la isla (el de su área) y si ya se hizo, es la que sigue o viene después. */
 internal data class HomeStop(val gameId: String, val title: String, val area: String, val place: String, val state: StopState)
@@ -201,7 +214,7 @@ internal fun routeMeta(ui: HomeUi): String {
 }
 
 /**
- * El contenido de Hoy sin ViewModel (Tareas 165 y 167): saludo, la fecha con la meta de la semana, los siete farolitos con tu racha, UNA tarjeta con la ruta de hoy y, debajo, el Desafío de hoy y «Todos los juegos» (y la invitación al punto de partida, si toca). Si algo no cabe (letra del sistema muy grande),
+ * El contenido de Hoy sin ViewModel (Tareas 165, 167 y 177): saludo, la fecha con la meta de la semana, los siete farolitos con tu racha, UNA tarjeta con la ruta de hoy y, debajo, el Contrarreloj de hoy y «Todos los juegos» (y la invitación al punto de partida, si toca). Si algo no cabe (letra del sistema muy grande),
  * toda la pantalla se desliza; con 1,3 cabe entera en 393 × 873 dp.
  */
 @Composable
@@ -212,8 +225,8 @@ internal fun HomeContent(
   onPlay: () -> Unit,
   onResume: () -> Unit,
   onBaseline: () -> Unit,
-  /** «Desafío de hoy»: lanza el juego que Nubi eligió en modo Desafío (Tarea 167). */
-  onChallenge: () -> Unit = {},
+  /** «Contrarreloj de hoy»: lanza el juego de la fecha en «La escalera de 2 minutos» (Tarea 177). */
+  onTimeTrial: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   // La barra de pestañas es una capa fija (`LocalBarInset`, Tarea 123): Hoy deja esa franja abajo.
@@ -233,9 +246,9 @@ internal fun HomeContent(
         color = HoySoft, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 2.dp).testTag("home_date")
       )
       com.example.ui.components.HoyWeek(ui.lamps, ui.streak, ui.streakNote)
-      Spacer(Modifier.height(14.dp))
+      Spacer(Modifier.height(10.dp))
       if (ui.stops.isNotEmpty() || ui.pausedTitle != null) HoyCard(ui, onPlay = onPlay, onResume = onResume, modifier = Modifier.padding(horizontal = 16.dp))
-      HoyBelow(ui, onAllGames = onAllGames, onChallenge = onChallenge, onBaseline = onBaseline)
+      HoyBelow(ui, onAllGames = onAllGames, onTimeTrial = onTimeTrial, onBaseline = onBaseline)
     }
   }
 }
@@ -243,7 +256,7 @@ internal fun HomeContent(
 /**
  * LA tarjeta de Hoy: una losa crema con «Tu ruta de hoy» y su meta («1 de 3 · unos 4 minutos») a la izquierda y Nubi posada en su esquina de arriba a la derecha (`hola` de día; de noche duerme, con los ojos cerrados); debajo, los tres juegos de la ruta, cada uno con su emblema, su nombre y su estado en
  * palabras con su marca («Hecho» con el visto sobre lima, «Sigue» con un punto de tinta, «Después» con un aro vacío): NO se tocan —informan; un juego concreto se abre desde «Todos los juegos»—, y el botón sol ADENTRO («Empezar la ruta · 3 juegos», «Seguir la ruta · 2 juegos» o «Seguir tu partida»),
- * el único sol mientras la ruta sigue. Con la ruta COMPLETA la tarjeta se cierra sola (Tarea 167): las tres filas en «Hecho», la meta en negrita («3 de 3 · ruta completa») y Nubi saludando, sin botón ni rótulo; el sol pasa al Desafío de hoy, debajo ([HoyBelow]). Las filas se leen una a una
+ * el único sol mientras la ruta sigue. Con la ruta COMPLETA la tarjeta se cierra sola (Tarea 167): las tres filas en «Hecho», la meta en negrita («3 de 3 · ruta completa») y Nubi saludando, sin botón ni rótulo; el sol pasa al Contrarreloj de hoy, debajo ([HoyBelow]). Las filas se leen una a una
  * («Bodega de carga, hecho»); el botón es el único toque de la tarjeta.
  */
 @Composable
@@ -376,94 +389,93 @@ internal fun captionLine(ui: HomeUi): String? = when {
   else -> null
 }
 
-/** Quién tiene el SOL de Hoy (Tarea 167: «un solo sol a la vez»; antes de la 167 era «el único sol»). */
-internal enum class Sun { ROUTE, CHALLENGE, NONE }
+/** Quién tiene el SOL de Hoy (Tarea 167: «un solo sol a la vez»). */
+internal enum class Sun { ROUTE, TIME_TRIAL, NONE }
 
 /**
- * El sol está en la acción del momento: la RUTA mientras sigue (o hay una partida en pausa que seguir), el DESAFÍO con la ruta completa y todavía sin jugar, y NADIE cuando el día está hecho (el Desafío superado) o el Desafío ya se jugó sin superarlo (crema, «otra vez»);
- * sin Desafío y con la ruta completa tampoco hay sol. Nunca dos a la vez. Robolectric no deja leer píxeles (`captureToImage` se cuelga): esta función es la que decide el color del botón (`ChallengeButton`) y la que vigilan las pruebas.
+ * El sol está en la acción del momento: la RUTA mientras sigue (o hay una partida en pausa que seguir), el CONTRARRELOJ con la ruta completa y todavía sin jugar hoy, y NADIE cuando el día está hecho (marca nueva) o el Contrarreloj ya se jugó sin marca nueva (crema, «otra vez»).
+ * Nunca dos a la vez. Robolectric no deja leer píxeles (`captureToImage` se cuelga): esta función es la que decide el color del botón (`TimeTrialButton`) y la que vigilan las pruebas.
  */
 internal fun sunOf(ui: HomeUi): Sun {
   val pending = ui.stops.count { it.state != StopState.DONE }
   val routeDone = ui.stops.isNotEmpty() && pending == 0 && ui.pausedTitle == null
   return when {
     ui.pausedTitle != null || pending > 0 -> Sun.ROUTE
-    routeDone && ui.challenge?.state == ChallengeState.PENDIENTE -> Sun.CHALLENGE
+    routeDone && ui.timeTrial?.state == TimeTrialState.PENDIENTE -> Sun.TIME_TRIAL
     else -> Sun.NONE
   }
 }
 
-/** El rótulo del botón del Desafío de hoy. */
-internal const val CHALLENGE_LABEL = "Desafío de hoy"
-
-/** Lo que Hoy dice cuando el día está hecho: con el Desafío superado, o con la ruta completa y sin Desafío (todavía no hay un juego medido fuera de la ruta). */
-internal const val CHALLENGE_TOMORROW = "Mañana hay ruta y Desafío nuevos."
+/** Lo que Hoy dice cuando el día está hecho con la ruta completa y sin Contrarreloj (no pasa: el juego del día siempre existe), y lo que dice la parte de abajo de la tarjeta. */
 internal const val ROUTE_TOMORROW = "Mañana te espera una ruta nueva."
 
-/** «Desafío superado: Tinta o Palabra.» */
-internal fun challengeDoneLine(title: String) = "Desafío superado: $title."
+/** El rótulo del botón del Contrarreloj de hoy (una palabra por concepto: nunca «Reto», «Desafío» ni «Con reloj»). */
+internal val TIME_TRIAL_LABEL = TimeTrialDay.LABEL
 
-/** Lo que dice el lector de pantalla del botón: todo junto, también cuando a la vista solo dice «Desafío de hoy» (media fila). */
-internal fun challengeDescription(c: HomeChallenge): String =
-  if (c.state == ChallengeState.JUGADO) "$CHALLENGE_LABEL, ${c.title}, un paso más difícil, otra vez" else "$CHALLENGE_LABEL, ${c.title}, un paso más difícil, ${DailyChallenge.minutesText()}"
+/** El mismo rótulo para la media fila: «de hoy» va unido por un espacio duro, así que si no cabe en una línea el renglón se parte después de «Contrarreloj» («Contrarreloj» arriba y «de hoy» abajo) y no deja «hoy» solo. */
+internal const val TIME_TRIAL_LABEL_HALF = "Contrarreloj de\u00A0hoy"
+
+/** «Otra vez»: el botón crema de media fila que reemplaza al botón cuando hoy hay marca nueva. */
+internal const val TIME_TRIAL_AGAIN = TimeTrialStats.AGAIN
+
+/** Lo que dice el lector de pantalla del botón: todo junto, también cuando a la vista solo dice «Contrarreloj de hoy» (media fila). */
+internal fun timeTrialDescription(t: HomeTimeTrial): String = TimeTrialDay.description(t.title, t.state, t.todayHits, t.record)
 
 /**
- * La segunda línea del botón del Desafío cuando toma todo el ancho (la ruta completa): «Tinta o Palabra · unos 2 minutos» o, jugado sin superar, «Tinta o Palabra · otra vez». Con letra del sistema de 1,3 o más ([large]) solo dice el juego (o «otra vez»): la losa no crece de más.
- * En media fila (la ruta sigue) no hay segunda línea salvo «otra vez».
+ * La segunda línea del botón cuando toma todo el ancho (la ruta completa): «Tinta o Palabra · 2 minutos» o, jugado, «Tinta o Palabra · hoy 38 aciertos». Con letra del sistema de 1,3 o más ([large]) solo lo que cambia. En media fila (la ruta sigue) no hay segunda línea salvo «otra vez».
  */
-internal fun challengeSecondLine(c: HomeChallenge, wide: Boolean, large: Boolean): String? = when {
-  c.state == ChallengeState.JUGADO -> if (wide) "${c.title} · otra vez" else "otra vez"
-  !wide -> null
-  large -> c.title
-  else -> "${c.title} · ${DailyChallenge.minutesText()}"
-}
+internal fun timeTrialSecondLine(t: HomeTimeTrial, wide: Boolean, large: Boolean): String? = TimeTrialDay.secondLine(t.title, t.state, t.todayHits, wide, large)
 
 /**
- * El botón del Desafío de hoy (Tarea 167): la losa del kit con el COMETA. Lila en media fila mientras la ruta sigue (el color de los botones secundarios del kit: el sol es de la ruta); sol a todo el ancho con la ruta completa (el sol pasa a la acción del momento); crema si se jugó sin superar («otra vez»).
- * Siempre justo debajo de la tarjeta: cambia de ancho y de color pero no se mueve de lugar.
+ * El botón del Contrarreloj de hoy (Tareas 167 y 177): la losa del kit con el RELOJ del kit. Lila en media fila mientras la ruta sigue (el color de los botones secundarios del kit: el sol es de la ruta); sol a todo el ancho con la ruta completa (el sol pasa a la acción del momento);
+ * crema si ya se jugó sin marca nueva («otra vez»). Siempre justo debajo de la tarjeta: cambia de ancho y de color pero no se mueve de lugar.
  */
 @Composable
-private fun ChallengeButton(c: HomeChallenge, wide: Boolean, sun: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, centerContent: Boolean = false) {
+private fun TimeTrialButton(t: HomeTimeTrial, wide: Boolean, sun: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, centerContent: Boolean = false, clock: Boolean = true) {
   val large = LocalDensity.current.fontScale >= 1.3f
-  val color = when { sun -> SlabColor.SUN; c.state == ChallengeState.JUGADO -> SlabColor.CREAM; else -> SlabColor.LILAC }
+  val color = when { sun -> SlabColor.SUN; t.state == TimeTrialState.JUGADO -> SlabColor.CREAM; else -> SlabColor.LILAC }
   KitButton(
-    text = CHALLENGE_LABEL, onClick = onClick, color = color, glyph = Glyph.COMET, fontSize = if (wide) 18.sp else 16.sp, minHeight = if (wide) 56.dp else 56.dp,
-    secondLine = challengeSecondLine(c, wide, large), secondLineSize = 16.sp, centerContent = centerContent,
-    modifier = modifier.semantics(mergeDescendants = true) { contentDescription = challengeDescription(c) }.testTag("btn_challenge")
+    text = if (wide) TIME_TRIAL_LABEL else TIME_TRIAL_LABEL_HALF, onClick = onClick, color = color, glyph = if (clock) Glyph.CLOCK else null, fontSize = if (wide) 18.sp else 16.sp, minHeight = 56.dp,
+    secondLine = timeTrialSecondLine(t, wide, large), secondLineSize = 16.sp, centerContent = centerContent,
+    modifier = modifier.semantics(mergeDescendants = true) { contentDescription = timeTrialDescription(t) }.testTag("btn_timetrial")
   )
 }
 
-/** El tono claro y suave del LILA del Desafío (el `#B8A4FF` del kit mezclado con blanco): el botón lila «se convierte» en su placa cuando el Desafío se supera. Con él, la tinta mide 11,8:1 y `InkMuted` 5,4:1 (`HoyTarjetaTest` los mide). */
-internal val ChallengeDoneFill = Color(0xFFD9CEFF)
+/** El tono claro y suave del LILA del Contrarreloj (el `#B8A4FF` del kit mezclado con blanco): el botón lila «se convierte» en su placa cuando hoy hay marca nueva. Con él, la tinta mide 11,8:1 y `InkMuted` 5,4:1 (`HoyTarjetaTest` los mide). */
+internal val TimeTrialDoneFill = Color(0xFFD9CEFF)
 
-/** El radio de las esquinas del recuadro del Desafío superado: el de los botones y las tarjetas del kit (22 dp). */
-internal val ChallengeDoneRadius = 22.dp
+/** El radio de las esquinas del recuadro de la marca nueva: el de los botones y las tarjetas del kit (22 dp). */
+internal val TimeTrialDoneRadius = 22.dp
 
 /**
- * El Desafío ya se superó (Tarea 169): un recuadro PLANO —sin borde tinta grueso, sin sombra dura, sin losa: no es un botón, no se toca y no tiene sol— con el LILA del Desafío en un tono claro, en el mismo lugar y al mismo ancho que tenía el botón, con el radio del kit y el alto que le da el contenido.
- * Adentro, el visto (la moneda lima) y «Desafío superado: Tinta o Palabra.» en tinta y, si la ruta también está completa (el día está hecho), «Mañana hay ruta y Desafío nuevos.» debajo. Sin cometa, para no cargarlo.
+ * Hoy hay marca nueva (Tarea 169 en el Desafío; Tarea 177 aquí): un recuadro PLANO —sin borde tinta grueso, sin sombra dura, sin losa: no es un botón, no se toca y no tiene sol— con el LILA del Contrarreloj en un tono claro, en el mismo lugar y al mismo ancho que tenía el botón, con el radio del kit y el
+ * alto que le da el contenido. Adentro, el visto (la moneda lima) y «Marca nueva: 43 aciertos en Tinta o Palabra.» en tinta, en UNA línea de texto (con «Mañana hay ruta y Contrarreloj nuevos.» no cabía con letra 1,3). Sin reloj, para no cargarlo.
  */
 @Composable
-private fun ChallengeDoneNote(c: HomeChallenge, dayDone: Boolean) {
+private fun TimeTrialDoneNote(t: HomeTimeTrial) {
+  val line = TimeTrialDay.newMarkLine(t.todayHits ?: t.record ?: 0, t.title)
   Row(
     Modifier
-      .fillMaxWidth().padding(top = 8.dp)
-      .semantics(mergeDescendants = true) { contentDescription = challengeDoneLine(c.title) + if (dayDone) " $CHALLENGE_TOMORROW" else "" }
-      .testTag("home_challenge_done")
-      .clip(RoundedCornerShape(ChallengeDoneRadius)).background(ChallengeDoneFill)
+      .fillMaxWidth().padding(top = 6.dp)
+      .semantics(mergeDescendants = true) { contentDescription = line }
+      .testTag("home_timetrial_done")
+      .clip(RoundedCornerShape(TimeTrialDoneRadius)).background(TimeTrialDoneFill)
       .padding(horizontal = 14.dp, vertical = 12.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
     StopMark(StopState.DONE)
     Spacer(Modifier.width(10.dp))
-    Column(Modifier.weight(1f)) {
-      Text(challengeDoneLine(c.title), color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp)
-      if (dayDone) Text(CHALLENGE_TOMORROW, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 2.dp))
-    }
+    Text(line, color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp, modifier = Modifier.weight(1f))
   }
 }
 
-/** «Todos los juegos»: una losa crema con las cuatro casillas; en media fila (junto al Desafío) va sin ícono, para que el rótulo quepa en UNA línea con letra 1,0. */
+/** «Tu récord: 41 aciertos.»: una línea PLANA (texto suelto sobre el cielo, no un recuadro) bajo el botón ancho. */
+@Composable
+private fun TimeTrialRecordLine(record: Int) {
+  OnBoardText(TimeTrialDay.recordLine(record), color = HoySoft, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.fillMaxWidth().padding(top = 2.dp).testTag("home_timetrial_record"), textAlign = TextAlign.Center)
+}
+
+/** «Todos los juegos»: una losa crema con las cuatro casillas; en media fila (junto al Contrarreloj) va sin ícono, para que el rótulo quepa en UNA línea con letra 1,0. */
 @Composable
 private fun AllGamesButton(onAllGames: () -> Unit, half: Boolean, modifier: Modifier = Modifier, centerContent: Boolean = false) {
   KitButton(
@@ -473,37 +485,76 @@ private fun AllGamesButton(onAllGames: () -> Unit, half: Boolean, modifier: Modi
   )
 }
 
+/** Cómo se acomodan el Contrarreloj y «Todos los juegos» cuando la ruta sigue: en una fila con el reloj, en una fila sin él, o uno bajo el otro. */
+private enum class TimeTrialRow { HALF_WITH_CLOCK, HALF_NO_CLOCK, STACKED }
+
 /**
- * Bajo la tarjeta (Tarea 167, «un solo sol a la vez»): el Desafío de hoy y «Todos los juegos».
- *  - La ruta sigue (o hay una partida en pausa): una fila con «Desafío de hoy» en LILA y el cometa, junto a «Todos los juegos» en crema; el sol está en la tarjeta.
- *  - La ruta completa: el Desafío toma todo el ancho en SOL («Tinta o Palabra · unos 2 minutos») y «Todos los juegos» baja; jugado sin superar, en crema («Tinta o Palabra · otra vez»).
- *  - Desafío superado: un recuadro plano en lila claro (`ChallengeDoneNote`, Tarea 169) con el visto y «Desafío superado: Tinta o Palabra.» (y «Mañana hay ruta y Desafío nuevos.» si la ruta también está completa), en el lugar del botón, sin tocar y SIN sol: el día está hecho.
- *  - Sin Desafío (todavía no hay un juego medido fuera de la ruta): Hoy queda como antes, solo «Todos los juegos» y, con la ruta completa, «Mañana te espera una ruta nueva.».
+ * ¿Cabe la palabra MÁS LARGA del rótulo del Contrarreloj («Contrarreloj») en UNA línea en media fila? Se mide con la letra del sistema de ese momento, igual que [HoyStops]: una palabra nunca se parte a la mitad. Primero con su reloj (el relleno de la losa, el reloj y su aire suman 58 dp);
+ * si no cabe, sin el reloj, como «Todos los juegos» en media fila (24 dp de relleno); y si ni así (letra 2,0, o 1,3 en 360 dp), los dos botones se apilan a todo el ancho (menos columnas). Se deja 4 dp de holgura.
+ */
+@Composable
+private fun timeTrialRow(rowWidth: androidx.compose.ui.unit.Dp): TimeTrialRow {
+  val measurer = androidx.compose.ui.text.rememberTextMeasurer()
+  val density = LocalDensity.current
+  val style = androidx.compose.material3.LocalTextStyle.current.merge(androidx.compose.ui.text.TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold))
+  val wordPx = TIME_TRIAL_LABEL.split(' ').maxOf { measurer.measure(it, style, softWrap = false, maxLines = 1).size.width }
+  val halfPx = with(density) { ((rowWidth - 10.dp) / 2).toPx() }
+  return when {
+    wordPx <= halfPx - with(density) { 62.dp.toPx() } -> TimeTrialRow.HALF_WITH_CLOCK
+    wordPx <= halfPx - with(density) { 28.dp.toPx() } -> TimeTrialRow.HALF_NO_CLOCK
+    else -> TimeTrialRow.STACKED
+  }
+}
+
+/**
+ * Bajo la tarjeta (Tareas 167 y 177, «un solo sol a la vez»): el Contrarreloj de hoy y «Todos los juegos».
+ *  - La ruta sigue (o hay una partida en pausa): una fila con «Contrarreloj de hoy» en LILA y el reloj, junto a «Todos los juegos» en crema; el sol está en la tarjeta. Jugado sin marca nueva, en crema con «otra vez».
+ *  - La ruta completa: el Contrarreloj toma todo el ancho en SOL («Tinta o Palabra · 2 minutos») y, debajo, en texto plano, «Tu récord: 41 aciertos.»; «Todos los juegos» baja. Jugado sin marca nueva, en crema («Tinta o Palabra · hoy 38 aciertos»).
+ *  - Hoy hay marca nueva: un recuadro plano en lila claro (`TimeTrialDoneNote`) con el visto y «Marca nueva: 43 aciertos en Tinta o Palabra.», en el lugar del botón, sin tocar y SIN sol (el día está hecho); debajo, media fila «Otra vez» (crema) junto a «Todos los juegos».
  * Y, si todavía no hizo la evaluación, la invitación a hacerla.
  */
 @Composable
-private fun HoyBelow(ui: HomeUi, onAllGames: () -> Unit, onChallenge: () -> Unit, onBaseline: () -> Unit) {
+private fun HoyBelow(ui: HomeUi, onAllGames: () -> Unit, onTimeTrial: () -> Unit, onBaseline: () -> Unit) {
   val pending = ui.stops.count { it.state != StopState.DONE }
   val routeDone = ui.stops.isNotEmpty() && pending == 0 && ui.pausedTitle == null
-  val c = ui.challenge
-  Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 4.dp)) {
+  val t = ui.timeTrial
+  Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 4.dp)) {
     when {
-      c == null -> {
+      t == null -> {
         if (routeDone && !ui.flightDay) OnBoardText(ROUTE_TOMORROW, color = HoyCream, fontSize = 17.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp, modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("home_route_tomorrow"), textAlign = TextAlign.Center)
-        AllGamesButton(onAllGames, half = false, modifier = Modifier.padding(top = 8.dp))
+        AllGamesButton(onAllGames, half = false, modifier = Modifier.padding(top = 6.dp))
       }
-      c.state == ChallengeState.SUPERADO -> {
-        ChallengeDoneNote(c, dayDone = routeDone)
-        AllGamesButton(onAllGames, half = false, modifier = Modifier.padding(top = 8.dp))
+      t.state == TimeTrialState.MARCA_NUEVA -> {
+        TimeTrialDoneNote(t)
+        // «Otra vez» y «Todos los juegos» miden lo mismo (con letra grande el rótulo puede pasar a dos líneas): el alto del más alto, con el texto centrado
+        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+          KitButton(
+            text = TIME_TRIAL_AGAIN, onClick = onTimeTrial, color = SlabColor.CREAM, glyph = Glyph.CLOCK, fontSize = 16.sp, minHeight = 56.dp, centerContent = true,
+            modifier = Modifier.weight(1f).fillMaxHeight().semantics(mergeDescendants = true) { contentDescription = "$TIME_TRIAL_AGAIN, ${t.title}, $TIME_TRIAL_LABEL" }.testTag("btn_timetrial")
+          )
+          AllGamesButton(onAllGames, half = true, modifier = Modifier.weight(1f).fillMaxHeight(), centerContent = true)
+        }
       }
       routeDone -> {
-        ChallengeButton(c, wide = true, sun = sunOf(ui) == Sun.CHALLENGE, onClick = onChallenge, modifier = Modifier.padding(top = 8.dp))
-        AllGamesButton(onAllGames, half = false, modifier = Modifier.padding(top = 8.dp))
+        TimeTrialButton(t, wide = true, sun = sunOf(ui) == Sun.TIME_TRIAL, onClick = onTimeTrial, modifier = Modifier.padding(top = 6.dp))
+        t.record?.let { TimeTrialRecordLine(it) }
+        AllGamesButton(onAllGames, half = false, modifier = Modifier.padding(top = 4.dp))
       }
-      // Los dos botones de la fila miden lo mismo (con letra grande «Desafío de hoy» pasa a dos líneas): el alto del más alto, con el texto centrado
-      else -> Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        ChallengeButton(c, wide = false, sun = false, onClick = onChallenge, modifier = Modifier.weight(1f).fillMaxHeight(), centerContent = true)
-        AllGamesButton(onAllGames, half = true, modifier = Modifier.weight(1f).fillMaxHeight(), centerContent = true)
+      // Los dos botones de la fila miden lo mismo (con letra grande «Contrarreloj de hoy» pasa a dos líneas): el alto del más alto, con el texto centrado. Si ni la palabra «Contrarreloj» cabe en UNA línea
+      // en media fila (primero se le quita el reloj; después, letra 2,0 o un teléfono angosto), los dos botones se apilan a todo el ancho (menos columnas) antes que partirla a la mitad.
+      else -> BoxWithConstraints(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+        val row = timeTrialRow(maxWidth)
+        if (row != TimeTrialRow.STACKED) {
+          Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            TimeTrialButton(t, wide = false, sun = false, onClick = onTimeTrial, modifier = Modifier.weight(1f).fillMaxHeight(), centerContent = true, clock = row == TimeTrialRow.HALF_WITH_CLOCK)
+            AllGamesButton(onAllGames, half = true, modifier = Modifier.weight(1f).fillMaxHeight(), centerContent = true)
+          }
+        } else {
+          Column(Modifier.fillMaxWidth()) {
+            TimeTrialButton(t, wide = false, sun = false, onClick = onTimeTrial)
+            AllGamesButton(onAllGames, half = false, modifier = Modifier.padding(top = 8.dp))
+          }
+        }
       }
     }
     if (ui.baselineInvite) {

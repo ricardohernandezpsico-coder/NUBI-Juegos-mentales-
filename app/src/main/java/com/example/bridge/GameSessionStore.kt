@@ -28,7 +28,9 @@ object GameSessionStore {
     val daily: Boolean,
     val intensity: Int,
     val assessmentStep: Int,
-    val mode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA
+    val mode: com.example.data.PlayMode = com.example.data.PlayMode.A_TU_MEDIDA,
+    /** El día de la pista de un Contrarreloj («yyyy-MM-dd»); vacío = una partida de siempre (Tarea 177). */
+    val timeTrialDay: String = ""
   )
 
   private val prefs get() = NeuroVidaApplication.instance.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -45,6 +47,7 @@ object GameSessionStore {
       .putInt("intensity", p.intensity)
       .putInt("assessmentStep", p.assessmentStep)
       .putString("mode", p.mode.name)
+      .putString("ttDay", p.timeTrialDay)
       .apply()
   }
 
@@ -62,7 +65,8 @@ object GameSessionStore {
       daily = p.getBoolean("daily", false),
       intensity = p.getInt("intensity", 0),
       assessmentStep = p.getInt("assessmentStep", 0),
-      mode = runCatching { com.example.data.PlayMode.valueOf(p.getString("mode", null) ?: "") }.getOrDefault(com.example.data.PlayMode.A_TU_MEDIDA)
+      mode = runCatching { com.example.data.PlayMode.valueOf(p.getString("mode", null) ?: "") }.getOrDefault(com.example.data.PlayMode.A_TU_MEDIDA),
+      timeTrialDay = p.getString("ttDay", null).orEmpty()
     )
   }
 
@@ -71,7 +75,7 @@ object GameSessionStore {
   fun clearInFlight() {
     prefs.edit()
       .remove("launchId").remove("gameId").remove("level").remove("timed")
-      .remove("daily").remove("intensity").remove("assessmentStep").remove("mode")
+      .remove("daily").remove("intensity").remove("assessmentStep").remove("mode").remove("ttDay")
       .apply()
   }
 

@@ -183,3 +183,26 @@ fun UserSettings.toEntity(): UserProfileEntity = UserProfileEntity(
   language = language.code,
   ageBand = ageBand?.name
 )
+
+/**
+ * Una partida de Contrarreloj (Tarea 177; `data/TimeTrialDay.kt`): su propia tabla, no `game_results`: el Contrarreloj no mueve el nivel, los puntos ni lo «medido» de la persona (sí cuenta como día jugado para la racha y las farolas). La base va entera en el respaldo.
+ * Un día, un juego, la versión de la pista con que se jugó, los aciertos (la marca), los errores, el paso más alto que alcanzó la pista y los segundos.
+ */
+@Entity(tableName = "time_trial_results")
+data class TimeTrialResultEntity(
+  @PrimaryKey val id: String,
+  val gameId: String,
+  val day: String,
+  val trackVersion: Int,
+  val hits: Int,
+  val errors: Int,
+  val level: Int,
+  val seconds: Int,
+  val timestamp: Long
+)
+
+fun TimeTrialResultEntity.toDomain(): com.example.data.TimeTrialResult =
+  com.example.data.TimeTrialResult(id = id, gameId = gameId, day = day, trackVersion = trackVersion, hits = hits, errors = errors, level = level, seconds = seconds, timestamp = timestamp)
+
+fun com.example.data.TimeTrialResult.toEntity(): TimeTrialResultEntity =
+  TimeTrialResultEntity(id = id, gameId = gameId, day = day, trackVersion = trackVersion, hits = hits, errors = errors, level = level, seconds = seconds, timestamp = timestamp)
