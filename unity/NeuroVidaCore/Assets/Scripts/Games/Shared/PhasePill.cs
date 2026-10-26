@@ -10,6 +10,10 @@ namespace NeuroVida.Games.Shared
     /// reemplaza al texto plano de estado. Cada cambio de fase hace un pequeño "pop", así
     /// el jugador percibe el cambio sin tener que leer. Compartida por Secuencia Lumínica y
     /// Parejas Ocultas.
+    /// <para>
+    /// Nace OCULTA y con un tamaño razonable (Tarea 178): hasta su primer <see cref="Set"/> no tiene texto, ni color de acento, ni tamaño propio (un objeto de la interfaz recién creado mide 100 × 100), y si se activaba antes se veía su losa de plasticina cruda y su punto blanco como un DISCO crema bajo la tarjeta
+    /// durante todo el primer ensayo: el «círculo en blanco» que Ricardo vio en Tinta o Palabra. <see cref="Clear"/> la vuelve a ocultar (al empezar otra partida).
+    /// </para>
     /// </summary>
     public sealed class PhasePill
     {
@@ -37,6 +41,8 @@ namespace NeuroVida.Games.Shared
             _group = go.AddComponent<CanvasGroup>();
             _group.interactable = false;
             _group.blocksRaycasts = false;
+            _group.alpha = 0f;                                                                  // oculta hasta su primer mensaje
+            _rect.sizeDelta = new Vector2(_fontPx * 7f, _fontPx * 2.15f);                       // el mínimo de Set: nunca los 100 × 100 de fábrica
 
             _bg = go.AddComponent<Image>();
             _slab = PlasticSlab.TryStyle(_bg, SlabSize.Button, SlabTone.Cream);
@@ -82,6 +88,14 @@ namespace NeuroVida.Games.Shared
         public RectTransform Rect => _rect;
 
         public void SetPosition(Vector2 anchoredPosition) => _rect.anchoredPosition = anchoredPosition;
+
+        /// <summary>La oculta hasta el próximo <see cref="Set"/> (otra partida: que no quede el mensaje de la anterior).</summary>
+        public void Clear()
+        {
+            if (_anim != null) { _runner.StopCoroutine(_anim); _anim = null; }
+            _group.alpha = 0f;
+            _rect.localScale = Vector3.one;
+        }
 
         public void Set(string text, Color accent)
         {

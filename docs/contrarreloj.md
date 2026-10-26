@@ -1,7 +1,18 @@
 # El Contrarreloj, fase 1: «La escalera de 2 minutos» (26-oct-2026)
 
 Un modo para **superarse uno mismo contra el tiempo**, como el Puzzle Rush de chess.com: 2 minutos fijos, la dificultad adaptativa apagada y una pista fija que parte siempre del paso 1 y sube un paso cada N aciertos. La marca es **«N aciertos en 2 minutos»**.
-Lo pidió Ricardo (cuando dijo «Desafío» pensaba en esto, no en el «Con reloj»), lo diseñó Fable (`Proyectos/auditoria-fable/contrarreloj.md`, su lámina y el anexo `contrarreloj-cuarto-juego.md`) y Ricardo decidió el 26-oct. Esta es la **fase 1: local, sin servidor**. T176 = Unity (este documento, §2 a §8); T177 = la app (§9, pendiente).
+Lo pidió Ricardo (cuando dijo «Desafío» pensaba en esto, no en el «Con reloj»), lo diseñó Fable (`Proyectos/auditoria-fable/contrarreloj.md`, su lámina y el anexo `contrarreloj-cuarto-juego.md`) y Ricardo decidió el 26-oct. Esta es la **fase 1: local, sin servidor**. T176 = Unity (este documento, §2 a §8); T177 = la app (§9); T178 = la marca neta (§0).
+
+## 0. Tarea 178 (26-oct): aciertos menos errores — MANDA sobre lo que dice la «pausa» más abajo
+
+Ricardo probó Tinta o Palabra («funciona bien») y la espera tras cada error (3, 6 y 9 s) alargaba demasiado la partida. Eligió cambiar la forma de medir:
+1. **Se quita la pausa que crece.** Un error ya NO descuenta tiempo ni hace esperar: solo da el aviso breve de error y se sigue (`TimeTrial.ErrorFeedbackSeconds` = 0,8 s en Tinta o Palabra y ¿Verdad o disparate?, con el reloj corriendo; en el Reto dura 1,5 s y alarga el reloj, aquí no; Acoplamiento deja su revelación de siempre, 1,5 a 1,8 s; Rescate no tiene nada de más). Se fueron `ErrorPauseBase`, `ErrorPause()`, `Run.ErrorPauseSeconds`, `Run.ConsecutiveErrors` y el campo `Track.ErrorPause`.
+2. **La MARCA es aciertos − errores, con piso en 0** (`TimeTrial.Mark`, en la app `TimeTrialDay.markOf`/`TimeTrialResult.mark`; una prueba en cada lado con los mismos casos: 38 y 4 dan 34; 3 y 5 dan 0). En la partida el chip muestra esa marca («34 aciertos»: baja con un error, sin signos). En el final la cifra grande es la marca y debajo, en frase: «38 aciertos menos 4 errores, en 2 minutos de Contrarreloj» (sin errores: «38 aciertos sin errores, …»). El récord, las últimas 5, la mejor de la semana y «Tu récord: 34 aciertos.» de Hoy usan la marca.
+3. **Se mantiene el mínimo antes de responder** (¿Verdad o disparate?: leer la frase; Acoplamiento: el puerto se abre a 1,2 s): no es castigo sino el tiempo de leer, y limita cuántas veces se puede adivinar en 2 minutos. Sin él, el azar a 0,2 s haría unos 400 intentos, con una marca neta de 0 ± 20, y su p90 rozaría la media de quien juega con cuidado.
+4. **Versión de la pista 2** en los cuatro juegos (la regla de la marca cambió: las marcas viejas no son comparables). La versión entra en la semilla, así que la pista del día también cambió. Los récords empiezan de nuevo; los de la versión 1 (solo aciertos) quedan en el detalle («Tu récord de la pista 1: 50 aciertos.»).
+5. **Telemetría:** `tt_hits` y `tt_errors` siguen SIN restar; la app calcula la marca (no hay `tt_score`: una sola fórmula en cada lado, vigilada por una prueba en cada uno).
+6. **La pista sigue subiendo por ACIERTOS** (un paso cada N aciertos): los errores no la bajan ni la suben.
+7. **Prueba del azar con la marca neta** (§6): los cuatro pasan con holgura.
 
 ## 1. Las decisiones de Ricardo (26-oct)
 
@@ -10,7 +21,7 @@ Lo pidió Ricardo (cuando dijo «Desafío» pensaba en esto, no en el «Con relo
 3. **La marca:** «N aciertos en 2 minutos»; el paso alcanzado va en una frase aparte. Se compara solo con tu récord, tus últimas 5 partidas y la mejor de la semana.
 4. **Ícono:** el reloj del kit.
 5. **Primera tanda:** Tinta o Palabra, ¿Verdad o disparate?, Rescate relámpago y **Acoplamiento** (no Carga exacta: a Ricardo no le gusta). Piloto queda para la fase 3.
-6. **Contra el azar:** «pausa que crece al fallar» y un mínimo antes de poder responder en los juegos de dos opciones; prueba obligatoria con bots (§6).
+6. **Contra el azar:** «pausa que crece al fallar» (QUITADA en la Tarea 178: ver §0) y un mínimo antes de poder responder en los juegos de dos opciones; prueba obligatoria con bots (§6).
 7. En Hoy, el «Contrarreloj de hoy» **reemplaza** al «Desafío de hoy». El modo Desafío de la ficha NO se toca.
 8. «¿Con reloj?» de la ficha **convive** en la fase 1 (es otra cosa); se irá en la fase 1b, cuando el Contrarreloj entre a la ficha.
 9. Nada de comparar con otras personas ni de franjas nuevas en esta fase (§8).
@@ -26,7 +37,7 @@ Lo pidió Ricardo (cuando dijo «Desafío» pensaba en esto, no en el «Con relo
 
 - **Los pasos son los niveles de cada juego** (`StroopContract.MaxLevel` = 5, los otros 12): el paso 1 es el nivel 1 y la pista no baja nunca. Un error no suma, no resta y no baja de paso: cuesta solo su pausa. En el último paso la pista se queda.
 - **Aciertos:** en Tinta, una palabra bien tocada; en ¿Verdad o disparate?, una frase bien decidida; en Acoplamiento, un módulo bien decidido; en Rescate, una **ronda lograda** (`RadarContract.Success`: todas las cápsulas, y con 4 una menos).
-- **La pausa que crece:** 3 s al primer error, 6 s al segundo seguido, 9 s desde el tercero; un acierto la devuelve a 3 s. El error CUESTA su pausa en el reloj (en el Reto de siempre la pausa no le gasta tiempo). En Acoplamiento cuenta lo que ya duró la revelación (1,5 a 1,8 s): se espera lo que falta hasta los 3, 6 o 9 s.
+- **La pausa que crece (QUITADA en la Tarea 178, §0; lo que sigue es la historia de la Tarea 176):** 3 s al primer error, 6 s al segundo seguido, 9 s desde el tercero; un acierto la devuelve a 3 s. El error CUESTA su pausa en el reloj (en el Reto de siempre la pausa no le gasta tiempo). En Acoplamiento cuenta lo que ya duró la revelación (1,5 a 1,8 s): se espera lo que falta hasta los 3, 6 o 9 s.
 - **El mínimo antes de responder** (`TimeTrial.MinThinkSeconds`): en ¿Verdad o disparate? los botones se ven apagados (45 %) hasta que la frase se lee (1,5 s, o 0,25 s por palabra si es más larga: una frase de 10 palabras, 2,5 s); en Acoplamiento, hasta los 1,2 s (el módulo termina de llegar y girar). Un toque antes no cuenta. El plazo de Acoplamiento por módulo (de 6 s a 2,5 s) sigue corriendo desde que llega.
 - **Lo que el Contrarreloj apaga:** la dificultad adaptativa (no se llama a `Register`; `end_rating` sale sin tocar y `mode_trials`/`mode_hits` en 0); en ¿Verdad o disparate?, las Ráfagas, la señal que se apaga y el «evitar las frases de las últimas partidas» (ni guarda las suyas en esa lista); en Rescate, las lluvias de cápsulas (el viaje de la nave a la estación sigue sin descontar tiempo); en los dos con récord propio (Rescate y Acoplamiento), el Contrarreloj no toca `resc_best` ni `dock_best`.
 - **El marcador:** el chip de la derecha dice «23 aciertos» y la fase de la fila de consigna, el tiempo («1:12»); la barra del reloj de cada juego baja de 120 s. La cuenta regresiva dice «Contrarreloj de 2 minutos».
@@ -57,7 +68,7 @@ Lo pidió Ricardo (cuando dijo «Desafío» pensaba en esto, no en el «Con relo
 - la media del azar menor que el **70 %** de la media del cuidado, y
 - el **p90** del azar menor que la media del cuidado.
 
-Resultado (pausa 3 s ×1/×2/×3; mínimo 1,5 s en ¿Verdad o disparate? y 1,2 s en Acoplamiento: los valores del anexo de Fable, sin ajustes):
+**Resultado de la Tarea 176** (marca = aciertos; pausa 3 s ×1/×2/×3; mínimo 1,5 s en ¿Verdad o disparate? y 1,2 s en Acoplamiento: los valores del anexo de Fable, sin ajustes) — HISTORIA, ver la tabla de la Tarea 178 más abajo:
 
 | Juego | Cuidado (media) | Azar (media) | Azar (p90) | Azar (máx.) | Azar / cuidado |
 |---|---|---|---|---|---|
@@ -68,11 +79,22 @@ Resultado (pausa 3 s ×1/×2/×3; mínimo 1,5 s en ¿Verdad o disparate? y 1,2 s
 
 Sin la pausa ni el mínimo (la pausa de hoy de cada juego; simulación con los mismos bots), adivinar GANA en ¿Verdad o disparate? (≈ 33 contra 33) y en Acoplamiento (≈ 20 contra 20): es lo que cierran las reglas de §2. **Acoplamiento es el margen más corto** (59 % contra el 70 % exigido: con 25 módulos en 2 minutos la suerte pesa); si alguna vez falla, se sube su pausa o su mínimo y se anota aquí. El informe se escribe en `unity/test-results/contrarreloj-azar.txt` cada vez que corre la prueba (y sale en el registro).
 
+**Resultado de la Tarea 178** (marca NETA = aciertos menos errores con piso en 0; SIN pausa tras el error, aviso de 0,8 s; mínimo 1,5 s en ¿Verdad o disparate? y 1,2 s en Acoplamiento, sin cambios; mismos bots y mismas exigencias):
+
+| Juego | Cuidado (media) | Azar (media) | Azar (p90) | Azar (máx.) | Azar / cuidado |
+|---|---|---|---|---|---|
+| Tinta o Palabra | 58,2 | 0,0 | 0 | 0 | 0 % |
+| ¿Verdad o disparate? | 28,4 | 2,6 | 9 | 18 | 9 % |
+| Rescate relámpago | 10,4 | 0,0 | 0 | 0 | 0 % |
+| Acoplamiento | 16,0 | 2,4 | 7 | 14 | 15 % |
+
+Con la marca neta adivinar PIERDE: en los juegos de cuatro opciones (y en Rescate) cada error resta más de lo que suma el azar, así que el azar se queda en 0 por el piso; en los de dos opciones el azar es una caminata sin rumbo (media 0, con el piso queda en unos 2,5) y el mínimo antes de responder limita cuántas veces puede probar. El margen más corto de la Tarea 176 (Acoplamiento, 59 %) pasó a 15 %. Sin el mínimo, el azar a 0,2 s haría unos 400 intentos y su p90 rozaría la media del cuidado: el mínimo se queda.
+
 ## 7. Honestidad y límites
 
 - «Aciertos», «marca», «récord», «pista», «paso», «Contrarreloj»: una palabra por concepto; nunca «nivel» a la vista, «Reto» ni «Desafío» para esto. La nota del final: «Es el resultado de un juego, comparado solo contigo. No es una medida de capacidad.» (T177).
 - La marca compara a la persona **con ella misma** (su récord, sus últimas 5 partidas, la mejor de la semana). `Features.COMPARE` sigue apagado.
-- La pausa de 6 y 9 s al segundo y tercer error seguido es tiempo muerto: es el precio de que adivinar no gane (§6); un acierto la devuelve a 3 s. «Sin culpa»: no hay vidas ni fin anticipado.
+- (Tarea 176; QUITADA en la 178) La pausa de 6 y 9 s al segundo y tercer error seguido era tiempo muerto. Ahora el error resta uno a la marca y da un aviso de 0,8 s; «sin culpa»: no hay vidas ni fin anticipado.
 - La prueba del azar usa tiempos de respuesta supuestos; la pista real se verá con personas.
 
 ## 8. Fase 2 (NO se construye ahora): las siete franjas de edad
@@ -88,7 +110,7 @@ Anotadas para cuando haya servidor, cuentas, consentimiento y abogado (Fable, §
 **Lo construido** (detalle de pantallas en [`arquitectura-app.md`](arquitectura-app.md) § «El Contrarreloj de hoy»):
 - `data/TimeTrialDay.kt`: el juego del día por rotación de la FECHA sobre los cuatro de la primera tanda (`GAMES[floorMod(epochDay, 4)]`: el mismo para todas las personas), la tabla de pistas (`TRACKS`: versión, paso y largo de cada juego; una prueba la compara con `TimeTrial.cs` y los contratos de Unity), la semilla (`track_seed` = la fecha local como número, aaaammdd), el estado de Hoy (`stateOf`: PENDIENTE · JUGADO · MARCA_NUEVA, DERIVADO de las partidas guardadas) y las frases de §9.8 con «Acoplamiento» en lugar de «Carga exacta».
 - `data/TimeTrialStats.kt`: el récord, las últimas 5 partidas, la mejor de la semana (desde el lunes) y las frases del final, todo SOLO contra la misma persona y la pista de hoy (las de una pista anterior no cuentan). `Outcome` = la partida, si es la primera, si es marca nueva, el récord de antes.
-- Room 16: tabla `time_trial_results` (`id`, `gameId`, `day`, `trackVersion`, `hits`, `errors`, `level`, `seconds`, `timestamp`), `Migration(15, 16)`, `MigrationTest`; va en el respaldo con la base entera. **No hay preferencia pasajera del día** (`desafio_hoy` y `DailyChallenge` se retiraron; el archivo viejo, si existe, queda sin uso: `BackupRulesTest`).
+- Room 16: tabla `time_trial_results` (`id`, `gameId`, `day`, `trackVersion`, `hits`, `errors` —SIN restar; la marca es `TimeTrialResult.mark`—, `level`, `seconds`, `timestamp`), `Migration(15, 16)`, `MigrationTest`; va en el respaldo con la base entera. **No hay preferencia pasajera del día** (`desafio_hoy` y `DailyChallenge` se retiraron; el archivo viejo, si existe, queda sin uso: `BackupRulesTest`).
 - Puente: la config lleva `time_trial` y `track_seed` (solo si el juego es de la primera tanda); Unity devuelve `tt_hits`, `tt_errors`, `tt_peak_level`, `tt_seconds` y `tt_track_version` (-1 = sin dato; una partida sin `tt_hits` no es un Contrarreloj). `GamePlayResult.isTimeTrial`. El ViewModel (`startTimeTrial`, `lastTimeTrial`, `timeTrialResults`) lo guarda en SU tabla y NO en `game_results`: no mueve el avance, los niveles, lo medido ni la ruta; sí cuenta para la racha y las farolas (por la fecha de la partida). Si Android cierra la app durante la partida, `GameSessionStore.InFlight.timeTrialDay` recuerda el día de la pista.
 - Hoy y el final del Contrarreloj: ver la arquitectura. El final no lleva «¿Por qué importa?» y dice, en una nota, «Es el resultado de un juego, comparado solo contigo. No es una medida de capacidad.».
 

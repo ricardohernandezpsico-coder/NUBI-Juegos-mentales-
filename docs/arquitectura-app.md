@@ -327,6 +327,8 @@ Fable, `auditoria-fable/hoy-desafio-y-dia-completo.md` (opción 1, «Dos botones
 
 ## El Contrarreloj de hoy (Tarea 177, 26-oct)
 
+> **Tarea 178 (26-oct): la marca es aciertos menos errores** (`TimeTrialResult.mark`, `TimeTrialDay.markOf`; piso en 0; pista versión 2). La cifra grande del final, el récord, las últimas 5, la mejor de la semana y «Tu récord: N aciertos.» de Hoy usan la marca; bajo la cifra, la frase «38 aciertos menos 4 errores, en 2 minutos de Contrarreloj» (`TimeTrialStats.scoreLine`; sin errores, «38 aciertos sin errores, …»), y el detalle explica la regla (`TimeTrialStats.RULE`). Las partidas de la pista 1 (solo aciertos) ya no cuentan para el récord y quedan en el detalle. Room no cambió (`hits` y `errors` se guardan sin restar).
+
 Reemplaza al Desafío de hoy en el mismo lugar y con las mismas reglas de «un solo sol a la vez» (decisión de Ricardo, 26-oct; `contrarreloj.md` §1 y §9; Fable, `auditoria-fable/contrarreloj.md` §4 y §9.8). Es «La escalera de 2 minutos»: 120 s, dificultad adaptativa apagada, pista fija del día, siempre desde el paso 1. UN juego al día, el mismo para todas las personas (la fecha manda: `TimeTrialDay.gameFor`), **gratis y sin tope de repeticiones**. El modo «Desafío» de la ficha de cada juego NO se toca, y el «¿Con reloj?» de la ficha convive con esto (en la fase 1b se va). `Features.COMPARE` sigue apagada: la marca se compara SOLO contigo.
 
 **Hoy, de arriba abajo** (`HomeScreen.kt`; `HomeUi.timeTrial: HomeTimeTrial?`; el estado SE DERIVA de las partidas guardadas, `TimeTrialDay.stateOf`): lo mismo que en la Tarea 167 con otro nombre y otro reloj en el botón (`Glyph.CLOCK`):

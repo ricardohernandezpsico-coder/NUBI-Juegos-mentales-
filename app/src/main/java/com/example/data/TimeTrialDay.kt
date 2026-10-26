@@ -4,7 +4,7 @@ package com.example.data
 enum class TimeTrialState { PENDIENTE, JUGADO, MARCA_NUEVA }
 
 /**
- * Una partida de Contrarreloj guardada (una fila de `time_trial_results`): el juego, el día («yyyy-MM-dd», hora local), la versión de la pista con que se jugó, los aciertos (la marca: «N aciertos en 2 minutos»), los errores, el paso más alto que alcanzó la pista,
+ * Una partida de Contrarreloj guardada (una fila de `time_trial_results`): el juego, el día («yyyy-MM-dd», hora local), la versión de la pista con que se jugó, los aciertos y los errores (SIN restar: la MARCA es [mark], aciertos menos errores desde la pista versión 2, Tarea 178), el paso más alto que alcanzó la pista,
  * los segundos de la partida y cuándo terminó. NO es una partida de siempre: no entra en `game_results`, así que no mueve el nivel, los puntos ni lo «medido» de la persona (sí cuenta como día jugado para la racha y las farolas de la semana).
  */
 data class TimeTrialResult(
@@ -17,11 +17,14 @@ data class TimeTrialResult(
   val level: Int,
   val seconds: Int = TimeTrialDay.SECONDS,
   val timestamp: Long = System.currentTimeMillis()
-)
+) {
+  /** La MARCA de la partida («34 aciertos»): lo que se compara con el récord, las últimas 5 y la semana. */
+  val mark: Int get() = TimeTrialDay.markOf(trackVersion, hits, errors)
+}
 
 /**
  * El Contrarreloj de hoy, fase 1: local, sin servidor (Tarea 177, 26-oct; `docs/contrarreloj.md`; diseño de Fable en `auditoria-fable/contrarreloj.md`, mecánica A «La escalera de 2 minutos», elegida por Ricardo). Un juego al día, EL MISMO PARA TODAS LAS PERSONAS (rotación fija de la fecha, como Wordle), en
- * una pista fija de 2 minutos que sube un paso cada N aciertos y es la misma ese día para todos; la marca es «N aciertos en 2 minutos» y se compara solo con tu récord, tus últimas 5 partidas y la mejor de la semana. Reemplaza al «Desafío de hoy» de la Tarea 167 (`DailyChallenge`, retirado). Lógica pura con pruebas (`TimeTrialDayTest`).
+ * una pista fija de 2 minutos que sube un paso cada N aciertos y es la misma ese día para todos; la marca es «N aciertos en 2 minutos», contando los aciertos MENOS los errores (Tarea 178), y se compara solo con tu récord, tus últimas 5 partidas y la mejor de la semana. Reemplaza al «Desafío de hoy» de la Tarea 167 (`DailyChallenge`, retirado). Lógica pura con pruebas (`TimeTrialDayTest`).
  *
  * Es gratis y se repite sin límite; no cuenta para el futuro tope de partidas libres ([COUNTS_FOR_FREE_CAP]; el Contrarreloj libre en cualquier juego será Plus en la fase 1b). No compara con otras personas (`Features.COMPARE` sigue apagado).
  * El estado del día se DERIVA de lo guardado ([stateOf]): no hay preferencia pasajera.
@@ -43,11 +46,19 @@ object TimeTrialDay {
   val GAMES: List<String> = listOf("stroop", "disparate", "radar", "acoplamiento")
 
   val TRACKS: Map<String, Track> = mapOf(
-    "stroop" to Track(version = 1, stepEvery = 8, maxLevel = 5),
-    "disparate" to Track(version = 1, stepEvery = 3, maxLevel = 12),
-    "radar" to Track(version = 1, stepEvery = 3, maxLevel = 12),
-    "acoplamiento" to Track(version = 1, stepEvery = 2, maxLevel = 12)
+    "stroop" to Track(version = 2, stepEvery = 8, maxLevel = 5),
+    "disparate" to Track(version = 2, stepEvery = 3, maxLevel = 12),
+    "radar" to Track(version = 2, stepEvery = 3, maxLevel = 12),
+    "acoplamiento" to Track(version = 2, stepEvery = 2, maxLevel = 12)
   )
+
+  /** Desde esta versión de la pista la marca es aciertos menos errores (con piso en 0); las partidas de la versión 1 (solo aciertos) quedan en el detalle y no se comparan. Tarea 178. */
+  const val NET_FROM_VERSION = 2
+
+  /**
+   * La MARCA de una partida: aciertos menos errores, con piso en 0 (nunca negativa) desde la pista versión 2; antes, solo los aciertos. Es la misma fórmula que usa Unity (`TimeTrial.Mark`): una prueba en cada lado la vigila con los mismos casos.
+   */
+  fun markOf(trackVersion: Int, hits: Int, errors: Int): Int = if (trackVersion < NET_FROM_VERSION) hits else (hits - errors).coerceAtLeast(0)
 
   fun supports(gameId: String): Boolean = gameId in TRACKS
 
@@ -91,7 +102,7 @@ object TimeTrialDay {
   /** ¿[r] superó el récord que había justo antes? (partidas anteriores por hora, del mismo juego y la misma pista; la primera nunca). */
   fun isNewRecord(mine: List<TimeTrialResult>, r: TimeTrialResult): Boolean {
     val before = mine.filter { it.timestamp < r.timestamp }
-    return before.isNotEmpty() && r.hits > before.maxOf { it.hits }
+    return before.isNotEmpty() && r.mark > before.maxOf { it.mark }
   }
 
   // ------------------------------------------------------------------ textos (Fable §9.8; «Acoplamiento» en lugar de «Carga exacta»)
@@ -99,7 +110,7 @@ object TimeTrialDay {
   /** El rótulo del botón de Hoy. Una palabra por concepto: nunca «Reto», «Desafío» ni «Con reloj» para esto. */
   const val LABEL = "Contrarreloj de hoy"
 
-  /** «38 aciertos» / «1 acierto»: la marca. */
+  /** «38 aciertos» / «1 acierto»: una marca (la de [TimeTrialResult.mark]). */
   fun hitsText(hits: Int): String = if (hits == 1) "1 acierto" else "$hits aciertos"
 
   /** «Tu récord: 41 aciertos.» (la línea plana bajo el botón ancho de Hoy). */

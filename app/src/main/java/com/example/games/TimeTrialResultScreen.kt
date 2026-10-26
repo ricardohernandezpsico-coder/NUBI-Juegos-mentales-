@@ -77,8 +77,8 @@ internal data class TimeTrialFinalUi(
 
 internal fun timeTrialFinalUi(o: TimeTrialStats.Outcome, title: String): TimeTrialFinalUi = TimeTrialFinalUi(
   title = title,
-  headline = TimeTrialDay.hitsText(o.result.hits),
-  unit = TimeTrialStats.UNIT,
+  headline = TimeTrialDay.hitsText(o.result.mark),
+  unit = TimeTrialStats.scoreLine(o.result),
   seal = if (o.isRecord) TimeTrialStats.SEAL else null,
   phrase = TimeTrialStats.phrase(o),
   step = TimeTrialStats.stepLine(o.result.level, o.maxLevel),

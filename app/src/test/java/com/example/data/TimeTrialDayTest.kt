@@ -16,7 +16,8 @@ import java.io.File
  */
 class TimeTrialDayTest {
   private val day = "2026-10-26"
-  private fun r(game: String, hits: Int, at: Long, d: String = day, version: Int = 1, errors: Int = 3, level: Int = 2, id: String = "r$at") =
+  // por defecto SIN errores: la marca (aciertos menos errores) es igual a los aciertos; las pruebas de la marca neta ponen sus errores
+  private fun r(game: String, hits: Int, at: Long, d: String = day, version: Int = 2, errors: Int = 0, level: Int = 2, id: String = "r$at") =
     TimeTrialResult(id = id, gameId = game, day = d, trackVersion = version, hits = hits, errors = errors, level = level, seconds = 120, timestamp = at)
 
   // ------------------------------------------------------------------ el juego del día
@@ -68,7 +69,7 @@ class TimeTrialDayTest {
       "StroopContract" to contract("StroopContract", "Stroop"), "DisparateContract" to contract("DisparateContract", "Disparate"),
       "RadarContract" to contract("RadarContract", "Radar"), "DockingContract" to contract("DockingContract", "Acoplamiento")
     )
-    val tracks = Regex("""new Track\((\w+)\.GameId,\s*(\d+),\s*(\d+),\s*(\w+)\.MaxLevel,\s*(true|false)\)""").findAll(cs).toList()
+    val tracks = Regex("""new Track\((\w+)\.GameId,\s*(\d+),\s*(\d+),\s*(\w+)\.MaxLevel\)""").findAll(cs).toList()
     assertEquals("las cuatro pistas de Unity", 4, tracks.size)
     assertEquals("el orden de la rotación es el mismo", TimeTrialDay.GAMES, tracks.map { contracts[it.groupValues[1]]!!.first })
     for (m in tracks) {
@@ -86,7 +87,7 @@ class TimeTrialDayTest {
   fun `la versión y el largo de la pista salen de la tabla`() {
     assertEquals(5, TimeTrialDay.maxLevel("stroop"))
     assertEquals(12, TimeTrialDay.maxLevel("acoplamiento"))
-    assertEquals(1, TimeTrialDay.trackVersion("radar"))
+    assertEquals("la versión 2 es la de la marca neta (Tarea 178)", 2, TimeTrialDay.trackVersion("radar"))
     assertTrue(TimeTrialDay.supports("disparate"))
     assertFalse(TimeTrialDay.supports("calculo"))
   }
@@ -132,19 +133,45 @@ class TimeTrialDayTest {
 
   @Test
   fun `si cambia la version de la pista el record empieza de nuevo y el viejo no cuenta`() {
-    val old = r("stroop", 50, 100, d = "2026-10-20", version = 0)       // una pista anterior (la de hoy es la 1)
+    val old = r("stroop", 50, 100, d = "2026-10-20", version = 1)       // una pista anterior (la de hoy es la 2: la marca pasó a ser aciertos menos errores)
     val now = r("stroop", 20, 200)
     assertEquals("20 es la primera partida con la pista de hoy: no es marca nueva", TimeTrialState.JUGADO, TimeTrialDay.stateOf(listOf(old, now), day, "stroop"))
     assertEquals(listOf(now), TimeTrialDay.ofGame(listOf(old, now), "stroop"))
+  }
+
+  // ------------------------------------------------------------------ la marca: aciertos menos errores (Tarea 178)
+
+  @Test
+  fun `la marca es aciertos menos errores con piso en cero, los mismos casos que Unity`() {
+    // los MISMOS casos que `TimeTrialTests.TheMarkIsHitsMinusErrors_FlooredAtZero` en Unity (`TimeTrial.Mark`): la fórmula está en los dos lados
+    assertEquals(34, TimeTrialDay.markOf(2, 38, 4))
+    assertEquals(37, TimeTrialDay.markOf(2, 43, 6))
+    assertEquals("nunca negativa", 0, TimeTrialDay.markOf(2, 3, 5))
+    assertEquals(0, TimeTrialDay.markOf(2, 0, 0))
+    assertEquals(1, TimeTrialDay.markOf(2, 1, 0))
+    assertEquals("la pista 1 contaba solo los aciertos", 38, TimeTrialDay.markOf(1, 38, 4))
+    assertEquals(34, r("stroop", 38, 100, errors = 4).mark)
+  }
+
+  @Test
+  fun `la marca nueva se decide con la marca neta y no con los aciertos`() {
+    val before = r("stroop", 41, 100, d = "2026-10-23")                                   // récord: 41
+    val clean = r("stroop", 40, 200, errors = 0)                                          // 40: no supera
+    val messy = r("stroop", 50, 300, errors = 12)                                         // 50 aciertos pero 38 de marca: no supera
+    val good = r("stroop", 45, 400, errors = 2)                                           // 43: sí
+    assertEquals(TimeTrialState.JUGADO, TimeTrialDay.stateOf(listOf(before, clean, messy), day, "stroop"))
+    assertEquals(TimeTrialState.MARCA_NUEVA, TimeTrialDay.stateOf(listOf(before, clean, messy, good), day, "stroop"))
+    assertEquals("la marca de hoy en Hoy es la neta", 43, TimeTrialDay.ofGame(listOf(before, good), "stroop").filter { it.day == day }.maxOf { it.mark })
   }
 
   // ------------------------------------------------------------------ lo que Unity devuelve
 
   @Test
   fun `la partida que devuelve Unity se guarda con su marca, sus errores, su paso y la version con que se jugo`() {
-    val raw = GamePlayResult(gameId = "acoplamiento", score = 50, correctAnswers = 19, totalTrials = 23, timed = true, level = 3, timestamp = 777L, ttHits = 19, ttErrors = 4, ttPeakLevel = 10, ttSeconds = 120, ttTrackVersion = 1)
+    val raw = GamePlayResult(gameId = "acoplamiento", score = 50, correctAnswers = 19, totalTrials = 23, timed = true, level = 3, timestamp = 777L, ttHits = 19, ttErrors = 4, ttPeakLevel = 10, ttSeconds = 120, ttTrackVersion = 2)
     val saved = TimeTrialDay.resultOf(raw, "2026-10-26")
-    assertEquals(Triple("acoplamiento", "2026-10-26", 1), Triple(saved.gameId, saved.day, saved.trackVersion))
+    assertEquals(Triple("acoplamiento", "2026-10-26", 2), Triple(saved.gameId, saved.day, saved.trackVersion))
+    assertEquals("Unity manda los aciertos y los errores SIN restar; la marca la calcula la app", 15, saved.mark)
     assertEquals(listOf<Any>(19, 4, 10, 120, 777L), listOf<Any>(saved.hits, saved.errors, saved.level, saved.seconds, saved.timestamp))
     assertTrue(raw.isTimeTrial)
     assertFalse(raw.copy(ttHits = null).isTimeTrial)

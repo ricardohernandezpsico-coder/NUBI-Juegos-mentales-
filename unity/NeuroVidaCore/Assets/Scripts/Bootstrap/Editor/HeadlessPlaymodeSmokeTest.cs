@@ -263,6 +263,32 @@ namespace NeuroVida.Bridge.EditorTools
             Debug.Log($"[SmokeTest] seguidos de prueba en {_current.Name}: el chip queda a {Mathf.RoundToInt(NeuroVida.Games.Shared.ToastPlacement.LocalRectOf(space, hud.StreakRect).yMin)} u del borde de arriba");
         }
 
+        private static readonly HashSet<string> _factorySeen = new HashSet<string>();
+
+        /// <summary>
+        /// Ninguna imagen se ve con los valores de fábrica (Tarea 178): una <c>Image</c> activa de 100 × 100, blanca y en el centro de su padre es un efecto, un aviso o un lucero que se hizo visible antes de que el código le fijara posición, tamaño y color: se ve UN cuadro como un disco blanco
+        /// (<see cref="NeuroVida.Games.Shared.FactoryImageGuard"/>). Se mira cada 3 cuadros en CADA corrida (no cada 0,4 s), en todos los juegos y en todos los objetos; cada objeto se informa una sola vez por corrida.
+        /// </summary>
+        private static void ScanFactoryImages()
+        {
+            if (Time.frameCount % 3 != 0) return;                                  // cada 3 cuadros: mirar cada uno añadía ~40 min a la corrida (la mirada reúne todas las imágenes de la escena)
+            if (EditorApplication.timeSinceStartup - _enteredPlayAt < 5.0) return;  // los primeros segundos de cada corrida (el lienzo de revisión se acomoda y la cuenta regresiva tapa la escena): lo que todavía no está acomodado detrás no se ve; la píldora de Tinta se veía durante todo el primer ensayo, mucho después
+            if (GameObject.Find("CountdownScreen") != null) return;                // y mientras haya una cuenta regresiva a la vista
+            // NUBI_GUARD_EXPERIMENT=1: registra QUÉ marcaría cada regla (A, B, C), sin contar ninguna como error: sirve para elegir las reglas con datos de los juegos reales
+            bool experiment = System.Environment.GetEnvironmentVariable("NUBI_GUARD_EXPERIMENT") == "1";
+            var hits = experiment
+                ? NeuroVida.Games.Shared.FactoryImageGuard.Scan(NeuroVida.Games.Shared.FactoryImageGuard.Rule.Strict | NeuroVida.Games.Shared.FactoryImageGuard.Rule.Midpoint | NeuroVida.Games.Shared.FactoryImageGuard.Rule.StretchedChild)
+                : NeuroVida.Games.Shared.FactoryImageGuard.Scan();
+            if (hits == null) return;
+            foreach (var h in hits)
+            {
+                if (!_factorySeen.Add(_current.Name + "|" + h)) continue;
+                if (experiment) { Debug.Log($"[SmokeTest] GUARDIA-EXPERIMENTO {_current.Name} ({_current.Id}): {h}"); continue; }
+                _errorCount++;
+                Debug.Log($"[SmokeTest] Error capturado: imagen de fábrica a la vista en {_current.Name} ({_current.Id}), 1080x{_currentHeight}: {h}");
+            }
+        }
+
         /// <summary>
         /// El chip «×N seguidos» a la vista NO tapa nada del juego (Tarea 127): ningún texto, botón ni estímulo por más de 800 unidades cuadradas, en dos revisiones seguidas. Solo corre en las corridas «Seguidos*». Como la partida sigue corriendo y puede apagar el chip, se vuelve a encender en cada revisión.
         /// </summary>
@@ -1266,6 +1292,7 @@ namespace NeuroVida.Bridge.EditorTools
                 if (_enteredPlayAt == 0) _enteredPlayAt = EditorApplication.timeSinceStartup;
                 double played = EditorApplication.timeSinceStartup - _enteredPlayAt;
                 ScanTextPlacement();
+                ScanFactoryImages();
                 if (_current.Name.EndsWith("Mudo") || _current.Name == "Piloto" || _current.Name == "Radar" || _current.Name == "Acoplamiento" || _current.Name == "Aterrizaje") SampleAudio();
                 if (_current.Name.StartsWith("Aviso") && !_sampleToastShown && played >= 5.5) ShowSampleToast();
                 if (_current.Name.StartsWith("Seguidos") && !_sampleStreakShown && played >= 5.5) ShowSampleStreak();

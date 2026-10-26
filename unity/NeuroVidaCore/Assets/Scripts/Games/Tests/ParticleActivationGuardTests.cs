@@ -11,6 +11,11 @@ namespace NeuroVida.Games.Tests
     /// así que una chispa pedida DESPUÉS de ese paso (desde una corrutina, o desde la lectura del toque, que va al final del <c>Update</c>) se veía un cuadro como un disco blanco de ~100 px en el centro de la pantalla: «unas pelotitas blanquitas que aparecen y se apagan» de En la punta de la lengua
     /// (Ricardo, 25-oct). Se vigila leyendo el código: en cada método que lanza efectos de una piscina (<c>Emit…</c>, <c>SpawnParticles</c>, <c>FlashRing</c>, <c>AddBloom</c>, <c>LaunchFlyer</c> y <c>LaunchArc</c>: las chispas, los aros, los luceros y los objetos que vuelan y los arcos), antes de cada <c>SetActive(true)</c> tienen que estar <c>anchoredPosition</c> y <c>sizeDelta</c>.
     /// Y En la punta de la lengua ya no tiene chispas: Ricardo las quitó (menos estímulos).
+    /// <para>
+    /// POR QUÉ NO SE ENSANCHA A TODOS LOS MÉTODOS (Tarea 178): se probó. Mirando todos los métodos de todos los juegos que crean un objeto y lo activan (<c>new GameObject(</c> + <c>SetActive(true)</c>) salían decenas de «ofensores» que no lo son: los objetos se fabrican con ayudas (<c>MakeImage(parent, pos, size)</c>…)
+    /// que fijan posición y tamaño por dentro, y casi todos los aros, destellos y marcas (~48 en los 17 juegos) se construyen al armar la escena y se encienden más tarde desde OTRO método: leyendo el texto no se puede saber si estaban acomodados. Lo que vigila en su lugar es <c>FactoryImageGuard</c> (<c>FactoryImageGuardTests</c> prueba que detecta),
+    /// que el smoke corre en CADA cuadro de CADA corrida de los 17 juegos y mira lo que realmente se ve: una <c>Image</c> activa de 100 × 100, blanca y en el centro es un error, sea cual sea el objeto y el método que la encendió.
+    /// </para>
     /// </summary>
     public class ParticleActivationGuardTests
     {

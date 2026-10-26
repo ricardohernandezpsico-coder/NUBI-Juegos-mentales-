@@ -34,14 +34,14 @@ class TimeTrialBridgeTest {
 
   @Test
   fun `lee la marca, los errores, el paso, los segundos y la version de la pista`() {
-    val r = NativeReceiver.parse(json("stroop", ""","tt_hits":38,"tt_errors":5,"tt_peak_level":4,"tt_seconds":120,"tt_track_version":1"""))
+    val r = NativeReceiver.parse(json("stroop", ""","tt_hits":38,"tt_errors":5,"tt_peak_level":4,"tt_seconds":120,"tt_track_version":2"""))
     assertNotNull(r)
     r!!
     assertEquals(38, r.ttHits)
     assertEquals(5, r.ttErrors)
     assertEquals(4, r.ttPeakLevel)
     assertEquals(120, r.ttSeconds)
-    assertEquals(1, r.ttTrackVersion)
+    assertEquals(2, r.ttTrackVersion)
     assertTrue("con marca, es un Contrarreloj", r.isTimeTrial)
   }
 

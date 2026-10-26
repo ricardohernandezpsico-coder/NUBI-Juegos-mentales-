@@ -217,12 +217,7 @@ namespace NeuroVida.Games.Acoplamiento
             EvaluateAnswer(level, out bool correct, out int answer);
             StartPrebake();                                                                    // el módulo que sigue se hornea de a poco mientras se revela este
             yield return StartCoroutine(RevealRoutine(correct, answer));
-            if (_tt != null && !correct)
-            {
-                // Contrarreloj: el error CUESTA su pausa (3, 6 o 9 s en total, contando lo que ya duró la revelación): el reloj sigue corriendo
-                float extra = Mathf.Min(_tt.ErrorPauseSeconds - DockingContract.MissRevealSeconds(_trial.Mirrored), _endsAt - Now);      // sin pasar de los 120 s: la partida termina con el reloj
-                if (extra > 0f) yield return Wait(extra);
-            }
+            // Contrarreloj (Tarea 178): un error ya no cuesta una pausa de más; queda solo su revelación de siempre, con el reloj corriendo
             EndTrial();
         }
 

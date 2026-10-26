@@ -86,12 +86,23 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Modo «Contrarreloj» (Tarea 177, NUBI_SHOTS_TT=1): los cuatro juegos de la primera tanda corren como CONTRARRELOJ (la pista del día fijo, el reloj de 120 s) y juegan solos con su piloto del Editor (<c>AutoPlayTimeTrial</c>): la cuenta regresiva, la primera pantalla (0 aciertos, 2:00) y tomas a los 10, 30 y 60 s para ver el chip «N aciertos» y el tiempo sin que tapen nada.</summary>
         private static bool _timeTrial;
 
+        /// <summary>
+        /// Modo «cuadro a cuadro» (Tarea 178, NUBI_SHOTS_FRAMES=1; con NUBI_SHOTS_TT=1 corre como Contrarreloj, sin él como Reto): diagnóstico del «disco blanco» que Ricardo vio en Tinta o Palabra. Con <c>Time.captureFramerate = 20</c> cada cuadro del juego dura 50 ms aunque la toma tarde y se saca UNA toma por cuadro
+        /// durante unos 6 s de partida; en el Reto, sin piloto propio, se toca la respuesta por reflexión (acierto, error, acierto…) cada ~0,8 s. Las tomas quedan en <c>unity/test-results/capturas-cuadros/&lt;juego&gt;[-tt]/</c>.
+        /// </summary>
+        private static bool _frames;
+
+        /// <summary>Modo «vigilante» (Tarea 178, NUBI_SHOTS_WATCH=1; con NUBI_SHOTS_TT=1 como Contrarreloj): juega unos 110 s de Tinta o Palabra en tiempo real y mira CADA cuadro con <see cref="FactoryImageGuard"/>; cada imagen que se ve con los valores de fábrica (el «disco blanco») queda en el registro con su ruta en la jerarquía y el momento.</summary>
+        private static bool _watch;
+
         public static void Run()
         {
             _juice = Environment.GetEnvironmentVariable("NUBI_SHOTS_JUICE") == "1";
             _puntaCascada = Environment.GetEnvironmentVariable("NUBI_SHOTS_PUNTA_CASCADA") == "1";
             if (_puntaCascada) _juice = true;
             _timeTrial = Environment.GetEnvironmentVariable("NUBI_SHOTS_TT") == "1";
+            _frames = Environment.GetEnvironmentVariable("NUBI_SHOTS_FRAMES") == "1";
+            _watch = Environment.GetEnvironmentVariable("NUBI_SHOTS_WATCH") == "1";
             var raw = (Environment.GetEnvironmentVariable("NUBI_SHOTS_GAMES") ?? "Correo").Trim();
             _root = Environment.GetEnvironmentVariable("NUBI_SHOTS_DIR");
             if (string.IsNullOrEmpty(_root)) _root = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "test-results", "capturas"));
@@ -243,7 +254,9 @@ namespace NeuroVida.Bridge.EditorTools
                 double t0 = Now;
                 Debug.Log("[Capturas] ---- " + id);
 
-                if (_timeTrial) yield return TimeTrialShots(id);
+                if (_watch) yield return WatchShots(id);
+                else if (_frames) yield return FrameShots(id);
+                else if (_timeTrial) yield return TimeTrialShots(id);
                 else if (_puntaCascada) yield return PuntaCascadaShots();
                 else if (_juice) yield return JuiceShots(id);
                 else if (id == "correo") yield return CorreoScript();
@@ -253,9 +266,9 @@ namespace NeuroVida.Bridge.EditorTools
                 else if (id == "acoplamiento") { yield return AcoplamientoScript(); yield return AcoplamientoScript16(); }
                 else if (id == "aterrizaje") { yield return AterrizajeScript(); yield return AterrizajeScript16(); }
                 else yield return PlayShots(id);
-                if (!_juice && !_timeTrial && id != "correo" && id != "satelites" && id != "piloto" && id != "radar" && id != "acoplamiento" && id != "aterrizaje") yield return ReduceMotionShot(id);          // los guiones de Correo, Satélites, Piloto, Rescate y Acoplamiento ya traen su toma con «quitar animaciones»
-                if (!_juice && !_timeTrial && TutorialGames.Contains(id)) yield return TutorialShots(id);
-                if (!_juice && !_timeTrial && (id == "acoplamiento" || id == "radar")) yield return TutorialShots(id, 1920, "-16x9");          // la práctica en la pantalla más baja: ahí la fila fija de arriba aprieta más (Tarea 128)
+                if (!_juice && !_timeTrial && !_frames && !_watch && id != "correo" && id != "satelites" && id != "piloto" && id != "radar" && id != "acoplamiento" && id != "aterrizaje") yield return ReduceMotionShot(id);          // los guiones de Correo, Satélites, Piloto, Rescate y Acoplamiento ya traen su toma con «quitar animaciones»
+                if (!_juice && !_timeTrial && !_frames && !_watch && TutorialGames.Contains(id)) yield return TutorialShots(id);
+                if (!_juice && !_timeTrial && !_frames && !_watch && (id == "acoplamiento" || id == "radar")) yield return TutorialShots(id, 1920, "-16x9");          // la práctica en la pantalla más baja: ahí la fila fija de arriba aprieta más (Tarea 128)
                 yield return Stopped();
 
                 int shots = _count;
@@ -573,6 +586,77 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>
         /// Contrarreloj (Tarea 177): el juego corre como la partida de las 2 minutos, con su piloto del Editor, y se fotografía la cuenta regresiva, la primera pantalla (0 aciertos, «2:00»), y a los 10, 30 y 60 s de juego (el chip «N aciertos» y el tiempo que baja). El piloto se equivoca una de cada tres veces: en alguna toma cae la pausa del error.
         /// </summary>
+        private static IEnumerator WatchShots(string id)
+        {
+            Configure(id, tutorial: false, reduceMotion: false);
+            EditorPlaytestBootstrap.TimeTrialOverride = _timeTrial;
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = _timeTrial;
+            yield return EnterPlay();
+            MonoBehaviour c = null;
+            yield return Wait.Until(() => (c = FindController("StroopGameController")) != null, 40);
+            if (c == null) { GameNotes.Add("no apareció StroopGameController"); yield return ExitPlay(); yield break; }
+            yield return WaitPlayable();
+            double start = Now, nextTap = start + 1.0;
+            int tap = 0, frames = 0, found = 0;
+            double watchSeconds = double.TryParse(Environment.GetEnvironmentVariable("NUBI_WATCH_SECONDS"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ws) ? ws : 110.0;
+            while (Now - start < watchSeconds && !CurtainUp())
+            {
+                frames++;
+                if (!_timeTrial && Now >= nextTap)
+                {
+                    nextTap += 0.9;
+                    var trial = Member(c, "_trial");
+                    int correct = trial == null ? 0 : (int)Member(trial, "CorrectIndex");
+                    bool wrong = tap++ % 3 == 1;
+                    Call(c, "OnColorTapped", wrong ? (correct + 1) % 4 : correct);
+                }
+                var hits = NeuroVida.Games.Shared.FactoryImageGuard.Scan();
+                if (hits != null && found < 300)
+                    foreach (var h in hits)
+                    {
+                        found++;
+                        string line = "DISCO cuadro " + frames + " a los " + (Now - start).ToString("0.00") + " s: " + h;
+                        Debug.Log("[Capturas] " + line);
+                        if (GameNotes.Count < 40) GameNotes.Add(line);
+                    }
+                yield return Wait.For(0.0);
+            }
+            Debug.Log("[Capturas] vigilante de " + id + (_timeTrial ? " (Contrarreloj)" : " (Reto)") + ": " + frames + " cuadros mirados, " + found + " veces una imagen de fábrica a la vista");
+            EditorPlaytestBootstrap.TimeTrialOverride = false;
+            yield return ExitPlay();
+        }
+
+        private static IEnumerator FrameShots(string id)
+        {
+            Configure(id, tutorial: false, reduceMotion: false);
+            EditorPlaytestBootstrap.TimeTrialOverride = _timeTrial;
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = _timeTrial;                  // en el Contrarreloj juega el piloto del juego; en el Reto, la reflexión de abajo
+            yield return EnterPlay();
+            MonoBehaviour c = null;
+            string controllerName = id == "disparate" ? "DisparateGameController" : "StroopGameController";
+            yield return Wait.Until(() => (c = FindController(controllerName)) != null, 40);
+            if (c == null) { GameNotes.Add("no apareció " + controllerName); yield return ExitPlay(); yield break; }
+            yield return WaitPlayable();
+            Time.captureFramerate = 20;
+            int tap = 0;
+            int frameCount = id == "disparate" ? 40 : 130;
+            for (int i = 0; i < frameCount; i++)
+            {
+                if (!_timeTrial && id == "stroop" && i % 16 == 4)
+                {
+                    var trial = Member(c, "_trial");
+                    int correct = trial == null ? 0 : (int)Member(trial, "CorrectIndex");
+                    bool wrong = tap++ % 3 == 1;
+                    Call(c, "OnColorTapped", wrong ? (correct + 1) % 4 : correct);
+                }
+                Shot("f" + i.ToString("000"));
+                yield return Wait.For(0.0);
+            }
+            Time.captureFramerate = 0;
+            EditorPlaytestBootstrap.TimeTrialOverride = false;
+            yield return ExitPlay();
+        }
+
         private static IEnumerator TimeTrialShots(string id)
         {
             Configure(id, tutorial: false, reduceMotion: false);

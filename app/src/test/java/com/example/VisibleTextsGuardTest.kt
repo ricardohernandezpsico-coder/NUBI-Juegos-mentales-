@@ -382,7 +382,7 @@ class VisibleTextsGuardTest {
     assertEquals("3 de 3 · ruta completa", com.example.ui.screens.routeMeta(ui))
     val phrases = listOf(
       com.example.ui.screens.TIME_TRIAL_LABEL, com.example.ui.screens.TIME_TRIAL_AGAIN, com.example.ui.screens.ROUTE_TOMORROW, com.example.data.TimeTrialDay.recordLine(41), com.example.data.TimeTrialDay.newMarkLine(43, "Tinta o Palabra"),
-      com.example.data.TimeTrialStats.SEAL, com.example.data.TimeTrialStats.UNIT, com.example.data.TimeTrialStats.FIRST_PHRASE, com.example.data.TimeTrialStats.NOTE, com.example.data.TimeTrialStats.LAST_TITLE, com.example.ui.screens.routeMeta(ui)
+      com.example.data.TimeTrialStats.SEAL, com.example.data.TimeTrialStats.UNIT, com.example.data.TimeTrialStats.RULE, com.example.data.TimeTrialStats.scoreLine(com.example.data.TimeTrialResult(gameId = "stroop", day = "2026-10-26", trackVersion = 2, hits = 38, errors = 4, level = 3)), com.example.data.TimeTrialStats.FIRST_PHRASE, com.example.data.TimeTrialStats.NOTE, com.example.data.TimeTrialStats.LAST_TITLE, com.example.ui.screens.routeMeta(ui)
     )
     for (p in phrases) {
       assertFalse("«$p» usa «reto» o «modo difícil»", Regex("""retos?|modo dif[ií]cil""", RegexOption.IGNORE_CASE).containsMatchIn(p))

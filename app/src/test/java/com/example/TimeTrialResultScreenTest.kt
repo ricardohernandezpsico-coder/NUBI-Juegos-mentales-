@@ -60,8 +60,9 @@ class TimeTrialResultScreenTest {
   private var done = 0
 
   private fun at(day: Int, h: Int = 12) = Calendar.getInstance().apply { set(2026, Calendar.OCTOBER, day, h, 0, 0); set(Calendar.MILLISECOND, 0) }.timeInMillis
-  private fun r(hits: Int, day: Int, game: String = "stroop", errors: Int = 5, level: Int = 4) =
-    TimeTrialResult(id = "r-$game-$day-$hits", gameId = game, day = "2026-10-%02d".format(day), trackVersion = 1, hits = hits, errors = errors, level = level, seconds = 120, timestamp = at(day))
+  // por defecto SIN errores: la marca (aciertos menos errores) es igual a los aciertos; los de la marca neta ponen los suyos (Tarea 178)
+  private fun r(hits: Int, day: Int, game: String = "stroop", errors: Int = 0, level: Int = 4) =
+    TimeTrialResult(id = "r-$game-$day-$hits-$errors", gameId = game, day = "2026-10-%02d".format(day), trackVersion = 2, hits = hits, errors = errors, level = level, seconds = 120, timestamp = at(day))
 
   private val history = listOf(r(31, 20), r(35, 21), r(41, 23), r(36, 24))
 
@@ -126,7 +127,7 @@ class TimeTrialResultScreenTest {
     mount(); show(marcaNueva)
     rule.onNodeWithTag("timetrial_result").assertIsDisplayed()
     val t = allText()
-    for (part in listOf("Atención · Contrarreloj de hoy", TimeTrialStats.SEAL, "43 aciertos", TimeTrialStats.UNIT, "Antes, tu mejor marca era 41 aciertos.", "Llegaste al paso 4 de 5 de la pista.", TimeTrialStats.LAST_TITLE, "La mejor de esta semana: 43 aciertos, la de hoy.", TimeTrialStats.NOTE))
+    for (part in listOf("Atención · Contrarreloj de hoy", TimeTrialStats.SEAL, "43 aciertos", "43 aciertos sin errores, en 2 minutos de Contrarreloj", "Antes, tu mejor marca era 41 aciertos.", "Llegaste al paso 4 de 5 de la pista.", TimeTrialStats.LAST_TITLE, "La mejor de esta semana: 43 aciertos, la de hoy.", TimeTrialStats.NOTE))
       assertTrue("falta «$part» en: $t", t.contains(part))
     assertEquals("cinco barras: las cuatro de antes y la de hoy", 5, (0..4).count { has("timetrial_bar_$it") })
     assertTrue(has("timetrial_last") && has("timetrial_week") && has("timetrial_step"))
@@ -195,10 +196,29 @@ class TimeTrialResultScreenTest {
   }
 
   @Test
+  fun `la cifra grande es la marca neta y debajo dice cuantos aciertos y cuantos errores`() {
+    val today = r(45, 26, errors = 2)                                      // 43: supera el récord de 41
+    val o = TimeTrialStats.outcome(history + today, today)
+    mount(); show(o)
+    val t = allText()
+    assertTrue("falta la marca neta en: $t", t.contains("43 aciertos"))
+    assertTrue("falta cómo se llegó a ella en: $t", t.contains("45 aciertos menos 2 errores, en 2 minutos de Contrarreloj"))
+    assertTrue("la regla se explica en el detalle (no en la vista)", !t.contains(TimeTrialStats.RULE))
+    val ui = timeTrialFinalUi(o, "Tinta o Palabra")
+    assertEquals("43 aciertos", ui.headline)
+    assertEquals("45 aciertos menos 2 errores, en 2 minutos de Contrarreloj", ui.unit)
+    assertEquals("la barra de hoy es la marca, no los aciertos", 43, ui.last.last())
+    assertTrue(ui.spoken.contains("43 aciertos. 45 aciertos menos 2 errores, en 2 minutos de Contrarreloj"))
+    val floor = r(3, 26, errors = 5).let { TimeTrialStats.outcome(history + it, it) }
+    assertEquals("0 aciertos", timeTrialFinalUi(floor, "Tinta o Palabra").headline)
+    assertEquals("3 aciertos menos 5 errores, en 2 minutos de Contrarreloj", timeTrialFinalUi(floor, "Tinta o Palabra").unit)
+  }
+
+  @Test
   fun `el armado de la pantalla trae solo lo del diseno`() {
     val ui = timeTrialFinalUi(marcaNueva, "Tinta o Palabra")
     assertEquals("43 aciertos", ui.headline)
-    assertEquals(TimeTrialStats.UNIT, ui.unit)
+    assertEquals("43 aciertos sin errores, en 2 minutos de Contrarreloj", ui.unit)
     assertEquals(TimeTrialStats.SEAL, ui.seal)
     assertEquals(TimeTrialStats.NOTE, ui.note)
     assertNull("sin marca nueva no hay sello", timeTrialFinalUi(sinRecord, "Tinta o Palabra").seal)
@@ -232,6 +252,21 @@ class TimeTrialResultScreenTest {
     shot("final-marca-nueva", marcaNueva, bottom = true)
     shot("final-primera-vez", primeraVez, bottom = true)
     shot("final-marca-nueva-1_3", marcaNueva, fs = 1.3f, bottom = true)
+  }
+
+  /** Las capturas de la lámina de la Tarea 178 (solo al grabar): el final con la marca NETA —la cifra grande es aciertos menos errores y debajo dice cuántos de cada uno— sin récord y con marca nueva. En `src/test/screenshots/tarea-178/`. */
+  @Test
+  fun tarea_178_capturas() {
+    org.junit.Assume.assumeTrue("solo al grabar capturas", System.getProperty("roborazzi.test.record") == "true")
+    val out = "src/test/screenshots/tarea-178"
+    mount()
+    fun shot(name: String, o: TimeTrialStats.Outcome, fs: Float = 1f) {
+      resize(393, 873, fs); show(o); repeat(3) { rule.mainClock.advanceTimeBy(300); rule.waitForIdle() }
+      rule.onRoot().captureRoboImage(filePath = "$out/$name.png")
+    }
+    shot("final-sin-record", r(38, 26, errors = 4).let { TimeTrialStats.outcome(history + it, it) })                     // 38 menos 4 = 34: no supera el récord de 41
+    shot("final-marca-nueva", r(47, 26, errors = 4).let { TimeTrialStats.outcome(history + it, it) })                    // 47 menos 4 = 43: supera el récord de 41
+    shot("final-sin-errores", r(44, 26, errors = 0).let { TimeTrialStats.outcome(history + it, it) })                    // sin errores: «44 aciertos sin errores, …»
   }
 
   @Test

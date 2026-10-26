@@ -705,7 +705,7 @@ namespace NeuroVida.Games.Disparate
             _fix.canvasRenderer.SetAlpha(1f);
             _shaking = false;
             float hold = Senior ? 1.9f : 1.4f;
-            if (_tt != null) hold = Mathf.Min(Mathf.Max(0.3f, _tt.ErrorPauseSeconds - fade), Mathf.Max(0.5f, _endsAt - GameClock.Time));              // Contrarreloj: el error cuesta su pausa en el reloj (3 s; el doble al segundo seguido, el triple desde el tercero)
+            if (_tt != null) hold = Mathf.Min(Mathf.Max(0.3f, TimeTrial.ErrorFeedbackSeconds - fade), Mathf.Max(0.3f, _endsAt - GameClock.Time));              // Contrarreloj: el error solo da un aviso breve y se sigue (Tarea 178); el reloj corre
             t = 0f;
             while (t < hold) { t += GameClock.DeltaTime; yield return null; }
             // despedida

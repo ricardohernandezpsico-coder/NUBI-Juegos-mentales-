@@ -254,7 +254,7 @@ class GameFlowTest {
   private fun timeTrialResult(gameId: String, hits: Int, errors: Int = 4, peak: Int = 2) =
     GamePlayResult(
       gameId = gameId, score = 50, correctAnswers = hits, totalTrials = hits + errors, timed = true, level = 2, endRating = 0.5f, modeTrials = 0, modeHits = 0,
-      ttHits = hits, ttErrors = errors, ttPeakLevel = peak, ttSeconds = 120, ttTrackVersion = 1
+      ttHits = hits, ttErrors = errors, ttPeakLevel = peak, ttSeconds = 120, ttTrackVersion = 2
     )
 
   private fun savedTimeTrials(): List<com.example.data.TimeTrialResult> =
@@ -287,7 +287,8 @@ class GameFlowTest {
     vm.onUnityResult(timeTrialResult(id, hits = 38), "LT1")
     TestSupport.awaitUntil(message = "El Contrarreloj no se guardó") { savedTimeTrials().size == 1 }
     val saved = savedTimeTrials().single()
-    assertEquals(listOf<Any>(id, 38, 4, 2, 120, 1), listOf(saved.gameId, saved.hits, saved.errors, saved.level, saved.seconds, saved.trackVersion))
+    assertEquals("Unity manda los aciertos y los errores SIN restar", listOf<Any>(id, 38, 4, 2, 120, 2), listOf(saved.gameId, saved.hits, saved.errors, saved.level, saved.seconds, saved.trackVersion))
+    assertEquals("la marca es aciertos menos errores", 34, saved.mark)
     assertEquals("con el día de la pista", vm.todayKey(), saved.day)
     assertEquals("NO es una partida de siempre: no entra en game_results", 0, savedResults())
     assertEquals("no mueve la ruta de hoy", before.completedCount, vm.dailySession.value.completedCount)
@@ -295,6 +296,7 @@ class GameFlowTest {
     val o = vm.lastTimeTrial.value!!
     assertTrue("la primera partida de un juego es «primera»: no hay récord que superar", o.isFirst && !o.isRecord)
     assertEquals(38, o.result.hits)
+    assertEquals("la marca del final es la neta", 34, o.result.mark)
     assertTrue("y hay un final abierto (la barra y las pestañas se esconden como con cualquier final)", vm.lastResult.value?.first?.isTimeTrial == true)
     assertNull("la sesión terminó", vm.activeGame.value)
   }
@@ -319,12 +321,12 @@ class GameFlowTest {
     TestSupport.awaitUntil(message = "No pasó a marca nueva") { com.example.data.TimeTrialDay.stateOf(vm.timeTrialResults.value, day, id) == com.example.data.TimeTrialState.MARCA_NUEVA }
     TestSupport.awaitUntil(message = "El final no se abrió") { vm.lastTimeTrial.value?.result?.hits == 41 }
     assertTrue("el final lo dice", vm.lastTimeTrial.value!!.isRecord)
-    assertEquals(30, vm.lastTimeTrial.value!!.previousRecord)
+    assertEquals("el récord de antes es la marca neta: 30 aciertos menos 4 errores", 26, vm.lastTimeTrial.value!!.previousRecord)
     Thread.sleep(5)
     play(35, "LS3")
     TestSupport.awaitUntil(message = "La tercera partida no se guardó") { vm.timeTrialResults.value.size == 3 }
     assertEquals("la marca nueva no se pierde al repetir sin superarla", com.example.data.TimeTrialState.MARCA_NUEVA, com.example.data.TimeTrialDay.stateOf(vm.timeTrialResults.value, day, id))
-    assertEquals(41, com.example.data.TimeTrialStats.record(vm.timeTrialResults.value, id))
+    assertEquals("el récord es la marca neta: 41 aciertos menos 4 errores", 37, com.example.data.TimeTrialStats.record(vm.timeTrialResults.value, id))
     assertEquals("y sigue siendo el mismo juego todo el día", id, com.example.data.TimeTrialDay.gameFor(vm.todayKey()))
   }
 

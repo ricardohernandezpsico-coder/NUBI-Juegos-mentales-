@@ -139,6 +139,7 @@ namespace NeuroVida.Games.Stroop
             _exit.Hide();
             _stageRect.gameObject.SetActive(true);
             _pill.Rect.gameObject.SetActive(true);
+            _pill.Clear();                                                // oculta hasta el primer mensaje: sin esto se veía un disco crema (su losa sin acomodar) durante todo el primer ensayo (Tarea 178)
             foreach (var r in _buttonRects) r.gameObject.SetActive(true);
             _cardRect.gameObject.SetActive(true);
             _cardGroup.alpha = 0f;
@@ -323,8 +324,8 @@ namespace NeuroVida.Games.Stroop
                 if (Motion.Decorative) StartCoroutine(UiFx.RingBurst(_fxRect, LocalIn(_fxRect, _buttonRects[correctIndex]), Color.white, 140f, 460f, 0.55f));
                 if (_answerIndex >= 0 && _answerIndex < _markImages.Count && _answerIndex != correctIndex) ShowMark(_answerIndex, false);          // ✗ en el tocado y ✓ en el correcto (Tarea 130)
                 ShowMark(correctIndex, true);
-                // una pausa para leer la explicación; no le gasta tiempo al Reto. En el Contrarreloj el error CUESTA su pausa (3 s; el doble al segundo error seguido y el triple desde el tercero): el reloj sigue corriendo
-                if (_tt != null) yield return Motion.Hold(Mathf.Min(_tt.ErrorPauseSeconds, Mathf.Max(0.5f, _roundEndsAt - GameClock.Time)));       // sin pasar de los 120 s: la partida termina con el reloj
+                // una pausa para leer la explicación; no le gasta tiempo al Reto. En el Contrarreloj el error solo da un aviso breve (TimeTrial.ErrorFeedbackSeconds) y se sigue: el reloj corre y la marca baja uno (Tarea 178)
+                if (_tt != null) yield return Motion.Hold(Mathf.Min(TimeTrial.ErrorFeedbackSeconds, Mathf.Max(0.3f, _roundEndsAt - GameClock.Time)));       // sin pasar de los 120 s: la partida termina con el reloj
                 else
                 {
                     yield return Motion.Hold(StroopContract.ErrorPauseSeconds);
@@ -1187,6 +1188,7 @@ namespace NeuroVida.Games.Stroop
             _bottomReserve = 0f;
             _topReserve = 0f;
             _pill.Rect.gameObject.SetActive(true);
+            _pill.Clear();
             _timerBg.gameObject.SetActive(Endless);
             Layout();
             ApplyRule(StroopRule.Ink, false);

@@ -172,7 +172,7 @@ internal fun timeTrialOf(results: List<com.example.data.TimeTrialResult>, dateKe
   val state = TimeTrialDay.stateOf(results, dateKey, gameId)
   return HomeTimeTrial(
     gameId = gameId, title = getGameTitle(gameId, lang, def.title), state = state,
-    todayHits = TimeTrialDay.ofGame(results, gameId).filter { it.day == dateKey }.maxOfOrNull { it.hits }, record = TimeTrialStats.record(results, gameId)
+    todayHits = TimeTrialDay.ofGame(results, gameId).filter { it.day == dateKey }.maxOfOrNull { it.mark }, record = TimeTrialStats.record(results, gameId)
   )
 }
 

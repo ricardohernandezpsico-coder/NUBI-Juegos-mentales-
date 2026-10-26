@@ -9,8 +9,8 @@ using NeuroVida.Games.Stroop;
 namespace NeuroVida.Games.Tests
 {
     /// <summary>
-    /// La partida SIMULADA del Contrarreloj para <see cref="TimeTrialFairnessTests"/> (Tarea 176): la MISMA pista del día jugada por un bot de «azar» (responde apenas puede, sin mirar) y uno de «cuidado» (acierta el 85 % y responde con el tiempo de una persona atenta).
-    /// El tiempo de cada ensayo sale de las MISMAS constantes que usan los controladores (llegada de la tarjeta, revelación de Acoplamiento, espera y revelación de Rescate, pausa del error, mínimo antes de responder) y de la pista real (los generadores sembrados por el día; el banco de frases real); lo único supuesto es cuánto tarda en
+    /// La partida SIMULADA del Contrarreloj para <see cref="TimeTrialFairnessTests"/> (Tarea 176; Tarea 178: la marca es aciertos menos errores, con piso en 0, y el error no hace esperar): la MISMA pista del día jugada por un bot de «azar» (responde apenas puede, sin mirar) y uno de «cuidado» (acierta el 85 % y responde con el tiempo de una persona atenta).
+    /// El tiempo de cada ensayo sale de las MISMAS constantes que usan los controladores (llegada de la tarjeta, revelación de Acoplamiento, espera y revelación de Rescate, aviso breve del error, mínimo antes de responder) y de la pista real (los generadores sembrados por el día; el banco de frases real); lo único supuesto es cuánto tarda en
     /// responder una persona atenta (0,85 s en Tinta, 2,4 s en Disparate y Acoplamiento, 2,2 s en Rescate; con dispersión). Sin UnityEngine: se puede correr fuera de Unity (<c>Resources</c> no existe ahí: el banco de frases se le pasa armado).
     /// </summary>
     public static class TimeTrialSimulation
@@ -55,7 +55,7 @@ namespace NeuroVida.Games.Tests
 
         private static double Percentile(double[] sorted, double p) => sorted[Math.Min(sorted.Length - 1, (int)Math.Ceiling(p * sorted.Length) - 1)];
 
-        /// <summary>Una partida simulada de 120 s sobre la pista del día: cuántos aciertos hace el bot.</summary>
+        /// <summary>Una partida simulada de 120 s sobre la pista del día: la MARCA del bot (aciertos menos errores, con piso en 0).</summary>
         public static double Play(string game, bool careful, Random bot, SentenceBank bank)
         {
             switch (game)
@@ -93,10 +93,10 @@ namespace NeuroVida.Games.Tests
                 if (answerAt > TimeTrial.Seconds) break;
                 bool correct = careful ? bot.NextDouble() < Careful : bot.Next(StroopContract.Names.Length) == trial.CorrectIndex;
                 run.Register(correct);
-                t = answerAt + (correct ? StroopContract.RetoSlideOutSeconds : run.ErrorPauseSeconds + StroopContract.FadeOutSeconds);
+                t = answerAt + (correct ? StroopContract.RetoSlideOutSeconds : TimeTrial.ErrorFeedbackSeconds + StroopContract.FadeOutSeconds);
                 if (t >= TimeTrial.Seconds) break;
             }
-            return run.Hits;
+            return run.Score;
         }
 
         // ------------------------------------------------------------------ ¿Verdad o disparate?
@@ -114,10 +114,10 @@ namespace NeuroVida.Games.Tests
                 if (answerAt > TimeTrial.Seconds) break;
                 bool correct = bot.NextDouble() < (careful ? Careful : 0.5);
                 run.Register(correct);
-                t = answerAt + (correct ? DisparateFarewell : run.ErrorPauseSeconds + DisparateFarewell);
+                t = answerAt + (correct ? DisparateFarewell : TimeTrial.ErrorFeedbackSeconds + DisparateFarewell);
                 if (t >= TimeTrial.Seconds) break;
             }
-            return run.Hits;
+            return run.Score;
         }
 
         // ------------------------------------------------------------------ Rescate relámpago
@@ -155,7 +155,7 @@ namespace NeuroVida.Games.Tests
                 t = answerAt + RadarContract.RevealSeconds;
                 if (t >= TimeTrial.Seconds) break;
             }
-            return run.Hits;
+            return run.Score;
         }
 
         // ------------------------------------------------------------------ Acoplamiento
@@ -177,11 +177,11 @@ namespace NeuroVida.Games.Tests
                 if (answerAt > TimeTrial.Seconds) break;
                 bool correct = !timedOut && bot.NextDouble() < (careful ? Careful : 0.5);
                 run.Register(correct);
-                double after = correct ? DockingContract.OkRevealSeconds(trial.Mirrored) : Math.Max(DockingContract.MissRevealSeconds(trial.Mirrored), run.ErrorPauseSeconds);
+                double after = correct ? DockingContract.OkRevealSeconds(trial.Mirrored) : DockingContract.MissRevealSeconds(trial.Mirrored);
                 t = answerAt + after;
                 if (t >= TimeTrial.Seconds) break;
             }
-            return run.Hits;
+            return run.Score;
         }
     }
 }

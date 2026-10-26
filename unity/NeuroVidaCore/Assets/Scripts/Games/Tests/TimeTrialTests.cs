@@ -83,10 +83,10 @@ namespace NeuroVida.Games.Tests
             Assert.AreNotEqual(TimeTrial.Seed(Day, "stroop"), TimeTrial.Seed(Day + 1, "stroop"), "mañana, otra pista");
             Assert.AreNotEqual(TimeTrial.Seed(Day, "stroop"), TimeTrial.Seed(Day, "disparate"), "otro juego, otra pista el mismo día");
             Assert.AreNotEqual(TimeTrial.Seed(Day, "radar"), TimeTrial.Seed(Day, "acoplamiento"));
-            // valores fijos: la pista del día no cambia de un teléfono ni de una versión de Unity a otra (SplitMix64 propio, no System.Random)
-            Assert.AreEqual(2276549384711325806UL, TimeTrial.Seed(20261026, "stroop"));
-            Assert.AreEqual(15734309949268824047UL, TimeTrial.Seed(20261026, "disparate"));
-            Assert.AreEqual(3512447372951049112UL, TimeTrial.Seed(20261027, "stroop"));
+            // valores fijos (de la VERSIÓN 2 de la pista: la versión entra en la semilla): la pista del día no cambia de un teléfono ni de una versión de Unity a otra (SplitMix64 propio, no System.Random)
+            Assert.AreEqual(3509569136056027780UL, TimeTrial.Seed(20261026, "stroop"));
+            Assert.AreEqual(7850226025669989732UL, TimeTrial.Seed(20261026, "disparate"));
+            Assert.AreEqual(8221759096789279619UL, TimeTrial.Seed(20261027, "stroop"));
         }
 
         [Test]
@@ -227,23 +227,42 @@ namespace NeuroVida.Games.Tests
             Assert.IsTrue(anyBurst);
         }
 
-        // ------------------------------------------------------------------ la pausa que crece y el mínimo antes de responder
+        // ------------------------------------------------------------------ la marca neta (Tarea 178) y el mínimo antes de responder
 
         [Test]
-        public void TheErrorPauseGrowsWithTheErrorsInARow_AndComesBackWithAHit()
+        public void TheMarkIsHitsMinusErrors_FlooredAtZero()
         {
-            Assert.AreEqual(3f, TimeTrial.ErrorPause(1));
-            Assert.AreEqual(6f, TimeTrial.ErrorPause(2), "×2 al segundo error seguido");
-            Assert.AreEqual(9f, TimeTrial.ErrorPause(3), "×3 desde el tercero");
-            Assert.AreEqual(9f, TimeTrial.ErrorPause(7));
-            Assert.AreEqual(3f, TimeTrial.ErrorPause(0), "nunca menos que la base");
+            // los mismos casos que `TimeTrialDayTest` en la app (TimeTrialDay.markOf): la fórmula está en los dos lados y una prueba en cada uno la vigila
+            Assert.AreEqual(34, TimeTrial.Mark(38, 4));
+            Assert.AreEqual(37, TimeTrial.Mark(43, 6));
+            Assert.AreEqual(0, TimeTrial.Mark(3, 5), "nunca negativa");
+            Assert.AreEqual(0, TimeTrial.Mark(0, 0));
+            Assert.AreEqual(1, TimeTrial.Mark(1, 0));
             var run = new TimeTrial.Run("stroop", Day);
-            run.Register(false); Assert.AreEqual(3f, run.ErrorPauseSeconds);
-            run.Register(false); Assert.AreEqual(6f, run.ErrorPauseSeconds);
-            run.Register(false); Assert.AreEqual(9f, run.ErrorPauseSeconds);
-            run.Register(true); Assert.AreEqual(0, run.ConsecutiveErrors, "un acierto la devuelve a ×1");
-            run.Register(false); Assert.AreEqual(3f, run.ErrorPauseSeconds);
-            Assert.AreEqual(0f, new TimeTrial.Run("radar", Day).ErrorPauseSeconds, "Rescate no tiene pausa del error: su ronda dura lo mismo acierte o no");
+            Assert.AreEqual(0, run.Score);
+            run.Register(true); run.Register(true); run.Register(true);
+            Assert.AreEqual(3, run.Score);
+            run.Register(false);
+            Assert.AreEqual((3, 1, 2), (run.Hits, run.Errors, run.Score), "el error resta uno a la marca");
+            run.Register(false); run.Register(false); run.Register(false);
+            Assert.AreEqual(0, run.Score, "piso en 0: nunca negativa");
+        }
+
+        [Test]
+        public void AnErrorDoesNotMakeThePersonWait_AndDoesNotChangeTheStep()
+        {
+            Assert.LessOrEqual(TimeTrial.ErrorFeedbackSeconds, 1f, "el error solo da un aviso breve (Tarea 178): ya no hay pausa de 3, 6 o 9 s");
+            var run = new TimeTrial.Run("disparate", Day);
+            int before = run.Level;
+            for (int i = 0; i < 6; i++) run.Register(false);
+            Assert.AreEqual(before, run.Level, "los errores no bajan ni suben el paso: la pista sube solo por aciertos");
+            Assert.AreEqual(0, run.Hits);
+        }
+
+        [Test]
+        public void TheFourTracksAreVersion2_BecauseTheMarkChanged()
+        {
+            foreach (var g in Games) Assert.AreEqual(2, TimeTrial.TrackVersion(g), g + ": la regla de la marca cambió (Tarea 178): los récords empiezan de nuevo");
         }
 
         [Test]
@@ -355,12 +374,11 @@ namespace NeuroVida.Games.Tests
         [Test]
         public void TheDockingRevealDurationsAreTheOnesTheControllerPlays()
         {
-            // lo que ya pasó antes de la pausa del error de Acoplamiento: gira, se da vuelta si era espejo, baja y se aleja (o, si acertó, espera, vuela a su casillero y queda a ras)
+            // lo que dura la revelación de Acoplamiento: gira, se da vuelta si era espejo, baja y se aleja (o, si acertó, espera, vuela a su casillero y queda a ras). Desde la Tarea 178 un error no suma pausa: queda solo esto
             Assert.AreEqual(1.5f, DockingContract.MissRevealSeconds(false), 1e-4f);
             Assert.AreEqual(1.8f, DockingContract.MissRevealSeconds(true), 1e-4f);
             Assert.AreEqual(1.82f, DockingContract.OkRevealSeconds(false), 1e-4f);
             Assert.AreEqual(2.12f, DockingContract.OkRevealSeconds(true), 1e-4f);
-            Assert.Less(DockingContract.MissRevealSeconds(true), TimeTrial.ErrorPause(1), "la pausa del primer error (3 s) siempre es mayor que la revelación: se espera lo que falta");
         }
 
         [Test]
