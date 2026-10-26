@@ -309,7 +309,7 @@ private fun Eyebrow(text: String, center: Boolean = false) =
 @Composable
 private fun Title(text: String, center: Boolean = false, size: Int = 28) =
   com.example.ui.components.OnBoardText(
-    text, color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = size.sp, lineHeight = (size + 5).sp,
+    text, color = Color.White, fontFamily = com.example.ui.theme.TitleFamily, fontWeight = FontWeight.Bold, fontSize = size.sp, lineHeight = (size + 5).sp,
     textAlign = if (center) TextAlign.Center else TextAlign.Start, modifier = if (center) Modifier.fillMaxWidth() else Modifier
   )
 
@@ -567,7 +567,7 @@ private fun FirstStar() {
         drawCircle(Color.White.copy(alpha = 0.55f), r * 0.22f, Offset(c.x - r * 0.35f, c.y - r * 0.38f))
       }
     }
-    Text("¡Nace tu primer lucero!", color = Clay.Sun, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 20.sp, textAlign = TextAlign.Center)
+    Text("¡Nace tu primer lucero!", color = Clay.Sun, fontFamily = com.example.ui.theme.TitleFamily, fontWeight = FontWeight.Bold, fontSize = 20.sp, textAlign = TextAlign.Center)
     Text("Cada partida hace nacer un lucero en el cielo de Nubi.", color = OnNightDim, fontFamily = AppFamily, fontSize = 18.sp, lineHeight = 24.sp, textAlign = TextAlign.Center)
   }
 }
@@ -619,7 +619,7 @@ private fun TodayPathPage(todayGames: List<String>, a: FlightActions) {
       val textHeight = remember(maxWidth, density.fontScale) {
         with(density) {
           val width = maxWidth.roundToPx()
-          val t = measurer.measure(title, TextStyle(fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 28.sp, lineHeight = 33.sp, textAlign = TextAlign.Center), constraints = androidx.compose.ui.unit.Constraints(maxWidth = width))
+          val t = measurer.measure(title, TextStyle(fontFamily = com.example.ui.theme.TitleFamily, fontWeight = FontWeight.Bold, fontSize = 28.sp, lineHeight = 33.sp, textAlign = TextAlign.Center), constraints = androidx.compose.ui.unit.Constraints(maxWidth = width))
           val s = measurer.measure(sub, TextStyle(fontFamily = AppFamily, fontSize = 18.sp, lineHeight = 25.sp, textAlign = TextAlign.Center), constraints = androidx.compose.ui.unit.Constraints(maxWidth = width))
           (t.size.height + s.size.height).toDp() + 12.dp * 2
         }

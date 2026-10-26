@@ -129,7 +129,7 @@ private fun OflText() {
 @Composable
 private fun Section(text: String) {
   Text(
-    text, color = Title, fontSize = 19.sp, fontWeight = FontWeight.Bold,
+    text, color = Title, fontSize = 19.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily,
     modifier = Modifier.padding(top = 22.dp, bottom = 6.dp)
   )
 }

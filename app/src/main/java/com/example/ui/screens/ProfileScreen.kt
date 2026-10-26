@@ -79,7 +79,7 @@ fun PanelHeader(title: String, onBack: () -> Unit) {
   ) {
     com.example.ui.components.KitBackButton(onBack, Modifier.testTag("btn_panel_back"))
     Spacer(Modifier.width(12.dp))
-    com.example.ui.components.OnBoardText(title, color = Color(0xFFEAF0FF), fontSize = 22.sp, fontWeight = FontWeight.Bold)
+    com.example.ui.components.OnBoardText(title, color = Color(0xFFEAF0FF), fontSize = 22.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, modifier = Modifier.semantics { heading() })
   }
 }
 
@@ -135,7 +135,7 @@ fun TuScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) {
 
   Column(modifier.fillMaxSize().padding(bottom = com.example.ui.components.LocalBarInset.current)) {      // la franja de la barra de pestañas queda libre
   Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-    com.example.ui.components.OnBoardText("Tú", color = Color(0xFFEAF0FF), fontSize = 26.sp, fontWeight = FontWeight.Bold, modifier = Modifier.semantics { heading() }.testTag("tu_title"))
+    com.example.ui.components.OnBoardText("Tú", color = Color(0xFFEAF0FF), fontSize = 26.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, modifier = Modifier.semantics { heading() }.testTag("tu_title"))
   }
   LazyColumn(
     modifier = Modifier
@@ -281,7 +281,7 @@ private fun AchievementDetailDialog(def: AchievementDef, unlockedAt: Long?, stat
             .background(Color(0xFF0A0F33))
             .padding(10.dp)
         ) { AchievementMedal(def = def, unlocked = unlockedAt != null, size = 110.dp) }
-        Text(def.title, color = Clay.Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 10.dp))
+        Text(def.title, color = Clay.Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, modifier = Modifier.padding(top = 10.dp))
         Text(def.description, color = Clay.InkSoft, fontSize = 16.sp, textAlign = TextAlign.Center)
         Spacer(Modifier.height(10.dp))
         if (unlockedAt != null) {

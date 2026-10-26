@@ -62,7 +62,7 @@ fun SessionSummaryScreen(
     ) {
       Spacer(Modifier.height(8.dp))
       NubiClay(com.example.ui.components.NubiSize.S, celebrate = true)
-      Text("¡Ruta de hoy completa!", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+      Text("¡Ruta de hoy completa!", color = Color.White, fontSize = 28.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, textAlign = TextAlign.Center)
       Text(
         "Trabajaste " + joinNames(names.map { it.lowercase() }),
         color = OnNightDim, fontSize = 16.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 4.dp)
@@ -74,7 +74,7 @@ fun SessionSummaryScreen(
       }
 
       Text(
-        "TUS JUEGOS", color = Clay.Sun, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+        "TUS JUEGOS", color = Clay.Sun, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily,
         modifier = Modifier.fillMaxWidth().padding(top = 22.dp, bottom = 4.dp)
       )
       summary.games.forEach { g ->
@@ -95,7 +95,7 @@ fun SessionSummaryScreen(
       }
 
       Text(
-        "TU AVANCE", color = Clay.Sun, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+        "TU AVANCE", color = Clay.Sun, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily,
         modifier = Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 4.dp)
       )
       summary.areas.forEachIndexed { i, a ->

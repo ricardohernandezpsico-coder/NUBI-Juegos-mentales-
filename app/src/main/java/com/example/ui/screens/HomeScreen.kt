@@ -224,7 +224,7 @@ internal fun HomeContent(
       Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 28.dp), verticalAlignment = Alignment.CenterVertically) {
         OnBoardText(
           if (ui.name.isBlank()) greetingWord(ui.now) else "${greetingWord(ui.now)}, ${ui.name.trim()}",
-          color = HoyCream, fontSize = 22.sp, fontWeight = FontWeight.Bold, lineHeight = 27.sp, modifier = Modifier.weight(1f).testTag("home_greeting")
+          color = HoyCream, fontSize = 22.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, lineHeight = 27.sp, modifier = Modifier.weight(1f).testTag("home_greeting")
         )
       }
       // Una sola línea con la fecha y la meta de la semana.
@@ -257,7 +257,7 @@ private fun HoyCard(ui: HomeUi, onPlay: () -> Unit, onResume: () -> Unit, modifi
       if (ui.stops.isNotEmpty()) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
           Column(Modifier.weight(1f)) {
-            Text("Tu ruta de hoy", color = Clay.Ink, fontSize = 22.sp, fontWeight = FontWeight.Bold, lineHeight = 27.sp, modifier = Modifier.testTag("home_route_title"))
+            Text("Tu ruta de hoy", color = Clay.Ink, fontSize = 22.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, lineHeight = 27.sp, modifier = Modifier.testTag("home_route_title"))
             Text(
               routeMeta(ui), color = if (complete) Clay.Ink else Clay.InkMuted, fontSize = 16.sp, lineHeight = 21.sp,
               fontWeight = if (complete) FontWeight.Bold else FontWeight.Normal, modifier = Modifier.testTag("home_route_meta")

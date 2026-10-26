@@ -49,25 +49,26 @@ val AppFamily = FontFamily(
 )
 
 /**
- * Los títulos de la pestaña AVANCE (Tarea 174, 25-oct, pedido de Ricardo, a prueba): Rubik Bold (700, OFL; `res/font/rubik_bold.ttf`). Solo la usan el título «Avance», los títulos de sección, los nombres de área de los cuadros y los títulos de la página de un área; el cuerpo sigue en Nunito
- * y los botones en Fredoka ([AppFamily] no cambia). Si la prueba no convence, se quita esta familia y Avance vuelve a Fredoka sin tocar nada más.
+ * La familia de los TÍTULOS de toda la app Kotlin (Tarea 175, 25-oct; Ricardo la probó en Avance —Tarea 174: «me convence»— y la aprobó para el resto): Rubik Bold (700, OFL; `res/font/rubik_bold.ttf`). Un título es el texto que NOMBRA una pantalla, una sección, una tarjeta o una lámina (el saludo de Hoy,
+ * «Tu ruta de hoy», «Todos los juegos», el nombre del juego en la ficha, «Sobre este juego», los títulos de Tú, Ajustes y Licencias, del final de la partida, del resumen de la ruta, del Primer vuelo y de los diálogos). NO la usan los botones de arcilla (siguen en Fredoka), las cifras grandes («668»), los chips, las etiquetas,
+ * las pestañas de abajo ni el cuerpo (Nunito): por eso [AppFamily] NO cambia (elige por peso y arrastraría a los botones) y los títulos la piden a mano o por los estilos `headline` y `title` de [Typography]. Los juegos de Unity no se tocan.
  */
-val AvanceTitleFamily = FontFamily(Font(R.font.rubik_bold, FontWeight.Bold), Font(R.font.rubik_bold, FontWeight.SemiBold))
+val TitleFamily = FontFamily(Font(R.font.rubik_bold, FontWeight.Bold), Font(R.font.rubik_bold, FontWeight.SemiBold))
 
 private val Base = Typography()
 
-// Títulos y encabezados: siempre Fredoka. Cuerpo y etiquetas: AppFamily (Nunito, o Fredoka si van en negrita), con
+// Títulos y encabezados: Rubik Bold ([TitleFamily], desde la Tarea 175; antes Fredoka). Cuerpo y etiquetas: AppFamily (Nunito, o Fredoka si van en negrita), con
 // los tamaños chicos subidos para que se lean bien (mínimo 13-14 sp).
 val Typography = Typography(
-  displayLarge = Base.displayLarge.copy(fontFamily = FredokaFamily),
-  displayMedium = Base.displayMedium.copy(fontFamily = FredokaFamily),
-  displaySmall = Base.displaySmall.copy(fontFamily = FredokaFamily),
-  headlineLarge = Base.headlineLarge.copy(fontFamily = FredokaFamily),
-  headlineMedium = Base.headlineMedium.copy(fontFamily = FredokaFamily),
-  headlineSmall = Base.headlineSmall.copy(fontFamily = FredokaFamily),
-  titleLarge = Base.titleLarge.copy(fontFamily = FredokaFamily),
-  titleMedium = Base.titleMedium.copy(fontFamily = FredokaFamily),
-  titleSmall = Base.titleSmall.copy(fontFamily = FredokaFamily, fontSize = 16.sp, lineHeight = 22.sp),
+  displayLarge = Base.displayLarge.copy(fontFamily = TitleFamily),
+  displayMedium = Base.displayMedium.copy(fontFamily = TitleFamily),
+  displaySmall = Base.displaySmall.copy(fontFamily = TitleFamily),
+  headlineLarge = Base.headlineLarge.copy(fontFamily = TitleFamily),
+  headlineMedium = Base.headlineMedium.copy(fontFamily = TitleFamily),
+  headlineSmall = Base.headlineSmall.copy(fontFamily = TitleFamily),
+  titleLarge = Base.titleLarge.copy(fontFamily = TitleFamily),
+  titleMedium = Base.titleMedium.copy(fontFamily = TitleFamily),
+  titleSmall = Base.titleSmall.copy(fontFamily = TitleFamily, fontSize = 16.sp, lineHeight = 22.sp),
   bodyLarge = Base.bodyLarge.copy(fontFamily = AppFamily),
   bodyMedium = Base.bodyMedium.copy(fontFamily = AppFamily, fontSize = 16.sp, lineHeight = 22.sp),
   bodySmall = Base.bodySmall.copy(fontFamily = AppFamily, fontSize = 16.sp, lineHeight = 22.sp),

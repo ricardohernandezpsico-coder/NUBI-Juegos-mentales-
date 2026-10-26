@@ -111,7 +111,7 @@ internal fun FamilyMedalDialog(state: FamilyMedalState, unlocks: Map<String, Lon
     ClayCard(Modifier.fillMaxWidth().padding(8.dp).testTag("medal_dialog"), color = Clay.Cream, size = SlabSize.LARGE, contentPadding = 22.dp) {
       Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         FamilyMedal(state, 120.dp)
-        Text(state.family.title, color = Clay.Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 8.dp))
+        Text(state.family.title, color = Clay.Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, modifier = Modifier.padding(top = 8.dp))
         Text(state.family.blurb, color = Clay.InkMuted, fontSize = 16.sp, textAlign = TextAlign.Center, lineHeight = 21.sp)
         Spacer(Modifier.height(10.dp))
         Achievements.levelsOf(state.family).forEach { def ->

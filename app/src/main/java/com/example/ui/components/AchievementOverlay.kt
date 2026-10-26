@@ -151,7 +151,7 @@ fun AchievementOverlay(
     ) {
       Text(
         text = "Medalla nueva",              // (Tarea 143, B3) antes «¡LOGRO!» en mayúsculas sostenidas con espaciado: DESIGN §1 no usa mayúsculas sostenidas, y la app las llama medallas
-        fontFamily = AppFamily,
+        fontFamily = com.example.ui.theme.TitleFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 16.sp,
         color = Clay.Sun
@@ -196,7 +196,7 @@ fun AchievementOverlay(
         modifier = Modifier.alpha(texts.value),
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
-        OnBoardText(def.title, color = Clay.Sun, fontSize = 36.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, textAlign = TextAlign.Center)          // sol con el contorno de los títulos de las pestañas (Tarea 148, P4)
+        OnBoardText(def.title, color = Clay.Sun, fontSize = 36.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, textAlign = TextAlign.Center)          // sol con el contorno de los títulos de las pestañas (Tarea 148, P4)
         Text(
           text = def.description,
           fontFamily = AppFamily,

@@ -40,7 +40,7 @@ import com.example.ui.components.StageScale
 import com.example.ui.components.WeekLampRendered
 import com.example.ui.components.areaDescription
 import com.example.ui.theme.Clay
-import com.example.ui.theme.AvanceTitleFamily
+import com.example.ui.theme.TitleFamily
 import com.example.ui.theme.ClayCard
 
 private val OnNight = androidx.compose.ui.graphics.Color(0xFFEAF0FF)
@@ -80,7 +80,7 @@ private val AreaTrack = androidx.compose.ui.graphics.Color(0xFFE2DAC8)
 
 /**
  * Tus áreas (Tarea 174, 25-oct; Ricardo, sobre un boceto de Opus, después de que 5 personas dijeran que la lista era «monótona» y de descartar los edificios de la isla y el radar de Fable): las cuatro áreas en una CUADRÍCULA de 2 × 2. Cada cuadro es una losa crema de arcilla que se toca y abre la página
- * del área ([AvanceAreaPage], que no cambia) y lleva SOLO tres cosas, siempre en el mismo lugar: el NOMBRE (Rubik Bold, [AvanceTitleFamily], con un solo tamaño para los cuatro: el mayor, de 20 a 16 sp, al que el nombre más largo cabe entero), los PUNTOS («730» grande y debajo «de 1000 puntos»; un área
+ * del área ([AvanceAreaPage], que no cambia) y lleva SOLO tres cosas, siempre en el mismo lugar: el NOMBRE (Rubik Bold, [TitleFamily], con un solo tamaño para los cuatro: el mayor, de 20 a 16 sp, al que el nombre más largo cabe entero), los PUNTOS («730» grande y debajo «de 1000 puntos»; un área
  * sin medir dice «Aún sin medir», como el resto de la app) y una BARRA del color del área sobre su riel (de 0 a 1000 puntos; con el contorno de tinta, para que se vea sin depender del color). Con letra mayor que 1,3, o si «Razonamiento» no cabe entero a 16 sp en media fila, va un cuadro por fila. La etapa, lo que falta,
  * la frase de la semana y «tu mejor marca sigue en N puntos» ya no están aquí: viven en la página del área. Nada se distingue solo por color: el nombre identifica cada área.
  */
@@ -90,12 +90,12 @@ internal fun AvanceAreaGrid(areas: List<AreaPoints>, names: Map<String, String>,
   val base = androidx.compose.material3.LocalTextStyle.current
   val density = LocalDensity.current
   Column {
-    SpaceSectionTitle("Tus áreas", hint = "Toca un área para ver sus juegos y tus marcas", fontFamily = AvanceTitleFamily)
+    SpaceSectionTitle("Tus áreas", hint = "Toca un área para ver sus juegos y tus marcas", fontFamily = TitleFamily)
     Spacer(Modifier.height(8.dp))
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
       val gapPx = with(density) { 8.dp.roundToPx() }
       val padPx = with(density) { CellPad.roundToPx() }
-      fun namePx(text: String, sp: Int) = measurer.measure(text, base.merge(androidx.compose.ui.text.TextStyle(fontSize = sp.sp, fontWeight = FontWeight.Bold, fontFamily = AvanceTitleFamily)), softWrap = false, maxLines = 1).size.width
+      fun namePx(text: String, sp: Int) = measurer.measure(text, base.merge(androidx.compose.ui.text.TextStyle(fontSize = sp.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily)), softWrap = false, maxLines = 1).size.width
       val nameOf = { p: AreaPoints -> names[p.area] ?: p.area }
       val twoPx = (constraints.maxWidth - gapPx) / 2 - 2 * padPx
       val cols = if (density.fontScale <= 1.3f && areas.all { namePx(nameOf(it), 16) <= twoPx }) 2 else 1
@@ -122,7 +122,7 @@ private fun AreaCell(p: AreaPoints, name: String, nameSp: Int, onClick: () -> Un
     onClick = onClick, contentPadding = 0.dp
   ) {
     Column(Modifier.fillMaxWidth().padding(horizontal = CellPad, vertical = 12.dp)) {
-      Text(name, color = Clay.Ink, fontSize = nameSp.sp, fontWeight = FontWeight.Bold, fontFamily = AvanceTitleFamily, lineHeight = (nameSp + 4).sp, maxLines = 1, softWrap = false, modifier = Modifier.testTag("area_name_$key"))
+      Text(name, color = Clay.Ink, fontSize = nameSp.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = (nameSp + 4).sp, maxLines = 1, softWrap = false, modifier = Modifier.testTag("area_name_$key"))
       // los puntos: la cifra grande y debajo «de 1000 puntos»; SIEMPRE la misma altura (la de las dos líneas más un respiro), haya cifra o no, para que la barra quede a la misma altura en los cuatro
       Column(Modifier.padding(top = 6.dp).height(with(density) { 36.sp.toDp() + 20.sp.toDp() + 6.dp })) {
         if (p.measured) {
@@ -172,7 +172,7 @@ internal fun AreaDot(areaKey: String) {
 @Composable
 internal fun AvanceBestMarks(marks: List<BestMark>, now: Long) {
   Column {
-    SpaceSectionTitle("Tus mejores marcas", hint = "Cada una con la unidad de su juego, comparada solo contigo", fontFamily = AvanceTitleFamily)
+    SpaceSectionTitle("Tus mejores marcas", hint = "Cada una con la unidad de su juego, comparada solo contigo", fontFamily = TitleFamily)
     Spacer(Modifier.height(8.dp))
     if (marks.isEmpty()) {
       OnBoardText("Cuando juegues tres partidas de un mismo juego, aquí aparece tu mejor marca.", color = OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.testTag("best_marks_empty"))

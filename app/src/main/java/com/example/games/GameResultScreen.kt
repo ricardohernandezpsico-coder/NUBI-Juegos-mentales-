@@ -350,7 +350,7 @@ fun GameResultScreen(
         }
         result.lexRareWords?.takeIf { it.isNotEmpty() }?.let { words ->
           Row(Modifier.fillMaxWidth().padding(start = 4.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            OnBoardText("Tu colección", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = AppFamily, modifier = Modifier.weight(1f))
+            OnBoardText("Tu colección", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = com.example.ui.theme.TitleFamily, modifier = Modifier.weight(1f))
             OnBoardText(
               text = "${words.size} palabra${if (words.size == 1) "" else "s"} rara${if (words.size == 1) "" else "s"}",
               color = Clay.Lime, fontWeight = FontWeight.Bold, fontSize = 17.sp, fontFamily = AppFamily
@@ -535,7 +535,7 @@ fun GameResultScreen(
         }
         streak?.takeIf { "Más seguidos: ${result.svBestStreak}" != model.dataLine }?.let { line ->
           Row(Modifier.fillMaxWidth().padding(start = 4.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            OnBoardText("Más seguidos", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = AppFamily, modifier = Modifier.weight(1f))
+            OnBoardText("Más seguidos", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = com.example.ui.theme.TitleFamily, modifier = Modifier.weight(1f))
             OnBoardText(line, color = Clay.Lime, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = AppFamily)
           }
         }
@@ -629,7 +629,7 @@ private fun ResultPlaque(gameId: String, title: String, domainName: String?, dom
     Box(Modifier.scale(pop.value)) { com.example.ui.components.GameEmblem(gameId, 72.dp) }
     Spacer(Modifier.width(14.dp))
     Column(Modifier.weight(1f)) {
-      OnBoardText(text = title, color = Clay.Cream, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 22.sp, lineHeight = 26.sp)
+      OnBoardText(text = title, color = Clay.Cream, fontFamily = com.example.ui.theme.TitleFamily, fontWeight = FontWeight.Bold, fontSize = 22.sp, lineHeight = 26.sp)
       if (domainName != null) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
           Canvas(Modifier.size(8.dp)) { drawCircle(domainColor) }

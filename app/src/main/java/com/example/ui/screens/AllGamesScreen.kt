@@ -129,7 +129,7 @@ internal fun AllGamesContent(
 
   Column(modifier.fillMaxSize()) {
     Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-      OnBoardText("Todos los juegos", color = NubiTokens.OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f).semantics { heading() }.testTag("all_games_title"))
+      OnBoardText("Todos los juegos", color = NubiTokens.OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, modifier = Modifier.weight(1f).semantics { heading() }.testTag("all_games_title"))
       KitCloseButton(onClose, Modifier.testTag("all_games_close"))
     }
     // El buscador y los chips quedan fijos arriba; con letra muy grande (> 1,3) ocupan casi la mitad de la pantalla y se deslizan con la lista
@@ -205,7 +205,7 @@ private fun AreaHeader(place: PlaceSheetUi, count: Int) {
   Row(Modifier.fillMaxWidth().padding(top = 10.dp).semantics(mergeDescendants = true) { heading() }.testTag("all_area_${place.area.lowercase()}"), verticalAlignment = Alignment.CenterVertically) {
     Box(Modifier.size(12.dp).clip(CircleShape).background(placeColor(place.area)).border(2.dp, Clay.Ink, CircleShape))
     Spacer(Modifier.width(8.dp))
-    OnBoardText(place.areaName, color = NubiTokens.OnNight, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+    OnBoardText(place.areaName, color = NubiTokens.OnNight, fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily)
     Spacer(Modifier.width(8.dp))
     OnBoardText(if (count == 1) "1 juego" else "$count juegos", color = NubiTokens.OnNightDim, fontSize = 16.sp)
   }

@@ -190,7 +190,7 @@ fun NextTrick(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
     contentPadding = 14.dp
   ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-      Text(model.trickTitle, color = Clay.Ink, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+      Text(model.trickTitle, color = Clay.Ink, fontFamily = com.example.ui.theme.TitleFamily, fontWeight = FontWeight.Bold, fontSize = 16.sp)
       Text(model.trick, color = Clay.Ink, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, modifier = Modifier.padding(top = 4.dp))
     }
   }
@@ -239,7 +239,7 @@ fun DetailText(text: String, tag: String, strong: Boolean = false, modifier: Mod
 @Composable
 fun DetailTitle(text: String, modifier: Modifier = Modifier) {
   OnBoardText(
-    text = text, color = Clay.Sun, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp, lineHeight = 24.sp,
+    text = text, color = Clay.Sun, fontFamily = com.example.ui.theme.TitleFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp, lineHeight = 24.sp,
     modifier = modifier.fillMaxWidth().padding(start = 4.dp, top = 12.dp, bottom = 4.dp)
   )
 }
@@ -252,7 +252,7 @@ fun DetailTitle(text: String, modifier: Modifier = Modifier) {
 fun WhyItMatters(model: MeaningfulResultModel, modifier: Modifier = Modifier, topPadding: androidx.compose.ui.unit.Dp = 24.dp) {
   Column(modifier.fillMaxWidth().padding(top = topPadding).testTag("why_it_matters")) {
     Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF8F8AC0).copy(alpha = 0.35f)))
-    OnBoardText(model.whyTitle, color = NubiTokens.OnNight, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 20.sp, lineHeight = 26.sp, modifier = Modifier.padding(start = 4.dp, top = 12.dp))
+    OnBoardText(model.whyTitle, color = NubiTokens.OnNight, fontFamily = com.example.ui.theme.TitleFamily, fontWeight = FontWeight.Bold, fontSize = 20.sp, lineHeight = 26.sp, modifier = Modifier.padding(start = 4.dp, top = 12.dp))
     OnBoardText(model.why, color = NubiTokens.OnNight, fontFamily = AppFamily, fontWeight = FontWeight.Normal, fontSize = 17.sp, lineHeight = 25.sp, modifier = Modifier.padding(start = 4.dp, top = 6.dp))
     OnBoardText(model.source, color = NubiTokens.OnNightDim, fontFamily = AppFamily, fontWeight = FontWeight.Normal, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(start = 4.dp, top = 8.dp))
   }

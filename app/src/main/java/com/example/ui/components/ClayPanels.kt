@@ -119,7 +119,7 @@ fun ClayDialog(
   Dialog(onDismissRequest = onDismiss) {
     ClayCard(Modifier.fillMaxWidth().padding(8.dp), Clay.Cream, SlabSize.LARGE, contentPadding = 0.dp) {
       Column(Modifier.fillMaxWidth().padding(22.dp)) {
-        Text(title, color = Clay.Ink, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+        Text(title, color = Clay.Ink, fontSize = 22.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily)
         Text(text, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 10.dp))
         Column(Modifier.padding(top = 18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
           ClayButton(confirmText, onConfirm, color = confirmColor, modifier = Modifier.fillMaxWidth())

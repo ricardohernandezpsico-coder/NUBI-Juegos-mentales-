@@ -324,7 +324,7 @@ private fun titleSizeFor(title: String, room: Dp): Int {
   val roomPx = with(density) { room.roundToPx() }
   val longest = title.split(' ').maxByOrNull { it.length } ?: title
   return listOf(24, 22, 20, 18).firstOrNull { sp ->
-    measurer.measure(longest, base.merge(TextStyle(fontSize = sp.sp, fontWeight = FontWeight.Bold)), softWrap = false, maxLines = 1).size.width <= roomPx
+    measurer.measure(longest, base.merge(TextStyle(fontSize = sp.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily)), softWrap = false, maxLines = 1).size.width <= roomPx
   } ?: 18
 }
 
@@ -402,7 +402,7 @@ internal fun GameSheetContent(
       BoxWithConstraints(Modifier.fillMaxWidth().padding(top = EmblemDrop + 6.dp)) {
         val titleSp = titleSizeFor(data.title, maxWidth - SideInset * 2)
         Column(Modifier.padding(horizontal = SideInset)) {
-          Text(data.title, color = Clay.Ink, fontSize = titleSp.sp, fontWeight = FontWeight.Bold, lineHeight = (titleSp + 4).sp, modifier = Modifier.semantics { heading() }.testTag("sheet_title"))
+          Text(data.title, color = Clay.Ink, fontSize = titleSp.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, lineHeight = (titleSp + 4).sp, modifier = Modifier.semantics { heading() }.testTag("sheet_title"))
           Text(g.subtitle, color = CardMuted, fontSize = Small, lineHeight = 20.sp, modifier = Modifier.testTag("sheet_subtitle"))
         }
       }
@@ -471,7 +471,7 @@ internal fun GameSheetContent(
           Column(Modifier.fillMaxWidth()) {
             // Cómo quieres jugar: cuadrícula de 2 × 2 (cada cuadro, al menos 64 de alto); la explicación solo del elegido
             HorizontalLine()
-            Text("¿Cómo quieres jugar?", color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp).semantics { liveRegion = LiveRegionMode.Polite })
+            Text("¿Cómo quieres jugar?", color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, modifier = Modifier.padding(bottom = 8.dp).semantics { liveRegion = LiveRegionMode.Polite })
             PlayMode.entries.chunked(if (largeText) 1 else 2).forEachIndexed { rowIndex, pair ->
               Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(top = if (rowIndex == 0) 0.dp else 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 pair.forEach { m ->
@@ -510,7 +510,7 @@ internal fun GameSheetContent(
             // ¿Con o sin reloj? Se recuerda por juego; la ruta diaria de Hoy va siempre sin reloj. Dos cuadros lado a lado.
             if (supportsReto) {
               HorizontalLine()
-              Text("¿Con reloj?", color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
+              Text("¿Con reloj?", color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, modifier = Modifier.padding(bottom = 8.dp))
               val duration = RetoChoice.seconds(g.id)?.let { RetoChoice.durationText(it) } ?: "con tiempo"
               // Lado a lado mientras CADA palabra quepa en su media fila («segundos» no: en un teléfono angosto o con letra 1,3 se partía en «segund / os»); si no, de a UNA por fila
               BoxWithConstraints(Modifier.fillMaxWidth()) {
@@ -567,8 +567,8 @@ internal fun GameAboutContent(data: GameCardData, onClose: () -> Unit = {}, onHo
         GameEmblem(g.id, 48.dp)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-          Text("Sobre este juego", color = CardMuted, fontSize = Small, lineHeight = 20.sp, modifier = Modifier.testTag("about_caption"))
-          Text(data.title, color = Clay.Ink, fontSize = 21.sp, fontWeight = FontWeight.Bold, lineHeight = 25.sp, modifier = Modifier.semantics { heading() }.testTag("about_title"))
+          Text("Sobre este juego", color = CardMuted, fontSize = Small, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, lineHeight = 20.sp, modifier = Modifier.testTag("about_caption"))
+          Text(data.title, color = Clay.Ink, fontSize = 21.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, lineHeight = 25.sp, modifier = Modifier.semantics { heading() }.testTag("about_title"))
         }
         Spacer(Modifier.width(8.dp))
         com.example.ui.components.KitCloseButton(onClose, Modifier.testTag("about_close"), label = "Cerrar y volver a la ficha")
@@ -577,7 +577,7 @@ internal fun GameAboutContent(data: GameCardData, onClose: () -> Unit = {}, onHo
       Text(g.subtitle, color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp, modifier = Modifier.testTag("about_subtitle"))
       FinalesConSentido.sheetFor(g.id)?.let { (whyText, whySource) ->
         Column(Modifier.padding(top = 12.dp).testTag("sheet_why")) {
-          Text("Qué pones en juego", color = Clay.InkMuted, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+          Text("Qué pones en juego", color = Clay.InkMuted, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily)
           Text(whyText, color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 4.dp))
           Text(whySource, color = Clay.InkSoft, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 6.dp))
         }

@@ -26,7 +26,7 @@ import com.example.ui.components.OnBoardText
 import com.example.ui.screens.AvanceAreaGrid
 import com.example.ui.screens.AvanceBestMarks
 import com.example.ui.screens.AvanceWeekLine
-import com.example.ui.theme.AvanceTitleFamily
+import com.example.ui.theme.TitleFamily
 import com.example.ui.theme.NeuroVidaTheme
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Assume
@@ -66,7 +66,7 @@ class Tarea174CapturasTest {
           Box(Modifier.width(393.dp).height(873.dp).testTag("frame")) {
             BoardBackground()
             Column(Modifier.padding(top = 24.dp, bottom = (48 + barDp).dp)) {
-              Box(Modifier.padding(start = 20.dp, end = 16.dp, top = 8.dp, bottom = 4.dp)) { OnBoardText("Avance", color = Color(0xFFEAF0FF), fontSize = 26.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, fontFamily = AvanceTitleFamily) }
+              Box(Modifier.padding(start = 20.dp, end = 16.dp, top = 8.dp, bottom = 4.dp)) { OnBoardText("Avance", color = Color(0xFFEAF0FF), fontSize = 26.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold, fontFamily = TitleFamily) }
               Column(Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                 AvanceWeekLine(Week.Lamps(listOf(true, true, true, true, true, false, false), todayIndex = 4), goal = 4, empty = false)
                 Spacer(Modifier.height(22.dp))

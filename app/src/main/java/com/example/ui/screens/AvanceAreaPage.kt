@@ -55,7 +55,7 @@ import com.example.ui.components.OnBoardText
 import com.example.ui.components.SpaceSectionTitle
 import com.example.ui.components.StageScale
 import com.example.ui.i18n.getGameTitle
-import com.example.ui.theme.AvanceTitleFamily
+import com.example.ui.theme.TitleFamily
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayCard
 
@@ -103,7 +103,7 @@ internal fun AvanceAreaPage(
       item { WeeksSection(weekly, points, areaName) }
       item {
         Column {
-          SpaceSectionTitle("Tus juegos de $areaName", hint = AreaPoints.gamesHint(points.maxPerGame), fontFamily = AvanceTitleFamily)
+          SpaceSectionTitle("Tus juegos de $areaName", hint = AreaPoints.gamesHint(points.maxPerGame), fontFamily = TitleFamily)
           Spacer(Modifier.height(8.dp))
           Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             points.perGame.forEach { g -> GameCard(g, lastPlayed[g.gameId], measures, lang, now, timedFor(g.gameId)) }
@@ -112,7 +112,7 @@ internal fun AvanceAreaPage(
       }
       item {
         Column {
-          SpaceSectionTitle("Qué pones en juego en $areaName", fontFamily = AvanceTitleFamily)
+          SpaceSectionTitle("Qué pones en juego en $areaName", fontFamily = TitleFamily)
           OnBoardText(whatYouPlay(points.area), color = OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 8.dp).testTag("page_what"))
         }
       }
@@ -157,11 +157,11 @@ private fun PageHeader(p: AreaPoints, areaName: String) {
     // el nombre baja de 28 a 20 sp si no cabe entero en su línea (letra 2,0): una palabra nunca se parte
     androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
       val room = constraints.maxWidth - with(LocalDensity.current) { 22.dp.toPx() }
-      val sp = (28 downTo 20 step 2).firstOrNull { measurer.measure(areaName, base.merge(androidx.compose.ui.text.TextStyle(fontSize = it.sp, fontWeight = FontWeight.Bold, fontFamily = AvanceTitleFamily)), softWrap = false, maxLines = 1).size.width <= room } ?: 20
+      val sp = (28 downTo 20 step 2).firstOrNull { measurer.measure(areaName, base.merge(androidx.compose.ui.text.TextStyle(fontSize = it.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily)), softWrap = false, maxLines = 1).size.width <= room } ?: 20
       Row(verticalAlignment = Alignment.CenterVertically) {
         AreaDot(p.area)
         Spacer(Modifier.width(10.dp))
-        OnBoardText(areaName, color = OnNight, fontSize = sp.sp, fontWeight = FontWeight.Bold, fontFamily = AvanceTitleFamily, lineHeight = (sp + 4).sp, modifier = Modifier.semantics { heading() }.testTag("page_title"))
+        OnBoardText(areaName, color = OnNight, fontSize = sp.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = (sp + 4).sp, modifier = Modifier.semantics { heading() }.testTag("page_title"))
       }
     }
     val stage = if (p.measured) "Etapa ${p.stageName}" else "Aún sin medir"
@@ -200,7 +200,7 @@ private fun WeeksSection(weekly: List<Int>, p: AreaPoints, areaName: String) {
 private fun WeeksChart(values: List<Int>) {
   val n = values.size
   ClayCard(Modifier.fillMaxWidth().testTag("page_chart"), contentPadding = 14.dp) {
-    Text("Tus puntos en las últimas $n semanas", color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AvanceTitleFamily, lineHeight = 22.sp, modifier = Modifier.semantics { heading() })
+    Text("Tus puntos en las últimas $n semanas", color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 22.sp, modifier = Modifier.semantics { heading() })
     val lo = values.min().toFloat(); val hi = values.max().toFloat()
     val span = maxOf(hi - lo, 20f)
     // El espacio de las dos cifras crece con la letra del sistema (a 2,0 una cifra de 16 sp mide ~42 dp): la línea nunca las pisa

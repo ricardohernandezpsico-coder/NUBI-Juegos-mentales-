@@ -109,7 +109,7 @@ fun GameLoadingScreen(
       Spacer(Modifier.height(18.dp))
       Text(
         text = game.title,
-        fontFamily = AppFamily,
+        fontFamily = com.example.ui.theme.TitleFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 32.sp,
         lineHeight = 36.sp,

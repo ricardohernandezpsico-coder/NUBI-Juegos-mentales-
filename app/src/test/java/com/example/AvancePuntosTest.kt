@@ -34,7 +34,7 @@ import com.example.ui.screens.AvanceAreaPage
 import com.example.ui.screens.AvanceAreaGrid
 import com.example.ui.screens.AvanceBestMarks
 import com.example.ui.screens.AvanceWeekLine
-import com.example.ui.theme.AvanceTitleFamily
+import com.example.ui.theme.TitleFamily
 import com.example.ui.theme.NeuroVidaTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -193,7 +193,7 @@ class AvancePuntosTest {
       assertEquals("$k ($fontScale): el nombre va en UNA línea, entero", 1, nameLayout.lineCount)
       assertTrue("$k ($fontScale): el nombre no se corta (la caja mide ${name.width} px y el texto entero ${nameLayout.getLineRight(0)})", name.width >= nameLayout.getLineRight(0) - 1f)
       assertTrue("$k ($fontScale): el nombre mide 16 sp o más (${nameLayout.layoutInput.style.fontSize})", nameLayout.layoutInput.style.fontSize.value >= 16f)
-      assertEquals("$k ($fontScale): el nombre va en Rubik", AvanceTitleFamily, nameLayout.layoutInput.style.fontFamily)
+      assertEquals("$k ($fontScale): el nombre va en Rubik", TitleFamily, nameLayout.layoutInput.style.fontFamily)
       if (count("area_points_$k") > 0) {
         val pts = bounds("area_points_$k"); val label = bounds("area_label_$k")
         assertTrue("$k ($fontScale): nombre, cifra, «de 1000 puntos» y barra, en ese orden", name.bottom <= pts.top + 1f && pts.bottom <= label.top + 1f && label.bottom <= bar.top + 1f)
@@ -227,27 +227,7 @@ class AvancePuntosTest {
     assertTrue("las 4 áreas miden $h dp con letra 1,3 (a 393 × 873 caben con el título y la semana sin deslizar si no pasan de ~330)", h <= 330f)
   }
 
-  // ---- Rubik: solo en Avance, a prueba
-
-  @Test
-  fun rubik_es_la_fuente_open_font_license_y_solo_la_usa_avance() {
-    val ttf = java.io.File("src/main/res/font/rubik_bold.ttf")
-    assertTrue("la fuente está en res/font", ttf.exists())
-    val bytes = ttf.readBytes()
-    assertTrue("es un TrueType", bytes[0].toInt() == 0 && bytes[1].toInt() == 1)
-    val text = String(bytes, Charsets.ISO_8859_1) + String(bytes, Charsets.UTF_16BE)
-    assertTrue("trae su nombre «Rubik» y la licencia SIL Open Font License en la tabla de nombres", text.contains("Rubik") && text.contains("SIL Open Font License"))
-    assertTrue("pesa menos de 200 KB (${bytes.size / 1024} KB)", bytes.size < 200 * 1024)
-    // quién la usa: la familia de los títulos de Avance, y solo los archivos de Avance
-    val allowed = setOf("Type.kt", "ProgressScreen.kt", "AvanceAreas.kt", "AvanceAreaPage.kt")          // SpaceSections.kt solo recibe «una familia» (null por defecto): no nombra a Rubik
-    val users = java.io.File("src/main/java").walkTopDown().filter { f -> f.extension == "kt" && f.readText().let { it.contains("AvanceTitleFamily") || it.contains("R.font.rubik") } }.map { it.name }.toSet()
-    assertEquals("Rubik solo en Avance (Ricardo, 25-oct: a prueba)", allowed, users)
-    val type = java.io.File("src/main/java/com/example/ui/theme/Type.kt").readText().replace("\r\n", "\n")
-    val start = type.indexOf("val AppFamily = FontFamily(")
-    val appFamily = type.substring(start, type.indexOf("\n)\n", start))
-    assertFalse("AppFamily (la de toda la app) no cambia: sigue Nunito y Fredoka", appFamily.contains("rubik"))
-    assertTrue(appFamily.contains("R.font.nunito_regular") && appFamily.contains("fredoka("))
-  }
+  // ---- Rubik en los títulos de Avance (desde la Tarea 175 lo es de toda la app: `TitulosRubikTest`)
 
   @Test
   fun el_titulo_de_las_secciones_de_avance_va_en_rubik_y_el_cuerpo_no() {
@@ -257,9 +237,9 @@ class AvancePuntosTest {
         AvanceBestMarks(emptyList(), now)
       }
     }
-    for (t in listOf("Tus áreas", "Tus mejores marcas")) assertEquals("«$t» en Rubik", AvanceTitleFamily, layoutOfText(t).layoutInput.style.fontFamily)
-    assertTrue("la ayuda bajo el título sigue en el cuerpo (no Rubik)", layoutOfText("Toca un área para ver sus juegos y tus marcas").layoutInput.style.fontFamily != AvanceTitleFamily)
-    assertTrue("y la cifra de los puntos, que es de Fredoka", layoutOf("area_points_memoria").layoutInput.style.fontFamily != AvanceTitleFamily)
+    for (t in listOf("Tus áreas", "Tus mejores marcas")) assertEquals("«$t» en Rubik", TitleFamily, layoutOfText(t).layoutInput.style.fontFamily)
+    assertTrue("la ayuda bajo el título sigue en el cuerpo (no Rubik)", layoutOfText("Toca un área para ver sus juegos y tus marcas").layoutInput.style.fontFamily != TitleFamily)
+    assertTrue("y la cifra de los puntos, que es de Fredoka", layoutOf("area_points_memoria").layoutInput.style.fontFamily != TitleFamily)
   }
 
   // ---- Tus mejores marcas
