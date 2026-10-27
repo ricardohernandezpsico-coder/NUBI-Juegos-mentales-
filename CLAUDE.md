@@ -32,6 +32,7 @@ El diario detallado de cómo se llegó hasta aquí (decisiones, bugs, pedidos de
 
 - Android SDK `C:\Users\RURAL7\AppData\Local\Android\Sdk` (android-36; emulador `medium_phone` x86_64: sirve para
   la UI Compose, no para los juegos Unity, que son arm64). Teléfono: Motorola (`DEVICE` en `verificar-todo.sh`).
+- **Mínimo Android 8 (`minSdk 26`, Tarea 183, 27-oct, decisión de Ricardo)**; `targetSdk 36`. Antes era 24, y en Android 7 la app se habría cerrado porque usa `java.time` (Lint `NewApi`); se eligió subir el mínimo y no sumar desugaring. El `unityLibrary` del export y `unity.minSdkVersion` siguen en 24: al unir los manifiestos manda el 26 de la app. Ícono adaptativo en `mipmap-anydpi`.
 - JDK 21 Temurin `C:\Users\RURAL7\AppData\Local\Temurin21\jdk-21.0.12.1+1` (NO el JBR de Android Studio).
 - Unity 6000.0.84f1 LTS + soporte Android. Config-cache de Gradle desactivado (choca con el export de Unity).
 - `local.properties` y `debug.keystore` fuera de git. Compilar a mano: `./gradlew.bat assembleDebug`.
@@ -150,7 +151,7 @@ Lenguaje con diseño propio y los demás en `docs/juegos/<id>.md` ([catálogo y 
 
 ## Pruebas
 
-- Kotlin: 1404 en el informe de Gradle (`./gradlew.bat testDebugUnitTest`), que incluye 77 de capturas que solo corren al grabar; se ejecutan siempre 1327 (Tarea 181); lógica pura en `app/src/test/.../data`, `model`, `notification`; los
+- Kotlin: 1400 en el informe de Gradle (`./gradlew.bat testDebugUnitTest`), que incluye 76 de capturas que solo corren al grabar; se ejecutan siempre 1324 (Tareas 182 y 183; la 182 sacó el código sin uso, con inventario en `docs/limpieza-182-inventario*.md` y resumen en `docs/arquitectura-app.md`); lógica pura en `app/src/test/.../data`, `model`, `notification`; los
   recorridos del ViewModel en `flow/`, lo guardado en disco en `bridge/`, migraciones y respaldo). Las pruebas con
   Robolectric que crean el ViewModel, el repositorio o leen la base llaman `TestSupport.resetDatabase()` en `@Before` y `@After` (Room EN MEMORIA, nunca `neurovida_database`) y SUELTAN lo creado con `TestSupport.release(...)`
   (cancela y ESPERA su trabajo de fondo); `NoDiskDatabaseGuardTest` falla si falta. Detalle: [docs/respaldo-y-diagnostico.md](docs/respaldo-y-diagnostico.md).
