@@ -107,8 +107,11 @@ object TimeTrialDay {
 
   // ------------------------------------------------------------------ textos (Fable §9.8; «Acoplamiento» en lugar de «Carga exacta»)
 
-  /** El rótulo del botón de Hoy. Una palabra por concepto: nunca «Reto», «Desafío» ni «Con reloj» para esto. */
+  /** El nombre del modo con «de hoy» (lo que lee el lector de pantalla y lo que dice el final). Una palabra por concepto: nunca «Reto», «Desafío» ni «Con reloj» para esto. */
   const val LABEL = "Contrarreloj de hoy"
+
+  /** El rótulo del botón de Hoy (Tarea 180): solo el nombre del modo; el juego de hoy va en su segunda línea. */
+  const val BUTTON_LABEL = "Contrarreloj"
 
   /** «38 aciertos» / «1 acierto»: una marca (la de [TimeTrialResult.mark]). */
   fun hitsText(hits: Int): String = if (hits == 1) "1 acierto" else "$hits aciertos"
@@ -122,16 +125,8 @@ object TimeTrialDay {
   /** «hoy 38 aciertos». */
   fun todayText(hits: Int): String = "hoy ${hitsText(hits)}"
 
-  /**
-   * La segunda línea del botón de Hoy. Ancho (la ruta completa): «Tinta o Palabra · 2 minutos» o, jugado, «Tinta o Palabra · hoy 38 aciertos». Con letra del sistema de 1,3 o más ([large]) solo lo que cambia («Tinta o Palabra», «hoy 38 aciertos»): la losa no crece de más.
-   * En media fila (la ruta sigue) no hay segunda línea salvo «otra vez» (jugado). Null = sin segunda línea.
-   */
-  fun secondLine(title: String, state: TimeTrialState, todayHits: Int?, wide: Boolean, large: Boolean): String? = when {
-    state == TimeTrialState.PENDIENTE -> if (!wide) null else if (large) title else "$title · $MINUTES_TEXT"
-    !wide -> "otra vez"
-    large -> todayText(todayHits ?: 0)
-    else -> "$title · ${todayText(todayHits ?: 0)}"
-  }
+  /** La segunda línea del botón de Hoy (Tarea 180): «Hoy: Tinta o Palabra», en todos los estados (lo demás —los minutos, lo jugado, el récord— va en otras partes o en el lector de pantalla). */
+  fun secondLine(title: String): String = "Hoy: $title"
 
   /** Lo que dice el lector de pantalla del botón: todo junto, también cuando a la vista solo dice «Contrarreloj de hoy» (media fila). */
   fun description(title: String, state: TimeTrialState, todayHits: Int?, record: Int?): String = buildString {

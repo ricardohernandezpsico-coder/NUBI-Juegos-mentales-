@@ -193,14 +193,11 @@ class TimeTrialDayTest {
   }
 
   @Test
-  fun `la segunda linea del boton cambia con el estado, el ancho y la letra grande`() {
-    val t = "Tinta o Palabra"
-    assertNull("en media fila, pendiente, no hay segunda línea", TimeTrialDay.secondLine(t, TimeTrialState.PENDIENTE, null, wide = false, large = false))
-    assertEquals("Tinta o Palabra · 2 minutos", TimeTrialDay.secondLine(t, TimeTrialState.PENDIENTE, null, wide = true, large = false))
-    assertEquals("con letra 1,3 solo el juego", "Tinta o Palabra", TimeTrialDay.secondLine(t, TimeTrialState.PENDIENTE, null, wide = true, large = true))
-    assertEquals("Tinta o Palabra · hoy 38 aciertos", TimeTrialDay.secondLine(t, TimeTrialState.JUGADO, 38, wide = true, large = false))
-    assertEquals("hoy 38 aciertos", TimeTrialDay.secondLine(t, TimeTrialState.JUGADO, 38, wide = true, large = true))
-    assertEquals("otra vez", TimeTrialDay.secondLine(t, TimeTrialState.JUGADO, 38, wide = false, large = false))
+  fun `el boton dice solo Contrarreloj y, debajo, Hoy con el juego del dia (Tarea 180)`() {
+    assertEquals("Contrarreloj", TimeTrialDay.BUTTON_LABEL)
+    assertEquals("Hoy: Tinta o Palabra", TimeTrialDay.secondLine("Tinta o Palabra"))
+    assertEquals("Hoy: Acoplamiento", TimeTrialDay.secondLine("Acoplamiento"))
+    assertFalse("el nombre del modo es UNA palabra que no se parte", TimeTrialDay.BUTTON_LABEL.contains(' '))
   }
 
   @Test
@@ -213,7 +210,7 @@ class TimeTrialDayTest {
   @Test
   fun `una palabra por concepto, nunca Reto ni Desafio ni Con reloj para el Contrarreloj`() {
     val texts = listOf(TimeTrialDay.LABEL, TimeTrialDay.recordLine(3), TimeTrialDay.newMarkLine(3, "X"), TimeTrialDay.todayText(3), TimeTrialDay.description("X", TimeTrialState.JUGADO, 3, 4)) +
-      TimeTrialState.values().mapNotNull { TimeTrialDay.secondLine("X", it, 3, wide = true, large = false) }
+      listOf(TimeTrialDay.BUTTON_LABEL, TimeTrialDay.secondLine("X"))
     for (t in texts) for (banned in listOf("Reto", "reto ", "Desafío", "Con reloj", "nivel", "Nivel", "racha")) assertFalse("«$t» no debe decir «$banned»", t.contains(banned))
   }
 

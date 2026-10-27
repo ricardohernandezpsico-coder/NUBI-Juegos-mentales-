@@ -1257,6 +1257,37 @@ def ic_cometa():
     estelas = churros([(*en(7.5, -5.8), *en(14.0, -5.8)), (*en(6.5, 6.2), *en(10.5, 6.2))], radio=0.75)   # dos churros finos (1,5 dp) de 6,5 y 4 dp, uno a cada lado de la cola
     return [gota] + estelas
 
+# ---- Tarea 180 (Hoy: Modos de juego): el RELOJ de plasticina del botón «Contrarreloj», de ~44 dp (los íconos de churro tinta miden 24). Un cronómetro de cuerpo redondo: el aro de plasticina TINTA (así se lee igual sobre lila, sol y crema, los tres colores del botón), la cara CREMA un poco levantada, dos manecillas y cuatro marcas de tinta, y la corona de arriba.
+# Se pinta con la misma luz y el mismo material de plasticina del kit; el canto se ve abajo como el de las losas. `--kit --kit-solo reloj_clay` (no entra en `todo`).
+RELOJ_R = 19.0                                                   # radio del aro (dp): 38 dp de ancho; con la corona, ~43,5 de alto
+RELOJ_YC = -2.7                                                  # centra el cuerpo (la corona sobresale por arriba) en el lienzo
+def ic_reloj_clay():
+    def y_(v): return (v + RELOJ_YC) / KIT_DPU
+    objs = []
+    def disco(R, h, z0, mt, nombre, bisel=0.72):
+        d = cyl(r=R/KIT_DPU, d=h/KIT_DPU, verts=72, loc=(0, y_(0), (z0 + h/2)/KIT_DPU), coll='iconos', name=nombre); bevel(d, h/KIT_DPU*bisel, 8); organic(d, 0.003, 1.4, 1); mat(d, mt); objs.append(d); return d
+    tinta = mat_tinta()
+    disco(RELOJ_R, 7.0, 0.0, tinta, 'reloj_aro')
+    disco(RELOJ_R - 3.6, 7.8, 0.0, mat_kit('m_kit_reloj_cara', KIT_CREMA), 'reloj_cara')
+    zt = 7.8 + 0.4
+    for (x, y) in ((0, 11.6), (11.6, 0), (0, -11.6), (-11.6, 0)):                  # las marcas: 12, 3, 6 y 9
+        sp = sphere(r=1.25/KIT_DPU, seg=20, loc=(x/KIT_DPU, y_(y), zt/KIT_DPU), coll='iconos', name='reloj_marca'); sp.scale = (1, 1, 0.75); mat(sp, tinta); objs.append(sp)
+    m = tinta
+    for (x1, y1) in ((1.6, 10.2), (6.4, -2.2)):                                      # las manecillas: la larga hacia arriba y la corta hacia la derecha y un poco abajo
+        objs.append(churro((0, y_(0), (zt + 0.5)/KIT_DPU), (x1/KIT_DPU, y_(y1), (zt + 0.5)/KIT_DPU), 1.5/KIT_DPU, m, coll='iconos', name='reloj_mano'))
+    sp = sphere(r=2.1/KIT_DPU, seg=24, loc=(0, y_(0), (zt + 0.6)/KIT_DPU), coll='iconos', name='reloj_eje'); mat(sp, m); objs.append(sp)
+    for (w, h, d, yc) in ((6.0, 3.4, 5.4, RELOJ_R + 0.5), (11.0, 3.8, 6.6, RELOJ_R + 3.4)):          # la corona: el cuello y la tapa
+        b = box((w/KIT_DPU, h/KIT_DPU, d/KIT_DPU), loc=(0, y_(yc), d/2/KIT_DPU), coll='iconos', name='reloj_corona'); bevel(b, 0.18, 5); mat(b, tinta); objs.append(b)
+    return objs
+
+def render_reloj_clay():
+    cam_pieza((4.0, 3.0, 6.0, 7.0), 44.0, 44.0)
+    before = set(bpy.data.objects); suelo_kit()
+    raiz = raiz_kit()
+    for o in ic_reloj_clay(): o.parent = raiz
+    times['kit_i_reloj_clay'] = render('kit_i_reloj_clay', {'iconos', 'luces'})
+    for o in [o for o in bpy.data.objects if o not in before]: bpy.data.objects.remove(o, do_unlink=True)
+
 ICONOS_T91 = {'isla': ic_isla, 'cohete': ic_cohete, 'farola': ic_farola, 'globo': ic_globo, 'altavoz': ic_altavoz, 'vibracion': ic_vibracion, 'reloj': ic_reloj, 'sin_reloj': ic_sin_reloj, 'escudo': ic_escudo, 'info': ic_info, 'campana': ic_campana, 'persona': ic_persona, 'arriba': ic_arriba, 'abajo': ic_abajo, 'cometa': ic_cometa}
 
 def icono_kit(nombre):
@@ -1379,6 +1410,7 @@ def render_kit():
     scene.view_settings.exposure = float(arg('--kit-exp','-0.42'))   # la plasticina clara se quemaba (crema y lima a 255) con el sol desde arriba
     if KIT_SOLO == 'avance':   # Tarea 124: canal, churro, bolita, 17 emblemas, farola, pedestal, cola del globo, medallas y escudos (`kit_avance.py`; solo si se pide: no entra en 'todo')
         exec(compile(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'kit_avance.py'), encoding='utf-8').read(), 'kit_avance.py', 'exec'), globals()); render_kit_avance()
+    if KIT_SOLO == 'reloj_clay': render_reloj_clay()                       # Tarea 180: el reloj de plasticina del Contrarreloj (44 dp)
     if KIT_SOLO == 'cometa': render_iconos_kit(solo=('cometa',))          # Tarea 167: solo el cometa del Desafío de hoy
     if KIT_SOLO == 'barra': render_iconos_kit(solo=('isla', 'cohete', 'farola'))          # Tarea 156: solo los tres glifos de la barra de pestañas
     if KIT_SOLO in ('todo', 'losas'): render_losas()

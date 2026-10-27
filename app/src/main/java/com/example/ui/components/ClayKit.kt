@@ -4,6 +4,8 @@ import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -19,6 +21,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,6 +37,7 @@ import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -246,6 +250,35 @@ internal fun KitGlyph(glyph: Glyph, modifier: Modifier = Modifier, size: Dp = 24
   val piece = spec.piece(glyph.key)
   val image = ImageBitmap.imageResource(glyph.res)
   Box(modifier.size(size).drawBehind { drawKitGlyph(image, piece, size.toPx() / (24.dp.toPx())) })
+}
+
+/**
+ * El reloj de plasticina del botón «Contrarreloj» (Tarea 180; `kit_i_reloj_clay`, de Blender: aro de tinta, cara crema, dos manecillas y la corona): un objeto de ~42 dp, no un glifo de churro. Se ve igual sobre lila, sol y crema (el aro es de tinta). Es decorativo: el botón ya dice qué hace.
+ * [size] es el alto del cuerpo del reloj; se dibuja de la misma imagen (3 px por dp), así que más grande que ~44 dp se ampliaría.
+ */
+@Composable
+internal fun ClayClockIcon(modifier: Modifier = Modifier, size: Dp = 42.dp) {
+  val spec = rememberClayKitSpec()
+  val piece = spec.piece("reloj_clay")
+  val image = ImageBitmap.imageResource(R.drawable.kit_i_reloj_clay)
+  Box(modifier.size(size).drawBehind { drawKitGlyph(image, piece, size.toPx() / (piece.bodyHeight * density)) }.testTag("icon_reloj_clay"))
+}
+
+/** Los colores de las cuatro áreas (Memoria, Atención, Razonamiento y Lenguaje) en el orden de la app: arriba a la izquierda, arriba a la derecha, abajo a la izquierda y abajo a la derecha. */
+internal val AreaSquareColors = listOf(com.example.ui.theme.NubiTokens.Memoria, com.example.ui.theme.NubiTokens.Atencion, com.example.ui.theme.NubiTokens.Razonamiento, com.example.ui.theme.NubiTokens.Lenguaje)
+
+/**
+ * Las cuatro casillas de «Todos los juegos» (Tarea 180): un cuadro de 2 × 2 con el color de cada área, cada casilla con su borde de tinta fino (sobre la losa crema el ámbar y el verde sin borde se pierden). Decorativo: el botón ya dice «Todos los juegos». [size] = el lado del cuadro entero.
+ */
+@Composable
+internal fun AreaSquares(modifier: Modifier = Modifier, size: Dp = 28.dp) {
+  val gap = size * 0.12f
+  val cell = (size - gap) / 2
+  Column(modifier.size(size).testTag("icon_areas"), verticalArrangement = Arrangement.spacedBy(gap)) {
+    for (row in 0..1) Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+      for (col in 0..1) Box(Modifier.size(cell).background(AreaSquareColors[row * 2 + col], RoundedCornerShape(cell * 0.28f)).border(1.5.dp, Clay.Ink, RoundedCornerShape(cell * 0.28f)))
+    }
+  }
 }
 
 /** Los discos de plasticina de 48 dp: crema y cielo lisos (el ícono o la inicial va encima, en Compose) y el de cerrar, con la X de dos churros tinta horneada. */

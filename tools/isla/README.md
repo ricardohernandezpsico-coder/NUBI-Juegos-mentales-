@@ -99,3 +99,7 @@ python -I tools/isla/icono.py tools/isla/out/nubi3d/capa-nubi-frente.png app/src
 ```
 
 `--width 3000` deja a Nubi de ~860 px de ancho (el ícono la pide a ≥ 432 px dentro de la zona segura). `nubi_recursos.py` (tools/previews) ya NO genera a Nubi: solo los planetas de las áreas.
+
+## El reloj de plasticina del Contrarreloj (Tarea 180, 26-oct)
+
+`--kit --kit-solo reloj_clay` (no entra en `todo`) renderiza `kit_i_reloj_clay.png`: un cronómetro de plasticina de ~44 dp (los íconos de churro del kit miden 24): el aro de tinta (así se lee igual sobre lila, sol y crema), la cara crema un poco levantada, cuatro marcas, dos manecillas y la corona de arriba. `isla.py`: `ic_reloj_clay()` arma las piezas y `render_reloj_clay()` pone la cámara de un cuerpo de 44 × 44 dp (7,5 s con Cycles). Después `python -I tools/isla/kit.py <carpeta_del_render> <salida> --solo-iconos=reloj_clay` normaliza el WebP (3 px por dp) y suma la pieza `reloj_clay` a `kit.json`; el WebP va a `app/src/main/res/drawable-nodpi/` y el `kit.json` nuevo a `app/src/main/res/raw/`. En la app lo dibuja `ClayClockIcon`.

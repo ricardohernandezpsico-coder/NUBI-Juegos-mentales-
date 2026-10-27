@@ -368,10 +368,11 @@ class VisibleTextsGuardTest {
     // Tarea 177 (`auditoria-fable/contrarreloj.md` §5 y §9.8, con «Acoplamiento» en lugar de «Carga exacta»): «Contrarreloj» es la palabra (no «reto», «Desafío» ni «Con reloj» para esto), «aciertos» la unidad, y ningún texto baja de lo dicho
     val t = com.example.ui.screens.HomeTimeTrial("stroop", "Tinta o Palabra", com.example.data.TimeTrialState.PENDIENTE, record = 41)
     assertEquals("Contrarreloj de hoy", com.example.ui.screens.TIME_TRIAL_LABEL)
-    assertEquals("Tinta o Palabra · 2 minutos", com.example.ui.screens.timeTrialSecondLine(t, wide = true, large = false))
-    assertEquals("Tinta o Palabra", com.example.ui.screens.timeTrialSecondLine(t, wide = true, large = true))
+    assertEquals("Contrarreloj", com.example.ui.screens.TIME_TRIAL_BUTTON_LABEL)
+    assertEquals("Modos de juego", com.example.ui.screens.MODES_TITLE)
+    assertEquals("Hoy: Tinta o Palabra", com.example.ui.screens.timeTrialSecondLine(t))
     val played = t.copy(state = com.example.data.TimeTrialState.JUGADO, todayHits = 38)
-    assertEquals("Tinta o Palabra · hoy 38 aciertos", com.example.ui.screens.timeTrialSecondLine(played, wide = true, large = false))
+    assertEquals("el botón dice lo mismo ya jugado: lo jugado va en el lector de pantalla y el récord en su línea", "Hoy: Tinta o Palabra", com.example.ui.screens.timeTrialSecondLine(played))
     assertEquals("Tu récord: 41 aciertos.", com.example.data.TimeTrialDay.recordLine(41))
     assertEquals("Marca nueva: 43 aciertos en Tinta o Palabra.", com.example.data.TimeTrialDay.newMarkLine(43, "Tinta o Palabra"))
     assertEquals("Otra vez", com.example.ui.screens.TIME_TRIAL_AGAIN)
@@ -381,7 +382,7 @@ class VisibleTextsGuardTest {
     val ui = com.example.ui.screens.HomeUi(name = "R", now = 0L, tier = com.example.model.RankTier.fromRating(0), streak = 0, weeklyGoal = 4, lamps = com.example.data.Week.Lamps(List(7) { false }, 6), stops = stops, pausedTitle = null, flightDay = false, hasBaseline = true)
     assertEquals("3 de 3 · ruta completa", com.example.ui.screens.routeMeta(ui))
     val phrases = listOf(
-      com.example.ui.screens.TIME_TRIAL_LABEL, com.example.ui.screens.TIME_TRIAL_AGAIN, com.example.ui.screens.ROUTE_TOMORROW, com.example.data.TimeTrialDay.recordLine(41), com.example.data.TimeTrialDay.newMarkLine(43, "Tinta o Palabra"),
+      com.example.ui.screens.TIME_TRIAL_LABEL, com.example.ui.screens.TIME_TRIAL_BUTTON_LABEL, com.example.ui.screens.MODES_TITLE, com.example.ui.screens.TIME_TRIAL_AGAIN, com.example.ui.screens.ROUTE_TOMORROW, com.example.data.TimeTrialDay.recordLine(41), com.example.data.TimeTrialDay.newMarkLine(43, "Tinta o Palabra"),
       com.example.data.TimeTrialStats.SEAL, com.example.data.TimeTrialStats.UNIT, com.example.data.TimeTrialStats.RULE, com.example.data.TimeTrialStats.scoreLine(com.example.data.TimeTrialResult(gameId = "stroop", day = "2026-10-26", trackVersion = 2, hits = 38, errors = 4, level = 3)), com.example.data.TimeTrialStats.FIRST_PHRASE, com.example.data.TimeTrialStats.NOTE, com.example.data.TimeTrialStats.LAST_TITLE, com.example.ui.screens.routeMeta(ui)
     )
     for (p in phrases) {
