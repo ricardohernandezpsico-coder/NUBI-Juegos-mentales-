@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.platform.ComposeView
+import com.example.data.TimeTrialDay
 import com.example.model.GameRegistry
 import com.example.ui.components.GameLoadingScreen
 import com.unity3d.player.UnityPlayerGameActivity
@@ -65,7 +66,10 @@ object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
     val game = GameRegistry.allGames.find { it.id == root.optString("game_id") } ?: return
     val config = root.optJSONObject("config")
     val level = config?.optInt("level", 0)?.takeIf { it > 0 }
-    val timed = if (config?.has("timed") == true) config.optBoolean("timed") else null
+    // Los cuatro juegos con Contrarreloj ya no eligen el reloj (Tarea 181): la carga no dice «Sin reloj»; un Contrarreloj dice su nombre («de hoy» solo si la pista es la del día de ese juego)
+    val timeTrial = config?.optBoolean("time_trial") == true && TimeTrialDay.supports(game.id)
+    val timed = if (config?.has("timed") == true && !TimeTrialDay.supports(game.id)) config.optBoolean("timed") else null
+    val timeTrialName = if (timeTrial) TimeTrialDay.nameFor(game.id, config?.optInt("track_seed", 0)?.let { TimeTrialDay.dateKeyOfSeed(it) }.orEmpty()) else null
     val assessmentStep = if (config?.optBoolean("assessment") == true) config.optInt("assessment_step", 0) else 0
     val assessmentTotal = config?.optInt("assessment_total", 0) ?: 0
 
@@ -80,7 +84,7 @@ object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
           setContent {
             GameLoadingScreen(
               game = game, level = level, timed = timed, withSky = true,
-              assessmentStep = assessmentStep, assessmentTotal = assessmentTotal
+              assessmentStep = assessmentStep, assessmentTotal = assessmentTotal, timeTrialName = timeTrialName
             )
           }
         },

@@ -430,7 +430,8 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   /**
    * «Contrarreloj de hoy» (Tarea 177; `docs/contrarreloj.md`): el juego de la fecha (el mismo para todas las personas: rotación fija sobre los cuatro de la primera tanda) en «La escalera de 2 minutos»: 120 s, la pista fija del día, sin dificultad adaptativa. NO es la ruta (no la avanza) y se
-   * puede repetir sin límite; gratis; no cuenta para el futuro tope de partidas libres (`TimeTrialDay.COUNTS_FOR_FREE_CAP`). Al terminar vuelve a Hoy. [gameId] solo lo pide «Otra vez» (el mismo juego y la misma pista, aunque el día haya cambiado mientras se jugaba).
+   * puede repetir sin límite; gratis; no cuenta para el futuro tope de partidas libres (`TimeTrialDay.COUNTS_FOR_FREE_CAP`). Al terminar vuelve a donde se vino (Hoy, o «Todos los juegos» si se lanzó desde la ficha). [gameId] lo piden «Otra vez» (el mismo juego y la misma pista, aunque el día haya
+   * cambiado mientras se jugaba) y el botón «Contrarreloj» de la ficha (Tarea 181: CUALQUIERA de los cuatro juegos, con la pista del día de ese juego: la misma semilla que usaría Hoy; se guarda igual y, si es el juego del día, Hoy lo ve como jugado o con marca nueva porque su estado sale de la tabla).
    */
   fun startTimeTrial(gameId: String? = null, day: String? = null) {
     val d = day ?: repository.todayKey()

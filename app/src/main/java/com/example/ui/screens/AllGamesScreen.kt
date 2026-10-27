@@ -102,7 +102,8 @@ fun AllGamesScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier)
   sheetFor?.let { g ->
     GameSheetHost(
       game = g, viewModel = viewModel, onDismiss = { sheetFor = null }, onPlay = { m: PlayMode, timed: Boolean -> sheetFor = null; viewModel.playFromHome(g.id, m, timed) },
-      onTutorial = { sheetFor = null; viewModel.playTutorialFromHome(g.id) }           // «Cómo se juega» (Tarea 171): el tutorial otra vez
+      onTutorial = { sheetFor = null; viewModel.playTutorialFromHome(g.id) },           // «Cómo se juega» (Tarea 171): el tutorial otra vez
+      onTimeTrial = { sheetFor = null; viewModel.startTimeTrial(g.id) }                  // «Contrarreloj» (Tarea 181): el de ESTE juego con la pista del día; al terminar vuelve aquí, como una partida de siempre
     )
   }
 }

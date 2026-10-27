@@ -393,6 +393,27 @@ class VisibleTextsGuardTest {
   }
 
   @Test
+  fun `el Contrarreloj de la ficha, la carga y el final no dicen de hoy a mano y usan las palabras de siempre`() {
+    // Tarea 181: «Contrarreloj de hoy» solo si es el juego del día; el nombre sale SIEMPRE de `TimeTrialDay.nameFor` (ni un literal «de hoy» en la ficha, la carga o el final)
+    for (path in listOf("ui/screens/GameSheet.kt", "ui/components/GameLoadingScreen.kt", "bridge/UnityLoadingOverlay.kt", "games/TimeTrialResultScreen.kt")) {
+      val texts = File("src/main/java/com/example/$path").readLines().flatMap { visibleLiteralsOf(it) }
+      for (t in texts) assertFalse("$path: «$t» dice «de hoy» a mano; el nombre sale de TimeTrialDay.nameFor", t.contains("Contrarreloj de hoy"))
+    }
+    val sheetTexts = listOf(
+      com.example.data.TimeTrialDay.BUTTON_LABEL, com.example.data.TimeTrialDay.sheetSecondLine(41), com.example.data.TimeTrialDay.sheetSecondLine(null),
+      com.example.data.TimeTrialDay.sheetDescription("radar", "2026-10-26", "Rescate relámpago", 12), com.example.data.TimeTrialDay.nameFor("stroop", "2026-10-26"), com.example.data.TimeTrialDay.nameFor("radar", "2026-10-26")
+    )
+    for (p in sheetTexts) {
+      assertFalse("«$p» usa «reto» o «modo difícil»", Regex("""retos?|modo dif[ií]cil""", RegexOption.IGNORE_CASE).containsMatchIn(p))
+      assertFalse("«$p» usa «Desafío» (el Contrarreloj no es el modo Desafío de la ficha)", p.contains("Desafío"))
+      assertFalse("«$p» habla de «Con reloj» (una palabra por concepto: el Contrarreloj)", p.contains("Con reloj"))
+      assertTrue("«$p» no lleva signos sueltos ni flechas", p.none { it in "↑↓→←+−" })
+    }
+    assertEquals("Tu récord: 41 aciertos.", com.example.data.TimeTrialDay.sheetSecondLine(41))
+    assertEquals("2 minutos", com.example.data.TimeTrialDay.sheetSecondLine(null))
+  }
+
+  @Test
   fun `las frases de la ficha portada son las de la spec, una sola palabra por concepto y sin lo que se fue`() {
     // Tarea 171 (`auditoria-fable/ficha-juego.md` §6.5): «Jugar» · «a tu medida · sin reloj» (lo elegido, en la segunda línea) · «Desafío» · «Más opciones» · «¿Cómo quieres jugar?» · «¿Con reloj?» · «Sobre este juego» · «Qué pones en juego» · «Fuente: …» · «Cómo se juega»
     val source = File("src/main/java/com/example/ui/screens/GameSheet.kt").readText()

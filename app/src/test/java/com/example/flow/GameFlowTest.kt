@@ -392,6 +392,84 @@ class GameFlowTest {
     assertEquals("2026-10-26", s.timeTrialDay)
   }
 
+  /** Tarea 181: el botón «Contrarreloj» de la ficha lanza el de ESE juego, sea o no el del día, con la pista de hoy (la misma semilla que usaría Hoy), y se guarda igual que desde Hoy. */
+  @Test
+  fun `desde la ficha se lanza el Contrarreloj de cualquiera de los cuatro con la pista de hoy y se guarda igual`() {
+    val vm = newViewModel()
+    val day = vm.todayKey()
+    val ofDay = com.example.data.TimeTrialDay.gameFor(day)
+    for ((i, game) in com.example.data.TimeTrialDay.GAMES.withIndex()) {
+      vm.openAllGames()
+      vm.startTimeTrial(game)
+      val s = vm.activeGame.value!!
+      assertEquals(game, s.gameDef.id)
+      assertEquals("$game: la pista es la de hoy (la fecha local), no la de otro día", day, s.timeTrialDay)
+      assertTrue("$game: va con el reloj del Contrarreloj", s.timed)
+      assertEquals("$game: sin modo de dificultad (el Contrarreloj no los tiene)", PlayMode.A_TU_MEDIDA, s.mode)
+      assertEquals("$game: la semilla que va a Unity es la fecha de hoy como número", com.example.data.TimeTrialDay.trackSeed(day), s.timeTrialDay?.let { com.example.data.TimeTrialDay.trackSeed(it) })
+      vm.onUnityLaunched("LF$i")
+      vm.onUnityResult(timeTrialResult(game, hits = 20 + i), "LF$i")
+      TestSupport.awaitUntil(message = "El Contrarreloj de $game no se guardó") { vm.timeTrialResults.value.count { it.gameId == game } == 1 }
+      val saved = vm.timeTrialResults.value.single { it.gameId == game }
+      assertEquals("$game: se guarda en el día de la pista", day, saved.day)
+      TestSupport.awaitUntil(message = "No se abrió el final de $game") { vm.lastTimeTrial.value?.result?.gameId == game }
+      assertEquals("cuenta como la partida de ese juego, de «hoy» solo si es el del día", game == ofDay, com.example.data.TimeTrialDay.isOfDay(game, day))
+      vm.closeGameOrResult()
+    }
+    assertTrue("ninguno de los cuatro sumó una partida de siempre", vm.gameHistory.value.isEmpty())
+  }
+
+  @Test
+  fun `el Contrarreloj lanzado desde la ficha vuelve a Todos los juegos con el juego marcado y desde Hoy vuelve a Hoy`() {
+    val vm = newViewModel()
+    vm.openAllGames()
+    vm.setAllGamesArea("ATENCION")
+    vm.startTimeTrial("stroop")
+    vm.onUnityLaunched("LV1")
+    vm.onUnityResult(timeTrialResult("stroop", hits = 25), "LV1")
+    TestSupport.awaitUntil(message = "No se abrió el final") { vm.lastTimeTrial.value != null }
+    vm.closeGameOrResult()
+    assertEquals("«Listo» vuelve a Todos los juegos como estaba, con el juego marcado", AllGamesState(area = "ATENCION", query = "", mark = "stroop"), vm.allGames.value)
+    assertNull(vm.lastResult.value)
+    // lanzado desde Hoy (sin Todos los juegos abierta): vuelve a Hoy, sin nada abierto
+    vm.closeAllGames()
+    vm.startTimeTrial()
+    val today = vm.activeGame.value!!.gameDef.id
+    vm.onUnityLaunched("LV2")
+    vm.onUnityResult(timeTrialResult(today, hits = 25), "LV2")
+    TestSupport.awaitUntil(message = "No se abrió el final de Hoy") { vm.lastTimeTrial.value?.result?.gameId == today }
+    vm.closeGameOrResult()
+    assertNull("desde Hoy no queda Todos los juegos abierta", vm.allGames.value)
+    assertEquals(AppTab.HOY, vm.currentTab.value)
+  }
+
+  @Test
+  fun `lo jugado desde la ficha del juego del dia lo ve Hoy como jugado o marca nueva y el de otro juego no lo toca`() {
+    val vm = newViewModel()
+    val day = vm.todayKey()
+    val ofDay = com.example.data.TimeTrialDay.gameFor(day)
+    val other = com.example.data.TimeTrialDay.GAMES.first { it != ofDay }
+    fun play(game: String, hits: Int, launch: String) {
+      vm.openAllGames()
+      vm.startTimeTrial(game)
+      vm.onUnityLaunched(launch)
+      vm.onUnityResult(timeTrialResult(game, hits), launch)
+    }
+    assertEquals(com.example.data.TimeTrialState.PENDIENTE, com.example.data.TimeTrialDay.stateOf(vm.timeTrialResults.value, day, ofDay))
+    play(other, 30, "LH1")
+    TestSupport.awaitUntil(message = "No se guardó el del otro juego") { vm.timeTrialResults.value.size == 1 }
+    assertEquals("jugar otro juego desde su ficha no cambia el de Hoy", com.example.data.TimeTrialState.PENDIENTE, com.example.data.TimeTrialDay.stateOf(vm.timeTrialResults.value, day, ofDay))
+    play(ofDay, 30, "LH2")
+    TestSupport.awaitUntil(message = "No se guardó el del día") { vm.timeTrialResults.value.size == 2 }
+    assertEquals("el juego del día, jugado desde su ficha, Hoy lo ve jugado", com.example.data.TimeTrialState.JUGADO, com.example.data.TimeTrialDay.stateOf(vm.timeTrialResults.value, day, ofDay))
+    Thread.sleep(5)
+    play(ofDay, 41, "LH3")
+    TestSupport.awaitUntil(message = "No se guardó la segunda") { vm.timeTrialResults.value.size == 3 }
+    assertEquals("y con una marca mejor, marca nueva", com.example.data.TimeTrialState.MARCA_NUEVA, com.example.data.TimeTrialDay.stateOf(vm.timeTrialResults.value, day, ofDay))
+    assertEquals("el récord de la ficha sale de la misma tabla", 37, com.example.data.TimeTrialStats.record(vm.timeTrialResults.value, ofDay))
+    assertEquals("y el de otro juego, del suyo", 26, com.example.data.TimeTrialStats.record(vm.timeTrialResults.value, other))
+  }
+
   @Test
   fun `cerrar Todos los juegos lo olvida y cambiar de pestana tampoco lo reabre`() {
     val vm = newViewModel()

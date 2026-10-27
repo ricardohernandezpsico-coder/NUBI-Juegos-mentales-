@@ -24,9 +24,13 @@ object RetoChoice {
 
   fun key(gameId: String): String = PREFIX + gameId
 
-  fun supports(gameId: String): Boolean = gameId !in WITHOUT_RETO
+  /**
+   * ¿La ficha ofrece «¿Con reloj?» en este juego? No en los sin Reto (Correo) ni, desde la Tarea 181 (26-oct), en los cuatro que tienen Contrarreloj propio ([TimeTrialDay.GAMES]): ahí el tiempo es el botón «Contrarreloj» de la ficha, no una elección. El modo Reto sigue en el código de Unity y en su smoke;
+   * lo que cambia es que esas cuatro fichas ya no lo lanzan. Un `reto_<juego>` guardado de uno de esos cuatro se ignora (se juega sin reloj) y NO se borra (va en el respaldo).
+   */
+  fun supports(gameId: String): Boolean = gameId !in WITHOUT_RETO && !TimeTrialDay.supports(gameId)
 
-  /** La elección que vale: la guardada de ese juego o, si no hay, la inicial (el ajuste viejo de Ajustes). Un juego sin Reto siempre va sin reloj. */
+  /** La elección que vale: la guardada de ese juego o, si no hay, la inicial (el ajuste viejo de Ajustes). Un juego sin «¿Con reloj?» siempre va sin reloj. */
   fun resolve(gameId: String, saved: Boolean?, initial: Boolean): Boolean = supports(gameId) && (saved ?: initial)
 
   /** Las elecciones guardadas, desde todas las preferencias (`clave → valor`): solo las claves `reto_<juego>` con un valor sí/no. */

@@ -218,4 +218,74 @@ class TimeTrialDayTest {
   fun `el Contrarreloj no cuenta para el futuro tope de partidas libres`() {
     assertFalse(TimeTrialDay.COUNTS_FOR_FREE_CAP)
   }
+
+  // ------------------------------------------------------------------ el Contrarreloj en la ficha (Tarea 181): «de hoy» solo si es el juego del día, y la segunda línea del botón
+
+  @Test
+  fun `solo es de hoy el juego del dia y los otros tres se llaman solo Contrarreloj`() {
+    // 26-oct-2026: Tinta o Palabra; 27: ¿Verdad o disparate?; 28: Rescate; 29: Acoplamiento
+    val ofDay = TimeTrialDay.GAMES.associateWith { g -> (26..29).filter { TimeTrialDay.isOfDay(g, "2026-10-$it") } }
+    assertEquals(mapOf("stroop" to listOf(26), "disparate" to listOf(27), "radar" to listOf(28), "acoplamiento" to listOf(29)), ofDay)
+    assertEquals("Contrarreloj de hoy", TimeTrialDay.nameFor("stroop", "2026-10-26"))
+    for (other in listOf("disparate", "radar", "acoplamiento")) assertEquals("$other el 26 no es el del día", "Contrarreloj", TimeTrialDay.nameFor(other, "2026-10-26"))
+    assertEquals("Contrarreloj de hoy", TimeTrialDay.nameFor("disparate", "2026-10-27"))
+    assertEquals("Contrarreloj", TimeTrialDay.nameFor("stroop", "2026-10-27"))
+    assertEquals("un juego sin Contrarreloj nunca es «de hoy»", "Contrarreloj", TimeTrialDay.nameFor("freno", "2026-10-26"))
+    assertFalse(TimeTrialDay.isOfDay("freno", "2026-10-26"))
+  }
+
+  @Test
+  fun `una fecha que no se lee no es de hoy y no rompe`() {
+    assertFalse(TimeTrialDay.isOfDay("stroop", ""))
+    assertEquals("Contrarreloj", TimeTrialDay.nameFor("stroop", ""))
+    assertEquals("Contrarreloj", TimeTrialDay.nameFor("stroop", "no es una fecha"))
+  }
+
+  @Test
+  fun `la semilla de la pista vuelve a ser la fecha`() {
+    assertEquals("2026-10-26", TimeTrialDay.dateKeyOfSeed(20261026))
+    assertEquals("2026-01-05", TimeTrialDay.dateKeyOfSeed(20260105))
+    for (day in listOf("2026-10-26", "2026-12-31", "2027-02-01")) assertEquals(day, TimeTrialDay.dateKeyOfSeed(TimeTrialDay.trackSeed(day)))
+    assertNull(TimeTrialDay.dateKeyOfSeed(0))
+    assertNull("un mes que no existe", TimeTrialDay.dateKeyOfSeed(20261326))
+    assertNull("ocho cifras que no son una fecha", TimeTrialDay.dateKeyOfSeed(99999999))
+  }
+
+  @Test
+  fun `la segunda linea del boton de la ficha dice el record de ese juego o dos minutos`() {
+    assertEquals("Tu récord: 41 aciertos.", TimeTrialDay.sheetSecondLine(41))
+    assertEquals("Tu récord: 1 acierto.", TimeTrialDay.sheetSecondLine(1))
+    assertEquals("un récord de 0 sigue siendo un récord", "Tu récord: 0 aciertos.", TimeTrialDay.sheetSecondLine(0))
+    assertEquals("2 minutos", TimeTrialDay.sheetSecondLine(null))
+    assertEquals("la misma frase que la línea de Hoy", TimeTrialDay.recordLine(41), TimeTrialDay.sheetSecondLine(41))
+  }
+
+  @Test
+  fun `el lector de pantalla del boton de la ficha dice el juego, los dos minutos y el record`() {
+    assertEquals("Contrarreloj de hoy, Tinta o Palabra, 2 minutos, tu récord 41 aciertos", TimeTrialDay.sheetDescription("stroop", "2026-10-26", "Tinta o Palabra", 41))
+    assertEquals("Contrarreloj de hoy, Tinta o Palabra, 2 minutos", TimeTrialDay.sheetDescription("stroop", "2026-10-26", "Tinta o Palabra", null))
+    assertEquals("Contrarreloj, Rescate relámpago, 2 minutos, tu récord 12 aciertos", TimeTrialDay.sheetDescription("radar", "2026-10-26", "Rescate relámpago", 12))
+    assertEquals("Contrarreloj, Acoplamiento, 2 minutos", TimeTrialDay.sheetDescription("acoplamiento", "2026-10-26", "Acoplamiento", null))
+  }
+
+  @Test
+  fun `los textos nuevos de la ficha tampoco dicen Reto, Desafio, Con reloj, nivel ni racha`() {
+    val texts = listOf(TimeTrialDay.sheetSecondLine(41), TimeTrialDay.sheetSecondLine(null), TimeTrialDay.nameFor("stroop", "2026-10-26"), TimeTrialDay.nameFor("radar", "2026-10-26"), TimeTrialDay.sheetDescription("radar", "2026-10-26", "X", 4))
+    for (t in texts) for (banned in listOf("Reto", "reto ", "Desafío", "Con reloj", "nivel", "Nivel", "racha")) assertFalse("«$t» no debe decir «$banned»", t.contains(banned))
+  }
+
+  @Test
+  fun `desde la ficha se juega con la misma pista que usaria Hoy aunque no sea el juego del dia`() {
+    // la semilla es la fecha local (no el juego): cualquiera de los cuatro recibe la del día, y Unity la mezcla con su versión y su id (TimeTrial.Seed)
+    assertEquals(20261026, TimeTrialDay.trackSeed("2026-10-26"))
+    // lo guardado desde la ficha de un juego que no es el del día vale como el de Hoy: es de ese juego y de ese día
+    val saved = listOf(r("radar", hits = 20, at = 5L, d = "2026-10-26"))
+    assertEquals(TimeTrialState.PENDIENTE, TimeTrialDay.stateOf(saved, "2026-10-26", "stroop"))
+    assertEquals(TimeTrialState.JUGADO, TimeTrialDay.stateOf(saved, "2026-10-26", "radar"))
+    // si es el juego del día, Hoy lo ve como jugado: primera partida (sin marca nueva) y, la siguiente, con marca nueva
+    val stroopOne = listOf(r("stroop", hits = 30, at = 10L))
+    assertEquals(TimeTrialState.JUGADO, TimeTrialDay.stateOf(stroopOne, "2026-10-26", TimeTrialDay.gameFor("2026-10-26")))
+    val stroopBetter = stroopOne + r("stroop", hits = 36, at = 20L)
+    assertEquals(TimeTrialState.MARCA_NUEVA, TimeTrialDay.stateOf(stroopBetter, "2026-10-26", "stroop"))
+  }
 }

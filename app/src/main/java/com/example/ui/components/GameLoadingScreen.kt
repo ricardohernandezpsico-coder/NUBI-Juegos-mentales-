@@ -68,7 +68,9 @@ fun GameLoadingScreen(
   fadeInDelayMs: Long = 0L,
   // Evaluación inicial: "Punto de partida · 1 de 3" en vez de nivel y modo (ver data/Baseline.kt).
   assessmentStep: Int = 0,
-  assessmentTotal: Int = 0
+  assessmentTotal: Int = 0,
+  // Un Contrarreloj (Tarea 181): su nombre («Contrarreloj de hoy» solo si es el juego del día; si no, «Contrarreloj», `TimeTrialDay.nameFor`) en lugar de la etapa y el reloj, que no aplican (la pista es fija, desde el paso 1).
+  timeTrialName: String? = null
 ) {
   val reduceMotion = rememberReduceMotion()
   val appear = remember { Animatable(if (reduceMotion || fadeInDelayMs <= 0L) 1f else 0f) }
@@ -116,7 +118,7 @@ fun GameLoadingScreen(
         color = Color.White,
         textAlign = TextAlign.Center
       )
-      val details = if (assessmentStep > 0) listOf("Punto de partida · $assessmentStep de $assessmentTotal") else buildList {
+      val details = if (assessmentStep > 0) listOf("Punto de partida · $assessmentStep de $assessmentTotal") else if (timeTrialName != null) listOf(timeTrialName) else buildList {
         if (level != null) add("Etapa ${LevelTier.fromLevel(level).tierName}")
         if (timed != null) add(if (timed) "Con reloj" else "Sin reloj")                // el mismo nombre que en la ficha (Tarea 150, B1.2: antes «Reto» y «Precisión»)
       }

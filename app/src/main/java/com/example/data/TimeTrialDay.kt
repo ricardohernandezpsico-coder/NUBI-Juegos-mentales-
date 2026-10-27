@@ -26,7 +26,7 @@ data class TimeTrialResult(
  * El Contrarreloj de hoy, fase 1: local, sin servidor (Tarea 177, 26-oct; `docs/contrarreloj.md`; diseño de Fable en `auditoria-fable/contrarreloj.md`, mecánica A «La escalera de 2 minutos», elegida por Ricardo). Un juego al día, EL MISMO PARA TODAS LAS PERSONAS (rotación fija de la fecha, como Wordle), en
  * una pista fija de 2 minutos que sube un paso cada N aciertos y es la misma ese día para todos; la marca es «N aciertos en 2 minutos», contando los aciertos MENOS los errores (Tarea 178), y se compara solo con tu récord, tus últimas 5 partidas y la mejor de la semana. Reemplaza al «Desafío de hoy» de la Tarea 167 (`DailyChallenge`, retirado). Lógica pura con pruebas (`TimeTrialDayTest`).
  *
- * Es gratis y se repite sin límite; no cuenta para el futuro tope de partidas libres ([COUNTS_FOR_FREE_CAP]; el Contrarreloj libre en cualquier juego será Plus en la fase 1b). No compara con otras personas (`Features.COMPARE` sigue apagado).
+ * Es gratis y se repite sin límite; no cuenta para el futuro tope de partidas libres ([COUNTS_FOR_FREE_CAP]). Desde la Tarea 181 (fase 1b) los cuatro juegos también lo tienen en su ficha («Contrarreloj», con la pista de hoy): gratis y sin tope, sin ningún candado (todavía no hay cobro). No compara con otras personas (`Features.COMPARE` sigue apagado).
  * El estado del día se DERIVA de lo guardado ([stateOf]): no hay preferencia pasajera.
  */
 object TimeTrialDay {
@@ -127,6 +127,28 @@ object TimeTrialDay {
 
   /** La segunda línea del botón de Hoy (Tarea 180): «Hoy: Tinta o Palabra», en todos los estados (lo demás —los minutos, lo jugado, el récord— va en otras partes o en el lector de pantalla). */
   fun secondLine(title: String): String = "Hoy: $title"
+
+  /** ¿[gameId] es el juego del Contrarreloj de [dateKey] (el del día)? Los otros tres de la primera tanda también se juegan en Contrarreloj desde su ficha (Tarea 181), pero no son «de hoy». */
+  fun isOfDay(gameId: String, dateKey: String): Boolean = supports(gameId) && runCatching { gameFor(dateKey) }.getOrNull() == gameId           // una fecha que no se lee no es «de hoy» (no rompe la carga)
+
+  /** El nombre del modo para la pantalla de carga, el final y el lector de pantalla (Tarea 181): «Contrarreloj de hoy» SOLO si es el juego del día; si no, «Contrarreloj». */
+  fun nameFor(gameId: String, dateKey: String): String = if (isOfDay(gameId, dateKey)) LABEL else BUTTON_LABEL
+
+  /** La segunda línea del botón de la ficha (Tarea 181): «Tu récord: 41 aciertos.» si hay récord de la pista vigente de ESE juego; si no, «2 minutos». */
+  fun sheetSecondLine(record: Int?): String = if (record != null) recordLine(record) else MINUTES_TEXT
+
+  /** Lo que dice el lector de pantalla del botón de la ficha: el nombre del modo (con «de hoy» solo si es el juego del día), el juego, los 2 minutos y el récord. */
+  fun sheetDescription(gameId: String, dateKey: String, title: String, record: Int?): String = buildString {
+    append(nameFor(gameId, dateKey)).append(", ").append(title).append(", ").append(MINUTES_TEXT)
+    if (record != null) append(", tu récord ").append(hitsText(record))
+  }
+
+  /** El «yyyy-MM-dd» de una `track_seed` (aaaammdd): la pantalla de carga la lee de la config que va a Unity para saber si la pista es la del día. Una semilla que no es una fecha da null. */
+  fun dateKeyOfSeed(seed: Int): String? {
+    val s = seed.toString()
+    if (s.length != 8) return null
+    return runCatching { java.time.LocalDate.of(s.substring(0, 4).toInt(), s.substring(4, 6).toInt(), s.substring(6, 8).toInt()).toString() }.getOrNull()
+  }
 
   /** Lo que dice el lector de pantalla del botón: todo junto, también cuando a la vista solo dice «Contrarreloj de hoy» (media fila). */
   fun description(title: String, state: TimeTrialState, todayHits: Int?, record: Int?): String = buildString {

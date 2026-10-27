@@ -87,9 +87,10 @@ fun UnityGameHost(
   GameLoadingScreen(
     game = session.gameDef,
     level = session.level,
-    timed = session.timed,
+    timed = session.timed.takeIf { !com.example.data.TimeTrialDay.supports(session.gameDef.id) },        // en los cuatro con Contrarreloj el reloj ya no se elige (Tarea 181): la carga no dice «Sin reloj»
     fadeInDelayMs = 250L,
     assessmentStep = session.assessmentStep,
-    assessmentTotal = if (session.assessmentStep > 0) com.example.data.BaselinePlan.steps.size else 0
+    assessmentTotal = if (session.assessmentStep > 0) com.example.data.BaselinePlan.steps.size else 0,
+    timeTrialName = session.timeTrialDay?.let { com.example.data.TimeTrialDay.nameFor(session.gameDef.id, it) }
   )
 }

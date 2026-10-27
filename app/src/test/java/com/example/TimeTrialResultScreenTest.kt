@@ -214,6 +214,29 @@ class TimeTrialResultScreenTest {
     assertEquals("3 aciertos menos 5 errores, en 2 minutos de Contrarreloj", timeTrialFinalUi(floor, "Tinta o Palabra").unit)
   }
 
+  /** Tarea 181: «Contrarreloj de hoy» solo si el juego de la pista es el del día; un Contrarreloj jugado desde la ficha de otro dice «Contrarreloj» (en la placa y para el lector de pantalla). */
+  @Test
+  fun `el final dice de hoy solo si es el juego del dia y si no dice Contrarreloj`() {
+    // 26-oct-2026: el juego del día es Tinta o Palabra; Rescate relámpago lo fue el 28
+    mount(); show(sinRecord)
+    assertTrue("Tinta el 26: «Atención · Contrarreloj de hoy»", allText().contains("Atención · Contrarreloj de hoy"))
+    assertTrue(timeTrialFinalUi(sinRecord, "Tinta o Palabra").spoken.startsWith("Tinta o Palabra, Contrarreloj de hoy."))
+    val rescate = r(18, 26, game = "radar", level = 3).let { TimeTrialStats.outcome(listOf(it), it) }
+    show(rescate)
+    val t = allText()
+    assertTrue("Rescate el 26 no es el del día: «Atención · Contrarreloj» a secas, en: $t", t.contains("Atención · Contrarreloj") && !t.contains("Contrarreloj de hoy"))
+    val ui = timeTrialFinalUi(rescate, "Rescate relámpago")
+    assertTrue("el lector de pantalla tampoco dice «de hoy»: ${ui.spoken}", ui.spoken.startsWith("Rescate relámpago, Contrarreloj.") && !ui.spoken.contains("Contrarreloj de hoy"))
+    // el resto del final es el MISMO: marca, frase, paso, nota y los dos botones
+    assertTrue(t.contains("18 aciertos") && t.contains(TimeTrialStats.NOTE) && t.contains("Llegaste al paso 3 de 12 de la pista."))
+    assertTrue(has("btn_timetrial_again") && has("btn_timetrial_done"))
+    // y el día de su pista manda, no el de la partida más nueva: ¿Verdad o disparate? el 27 sí es de hoy
+    val disparate = r(30, 27, game = "disparate").let { TimeTrialStats.outcome(listOf(it), it) }
+    assertTrue(timeTrialFinalUi(disparate, "¿Verdad o disparate?").spoken.startsWith("¿Verdad o disparate?, Contrarreloj de hoy."))
+    val disparate26 = r(30, 26, game = "disparate").let { TimeTrialStats.outcome(listOf(it), it) }
+    assertTrue(timeTrialFinalUi(disparate26, "¿Verdad o disparate?").spoken.startsWith("¿Verdad o disparate?, Contrarreloj."))
+  }
+
   @Test
   fun `el armado de la pantalla trae solo lo del diseno`() {
     val ui = timeTrialFinalUi(marcaNueva, "Tinta o Palabra")

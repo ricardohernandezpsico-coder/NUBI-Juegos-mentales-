@@ -112,9 +112,9 @@ object TimeTrialStats {
     o.olderTrackRecord?.let { (version, hits) -> add("Tu récord de la pista $version: ${TimeTrialDay.hitsText(hits)}.") }
   }
 
-  /** Lo que lee en voz alta un lector de pantalla: el juego, la marca con su unidad, el sello, la frase, el paso y la mejor de la semana. */
+  /** Lo que lee en voz alta un lector de pantalla: el juego con el nombre del modo («Contrarreloj de hoy» solo si es el juego del día de su pista; si no, «Contrarreloj»), la marca con su unidad, el sello, la frase, el paso y la mejor de la semana. */
   fun spoken(title: String, o: Outcome, now: Long = o.result.timestamp): String = buildList {
-    add("$title, Contrarreloj de hoy")
+    add("$title, ${TimeTrialDay.nameFor(o.result.gameId, o.result.day)}")
     if (o.isRecord) add(SEAL)
     add(TimeTrialDay.hitsText(o.result.mark))
     add(scoreLine(o.result))

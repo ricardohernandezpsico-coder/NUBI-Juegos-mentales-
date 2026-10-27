@@ -90,7 +90,7 @@ internal fun timeTrialFinalUi(o: TimeTrialStats.Outcome, title: String): TimeTri
 )
 
 /**
- * El final del Contrarreloj (Tarea 177; `auditoria-fable/contrarreloj.md` §4): la misma forma del final «B», de arriba abajo: la placa del juego («Atención · Contrarreloj de hoy»), el sello «¡Tu mejor marca hasta hoy!» solo con marca nueva, la cifra («38 aciertos») y su unidad
+ * El final del Contrarreloj (Tarea 177; `auditoria-fable/contrarreloj.md` §4): la misma forma del final «B», de arriba abajo: la placa del juego («Atención · Contrarreloj de hoy» si es el juego del día; «Atención · Contrarreloj» si se jugó desde la ficha de otro: Tarea 181), el sello «¡Tu mejor marca hasta hoy!» solo con marca nueva, la cifra («38 aciertos») y su unidad
  * («en 2 minutos de Contrarreloj»), UNA frase solo contigo (con marca nueva, sin ella o la primera vez), «Llegaste al paso 4 de 5 de la pista.», «Tus últimas partidas» (cinco barras con su cifra encima, la de hoy en sol y marcada «hoy») y «La mejor de esta semana», «Otra vez» (sol: el
  * Contrarreloj se juega para repetirse), «Listo», «Ver el detalle de tu partida» y la nota («Es el resultado de un juego, comparado solo contigo. No es una medida de capacidad.»). Sin «¿Por qué importa?»: es el resultado de un juego, no de una medida. Nunca percentiles ni otras personas.
  */
@@ -128,7 +128,7 @@ fun TimeTrialResultScreen(
     modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp).padding(top = 20.dp, bottom = 32.dp).testTag("timetrial_result"),
     horizontalAlignment = Alignment.Start
   ) {
-    ResultPlaque(outcome.result.gameId, ui.title, (gameDef?.domain?.displayName?.let { "$it · " } ?: "") + TimeTrialDay.LABEL.replaceFirstChar { it.uppercase() }, gameDef?.domain?.color ?: Clay.Sky, plaquePop)
+    ResultPlaque(outcome.result.gameId, ui.title, (gameDef?.domain?.displayName?.let { "$it · " } ?: "") + TimeTrialDay.nameFor(outcome.result.gameId, outcome.result.day), gameDef?.domain?.color ?: Clay.Sky, plaquePop)
     ui.seal?.let { RecordLine(it) }
     Column(Modifier.semantics(mergeDescendants = true) { contentDescription = ui.spoken }) {
       ResultHeadline(model)

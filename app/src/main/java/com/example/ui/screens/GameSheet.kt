@@ -98,6 +98,9 @@ import com.example.data.LibraryOrder
 import com.example.ui.components.areaDescription
 import com.example.data.PlayMode
 import com.example.data.RetoChoice
+import com.example.data.TimeTrialDay
+import com.example.data.TimeTrialStats
+import com.example.ui.components.ClayClockIcon
 import com.example.ui.components.KitButton
 import com.example.data.GamePoints
 import com.example.data.Skill
@@ -161,22 +164,33 @@ data class GameCardData(
 )
 
 /**
+ * El botón «Contrarreloj» de la ficha (Tarea 181; solo en Tinta o Palabra, ¿Verdad o disparate?, Rescate relámpago y Acoplamiento): su segunda línea («Tu récord: 41 aciertos.» o «2 minutos»), lo que dice el lector de pantalla y su color (lila o crema: nunca sol, el sol es de «Jugar»).
+ */
+internal data class SheetTimeTrial(val secondLine: String, val spoken: String, val color: SlabColor = SlabColor.LILAC)
+
+/** El botón de la ficha de [gameId] con lo guardado: [record] = el récord de ese juego con la pista vigente (null = nunca jugó), [dateKey] = hoy (para decir «de hoy» solo si es el juego del día). Null si el juego no tiene Contrarreloj. */
+internal fun sheetTimeTrialOf(gameId: String, title: String, record: Int?, dateKey: String, color: SlabColor = SlabColor.LILAC): SheetTimeTrial? =
+  if (!TimeTrialDay.supports(gameId)) null else SheetTimeTrial(TimeTrialDay.sheetSecondLine(record), TimeTrialDay.sheetDescription(gameId, dateKey, title, record), color)
+
+/**
  * La ficha de [game] con sus datos ya leídos del ViewModel: la usan Hoy (la piedrita de «Tu ruta de hoy» y las filas de la lámina de un lugar) y Avance (las filas del detalle de un área), igual que Juegos. Tocar el nombre de un juego abre SIEMPRE esta ficha;
- * solo los botones grandes («Empezar la ruta», «Jugar en el …», «Jugar <juego>» del detalle de un área y el «Jugar · …» de la propia ficha) juegan directo (Tarea 87).
+ * solo los botones grandes («Empezar la ruta», «Jugar en el …», «Jugar <juego>» del detalle de un área y el «Jugar · …» de la propia ficha) juegan directo (Tarea 87). [onTimeTrial] lanza el Contrarreloj de ese juego (Tarea 181; solo los cuatro que lo tienen).
  */
 @Composable
-internal fun GameSheetHost(game: GameDefinition, viewModel: NeuroVidaViewModel, onDismiss: () -> Unit, onPlay: (PlayMode, Boolean) -> Unit, onTutorial: () -> Unit = {}) {
+internal fun GameSheetHost(game: GameDefinition, viewModel: NeuroVidaViewModel, onDismiss: () -> Unit, onPlay: (PlayMode, Boolean) -> Unit, onTutorial: () -> Unit = {}, onTimeTrial: () -> Unit = {}) {
   val history by viewModel.gameHistory.collectAsState()
   val settings by viewModel.userSettings.collectAsState()
   val measures by viewModel.starMeasures.collectAsState()
   val progressLog by viewModel.progressLog.collectAsState()
   val skill by viewModel.skill.collectAsState()
+  val timeTrialResults by viewModel.timeTrialResults.collectAsState()
   val lang = LocalAppLanguage.current
   val now = remember(game.id) { System.currentTimeMillis() }
   // Los puntos del juego salen de los de su área, para que la ficha y la página del área digan lo mismo (el redondeo se reparte entre los juegos del área)
   val gamePoints = remember(game.id, progressLog, now) { AreaPoints.compute(game.domain.name, AreaPoints.gamesOf(game.domain.name), progressLog, now).perGame.firstOrNull { it.gameId == game.id } }
+  val title = getGameTitle(game.id, lang, game.title)
   val data = cardData(
-    game, getGameTitle(game.id, lang, game.title), history.filter { it.gameId == game.id }.maxOfOrNull { it.timestamp }, now, null, measures,
+    game, title, history.filter { it.gameId == game.id }.maxOfOrNull { it.timestamp }, now, null, measures,
     history.count { it.gameId == game.id && now - it.timestamp <= 14 * DAY_MS }, points = gamePoints
   )
   GameSheet(
@@ -187,7 +201,9 @@ internal fun GameSheetHost(game: GameDefinition, viewModel: NeuroVidaViewModel, 
     timed = viewModel.retoFor(game.id),
     onDismiss = onDismiss,
     onPlay = onPlay,
-    onTutorial = onTutorial
+    onTutorial = onTutorial,
+    timeTrial = sheetTimeTrialOf(game.id, title, TimeTrialStats.record(timeTrialResults, game.id), viewModel.todayKey()),
+    onTimeTrial = onTimeTrial
   )
 }
 
@@ -250,7 +266,10 @@ internal fun GameSheet(
   onDismiss: () -> Unit,
   onPlay: (PlayMode, Boolean) -> Unit,
   /** «Cómo se juega», en «Sobre este juego»: abre el tutorial del juego otra vez (Tarea 171). */
-  onTutorial: () -> Unit = {}
+  onTutorial: () -> Unit = {},
+  /** El botón «Contrarreloj» (Tarea 181): null = el juego no lo tiene. */
+  timeTrial: SheetTimeTrial? = null,
+  onTimeTrial: () -> Unit = {}
 ) {
   var choice by remember(data.game.id) { mutableStateOf(selected) }
   var withClock by remember(data.game.id) { mutableStateOf(timed) }
@@ -286,7 +305,7 @@ internal fun GameSheet(
           if (about) GameAboutContent(data, onClose = { about = false }, onHowToPlay = onTutorial)
           else GameSheetContent(
             data, age, expertOpen, choice, onChoose = { choice = it }, onPlay = { onPlay(choice, withClock) }, onClose = onDismiss, timed = withClock, onChooseTimed = { withClock = it },
-            onPlayDesafio = { onPlay(PlayMode.DESAFIO, withClock) }, onAbout = { about = true }, options = options
+            onPlayDesafio = { onPlay(PlayMode.DESAFIO, withClock) }, onAbout = { about = true }, options = options, timeTrial = timeTrial, onTimeTrial = onTimeTrial
           )
         }
       }
@@ -351,7 +370,11 @@ internal fun GameSheetContent(
   /** «Sobre este juego»: abre la lámina con «Qué pones en juego», su fuente y «Cómo se juega». */
   onAbout: () -> Unit = {},
   /** «Más opciones» desplegadas. La ventana la sube para que sobreviva a abrir «Sobre este juego» y volver; sola, vive mientras la ficha está abierta (por juego). */
-  options: MutableState<Boolean> = rememberSaveable(data.game.id) { mutableStateOf(false) }
+  options: MutableState<Boolean> = rememberSaveable(data.game.id) { mutableStateOf(false) },
+  /** El botón «Contrarreloj» a todo el ancho bajo «Desafío | Más opciones» (Tarea 181; solo Tinta o Palabra, ¿Verdad o disparate?, Rescate relámpago y Acoplamiento); null = el juego no lo tiene. */
+  timeTrial: SheetTimeTrial? = null,
+  /** Lanza el Contrarreloj de ESTE juego con la pista del día. */
+  onTimeTrial: () -> Unit = {}
 ) {
   val g = data.game
   val density = androidx.compose.ui.platform.LocalDensity.current
@@ -459,6 +482,15 @@ internal fun GameSheetContent(
               more(Modifier, false)
             }
           }
+        }
+
+        // «Contrarreloj» (Tarea 181): solo en los cuatro juegos que lo tienen, a todo el ancho BAJO la fila de arriba, con el mismo reloj de plasticina de Hoy (42 dp). Su segunda línea dice el récord de ESE juego o «2 minutos». No es el sol: el único sol de la ficha es «Jugar».
+        if (timeTrial != null) {
+          KitButton(
+            text = TimeTrialDay.BUTTON_LABEL, onClick = onTimeTrial, color = timeTrial.color, leading = { ClayClockIcon() }, fontSize = 18.sp, minHeight = 64.dp,
+            secondLine = timeTrial.secondLine, secondLineSize = 16.sp,
+            modifier = Modifier.padding(top = 8.dp).semantics(mergeDescendants = true) { contentDescription = timeTrial.spoken }.testTag("sheet_timetrial")
+          )
         }
 
         // Las dos secciones solo se componen con «Más opciones» desplegadas, y entran y salen cambiando de ALTURA con suavidad (la tarjeta, centrada en la ventana, crece hacia arriba y hacia abajo):

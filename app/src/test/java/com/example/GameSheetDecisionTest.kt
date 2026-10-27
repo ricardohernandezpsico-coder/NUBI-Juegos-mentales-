@@ -67,7 +67,7 @@ class GameSheetDecisionTest {
 
   /** La ficha de [gameId] con el estado que la ventana real le da (la elección vive arriba, en quien la usa). */
   private fun setSheet(
-    gameId: String = "radar", widthDp: Int = 393, heightDp: Int = 825, fontScale: Float = 1f, mode: PlayMode = PlayMode.A_TU_MEDIDA, timed: Boolean = true,
+    gameId: String = "freno", widthDp: Int = 393, heightDp: Int = 825, fontScale: Float = 1f, mode: PlayMode = PlayMode.A_TU_MEDIDA, timed: Boolean = true,
     onPlay: () -> Unit = {}, onPlayDesafio: () -> Unit = {}, onAbout: () -> Unit = {}, onClose: () -> Unit = {}
   ) {
     val g = GameRegistry.getById(gameId)!!
@@ -102,7 +102,7 @@ class GameSheetDecisionTest {
   @Test
   fun la_ficha_parte_plegada_con_la_portada_el_nombre_la_etapa_y_los_tres_botones_y_las_secciones_ni_se_componen() {
     setSheet()
-    val g = GameRegistry.getById("radar")!!
+    val g = GameRegistry.getById("freno")!!
     rule.onNodeWithTag("sheet_cover").assertExists()
     rule.onNodeWithTag("sheet_emblem").assertExists()
     rule.onNodeWithTag("sheet_title").assertTextEquals(g.title)
@@ -348,8 +348,8 @@ class GameSheetDecisionTest {
   }
 
   @Test
-  fun las_casillas_del_reloj_de_rescate_van_lado_a_lado_con_letra_100() {
-    setSheet(gameId = "radar")                                                         // «2 minutos»
+  fun las_casillas_del_reloj_de_freno_van_lado_a_lado_con_letra_100() {
+    setSheet(gameId = "freno")                                                         // «2 minutos»
     rule.onNodeWithTag("sheet_change").performClick()
     rule.waitForIdle()
     val sin = boundsOf("reto_sin"); val con = boundsOf("reto_con")

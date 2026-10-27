@@ -20,6 +20,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
@@ -35,6 +36,7 @@ import com.example.ui.screens.GameCardData
 import com.example.ui.screens.GameAboutContent
 import com.example.ui.screens.GameSheetContent
 import com.example.ui.screens.cardData
+import com.example.ui.screens.sheetTimeTrialOf
 import com.example.ui.theme.NeuroVidaTheme
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -72,6 +74,12 @@ class GameSheetFitScreenshotTest {
     return cardData(radar, radar.title, now - day, now, 0.55f, series("glance", 260f, 240f, 250f, 210f, 190f, 170f), playsLast14 = 6)
   }
 
+  /** Un juego con «¿Con reloj?» (Freno de Emergencia): los cuatro con Contrarreloj ya no lo tienen (Tarea 181), así que lo desplegado de siempre se prueba con uno de los otros 13. */
+  private fun withReto(): GameCardData {
+    val freno = GameRegistry.getById("freno")!!
+    return cardData(freno, freno.title, now - day, now, 0.55f, series("glance", 260f, 240f, 250f, 210f, 190f, 170f), playsLast14 = 6)
+  }
+
   /** [fontScale]: la letra del sistema (1,3 = al 130 %, como la usan muchas personas mayores). [unfold]: toca «Más opciones» antes de la captura (la ficha parte plegada). */
   private fun show(data: GameCardData, widthDp: Int, heightDp: Int, shot: String, timed: Boolean = true, fontScale: Float = 1f, unfold: Boolean = false) {
     composeTestRule.setContent {
@@ -80,7 +88,10 @@ class GameSheetFitScreenshotTest {
           // lo que hace la ventana de la ficha: un marco del alto disponible (ya sin las barras del sistema), con su margen, y la tarjeta CENTRADA (Tarea 140: Ricardo la quiso más arriba, no pegada abajo)
           Box(Modifier.width(widthDp.dp).height(heightDp.dp).background(Color(0xFF050823)).testTag("frame").padding(horizontal = 14.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
             Box(Modifier.fillMaxWidth()) {
-              GameSheetContent(data, AgeBand.SENIOR, expertOpen = false, choice = PlayMode.A_TU_MEDIDA, onChoose = {}, onPlay = {}, timed = timed, onChooseTimed = {})
+              GameSheetContent(
+                data, AgeBand.SENIOR, expertOpen = false, choice = PlayMode.A_TU_MEDIDA, onChoose = {}, onPlay = {}, timed = timed, onChooseTimed = {},
+                timeTrial = sheetTimeTrialOf(data.game.id, data.title, null, "2026-10-26"), onTimeTrial = {}                    // el botón «Contrarreloj» de los cuatro juegos que lo tienen (Tarea 181)
+              )
             }
           }
         }
@@ -109,7 +120,8 @@ class GameSheetFitScreenshotTest {
     assertPlayButtonInsideFrame()
     for (tag in listOf("sheet_title", "sheet_stage", "sheet_desafio", "sheet_change", "sheet_about", "sheet_close")) composeTestRule.onNodeWithTag(tag).assertIsDisplayed()
     val frame = composeTestRule.onNodeWithTag("frame").fetchSemanticsNode().boundsInRoot
-    for (tag in listOf("sheet_desafio", "sheet_change")) {
+    val last = if (composeTestRule.onAllNodesWithTag("sheet_timetrial").fetchSemanticsNodes().isNotEmpty()) listOf("sheet_desafio", "sheet_change", "sheet_timetrial") else listOf("sheet_desafio", "sheet_change")
+    for (tag in last) {
       val b = composeTestRule.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
       assertTrue("$tag (abajo en ${b.bottom}) queda dentro del marco (abajo en ${frame.bottom}) sin deslizar", b.bottom <= frame.bottom + 0.5f)
     }
@@ -126,8 +138,8 @@ class GameSheetFitScreenshotTest {
   fun rescate_plegada_cabe_entera_en_393_por_873_sin_deslizar() {
     show(rescue(), commonW, commonH, "ficha-rescate-393x873")
     assertFoldedFitsWithoutScrolling()
-    // lo elegido se lee en la segunda línea de «Jugar»: «a tu medida · con reloj»
-    assertEquals(listOf("Jugar", "a tu medida · con reloj"), playTexts())
+    // lo elegido se lee en la segunda línea de «Jugar»: «a tu medida» (en los cuatro juegos con Contrarreloj ya no hay reloj que elegir: Tarea 181)
+    assertEquals(listOf("Jugar", "a tu medida"), playTexts())
   }
 
   @Test
@@ -169,7 +181,7 @@ class GameSheetFitScreenshotTest {
     val data = cardData(stroop, stroop.title, now - 2 * day, now, 0.62f, emptyList(), playsLast14 = 3)
     show(data, commonW, commonH, "ficha-tinta-393x873", timed = false)
     assertFoldedFitsWithoutScrolling()
-    assertEquals(listOf("Jugar", "a tu medida · sin reloj"), playTexts())
+    assertEquals(listOf("Jugar", "a tu medida"), playTexts())
   }
 
   @Test
@@ -238,8 +250,8 @@ class GameSheetFitScreenshotTest {
   // ---------- desplegada: las dos secciones como siempre ----------
 
   @Test
-  fun rescate_desplegada_en_393_por_873_tiene_todo_alcanzable() {
-    show(rescue(), commonW, commonH, "ficha-rescate-393x873-desplegada", unfold = true)
+  fun freno_desplegada_en_393_por_873_tiene_todo_alcanzable() {
+    show(withReto(), commonW, commonH, "ficha-freno-393x873-desplegada", unfold = true)
     val frame = composeTestRule.onNodeWithTag("frame").fetchSemanticsNode().boundsInRoot
     val card = composeTestRule.onNodeWithTag("game_sheet").fetchSemanticsNode().boundsInRoot
     assertTrue("la tarjeta (arriba en ${card.top}, abajo en ${card.bottom}) cabe en el marco (${frame.top} a ${frame.bottom})", card.top >= frame.top - 0.5f && card.bottom <= frame.bottom + 0.5f)
@@ -256,8 +268,8 @@ class GameSheetFitScreenshotTest {
   }
 
   @Test
-  fun rescate_desplegada_en_360_por_640_hace_scroll_por_dentro_y_todo_se_alcanza() {
-    show(rescue(), 360, 640, "ficha-rescate-360x640-desplegada", unfold = true)
+  fun freno_desplegada_en_360_por_640_hace_scroll_por_dentro_y_todo_se_alcanza() {
+    show(withReto(), 360, 640, "ficha-freno-360x640-desplegada", unfold = true)
     val frame = composeTestRule.onNodeWithTag("frame").fetchSemanticsNode().boundsInRoot
     val card = composeTestRule.onNodeWithTag("game_sheet").fetchSemanticsNode().boundsInRoot
     assertTrue("la tarjeta cabe en el marco", card.top >= frame.top - 0.5f && card.bottom <= frame.bottom + 0.5f)
@@ -266,9 +278,9 @@ class GameSheetFitScreenshotTest {
   }
 
   @Test
-  fun rescate_desplegada_con_la_letra_del_sistema_al_130_por_ciento_hace_scroll_y_todo_se_alcanza() {
+  fun freno_desplegada_con_la_letra_del_sistema_al_130_por_ciento_hace_scroll_y_todo_se_alcanza() {
     // con la letra grande hace scroll por dentro (se desliza sola al desplegar) y la tarjeta no se sale del marco
-    show(rescue(), commonW, commonH, "ficha-rescate-393x873-letra130-desplegada", fontScale = 1.3f, unfold = true)
+    show(withReto(), commonW, commonH, "ficha-freno-393x873-letra130-desplegada", fontScale = 1.3f, unfold = true)
     val frame = composeTestRule.onNodeWithTag("frame").fetchSemanticsNode().boundsInRoot
     val card = composeTestRule.onNodeWithTag("game_sheet").fetchSemanticsNode().boundsInRoot
     assertTrue("la tarjeta cabe en el marco", card.top >= frame.top - 0.5f && card.bottom <= frame.bottom + 0.5f)

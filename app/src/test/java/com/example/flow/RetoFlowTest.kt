@@ -48,12 +48,12 @@ class RetoFlowTest {
   @Test
   fun `la eleccion de la ficha se usa en esa partida y se recuerda solo para ese juego`() {
     val vm = newViewModel()
-    vm.playFromHome("radar", PlayMode.A_TU_MEDIDA, timed = true)
+    vm.playFromHome("freno", PlayMode.A_TU_MEDIDA, timed = true)
     assertTrue("la partida lanzada desde la ficha va con reloj", vm.activeGame.value!!.timed)
-    assertTrue(saved("radar"))
-    assertTrue(vm.retoFor("radar"))
+    assertTrue(saved("freno"))
+    assertTrue(vm.retoFor("freno"))
     assertFalse("otro juego no cambia", vm.retoFor("calculo"))
-    assertEquals(mapOf("radar" to true), vm.retoChoices.value)
+    assertEquals(mapOf("freno" to true), vm.retoChoices.value)
   }
 
   @Test
@@ -64,11 +64,29 @@ class RetoFlowTest {
     assertEquals(mapOf("calculo" to false), vm.retoChoices.value)
   }
 
+  /** Tarea 181: en los cuatro juegos con Contrarreloj ya no hay «¿Con reloj?»: lo que estuviera guardado se ignora (se juega sin reloj) y NO se borra (va en el respaldo). */
+  @Test
+  fun `en los cuatro juegos con Contrarreloj lo guardado de con reloj se ignora y no se borra`() {
+    app.getSharedPreferences("profile_extra", android.content.Context.MODE_PRIVATE).edit().putBoolean("reto_stroop", true).putBoolean("reto_radar", true).putBoolean("reto_freno", true).commit()
+    val vm = newViewModel()
+    assertEquals("la clave se lee igual", mapOf("stroop" to true, "radar" to true, "freno" to true), vm.retoChoices.value)
+    for (g in listOf("stroop", "disparate", "radar", "acoplamiento")) {
+      assertFalse("$g: se ignora lo guardado", vm.retoFor(g))
+      vm.launchGame(g)
+      assertFalse("$g: la partida de siempre va sin reloj", vm.activeGame.value!!.timed)
+      vm.playFromHome(g, PlayMode.DESAFIO, timed = true)
+      assertFalse("$g: ni aunque llegue timed = true desde la ficha", vm.activeGame.value!!.timed)
+    }
+    assertTrue("Freno sigue con su reloj guardado", vm.retoFor("freno"))
+    assertTrue("las claves de los cuatro siguen en el disco", saved("stroop") && saved("radar"))
+    assertFalse("y jugar desde la ficha no escribió las de los otros dos", saved("disparate") || saved("acoplamiento"))
+  }
+
   @Test
   fun `el camino diario de Hoy va siempre sin reloj aunque el juego tenga el Reto elegido`() {
     val vm = newViewModel()
-    vm.playFromHome("radar", PlayMode.A_TU_MEDIDA, timed = true)
-    vm.launchGame("radar", isDailyFlow = true)
+    vm.playFromHome("freno", PlayMode.A_TU_MEDIDA, timed = true)
+    vm.launchGame("freno", isDailyFlow = true)
     assertTrue(vm.activeGame.value!!.isDailyFlow)
     assertFalse("la sesión diaria nunca lleva reloj", vm.activeGame.value!!.timed)
   }
