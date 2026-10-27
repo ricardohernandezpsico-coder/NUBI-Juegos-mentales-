@@ -141,7 +141,6 @@ namespace NeuroVida.Games.Stroop
         /// <summary>Lo que dura la tarjeta en salir tras un acierto en el Reto y en el Contrarreloj, y en desvanecerse tras un error (después de su pausa): el reloj no corre distinto en ninguno de los dos (<c>TimeTrialFairnessTests</c> los usa).</summary>
         public const float RetoSlideOutSeconds = 0.17f, FadeOutSeconds = 0.16f;
         public const float GuidedErrorPauseSeconds = 1.6f;
-        public const float GuidedOkPauseSeconds = 0.9f;
 
         // ------------------------------------------------------------------ niveles
 
@@ -280,9 +279,5 @@ namespace NeuroVida.Games.Stroop
         public static Color RuleLight(StroopRule rule) => Color.Lerp(rule == StroopRule.Ink ? InkShore : WordShore, Color.white, 0.55f);
 
         public static string Ribbon(StroopRule rule) => rule == StroopRule.Ink ? "Responde: TINTA" : "Responde: PALABRA";
-
-        /// <summary>Qué se toca con cada orilla, en una frase.</summary>
-        public static string RuleLine(StroopRule rule) =>
-            rule == StroopRule.Ink ? "Toca el color con que está escrita" : "Toca lo que dice la palabra, no su color";
     }
 }

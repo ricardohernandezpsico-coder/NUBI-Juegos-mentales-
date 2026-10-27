@@ -12,7 +12,7 @@ namespace NeuroVida.Games.Engranajes
 
     /// <summary>
     /// «Madera cálida» en Engranajes: Taller de reparación (Fase E; spec `auditoria-fable/spec-sonido-CDE.md` §4.5; cableada el 19-oct, Tarea 139). La cascada es la secuencia más densa de la app (hasta 10 notas en 1,5 s): cada paso (cada 0,15 s, 0,21 en mayores: <see cref="EngranajesContract.StepSeconds"/>, que NO cambia)
-    /// suena un clic de dientes y la nota de la escala que sube con la profundidad (<see cref="StepNoteHz"/>: <c>Penta[profundidad + 1]</c>, la altura de hoy) en MARIMBA con caída de 0,15 s (<see cref="StepTau"/>; 20 dB en ≈ 0,35 s: la pila de notas es la de hoy), un propio por paso (<see cref="EngranajesSfx.Step0"/> a <see cref="EngranajesSfx.Step9"/>).
+    /// suena un clic de dientes y la nota de la escala que sube con la profundidad (<c>Penta[profundidad + 1]</c>, la altura de hoy) en MARIMBA con caída de 0,15 s (<see cref="StepTau"/>; 20 dB en ≈ 0,35 s: la pila de notas es la de hoy), un propio por paso (<see cref="EngranajesSfx.Step0"/> a <see cref="EngranajesSfx.Step9"/>).
     /// Cada pieza del cohete tiene el suyo (<see cref="EngranajesSfx.Antenna"/>, <see cref="EngranajesSfx.Turbine"/> y <see cref="EngranajesSfx.Rack"/> con <b>tres golpes graves a 0,27 s = el motor y un golpe seco al parar</b>) y el despegue (<see cref="EngranajesSfx.Launch"/>: es un HITO, no el <c>Record</c> de la app, que no puede sonar en un despegue).
     /// El resto es de la paleta: el motor que arranca <c>Hum</c>, un cambio <c>Clack</c>, un cartel que no cumplió <c>Knock</c> (y una jugada que no era <c>Knock</c> a −6 dB), el acierto de la máquina <c>Perfect</c>, la luz del cohete <c>Spark</c> (1 a 8), «NUEVO» <c>New</c>; y «Arrancar» es el toque del kit (<c>PlaysTap</c>), sin nota propia.
     /// </summary>
@@ -26,9 +26,6 @@ namespace NeuroVida.Games.Engranajes
 
         /// <summary>El número de nota (0 a 9) del paso de profundidad [depth] (0 = el motor): <c>profundidad + 1</c>, como hoy.</summary>
         public static int StepIndex(int depth) => Mathf.Clamp(depth + 1, 0, Penta.Length - 1);
-
-        /// <summary>La frecuencia de la nota del paso [depth].</summary>
-        public static double StepNoteHz(int depth) => Penta[StepIndex(depth)];
 
         /// <summary>El propio del paso de profundidad [depth].</summary>
         public static EngranajesSfx StepSfx(int depth) => (EngranajesSfx)StepIndex(depth);

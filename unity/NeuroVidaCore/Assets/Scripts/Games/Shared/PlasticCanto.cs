@@ -88,16 +88,5 @@ namespace NeuroVida.Games.Shared
             e.Apply(distance, steps, deep, light);
             return e;
         }
-
-        /// <summary>El relieve de un texto o un ícono: una sombra pegada (2 pasos) del tono [shade], [distance] unidades hacia abajo.</summary>
-        public static CantoEffect Relief(Graphic g, float distance, Color shade, int steps = 2) => Add(g, distance, shade, shade, steps);
-
-        /// <summary>El tono hondo del canto de un color de la paleta (más oscuro y un poco más saturado) y el claro (junto a la cara).</summary>
-        public static void Tones(Color face, out Color deep, out Color light)
-        {
-            Color.RGBToHSV(face, out float h, out float s, out float v);
-            deep = Color.HSVToRGB(h, Mathf.Clamp01(s * 1.1f + 0.05f), v * 0.40f);
-            light = Color.HSVToRGB(h, Mathf.Clamp01(s * 1.1f + 0.04f), v * 0.60f);
-        }
     }
 }

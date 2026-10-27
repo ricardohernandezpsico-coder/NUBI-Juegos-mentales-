@@ -39,7 +39,7 @@ namespace NeuroVida.Games.Correo
         private MailDay _day;
         private MailRecap _recap;
         private Phase _phase = Phase.Idle;
-        private bool _senior, _loopOn, _guided, _inputOn, _baked, _aborted, _recordBroken, _tapped;
+        private bool _loopOn, _guided, _inputOn, _baked, _aborted, _recordBroken, _tapped;
         private int _bestRecord, _debugStage;
         private float _phaseAt;
         private MailIntro _introKind;
@@ -63,8 +63,6 @@ namespace NeuroVida.Games.Correo
         {
             _config = config;
             _rng = new System.Random();
-            var age = DdaUserProfileConfig.ParseAgeBand(config.config.age_band);
-            _senior = age == AgeBand.Senior;
             _dda = MailContract.CreateEngine(config.config);
             _bestRecord = Mathf.Max(0, config.config.mail_best);
             _debugStage = Mathf.Max(0, config.config.mail_stage);

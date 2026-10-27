@@ -14,7 +14,6 @@ namespace NeuroVida.Games.Aterrizaje
     {
         public static readonly Color Gold = Hex(0xFFC94A), Cyan = Hex(0x7FD8FF), LimeColor = Hex(0xA6E36B), CoralColor = Hex(0xFF8A6B), CabinColor = Hex(0xE9E6FF), RulerColor = Hex(0xF3EBD3), NoticeFill = Hex(0x1F1B4E), DomeOff = Hex(0x3A3486);
 
-        private const float Aa = 0.03f;
         private static readonly Dictionary<int, Sprite> Cache = new Dictionary<int, Sprite>();
 
         /// <summary>El atlas de plasticina de este juego (<c>Resources/Plasticina/aterrizaje</c>): la nave, el gallardete, la Tierra, el satélite, las dos cúpulas del marcador y la regla (una losa crema sin marcas). Las marcas de la regla, sus números y el asta de la bandera NO están en el atlas:

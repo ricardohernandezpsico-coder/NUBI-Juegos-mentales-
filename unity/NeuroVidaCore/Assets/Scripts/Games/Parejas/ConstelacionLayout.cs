@@ -118,8 +118,6 @@ namespace NeuroVida.Games.Parejas
 
         // ------------------------------------------------------------------ las líneas
 
-        public const float MaxDetour = 50f;
-
         /// <summary>
         /// La curva de la línea entre <paramref name="a"/> y <paramref name="b"/>: se curva un poco (desvío máximo de ±50 dp) para esquivar otras luces y otras líneas cuando puede; las parejas cercanas (distancia
         /// menor que 4R) van rectas. Si no puede esquivar, pasa por encima (las líneas se dibujan sobre todas las luces). <paramref name="lights"/> son todas las luces del cielo, <paramref name="links"/> las líneas ya trazadas.

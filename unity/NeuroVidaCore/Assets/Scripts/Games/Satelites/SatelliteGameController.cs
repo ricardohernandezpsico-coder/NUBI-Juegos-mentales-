@@ -43,9 +43,9 @@ namespace NeuroVida.Games.Satelites
         private LevelSpec _spec;
         private Surprise _surprise, _lastSurprise;
         private Phase _phase = Phase.Idle;
-        private bool _loopOn, _baked, _guided, _inputOn, _tapped, _planetBig;
+        private bool _loopOn, _baked, _guided, _inputOn, _planetBig;
         private int _roundNo, _level, _bestRecord, _debugStage, _debugSurprise, _lightsShown, _lastTickSecond;
-        private float _endsAt, _evalAt, _answerStartedAt, _phaseAt;
+        private float _endsAt, _evalAt, _answerStartedAt;
         private int _previousFrameRate;
         private Vector2? _press;
         private readonly bool[] _marked = new bool[SatPool];
@@ -198,7 +198,6 @@ namespace NeuroVida.Games.Satelites
         private IEnumerator DoReady()
         {
             _phase = Phase.Ready;
-            _phaseAt = Now;
             SetPrompt(SatelliteContract.CueTitle(_spec.K), SatelliteContract.CueSub, TextColor);
             yield return Wait(SatelliteContract.ReadySeconds);
         }

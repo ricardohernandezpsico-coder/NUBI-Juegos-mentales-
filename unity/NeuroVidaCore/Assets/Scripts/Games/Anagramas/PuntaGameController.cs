@@ -36,7 +36,6 @@ namespace NeuroVida.Games.Anagramas
         private static readonly Color CardFill = new Color(20f / 255f, 27f / 255f, 58f / 255f);
         private static readonly Color SlotFill = new Color(14f / 255f, 20f / 255f, 48f / 255f);
         private static readonly Color Lavender = new Color(171f / 255f, 165f / 255f, 210f / 255f);
-        private static readonly Color Dim = new Color(110f / 255f, 106f / 255f, 154f / 255f);
         private static readonly Color ButtonSecondary = new Color(35f / 255f, 43f / 255f, 87f / 255f);
         private static readonly Color ButtonText = new Color(237f / 255f, 234f / 255f, 251f / 255f);
         private static readonly Color GoodText = new Color(159f / 255f, 245f / 255f, 214f / 255f);
@@ -929,27 +928,10 @@ namespace NeuroVida.Games.Anagramas
             return pool[_rng.Next(pool.Count)];
         }
 
-        /// <summary>El aro sol punteado marca el botón que se toca (0 = el de la izquierda, 1 = el de la derecha).</summary>
-        private void PlaceHintOn(int button)
-        {
-            var b = _buttons[button];
-            _hintRing.rectTransform.sizeDelta = new Vector2((b.Rect.width + 14f) * _s, (b.Rect.height + 14f) * _s);
-            _hintRing.rectTransform.anchoredPosition = P(b.Rect.center);
-            _hintTile = null;
-            _hintRing.gameObject.SetActive(true);
-        }
-
         private void HideHint()
         {
             _hintTile = null;
             if (_hintRing != null) _hintRing.gameObject.SetActive(false);
-        }
-
-        /// <summary>El aro marca una ficha (la sigue mientras se mueve).</summary>
-        private void PlaceHintOnTile(Tile tile)
-        {
-            _hintTile = tile;
-            _hintRing.gameObject.SetActive(true);
         }
 
         // ------------------------------------------------------------------ entrada y animación por cuadro
@@ -1024,8 +1006,6 @@ namespace NeuroVida.Games.Anagramas
             }
             return best != null ? new Intent { Kind = IntentKind.Tile, Tile = best } : none;
         }
-
-        private void PressFx(int button) => _buttons[button].PressedAt = GameClock.Time;
 
         private void UpdateClock()
         {

@@ -22,7 +22,6 @@ namespace NeuroVida.Games.Engranajes
         private static readonly Color GoldSoft = new Color(255f / 255f, 224f / 255f, 138f / 255f);
         private static readonly Color Lavender = new Color(171f / 255f, 165f / 255f, 210f / 255f);
         private static readonly Color Mint = new Color(159f / 255f, 245f / 255f, 214f / 255f);
-        private static readonly Color WarnText = new Color(255f / 255f, 214f / 255f, 160f / 255f);
         private static readonly Color ButtonFill = new Color(35f / 255f, 43f / 255f, 87f / 255f);
         private static readonly Color ButtonText = new Color(237f / 255f, 234f / 255f, 251f / 255f);
         private static readonly Color LightOff = new Color(1f, 1f, 1f, 0.16f);
@@ -97,8 +96,6 @@ namespace NeuroVida.Games.Engranajes
         private Image _counterSlab;
         private CantoEffect _dishCanto, _fanCanto;
         private static Color Sh(Color c, float f) => new Color(c.r * f, c.g * f, c.b * f, 1f);             // un tono más claro u oscuro SIN tocar el alfa
-        private static readonly Color Ink2 = new Color(0.07f, 0.05f, 0.20f, 1f);               // el tono del relieve de las letras
-        private static readonly Color CantoDeepViolet = new Color(0.38f, 0.30f, 0.62f, 1f), CantoLightViolet = new Color(0.58f, 0.48f, 0.82f, 1f);
         /// <summary>El canto de la MADERA (Tarea 164, paleta «Madera clara»): el camino y las piezas de madera del cohete (portón, barra dentada); su visto contra la ventanilla noche mide ~1,7 : 1 (antes, el lila, 1,2 : 1).</summary>
         private static readonly Color CantoDeepWood = new Color(0.33f, 0.20f, 0.10f, 1f), CantoLightWood = new Color(0.52f, 0.32f, 0.16f, 1f);
 

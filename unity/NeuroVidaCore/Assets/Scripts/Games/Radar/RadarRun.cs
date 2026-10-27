@@ -45,7 +45,6 @@ namespace NeuroVida.Games.Radar
         public int Trips { get; private set; }
         public void AddTrip() { Trips++; }
         public IReadOnlyList<float> RealMs => _realMs;
-        public IReadOnlyList<int> RainRaws => _rainRaws;
 
         /// <summary>Registra una ronda resuelta. <paramref name="realMs"/> = lo que de verdad duró el destello (medido a 60 cuadros por segundo).</summary>
         public RoundOutcome Add(RadarRound round, int hits, int extras, float realMs)

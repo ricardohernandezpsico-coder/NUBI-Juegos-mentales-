@@ -17,8 +17,6 @@ namespace NeuroVida.Games.Shared
         public static readonly Color InkSoft = Hex(0x6B6790);
         /// <summary>Rótulos secundarios sobre una losa crema o lila (Tarea 129): #514B78, 6,8:1 sobre crema (el <c>InkMuted</c> de la app).</summary>
         public static readonly Color InkMuted = Hex(0x514B78);
-        /// <summary>Un acento azul que sí se lee sobre crema (#2B57B8, 5,6:1; el celeste del cielo solo da 1,6:1): «Toca para seguir» y parecidos.</summary>
-        public static readonly Color PanelAccent = Hex(0x2B57B8);
         public static readonly Color Coral = Hex(0xFF6B4A);
         public static readonly Color Sun = Hex(0xFFC93C);
         public static readonly Color Sky = Hex(0x4CC9F0);

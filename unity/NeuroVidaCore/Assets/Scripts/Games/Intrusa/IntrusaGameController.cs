@@ -65,7 +65,6 @@ namespace NeuroVida.Games.Intrusa
         private IntrusaTally _tally;
         private Phase _phase = Phase.Idle;
         private bool Endless => _config != null && _config.config.timed;
-        private bool Precision => !Endless;
         private bool Senior;
         private int _previousFrameRate;
         private float _endsAt;
@@ -80,9 +79,7 @@ namespace NeuroVida.Games.Intrusa
         private IntrusaSpec _spec, _nextSpec;
         private Engraving _engraving;
         private Vector2? _press;                 // último toque (coordenadas lógicas), lo consume quien lo espera
-        private bool _roundLive;
         private float _legibleAt;
-        private int _revealStep;
 
         // escala y disposición
         private float _s = 3f, _playW, _playH, _yShift, _logicalH;
@@ -90,7 +87,7 @@ namespace NeuroVida.Games.Intrusa
 
         // UI
         private RectTransform _safe, _play, _fig, _fxLayer, _textLayer, _timerTrack, _comet;
-        private Image _cometGlow, _cometTail, _clearGlow, _dimFade;
+        private Image _cometGlow, _cometTail, _clearGlow;
         private Text _measure, _name, _rule, _named, _explain, _trapText, _reviewTag, _hint, _seguirLabel;
         private RectTransform _seguir, _optionsBar, _optionsFill;
         private Image _seguirImg;
@@ -116,7 +113,7 @@ namespace NeuroVida.Games.Intrusa
             public Image Halo, Core, Flare, Aro, XMark, PlateBg;
             public Text Label;
             public CanvasGroup Group, PlateGroup;
-            public Vector2 PosU, BaseSizeU;
+            public Vector2 PosU;
             public LRect Plaque, Touch;
             public string Word;
             public bool Intruder;
@@ -155,7 +152,6 @@ namespace NeuroVida.Games.Intrusa
             _phase = Phase.Idle;
             _spec = _nextSpec = null;
             _press = null;
-            _roundLive = false;
             _streak = _points = _resolved = 0;
             _endsAt = 0f;
             _lastTickSecond = -1;
@@ -279,11 +275,10 @@ namespace NeuroVida.Games.Intrusa
 
             // esperar el toque: no hay reloj por ronda (el tiempo de la partida es la cometa)
             _legibleAt = GameClock.Time;
-            _roundLive = true;
             int choice = -1;
             while (choice < 0)
             {
-                if (Endless && Finished()) { _roundLive = false; yield break; }
+                if (Endless && Finished()) { yield break; }
                 if (_press.HasValue)
                 {
                     var p = _press.Value;
@@ -292,7 +287,6 @@ namespace NeuroVida.Games.Intrusa
                 }
                 yield return null;
             }
-            _roundLive = false;
             GameFeel.Haptic(GameFeel.HapticKind.Light);
             int ms = Mathf.RoundToInt((GameClock.Time - _legibleAt) * 1000f);
             if (_hint.gameObject.activeSelf) _hint.gameObject.SetActive(false);
@@ -1227,7 +1221,6 @@ namespace NeuroVida.Games.Intrusa
             _timerTrack.gameObject.SetActive(false);
             _phase = Phase.Playing;
             _press = null;
-            _roundLive = false;
             _spec = spec;
             ShowRound(spec);
             yield return StartCoroutine(AppearStars());
@@ -1292,7 +1285,6 @@ namespace NeuroVida.Games.Intrusa
             coach.Hide();
             HideRound();
             _press = null;
-            _roundLive = false;
             _timerTrack.gameObject.SetActive(Endless);
             _guided = false;
             _phase = Phase.Idle;                                       // la partida (o «Cómo se juega») sigue desde su bucle
@@ -1334,7 +1326,6 @@ namespace NeuroVida.Games.Intrusa
         protected override void HowToSuspend()
         {
             // la ronda que estaba en pantalla se descarta (si todavía no se había contestado, no cuenta); después sigue la partida con una nueva
-            _roundLive = false;
             _press = null;
             HideRound();
             _phase = Phase.Idle;
@@ -1354,7 +1345,6 @@ namespace NeuroVida.Games.Intrusa
         private IEnumerator FinishGame()
         {
             _phase = Phase.Done;
-            _roundLive = false;
             HideRound();
             try
             {

@@ -112,10 +112,5 @@ namespace NeuroVida.Games.Piloto
                 s.volume = Mathf.Clamp01(_gain[i] * MasterLevel * _freeze);
             }
         }
-
-        /// <summary>El volumen que hoy suena en cada capa (para las pruebas y el diagnóstico).</summary>
-        public float VolumeOf(int layer) => _sources[layer].volume;
-
-        public bool MutedNow => _sources[0].mute;
     }
 }

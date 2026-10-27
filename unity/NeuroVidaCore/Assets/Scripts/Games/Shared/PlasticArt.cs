@@ -128,9 +128,6 @@ namespace NeuroVida.Games.Shared
         /// <summary>El sprite de plasticina, o null si no existe: el que llama usa entonces el suyo.</summary>
         public static Sprite Get(string group, string sprite) => Group(group)?.Get(sprite);
 
-        /// <summary>El sprite de plasticina; si no existe, el que arma <paramref name="fallback"/> (el procedural de siempre).</summary>
-        public static Sprite GetOr(string group, string sprite, Func<Sprite> fallback) => Get(group, sprite) ?? fallback();
-
         public static bool Has(string group, string sprite) => Group(group)?.Has(sprite) ?? false;
 
         public static float Measure(string group, string name, float fallback) => Group(group)?.Measure(name, fallback) ?? fallback;

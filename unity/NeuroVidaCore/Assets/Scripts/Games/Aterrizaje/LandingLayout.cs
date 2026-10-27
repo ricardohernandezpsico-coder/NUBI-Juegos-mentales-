@@ -28,8 +28,6 @@ namespace NeuroVida.Games.Aterrizaje
     public readonly struct LandingPlan
     {
         public const float Width = 360f;
-        /// <summary>Lo que ocupa el marcador común de arriba (190 unidades de 1080 → 63,3 dp).</summary>
-        public const float HudBottom = 190f / 3f;
         public const float TutorialControls = 96f;
         public const float ReferenceHeight = 780f;
 

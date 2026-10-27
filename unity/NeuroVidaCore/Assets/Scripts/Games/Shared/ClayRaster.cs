@@ -222,20 +222,6 @@ namespace NeuroVida.Games.Shared
             return Mathf.Sqrt(qx * qx + qy * qy) * Mathf.Sign(qx) - round;
         }
 
-        /// <summary>
-        /// Media luna (sdMoon de Quilez, distancia exacta): círculo de radio <paramref name="ra"/> en el origen
-        /// menos otro de radio <paramref name="rb"/> corrido <paramref name="d"/> sobre el eje x.
-        /// </summary>
-        public static float Crescent(float x, float y, float d, float ra, float rb)
-        {
-            y = Mathf.Abs(y);
-            float a = (ra * ra - rb * rb + d * d) / (2f * d);
-            float b = Mathf.Sqrt(Mathf.Max(ra * ra - a * a, 0f));
-            if (d * (x * b - y * a) > d * d * Mathf.Max(b - y, 0f))
-                return Mathf.Sqrt((x - a) * (x - a) + (y - b) * (y - b));
-            return Mathf.Max(Mathf.Sqrt(x * x + y * y) - ra, -(Mathf.Sqrt((x - d) * (x - d) + y * y) - rb));
-        }
-
         public static float Union(float a, float b) => Mathf.Min(a, b);
         public static float Intersect(float a, float b) => Mathf.Max(a, b);
         public static float Subtract(float a, float b) => Mathf.Max(a, -b);

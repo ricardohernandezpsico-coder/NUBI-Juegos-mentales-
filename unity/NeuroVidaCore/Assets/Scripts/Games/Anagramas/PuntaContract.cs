@@ -33,8 +33,6 @@ namespace NeuroVida.Games.Anagramas
         public const int RetoTargetWords = 8;
         /// <summary>Las ayudas: 1 cuántas letras, 2 la primera letra, 3 solo sus letras. Después, el botón dice «Ver la palabra».</summary>
         public const int HelpSteps = 3;
-        /// <summary>Palabras azules que esperan volver (las guarda la app).</summary>
-        public const int MaxPending = 20;
         /// <summary>Cuántas azules vuelven como máximo en una partida de Precisión, y cada cuántas palabras vuelve una en el Reto.</summary>
         public const int MaxBlueInPrecision = 2;
         public const int BlueEveryInReto = 4;

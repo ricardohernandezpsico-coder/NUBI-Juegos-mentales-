@@ -55,43 +55,10 @@ namespace NeuroVida.Games.Shared
 
         // ---- los mundos de los 9 juegos ----
 
-        public static GameWorld Constellation => new GameWorld
-        {
-            Name = "Constelación", Constellations = 3,
-            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.24f), NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.20f),
-        };
-
-        public static GameWorld TwinMoons => new GameWorld
-        {
-            Name = "Lunas gemelas", Bokeh = 5,
-            Moons = new[] { new Vector3(0.74f, 0.845f, 150f), new Vector3(0.885f, 0.80f, 96f) },
-            MoonTints = new[] { NeuroStyle.Hex(0xFFF4D6), NeuroStyle.Hex(0xE4DCFF) },
-            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.26f), NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Coral, 0.16f),
-        };
-
-        // Sin uso desde que Ruta del Tesoro se retiró (4-oct-2026): queda como mundo disponible para otro juego.
-        public static GameWorld TreasureMoon => new GameWorld
-        {
-            Name = "Luna del tesoro", SurfaceHeight = 0.15f, Stars = 46, VanishingPoint = new Vector2(0.5f, 0.3f),
-            Asteroids = new[] { new Vector3(0.02f, 0.58f, 120f), new Vector3(0.985f, 0.40f, 96f), new Vector3(0.90f, 0.18f, 64f) },
-            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.24f), NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.16f),
-            NebulaBPos = new Vector2(0.8f, 0.35f),
-        };
-
         public static GameWorld Neon => new GameWorld
         {
             Name = "Neón", Bokeh = 9,
             NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Coral, 0.26f), NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.26f),
-        };
-
-        // Sin uso desde que Comparación Instantánea se retiró (4-oct-2026): queda como mundo disponible para otro juego.
-        public static GameWorld PlanetDuel => new GameWorld
-        {
-            Name = "Duelo de planetas",
-            Planets = new[] { new Vector3(-0.02f, 0.06f, 620f), new Vector3(1.03f, 0.93f, 520f) },
-            PlanetColors = new[] { NeuroStyle.Sky, NeuroStyle.Coral },
-            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Coral, 0.18f), NebulaAPos = new Vector2(0.9f, 0.85f),
-            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.20f), NebulaBPos = new Vector2(0.1f, 0.15f),
         };
 
         // Sin uso desde que Cambio de Chip se retiró (3-oct-2026): queda como mundo disponible para otro juego.
@@ -99,13 +66,6 @@ namespace NeuroVida.Games.Shared
         {
             Name = "Órbitas", OrbitRings = 4,
             NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Lime, 0.14f), NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.20f),
-        };
-
-        // Sin uso desde que Detective de Series se retiró (4-oct-2026): queda como mundo disponible para otro juego (no es el juego «Lluvia de meteoros»).
-        public static GameWorld MeteorShower => new GameWorld
-        {
-            Name = "Lluvia de meteoros", MeteorEverySeconds = 2.4f,
-            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.24f), NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.12f),
         };
 
         /// <summary>Piloto Estelar: las estrellas nacen arriba (hacia donde vuela la nave) y pasan a los costados;
@@ -143,16 +103,6 @@ namespace NeuroVida.Games.Shared
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.14f), NebulaBPos = new Vector2(0.1f, 0.4f),
         };
 
-        /// <summary>Aterrizaje Lunar: la superficie de una luna ocupa la cuarta parte de abajo (la regla va en su
-        /// borde) y un planeta asoma a la derecha.</summary>
-        public static GameWorld LunarRange => new GameWorld
-        {
-            Name = "Campo de aterrizaje", SurfaceHeight = 0.26f, Stars = 50, VanishingPoint = new Vector2(0.5f, 0.4f),
-            Planets = new[] { new Vector3(1.04f, 0.56f, 340f) }, PlanetColors = new[] { NeuroStyle.Grape },
-            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.16f), NebulaAPos = new Vector2(0.15f, 0.85f),
-            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sun, 0.10f), NebulaBPos = new Vector2(0.5f, 0.3f),
-        };
-
         /// <summary>Aterrizaje Lunar (renovación del 10-oct): el cielo de la app SIN estrellas ni perspectiva ni planeta ni superficie y con nebulosas muy tenues: todo lo que se ve en el cielo (estrellas que titilan, la Tierra, un satélite, la luna y sus dos cordilleras que se desplazan) lo arma
         /// el propio juego (nada fijo junto a la regla: serviría de pista).</summary>
         public static GameWorld LunarBase => new GameWorld
@@ -170,15 +120,6 @@ namespace NeuroVida.Games.Shared
             Planets = new[] { new Vector3(-0.06f, 0.36f, 380f) }, PlanetColors = new[] { NeuroStyle.Sky },
             NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.20f), NebulaAPos = new Vector2(0.85f, 0.8f),
             NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Lime, 0.10f), NebulaBPos = new Vector2(0.5f, 0.25f),
-        };
-
-        // Sin uso desde que Tráfico Estelar se retiró (4-oct-2026): queda como mundo disponible para otro juego.
-        /// <summary>Tráfico Estelar: centro de tráfico; cielo quieto con nebulosa uva arriba (de donde sale el portal).</summary>
-        public static GameWorld TrafficHub => new GameWorld
-        {
-            Name = "Centro de tráfico", Stars = 50,
-            NebulaA = NeuroStyle.WithAlpha(NeuroStyle.Grape, 0.24f), NebulaAPos = new Vector2(0.5f, 0.95f),
-            NebulaB = NeuroStyle.WithAlpha(NeuroStyle.Sky, 0.14f), NebulaBPos = new Vector2(0.5f, 0.1f),
         };
 
         /// <summary>Bitácora de Misión: cielo de exploración con constelaciones tenues y alguna estrella fugaz (destellos

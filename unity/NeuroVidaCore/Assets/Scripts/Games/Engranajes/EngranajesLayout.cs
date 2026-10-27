@@ -46,9 +46,6 @@ namespace NeuroVida.Games.Engranajes
             public float StripTop, QuestionTop, SceneCenterLogicalY, SceneScale, ButtonsTop, ButtonH, SayTop, SayH, Bottom;
         }
 
-        /// <summary>La altura que pide la pantalla con la escena a tamaño completo y los botones y el aviso más bajos que se permiten.</summary>
-        public static float FullHeight(float buttonH, float sayH) => TableTopDp + SceneHeight + 8f + buttonH + SayGap + sayH + 6f;
-
         public static Metrics Compute(float height)
         {
             var m = new Metrics();

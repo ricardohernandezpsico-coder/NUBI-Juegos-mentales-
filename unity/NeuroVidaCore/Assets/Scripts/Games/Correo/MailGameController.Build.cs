@@ -139,7 +139,6 @@ namespace NeuroVida.Games.Correo
         private Image _introBox;
         private Text _endTitle, _endHead, _endPct, _endSub, _endTip, _endNote;
         private readonly Text[] _endLabels = new Text[EndRows], _endValues = new Text[EndRows];
-        private RectTransform _timerTrackUnused;
 
         // ------------------------------------------------------------------ construcción de UI
 

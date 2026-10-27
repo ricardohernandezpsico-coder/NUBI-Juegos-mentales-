@@ -72,7 +72,7 @@ namespace NeuroVida.Games.Calculo
             public bool Shown, Flying;
             public int Value;
             public Vector2 Pos, Target;
-            public float BornAt, PopAt = -10f, FlyAt, FlyFade;
+            public float BornAt, PopAt = -10f, FlyAt;
             public int FlyToId = -1;
             public Vector2 FlyFrom;
         }

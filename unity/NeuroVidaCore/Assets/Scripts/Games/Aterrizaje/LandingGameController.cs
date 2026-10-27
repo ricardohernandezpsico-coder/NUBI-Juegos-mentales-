@@ -50,7 +50,7 @@ namespace NeuroVida.Games.Aterrizaje
         // el aterrizaje en curso
         private LandingTrial _trial;
         private float _x, _tx, _y, _y0, _fallAt, _dropAt, _descent, _landAt, _holdT = 2.3f, _popAt = -10f;
-        private bool _released, _touching, _everTouched;
+        private bool _released, _touching;
 
         /// <summary>Cómo salió el aterrizaje (se calcula al tocar la regla).</summary>
         private sealed class Landing
@@ -208,7 +208,7 @@ namespace NeuroVida.Games.Aterrizaje
             float startFrac = Mathf.Lerp(0.1f, 0.9f, (float)_rng.NextDouble());
             _x = _tx = LandingPlan.FracX(startFrac);
             _y = LandingPlan.StartY;
-            _released = _touching = _everTouched = false;
+            _released = _touching = false;
             _fallAt = Now;
             _popAt = Now;
             _descent = Mathf.Max(0.5f, descentSeconds);
@@ -487,7 +487,6 @@ namespace NeuroVida.Games.Aterrizaje
                 if (!_touching && p.y <= LandingPlan.TouchTopY) return;
                 _tx = Mathf.Clamp(p.x, LandingPlan.RulerX0, LandingPlan.RulerX1);
                 _touching = true;
-                _everTouched = true;
             }
             else if (_touching)
             {

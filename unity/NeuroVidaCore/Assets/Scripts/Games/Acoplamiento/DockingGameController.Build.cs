@@ -19,15 +19,10 @@ namespace NeuroVida.Games.Acoplamiento
         private static readonly Color Lime = new Color(166f / 255f, 227f / 255f, 107f / 255f);
         private static readonly Color Coral = new Color(255f / 255f, 138f / 255f, 107f / 255f);
         private static readonly Color Lavender = new Color(171f / 255f, 165f / 255f, 210f / 255f);
-        private static readonly Color Dim = new Color(143f / 255f, 138f / 255f, 192f / 255f);
         private static readonly Color Soft = new Color(214f / 255f, 209f / 255f, 242f / 255f);
-        private static readonly Color TextColor = new Color(237f / 255f, 234f / 255f, 251f / 255f);
         private static readonly Color Ink = new Color(26f / 255f, 18f / 255f, 64f / 255f);
-        private static readonly Color Shadow = new Color(8f / 255f, 6f / 255f, 30f / 255f, 0.55f);
-        private static readonly Color RingViolet = new Color(140f / 255f, 120f / 255f, 236f / 255f);
         /// <summary>El cordón del hueco: verde agua en reposo, lima al encajar, celeste al «mostrar» (el tubo de plasticina es gris y se tiñe con estos).</summary>
         private static readonly Color PortEdgeIdle = new Color(92f / 255f, 200f / 255f, 194f / 255f);
-        private static readonly Color CardFill = new Color(34f / 255f, 32f / 255f, 90f / 255f, 0.97f);
 
         private RectTransform _safe, _play, _backLayer, _portLayer, _moduleLayer, _buttonLayer, _hudLayer, _fxLayer;
         private readonly List<KeyValuePair<Text, float>> _fonts = new List<KeyValuePair<Text, float>>();
@@ -454,8 +449,5 @@ namespace NeuroVida.Games.Acoplamiento
             SetRect(_timerTrack.rectTransform, DockingPlan.Width * 0.5f, 71f, DockingPlan.Width - 24f, 5f);
             SetTimer(_timerFraction);
         }
-
-        /// <summary>Lo que ocupa, abajo, el rótulo «Práctica: no cuenta» y «Saltar tutorial» (dp).</summary>
-        private const float TutorialControlsDp = DockingPlan.TutorialControls;
     }
 }

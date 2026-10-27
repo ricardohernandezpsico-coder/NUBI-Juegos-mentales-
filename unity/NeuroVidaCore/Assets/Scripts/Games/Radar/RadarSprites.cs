@@ -31,7 +31,7 @@ namespace NeuroVida.Games.Radar
             Hex(0xFFB3D1),      // rombo
         };
 
-        public static readonly Color RockColor = Hex(0x76718F), RockSpot = Hex(0x5C5875), WindowWhite = Hex(0xF4F2FF), Visor = Hex(0x284A8E), Bezel = Hex(0x3A3486), Glass = Hex(0x070E2C), GlassCenter = Hex(0x13265E);
+        public static readonly Color RockColor = Hex(0x76718F), RockSpot = Hex(0x5C5875), WindowWhite = Hex(0xF4F2FF), Visor = Hex(0x284A8E), Bezel = Hex(0x3A3486);
 
         private const float Aa = 0.03f;
         private static readonly Dictionary<int, Sprite> Cache = new Dictionary<int, Sprite>();

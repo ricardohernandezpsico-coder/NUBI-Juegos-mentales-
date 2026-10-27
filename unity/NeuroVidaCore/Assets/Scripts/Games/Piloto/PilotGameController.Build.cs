@@ -14,7 +14,6 @@ namespace NeuroVida.Games.Piloto
         private static readonly Color Gold = new Color(255f / 255f, 201f / 255f, 74f / 255f);
         private static readonly Color Cyan = new Color(127f / 255f, 216f / 255f, 255f / 255f);
         private static readonly Color Lavender = new Color(171f / 255f, 165f / 255f, 210f / 255f);
-        private static readonly Color Dim = new Color(143f / 255f, 138f / 255f, 192f / 255f);
         private static readonly Color Soft = new Color(214f / 255f, 209f / 255f, 242f / 255f);
         private static readonly Color Good = new Color(166f / 255f, 227f / 255f, 107f / 255f);
         private static readonly Color Bad = new Color(255f / 255f, 138f / 255f, 107f / 255f);
@@ -529,9 +528,5 @@ namespace NeuroVida.Games.Piloto
             SetRect(_tallName.rectTransform, left + PilotPlan.NoticeShapeDp + 10f + nameW * 0.5f, row, nameW, 24f);
             SetRect(_tallFoot.rectTransform, cx, b.Y0 + 98f, w - 16f, 20f);
         }
-
-
-        /// <summary>Lo que ocupan, abajo, el rótulo «Práctica: no cuenta» y «Saltar tutorial» (dp).</summary>
-        private const float TutorialControlsDp = PilotPlan.TutorialControls;
     }
 }

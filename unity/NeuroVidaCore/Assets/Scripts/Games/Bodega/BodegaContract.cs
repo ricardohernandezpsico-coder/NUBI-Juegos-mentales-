@@ -48,9 +48,6 @@ namespace NeuroVida.Games.Bodega
         /// <summary>La escotilla que de verdad tiene ese objeto ahora (después de las cajas); -1 si no está.</summary>
         public int HatchOf(int obj) => Array.IndexOf(Final, obj);
 
-        /// <summary>Lo que hay en la escotilla antes de las cajas (para dibujar el guardado).</summary>
-        public int LoadedOf(int hatch) => Loaded[hatch];
-
         /// <summary>El lugar del anillo (0 = esclusa, 1..Hatches = escotillas) que ocupa la escotilla DESPUÉS del giro.</summary>
         public int PositionAfterSpin(int hatch) => BodegaContract.Wrap(hatch + 1 + Spin, Hatches + 1);
 

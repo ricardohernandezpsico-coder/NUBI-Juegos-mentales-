@@ -47,9 +47,6 @@ namespace NeuroVida.Games.Shared
         /// <summary>Cuánto están cerrados los ojos: 0 (abiertos) a 1 (cerrados).</summary>
         public float Closed { get; private set; }
 
-        /// <summary>Cuántos parpadeos (de a uno; el doble cuenta como uno) lleva.</summary>
-        public int Blinks => _count;
-
         /// <param name="seed">0 = al azar de verdad; otro número, repetible (las pruebas).</param>
         public NubiIdle(int seed = 0, float now = 0f)
         {
@@ -177,8 +174,7 @@ namespace NeuroVida.Games.Shared
             Layout();
         }
 
-        /// <summary>Cuánto están cerrados los ojos (0 a 1) y cuánto sube Nubi (dp): para las pruebas.</summary>
-        public float EyesClosed => _idle == null ? 0f : _idle.Closed;
+        /// <summary>Cuánto sube Nubi (dp): para las pruebas.</summary>
         public float FloatDp => _floatDp;
         public RectTransform Body => _bodyRt;
         public RectTransform Shadow => _shadowRt;

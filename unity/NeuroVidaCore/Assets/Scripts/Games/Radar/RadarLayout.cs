@@ -30,13 +30,12 @@ namespace NeuroVida.Games.Radar
     public readonly struct RadarPlan
     {
         public const float Width = 360f;
-        public const float HudBottom = 190f / 3f;
         /// <summary>Lo que se reserva ABAJO en la ronda guiada (dp) para Nubi y su globo; «Saltar tutorial» ya no va ahí sino en la fila fija de arriba (Tarea 127), así que bajó de 96 a 72 y, en la Tarea 128, a 60 (con la fila fija de arriba las cápsulas del tablero medían 46 dp en 16:9).</summary>
         public const float TutorialControls = 60f;
         /// <summary>La franja de mensajes: de 78 a 114 dp desde arriba, a todo lo ancho menos 12 dp de cada lado.</summary>
         public const float StripTop = 78f, StripBottom = 114f, StripLineA = 90f, StripLineB = 108f;
         /// <summary>El alto del layout compacto (16:9, el de la Tarea 62) y el de la referencia (20:9, v4).</summary>
-        public const float ShortHeight = 640f, TallHeight = 780f;
+        public const float TallHeight = 780f;
 
         // la v4, medida con la referencia de 780 dp (diseno-rescate-v4.md §1)
         private const float TopFixed = StripBottom + 4f;

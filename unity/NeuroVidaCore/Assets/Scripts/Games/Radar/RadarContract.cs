@@ -309,7 +309,6 @@ namespace NeuroVida.Games.Radar
         public static string AllSafe(int streak) => streak >= 3 ? "¡Todos a salvo! " + streak + " seguidos" : "¡Todos a salvo!";
         public static string Partial(int hits, int count, int extras) => "Rescataste " + hits + " de " + count + (extras > 0 ? " · " + extras + (extras == 1 ? " no estaba" : " no estaban") : "");
         public static string RoundChip(int round, int total) => total > 0 ? "Ronda " + Math.Min(round, total) + " de " + total : "Ronda " + round;
-        public static string StreakChip(int streak) => streak + " seguidos";
 
         /// <summary>Las cápsulas rescatadas en la partida, en la fila de consigna del marcador (Tarea 127; antes un número suelto con una cápsula arriba a la derecha).</summary>
         public static string RescuedPhase(int rescued) => rescued == 1 ? "1 rescatada" : rescued + " rescatadas";

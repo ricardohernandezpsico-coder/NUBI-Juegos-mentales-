@@ -10,8 +10,8 @@ namespace NeuroVida.Games.Correo
     public static class MailLayout
     {
         public const float W = 360f, HudDp = 66f;
-        /// <summary>La carta de la cinta (112×76) y su marco punteado (132×92); la carta que espera se queda a 150 dp de la izquierda.</summary>
-        public const float LetterW = 112f, LetterH = 76f, FrameW = 132f, FrameH = 92f, BeltXA = 150f, BeltBandH = 100f;
+        /// <summary>El ancho de la carta de la cinta (112); la carta que espera se queda a 150 dp de la izquierda.</summary>
+        public const float LetterW = 112f, BeltXA = 150f, BeltBandH = 100f;
         public const float BoxH = 112f, BtnH = 88f, BtnW = 158f, ClockR = 28f;
         /// <summary>De la altura mínima de la pantalla (incluye el marcador) en que todo cabe sin apretarse.</summary>
         public const float MinHeight = 592f;

@@ -24,7 +24,6 @@ namespace NeuroVida.Games.Meteoros
 
         /// <summary>Meteoros normales lanzados hasta ahora.</summary>
         public int Spawned => _index;
-        public int DecoyRun => _decoyRun;
         public bool InShower => _showerLeft > 0;
 
         public MeteorSpec Next(int level, bool precision, bool senior)

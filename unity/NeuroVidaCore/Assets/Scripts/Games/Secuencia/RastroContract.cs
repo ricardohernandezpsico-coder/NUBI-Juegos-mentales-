@@ -26,28 +26,6 @@ namespace NeuroVida.Games.Secuencia
             }
         }
 
-        /// <summary>Rótulo de abajo mientras se mira el camino.</summary>
-        public static string WatchRule(RastroMode m, int asked)
-        {
-            switch (m)
-            {
-                case RastroMode.Reves: return "Mira el rastro: lo repetirás al revés";
-                case RastroMode.Marcha: return "Mira… al final, las últimas " + asked;
-                default: return "Mira el rastro";
-            }
-        }
-
-        /// <summary>Rótulo de abajo mientras se repite el camino.</summary>
-        public static string RepeatRule(RastroMode m, int asked)
-        {
-            switch (m)
-            {
-                case RastroMode.Reves: return "Al revés: de la última a la primera";
-                case RastroMode.Marcha: return "Repite las últimas " + asked;
-                default: return "Repítelo con el dedo";
-            }
-        }
-
         /// <summary>La fase en la fila de consigna del marcador (Tarea 127) mientras se mira el camino: «Mira el rastro».</summary>
         public static string PhaseWatch(RastroMode m, int asked) => m == RastroMode.Marcha ? "Mira… las últimas " + asked : "Mira el rastro";
 

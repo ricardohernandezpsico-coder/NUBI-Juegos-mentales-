@@ -41,7 +41,6 @@ namespace NeuroVida.Games.Engranajes
         private static readonly Dictionary<GearSize, float[]> GearPts = new Dictionary<GearSize, float[]>();
 
         // colores del boceto aprobado
-        public static readonly Color GearInk = Ink;
         private static readonly Color[][] Pal =
         {
             new[] { Hex(0xE0F8FF), Hex(0x4CC9F0) },   // motor: celeste (el Sky del kit); paleta «Madera clara» (Tarea 164), la misma del atlas
@@ -513,23 +512,6 @@ namespace NeuroVida.Games.Engranajes
             });
         }
 
-        private static float[] MiniGear(float tip, int n)
-        {
-            float root = tip - 6f, p = 2f * Mathf.PI / n;
-            var pts = new float[n * 8];
-            int k2 = 0;
-            for (int k = 0; k < n; k++)
-            {
-                float t = k * p;
-                foreach (var (a, r) in new[] { (t - 0.32f * p, root), (t - 0.17f * p, tip), (t + 0.17f * p, tip), (t + 0.32f * p, root) })
-                {
-                    pts[k2++] = Mathf.Cos(a) * r;
-                    pts[k2++] = Mathf.Sin(a) * r;
-                }
-            }
-            return pts;
-        }
-
         // ------------------------------------------------------------------ cuántos sprites hay y su horneado por tandas
 
         /// <summary>Hornea todo lo de la partida, de a una pieza por cuadro (para que la cuenta regresiva no se trabe). Lo que ya está horneado no se repite.</summary>
@@ -566,8 +548,5 @@ namespace NeuroVida.Games.Engranajes
 
         /// <summary>Los tres grosores de la correa: el brillo dorado (16), el borde oscuro (8) y la banda clara (4,5).</summary>
         public static readonly float[] BeltWidths = { 16f, 8f, 4.5f };
-
-        /// <summary>Para las pruebas: cuántos sprites hay horneados.</summary>
-        public static int BakedCount => Cache.Count;
     }
 }

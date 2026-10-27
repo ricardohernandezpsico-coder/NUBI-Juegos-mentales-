@@ -286,11 +286,8 @@ namespace NeuroVida.Games.Acoplamiento
         public const string Rule = "Gira la pieza en tu mente: ¿encaja?", RuleShort = "¿Encaja o es su espejo?";
         public const string RingComplete = "¡Anillo completo!";
         public const string CountdownSub = "¿Encaja en el puerto o es su espejo?";
-        /// <summary>La pista de los primeros módulos.</summary>
-        public const int HintModules = 3;
 
         public static string RoundChip(int module, int total) => total > 0 ? "Módulo " + Math.Min(module, total) + " de " + total : "Módulo " + module;
-        public static string StreakChip(int streak) => streak + " seguidos";
 
         /// <summary>
         /// El chip de avance del marcador común (Tarea 144, ítem 5 de la revisión del 19-oct): el módulo y cuántos van a bordo, de lo más completo a lo más corto (<c>GameHud.SetInfoFit</c> pone el primero que cabe junto al título).

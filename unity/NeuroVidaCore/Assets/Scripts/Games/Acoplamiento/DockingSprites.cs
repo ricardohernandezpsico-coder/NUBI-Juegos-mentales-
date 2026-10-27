@@ -12,7 +12,7 @@ namespace NeuroVida.Games.Acoplamiento
     /// </summary>
     public static class DockingSprites
     {
-        public static readonly Color ModuleColor = Hex(0x7FD8FF), LimeColor = Hex(0xA6E36B), GrapeColor = Hex(0xB79BFF), PortColor = Hex(0x2C2A6E), HoleColor = Hex(0x070818), RingBase = Hex(0x5B4FC0), CreamIcon = Hex(0xE9E6FF);
+        public static readonly Color LimeColor = Hex(0xA6E36B), GrapeColor = Hex(0xB79BFF), PortColor = Hex(0x2C2A6E), CreamIcon = Hex(0xE9E6FF);
 
         private const float Aa = 0.03f;
         private static readonly Dictionary<int, Sprite> Cache = new Dictionary<int, Sprite>();
@@ -145,15 +145,6 @@ namespace NeuroVida.Games.Acoplamiento
         }
 
         // ------------------------------------------------------------------ sprites rectangulares y caché
-
-        /// <summary>Un sprite de una textura rectangular (1 unidad = el ancho).</summary>
-        public static Sprite ToSpriteRect(Color32[] pixels, int w, int h)
-        {
-            var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
-            tex.SetPixels32(pixels);
-            tex.Apply();
-            return Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), w);
-        }
 
         private static Sprite Get(int key, System.Func<Sprite> build)
         {

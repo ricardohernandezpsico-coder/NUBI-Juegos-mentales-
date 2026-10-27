@@ -16,7 +16,6 @@ namespace NeuroVida.Games.Bodega
     /// </summary>
     public static class BodegaSprites
     {
-        public const float Ppd = 3f;
         public const float HatchR = BodegaLayout.HatchR, FrameR = BodegaLayout.HatchR + BodegaLayout.FrameW, WindowR = BodegaLayout.HatchR + 6f, RobotR = 26f;
 
         /// <summary>El atlas de plasticina de este juego (<c>Resources/Plasticina/bodega</c>): los 12 objetos, el marco, el aro y los tres interiores de la escotilla, la hoja de la puerta (y su presionada), el robot, la caja, la esclusa y el carro.
@@ -278,12 +277,6 @@ namespace NeuroVida.Games.Bodega
             var sprite = ToSprite(pixels, size, size);
             Cache[key] = sprite;
             return sprite;
-        }
-
-        public static Color32[] RenderObject(int id, int size)
-        {
-            int b = FromBitacora[Mathf.Clamp(id, 0, BodegaContract.ObjectCount - 1)];
-            return b >= 0 ? BitacoraSprites.RenderFind(b, size) : RenderClay(size, 1.12f, 0.06f, 0.075f, 0.02f, (x, y) => NewBody(id, x, y), (ref Px p, float x, float y) => NewPaint(id, ref p, x, y));
         }
 
         private static readonly Color AppleRed = Hex(0xE2524A), Wood = Hex(0x9C6A4E);

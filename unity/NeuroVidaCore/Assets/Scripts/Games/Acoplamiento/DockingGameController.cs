@@ -529,16 +529,6 @@ namespace NeuroVida.Games.Acoplamiento
 
         private bool SoundWanted => GameFeel.SoundOn && (_config == null || _config.config == null || _config.config.sound_enabled);
 
-        private static IEnumerator Wait(float seconds)
-        {
-            float t = 0f;
-            while (t < seconds)
-            {
-                t += GameClock.DeltaTime;
-                yield return null;
-            }
-        }
-
 #if UNITY_EDITOR
         private float _botT;
         private int _botPick = NoAnswer;

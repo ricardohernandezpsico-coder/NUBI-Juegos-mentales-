@@ -237,8 +237,6 @@ namespace NeuroVida.Games.Bodega
 
         // ------------------------------------------------------------------ dibujo por cuadro: la bodega
 
-        private static Vector2 Rot2(float ang) => new Vector2(Mathf.Cos(ang), Mathf.Sin(ang));
-
         /// <summary>Una línea entre dos puntos del boceto (cápsula con la imagen redondeada), ancho en dp.</summary>
         private static void SetLine(Image img, Vector2 a, Vector2 b, float widthDp, Color color)
         {

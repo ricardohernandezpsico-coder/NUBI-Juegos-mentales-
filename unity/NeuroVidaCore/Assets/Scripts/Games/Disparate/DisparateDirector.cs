@@ -23,7 +23,6 @@ namespace NeuroVida.Games.Disparate
         public bool InBurst => _burstLeft > 0;
         /// <summary>true = sin Ráfagas (el Contrarreloj: la pista es una escalera pura de frases normales).</summary>
         public bool NoBursts { get; set; }
-        public int BurstLeft => _burstLeft;
         /// <summary>Ids de todas las frases de la partida, en orden (para evitarlas en las próximas).</summary>
         public List<string> UsedInOrder { get; } = new List<string>();
 

@@ -47,7 +47,6 @@ namespace NeuroVida.Games.Engranajes
         private readonly Dictionary<int, float> _beltFlipAt = new Dictionary<int, float>();
         private Phase _phase = Phase.Idle;
         private bool Endless => _config != null && _config.config.timed;
-        private bool Precision => !Endless;
         private bool _senior, _loopOn, _guided, _inputOn, _baked, _okAnswer, _startRequested;
         private int _streak, _bestStreak, _points, _resolved, _okCount;
         private float _endsAt, _t0, _runAt = float.MaxValue, _verdictAt = float.MaxValue, _showFixAt = -10f, _motorFlipAt, _hintAt, _startPressAt = -10f;

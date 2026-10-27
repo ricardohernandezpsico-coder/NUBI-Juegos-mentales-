@@ -459,8 +459,5 @@ namespace NeuroVida.Games.Correo
             DashFrame(); yield return null;
             CheckOk(); CheckNo(); DayBar(); yield return null;
         }
-
-        /// <summary>Todas las claves que se hornean (para las pruebas: ninguna pieza se queda sin dibujo).</summary>
-        public static int BakedCount => Cache.Count;
     }
 }

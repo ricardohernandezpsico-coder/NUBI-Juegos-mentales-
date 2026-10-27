@@ -19,7 +19,6 @@ namespace NeuroVida.Games.Parejas
         private static readonly Color Mint = new Color(159f / 255f, 245f / 255f, 214f / 255f);
         private static readonly Color PanelFill = new Color(20f / 255f, 27f / 255f, 58f / 255f);
         private static readonly Color TextColor = new Color(237f / 255f, 234f / 255f, 251f / 255f);
-        private static readonly Color Muted = new Color(110f / 255f, 106f / 255f, 154f / 255f);
         private static readonly Color InkEdge = new Color(26f / 255f, 18f / 255f, 64f / 255f);
 
         /// <summary>Una luz: el aro de pareja hecha, el brillo de pista, y el cuerpo con su objeto (que se voltea con un resorte).</summary>

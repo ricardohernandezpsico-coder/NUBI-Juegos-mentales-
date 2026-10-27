@@ -1223,8 +1223,6 @@ namespace NeuroVida.Games.Meteoros
             }
         }
 
-        private static IEnumerator Wait(float seconds) => Motion.Hold(seconds);
-
         private IEnumerator GuidedFade(Meteor m)
         {
             float t = 0f;

@@ -16,13 +16,11 @@ namespace NeuroVida.Games.Aterrizaje
         private static readonly Color Lime = LandingSprites.LimeColor;
         private static readonly Color Coral = LandingSprites.CoralColor;
         private static readonly Color Lavender = new Color(171f / 255f, 165f / 255f, 210f / 255f);
-        private static readonly Color Dim = new Color(143f / 255f, 138f / 255f, 192f / 255f);
         private static readonly Color Soft = new Color(214f / 255f, 209f / 255f, 242f / 255f);
         private static readonly Color TextColor = new Color(237f / 255f, 234f / 255f, 251f / 255f);
         private static readonly Color Ink = new Color(26f / 255f, 18f / 255f, 64f / 255f);
         private static readonly Color Shadow = new Color(8f / 255f, 6f / 255f, 30f / 255f, 0.55f);
         private static readonly Color NoticeFill = LandingSprites.NoticeFill;
-        private static readonly Color CardFill = new Color(34f / 255f, 32f / 255f, 90f / 255f, 0.97f);
 
         private RectTransform _safe, _play, _worldLayer, _rulerLayer, _guideLayer, _landerLayer, _resultLayer, _fxLayer, _noticeLayer, _hudLayer;
         private readonly List<KeyValuePair<Text, float>> _fonts = new List<KeyValuePair<Text, float>>();

@@ -10,7 +10,6 @@ namespace NeuroVida.Games.Shared
     public sealed class ProgressDots
     {
         public static readonly Color Pending = new Color(1f, 1f, 1f, 0.18f);
-        public static readonly Color Current = new Color(1f, 1f, 1f, 0.55f);
         public static readonly Color Good = new Color(0x22 / 255f, 0xC5 / 255f, 0x5E / 255f);
         public static readonly Color Bad = new Color(0xEF / 255f, 0x44 / 255f, 0x44 / 255f);
 
@@ -69,11 +68,6 @@ namespace NeuroVida.Games.Shared
         public void Reset()
         {
             foreach (var d in _dots) d.color = Pending;
-        }
-
-        public void MarkCurrent(int index)
-        {
-            if (index >= 0 && index < _dots.Count) _dots[index].color = Current;
         }
 
         public void Mark(int index, bool correct)

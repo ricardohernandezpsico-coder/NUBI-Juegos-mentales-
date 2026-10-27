@@ -203,8 +203,6 @@ namespace NeuroVida.Games.Parejas
 
         public static string SkyOf(int board, int boards) => boards > 0 ? "Cielo " + board + " de " + boards : "Cielo " + board;
 
-        public static string BestStreakLine(int best) => best > 0 ? "Más seguidas: " + best : "";
-
         public static string MemoryCount(int hits, int opps) => opps > 0 ? hits + " de " + opps : MemoryNone;
 
         public static string DoneLine(int hits, int opps, bool recordStreak) =>

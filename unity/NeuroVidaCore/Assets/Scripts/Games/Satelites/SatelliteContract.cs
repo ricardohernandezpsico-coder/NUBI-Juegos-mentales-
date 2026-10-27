@@ -167,10 +167,6 @@ namespace NeuroVida.Games.Satelites
         public static string RoundHudReto(int round) => "Ronda " + round;
         public static string LightsFooter(int lights) => "Luces encendidas: " + lights;
 
-        /// <summary>«2,6 de 3,5 a la vez» (coma decimal; el segundo número sin decimales si es entero).</summary>
-
-        private static string Decimal(float v, string format) => v.ToString(format, System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',');
-
         // ------------------------------------------------------------------ puntaje y medidas
 
         public static bool IsPerfect(int hits, int targets) => targets > 0 && hits >= targets;

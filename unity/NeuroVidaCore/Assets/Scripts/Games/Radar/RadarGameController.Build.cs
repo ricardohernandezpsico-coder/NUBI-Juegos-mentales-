@@ -42,7 +42,6 @@ namespace NeuroVida.Games.Radar
         private static readonly Color Lime = new Color(166f / 255f, 227f / 255f, 107f / 255f);
         private static readonly Color Coral = new Color(255f / 255f, 138f / 255f, 107f / 255f);
         private static readonly Color Lavender = new Color(171f / 255f, 165f / 255f, 210f / 255f);
-        private static readonly Color Dim = new Color(143f / 255f, 138f / 255f, 192f / 255f);
         private static readonly Color Soft = new Color(214f / 255f, 209f / 255f, 242f / 255f);
         private static readonly Color TextColor = new Color(237f / 255f, 234f / 255f, 251f / 255f);
         private static readonly Color Ink = new Color(26f / 255f, 18f / 255f, 64f / 255f);
@@ -625,8 +624,5 @@ namespace NeuroVida.Games.Radar
             r.anchoredPosition = P(12f, 71f);
             _timerFill.color = _timerFraction > 0.5f ? Color.Lerp(Gold, Lime, (_timerFraction - 0.5f) * 2f) : Color.Lerp(Coral, Gold, _timerFraction * 2f);
         }
-
-        /// <summary>Lo que ocupan, abajo, el rótulo «Práctica: no cuenta» y «Saltar tutorial» (dp).</summary>
-        private const float TutorialControlsDp = RadarPlan.TutorialControls;
     }
 }

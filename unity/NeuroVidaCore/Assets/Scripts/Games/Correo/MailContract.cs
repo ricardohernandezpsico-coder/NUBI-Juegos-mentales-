@@ -54,8 +54,8 @@ namespace NeuroVida.Games.Correo
 
         // ------------------------------------------------------------------ tiempos (docs §2, §5 y §11)
 
-        /// <summary>El reloj tapado se destapa 1,6 s al tocarlo; la radio dura 3,2 s; el faro encendido a tiempo dura 3,4 s.</summary>
-        public const float PeekSeconds = 1.6f, RadioSeconds = 3.2f, ShowSeconds = 3.4f;
+        /// <summary>El reloj tapado se destapa 1,6 s al tocarlo; la radio dura 3,2 s.</summary>
+        public const float PeekSeconds = 1.6f, RadioSeconds = 3.2f;
         /// <summary>Un saco trae 5 cartas seguidas, una cada 0,85 s; mientras dura la cinta aguanta 7.</summary>
         public const int RushLetters = 5;
         public const float RushEvery = 0.85f, RushStartDelay = 0.6f;
@@ -163,7 +163,6 @@ namespace NeuroVida.Games.Correo
         public static readonly string[] PlanetShapes = { "círculo", "triángulo", "cuadrado", "gota" };
         /// <summary>La nota de cada buzón (do, mi, sol y do alto).</summary>
         public static readonly float[] PlanetNotes = { 523.25f, 659.25f, 783.99f, 1046.5f };
-        public static readonly float[] Penta = { 523.25f, 587.33f, 659.25f, 783.99f, 880f, 1046.5f, 1174.66f, 1318.5f, 1567.98f, 1760f };
 
         // ------------------------------------------------------------------ motor común
 

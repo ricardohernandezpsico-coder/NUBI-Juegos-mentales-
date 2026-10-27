@@ -36,7 +36,7 @@ namespace NeuroVida.Games.Shared
 
         private readonly MonoBehaviour _runner;
         private readonly float _margin;
-        private readonly RectTransform _infoChip, _streakChip, _titleRect;
+        private readonly RectTransform _infoChip, _streakChip;
         private readonly Text _titleText, _infoText, _streakText, _promptText, _phaseText;
         private readonly Image _infoBg, _promptBg, _promptIcon;
         /// <summary>Las losas de plasticina de las pastillas (null = el arcilla de siempre): avance, consigna y seguidos.</summary>
@@ -64,7 +64,6 @@ namespace NeuroVida.Games.Shared
 
             // fila 1: el título a 18 dp (54 unidades); se achica hasta 16 dp solo si el chip de avance le deja poco lugar (el título más largo, «En la punta de la lengua»)
             _titleText = MakeText(Rect, "Title", 54, TextAnchor.MiddleLeft, Color.white, 3f, 0.45f);
-            _titleRect = _titleText.rectTransform;
             PlaceTopText(_titleText, marginU, marginU + 160f, -TitleTop, TitleH);
             BestFit(_titleText, 48);
             _titleText.text = title;
@@ -490,7 +489,7 @@ namespace NeuroVida.Games.Shared
         public const string SubtitleJoin = " · ";
 
         private bool _announcing;
-        private AnnounceTone _annTone, _annMainTone, _annSubTone;          // _annTone = el de la parte que se ve ahora
+        private AnnounceTone _annTone, _annSubTone;          // _annTone = el de la parte que se ve ahora
         private string[] _annBeats;
         private float[] _annHolds;
         private int _annIndex;
@@ -540,7 +539,7 @@ namespace NeuroVida.Games.Shared
             AnnouncesShown++;
 #endif
             _announcing = true;
-            _annMainTone = _annTone = tone;
+            _annTone = tone;
             _annSubTone = subtitleTone ?? tone;
             _annBeats = beats;
             _annHolds = holds;

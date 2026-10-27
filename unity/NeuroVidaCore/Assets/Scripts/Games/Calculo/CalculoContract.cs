@@ -168,19 +168,6 @@ namespace NeuroVida.Games.Calculo
             float denom = endless ? RetoReferenceLoads : PrecisionLoads;
             return Math.Max(0, Math.Min(100, (int)Math.Round(100f * credit / denom)));
         }
-
-        /// <summary>El nivel que se muestra en el marcador (mismo para todos los modos).</summary>
-        public static string LevelNote(int level)
-        {
-            switch (level)
-            {
-                case 1: return "Solo sumas";
-                case 2: return "Sumas y restas";
-                case 3: return "Aparecen las multiplicaciones";
-                case 4: return "Aparecen las divisiones";
-                default: return "Con más celdas";
-            }
-        }
     }
 
     // ---------------------------------------------------------------------------------------------------- solucionador
@@ -231,9 +218,6 @@ namespace NeuroVida.Games.Calculo
             }
             return null;
         }
-
-        public static bool Solvable(IReadOnlyList<int> cells, IReadOnlyList<CargaOp> ops, int target, bool requireAll) =>
-            Shortest(cells, ops, target, requireAll) != null;
 
         private static bool Goal(List<int> state, int target, bool requireAll)
         {

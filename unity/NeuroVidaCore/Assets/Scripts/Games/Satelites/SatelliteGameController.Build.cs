@@ -14,13 +14,11 @@ namespace NeuroVida.Games.Satelites
         private static readonly Color Gold = new Color(255f / 255f, 201f / 255f, 74f / 255f);
         private static readonly Color Cyan = new Color(127f / 255f, 216f / 255f, 255f / 255f);
         private static readonly Color Lavender = new Color(171f / 255f, 165f / 255f, 210f / 255f);
-        private static readonly Color Dim = new Color(143f / 255f, 138f / 255f, 192f / 255f);
         private static readonly Color Soft = new Color(214f / 255f, 209f / 255f, 242f / 255f);
         private static readonly Color Good = new Color(166f / 255f, 227f / 255f, 107f / 255f);
         private static readonly Color Bad = new Color(255f / 255f, 138f / 255f, 107f / 255f);
         private static readonly Color TextColor = new Color(237f / 255f, 234f / 255f, 251f / 255f);
         private static readonly Color PanelFill = new Color(20f / 255f, 18f / 255f, 58f / 255f);
-        private static readonly Color InkEdge = new Color(26f / 255f, 18f / 255f, 64f / 255f);
 
         /// <summary>Un satélite: su raíz de 60 dp (el área de toque y el hueco del tutorial), el resplandor y el aro de la señal, el sobre, el aro celeste de «marcado» y, al revelar, la marca y el aro punteado.</summary>
         private sealed class SatView
@@ -534,8 +532,5 @@ namespace NeuroVida.Games.Satelites
             SetRect(_surpriseLine.rectTransform, ScreenPlan.Width * 0.5f, cy + h * 0.5f - 44f, w - 36f, 54f);
             SetRect(_surpriseIcon.rectTransform, -1000f, -1000f, 1f, 1f);       // sin icono por ahora (el aviso es texto)
         }
-
-        /// <summary>Lo que ocupan, abajo, el rótulo «Práctica: no cuenta» y «Saltar tutorial» (dp).</summary>
-        private const float TutorialControlsDp = ScreenPlan.TutorialControls;
     }
 }

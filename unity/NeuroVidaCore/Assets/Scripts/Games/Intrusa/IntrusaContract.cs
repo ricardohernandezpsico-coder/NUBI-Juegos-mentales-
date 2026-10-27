@@ -139,7 +139,6 @@ namespace NeuroVida.Games.Intrusa
         public const int ClearStreak = 5;
         public const float ClearMultiplier = 1.5f;
         public const int RecentGames = 3;
-        public const float MinTouchDp = 64f;
         /// <summary>Cada cuántas rondas vuelve una regla por repasar (si hay alguna pendiente de otro día).</summary>
         public const int ReviewEvery = 4;
         /// <summary>Rondas mínimas para dar la medida de una categoría y para hablar de las trampas.</summary>
@@ -213,8 +212,6 @@ namespace NeuroVida.Games.Intrusa
                 default: return 3;
             }
         }
-
-        public static readonly string[] CategoryNames = { "Tipo de cosa", "Para qué sirve", "Dónde está o de qué es", "Trampas" };
 
         /// <summary>La categoría de menor acierto entre las que tienen al menos <see cref="MinCategoryRounds"/> rondas, si hay dos o más y
         /// no todas empatan; -1 si no se puede decir (la más baja se marca con TEXTO, nunca solo con color).</summary>

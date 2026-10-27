@@ -87,7 +87,7 @@ namespace NeuroVida.Games.Disparate
         private RectTransform _btnTrue, _btnFalse, _sigBar, _sigFillRect;
         private CanvasGroup _plateGroup;
         private Image _plateImg, _plateGlow, _tipGlow, _ribbon, _sigFill, _mark;
-        private Text _label, _fix, _measure, _hint, _swipeTrue, _swipeFalse, _sigLabel, _burstTag;
+        private Text _label, _fix, _measure, _hint, _swipeTrue, _swipeFalse, _sigLabel;
         private readonly List<Image> _rings = new List<Image>();
         private readonly List<Image> _meter = new List<Image>();
         private readonly List<Image> _aurora = new List<Image>();

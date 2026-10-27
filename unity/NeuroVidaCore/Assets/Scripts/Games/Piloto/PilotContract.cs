@@ -226,7 +226,6 @@ namespace NeuroVida.Games.Piloto
 
         public const string MissionLabel = "Misión:", NewMissionLabel = "Nueva misión:";
         public static string SectorHud(int sector) => "Sector " + (sector + 1) + " de " + Sectors + " · " + SectorName(sector);
-        public static string SectorBannerTag(int sector) => "Sector " + (sector + 1);
 
         /// <summary>El aviso de misión (Tarea 63): arriba el título (en el primer sector todavía nada cambió: «¡Tu misión!»; en los otros, «¡Nueva misión!»), al medio la forma con su detalle dibujada y su nombre, abajo «Sector N · nombre».</summary>
         public const string FirstMissionTitle = "¡Tu misión!", NewMissionTitle = "¡Nueva misión!";

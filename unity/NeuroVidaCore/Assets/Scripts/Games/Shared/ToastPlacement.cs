@@ -117,15 +117,6 @@ namespace NeuroVida.Games.Shared
             return sb.ToString();
         }
 
-        private static float ScreenWorldArea(Canvas canvas)
-        {
-            var rt = (RectTransform)canvas.transform;
-            var c = new Vector3[4];
-            rt.GetWorldCorners(c);
-            var b = Bounds(c);
-            return Mathf.Max(1f, b.width * b.height);
-        }
-
         private static bool IsAmbient(Transform t)
         {
             for (var c = t; c != null; c = c.parent)

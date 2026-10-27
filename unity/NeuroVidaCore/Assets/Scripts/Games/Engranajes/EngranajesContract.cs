@@ -127,7 +127,7 @@ namespace NeuroVida.Games.Engranajes
 
         // ---- la cuadrícula (unidades del boceto; la pantalla las escala)
         public const float GridX0 = 40f, GridY0 = 150f, GridStep = 50f;
-        public const int Cols = 4, Rows = 6;
+        public const int Rows = 6;
         /// <summary>Casillas alternadas grandes (15 dientes) y chicas (10 dientes), como un tablero de ajedrez.</summary>
         public const float BigTip = 33f, BigPitch = 30f, SmallTip = 23f, SmallPitch = 20f;
         public const int BigTeeth = 15, SmallTeeth = 10;
@@ -136,8 +136,6 @@ namespace NeuroVida.Games.Engranajes
         public const float PulleyRadius = 14f;
         /// <summary>Cuánto se aleja del trazo de la correa un toque y aún cuenta (unidades del boceto).</summary>
         public const float BeltTouch = 26f;
-
-        public static readonly Station[] AllStations = { Station.Antena, Station.Compuerta, Station.Carga, Station.Turbina };
 
         /// <summary>Fila de cada pieza en la columna del cohete.</summary>
         public static int StationRow(Station s)

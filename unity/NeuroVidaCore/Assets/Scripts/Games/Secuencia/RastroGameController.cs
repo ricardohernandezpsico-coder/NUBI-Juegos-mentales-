@@ -122,7 +122,6 @@ namespace NeuroVida.Games.Secuencia
         private float _winAt = -10f;
         private bool _sparkOn;
         private Vector2 _sparkPos;                                    // en unidades del lienzo
-        private float _fadeSparkAt = -10f;
 
         private readonly struct PointerEvent
         {
