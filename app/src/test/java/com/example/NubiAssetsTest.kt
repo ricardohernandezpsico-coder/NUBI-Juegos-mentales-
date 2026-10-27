@@ -81,7 +81,7 @@ class NubiAssetsTest {
       assertEquals("$d/ic_stat_neurovida: 24 dp", (24 * k).toInt() to (24 * k).toInt(), imageSize(File(res, "drawable-$d/ic_stat_neurovida.png")))
     }
     for (n in listOf("ic_launcher.xml", "ic_launcher_round.xml")) {
-      val xml = File(res, "mipmap-anydpi-v26/$n").readText()
+      val xml = File(res, "mipmap-anydpi/$n").readText()
       assertTrue("$n lleva el fondo, la capa de Nubi y la monocroma (ícono temático de Android 13+)", listOf("@drawable/ic_launcher_background", "@mipmap/ic_launcher_foreground", "@mipmap/ic_launcher_monochrome").all { it in xml })
     }
     assertTrue("el fondo es el azul marino de la lámina", File(res, "drawable/ic_launcher_background.xml").readText().contains("#23255A"))

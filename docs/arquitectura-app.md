@@ -491,3 +491,12 @@ Se borró lo que ningún código ni prueba usaba (≈ 1 050 líneas de Kotlin, 1
 - Las secciones de la pestaña «Espacio» (`LeagueHero`, `GameLevelsList`, `SpaceToggle`: `SpaceSections.kt` quedó solo con comentarios), `NubiBubble`/`BubbleLabel`, `LockTabSwipe` (queda `LocalTabSwipeLock`), `CreamSparkline`, `WeekLamp`/`WeekLampCream`, `DomainLegend`, `FredokaFamily` y `rememberKitConfirm`.
 - `GameCardData` ahora es `(game, title, points)` y `cardData(g, title, progress, points = null)`: los 10 campos de la marca, la constancia y la ruta que la ficha dejó de mostrar en la Tarea 171 se borraron junto con el cálculo que los llenaba. Se fueron también `calculateStreak` y `finishActiveGame`.
 - Prueba obsoleta: `Tarea159CapturasTest.la_lamina_de_hoy_con_la_linea_de_puntos` (tocaba el edificio `isla_observatorio` de Hoy, que se fue con las Tareas 163 y 165) se borró; la clase pasa entera al grabar.
+
+## Android 8 como mínimo (Tarea 183, 27-oct)
+
+Decisión de Ricardo: `minSdk` pasa de 24 a **26** (`app/build.gradle.kts`). La app usa `java.time` (`ZoneId`, `Instant`, `LocalDate`… en `data/CountdownSteps.kt`, `NeuroVidaRepository`, `GameResultScreen`…), que no existe en Android 7: con `minSdk 24` Lint daba 14 errores `NewApi` y la app se habría cerrado ahí; con 26 son 0. Se prefirió subir el mínimo a sumar «desugaring» de la biblioteca base. Lo que se hizo y lo que no:
+
+- `CognitiveReminderWorker.createNotificationChannel` ya no pregunta `SDK_INT >= O` (los canales de notificación existen desde el 26). Se dejaron los de 28, 30, Q, S y TIRAMISU, que siguen siendo reales.
+- El export de Unity (`unity.minSdkVersion=24` en `gradle.properties`, `minSdk = 24` de `tools/nube-compilar-app.sh` y `tools/unity-falso.sh`, y los Player Settings) NO se tocó: al unirse los manifiestos manda el más alto, el de la app.
+- Lint avisó de un efecto del cambio: la carpeta `mipmap-anydpi-v26` (el ícono adaptativo) ya no necesita su calificador, así que se renombró a `mipmap-anydpi` (y `NubiAssetsTest` lee la nueva ruta). Los íconos cuadrado y redondo de `mipmap-*dpi/ic_launcher*.webp`, que eran solo para Android 7, quedaron sin uso; no se borraron (queda como otra limpieza).
+- Google Play ofrecerá Nubi desde Android 8 (API 26). El teléfono de Ricardo y el emulador `medium_phone` (API 36) quedan igual.
