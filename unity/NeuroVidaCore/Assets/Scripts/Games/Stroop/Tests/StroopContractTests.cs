@@ -338,6 +338,9 @@ namespace NeuroVida.Games.Stroop.Tests
         public void Explain_SaysWhatTheInkWasOrWhatTheWordSaid_WithoutBlame()
         {
             Assert.AreEqual("La tinta era azul", StroopContract.Explain(new StroopTrial(0, 1, StroopRule.Ink)));
+            Assert.AreEqual("La tinta era roja", StroopContract.Explain(new StroopTrial(1, 0, StroopRule.Ink)), "la tinta es femenina");
+            Assert.AreEqual("La tinta era amarilla", StroopContract.Explain(new StroopTrial(0, 2, StroopRule.Ink)));
+            Assert.AreEqual("La tinta era blanca", StroopContract.Explain(new StroopTrial(0, 3, StroopRule.Ink)));
             Assert.AreEqual("La palabra decía rojo", StroopContract.Explain(new StroopTrial(0, 1, StroopRule.Word)));
             Assert.AreEqual("La palabra decía amarillo", StroopContract.Explain(new StroopTrial(2, 3, StroopRule.Word)));
             Assert.AreEqual("Responde: TINTA", StroopContract.Ribbon(StroopRule.Ink));

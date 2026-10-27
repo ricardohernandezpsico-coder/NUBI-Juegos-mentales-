@@ -12,7 +12,6 @@ namespace NeuroVida.Games.Engranajes
     {
         private readonly GearDef _introGearA = new GearDef { N = EngranajesContract.BigTeeth, Pitch = EngranajesContract.BigPitch, Tip = EngranajesContract.BigTip };
         private readonly GearDef _introGearB = new GearDef { X = 50f, N = EngranajesContract.SmallTeeth, Pitch = EngranajesContract.SmallPitch, Tip = EngranajesContract.SmallTip };
-        private bool _sayHasSub = true;
 
         // posición de cada pieza y de su cartel, en coordenadas del boceto
         private static Vector2 PartPosition(Station s)
@@ -758,49 +757,19 @@ namespace NeuroVida.Games.Engranajes
 
         // ------------------------------------------------------------------ aviso, luz que vuela, chispas, tarjeta «NUEVO»
 
-        /// <summary>Lo que dice el aviso de abajo: <paramref name="good"/> = verde, si no ámbar; <paramref name="sub"/> (la pista) va en dorado debajo.</summary>
+        /// <summary>
+        /// Lo que dice el aviso (Tarea 179): la fila de consigna del marcador, en un solo sistema con todos los juegos (la franja de abajo se retiró). <paramref name="good"/> = lima con el visto; si no, coral con la equis. El fallo y su pista («Truco…») se dicen en dos tiempos y
+        /// duran lo que duraba la franja (3,2 s): la pista ayuda a resolver.
+        /// </summary>
         private void Tell(string title, string sub, bool good)
         {
             _sayTitleFull = title ?? "";
             _saySubFull = sub ?? "";
-            _sayGood = good;
-            _sayAt = GameClock.Time;
+            _hud.Announce(_sayTitleFull, good ? AnnounceTone.Done : AnnounceTone.Error, string.IsNullOrEmpty(_saySubFull) ? 0f : StripSeconds, _saySubFull, subtitleTone: AnnounceTone.Info);          // la pista («Truco…») es ayuda: crema con el punto, no un segundo error
         }
 
-        private void AnimateSay(float now)
-        {
-            float k = (now - _sayAt) / 3.2f;
-            bool on = k >= 0f && k < 1f && _sayTitleFull.Length > 0;
-            _sayRoot.gameObject.SetActive(on);
-            if (!on) return;
-            _sayGroup.alpha = Mathf.Clamp01(Mathf.Min(k * 8f, (1f - k) * 4f));
-            if (_sayCream)                                                  // la losa crema: letra en tinta y la moneda ✓ o ✗ (acierto y error nunca solo por color: la forma lo dice); el texto lo coloca LayoutSay
-            {
-                if (_sayLaidTitle != _sayTitleFull || _sayLaidSub != _saySubFull) LayoutSay();
-                _sayTitle.color = NeuroStyle.Ink;
-                _saySub.color = NeuroStyle.InkMuted;
-                _sayCoin.sprite = _sayGood ? EngranajesSprites.CheckBadge() : EngranajesSprites.CrossBadge();
-                _sayCoin.color = Color.white;
-                _saySub.gameObject.SetActive(_saySubFull.Length > 0);
-                return;
-            }
-            _sayTitle.text = _sayTitleFull;
-            _saySub.text = _saySubFull;
-            _sayTitle.color = _sayGood ? Mint : WarnText;
-            _sayRim.color = _sayGood ? new Color(159f / 255f, 245f / 255f, 214f / 255f, 0.5f) : new Color(1f, 214f / 255f, 160f / 255f, 0.5f);
-            bool hasSub = _saySubFull.Length > 0;
-            if (hasSub != _sayHasSub)
-            {
-                _sayHasSub = hasSub;
-                LayoutSay();
-            }
-            if (!hasSub)
-            {
-                float h = _lay.SayH;
-                SetChild(_sayTitle.rectTransform, 0f, 0f, EngranajesLayout.W - 40f, h * 0.8f);
-            }
-            _saySub.gameObject.SetActive(hasSub);
-        }
+        /// <summary>Cuánto se veía la franja de abajo con título y pista (segundos): lo que la fila no baja de decir cuando hay pista.</summary>
+        public const float StripSeconds = 3.2f;
 
         private void StartFlyer(Vector2 fromLogical)
         {
@@ -1089,17 +1058,12 @@ namespace NeuroVida.Games.Engranajes
             if (!(center.b > sky.b + 0.01f && center.r > sky.r + 0.01f && center.b < 0.5f)) problems.Add("la ventanilla debe ser un paso más clara que el cielo " + sky + " y seguir siendo noche: es " + center);
             var left = At(5, tex.height / 2); var right = At(tex.width - 6, tex.height / 2);
             if (!(left.r + left.g + left.b < right.r + right.g + right.b)) problems.Add("la ventanilla no se ve hundida: junto al borde izquierdo debía ser más oscura que junto al derecho (" + left + " contra " + right + ")");
-            // el aviso crema
-            if (!_sayCream) { problems.Add("el aviso no es la losa crema del kit"); return problems; }
-            Tell("La turbina giró al revés de su cartel", "Truco: cada engranaje que toca gira al revés", false);
-            AnimateSay(_sayAt + 1f);
-            if (_sayTitle.color != NeuroStyle.Ink || _saySub.color != NeuroStyle.InkMuted) problems.Add("el aviso lleva la letra en tinta y la pista en InkMuted");
-            if (!_sayCoin.gameObject.activeSelf || _sayCoin.sprite != EngranajesSprites.CrossBadge()) problems.Add("un error lleva la moneda ✗ a la izquierda");
-            if (_sayBg.rectTransform.sizeDelta.y < _lay.SayH * _s - 0.01f) problems.Add("la losa del aviso mide menos que el alto mínimo");
-            if (_sayRim.enabled) problems.Add("el aviso crema no lleva el borde de siempre");
+            // el aviso va por la fila de consigna (Tarea 179): coral con la equis si falla, lima con el visto si acierta
+            Tell("La turbina giró al revés de su cartel", "Truco: el de al lado gira al revés", false);
+            if (!_hud.Announcing || _hud.AnnounceToneNow != AnnounceTone.Error) problems.Add("un error lo dice la fila de consigna en coral con la equis");
             Tell("¡Todo en orden!", null, true);
-            AnimateSay(_sayAt + 1f);
-            if (_sayCoin.sprite != EngranajesSprites.CheckBadge()) problems.Add("un acierto lleva la moneda ✓ a la izquierda");
+            if (!_hud.Announcing || _hud.AnnounceToneNow != AnnounceTone.Done) problems.Add("un acierto lo dice la fila de consigna en lima con el visto");
+            _hud.CancelAnnounce();
             return problems;
         }
 

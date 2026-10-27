@@ -38,7 +38,7 @@ Con «quitar animaciones» activo:
 | `WorldBackdrop` (`WorldAmbient`, `CountdownAmbient`) | Estado de reposo dibujado UNA vez: alfa base, posiciones de casa, sin giro, sin órbitas, sin estrellas fugaces, letras flotantes quietas. Solo se redibuja si cambia el tamaño del área. |
 | `StarfieldFx` | Reposo dibujado una vez (estrellas en su lugar de casa, sin estela, alfa base); `Warp` se ignora. |
 | `CountdownScreen` | «3, 2, 1, ¡Ya!» con fundido cruzado (160 ms). Sin chispas, estrella en órbita, onda, destello central, rebote, respiración ni hiperespacio. Misma duración total. |
-| `Toast` | Fundido de entrada y salida, sin caída ni rebote. |
+| `GameHud.Announce` (la fila de consigna habla) | Sin fundido ni rebote: el aviso cambia de una vez, con los mismos tiempos de lectura (1,2 s; 2 s con subtítulo) y la consigna vuelve de una vez. |
 | `PhasePill` | El texto nuevo entra con fundido (0,35 → 1 en 160 ms), sin rebote. |
 | `ProgressDots` | El punto pasa a verde/rojo con fundido de color, sin pop. |
 | `GameHud` | `CountUp`: número final de una vez. `LevelUpGlow`: el chip queda resaltado (estático) 0,45 s y vuelve con fundido. Racha: sin pop (y sin chispas, por `UiFx`). Desde la Tarea 127 el salto al subir de nivel lo da el chip de AVANCE (ya no hay chip de nivel) y el rebote es del chip «×N seguidos» (que aparece desde 2): con «quitar animaciones» ninguno se mueve, solo cambian de valor o de color. La fila de consigna de Tinta late al cambiar de regla y la pausa pregunta antes de reiniciar: sin «quitar animaciones» solo cambia el texto. La cuenta regresiva: 2 o 3 pasos con la misma regla. |

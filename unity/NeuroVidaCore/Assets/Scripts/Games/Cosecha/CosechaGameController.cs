@@ -102,7 +102,6 @@ namespace NeuroVida.Games.Cosecha
         private readonly List<RectTransform> _plants = new List<RectTransform>();
         private readonly List<float> _plantY = new List<float>();
         private RectTransform _treeRect;
-        private Toast _toast;
         private ExitButton _exit;
         private GameHud _hud;
         private CountdownScreen _countdown;
@@ -276,8 +275,8 @@ namespace NeuroVida.Games.Cosecha
             var change = _dda.Register(won);
             if (_cosecha < CosechaContract.Cosechas - 1)
             {
-                if (change == DdaChange.Up) _toast.Show("¡Subes de nivel!", "Las próximas cosechas traen letras más difíciles", GoodColor, 1.4f);
-                else if (change == DdaChange.Down) _toast.Show("Con calma", "Las próximas cosechas son un poco más fáciles", AmberColor, 1.4f);
+                if (change == DdaChange.Up) _hud.Announce("¡Subes de nivel!", AnnounceTone.Step, subtitle: "Las próximas cosechas traen letras más difíciles");
+                else if (change == DdaChange.Down) _hud.Announce("Con calma", AnnounceTone.Pace, subtitle: "Las próximas cosechas son un poco más fáciles");
             }
         }
 
@@ -1252,8 +1251,6 @@ namespace NeuroVida.Games.Cosecha
             BuildReady();
             BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
-            _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetBelowHud();
             SetUpTutorial();
 
             var flashGo = new GameObject("Flash");

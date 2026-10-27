@@ -285,7 +285,6 @@ namespace NeuroVida.Games.Acoplamiento
         {
             _phase = Phase.Idle;
             HideModule();
-            SetNotice("", Lime, false);
         }
 
         // ------------------------------------------------------------------ la revelación (siempre se ve la verdad)
@@ -303,7 +302,7 @@ namespace NeuroVida.Games.Acoplamiento
             _shownAnswer = demo ? NoAnswer : answer;
             _shownCorrect = correct;
             _landingPending = correct && !demo;
-            if (!demo) SetNotice(DockingContract.Notice(_trial.Mirrored, answer, _streak), correct ? Lime : Gold, false);
+            if (!demo) _hud.Announce(DockingContract.Notice(_trial.Mirrored, answer, _streak), correct ? AnnounceTone.Done : AnnounceTone.Error);          // la fila de consigna lo dice (Tarea 179): lima con el visto si acertó, coral con la equis si no
             RefreshButtons(Now);
             float tA = RevealUp + (_trial.Mirrored ? RevealFlip : 0f);
             float end = demo ? tA + RevealDown + 0.9f : correct ? tA + RevealDown + RevealHold + RevealFly + RevealAfter : tA + RevealDown + RevealGone + 0.2f;
@@ -367,7 +366,7 @@ namespace NeuroVida.Games.Acoplamiento
             if (DockingContract.CompletesRing(_stationShown))
             {
                 if (!_guided) _rings++;
-                SetNotice(DockingContract.RingComplete, Cyan, true);
+                _hud.Announce(DockingContract.RingComplete, AnnounceTone.Milestone);
                 StartCoroutine(PlayLater(DockSfx.Ring, 0.26f));
             }
         }
@@ -451,7 +450,7 @@ namespace NeuroVida.Games.Acoplamiento
             _inputOn = false;
             _shownAnswer = NoAnswer;
             HideModule();
-            SetNotice("", Lime, false);
+            _hud.CancelAnnounce();
             SetFuelVisible(false);
             _hint.gameObject.SetActive(false);
             RefreshButtons(Now);
@@ -476,7 +475,6 @@ namespace NeuroVida.Games.Acoplamiento
             Animate(now, dt);
 #if UNITY_EDITOR
             if (_phase == Phase.Decide && !_guided && dt > 0f) AutoPlay(dt);
-            GuardNotices();
 #endif
         }
 
@@ -544,7 +542,6 @@ namespace NeuroVida.Games.Acoplamiento
 #if UNITY_EDITOR
         private float _botT;
         private int _botPick = NoAnswer;
-        private int _guardReports;
 
         /// <summary>SOLO EN EL EDITOR (smoke): juega solo. Contesta bien casi siempre, una vez de cada tres se equivoca a propósito (para ver «Era su espejo» y «Sí encajaba») y una de cada cinco no contesta (para ver «Sin tiempo»). En el teléfono no hace nada.</summary>
         private void AutoPlay(float dt)
@@ -564,23 +561,6 @@ namespace NeuroVida.Games.Acoplamiento
             int pick = _botPick;
             _botPick = NoAnswer;
             PressButton(pick);
-        }
-
-        /// <summary>SOLO EN EL EDITOR: el pedido de Ricardo hecho prueba. El aviso (con su píldora y su texto) nunca toca el módulo, el puerto ni los botones: si se cruzan, el smoke falla (cualquier error de consola lo hace).</summary>
-        private void GuardNotices()
-        {
-            if (_guardReports >= 3 || _s <= 0f || _phase == Phase.Done || !_noticePill.gameObject.activeSelf) return;
-            var rt = _noticePill.rectTransform;
-            var c = ToLogical(rt.anchoredPosition);
-            var box = new DockBox(c.x - rt.sizeDelta.x / _s * 0.5f, c.y - rt.sizeDelta.y / _s * 0.5f, c.x + rt.sizeDelta.x / _s * 0.5f, c.y + rt.sizeDelta.y / _s * 0.5f);
-            var zones = new[] { ("el módulo", _plan.ModuleBox), ("el puerto", _plan.PortBox), ("«Encaja»", _plan.ButtonBox(0)), ("«Espejo»", _plan.ButtonBox(1)), ("la barra de tiempo", _plan.FuelBox), ("la fila de luces", _plan.LightsBox) };
-            foreach (var z in zones)
-                if (box.Intersects(z.Item2))
-                {
-                    _guardReports++;
-                    Debug.LogError("[SmokeTest] Acoplamiento: un aviso tapa " + z.Item1 + " (aviso de " + Mathf.RoundToInt(box.X0) + "," + Mathf.RoundToInt(box.Y0) + " a " + Mathf.RoundToInt(box.X1) + "," + Mathf.RoundToInt(box.Y1) + ")");
-                    return;
-                }
         }
 #endif
     }

@@ -107,16 +107,15 @@ namespace NeuroVida.Games.Engranajes
         private RectTransform _safe, _play, _stripLayer, _sceneRoot, _rocketRoot, _machineLayer, _uiLayer, _fxLayer, _introLayer, _launchLayer, _questionBar, _counterRoot;
         private RectTransform _timerTrack, _timerHead, _motorArrowRect;
         private Image _timerFill, _questionBg, _counterBg;
-        private CanvasGroup _machineGroup, _questionGroup, _sayGroup, _introGroup, _counterGroup;
-        private Text _rocketTitle, _orbitText, _consigna1, _consigna2, _counterText, _counterNum, _sayTitle, _saySub, _introTitle, _introBody, _launchTitle, _launchLine1, _launchLine2;
-        private Image _room, _hull, _motorArrow, _motorPulse, _sayBg, _sayRim, _dim, _flyerGlow, _flyerDot, _flame, _gateGlow, _stripGlow;
+        private CanvasGroup _machineGroup, _questionGroup, _introGroup, _counterGroup;
+        private Text _rocketTitle, _orbitText, _consigna1, _consigna2, _counterText, _counterNum, _introTitle, _introBody, _launchTitle, _launchLine1, _launchLine2;
+        private Image _room, _hull, _motorArrow, _motorPulse, _dim, _flyerGlow, _flyerDot, _flame, _gateGlow, _stripGlow;
         // la mesa de taller (Tarea 164): una losa crema gruesa del kit que lleva la sala como ventanilla noche hundida y el cohete; cuatro tornillos de plasticina en su marco. Sin plasticina, la sala de siempre.
-        private bool _tableOn, _sayCream;
-        private Image _table, _tableSlab, _saySlab, _sayCoin;
+        private bool _tableOn;
+        private Image _table, _tableSlab;
         private readonly Image[] _screws = new Image[4];
         private static readonly Color HullOnTable = new Color(0.74f, 0.68f, 0.95f);
         private const float ScrewDp = 10f, ScrewLeftX = 0f, ScrewRightX = 258f, ScrewTopY = 99f, ScrewBottomY = 469f;      // en el marco, junto a las esquinas de la ventanilla (8..250 × 114..462)
-        private string _sayLaidTitle = "", _sayLaidSub = "";
         private Image _introCard, _introRim;
         private readonly Image[] _windows = new Image[EngranajesContract.RocketLights];
         private readonly Image[] _windowGlows = new Image[EngranajesContract.RocketLights];
@@ -142,10 +141,8 @@ namespace NeuroVida.Games.Engranajes
         private readonly List<KeyValuePair<Text, float>> _sceneFonts = new List<KeyValuePair<Text, float>>();
         private int _launchNumber;
 
-        // lo que dice el aviso de abajo
+        // lo último que dijo la fila de consigna como aviso (Tarea 179: la franja de abajo se retiró; lo dice <c>GameHud.Announce</c>); las auditorías lo leen
         private string _sayTitleFull = "", _saySubFull = "";
-        private float _sayAt = -10f;
-        private bool _sayGood;
         // la luz que vuela desde la pieza hasta la cabecera
         private bool _flyerOn;
         private Vector2 _flyerFrom;
@@ -197,7 +194,6 @@ namespace NeuroVida.Games.Engranajes
             BuildConsigna();
             BuildScene();
             BuildBottom();
-            BuildSay();
             BuildFx();
             BuildLaunch();
             BuildIntro();
@@ -631,32 +627,6 @@ namespace NeuroVida.Games.Engranajes
             _start = b;
         }
 
-        private void BuildSay()
-        {
-            var go = new GameObject("Say");
-            go.transform.SetParent(_uiLayer, false);
-            var r = go.AddComponent<RectTransform>();
-            r.anchorMin = r.anchorMax = r.pivot = new Vector2(0.5f, 0.5f);
-            _sayGroup = go.AddComponent<CanvasGroup>();
-            _sayGroup.blocksRaycasts = false;
-            _sayRim = MakeImage(r, "Rim", RoundedRectSprite.Get(24));
-            _sayBg = MakeImage(r, "Bg", RoundedRectSprite.Get(24));
-            _sayBg.color = new Color(8f / 255f, 10f / 255f, 34f / 255f, 0.95f);
-            // el aviso (Tarea 164, regla R2): una losa crema mediana del kit con la letra en tinta y la moneda ✓ (lima) o ✗ (coral) de lo común a la izquierda; sin plasticina o sin las monedas, la losa noche de siempre
-            _saySlab = _volume && EngranajesSprites.BadgesAreCoins ? (PlasticSlab.TryStyleCustom(_sayBg, EngranajesSprites.PlasticGroup, "aviso_crema") ?? PlasticSlab.TryStyle(_sayBg, SlabSize.Button, SlabTone.Cream)) : null;          // Tarea 166: la losa crema SIN su sombra dura (`aviso_crema`, del atlas del juego); sin ella, la del kit
-            _sayCream = _saySlab != null;
-            if (_sayCream) _sayRim.enabled = false;
-            _sayCoin = MakeImage(r, "Coin", null, _sayCream);
-            _sayTitle = MakeLabel(r, "Title", _sayCream ? 20f : 16f, UiFonts.Bold, _sayCream ? NeuroStyle.Ink : Mint, _sayCream ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter);
-            _saySub = MakeLabel(r, "Sub", 16f, UiFonts.Regular, _sayCream ? NeuroStyle.InkMuted : Gold, _sayCream ? TextAnchor.MiddleLeft : TextAnchor.MiddleCenter);
-            _sayTitle.horizontalOverflow = _saySub.horizontalOverflow = HorizontalWrapMode.Wrap;
-            _sayTitle.verticalOverflow = _saySub.verticalOverflow = VerticalWrapMode.Overflow;
-            go.SetActive(false);
-            _sayRoot = r;
-        }
-
-        private RectTransform _sayRoot;
-
         private void BuildFx()
         {
             for (int i = 0; i < SparkPool; i++)
@@ -879,7 +849,6 @@ namespace NeuroVida.Games.Engranajes
             SetRect(_consigna2.rectTransform, EngranajesLayout.W / 2f, qy + 11f, EngranajesLayout.W - 36f, 20f);
 
             LayoutBottom();
-            LayoutSay();
 
             // despegue: el texto va sobre la sala vacía (a la izquierda del cohete)
             var lp = L(130f, 170f);
@@ -978,41 +947,6 @@ namespace NeuroVida.Games.Engranajes
             SetChild(b.Icon.rectTransform, -w / 2f + 63f, 0f, play, play);
             b.Label.rectTransform.sizeDelta = new Vector2((w - 88f - 8f) * _s, 40f * _s);
             b.Label.rectTransform.anchoredPosition = new Vector2((-w / 2f + 88f + (w - 96f) / 2f) * _s, 0f);
-        }
-
-        private void LayoutSay()
-        {
-            float w = EngranajesLayout.W - 20f, h = _lay.SayH;
-            if (_sayCream)
-            {
-                // la moneda a la izquierda y el texto a su lado; la losa crece si una frase se parte en dos líneas
-                const float padX = 16f, coin = 34f, gap = 10f, padY = 10f;
-                float textW = w - padX - coin - gap - 14f;
-                bool sub = _saySubFull.Length > 0;
-                _sayTitle.text = _sayTitleFull;
-                _saySub.text = _saySubFull;
-                _sayTitle.rectTransform.sizeDelta = new Vector2(textW * _s, 200f * _s);
-                _saySub.rectTransform.sizeDelta = new Vector2(textW * _s, 200f * _s);
-                float th = Mathf.Max(26f, _sayTitle.preferredHeight / _s), sh = sub ? Mathf.Max(20f, _saySub.preferredHeight / _s) : 0f;
-                h = Mathf.Min(Mathf.Max(h, th + sh + 2f * padY), Mathf.Max(h, _logicalH - _lay.SayTop - 6f));
-                SetRect(_sayRoot, EngranajesLayout.W / 2f, _lay.SayTop + h / 2f, w, h);
-                SetChild(_sayRim.rectTransform, 0f, 0f, w, h);
-                SetChild(_sayBg.rectTransform, 0f, 0f, w, h);
-                SetChild(_sayCoin.rectTransform, -w / 2f + padX + coin / 2f, 0f, coin, coin);
-                float tx = -w / 2f + padX + coin + gap + textW / 2f, y0 = -(th + sh) / 2f;
-                SetChild(_sayTitle.rectTransform, tx, y0 + th / 2f, textW, th);
-                SetChild(_saySub.rectTransform, tx, y0 + th + sh / 2f, textW, Mathf.Max(1f, sh));
-                _sayLaidTitle = _sayTitleFull;
-                _sayLaidSub = _saySubFull;
-                return;
-            }
-            SetRect(_sayRoot, EngranajesLayout.W / 2f, _lay.SayTop + h / 2f, w, h);
-            SetChild(_sayRim.rectTransform, 0f, 0f, w + 3f, h + 3f);
-            SetChild(_sayBg.rectTransform, 0f, 0f, w, h);
-            SetRadius(_sayRim, 15.5f * _s);
-            SetRadius(_sayBg, 14f * _s);
-            SetChild(_sayTitle.rectTransform, 0f, -h * 0.5f + h * 0.36f, w - 20f, h * 0.56f);
-            SetChild(_saySub.rectTransform, 0f, h * 0.5f - h * 0.2f, w - 20f, h * 0.36f);
         }
 
         /// <summary>Coloca una pieza respecto del centro de su padre (dp; y hacia abajo).</summary>

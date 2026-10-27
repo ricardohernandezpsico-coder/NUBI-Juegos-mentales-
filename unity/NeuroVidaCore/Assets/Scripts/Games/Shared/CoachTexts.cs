@@ -308,9 +308,9 @@ namespace NeuroVida.Games.Shared
             yield return ("stroop", "palabra", Stroop.WordRule);
             yield return ("stroop", "casi tinta", Stroop.MissedInk);
             yield return ("stroop", "casi palabra", Stroop.MissedWord);
-            foreach (var word in new[] { "rojo", "azul", "amarillo", "blanco" })
+            foreach (var (word, ink) in new[] { ("rojo", "roja"), ("azul", "azul"), ("amarillo", "amarilla"), ("blanco", "blanca") })
             {
-                yield return ("stroop", "bien tinta " + word, Stroop.Good("La tinta era " + word));
+                yield return ("stroop", "bien tinta " + word, Stroop.Good("La tinta era " + ink));
                 yield return ("stroop", "bien palabra " + word, Stroop.Good("La palabra decía " + word));
             }
         }

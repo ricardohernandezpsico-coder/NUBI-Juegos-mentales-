@@ -201,7 +201,6 @@ namespace NeuroVida.Games.Anagramas
         private Text _ladderLabel;
         private readonly Image[] _ladderDots = new Image[3];
         private Image _hintRing;
-        private Toast _toast;
         private ExitButton _exit;
         private GameHud _hud;
         private CountdownScreen _countdown;
@@ -346,12 +345,12 @@ namespace NeuroVida.Games.Anagramas
             UpdateHud();
             if (change == DdaChange.Up)
             {
-                _toast.Show("¡Un paso más!", "Palabras menos comunes y más largas", NeuroStyle.Lime, 1.1f, sound: false);          // el arpegio de abajo ya suena con él
+                _hud.Announce("¡Un paso más!", AnnounceTone.Step, subtitle: "Palabras menos comunes y más largas", sound: false);          // el arpegio de abajo ya suena con él
                 WoodCore.Play(WoodSfx.LevelUp, gainDb: PuntaSounds.LevelUpGainDb);          // el arpegio de subir de etapa, 3 dB más bajo (25-oct: encima de la cascada llegaba a −2,5 dBFS); el háptico es el de siempre
                 GameFeel.Haptic(GameFeel.HapticKind.Firm);
             }
             else if (change == DdaChange.Down || _dda.Struggling)
-                _toast.Show("Con calma", "Pide una ayuda cuando la necesites", NeuroStyle.Sun, 0.9f);
+                _hud.Announce("Con calma", AnnounceTone.Pace, subtitle: "Pide una ayuda cuando la necesites");
 
             yield return StartCoroutine(PlaySolved(tier, _word, _tally.Total - 1, count: true));
         }
@@ -773,7 +772,7 @@ namespace NeuroVida.Games.Anagramas
             _strict = false;
             _allowKind = IntentKind.None;
             _allowTile = _hintTile = null;
-            _toast.Hide();
+            _hud.CancelAnnounce();
             ClearWordVisuals();
         }
 
@@ -881,7 +880,7 @@ namespace NeuroVida.Games.Anagramas
             _reserve = _guidedGap = 0f;
             SetSkyVisible(true);
             _phase = Phase.Idle;
-            _toast.Hide();
+            _hud.CancelAnnounce();
             t.EndPractice();
         }
         // </guided>
@@ -1525,8 +1524,6 @@ namespace NeuroVida.Games.Anagramas
             BuildUiPieces();
 
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
-            _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetBelowHud();
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);

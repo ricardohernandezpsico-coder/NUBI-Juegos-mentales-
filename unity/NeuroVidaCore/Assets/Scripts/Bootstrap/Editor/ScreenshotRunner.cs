@@ -95,6 +95,12 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Modo «vigilante» (Tarea 178, NUBI_SHOTS_WATCH=1; con NUBI_SHOTS_TT=1 como Contrarreloj): juega unos 110 s de Tinta o Palabra en tiempo real y mira CADA cuadro con <see cref="FactoryImageGuard"/>; cada imagen que se ve con los valores de fábrica (el «disco blanco») queda en el registro con su ruta en la jerarquía y el momento.</summary>
         private static bool _watch;
 
+        /// <summary>
+        /// Modo «avisos» (Tarea 179, NUBI_SHOTS_AVISOS=1): en cada juego saca la fila de consigna en reposo, un aviso de cada tono (flecha, visto, visto sol, reloj, equis, punto), un aviso en dos tiempos con sus dos partes y la fila de vuelta a su consigna, con el juego REAL (la lámina «hoy | propuesta»).
+        /// Con NUBI_SHOTS_TT=1 corre como Contrarreloj y saca el primer error del piloto (la nota en coral con su equis). Las tomas quedan con el prefijo del paso: <c>reposo</c>, <c>tono-…</c>, <c>dos-tiempos-1/2</c>, <c>vuelta</c>, <c>tt-error</c>.
+        /// </summary>
+        private static bool _avisos;
+
         public static void Run()
         {
             _juice = Environment.GetEnvironmentVariable("NUBI_SHOTS_JUICE") == "1";
@@ -103,6 +109,7 @@ namespace NeuroVida.Bridge.EditorTools
             _timeTrial = Environment.GetEnvironmentVariable("NUBI_SHOTS_TT") == "1";
             _frames = Environment.GetEnvironmentVariable("NUBI_SHOTS_FRAMES") == "1";
             _watch = Environment.GetEnvironmentVariable("NUBI_SHOTS_WATCH") == "1";
+            _avisos = Environment.GetEnvironmentVariable("NUBI_SHOTS_AVISOS") == "1";
             var raw = (Environment.GetEnvironmentVariable("NUBI_SHOTS_GAMES") ?? "Correo").Trim();
             _root = Environment.GetEnvironmentVariable("NUBI_SHOTS_DIR");
             if (string.IsNullOrEmpty(_root)) _root = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "test-results", "capturas"));
@@ -254,7 +261,8 @@ namespace NeuroVida.Bridge.EditorTools
                 double t0 = Now;
                 Debug.Log("[Capturas] ---- " + id);
 
-                if (_watch) yield return WatchShots(id);
+                if (_avisos) yield return AvisosShots(id);
+                else if (_watch) yield return WatchShots(id);
                 else if (_frames) yield return FrameShots(id);
                 else if (_timeTrial) yield return TimeTrialShots(id);
                 else if (_puntaCascada) yield return PuntaCascadaShots();
@@ -266,9 +274,9 @@ namespace NeuroVida.Bridge.EditorTools
                 else if (id == "acoplamiento") { yield return AcoplamientoScript(); yield return AcoplamientoScript16(); }
                 else if (id == "aterrizaje") { yield return AterrizajeScript(); yield return AterrizajeScript16(); }
                 else yield return PlayShots(id);
-                if (!_juice && !_timeTrial && !_frames && !_watch && id != "correo" && id != "satelites" && id != "piloto" && id != "radar" && id != "acoplamiento" && id != "aterrizaje") yield return ReduceMotionShot(id);          // los guiones de Correo, Satélites, Piloto, Rescate y Acoplamiento ya traen su toma con «quitar animaciones»
-                if (!_juice && !_timeTrial && !_frames && !_watch && TutorialGames.Contains(id)) yield return TutorialShots(id);
-                if (!_juice && !_timeTrial && !_frames && !_watch && (id == "acoplamiento" || id == "radar")) yield return TutorialShots(id, 1920, "-16x9");          // la práctica en la pantalla más baja: ahí la fila fija de arriba aprieta más (Tarea 128)
+                if (!_juice && !_timeTrial && !_frames && !_watch && !_avisos && id != "correo" && id != "satelites" && id != "piloto" && id != "radar" && id != "acoplamiento" && id != "aterrizaje") yield return ReduceMotionShot(id);          // los guiones de Correo, Satélites, Piloto, Rescate y Acoplamiento ya traen su toma con «quitar animaciones»
+                if (!_juice && !_timeTrial && !_frames && !_watch && !_avisos && TutorialGames.Contains(id)) yield return TutorialShots(id);
+                if (!_juice && !_timeTrial && !_frames && !_watch && !_avisos && (id == "acoplamiento" || id == "radar")) yield return TutorialShots(id, 1920, "-16x9");          // la práctica en la pantalla más baja: ahí la fila fija de arriba aprieta más (Tarea 128)
                 yield return Stopped();
 
                 int shots = _count;
@@ -574,7 +582,7 @@ namespace NeuroVida.Bridge.EditorTools
                 if (CurtainUp()) { ended = true; break; }
                 // la pausa va a los 21 s, a mitad de partida: más tarde un juego corto ya terminó (Bodega acaba sus 6 pedidos hacia los 40 s) y su pausa ya no ofrece «Cómo se juega»
                 if (step.Item1 == "pausa") yield return PauseShot();
-                else if (step.Item1 == "aviso") yield return ToastShot();
+                else if (step.Item1 == "aviso") yield return AnnounceShot();
                 else Shot(step.Item1);
             }
             if (ended || CurtainUp()) yield return EndShots();
@@ -677,32 +685,109 @@ namespace NeuroVida.Bridge.EditorTools
             yield return ExitPlay();
         }
 
-        /// <summary>
-        /// Muestra un aviso de prueba (de dos renglones) con el <c>Toast</c> del juego y saca la toma «aviso» cuando ya se ve del todo: para revisar a ojo que no tapa el título, el estímulo ni los botones (Tarea 55). Los juegos sin aviso
-        /// (Constelaciones, Rastro de luz, Bodega, Engranajes, Correo) no sacan esta toma. Si el aviso espera una franja libre («entre ensayos») y no aparece en 5 s, la toma sale igual con lo que haya.
-        /// </summary>
-        private static IEnumerator ToastShot()
+        /// <summary>El marcador común (<c>GameHud</c>) del juego en marcha (cada controlador lo guarda en un campo), o null.</summary>
+        private static NeuroVida.Games.Shared.GameHud FindHud()
         {
-            NeuroVida.Games.Shared.Toast toast = null;
             foreach (var mb in UnityEngine.Object.FindObjectsOfType<MonoBehaviour>())
+                foreach (var field in mb.GetType().GetFields(System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance))
+                {
+                    if (field.FieldType != typeof(NeuroVida.Games.Shared.GameHud)) continue;
+                    var hud = (NeuroVida.Games.Shared.GameHud)field.GetValue(mb);
+                    if (hud != null) return hud;
+                }
+            return null;
+        }
+
+        /// <summary>
+        /// Hace hablar a la fila de consigna con un aviso de prueba y saca la toma «aviso» cuando ya se ve del todo (Tarea 55; desde la Tarea 179 el aviso es la fila del marcador). Engranajes saca además su «bien» y su «mal» con la pista.
+        /// </summary>
+        private static IEnumerator AnnounceShot()
+        {
+            var hud = FindHud();
+            if (hud == null)
             {
-                var field = mb.GetType().GetField("_toast", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (field == null || field.FieldType != typeof(NeuroVida.Games.Shared.Toast)) continue;
-                toast = (NeuroVida.Games.Shared.Toast)field.GetValue(mb);
-                if (toast != null) break;
-            }
-            if (toast == null)
-            {
-                if (_gameId == "engranajes") yield return EngranajesNoticeShots();               // Engranajes lleva su propio aviso (la losa crema de abajo): se muestran el de «bien» y el de «mal», con su pista, para revisarlos a ojo (Tarea 164)
+                if (_gameId == "engranajes") yield return EngranajesNoticeShots();
                 yield break;
             }
-            toast.Show("Aviso de prueba", "Una frase de dos renglones para probar dónde queda el aviso en esta pantalla", NeuroVida.Games.Shared.NeuroStyle.Sun, 7f);
-            var group = toast.Rect.GetComponent<CanvasGroup>();
-            double limit = Now + 5.5;
-            yield return Wait.Until(() => (group != null && group.alpha >= 0.99f) || Now > limit, 6.5);
+            hud.Announce("Aviso de prueba", NeuroVida.Games.Shared.AnnounceTone.Pace, 0f, "Con calma", false);
+            yield return Wait.Until(() => hud.RowTextComponent.color.a >= 0.99f, 3);
             yield return Wait.For(0.3);
-            Debug.Log("[Capturas] aviso de " + _gameId + ": a " + Mathf.RoundToInt(toast.PlacedTopU) + " u del borde de arriba, choque " + Mathf.RoundToInt(toast.PlacedOverlap));
             Shot("aviso");
+            if (_gameId == "engranajes") yield return EngranajesNoticeShots();
+        }
+
+        private static readonly (NeuroVida.Games.Shared.AnnounceTone Tone, string Name, string Text, string Sub)[] AvisoCopy =
+        {
+            (NeuroVida.Games.Shared.AnnounceTone.Step, "paso", "¡Un paso más!", "Más difícil"),
+            (NeuroVida.Games.Shared.AnnounceTone.Done, "hecho", "¡Todo en orden!", null),
+            (NeuroVida.Games.Shared.AnnounceTone.Milestone, "hito", "10 seguidos", "Sigue así"),
+            (NeuroVida.Games.Shared.AnnounceTone.Pace, "calma", "Con calma", "Un poco más fácil"),
+            (NeuroVida.Games.Shared.AnnounceTone.Error, "error", "Era su espejo", null),
+            (NeuroVida.Games.Shared.AnnounceTone.Info, "info", "Gracias, la revisaremos", null),
+        };
+
+        /// <summary>
+        /// Avisos (Tarea 179): la fila de consigna en reposo, un aviso de cada tono, un aviso en dos tiempos (sus dos partes) y la fila de vuelta a su consigna. En Contrarreloj, el primer error del piloto. El piloto automático se apaga en la partida de siempre para que ningún aviso propio se cruce con los de prueba.
+        /// </summary>
+        private static IEnumerator AvisosShots(string id)
+        {
+            Configure(id, tutorial: false, reduceMotion: false);
+            if (_timeTrial) EditorPlaytestBootstrap.TimeTrialOverride = true;
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = _timeTrial;
+            yield return EnterPlay();
+            yield return WaitPlayable();
+            yield return Wait.For(1.5);
+            var hud = FindHud();
+            if (hud == null) { GameNotes.Add("no encontré el marcador común"); EditorPlaytestBootstrap.TimeTrialOverride = false; yield return ExitPlay(); yield break; }
+            if (_timeTrial)
+            {
+                yield return Wait.Until(() => hud.Announcing && hud.AnnounceToneNow == NeuroVida.Games.Shared.AnnounceTone.Error && hud.RowTextComponent.color.a >= 0.99f, 90);
+                yield return Wait.For(0.1);
+                Shot("tt-error");
+                EditorPlaytestBootstrap.TimeTrialOverride = false;
+                yield return ExitPlay();
+                yield break;
+            }
+            Shot("reposo");
+            foreach (var c in AvisoCopy)
+            {
+                hud.Announce(c.Text, c.Tone, 0f, c.Sub, false);
+                yield return Wait.Until(() => hud.RowTextComponent.color.a >= 0.99f, 3);
+                yield return Wait.For(0.15);
+                Shot("tono-" + c.Name);
+                hud.CancelAnnounce();
+                yield return Wait.For(0.3);
+            }
+            if (id == "engranajes")
+            {
+                object controller = null; System.Reflection.MethodInfo tell = null;
+                foreach (var mb in UnityEngine.Object.FindObjectsOfType<MonoBehaviour>())
+                {
+                    if (mb.GetType().Name != "EngranajesGameController") continue;
+                    tell = mb.GetType().GetMethod("Tell", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (tell != null) { controller = mb; break; }
+                }
+                if (controller != null) tell.Invoke(controller, new object[] { "La turbina giró al revés de su cartel", "Truco: el de al lado gira al revés", false });
+            }
+            else hud.Announce("¡Ráfaga! Cinco frases rápidas", NeuroVida.Games.Shared.AnnounceTone.Info, 0f, "No cuentan para tu medida", false);
+            yield return Wait.Until(() => hud.RowTextComponent.color.a >= 0.99f, 3);
+            yield return Wait.For(0.4);
+            Shot("dos-tiempos-1");
+            string first = hud.RowText;
+            yield return Wait.Until(() => hud.Announcing && hud.RowText != first && hud.RowTextComponent.color.a >= 0.99f, 4);
+            yield return Wait.For(0.4);
+            Shot("dos-tiempos-2");
+            yield return Wait.Until(() => !hud.Announcing, 6);
+            yield return Wait.For(0.6);
+            Shot("vuelta");
+            if (id == "acoplamiento" || id == "stroop" || id == "disparate")
+            {
+                NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = true;
+                yield return Wait.Until(() => hud.Announcing && hud.RowTextComponent.color.a >= 0.99f, 40);
+                yield return Wait.For(0.2);
+                Shot("natural");
+            }
+            yield return ExitPlay();
         }
 
         /// <summary>Engranajes, en reposo y antes de tocar «Arrancar» (los botones de abajo en su estado normal, no atenuados): el aviso crema con una frase de error y su pista, como el de «engranaje trabado». Sale a los 0,5 s de nacer (el aviso ya se ve entero), con el piloto en pausa, y se deja ir antes de la toma de los 8 s.</summary>
@@ -716,7 +801,7 @@ namespace NeuroVida.Bridge.EditorTools
                 if (tell != null) { controller = mb; break; }
             }
             if (controller == null) yield break;
-            tell.Invoke(controller, new object[] { "La compuerta se abrió en vez de cerrarse", "Tu cambio también movió la antena", false });
+            tell.Invoke(controller, new object[] { "La compuerta se abrió, no se cerró", "Tu cambio movió la antena", false });
             yield return Wait.For(0.5);
             Shot("primera-aviso");
         }
@@ -736,9 +821,11 @@ namespace NeuroVida.Bridge.EditorTools
             yield return Wait.For(0.7);
             Shot("aviso-bien");
             yield return Wait.For(2.6);
-            tell.Invoke(controller, new object[] { "La compuerta se abrió en vez de cerrarse", "Tu cambio también movió la antena", false });
+            tell.Invoke(controller, new object[] { "La compuerta se abrió, no se cerró", "Tu cambio movió la antena", false });
             yield return Wait.For(0.7);
             Shot("aviso-mal");
+            yield return Wait.For(1.3);                      // la pista («Tu cambio movió la antena») es el segundo tiempo de la fila
+            Shot("aviso-mal-pista");
         }
 
         /// <summary>

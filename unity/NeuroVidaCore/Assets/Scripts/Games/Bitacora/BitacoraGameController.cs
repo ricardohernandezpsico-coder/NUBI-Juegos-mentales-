@@ -83,7 +83,6 @@ namespace NeuroVida.Games.Bitacora
         private readonly List<RectTransform> _comets = new List<RectTransform>();
         private readonly List<Vector2> _cometVel = new List<Vector2>();
         private Image _findHint;
-        private Toast _toast;
         private ExitButton _exit;
         private GameHud _hud;
         private CountdownScreen _countdown;
@@ -198,10 +197,10 @@ namespace NeuroVida.Games.Bitacora
         private IEnumerator Transmission()
         {
             SetCaption("Llega una transmisión", "Toca cada hallazgo para guardarlo en la bitácora");
-            _toast.Show("Llega una transmisión", "Guarda cada hallazgo en la bitácora", NeuroStyle.Sky, 2f);
+            _hud.Announce("Llega una transmisión", AnnounceTone.Info, subtitle: "Guarda cada hallazgo en la bitácora");
             Sfx(BitacoraSounds.Incoming(), 0.5f);
             yield return StartCoroutine(Pause(2.2f));
-            _toast.Show("Truco", "Imagina cada hallazgo EN su planeta, como una escena", NeuroStyle.Sun, 2.6f);
+            _hud.Announce("Truco", AnnounceTone.Info, 3.5f, "Imagina cada hallazgo EN su planeta, como una escena");
             yield return StartCoroutine(Pause(2.8f));
 
             _probe.gameObject.SetActive(true);
@@ -300,7 +299,7 @@ namespace NeuroVida.Games.Bitacora
         /// <summary>Patrulla (solo al jugar suelto): una tarea liviana que ocupa la atención para que no se repase.</summary>
         private IEnumerator Patrol()
         {
-            _toast.Show("Patrulla", "Atrapa cometas mientras la base procesa la bitácora", NeuroStyle.Sky, 2.2f);
+            _hud.Announce("Patrulla", AnnounceTone.Info, subtitle: "Atrapa cometas mientras la base procesa la bitácora");
             SetCaption("Patrulla", "Toca los cometas");
             foreach (var v in _planets) v.Body.color = new Color(1f, 1f, 1f, 0.35f);
             _patrolRoot.gameObject.SetActive(true);
@@ -331,7 +330,7 @@ namespace NeuroVida.Games.Bitacora
             if (_phaseMode == "recall")
             {
                 int min = Mathf.Max(1, Mathf.RoundToInt(_config.config.memory_elapsed_s / 60f));
-                _toast.Show("Informe de la bitácora", $"La transmisión llegó hace {min} {(min == 1 ? "minuto" : "minutos")}", NeuroStyle.Grape, 2.2f);
+                _hud.Announce("Informe de la bitácora", AnnounceTone.Info, subtitle: $"La transmisión llegó hace {min} {(min == 1 ? "minuto" : "minutos")}");
                 yield return StartCoroutine(Pause(0.3f));
             }
             Sfx(BitacoraSounds.Report(), 0.5f);
@@ -445,7 +444,7 @@ namespace NeuroVida.Games.Bitacora
             if (kept > 0)
             {
                 Sfx(BitacoraSounds.Archive(), 0.55f);
-                _toast.Show(kept == _m.Items ? "¡Misión completa!" : "¡A tu bitácora!", kept == 1 ? "1 hallazgo archivado" : $"{kept} hallazgos archivados", NeuroStyle.Sun, 1.8f);
+                _hud.Announce(kept == _m.Items ? "¡Misión completa!" : "¡A tu bitácora!", AnnounceTone.Milestone, subtitle: kept == 1 ? "1 hallazgo archivado" : $"{kept} hallazgos archivados");
                 GameFeel.LevelUp();
             }
             SetCaption(kept == _m.Items ? "Recordaste toda la misión" : $"Recordaste {kept} de {_m.Items}", "");
@@ -969,8 +968,6 @@ namespace NeuroVida.Games.Bitacora
 
             BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
-            _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetBelowHud();
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);

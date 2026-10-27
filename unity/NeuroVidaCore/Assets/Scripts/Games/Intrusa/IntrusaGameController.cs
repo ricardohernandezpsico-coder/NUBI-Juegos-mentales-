@@ -104,7 +104,6 @@ namespace NeuroVida.Games.Intrusa
         private readonly List<Particle> _particles = new List<Particle>();
         private readonly List<RingFx> _rings = new List<RingFx>();
         private readonly List<Image> _trail = new List<Image>();
-        private Toast _toast;
         private ExitButton _exit;
         private GameHud _hud;
         private CountdownScreen _countdown;
@@ -312,8 +311,8 @@ namespace NeuroVida.Games.Intrusa
         private void Register(bool correct)
         {
             var change = _dda.Register(correct);
-            if (change == DdaChange.Up) _toast.Show("¡Un paso más!", IntrusaContract.LevelNews(_dda.Level), GoodColor, 1.1f);
-            else if (change == DdaChange.Down || _dda.Struggling) _toast.Show("Con calma", "Piensa qué tienen en común las otras", AmberColor, 0.9f);
+            if (change == DdaChange.Up) _hud.Announce("¡Un paso más!", AnnounceTone.Step, subtitle: IntrusaContract.LevelNews(_dda.Level));
+            else if (change == DdaChange.Down || _dda.Struggling) _hud.Announce("Con calma", AnnounceTone.Pace, subtitle: "Piensa qué tienen en común las otras");
         }
 
         private int PickSlot(Vector2 logical)
@@ -1046,7 +1045,7 @@ namespace NeuroVida.Games.Intrusa
             if (clear && !_clearShown)
             {
                 _clearShown = true;
-                _toast.Show("¡Cielo despejado!", "50 % más de puntos", AmberColor, 1.2f);
+                _hud.Announce("¡Cielo despejado!", AnnounceTone.Milestone, subtitle: "50 % más de puntos");
                 GameFeel.LevelUp();
             }
             else if (!clear) _clearShown = false;
@@ -1472,8 +1471,6 @@ namespace NeuroVida.Games.Intrusa
             _measure.rectTransform.sizeDelta = new Vector2(4000f, 200f);
 
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
-            _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetBelowHud();
             SetUpTutorial();
 
             var flashGo = new GameObject("Flash");

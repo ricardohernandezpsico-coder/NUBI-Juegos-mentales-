@@ -24,7 +24,6 @@ namespace NeuroVida.Games.Acoplamiento
         private static readonly Color TextColor = new Color(237f / 255f, 234f / 255f, 251f / 255f);
         private static readonly Color Ink = new Color(26f / 255f, 18f / 255f, 64f / 255f);
         private static readonly Color Shadow = new Color(8f / 255f, 6f / 255f, 30f / 255f, 0.55f);
-        private static readonly Color NoticeFill = new Color(31f / 255f, 27f / 255f, 78f / 255f);
         private static readonly Color RingViolet = new Color(140f / 255f, 120f / 255f, 236f / 255f);
         /// <summary>El cordón del hueco: verde agua en reposo, lima al encajar, celeste al «mostrar» (el tubo de plasticina es gris y se tiñe con estos).</summary>
         private static readonly Color PortEdgeIdle = new Color(92f / 255f, 200f / 255f, 194f / 255f);
@@ -38,7 +37,7 @@ namespace NeuroVida.Games.Acoplamiento
         private readonly Image[] _lights = new Image[Lights];
         private Image _lightGlow, _medal;
         private Text _medalText;
-        private RectTransform _lightsZone, _noticeZone;
+        private RectTransform _lightsZone;
 
         // puerto: el panel (losa «noche» del kit), su rótulo, los chevrones, la cavidad del hueco, el cordón (tinta el estado) y la marca de visto
         private Image _portPanel, _portSlab, _portEdge, _portHole, _portMark;
@@ -64,8 +63,8 @@ namespace NeuroVida.Games.Acoplamiento
         private readonly BtnView[] _buttons = new BtnView[2];
 
         // barra de tiempo, pista y avisos (la losa chica del kit)
-        private Image _fuelBorder, _fuelTrack, _fuelFill, _noticeShadow, _noticeBorder, _noticePill, _noticeSlab;
-        private Text _fuelLabel, _hint, _noticeText;
+        private Image _fuelBorder, _fuelTrack, _fuelFill;
+        private Text _fuelLabel, _hint;
 
         private static Sprite Art(string name) => PlasticArt.Get(PlasticGroup, name);
 
@@ -137,11 +136,6 @@ namespace NeuroVida.Games.Acoplamiento
             zone.transform.SetParent(_hudLayer, false);
             _lightsZone = zone.AddComponent<RectTransform>();
             _lightsZone.anchorMin = _lightsZone.anchorMax = _lightsZone.pivot = new Vector2(0.5f, 0.5f);
-            var noticeZone = new GameObject("NoticeZone");
-            noticeZone.transform.SetParent(_hudLayer, false);
-            _noticeZone = noticeZone.AddComponent<RectTransform>();
-            _noticeZone.anchorMin = _noticeZone.anchorMax = _noticeZone.pivot = new Vector2(0.5f, 0.5f);
-            _hud.AvoidForStreak(_noticeZone);                               // la franja del aviso («¡Anillo completo!» aparece con el 8.º módulo, a la vez que el chip, y entra con un fundido): el chip tampoco la cruza
             _hud.AvoidForStreak(_lightsZone);                               // Tarea 144: las luces de avance miden menos de 80 unidades y la guardia no las ve como estímulo: el chip «×N seguidos» no las cruza nunca
             for (int i = 0; i < Lights; i++) _lights[i] = MakeImage(_hudLayer, "Light" + i, null);
             _lightGlow = MakeImage(_hudLayer, "LightGlow", RadialGlowSprite.Get());
@@ -231,20 +225,7 @@ namespace NeuroVida.Games.Acoplamiento
             _hint = MakeLabel(_hudLayer, "Hint", 16f, UiFonts.Regular, Lavender, TextAnchor.MiddleCenter);
             _hint.text = DockingContract.Hint;
             _hint.horizontalOverflow = HorizontalWrapMode.Wrap;
-            // el aviso: la losa chica del kit (dorada si acertó, crema si no) con el texto liso de tinta, en la franja de y 118-150 (sin el kit, la píldora oscura de siempre)
-            _noticeShadow = Rr(_hudLayer, "NoticeShadow", Shadow, 16f);
-            _noticeBorder = Rr(_hudLayer, "NoticeBorder", Ink, 19f);
-            _noticePill = Rr(_hudLayer, "NoticePill", NoticeFill, 16f);
-            _noticeSlab = PlasticSlab.Available(SlabSize.Chip, SlabTone.Sun) && PlasticSlab.Available(SlabSize.Chip, SlabTone.Cream) ? PlasticSlab.Attach(_noticePill.rectTransform, SlabSize.Chip, SlabTone.Sun) : null;
-            if (_noticeSlab != null)
-            {
-                _noticePill.enabled = false;
-                _noticeShadow.enabled = false;
-                _noticeBorder.enabled = false;
-            }
-            _noticeText = MakeLabel(_hudLayer, "NoticeText", 17f, UiFonts.Bold, Lime, TextAnchor.MiddleCenter);
-            _noticeText.horizontalOverflow = HorizontalWrapMode.Overflow;
-            SetNoticeVisible(false);
+            // el aviso ya no tiene franja propia (Tarea 179): lo dice la fila de consigna del marcador (GameHud.Announce)
         }
 
         private void BuildHud()
@@ -391,7 +372,6 @@ namespace NeuroVida.Games.Acoplamiento
                 if (v.Slab == null) v.Bg.sprite = i == 0 ? DockingSprites.FitButton() : DockingSprites.MirrorButton();
                 v.Icon.sprite = Art(i == 0 ? "ico_encaja" : "ico_espejo") ?? (i == 0 ? DockingSprites.FitIcon() : DockingSprites.MirrorIcon());
             }
-            if (_noticeSlab == null) { _noticePill.sprite = _noticeBorder.sprite = _noticeShadow.sprite = RoundedRectSprite.Get(24); }
             _medal.sprite = Art("luz_lima") ?? DiscSprite.Get();
         }
 
@@ -467,13 +447,11 @@ namespace NeuroVida.Games.Acoplamiento
             SetRect(_fuelLabel.rectTransform, cx - _plan.FuelW * 0.5f - 8f - 30f, _plan.FuelCy, 60f, 20f);
             SetFuel(_fuelFraction);
             SetRect(_hint.rectTransform, cx, _plan.HintCy, DockingPlan.Width - 24f, 36f);
-            LayoutNotice();
         }
 
         private void LayoutHud()
         {
             SetRect(_timerTrack.rectTransform, DockingPlan.Width * 0.5f, 71f, DockingPlan.Width - 24f, 5f);
-            SetRect(_noticeZone, DockingPlan.Width * 0.5f, _plan.StripCy, DockingPlan.Width - 56f, 38f);
             SetTimer(_timerFraction);
         }
 

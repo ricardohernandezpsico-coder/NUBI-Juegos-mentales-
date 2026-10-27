@@ -188,14 +188,17 @@ namespace NeuroVida.Bridge.EditorTools
         }
 
         /// <summary>
-        /// Una corrida «Aviso*» por juego con aviso (Tarea 55): a los 5,5 s el smoke MUESTRA un aviso de prueba de dos renglones y la guardia <see cref="ScanToastCover"/> comprueba que no tapa ningún texto, botón ni el estímulo del juego (las mismas reglas con que el aviso se
-        /// acomoda: <see cref="NeuroVida.Games.Shared.ToastPlacement"/>), en la pantalla más alta y en la más baja. Bitácora (retirada) no entra.
+        /// Una corrida «Aviso*» por juego (Tarea 55; desde la Tarea 179, los 17 juegos y los dos retirados que siguen en el smoke): a los 5,5 s el smoke hace hablar a la fila de consigna del marcador (<c>GameHud.Announce</c>) con un aviso de prueba que NO cabe en una línea junto a su subtítulo (para pasar por sus dos tiempos), con un tono distinto
+        /// en cada corrida, en la pantalla más alta y en la más baja. La guardia <see cref="ScanAnnounce"/> comprueba que el texto cabe en UNA línea, que el tono y su ícono están a la vista, que la fila vuelve sola a su consigna y que la letra no baja de 16 dp (la guardia de textos de siempre). Bitácora (retirada) no entra.
         /// </summary>
         private static readonly (string Name, string Id, float Seconds)[] AvisoCatalog =
         {
-            ("AvisoAnagramas", "anagramas", 10.5f), ("AvisoCosecha", "cosecha", 10.5f), ("AvisoDisparate", "disparate", 10.5f),
-            ("AvisoFreno", "freno", 10.5f), ("AvisoIntrusa", "intrusa", 10.5f), ("AvisoMeteoros", "meteoros", 10.5f),
-            ("AvisoRumbo", "rumbo", 10.5f), ("AvisoStroop", "stroop", 10.5f),
+            ("AvisoAnagramas", "anagramas", 12.5f), ("AvisoCosecha", "cosecha", 12.5f), ("AvisoDisparate", "disparate", 12.5f),
+            ("AvisoFreno", "freno", 12.5f), ("AvisoIntrusa", "intrusa", 12.5f), ("AvisoMeteoros", "meteoros", 12.5f),
+            ("AvisoRumbo", "rumbo", 12.5f), ("AvisoStroop", "stroop", 12.5f),
+            ("AvisoRastro", "secuencia", 12.5f), ("AvisoParejas", "parejas", 12.5f), ("AvisoBodega", "bodega", 12.5f), ("AvisoCorreo", "correo", 12.5f),
+            ("AvisoPiloto", "piloto", 12.5f), ("AvisoSatelites", "satelites", 12.5f), ("AvisoRadar", "radar", 12.5f), ("AvisoCalculo", "calculo", 12.5f),
+            ("AvisoEngranajes", "engranajes", 12.5f), ("AvisoAcoplamiento", "acoplamiento", 12.5f), ("AvisoAterrizaje", "aterrizaje", 12.5f),
         };
 
         /// <summary>
@@ -387,12 +390,6 @@ namespace NeuroVida.Bridge.EditorTools
             Debug.Log($"[SmokeTest] Error capturado: «Cómo se juega» no terminó o la partida no volvió a estar en marcha en {_current.Name}");
         }
 
-        /// <summary>Juegos cuyo aviso puede quedar sobre el juego, con el porqué (lista corta).</summary>
-        private static readonly (string Id, string Why)[] ToastCoverExceptions =
-        {
-            ("rumbo", "su señal, su baliza y su nave se mueven por todo el mapa (la pantalla alta tiene una franja libre; la corta no) y Rumbo se revisa en la Etapa 2 de la hoja de ruta; su aviso va arriba, debajo de la consigna"),
-        };
-
         private static readonly Queue<(string Name, string Id, float Seconds)> _queue = new Queue<(string, string, float)>();
         private static readonly Queue<int> _heights = new Queue<int>();       // alto de pantalla de cada corrida de _queue (0 = el de la ventana del Editor)
         private static (string Name, string Id, float Seconds) _current;
@@ -545,10 +542,10 @@ namespace NeuroVida.Bridge.EditorTools
             _hudNow.Clear();
             _hudPrev.Clear();
             _hudSeen.Clear();
-            _toastNow.Clear();
-            _toastPrev.Clear();
-            _toastSeen.Clear();
-            _sampleToastShown = false;
+            _sampleAnnounceShown = false;
+            _announceMeasured = 0;
+            _announceBackChecked = false;
+            _announceFirstAt = 0;
             _sampleStreakShown = false;
             _streakNow.Clear();
             _streakPrev.Clear();
@@ -911,7 +908,7 @@ namespace NeuroVida.Bridge.EditorTools
             foreach (var k in _guardPrev.Keys) if (!_guardNow.Contains(k)) gone.Add(k);
             foreach (var k in gone) _guardPrev.Remove(k);
             ScanHudCover();
-            ScanToastCover();
+            ScanAnnounce();
             ScanStreakChip();
             ScanTouchTargets();
         }
@@ -985,64 +982,75 @@ namespace NeuroVida.Bridge.EditorTools
             return p;
         }
 
-        private static readonly HashSet<string> _toastNow = new HashSet<string>();
-        private static readonly HashSet<string> _toastPrev = new HashSet<string>();
-        private static readonly HashSet<string> _toastSeen = new HashSet<string>();
-        private static bool _sampleToastShown;
+        private static bool _sampleAnnounceShown, _announceBackChecked;
+        private static int _announceMeasured, _announceRunIndex;
+        private static double _announceFirstAt;
+        private static NeuroVida.Games.Shared.GameHud _announceHud;
 
-        /// <summary>El <c>Toast</c> del juego en marcha (cada controlador lo guarda en su campo <c>_toast</c>), o null.</summary>
-        private static NeuroVida.Games.Shared.Toast FindGameToast()
+        /// <summary>Hace hablar a la fila de consigna del juego en marcha con un aviso de prueba que pasa por sus dos tiempos, con un tono distinto en cada corrida.</summary>
+        private static void ShowSampleAnnounce()
         {
-            foreach (var mb in UnityEngine.Object.FindObjectsOfType<MonoBehaviour>())
-            {
-                var field = mb.GetType().GetField("_toast", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                if (field == null || field.FieldType != typeof(NeuroVida.Games.Shared.Toast)) continue;
-                var toast = (NeuroVida.Games.Shared.Toast)field.GetValue(mb);
-                if (toast != null) return toast;
-            }
-            return null;
-        }
-
-        /// <summary>Muestra un aviso de prueba (dos renglones, como los más largos de los juegos) con el <c>Toast</c> del juego en marcha.</summary>
-        private static void ShowSampleToast()
-        {
-            _sampleToastShown = true;
-            var toast = FindGameToast();
-            if (toast == null) { Debug.Log($"[SmokeTest] aviso de prueba: {_current.Name} no tiene _toast"); return; }
-            toast.Show("Aviso de prueba", "Una frase de dos renglones para probar dónde queda el aviso en esta pantalla", NeuroVida.Games.Shared.NeuroStyle.Sun, 4.2f);
-            Debug.Log($"[SmokeTest] aviso de prueba en {_current.Name}: queda a {Mathf.RoundToInt(toast.PlacedTopU)} u del borde de arriba, choque {Mathf.RoundToInt(toast.PlacedOverlap)}");
+            _sampleAnnounceShown = true;
+            var hud = FindGameHud();
+            if (hud == null) { Debug.Log($"[SmokeTest] aviso de prueba: {_current.Name} no tiene marcador común"); return; }
+            var tone = NeuroVida.Games.Shared.AnnounceStyle.All[_announceRunIndex++ % NeuroVida.Games.Shared.AnnounceStyle.All.Length];
+            _announceHud = hud;
+            _announceFirstAt = EditorApplication.timeSinceStartup;
+            hud.Announce("Aviso de prueba", tone, 0f, "Una frase de explicación que no cabe junto a su título en una línea", sound: false);
+            Debug.Log($"[SmokeTest] aviso de prueba en {_current.Name}: tono {tone} ({NeuroVida.Games.Shared.AnnounceStyle.Shape(tone)}), «{hud.RowText}»");
         }
 
         /// <summary>
-        /// El aviso a la vista NO tapa nada del juego: ningún texto, botón ni estímulo (<see cref="NeuroVida.Games.Shared.ToastPlacement"/>) por más de 800 unidades cuadradas, en dos revisiones seguidas. Solo corre en las corridas «Aviso*».
+        /// La fila habla bien (Tarea 179), en las corridas «Aviso*» mientras el aviso de prueba está a la vista: el texto cabe en UNA línea (sin partirse en dos renglones), el ícono del tono está a la vista y la fila está a la vista. A los 5 s del aviso la fila tiene que haber vuelto sola a su consigna.
         /// </summary>
-        private static void ScanToastCover()
+        private static void ScanAnnounce()
         {
-            if (!_current.Name.StartsWith("Aviso")) return;
-            foreach (var ex in ToastCoverExceptions) if (ex.Id == _current.Id) return;
-            var toast = FindGameToast();
-            if (toast == null || toast.Rect == null || !toast.Rect.gameObject.activeInHierarchy) return;
-            var group = toast.Rect.GetComponent<CanvasGroup>();
-            if (group == null || group.alpha < 0.95f) return;
-            var space = (RectTransform)toast.Rect.parent;
-            var names = new List<string>();
-            var boxes = NeuroVida.Games.Shared.ToastPlacement.Collect(space, toast.Rect, names);
-            foreach (var z in toast.KeepOutZones)
-                if (z != null) { boxes.Add(NeuroVida.Games.Shared.ToastPlacement.LocalRectOf(space, z)); names.Add("zona prohibida " + z.name); }
-            var mine = NeuroVida.Games.Shared.ToastPlacement.LocalRectOf(space, toast.Rect);
-            _toastNow.Clear();
-            for (int i = 0; i < boxes.Count; i++)
+            if (!_current.Name.StartsWith("Aviso") || !_sampleAnnounceShown || _announceHud == null) return;
+            var hud = _announceHud;
+            double since = EditorApplication.timeSinceStartup - _announceFirstAt;
+            if (hud.Announcing)
             {
-                float o = NeuroVida.Games.Shared.ToastPlacement.Overlap(mine, boxes[i]);
-                if (o < 800f) continue;
-                string key = names[i];
-                _toastNow.Add(key);
-                if (!_toastPrev.Contains(key) || !_toastSeen.Add(key)) continue;
-                _errorCount++;
-                Debug.Log($"[SmokeTest] Error capturado: guardia del aviso: {_current.Name} ({_current.Id}), 1080x{_currentHeight}: el aviso (de {Mathf.RoundToInt(mine.yMin)} a {Mathf.RoundToInt(mine.yMax)} desde arriba) tapa [{names[i]}] ({Mathf.RoundToInt(boxes[i].width)}x{Mathf.RoundToInt(boxes[i].height)} en {Mathf.RoundToInt(boxes[i].xMin)},{Mathf.RoundToInt(boxes[i].yMin)}): {Mathf.RoundToInt(o)} u2");
+                var text = hud.RowTextComponent;
+                if (!text.gameObject.activeInHierarchy || text.color.a < 0.99f) return;                       // todavía entrando
+                _announceMeasured++;
+                var gen = text.cachedTextGenerator;
+                if (gen.lineCount > 1)
+                {
+                    _errorCount++;
+                    Debug.Log($"[SmokeTest] Error capturado: guardia del aviso: {_current.Name} ({_current.Id}), 1080x{_currentHeight}: «{text.text}» se parte en {gen.lineCount} renglones en la fila (tiene que caber en uno)");
+                }
+                if (hud.RowIcon == null || hud.RowIcon != NeuroVida.Games.Shared.AnnounceStyle.Glyph(hud.AnnounceToneNow))
+                {
+                    _errorCount++;
+                    Debug.Log($"[SmokeTest] Error capturado: guardia del aviso: {_current.Name} ({_current.Id}): el aviso «{text.text}» no lleva el ícono de su tono");
+                }
+                return;
             }
-            _toastPrev.Clear();
-            foreach (var k in _toastNow) _toastPrev.Add(k);
+            if (since < 5.0 || _announceBackChecked) return;                                  // el aviso de prueba dura unos 3,8 s con sus dos tiempos
+            _announceBackChecked = true;
+            if (hud.RowText != hud.PromptText || hud.RowTextComponent.color.a < 0.99f)
+            {
+                _errorCount++;
+                Debug.Log($"[SmokeTest] Error capturado: guardia del aviso: {_current.Name} ({_current.Id}): la fila no volvió a su consigna («{hud.RowText}» en vez de «{hud.PromptText}»)");
+            }
+        }
+
+        /// <summary>Al terminar cada corrida: cuántos avisos dijo la fila y cuántos pisó otro antes de leerse su primera línea (1,2 s); en las «Aviso*», que el aviso de prueba se midió.</summary>
+        private static void CheckAnnounce()
+        {
+            if (NeuroVida.Games.Shared.GameHud.AnnouncesShown > 0)
+            {
+                var cut = NeuroVida.Games.Shared.GameHud.AnnouncesCutShort;
+                Debug.Log($"[SmokeTest] avisos de {_current.Name}: {NeuroVida.Games.Shared.GameHud.AnnouncesShown} (pisados antes de 1,2 s: {cut.Count})" + (cut.Count > 0 ? ": " + string.Join(" | ", cut) : ""));
+            }
+            NeuroVida.Games.Shared.GameHud.AnnouncesShown = 0;
+            NeuroVida.Games.Shared.GameHud.AnnouncesCutShort.Clear();
+            if (_current.Name.StartsWith("Aviso") && _announceHud != null && _announceMeasured == 0 && _announceHud.Rect != null && _announceHud.Rect.gameObject.activeInHierarchy)
+            {
+                _errorCount++;
+                Debug.Log($"[SmokeTest] Error capturado: guardia del aviso: {_current.Name} ({_current.Id}): el aviso de prueba nunca se vio del todo (no se pudo medir)");
+            }
+            _announceHud = null;
         }
 
         /// <summary>Las piezas de foco de <see cref="NeuroVida.Games.Shared.NubiCoach"/> (velo, esquinas, marco, aro y dedo): oscurecen o enmarcan a propósito. Nubi y su globo NO son de foco: no deben tapar el HUD.</summary>
@@ -1294,7 +1302,7 @@ namespace NeuroVida.Bridge.EditorTools
                 ScanTextPlacement();
                 ScanFactoryImages();
                 if (_current.Name.EndsWith("Mudo") || _current.Name == "Piloto" || _current.Name == "Radar" || _current.Name == "Acoplamiento" || _current.Name == "Aterrizaje") SampleAudio();
-                if (_current.Name.StartsWith("Aviso") && !_sampleToastShown && played >= 5.5) ShowSampleToast();
+                if (_current.Name.StartsWith("Aviso") && !_sampleAnnounceShown && played >= 5.5) ShowSampleAnnounce();
                 if (_current.Name.StartsWith("Seguidos") && !_sampleStreakShown && played >= 5.5) ShowSampleStreak();
                 if (_current.Name.StartsWith("HowTo")) DriveHowTo(played);
                 if (StalePauseRequested && !_staleDone) SimulateStalePause();
@@ -1309,6 +1317,7 @@ namespace NeuroVida.Bridge.EditorTools
                 CheckCoachAudit();
                 CheckHowTo();
                 CheckTimeTrial();
+                CheckAnnounce();
                 CheckSound();
                 if (_current.Name == "Piloto" || _current.Name == "Radar" || _current.Name == "Acoplamiento" || _current.Name == "Aterrizaje")
                     Debug.Log("[SmokeTest] control de audio de " + _current.Name + ": " + (_audioHeard ? "se oyó sonido (el instrumento sirve)" : "NO se detectó ningún sonido: la prueba de «sonido apagado» no sería concluyente"));

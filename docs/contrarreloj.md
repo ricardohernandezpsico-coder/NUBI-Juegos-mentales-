@@ -3,6 +3,10 @@
 Un modo para **superarse uno mismo contra el tiempo**, como el Puzzle Rush de chess.com: 2 minutos fijos, la dificultad adaptativa apagada y una pista fija que parte siempre del paso 1 y sube un paso cada N aciertos. La marca es **«N aciertos en 2 minutos»**.
 Lo pidió Ricardo (cuando dijo «Desafío» pensaba en esto, no en el «Con reloj»), lo diseñó Fable (`Proyectos/auditoria-fable/contrarreloj.md`, su lámina y el anexo `contrarreloj-cuarto-juego.md`) y Ricardo decidió el 26-oct. Esta es la **fase 1: local, sin servidor**. T176 = Unity (este documento, §2 a §8); T177 = la app (§9); T178 = la marca neta (§0).
 
+## 0b. Tarea 179 (26-oct): el error y los avisos van por la fila de consigna
+
+El aviso del error (`TimeTrial.ErrorFeedbackSeconds`, 0,8 s) y los demás avisos del Contrarreloj («¡Un paso más!») los dice la fila de consigna del marcador (`GameHud.Announce`, `docs/arquitectura-app.md` § «Los avisos: la fila habla»): el error sale en coral con su equis (Tinta: «La tinta era azul», y la píldora se aparta; ¿Verdad o disparate?: «Era verdad» / «Era un disparate»; Acoplamiento: «Era su espejo» / «Sí encajaba»). **Ningún «+N» de puntos sale en el Contrarreloj** (no tiene puntos; el «+120» de ¿Verdad o disparate? solo sale en la partida de siempre; `HudAnnounceTests.NoPointsTextFloatsInTheContrarreloj`).
+
 ## 0. Tarea 178 (26-oct): aciertos menos errores — MANDA sobre lo que dice la «pausa» más abajo
 
 Ricardo probó Tinta o Palabra («funciona bien») y la espera tras cada error (3, 6 y 9 s) alargaba demasiado la partida. Eligió cambiar la forma de medir:

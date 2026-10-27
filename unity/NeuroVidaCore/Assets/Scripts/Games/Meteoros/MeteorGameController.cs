@@ -76,14 +76,12 @@ namespace NeuroVida.Games.Meteoros
         private RectTransform _safe, _play, _fxRect, _meteorLayer, _timerBg, _timerFill, _atmosphere;
         private Text _hint, _prompt;
         private readonly List<Image> _conStars = new List<Image>();
-        private Toast _toast;
         private ExitButton _exit;
         private GameHud _hud;
         private CountdownScreen _countdown;
         private float _playW, _playH, _spawnY, _atmosphereY, _bottom, _hudBottomY;
         /// <summary>Dónde nace el centro de la roca, desde arriba, como fracción de la altura del juego (Tarea 128: 0,20).</summary>
         public const float SpawnFraction = 0.20f;
-        private RectTransform _toastKeepOut;
         private Vector2 _starTarget;
 
         // ------------------------------------------------------------------ sesión
@@ -185,7 +183,7 @@ namespace NeuroVida.Games.Meteoros
                     _lastSpawn = placed ? GameClock.Time : GameClock.Time - gap + 0.15f; // sin lugar libre: se reintenta enseguida
                     if (placed && !_wasShower && _director.InShower)
                     {
-                        _toast.Show("¡Lluvia de estrellas!", "Toca sin pensar: son palabras comunes", AmberColor, 1.4f);
+                        _hud.Announce("¡Lluvia de estrellas!", AnnounceTone.Info, subtitle: "Toca sin pensar: palabras comunes");
                         GameFeel.LevelUp();
                     }
                     if (placed) _wasShower = _director.InShower;
@@ -547,8 +545,8 @@ namespace NeuroVida.Games.Meteoros
         {
             if (spec.Shower) return; // la lluvia de estrellas va fuera de la escalera
             var change = _dda.Register(correct);
-            if (change == DdaChange.Up) _toast.Show("¡Un paso más!", MeteorContract.LevelNews(_dda.Level), GoodColor, 1.1f);
-            else if (change == DdaChange.Down || _dda.Struggling) _toast.Show("Con calma", "Mira la palabra entera, de principio a fin", AmberColor, 0.9f);
+            if (change == DdaChange.Up) _hud.Announce("¡Un paso más!", AnnounceTone.Step, subtitle: MeteorContract.LevelNews(_dda.Level));
+            else if (change == DdaChange.Down || _dda.Struggling) _hud.Announce("Con calma", AnnounceTone.Pace, subtitle: "Mira la palabra de principio a fin");
         }
 
         private void BreakStreak()
@@ -637,7 +635,7 @@ namespace NeuroVida.Games.Meteoros
             if (complete)
             {
                 StartCoroutine(UiFx.RingBurst(_fxRect, pos, NeuroStyle.Sun, 100f, 420f, 0.5f));
-                _toast.Show("¡Constelación completa!", "Cada palabra rescatada suma una estrella", GoodColor, 1.1f);
+                _hud.Announce("¡Constelación completa!", AnnounceTone.Milestone, subtitle: "Cada palabra suma una estrella");
                 StartCoroutine(ResetConstellationSoon());
             }
         }
@@ -938,15 +936,6 @@ namespace NeuroVida.Games.Meteoros
             _fxRect = Layer(_play, "Fx");
 
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
-            _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetBelowHud();
-            // el campo donde se mueve el estímulo: el aviso nunca va ahí (se mide en Layout)
-            var keepOut = new GameObject("ToastKeepOut", typeof(RectTransform));
-            keepOut.transform.SetParent(_play, false);
-            _toastKeepOut = (RectTransform)keepOut.transform;
-            _toastKeepOut.anchorMin = _toastKeepOut.anchorMax = new Vector2(0.5f, 0.5f);
-            _toastKeepOut.pivot = new Vector2(0.5f, 1f);
-            _toast.KeepOut(_toastKeepOut);
             BuildTutorial(_safe, GameHud.Height + 10f, "Lluvia de meteoros", "Toca las palabras que existen. Las inventadas, déjalas caer.",
                 captionFromBottomU: 430f, badgeAtBottom: true);
 
@@ -1067,9 +1056,6 @@ namespace NeuroVida.Games.Meteoros
             // la atmósfera queda sobre la cúpula del observatorio (la superficie ocupa el 16% de abajo)
             _atmosphereY = _bottom + _playH * 0.30f;
             _atmosphere.anchoredPosition = new Vector2(0f, _atmosphereY - 40f);
-            // zona prohibida del aviso: el cielo por donde caen los meteoros, de debajo del marcador a la atmósfera; el aviso va abajo, en la cúpula y la superficie
-            _toastKeepOut.sizeDelta = new Vector2(_playW, Mathf.Max(0f, (top - GameHud.Height) - _atmosphereY));
-            _toastKeepOut.anchoredPosition = new Vector2(0f, top - GameHud.Height);
         }
 
         private void UpdateHud()
@@ -1088,7 +1074,7 @@ namespace NeuroVida.Games.Meteoros
         protected override void HowToSuspend()
         {
             _phase = Phase.Idle;
-            _toast.Hide();
+            _hud.CancelAnnounce();
             ClearTransient();
         }
 

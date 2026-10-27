@@ -91,7 +91,6 @@ namespace NeuroVida.Games.Rumbo
         private readonly List<float> _dustAlpha = new List<float>();
         private RailLine _outGlow, _outLine, _idealLine, _backLine, _gapLine;
         private Text _prompt, _detail, _hint;
-        private Toast _toast;
         private ExitButton _exit;
         private GameHud _hud;
         private CountdownScreen _countdown;
@@ -176,7 +175,7 @@ namespace NeuroVida.Games.Rumbo
             if (!_introShown)
             {
                 _introShown = true;
-                _toast.Show("Recuerda cada giro", "Al final vuelves a casa sin mapa", NeuroStyle.Sky, 2.2f);
+                _hud.Announce("Recuerda cada giro", AnnounceTone.Info, subtitle: "Al final vuelves a casa sin mapa");
             }
             if (beacon && !_beaconHintShown)
             {
@@ -205,7 +204,7 @@ namespace NeuroVida.Games.Rumbo
         private IEnumerator DelayedToast(float delay, string title, string subtitle)
         {
             yield return StartCoroutine(Wait(delay));
-            _toast.Show(title, subtitle, AmberColor, 2.4f);
+            _hud.Announce(title, AnnounceTone.Info, subtitle: subtitle);
         }
 
         private IEnumerator Leg(int i)
@@ -264,7 +263,7 @@ namespace NeuroVida.Games.Rumbo
 
         private IEnumerator Aim()
         {
-            _toast.Show("¡Hora de volver!", "Combustible justo para llegar a casa", AmberColor, 1.8f);
+            _hud.Announce("¡Hora de volver!", AnnounceTone.Info, subtitle: "Combustible justo para llegar a casa");
             SetPrompt("¿Hacia dónde está casa?", AmberColor);
             SetDetail("");
             _aimRoot.gameObject.SetActive(true);
@@ -311,7 +310,7 @@ namespace NeuroVida.Games.Rumbo
             if (!_stopPressed)
             {
                 Sfx(HomingSounds.FuelOut(), 0.5f);
-                _toast.Show("Sin combustible", "La nave se detuvo sola", AmberColor, 1.2f);
+                _hud.Announce("Sin combustible", AnnounceTone.Error, subtitle: "La nave se detuvo sola");
             }
             else StartCoroutine(PopRect(_stopButton, 0.92f, 0.12f));
             yield return StartCoroutine(Wait(0.15f));
@@ -445,9 +444,9 @@ namespace NeuroVida.Games.Rumbo
 
             var change = _dda.Register(o.Hit);
             if (change == DdaChange.Up)
-                _toast.Show("¡Subes de nivel!", HomingContract.LevelNews(_dda.Level), GoodColor, 1.3f);
+                _hud.Announce("¡Subes de nivel!", AnnounceTone.Step, subtitle: HomingContract.LevelNews(_dda.Level));
             else if (change == DdaChange.Down || _dda.Struggling)
-                _toast.Show("Con calma", "En cada giro, fíjate cuánto gira el polvo", AmberColor, 1.3f);
+                _hud.Announce("Con calma", AnnounceTone.Pace, subtitle: "En cada giro, fíjate cuánto gira el polvo");
             UpdateHud();
 
             yield return StartCoroutine(Wait(o.Hit ? 3.0f : 3.6f));
@@ -976,14 +975,6 @@ namespace NeuroVida.Games.Rumbo
 
             BuildResultPanel();
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
-            _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetBelowHud();
-            _toast.KeepOut(_prompt.rectTransform);          // los textos del juego, aunque en este momento estén vacíos
-            _toast.KeepOut(_detail.rectTransform);
-            _toast.KeepOut(_hint.rectTransform);
-            _toast.KeepOut(_shipRect);
-            _toast.KeepOut(_signal);                        // la señal y la baliza aparecen a mitad de ronda
-            _toast.KeepOut(_beacon);
 
             var flashGo = new GameObject("Flash");
             flashGo.transform.SetParent(canvasGo.transform, false);

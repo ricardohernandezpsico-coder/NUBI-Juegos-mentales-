@@ -507,7 +507,6 @@ namespace NeuroVida.Games.Engranajes
             AnimateScene(now, dt);
             AnimateStrip(now);
             AnimateBottom(now);
-            AnimateSay(now);
             AnimateFlyer(now);
             AnimateSparks(dt);
             AnimateIntro(now);

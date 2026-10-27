@@ -81,7 +81,7 @@ namespace NeuroVida.Games.Tests
         }
 
         [Test]
-        public void AToastThatAlreadySoundsSomethingOfItsOwn_IsSilent()
+        public void AnAnnouncementThatAlreadySoundsSomethingOfItsOwn_IsSilent()
         {
             var own = new Regex(@"\bPlay(?:Clip|Tone)\(|(?<![\w.])Play\((?:Dock|Land|Radar)Sfx|WoodCore\.Play|\.Play\(\w+Sfx|PlayNote\(|PlayCue\(");           // (a) desde el paso 0 cubre también los sonidos de WoodCore
             foreach (var file in Controllers())
@@ -89,7 +89,7 @@ namespace NeuroVida.Games.Tests
                 var lines = File.ReadAllLines(file);
                 for (int i = 0; i < lines.Length; i++)
                 {
-                    if (!Regex.IsMatch(lines[i], @"_toast\??\.Show\(") || lines[i].Contains("sound: false")) continue;
+                    if (!Regex.IsMatch(lines[i], @"_hud\??\.Announce\(") || lines[i].Contains("sound: false")) continue;
                     for (int j = System.Math.Max(0, i - 2); j <= System.Math.Min(lines.Length - 1, i + 2); j++)
                         if (j != i && !lines[j].TrimStart().StartsWith("//") && own.IsMatch(lines[j]))
                             Assert.Fail("El aviso de " + Where(file, i) + " suena el aviso de la paleta y el juego ya suena algo propio en " + Where(file, j) + " («" + lines[j].Trim() + "»): ese aviso va con «sound: false»");

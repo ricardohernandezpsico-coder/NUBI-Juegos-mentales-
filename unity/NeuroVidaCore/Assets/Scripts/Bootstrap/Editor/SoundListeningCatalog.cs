@@ -198,7 +198,7 @@ namespace NeuroVida.Bridge.EditorTools
             E(g, "ya", "«¡Ya!»", "Silencio", "CountdownScreen.cs:321 y :447 (con «quitar animaciones»)", null, 1f, Wk(WoodSfx.Go), "Go: dos marimbas y una kalimba aguda", "", "NUEVO: hoy no suena nada.");
             E(g, "pausa-abrir", "Abrir la pausa", "Silencio (el audio se congela con AudioListener.pause)", "PauseMenu.cs:187 Show()", null, 1f, Wk(WoodSfx.PauseIn), "PauseIn: dos marimbas suaves que bajan", "", "NUEVO. Ojo: la pausa congela el audio, así que este sonido tiene que sonar ANTES de congelarlo (o con ignoreListenerPause).");
             E(g, "pausa-seguir", "Seguir jugando", "Silencio", "PauseMenu.cs (botón «Seguir»)", null, 1f, Wk(WoodSfx.PauseOut), "PauseOut: las mismas dos, que suben", "", "NUEVO.");
-            E(g, "aviso", "Aviso en pantalla (Toast, «¡Ráfaga!», «Nivel 2»…)", "Silencio (algunos juegos suman su propio sonido)", "Toast.cs:178 Show()", null, 1f, Wk(WoodSfx.Notice), "Notice: una marimba sola", "", "NUEVO.");
+            E(g, "aviso", "Aviso en pantalla (la fila de consigna, «¡Ráfaga!», «¡Un paso más!»…)", "Silencio (algunos juegos suman su propio sonido)", "GameHud.Announce()", null, 1f, Wk(WoodSfx.Notice), "Notice: una marimba sola", "", "NUEVO.");
             E(g, "boton", "Botón o ficha presionada (kit de plasticina)", "Silencio en el kit; cada juego pone el suyo (campanita, siseo, golpe…)", "PlasticTouch.cs:86 Press(); PlasticSlab.cs:214 PlasticPress (pointer down)", null, 1f, Wk(WoodSfx.Tap), "Tap: marimba apagada de 60 ms (la de Acoplamiento)", "", "NUEVO en el kit; aprobado ya en Acoplamiento. Ricardo notó que los toques cortos y más fuertes «no se entendían»: queda el más suave.");
         }
 

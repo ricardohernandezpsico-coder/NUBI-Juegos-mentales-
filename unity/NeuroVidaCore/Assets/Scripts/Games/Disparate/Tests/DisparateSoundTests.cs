@@ -71,7 +71,7 @@ namespace NeuroVida.Games.Disparate.Tests
         }
 
         [Test]
-        public void TheRightAndWrongAnswers_SoundOnlyTheCommonOnes_AndTheUnclearThanksUsesTheNoticeOfItsToast()
+        public void TheRightAndWrongAnswers_SoundOnlyTheCommonOnes_AndTheUnclearThanksUsesTheNoticeOfItsAnnouncement()
         {
             string text = Controller();
             string right = Body(text, "private IEnumerator CorrectFeedback(");
@@ -80,11 +80,11 @@ namespace NeuroVida.Games.Disparate.Tests
             StringAssert.Contains("GameFeel.Wrong()", wrong);
             foreach (var body in new[] { right, wrong }) Assert.AreEqual(0, Regex.Matches(body, @"WoodCore\.Play|PlayNote|PlayCue|PlayTone").Count, "una sola respuesta, un solo sonido");
             // «Gracias, la revisaremos»: el aviso suena su Notice (ya no va mudo)
-            var thanks = Regex.Match(text, @"_toast\.Show\(""Gracias, la revisaremos""[^;]*;");
+            var thanks = Regex.Match(text, @"_hud\.Announce\(""Gracias, la revisaremos""[^;]*;");
             Assert.IsTrue(thanks.Success, "el aviso existe");
             StringAssert.DoesNotContain("sound: false", thanks.Value, "el aviso ya no va mudo: suena el Notice");
             // y «se perdió la señal» sigue con su aviso mudo (suena el Wrong)
-            var lost = Regex.Match(text, @"_toast\.Show\(""Se perdió la señal""[^;]*;");
+            var lost = Regex.Match(text, @"_hud\.Announce\(""Se perdió la señal""[^;]*;");
             StringAssert.Contains("sound: false", lost.Value);
         }
     }

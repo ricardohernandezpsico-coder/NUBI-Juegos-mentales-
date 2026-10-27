@@ -160,7 +160,7 @@ namespace NeuroVida.Games.Meteoros
         {
             switch (Clamp(level))
             {
-                case 3: return "Llegan palabras con una letra cambiada";
+                case 3: return "Palabras con una letra cambiada";
                 case 4: return "Dos meteoros a la vez";
                 case 5: return "Palabras menos comunes";
                 case 7: return "Letras cambiadas de lugar";

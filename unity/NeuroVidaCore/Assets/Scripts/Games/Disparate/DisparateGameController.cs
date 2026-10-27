@@ -92,7 +92,6 @@ namespace NeuroVida.Games.Disparate
         private readonly List<Image> _meter = new List<Image>();
         private readonly List<Image> _aurora = new List<Image>();
         private readonly List<RawImage> _edgeStatic = new List<RawImage>();
-        private Toast _toast;
         private ExitButton _exit;
         private GameHud _hud;
         private CountdownScreen _countdown;
@@ -310,7 +309,7 @@ namespace NeuroVida.Games.Disparate
             // ráfaga: estrellas veloces y un cartelito
             if (spec.Burst)
             {
-                if (!_wasBurst) { _toast.Show("¡Ráfaga!", "Cinco frases rápidas; no cuentan para tu medida", AmberColor, 1.2f); GameFeel.LevelUp(); }
+                if (!_wasBurst) { _hud.Announce("¡Ráfaga! Cinco frases rápidas", AnnounceTone.Info, subtitle: "No cuentan para tu medida"); GameFeel.LevelUp(); }
                 _warpTarget = GameFeel.ReduceMotion ? 0f : 2.2f;
             }
             else _warpTarget = 0f;
@@ -571,7 +570,7 @@ namespace NeuroVida.Games.Disparate
             if (_guided && !Allows(Allow.Hold)) return;
             _unclearDone = true;
             if (!_guided) _tally.ReportUnclear(_cur.S.i);                // la frase de la práctica no se anota
-            _toast.Show("Gracias, la revisaremos", "Marcaste esta frase como poco clara", AmberColor, 1.0f);                       // suena el Notice del propio aviso (antes un «gracias» propio)
+            _hud.Announce("Gracias, la revisaremos", AnnounceTone.Info, subtitle: "Marcaste esta frase como poco clara");                       // suena el Notice del propio aviso (antes un «gracias» propio)
             GameFeel.Haptic(GameFeel.HapticKind.Double);
             StartCoroutine(UiFx.RingBurst(_fxRect, new Vector2(0f, _plateY), AmberColor, 200f, 700f, 0.45f));
         }
@@ -630,12 +629,12 @@ namespace NeuroVida.Games.Disparate
             if (_tt != null)
             {
                 // Contrarreloj: la pista sube por aciertos y el DDA no corre
-                if (_tt.Register(correct)) _toast.Show("¡Un paso más!", DisparateContract.LevelNews(_tt.Level), GoodColor, 1.1f);
+                if (_tt.Register(correct)) _hud.Announce("¡Un paso más!", AnnounceTone.Step, subtitle: DisparateContract.LevelNews(_tt.Level));
                 return;
             }
             var change = _dda.Register(correct);
-            if (change == DdaChange.Up) _toast.Show("¡Un paso más!", DisparateContract.LevelNews(_dda.Level), GoodColor, 1.1f);
-            else if (change == DdaChange.Down || _dda.Struggling) _toast.Show("Con calma", "Lee la frase hasta el final", AmberColor, 0.9f);
+            if (change == DdaChange.Up) _hud.Announce("¡Un paso más!", AnnounceTone.Step, subtitle: DisparateContract.LevelNews(_dda.Level));
+            else if (change == DdaChange.Down || _dda.Struggling) _hud.Announce("Con calma", AnnounceTone.Pace, subtitle: "Lee la frase hasta el final");
         }
 
         private IEnumerator CorrectFeedback(SentenceSpec spec)
@@ -653,7 +652,7 @@ namespace NeuroVida.Games.Disparate
             StartCoroutine(PlateBeat());
             StartCoroutine(UiFx.RingBurst(_fxRect, _dishPos, StreakColor(), 120f, 760f, 0.55f));
             if (!GameFeel.ReduceMotion) StartCoroutine(SparkTravel(new Vector2(_plateX, _plateY), _tipPos));
-            StartCoroutine(FloatText(new Vector2(0f, _plateY + _plate.sizeDelta.y * 0.5f + 40f), "+" + pts, NeuroStyle.Sun));
+            if (_tt == null) StartCoroutine(FloatText(new Vector2(0f, _plateY + _plate.sizeDelta.y * 0.5f + 40f), "+" + pts, NeuroStyle.Sun));           // el Contrarreloj no tiene puntos: ningún «+N» (Tarea 179)
             if (_streak == DisparateContract.PerfectStreak && !_perfectShown)
             {
                 _perfectShown = true;
@@ -678,6 +677,7 @@ namespace NeuroVida.Games.Disparate
         {
             BreakStreak();
             GameFeel.Wrong();                                           // queda SOLO el error común (la estática, que sonaba encima, se quitó)
+            if (_tt != null) _hud.Announce(spec.S.v ? "Era verdad" : "Era un disparate", AnnounceTone.Error);          // Contrarreloj: la nota del error va por la fila, en coral y con su equis (Tarea 179)
             _plateGlow.color = new Color(BadColor.r, BadColor.g, BadColor.b, 0.5f);
             _mark.sprite = AnswerMarkSprite.Cross();
             _mark.gameObject.SetActive(true);
@@ -725,7 +725,7 @@ namespace NeuroVida.Games.Disparate
         {
             BreakStreak();
             WoodCore.Play(WoodSfx.Wrong);                               // se perdió la señal
-            _toast.Show("Se perdió la señal", "Sigue la próxima frase", AmberColor, 0.9f, sound: false);                         // ya suena el Wrong: el aviso va mudo
+            _hud.Announce("Se perdió la señal", AnnounceTone.Error, subtitle: "Sigue la próxima frase", sound: false);                         // ya suena el Wrong: el aviso va mudo
             // la frase se disuelve en estática (sin castigo extra)
             BuildDecode(spec.S.f);
             float dur = GameFeel.ReduceMotion ? 0.15f : 0.45f;
@@ -849,7 +849,7 @@ namespace NeuroVida.Games.Disparate
         private IEnumerator PerfectTransmission()
         {
             // 10 seguidas: la antena se enciende (× 1,5) y una aurora suave cruza el cielo
-            _toast.Show("¡Transmisión perfecta!", "Antena encendida: 50 % más de puntos", AmberColor, 1.4f, sound: false);       // ya suena su Streak: el aviso va mudo
+            _hud.Announce("¡Transmisión perfecta!", AnnounceTone.Milestone, subtitle: "Antena encendida: 50 % más puntos", sound: false);       // ya suena su Streak: el aviso va mudo
             WoodCore.Play(WoodSfx.Streak);                              // un hito de racha (× 1,5), no un nivel: solo el Streak (se quitó el LevelUp que sonaba encima)
             if (GameFeel.ReduceMotion) yield break;
             float t = 0f;
@@ -1316,8 +1316,6 @@ namespace NeuroVida.Games.Disparate
             _fxRect = Layer(_play, "Fx");
 
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
-            _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetBelowHud();
             SetUpTutorial();
 
             var flashGo = new GameObject("Flash");

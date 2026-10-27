@@ -13,6 +13,7 @@ namespace NeuroVida.Games.Shared
     /// - <b>Fila 2</b>: la fila de CONSIGNA, una losa «noche» del kit de 16-17 dp con lo que hay que hacer («Lanza el cohete que se enciende», «Responde: TINTA»), un ícono opcional a la izquierda y una FASE opcional a la derecha («Mira el rastro» → «Repítelo»).
     ///   Un solo lugar, siempre el mismo (reconocer, no recordar): los juegos que la ponían flotando, al pie o en un panel la mueven aquí. Una sola línea: el texto se achica hasta 16 dp y no se parte (los textos son cortos a propósito).
     /// - Los aciertos seguidos ya no son una píldora grande siempre a la vista (casi siempre decía «0»): un chip «×4 seguidos» que aparece SOLO desde 2, justo debajo del marcador a la derecha, rebota al crecer y en cada múltiplo de 5 suelta destellos.
+    /// - Los AVISOS del juego («¡Un paso más!», «Con calma», «Era su espejo»…) los dice la misma fila de consigna (<see cref="Announce"/>, Tarea 179): se tiñe con el tono, cambia su ícono, dice el aviso en una línea y vuelve sola; no hay carteles flotando.
     /// Subir de nivel hace saltar el chip de avance (con una chispa redonda de sol). Mismo alto que antes (190): no mueve nada de abajo.
     /// </summary>
     public sealed class GameHud
@@ -59,6 +60,7 @@ namespace NeuroVida.Games.Shared
             Rect.pivot = new Vector2(0.5f, 1f);
             Rect.sizeDelta = new Vector2(0f, Height);
             Rect.anchoredPosition = Vector2.zero;
+            go.AddComponent<AnnounceTicker>().Hud = this;                    // el reloj de los avisos vive en el marcador, no en el juego: si el juego detiene sus corrutinas, la fila igual vuelve a su consigna
 
             // fila 1: el título a 18 dp (54 unidades); se achica hasta 16 dp solo si el chip de avance le deja poco lugar (el título más largo, «En la punta de la lengua»)
             _titleText = MakeText(Rect, "Title", 54, TextAnchor.MiddleLeft, Color.white, 3f, 0.45f);
@@ -272,6 +274,13 @@ namespace NeuroVida.Games.Shared
         /// </summary>
         public void SetPrompt(string text, Sprite icon = null, int sizeU = PromptSize)
         {
+            if (_announcing)
+            {
+                // la consigna manda (Tarea 179): lo mismo que ya dice no interrumpe al aviso; una consigna distinta lo termina y ocupa su lugar
+                bool hasI = icon != null && !string.IsNullOrEmpty(text);
+                if ((text ?? "") == _snapText && (hasI ? icon : null) == (_snapIconOn ? _snapIcon : null)) return;
+                EndAnnounce();
+            }
             if (_promptText.fontSize != sizeU) _promptText.fontSize = sizeU;
             _promptText.resizeTextMaxSize = sizeU;
             _promptText.text = text ?? "";
@@ -298,7 +307,9 @@ namespace NeuroVida.Games.Shared
         }
 
         /// <summary>¿Cabe <paramref name="text"/> en una línea de la fila de consigna a 16 dp (la letra más chica que permite)? Con el ícono y la fase que haya puestos.</summary>
-        public bool FitsOneLine(string text, bool withIcon)
+        public bool FitsOneLine(string text, bool withIcon) => LineFits(text, withIcon, _phaseText.gameObject.activeSelf);
+
+        private bool LineFits(string text, bool withIcon, bool withPhase)
         {
             bool best = _promptText.resizeTextForBestFit;
             int size = _promptText.fontSize;
@@ -313,13 +324,18 @@ namespace NeuroVida.Games.Shared
             _promptText.fontSize = size;
             _promptText.resizeTextForBestFit = best;
             float left = withIcon ? 26f + 60f + 14f : 28f;
-            float right = 24f + (_phaseText.gameObject.activeSelf ? Mathf.Ceil(_phaseText.preferredWidth) + 28f : 0f);
+            float right = 24f + (withPhase ? Mathf.Ceil(_phaseText.preferredWidth) + 28f : 0f);
             return width <= 1080f - 2f * _margin - left - right;
         }
 
         /// <summary>Solo el ícono de la consigna (la regla de Tinta cambia de color y de ícono con cada palabra).</summary>
         public void SetPromptIcon(Sprite icon, Color color)
         {
+            if (_announcing)
+            {
+                if (icon == (_snapIconOn ? _snapIcon : null) && (icon == null || color == _snapIconColor)) return;
+                EndAnnounce();
+            }
             _promptIcon.gameObject.SetActive(icon != null);
             if (icon != null) { _promptIcon.sprite = icon; _promptIcon.color = color; }
             LayoutPrompt();
@@ -328,6 +344,13 @@ namespace NeuroVida.Games.Shared
         /// <summary>La fase de la consigna, a la derecha de la misma fila («Mira el rastro» → «Repítelo»). Vacío = sin fase.</summary>
         public void SetPhase(string text)
         {
+            if (_announcing)
+            {
+                // la fase (el reloj del Contrarreloj, «40 rescatadas», lo que dice Satélites) es información de apoyo, no la consigna: se guarda y vuelve con la fila; no termina el aviso
+                _snapPhaseOn = !string.IsNullOrEmpty(text);
+                _snapPhase = text ?? "";
+                return;
+            }
             bool show = !string.IsNullOrEmpty(text);
             _phaseText.gameObject.SetActive(show);
             if (show) _phaseText.text = text;
@@ -336,12 +359,16 @@ namespace NeuroVida.Games.Shared
         }
 
         /// <summary>La consigna salta un poco y se enciende un momento (un sector nuevo, una misión nueva): sin «quitar animaciones», solo el color.</summary>
-        public void PulsePrompt() => _runner.StartCoroutine(PromptPulse());
+        public void PulsePrompt()
+        {
+            if (!_announcing) _runner.StartCoroutine(PromptPulse());                                   // mientras la fila habla, el aviso ya es el destello
+        }
 
         /// <summary>El color del cuerpo de la fila de consigna (la losa «noche» del kit): contra él se mide que lo que va en color se lea (≥ 4,5:1). Medido sobre una captura real.</summary>
         public static readonly Color RowBody = new Color32(0x2F, 0x27, 0x5F, 0xFF);
 
-        public string PromptText => _promptText.text;
+        /// <summary>La consigna (mientras la fila habla, la de siempre: la que vuelve, no la del aviso).</summary>
+        public string PromptText => _announcing ? _snapText : _promptText.text;
         /// <summary>El chip de «seguidos» (null en los juegos sin racha): su caja, para que la guardia del smoke mida que no tapa nada.</summary>
         public RectTransform StreakRect => _streakChip;
         public bool HasStreakChip => _streakChip != null;
@@ -368,7 +395,7 @@ namespace NeuroVida.Games.Shared
 
         /// <summary>Las zonas que el juego declaró con <see cref="AvoidForStreak"/> (para la guardia del smoke y las pruebas).</summary>
         public System.Collections.Generic.IReadOnlyList<RectTransform> StreakAvoidZones => _avoidForStreak;
-        public string PhaseText => _phaseText.gameObject.activeSelf ? _phaseText.text : "";
+        public string PhaseText => _announcing ? (_snapPhaseOn ? _snapPhase : "") : _phaseText.gameObject.activeSelf ? _phaseText.text : "";
         public bool StreakVisible => _streakChip != null && _streakChip.gameObject.activeSelf;
         public string StreakText => _streakText != null ? _streakText.text : "";
 
@@ -451,6 +478,192 @@ namespace NeuroVida.Games.Shared
         /// <summary>Aire entre una zona registrada con <see cref="AvoidForStreak"/> y el chip que se coloca justo debajo de ella (unidades), de lo preferido a lo mínimo.</summary>
         private static readonly float[] StreakZoneGaps = { 12f, 4f, 0f };
 
+        // ------------------------------------------------------------------ los avisos: la fila habla (Tarea 179)
+
+        /// <summary>Cuánto se ve un aviso de una línea (segundos): lo que dura hoy un aviso corto; con subtítulo, <see cref="SubtitleSeconds"/>.</summary>
+        public const float LineSeconds = 1.2f;
+        /// <summary>Cuánto se ve la segunda parte (el subtítulo) de un aviso en dos tiempos, o la línea con subtítulo.</summary>
+        public const float SubtitleSeconds = 2f;
+        /// <summary>Lo que dura la entrada y la vuelta de la consigna (con «quitar animaciones» no hay transición, pero se leen los mismos segundos).</summary>
+        public const float AnnounceFade = 0.2f;
+        /// <summary>Lo que separa el aviso de su subtítulo cuando caben en una línea.</summary>
+        public const string SubtitleJoin = " · ";
+
+        private bool _announcing;
+        private AnnounceTone _annTone, _annMainTone, _annSubTone;          // _annTone = el de la parte que se ve ahora
+        private string[] _annBeats;
+        private float[] _annHolds;
+        private int _annIndex;
+        private float _annT, _annFadeBack;
+        // lo que la fila decía antes de hablar (vuelve sola)
+        private string _snapText = "", _snapPhase = "";
+        private int _snapSize = PromptSize;
+        private Sprite _snapIcon;
+        private Color _snapIconColor = Color.white;
+        private bool _snapIconOn, _snapPhaseOn;
+
+#if UNITY_EDITOR
+        /// <summary>SOLO EN EL EDITOR (el smoke lo lee y lo vacía): los avisos mostrados y los que un aviso nuevo pisó antes de que se leyera su primera línea («texto → texto nuevo (tono)»).</summary>
+        public static int AnnouncesShown;
+        public static readonly System.Collections.Generic.List<string> AnnouncesCutShort = new System.Collections.Generic.List<string>();
+#endif
+
+        /// <summary>¿La fila está hablando (un aviso a la vista)?</summary>
+        public bool Announcing => _announcing;
+        /// <summary>El texto que dice la fila ahora mismo (el aviso, o la consigna si no habla). Para las pruebas y el smoke.</summary>
+        public string RowText => _promptText.text;
+        /// <summary>El tono del aviso en curso (solo válido mientras <see cref="Announcing"/>).</summary>
+        public AnnounceTone AnnounceToneNow => _annTone;
+        /// <summary>El ícono que lleva la fila ahora mismo (el glifo del tono mientras habla).</summary>
+        public Sprite RowIcon => _promptIcon.gameObject.activeSelf ? _promptIcon.sprite : null;
+        /// <summary>La fila de consigna: el texto, para medir su letra y su contraste.</summary>
+        public Text RowTextComponent => _promptText;
+
+        /// <summary>
+        /// El aviso de un juego (Tarea 179, «La fila habla»): la fila de consigna, que ya está en los 17 juegos, se tiñe con el tono (lima, sol, lila, coral o crema), cambia su ícono por la forma del tono y dice el aviso en UNA línea con la letra en tinta; después vuelve sola a su consigna.
+        /// Ningún aviso flota ni tapa nada, y hay un solo lugar donde mirar. Un aviso nuevo reemplaza al anterior (nunca dos a la vez). <paramref name="seconds"/> es cuánto se ve (0 = por omisión <see cref="LineSeconds"/>, o <see cref="SubtitleSeconds"/> con subtítulo).
+        /// Si «texto · subtítulo» no cabe en una línea (a 16 dp), se dicen en DOS tiempos en la misma fila: el texto y después el subtítulo (<paramref name="seconds"/> es entonces el total mínimo). Si el juego cambia su consigna mientras la fila habla, la consigna manda y el aviso termina.
+        /// <paramref name="subtitleTone"/>: el tono del subtítulo cuando se dice en su propio tiempo (por omisión, el mismo): la pista de Engranajes es ayuda, no un segundo error, y va en crema con el punto.
+        /// <paramref name="sound"/>: false = este aviso es silencioso (el juego ya suena su propio sonido con él; <see cref="WoodCore.NoticeUnlessCovered"/>).
+        /// </summary>
+        public void Announce(string text, AnnounceTone tone, float seconds = 0f, string subtitle = null, bool sound = true, AnnounceTone? subtitleTone = null)
+        {
+            if (string.IsNullOrEmpty(text)) return;
+            var beats = AnnounceBeats(text, subtitle);
+            var holds = new float[beats.Length];
+            if (beats.Length == 1) holds[0] = seconds > 0f ? seconds : string.IsNullOrEmpty(subtitle) ? LineSeconds : SubtitleSeconds;
+            else { holds[0] = LineSeconds; holds[1] = Mathf.Max(SubtitleSeconds, seconds - LineSeconds); }
+
+            if (!_announcing) Snapshot();
+#if UNITY_EDITOR
+            else if (_annIndex == 0 && _annT < LineSeconds) AnnouncesCutShort.Add(_annBeats[0] + " → " + beats[0] + " (" + _annTone + " → " + tone + ")");
+            AnnouncesShown++;
+#endif
+            _announcing = true;
+            _annMainTone = _annTone = tone;
+            _annSubTone = subtitleTone ?? tone;
+            _annBeats = beats;
+            _annHolds = holds;
+            _annIndex = 0;
+            _annT = 0f;
+            _annFadeBack = 0f;
+            ShowBeat();
+            if (sound && GameFeel.SoundOn) _runner.StartCoroutine(NoticeNextFrame(Time.realtimeSinceStartup));
+        }
+
+        /// <summary>
+        /// Las partes en que se dice un aviso: «texto · subtítulo» en una sola línea si cabe a 16 dp junto al ícono; si no, el texto y después el subtítulo (dos tiempos). Sin subtítulo, solo el texto.
+        /// </summary>
+        public string[] AnnounceBeats(string text, string subtitle)
+        {
+            if (string.IsNullOrEmpty(subtitle)) return new[] { text };
+            string joined = text + SubtitleJoin + subtitle;
+            return LineFits(joined, true, false) ? new[] { joined } : new[] { text, subtitle };
+        }
+
+        /// <summary>¿Cabe <paramref name="beat"/> en la fila, en una línea a 16 dp, con el ícono del tono y sin la fase (como se dice un aviso)?</summary>
+        public bool AnnounceFits(string beat) => LineFits(beat, true, false);
+
+        /// <summary>Termina el aviso de una vez y la fila vuelve a su consigna (al abrir la pausa o «Cómo se juega», o al empezar otra partida).</summary>
+        public void CancelAnnounce()
+        {
+            if (_announcing) EndAnnounce(fade: false);
+            _annFadeBack = 0f;
+            SetRowAlpha(1f);
+        }
+
+        /// <summary>El reloj del aviso (lo llama el marcador cada cuadro; las pruebas lo llaman a mano con el tiempo que quieran).</summary>
+        public void AdvanceAnnounce(float dt)
+        {
+            if (_annFadeBack > 0f)
+            {
+                _annFadeBack -= dt;
+                SetRowAlpha(_annFadeBack <= 0f ? 1f : 1f - _annFadeBack / AnnounceFade);
+            }
+            if (!_announcing) return;
+            _annT += dt;
+            float fade = Motion.Decorative ? AnnounceFade : 0f;
+            SetRowAlpha(fade > 0f ? Mathf.Clamp01(_annT / fade) : 1f);
+            PromptRect.localScale = Vector3.one * (fade > 0f && _annT < fade ? Mathf.Lerp(1.05f, 1f, UiFx.EaseOutCubic(_annT / fade)) : 1f);
+            if (_annT < _annHolds[_annIndex] + fade) return;
+            if (_annIndex + 1 < _annBeats.Length)
+            {
+                _annIndex++;
+                _annT = 0f;
+                _annTone = _annSubTone;
+                ShowBeat();
+                return;
+            }
+            EndAnnounce(fade: true);
+        }
+
+        private void Snapshot()
+        {
+            _snapText = _promptText.text ?? "";
+            _snapSize = _promptText.fontSize;
+            _snapIconOn = _promptIcon.gameObject.activeSelf;
+            _snapIcon = _promptIcon.sprite;
+            _snapIconColor = _promptIcon.color;
+            _snapPhaseOn = _phaseText.gameObject.activeSelf;
+            _snapPhase = _phaseText.text ?? "";
+        }
+
+        /// <summary>Pone la parte actual del aviso en la fila: el tono, el glifo, el texto en tinta; la fase a la derecha se oculta mientras habla.</summary>
+        private void ShowBeat()
+        {
+            _promptText.fontSize = PromptSize;
+            _promptText.resizeTextMaxSize = PromptSize;
+            _promptText.text = _annBeats[_annIndex];
+            _promptText.color = NeuroStyle.Ink;
+            _promptIcon.gameObject.SetActive(true);
+            _promptIcon.sprite = AnnounceStyle.Glyph(_annTone);
+            _promptIcon.color = NeuroStyle.Ink;
+            _phaseText.gameObject.SetActive(false);
+            if (_promptSlab != null) PlasticSlab.Set(_promptSlab, SlabSize.Chip, AnnounceStyle.Slab(_annTone));
+            else _promptBg.color = Color.Lerp(NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.9f), AnnounceStyle.Fill(_annTone), 0.6f);
+            PromptRect.gameObject.SetActive(true);
+            LayoutPrompt();
+            SetRowAlpha(Motion.Decorative ? 0f : 1f);
+            PromptRect.localScale = Vector3.one * (Motion.Decorative ? 1.05f : 1f);
+        }
+
+        /// <summary>La fila vuelve a lo que decía antes: su texto, su ícono, su fase y su losa «noche».</summary>
+        private void EndAnnounce(bool fade = false)
+        {
+            _announcing = false;
+            _promptText.fontSize = _snapSize;
+            _promptText.resizeTextMaxSize = _snapSize;
+            _promptText.text = _snapText;
+            _promptText.color = NeuroStyle.Cream;
+            _promptIcon.gameObject.SetActive(_snapIconOn);
+            _promptIcon.sprite = _snapIcon;
+            _promptIcon.color = _snapIconColor;
+            _phaseText.gameObject.SetActive(_snapPhaseOn);
+            _phaseText.text = _snapPhase;
+            if (_promptSlab != null) PlasticSlab.Set(_promptSlab, SlabSize.Chip, SlabTone.Night);
+            else _promptBg.color = NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.9f);
+            PromptRect.localScale = Vector3.one;
+            RefreshRow();
+            LayoutPrompt();
+            _annFadeBack = fade && Motion.Decorative ? AnnounceFade : 0f;
+            SetRowAlpha(_annFadeBack > 0f ? 0f : 1f);
+        }
+
+        /// <summary>La opacidad de lo que dice la fila (el texto, el ícono y la fase): la entrada del aviso y la vuelta de la consigna se hacen con ella.</summary>
+        private void SetRowAlpha(float a)
+        {
+            var c = _promptText.color; c.a = a; _promptText.color = c;
+            c = _promptIcon.color; c.a = a; _promptIcon.color = c;
+            c = _phaseText.color; c.a = a; _phaseText.color = c;
+        }
+
+        /// <summary>Un cuadro después de mostrarse: si en ese rato no sonó nada más por el altavoz del juego, suena el aviso (así da lo mismo si el juego llama a su sonido antes o después del aviso).</summary>
+        private static IEnumerator NoticeNextFrame(float shownAt)
+        {
+            yield return null;
+            WoodCore.NoticeUnlessCovered(shownAt);
+        }
+
         // ------------------------------------------------------------------ animaciones
 
         private IEnumerator CountUp()
@@ -528,19 +741,27 @@ namespace NeuroVida.Games.Shared
                 PlasticSlab.Set(_promptSlab, SlabSize.Chip, SlabTone.Sky);
                 float hold = Motion.Decorative ? 0.7f : 0.5f, waited = 0f;
                 while (waited < hold) { waited += GameClock.DeltaTime; yield return null; }
-                PlasticSlab.Set(_promptSlab, SlabSize.Chip, SlabTone.Night);
+                if (!_announcing) PlasticSlab.Set(_promptSlab, SlabSize.Chip, SlabTone.Night);          // si la fila habla, su tono manda
                 yield break;
             }
             var baseColor = NeuroStyle.WithAlpha(NeuroStyle.Surface, 0.9f);
             _promptBg.color = Color.Lerp(baseColor, NeuroStyle.Sky, 0.35f);
             float held = 0f;
             while (held < 0.5f) { held += GameClock.DeltaTime; yield return null; }
-            _promptBg.color = baseColor;
+            if (!_announcing) _promptBg.color = baseColor;
         }
 
         /// <summary>"1.250 pts" (separador de miles con punto, como se escribe en español).</summary>
         // Sin CultureInfo("es-ES"): en IL2CPP los datos de cultura pueden venir recortados y lanzar excepción.
         private static string FormatPoints(int points) =>
             points.ToString("#,0", System.Globalization.CultureInfo.InvariantCulture).Replace(',', '.') + " pts";
+    }
+
+    /// <summary>El reloj de los avisos (Tarea 179): vive en el objeto del marcador y avanza con el tiempo del juego (se detiene con la pausa). Así, aunque un juego detenga todas sus corrutinas, la fila vuelve sola a su consigna.</summary>
+    internal sealed class AnnounceTicker : MonoBehaviour
+    {
+        public GameHud Hud;
+
+        private void Update() => Hud?.AdvanceAnnounce(GameClock.DeltaTime);
     }
 }

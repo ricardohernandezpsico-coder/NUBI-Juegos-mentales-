@@ -77,7 +77,6 @@ namespace NeuroVida.Games.Freno
         private Text _prompt, _stopText, _gaugeValue;
         private readonly List<Lane> _lanes = new List<Lane>();
         private readonly List<Image> _stars = new List<Image>();
-        private Toast _toast;
         private ExitButton _exit;
         private GameHud _hud;
         private CountdownScreen _countdown;
@@ -204,7 +203,7 @@ namespace NeuroVida.Games.Freno
             if (pads != _lanesShown)
             {
                 SetupLanes(pads);
-                if (_trials > 0) _toast.Show("¡Nueva plataforma!", "Ahora son " + pads, GoodColor, 1.0f);
+                if (_trials > 0) _hud.Announce("¡Nueva plataforma!", AnnounceTone.Step, subtitle: "Ahora son " + pads);
                 yield return StartCoroutine(Wait(0.4f));
             }
             int deadline = BrakeContract.DeadlineMs(level, Precision);
@@ -286,16 +285,16 @@ namespace NeuroVida.Games.Freno
                 else yield return StartCoroutine(TooSlow(L));
                 if (change == DdaChange.Up)
                 {
-                    _toast.Show("¡Más rápido!", "Menos tiempo para lanzar", GoodColor, 0.9f);
+                    _hud.Announce("¡Más rápido!", AnnounceTone.Step, subtitle: "Menos tiempo para lanzar");
                     GameFeel.LevelUp();
                 }
-                else if (_dda.Struggling) _toast.Show("Con calma", "Mira bien cuál se enciende", AmberColor, 0.9f);
+                else if (_dda.Struggling) _hud.Announce("Con calma", AnnounceTone.Pace, subtitle: "Mira bien cuál se enciende");
 
                 // ¿Empezó a esperar el alto? Eso arruina la medida: aviso amable (como mucho cada 10 lanzamientos).
                 if (BrakeContract.IsWaiting(_goRts) && _trials - _warnedAt >= 10)
                 {
                     _warnedAt = _trials;
-                    _toast.Show("¡No esperes al ALTO!", "Lanza apenas se encienda", AmberColor, 1.4f);
+                    _hud.Announce("¡No esperes al ALTO!", AnnounceTone.Info, subtitle: "Lanza apenas se encienda");
                 }
             }
             _hud.SetStreak(_streak);
@@ -320,7 +319,7 @@ namespace NeuroVida.Games.Freno
             StartCoroutine(UiFx.Shake(6f, 0.18f, _lanesRoot));
             if (_launched % 10 == 0)
             {
-                _toast.Show($"¡{_launched} lanzamientos!", "Tu cielo se llena de estrellas", NeuroStyle.Sun, 1.0f);
+                _hud.Announce($"¡{_launched} lanzamientos!", AnnounceTone.Milestone, subtitle: "Tu cielo se llena de estrellas");
                 GameFeel.LevelUp();
             }
             yield return StartCoroutine(Wait(0.35f));
@@ -364,7 +363,7 @@ namespace NeuroVida.Games.Freno
             StartCoroutine(UiFx.RingBurst(_fxRect, LocalIn(_fxRect, _stopRect), GoodColor, 200f, 520f, 0.45f));
             if (record)
             {
-                _toast.Show("¡Nuevo límite!", "Frenaste con el alto más tarde que nunca", NeuroStyle.Sun, 1.1f);
+                _hud.Announce("¡Nuevo límite!", AnnounceTone.Milestone, subtitle: "Frenaste con el alto más tardío");
                 GameFeel.LevelUp();
             }
             yield return StartCoroutine(Wait(0.5f));
@@ -806,10 +805,6 @@ namespace NeuroVida.Games.Freno
             _fxRect = Layer(_play, "Fx");
 
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
-            _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetBelowHud();
-            _toast.KeepOut(_stopRect);                      // el lugar de la señal ALTO, aunque en este momento no se vea
-            _toast.KeepOut(_prompt.rectTransform);          // y el letrero de las instrucciones
             BuildTutorial(_safe, GameHud.Height + 10f, "Freno de Emergencia", "Lanza el cohete que se enciende. Si aparece ¡ALTO!, no toques.",
                 captionFromBottomU: 700f);
 
@@ -1136,7 +1131,7 @@ namespace NeuroVida.Games.Freno
             _phase = Phase.Idle;
             _tapped = false;
             SetPrompt("", Color.white);
-            _toast.Hide();
+            _hud.CancelAnnounce();
             ClearTransient();
         }
 

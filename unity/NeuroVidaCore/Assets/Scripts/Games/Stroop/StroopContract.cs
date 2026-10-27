@@ -99,6 +99,8 @@ namespace NeuroVida.Games.Stroop
         public static readonly string[] Names = { "ROJO", "AZUL", "AMARILLO", "BLANCO" };
         /// <summary>El nombre en minúscula, para las frases de «La tinta era azul» / «La palabra decía rojo».</summary>
         public static readonly string[] LowerNames = { "rojo", "azul", "amarillo", "blanco" };
+        /// <summary>Lo mismo en femenino, para «La tinta era roja»: la tinta es femenina («azul» no cambia). «La palabra decía rojo» sigue en masculino: nombra la palabra.</summary>
+        public static readonly string[] InkNames = { "roja", "azul", "amarilla", "blanca" };
 
         /// <summary>Las 4 tintas. Verificadas con <c>python tools/paleta_daltonismo.py C93C3C 4A86E8 F2CC1D F4F4F4 --fondo 141B36</c> (regla: diferencia ≥ 20 en visión
         /// típica, protanopía y deuteranopía). Se quitaron VERDE y MORADO: con deuteranopía el azul y el morado quedaban a 0,9 (no se distinguen).</summary>
@@ -271,7 +273,7 @@ namespace NeuroVida.Games.Stroop
 
         /// <summary>«La tinta era azul» / «La palabra decía rojo»: lo que explica Nubi al fallar, sin culpa.</summary>
         public static string Explain(StroopTrial trial) =>
-            trial.Rule == StroopRule.Ink ? "La tinta era " + LowerNames[trial.InkIndex] : "La palabra decía " + LowerNames[trial.WordIndex];
+            trial.Rule == StroopRule.Ink ? "La tinta era " + InkNames[trial.InkIndex] : "La palabra decía " + LowerNames[trial.WordIndex];
 
         /// <summary>«Responde: TINTA» / «Responde: PALABRA» (la cinta fija de arriba).</summary>
         /// <summary>El color de la palabra de la regla en la fila de consigna del marcador («Responde: <b>TINTA</b>»): el de su orilla aclarado hacia el blanco, para leerse (≥ 4,5:1) sobre la losa «noche» (Tarea 127).</summary>

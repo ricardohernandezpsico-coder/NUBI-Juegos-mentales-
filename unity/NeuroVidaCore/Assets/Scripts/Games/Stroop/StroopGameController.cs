@@ -95,7 +95,6 @@ namespace NeuroVida.Games.Stroop
         private Coroutine _markFade;
         private const float MarkDp = 40f;
         private PhasePill _pill;
-        private Toast _toast;
         private ExitButton _exit;
         private GameHud _hud;
         private CountdownScreen _countdown;
@@ -215,14 +214,14 @@ namespace NeuroVida.Games.Stroop
                 yield return StartCoroutine(ResolveTrial(correct));
                 if (_tt != null)
                 {
-                    if (stepUp) { _toast.Show("¡Un paso más!", _tt.Level == 3 ? "Ahora llegan por las dos orillas" : "Más difícil", GoodColor, 1.0f); GameFeel.LevelUp(); }
+                    if (stepUp) { _hud.Announce("¡Un paso más!", AnnounceTone.Step, subtitle: _tt.Level == 3 ? "Ahora llegan por las dos orillas" : "Más difícil"); GameFeel.LevelUp(); }
                 }
                 else if (change == DdaChange.Up)
                 {
-                    _toast.Show("¡Un paso más!", _dda.Level == 3 ? "Ahora llegan por las dos orillas" : "Más difícil", GoodColor, 1.0f);
+                    _hud.Announce("¡Un paso más!", AnnounceTone.Step, subtitle: _dda.Level == 3 ? "Ahora llegan por las dos orillas" : "Más difícil");
                     GameFeel.LevelUp();
                 }
-                else if (change == DdaChange.Down || _dda.Struggling) _toast.Show("Con calma", "Ajustamos la dificultad", AmberColor, 1.0f);
+                else if (change == DdaChange.Down || _dda.Struggling) _hud.Announce("Con calma", AnnounceTone.Pace, subtitle: "Ajustamos la dificultad");
                 _trialIndex++;
             }
 
@@ -303,7 +302,7 @@ namespace NeuroVida.Games.Stroop
                     StartCoroutine(UiFx.RingBurst(_fxRect, LocalIn(_fxRect, _buttonRects[_answerIndex]), Color.white, 120f, 420f, 0.45f));
                 }
                 if (_streak == 4 || _streak == 8 || _streak == 12)
-                    _toast.Show($"{_streak} seguidos", "Sigue así", GoodColor, 0.9f);
+                    _hud.Announce($"{_streak} seguidos", AnnounceTone.Milestone, subtitle: "Sigue así");
 
                 // la tarjeta sale hacia la orilla CONTRARIA a la de la que llegó
                 yield return StartCoroutine(SlideOut(Endless ? StroopContract.RetoSlideOutSeconds : 0.24f, -_shownCardSide));
@@ -314,7 +313,8 @@ namespace NeuroVida.Games.Stroop
                 _streak = 0;
                 SetStreak(0);
                 int correctIndex = _trial.CorrectIndex;
-                _pill.Set(StroopContract.Explain(_trial), AmberColor);
+                if (_tt != null) { _pill.Clear(); _hud.Announce(StroopContract.Explain(_trial), AnnounceTone.Error); }          // Contrarreloj: el error lo dice la fila, en coral y con su equis (Tarea 179); en la partida normal, la píldora de siempre
+                else _pill.Set(StroopContract.Explain(_trial), AmberColor);
                 GameFeel.Wrong();
                 if (_cardBorderSlab != null) PlasticSlab.Set(_cardBorderSlab, SlabSize.Panel, SlabTone.Coral);              // plasticina: borde coral (la losa grande coral, o la mediana si no hay)
                 else _cardBorder.color = new Color(BadColor.r, BadColor.g, BadColor.b, 0.9f);
@@ -527,8 +527,6 @@ namespace NeuroVida.Games.Stroop
 
             _exit = new ExitButton(_safe, this, UnitsPerDp, GameId);
 
-            _toast = new Toast(_safe, this, UnitsPerDp);
-            _toast.SetBelowHud();
             BuildTutorial(_safe, GameHud.Height + 10f, "Tinta o Palabra", "La palabra llega por una orilla: de la TINTA, toca su color; de la PALABRA, lo que dice.",
                 badgeAtBottom: true);
 
@@ -963,7 +961,6 @@ namespace NeuroVida.Games.Stroop
 
             // píldora de estado (y explicación del error) en el hueco entre la tarjeta y los botones; el y se mide desde el centro del Safe Area
             _pill.SetPosition(new Vector2(0f, sh / 2f - (y + pillGap / 2f)));
-            _toast.SetBelowHud(); // los avisos van debajo del marcador, nunca sobre el título
             _lastBlock = block;
             _lastBottom = bottom;
         }
@@ -1087,7 +1084,7 @@ namespace NeuroVida.Games.Stroop
             _acceptInput = false;
             _answerIndex = (int)NoAnswer;
             _cardGroup.alpha = 0f;
-            _toast.Hide();
+            _hud.CancelAnnounce();
             ClearTransient();
         }
 

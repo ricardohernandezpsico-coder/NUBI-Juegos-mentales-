@@ -505,19 +505,19 @@ namespace NeuroVida.Games.Engranajes.Tests
                     Assert.That(fail, Does.StartWith("La ").Or.StartWith("Fallaron "), fail);
                     Assert.LessOrEqual(fail.Length, 48, fail);
                     Assert.LessOrEqual(hint.Length, 46, hint);
-                    if (hint.StartsWith("Tu cambio también movió ")) sawAlso = true;
-                    else if (hint == "Brilla en dorado lo que había que cambiar") { sawNone = true; Assert.AreEqual(0, changes.Count); }
-                    else { sawTrick = true; Assert.AreEqual("Truco: cada engranaje que toca gira al revés", hint); }
+                    if (hint.StartsWith("Tu cambio movió ")) sawAlso = true;
+                    else if (hint == "En dorado, lo que había que cambiar") { sawNone = true; Assert.AreEqual(0, changes.Count); }
+                    else { sawTrick = true; Assert.AreEqual("Truco: el de al lado gira al revés", hint); }
                 }
             Assert.IsTrue(sawAlso && sawNone && sawTrick, "salieron las tres pistas");
             var one = new[] { new PartResult(Station.Turbina, Act.Ccw, false) };
             Assert.AreEqual("La turbina giró al revés de su cartel", EngranajesContract.FailText(one));
             Assert.AreEqual("La carga subió en vez de bajar", EngranajesContract.FailText(new[] { new PartResult(Station.Carga, Act.Up, false) }));
             Assert.AreEqual("La carga bajó en vez de subir", EngranajesContract.FailText(new[] { new PartResult(Station.Carga, Act.Down, false) }));
-            Assert.AreEqual("La compuerta se cerró en vez de abrirse", EngranajesContract.FailText(new[] { new PartResult(Station.Compuerta, Act.Close, false) }));
-            Assert.AreEqual("La compuerta se abrió en vez de cerrarse", EngranajesContract.FailText(new[] { new PartResult(Station.Compuerta, Act.Open, false) }));
+            Assert.AreEqual("La compuerta se cerró, no se abrió", EngranajesContract.FailText(new[] { new PartResult(Station.Compuerta, Act.Close, false) }));
+            Assert.AreEqual("La compuerta se abrió, no se cerró", EngranajesContract.FailText(new[] { new PartResult(Station.Compuerta, Act.Open, false) }));
             Assert.AreEqual("Fallaron la antena y la turbina", EngranajesContract.FailText(new[] { new PartResult(Station.Antena, Act.Cw, false), new PartResult(Station.Turbina, Act.Ccw, false) }));
-            Assert.AreEqual("Fallaron la antena, la carga y la turbina", EngranajesContract.FailText(new[] { new PartResult(Station.Antena, Act.Cw, false), new PartResult(Station.Carga, Act.Up, false), new PartResult(Station.Turbina, Act.Ccw, false) }));
+            Assert.AreEqual("Fallaron antena, carga y turbina", EngranajesContract.FailText(new[] { new PartResult(Station.Antena, Act.Cw, false), new PartResult(Station.Carga, Act.Up, false), new PartResult(Station.Turbina, Act.Ccw, false) }));
         }
 
         [Test]
@@ -620,8 +620,8 @@ namespace NeuroVida.Games.Engranajes.Tests
         {
             Assert.AreEqual("Ya usaste tu cambio", EngranajesContract.BlockedTitle(1));
             Assert.AreEqual("Ya usaste tus 2 cambios", EngranajesContract.BlockedTitle(2));
-            Assert.AreEqual("Toca el motor otra vez para deshacerlo", EngranajesContract.BlockedHint(new[] { EngranajesContract.MotorId }, 1));
-            Assert.AreEqual("Toca la correa dorada otra vez para deshacerlo", EngranajesContract.BlockedHint(new[] { 2 }, 1));
+            Assert.AreEqual("Toca el motor para deshacerlo", EngranajesContract.BlockedHint(new[] { EngranajesContract.MotorId }, 1));
+            Assert.AreEqual("Toca la correa para deshacerlo", EngranajesContract.BlockedHint(new[] { 2 }, 1));
             Assert.AreEqual("Toca uno de ellos para deshacerlo", EngranajesContract.BlockedHint(new[] { 2, EngranajesContract.MotorId }, 2));
             // lo que se lee: cada línea cabe en una pantalla de teléfono (el aviso de abajo parte las líneas largas en dos)
             foreach (var text in new[] { EngranajesContract.BlockedTitle(1), EngranajesContract.BlockedTitle(2), EngranajesContract.BlockedHint(new[] { 2 }, 1), EngranajesContract.BlockedHint(new[] { 2, 3 }, 2) })

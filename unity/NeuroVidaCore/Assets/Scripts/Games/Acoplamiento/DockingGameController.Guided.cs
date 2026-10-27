@@ -29,7 +29,7 @@ namespace NeuroVida.Games.Acoplamiento
             _inputOn = false;
             _phase = Phase.Idle;
             HideModule();
-            SetNotice("", Lime, false);
+            _hud.CancelAnnounce();
             SetFuelVisible(false);
             _hint.gameObject.SetActive(false);
             RefreshLights(Now);
@@ -150,7 +150,7 @@ namespace NeuroVida.Games.Acoplamiento
             _revealing = false;
             _shownAnswer = NoAnswer;
             HideModule();
-            SetNotice("", Lime, false);
+            _hud.CancelAnnounce();
             _guided = false;
             _stationShown = savedShown;
             _streak = savedStreak;

@@ -9,8 +9,8 @@ using NeuroVida.Games.Shared;
 namespace NeuroVida.Games.Tests
 {
     /// <summary>
-    /// Lo que se vio mal en las capturas reales del 8-oct y NO debe volver (Tarea 54): los avisos tapaban el marcador de arriba, la letra bajaba de 14 dp, la fila de puntos de avance se salía de la pantalla y las esquinas del foco
-    /// del tutorial quedaban a la vista en un aviso. Aparte, el smoke mide cada texto visible a 14 dp exactos y que nada tape el HUD (<c>HeadlessPlaymodeSmokeTest</c>); estas pruebas cubren lo que el smoke no alcanza a ver.
+    /// Lo que se vio mal en las capturas reales del 8-oct y NO debe volver (Tarea 54): la letra bajaba de 14 dp, la fila de puntos de avance se salía de la pantalla y las esquinas del foco
+    /// del tutorial quedaban a la vista en un aviso (los avisos ya no flotan: los dice la fila de consigna, Tarea 179; sus pruebas, en <c>HudAnnounceTests</c>). Aparte, el smoke mide cada texto visible a 14 dp exactos y que nada tape el HUD (<c>HeadlessPlaymodeSmokeTest</c>); estas pruebas cubren lo que el smoke no alcanza a ver.
     /// </summary>
     public class HudRulesTests
     {
@@ -39,61 +39,6 @@ namespace NeuroVida.Games.Tests
             var go = new GameObject("Host");
             _made.Add(go);
             return go.AddComponent<Host>();
-        }
-
-        // ------------------------------------------------------------------ avisos debajo del marcador
-
-        [Test]
-        public void Toast_SetBelowHud_PutsTheNoticeBelowTheHud()
-        {
-            var toast = new Toast(NewArea(), NewHost(), 3f);
-            toast.SetBelowHud();
-            Assert.GreaterOrEqual(toast.TopOffsetU, GameHud.Height + Toast.BelowHudGap - 0.01f, "el aviso queda debajo del marcador, no encima del título");
-            toast.SetBelowHud(60f);
-            Assert.AreEqual(GameHud.Height + Toast.BelowHudGap + 60f, toast.TopOffsetU, 0.01f, "el extra baja el aviso todavía más");
-        }
-
-        [Test]
-        public void Toast_AvoidsAKeepOutZone_AndSaysSoWhenThereIsNoRoom()
-        {
-            var area = NewArea(1080f, 2200f);
-            var toast = new Toast(area, NewHost(), 3f);
-            toast.SetBelowHud();
-            var zoneGo = new GameObject("zona", typeof(RectTransform));
-            _made.Add(zoneGo);
-            var zone = (RectTransform)zoneGo.transform;
-            zone.SetParent(area, false);
-            zone.anchorMin = zone.anchorMax = new Vector2(0.5f, 1f);
-            zone.pivot = new Vector2(0.5f, 1f);
-            zone.sizeDelta = new Vector2(1080f, 800f);
-            zone.anchoredPosition = new Vector2(0f, -250f);                   // de 250 a 1050 desde arriba
-            toast.KeepOut(zone);
-            toast.Show("Aviso", "Un subtítulo corto", Color.white, 1f);        // la primera vuelta de su corrutina lo coloca
-            Assert.GreaterOrEqual(toast.PlacedTopU, 1050f - 1f, "el aviso queda DEBAJO de la zona prohibida");
-            Assert.AreEqual(0f, toast.PlacedOverlap, 0.01f, "y sin chocar con nada");
-            zone.sizeDelta = new Vector2(1080f, 2100f);
-            zone.anchoredPosition = new Vector2(0f, -120f);                   // ya no queda franja libre
-            toast.Show("Aviso", "Un subtítulo corto", Color.white, 1f);
-            Assert.Greater(toast.PlacedOverlap, 0f, "sin franja libre lo dice (el aviso espera «entre ensayos»)");
-        }
-
-        [Test]
-        public void EveryGameWithAToast_PutsItBelowTheHud()
-        {
-            var root = Path.Combine(Application.dataPath, "Scripts", "Games");
-            var missing = new List<string>();
-            int games = 0;
-            foreach (var file in Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories))
-            {
-                string rel = file.Substring(root.Length + 1).Replace('\\', '/');
-                if (rel.Contains("/Tests/") || rel.StartsWith("Shared/")) continue;
-                string text = File.ReadAllText(file);
-                if (!text.Contains("new Toast(")) continue;
-                games++;
-                if (!text.Contains("_toast.SetBelowHud(")) missing.Add(rel);
-            }
-            Assert.GreaterOrEqual(games, 10, "se revisaron los juegos con aviso");
-            Assert.IsEmpty(missing, "estos juegos crean un Toast y no lo ponen debajo del marcador (SetBelowHud): " + string.Join(", ", missing));
         }
 
         // ------------------------------------------------------------------ el chip de «seguidos» y las zonas del juego

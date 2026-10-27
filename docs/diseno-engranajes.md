@@ -157,7 +157,7 @@ En «cualquier grupo», el grupo «todas fallan», que se arregla con el motor, 
   - Con todas las llaves usadas, tocar el motor o una correa NO cambiados **no cambia nada** (`EngranajesContract.Touch` → `Blocked`).
   - Sobre lo tocado aparece ~1 s la **moneda coral con la aspa** (la de lo común), con una sacudida corta de 0,3 s (con «quitar animaciones» solo aparece y se apaga).
   - El contador de llaves **late una vez** (el color; el tamaño solo con movimiento), suena el **golpe suave** de «no» (el sordo del cartel que falla, a 0,4) y vibra corto si la vibración está activa.
-  - El aviso de abajo (el mismo de «La turbina giró al revés…») nombra lo cambiado: «Ya usaste tu cambio» y, debajo, «Toca el motor otra vez para deshacerlo» o «Toca la correa dorada otra vez para deshacerlo»; con dos llaves, «Ya usaste tus 2 cambios» y «Toca uno de ellos para deshacerlo».
+  - El aviso de abajo (el mismo de «La turbina giró al revés…») nombra lo cambiado: «Ya usaste tu cambio» y, debajo, «Toca el motor para deshacerlo» (Tarea 179; antes «…otra vez para deshacerlo») o «Toca la correa para deshacerlo»; con dos llaves, «Ya usaste tus 2 cambios» y «Toca uno de ellos para deshacerlo».
   - **No es un error**: no cuenta como fallo, no toca el DDA ni las medidas y no agrega campos de telemetría. La solución guardada nunca pide más cambios que llaves, así que la regla no deja a nadie sin salida (lo vigila `EveryStageGeneratedWithKeys_CanBeSolvedWithoutNeedingToMoveAKey`).
 - **Contador de cambios**, abajo a la izquierda: «1 cambio» o «2 cambios», con llaves inglesas que se llenan de dorado al
   usarlas.
@@ -216,12 +216,12 @@ En «cualquier grupo», el grupo «todas fallan», que se arregla con el motor, 
   1. Lo que falló, una de estas frases:
      - «La turbina giró al revés de su cartel»;
      - «La carga bajó en vez de subir»;
-     - «La compuerta se cerró en vez de abrirse»;
+     - «La compuerta se cerró, no se abrió» (antes «…en vez de abrirse»);
      - «Fallaron la antena y la turbina».
   2. La pista, una de estas frases:
-     - si tu cambio rompió una pieza que estaba bien: «Tu cambio también movió la antena»;
-     - si no cambiaste nada: «Brilla en dorado lo que había que cambiar»;
-     - en otro caso: «Truco: cada engranaje que toca gira al revés».
+     - si tu cambio rompió una pieza que estaba bien: «Tu cambio movió la antena» (antes «Tu cambio también movió la antena»: Tarea 179, una línea de la fila cabe unas 36 letras);
+     - si no cambiaste nada: «En dorado, lo que había que cambiar» (antes «Brilla en dorado lo que había que cambiar»);
+     - en otro caso: «Truco: el de al lado gira al revés» (antes «Truco: cada engranaje que toca gira al revés»; «si se tocan» se leía como «si tú los tocas»).
 - La siguiente máquina llega a los 4,8 s del veredicto si hubo error, y a los 1,9 s si fue acierto.
 
 ## 8. El cohete (sin cambios)
@@ -416,3 +416,7 @@ Ricardo probó la Tarea 164 en el teléfono: colores, mesa y botones bien y el j
 | **El cartel «Motor»** (tapaba media rueda y la consigna dice «Toca el motor») | Ya no cuelga 16 dp bajo el centro del motor: `EngranajesLayout.MotorPillCenter(Machine)` busca, en una rejilla de 2 dp, el lugar más cercano al motor (mejor debajo que arriba: ahí cae la flecha del giro) **fuera del círculo del motor** (con 4 dp de aire sobre sus dientes), **dentro de la ventanilla** y sin pisar otra rueda, barra dentada, correa ni eje (si ninguno está del todo libre toma el que menos choca, pero nunca sobre el motor). El pulso dorado del motor lo acompaña | `EngranajesLayout`, `Scene.cs` (`ShowMachine`), `Build.cs` (`MotorW/H`) |
 
 **Pruebas** (`EngranajesViewTests`): `TheMotorLabel_NeverCoversTheMotor_IsInsideTheWindow_AndTouchesNoOtherGear_InEveryMachineOfEveryStage` (400 máquinas por cada una de las 12 etapas, 4800: el rótulo queda fuera del círculo del motor, dentro de la ventanilla y sin tocar nada; 0 casos que pisen otra pieza) y `TheWorkshopTable_…` ajustada al reparto (la mesa baja 44 dp como mucho, los botones miden 88 dp en todas las alturas, ≤ 145 dp de cielo vacío a 800 dp y ≥ 40 dp bajo el aviso). Capturas: `bash tools/verificar-todo.sh --capturas engranajes,stroop,piloto,bodega`.
+
+## 19. El aviso va por la fila de consigna (Tarea 179, 26-oct)
+
+La franja crema de abajo (la losa con la moneda ✓ o ✗, §18 parte D) **se retiró**: el aviso de Engranajes lo dice, como en los demás juegos, la fila de consigna del marcador (`GameHud.Announce`, `docs/arquitectura-app.md` § «Los avisos: la fila habla»). `Tell(título, pista, bien)` ahora llama a `Announce`: «¡Todo en orden!» sale en lima con el visto; un fallo sale en coral con la equis y su pista («Truco: el de al lado gira al revés», «En dorado, lo que había que cambiar»…) en el segundo tiempo de la misma fila, **en crema con el punto** (es ayuda, no un segundo error: `subtitleTone`), **3,2 s en total, los mismos que duraba la franja** (la pista ayuda a resolver). Un toque bloqueado («Ya usaste tu cambio» y «Toca … para deshacerlo») también. Se quitaron `BuildSay`, `LayoutSay`, `AnimateSay` y sus campos; el hueco de la franja (`SayTop`/`SayH` en `EngranajesLayout`) sigue reservado abajo, sin nada dibujado. En el tutorial sigue hablando Nubi (el juego no avisa).

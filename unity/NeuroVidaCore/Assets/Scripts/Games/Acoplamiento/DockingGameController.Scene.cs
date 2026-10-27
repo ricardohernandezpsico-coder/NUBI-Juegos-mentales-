@@ -24,8 +24,7 @@ namespace NeuroVida.Games.Acoplamiento
         private bool _poseAligned, _poseSeated;
         private int _moduleNo;
         private float _fuelFraction = 1f, _timerFraction = 1f;
-        private float _noticeAt = -10f, _noticeLife = 1.3f, _landAt = -10f;
-        private bool _noticeBig;
+        private float _landAt = -10f;
         private Image _timerTrack, _timerFill;
 
         // ------------------------------------------------------------------ reposo y módulo
@@ -42,7 +41,7 @@ namespace NeuroVida.Games.Acoplamiento
             _portMark.gameObject.SetActive(false);
             _portState = PortState.Idle;
             _shownAnswer = NoAnswer;
-            SetNotice("", Lime, false);
+            _hud.CancelAnnounce();
             SetFuelVisible(false);
             _hint.gameObject.SetActive(false);
             _lightGlow.gameObject.SetActive(false);
@@ -89,7 +88,6 @@ namespace NeuroVida.Games.Acoplamiento
             _shownAnswer = NoAnswer;
             _portState = PortState.Idle;
             _moduleRoot.gameObject.SetActive(false);
-            SetNotice("", Lime, false);
             LayoutModule();
             RefreshButtons(Now);
 #if UNITY_EDITOR
@@ -328,7 +326,6 @@ namespace NeuroVida.Games.Acoplamiento
             else _portState = _phase == Phase.Idle ? PortState.Idle : _portState;
             RefreshPort(now);
             RefreshButtons(now);
-            AnimateNotice(now);
             RefreshLights(now);
         }
 
@@ -380,62 +377,6 @@ namespace NeuroVida.Games.Acoplamiento
                 v.Badge.gameObject.SetActive(badge);
                 if (badge) v.Badge.sprite = _shownCorrect ? AnswerMarkSprite.Check() : AnswerMarkSprite.Cross();
             }
-        }
-
-        // ------------------------------------------------------------------ el aviso (la franja de y 118-150: NUNCA sobre el módulo, el puerto ni los botones)
-
-        private void SetNotice(string text, Color color, bool big)
-        {
-            bool has = !string.IsNullOrEmpty(text);
-            _noticeText.text = text ?? "";
-            _noticeText.color = _noticeSlab != null ? Ink : color;
-            if (_noticeSlab != null) PlasticSlab.Set(_noticeSlab, SlabSize.Chip, color == Gold ? SlabTone.Cream : SlabTone.Sun);          // dorada si acertó (o completó el anillo), crema si no
-            _noticeBig = big;
-            _noticeAt = Now;
-            _noticeLife = big ? 1.7f : 1.3f;
-            SetNoticeVisible(has);
-            if (has) LayoutNotice();
-        }
-
-        private void SetNoticeVisible(bool on)
-        {
-            _noticeText.gameObject.SetActive(on);
-            _noticePill.gameObject.SetActive(on);
-            _noticeShadow.gameObject.SetActive(on && _noticeSlab == null);
-            _noticeBorder.gameObject.SetActive(on && _noticeSlab == null);
-        }
-
-        /// <summary>Acomoda el aviso al texto (17 dp, 18 en «¡Anillo completo!»; si no cabe en el ancho, achica hasta 14 dp).</summary>
-        private void LayoutNotice()
-        {
-            float cx = DockingPlan.Width * 0.5f, cy = _plan.StripCy;
-            float fs = _noticeBig ? 18f : 17f;
-            _noticeText.horizontalOverflow = HorizontalWrapMode.Overflow;
-            do
-            {
-                _noticeText.fontSize = Mathf.RoundToInt(fs * _s);
-                if (_noticeText.preferredWidth / _s <= DockingPlan.Width - 56f - 30f) break;
-                fs -= 1f;
-            } while (fs > 14f);
-            _noticeText.fontSize = Mathf.RoundToInt(Mathf.Max(14f, fs) * _s);
-            float w = Mathf.Min(DockingPlan.Width - 56f, _noticeText.preferredWidth / _s + 30f);
-            SetRect(_noticeText.rectTransform, cx, cy + 1f, w, 30f);
-            SetRect(_noticePill.rectTransform, cx, cy, w, _noticeSlab != null ? 30f : 32f);
-            SetRect(_noticeBorder.rectTransform, cx, cy, w + 6f, 38f);
-            SetRect(_noticeShadow.rectTransform, cx, cy + 4f, w + 6f, 38f);
-        }
-
-        private void AnimateNotice(float now)
-        {
-            if (!_noticeText.gameObject.activeSelf) return;
-            float k = (now - _noticeAt) / _noticeLife;
-            if (k >= 1f) { SetNoticeVisible(false); return; }
-            float a = Mathf.Clamp01(Mathf.Min(1f, k * 7f, (1f - k) * 3f));
-            _noticeText.color = new Color(_noticeText.color.r, _noticeText.color.g, _noticeText.color.b, a);
-            if (_noticeSlab != null) _noticeSlab.color = new Color(1f, 1f, 1f, a);
-            _noticePill.color = _noticeSlab != null ? _noticePill.color : new Color(NoticeFill.r, NoticeFill.g, NoticeFill.b, a);
-            _noticeBorder.color = new Color(Ink.r, Ink.g, Ink.b, a);
-            _noticeShadow.color = new Color(Shadow.r, Shadow.g, Shadow.b, Shadow.a * a);
         }
 
         // ------------------------------------------------------------------ la barra de tiempo y el marcador

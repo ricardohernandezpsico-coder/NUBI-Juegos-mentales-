@@ -567,7 +567,7 @@ namespace NeuroVida.Games.Engranajes
         public static string BlockedHint(IReadOnlyList<int> changes, int keys)
         {
             if (keys > 1) return "Toca uno de ellos para deshacerlo";
-            return changes.Count > 0 && changes[0] == MotorId ? "Toca el motor otra vez para deshacerlo" : "Toca la correa dorada otra vez para deshacerlo";
+            return changes.Count > 0 && changes[0] == MotorId ? "Toca el motor para deshacerlo" : "Toca la correa para deshacerlo";
         }
 
         // ------------------------------------------------------------------ dientes que encajan
@@ -698,13 +698,14 @@ namespace NeuroVida.Games.Engranajes
                 switch (f.Station)
                 {
                     case Station.Carga: return f.Got == Act.Up ? "La carga subió en vez de bajar" : "La carga bajó en vez de subir";
-                    case Station.Compuerta: return f.Got == Act.Open ? "La compuerta se abrió en vez de cerrarse" : "La compuerta se cerró en vez de abrirse";
+                    case Station.Compuerta: return f.Got == Act.Open ? "La compuerta se abrió, no se cerró" : "La compuerta se cerró, no se abrió";
                     case Station.Antena: return "La antena giró al revés de su cartel";
                     default: return "La turbina giró al revés de su cartel";
                 }
             }
+            if (fails.Count >= 4) return "Fallaron las cuatro piezas";                       // una línea de la fila cabe unas 36 letras (Tarea 179)
             var names = new List<string>();
-            foreach (var f in fails) names.Add(StationName(f.Station));
+            foreach (var f in fails) names.Add(fails.Count == 2 ? StationName(f.Station) : StationName(f.Station).Substring(3));          // con tres, sin el artículo: «Fallaron antena, carga y turbina»
             string last = names[names.Count - 1];
             names.RemoveAt(names.Count - 1);
             return "Fallaron " + string.Join(", ", names) + " y " + last;
@@ -713,11 +714,11 @@ namespace NeuroVida.Games.Engranajes
         /// <summary>La pista de la segunda línea del aviso de error.</summary>
         public static string HintText(Machine m, PartResult[] results, ICollection<int> changes)
         {
-            if (changes == null || changes.Count == 0) return "Brilla en dorado lo que había que cambiar";
+            if (changes == null || changes.Count == 0) return "En dorado, lo que había que cambiar";
             var before = Results(m, null);
             for (int k = 0; k < results.Length; k++)
-                if (!results[k].Ok && before[k].Ok) return "Tu cambio también movió " + StationName(results[k].Station);
-            return "Truco: cada engranaje que toca gira al revés";
+                if (!results[k].Ok && before[k].Ok) return "Tu cambio movió " + StationName(results[k].Station);
+            return "Truco: el de al lado gira al revés";
         }
 
         /// <summary>El aviso al acertar (rota entre tres; si ya estaba bien y no se tocó nada, uno propio).</summary>
