@@ -93,7 +93,7 @@ class TitulosRubikTest {
   @Test
   fun la_ficha_lleva_su_nombre_y_sus_secciones_en_rubik_y_sus_botones_no() {
     val g = GameRegistry.getById("piloto")!!
-    val data = cardData(g, g.title, null, 400 * 86_400_000L, 0.4f, emptyList(), playsLast14 = 0)
+    val data = cardData(g, g.title, 0.4f)
     rule.setContent {
       NeuroVidaTheme {
         Box(Modifier.width(393.dp)) { GameSheetContent(data, AgeBand.ADULT, expertOpen = false, choice = PlayMode.A_TU_MEDIDA, onChoose = {}, onPlay = {}, timed = true, onChooseTimed = {}, options = androidx.compose.runtime.mutableStateOf(true)) }
@@ -112,7 +112,7 @@ class TitulosRubikTest {
   @Test
   fun sobre_este_juego_lleva_sus_titulos_en_rubik_y_su_boton_no() {
     val g = GameRegistry.getById("radar")!!
-    val data = cardData(g, g.title, null, 400 * 86_400_000L, 0.4f, emptyList(), playsLast14 = 0)
+    val data = cardData(g, g.title, 0.4f)
     rule.setContent { NeuroVidaTheme { Box(Modifier.width(393.dp)) { GameAboutContent(data) } } }
     rule.waitForIdle()
     assertEquals("«Sobre este juego»", TitleFamily, layoutOfTag("about_caption").layoutInput.style.fontFamily)

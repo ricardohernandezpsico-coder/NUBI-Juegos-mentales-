@@ -9,12 +9,6 @@ data class IslaPoint(val x: Float, val y: Float)
 /** Un lugar de la isla: [key] (`observatorio`, `antena`, `biblioteca`, `hangar`), el área a la que pertenece (`MEMORIA`…) y sus tres puntos. */
 data class IslaPlace(val key: String, val area: String, val foot: IslaPoint, val center: IslaPoint, val top: IslaPoint)
 
-/** La caja de una imagen de Nubi (`hola` o `mira_<lugar>`) sobre el recorte común: esquina superior izquierda, esquina inferior derecha y su tamaño en píxeles a 2×. */
-data class IslaNubiBox(val topLeft: IslaPoint, val bottomRight: IslaPoint, val widthPx: Int, val heightPx: Int) {
-  val width: Float get() = bottomRight.x - topLeft.x
-  val height: Float get() = bottomRight.y - topLeft.y
-}
-
 /** La sombra de Nubi sobre la losa: elipse de tinta, ancho y alto normalizados a ese ancho y alto del recorte. */
 data class IslaShadow(val center: IslaPoint, val width: Float, val height: Float, val opacity: Float, val blur: Float)
 
@@ -55,8 +49,6 @@ data class IslaLayout(
   val shadow: IslaShadow,
   val antennaHalo: IslaHalo,
   val lampHalos: IslaHalo,
-  /** Las cajas de Nubi mirando hacia cada lugar (`observatorio`, `antena`, `biblioteca`, `hangar`): cada imagen tiene la suya porque se recortó a su borde. */
-  val miraBoxes: Map<String, IslaNubiBox> = emptyMap(),
   /** Qué farola (índice en [lamps]) es de cada lugar (`observatorio`…): la de menor distancia total entre el pie de cada edificio y el tope de cada farola (Tarea 88; `tools/isla/componer.py`). */
   val lampOf: Map<String, Int> = emptyMap(),
   val litLamp: IslaLitLamp = IslaLitLamp.DEFAULT,
@@ -67,9 +59,6 @@ data class IslaLayout(
   val aspect: Float get() = widthPx.toFloat() / heightPx
 
   fun place(key: String): IslaPlace = places.first { it.key == key }
-
-  /** El índice de la farola del lugar [placeKey] (`observatorio`…), o null si ese lugar no tiene. */
-  fun lampIndex(placeKey: String): Int? = lampOf[placeKey]
 
   companion object {
     /** El orden en que el lector de pantalla recorre los lugares (el del rombo de la ruta). */
@@ -90,12 +79,6 @@ data class IslaLayout(
       val box = nubi.getJSONArray("caja")
       val px = nubi.getJSONArray("px_2x")
       val sh = root.getJSONObject("nubi").getJSONObject("sombra_elipse")
-      val capa = root.getJSONObject("capa_nubi")
-      val mira = PLACE_ORDER.associateWith { key ->
-        val o = capa.getJSONObject("mira_$key")
-        val b = o.getJSONArray("caja"); val q = o.getJSONArray("px_2x")
-        IslaNubiBox(pt(b.getJSONArray(0)), pt(b.getJSONArray(1)), q.getInt(0), q.getInt(1))
-      }
       val lampOf = root.optJSONObject("lampara_de")?.let { o -> PLACE_ORDER.mapNotNull { k -> if (o.has(k)) k to o.getInt(k) else null }.toMap() } ?: emptyMap()
       val litLamp = root.optJSONObject("farolas_encendidas")?.let { f ->
         val g = f.getJSONObject("resplandor_losa")
@@ -116,7 +99,7 @@ data class IslaLayout(
         shadow = IslaShadow(pt(sh.getJSONArray("centro")), sh.getDouble("ancho").toFloat(), sh.getDouble("alto").toFloat(), sh.getDouble("opacidad").toFloat(), sh.getDouble("desenfoque").toFloat()),
         antennaHalo = IslaHalo(listOf(pt(ha.getJSONArray("centro"))), ha.getDouble("radio").toFloat(), ha.getDouble("opacidad").toFloat(), ha.getString("color")),
         lampHalos = IslaHalo(pts(hf.getJSONArray("centros")), hf.getDouble("radio").toFloat(), hf.getDouble("opacidad").toFloat(), hf.getString("color")),
-        miraBoxes = mira, lampOf = lampOf, litLamp = litLamp, deco = deco
+        lampOf = lampOf, litLamp = litLamp, deco = deco
       )
     }
   }

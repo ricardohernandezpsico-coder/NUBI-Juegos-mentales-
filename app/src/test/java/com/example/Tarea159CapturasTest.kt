@@ -239,16 +239,7 @@ class Tarea159CapturasTest {
     f.shot("avance-vacio", 873)
   }
 
-  @Test
-  fun la_lamina_de_hoy_con_la_linea_de_puntos() {
-    val f = Frame(viewModel(seed(9, memoria + atencion + listOf("calculo", "engranajes", "aterrizaje"))), AppTab.HOY)
-    f.settle()
-    rule.runOnIdle { f.barVisible = false }
-    rule.onNodeWithTag("isla_observatorio").performClick()
-    f.settle()
-    f.shot("hoy-lamina", 873)
-    f.shot("hoy-lamina-letra13", 873, 1.3f)
-  }
+  // (Tarea 182: se borró `la_lamina_de_hoy_con_la_linea_de_puntos`, prueba obsoleta: tocaba el edificio `isla_observatorio` de Hoy para abrir la lámina de un lugar, y esa lámina y los edificios tocables se fueron con las Tareas 163 y 165; solo corría al grabar capturas y fallaba desde entonces.)
 
   /** La ficha de un juego con sus puntos («Etapa Hábil · 110 de 200 puntos», «Te faltan 10 puntos para Experto»). */
   @Test
@@ -258,7 +249,7 @@ class Tarea159CapturasTest {
     val now = System.currentTimeMillis()
     val g = GameRegistry.getById("radar")!!
     val glance = listOf(260f, 240f, 250f, 210f, 190f, 170f).let { v -> v.mapIndexed { i, x -> MeasurePoint(now - (v.size - i) * day, "glance", x, 0.5f, true) } }
-    val data = cardData(g, g.title, now - day, now, 0.55f, glance, 6)
+    val data = cardData(g, g.title, 0.55f)
     rule.setContent {
       val base = LocalDensity.current
       CompositionLocalProvider(LocalDensity provides Density(base.density, scale)) {

@@ -9,8 +9,6 @@ import kotlin.math.roundToInt
  * Las cúpulas de tu base (una cada 5 aterrizajes justos) y su récord (preferencias `aterrizaje_record`, que SÍ van en el respaldo) son el premio, no una medida.
  */
 object Aterrizaje {
-  /** Cada cuántos aterrizajes justos se arma una cúpula (la misma regla que `LandingContract.DomeEvery` en Unity). */
-  const val DOME_EVERY = 5
 
   /** Cuántas partidas anteriores entran en «Tu promedio» y «Tu mejor» (las últimas). */
   const val PREVIOUS_MAX = 10

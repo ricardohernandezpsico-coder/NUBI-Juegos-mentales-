@@ -2,8 +2,6 @@ package com.example.ui.components
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.snap
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable

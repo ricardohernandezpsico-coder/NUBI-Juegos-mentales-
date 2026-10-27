@@ -1,15 +1,10 @@
 package com.example.ui.theme
 
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 
 // Esquema unico "cosmos": fondo transparente (lo dibuja el fondo «Espacio profundo»), superficies azul noche y, de acento, los colores del KIT (Clay: cielo, tinta, coral, sol), no los azul eléctrico y naranja con que se armó la app en AI Studio.
 // Todo sale de NubiTokens y Clay (Tarea 123). Cambios de color: `primary`, `secondary`, `tertiary` y sus contenedores (ningún componente visible los lee: se buscó en el código) y `onSurfaceVariant`,

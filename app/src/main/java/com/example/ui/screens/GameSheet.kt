@@ -5,7 +5,6 @@ import com.example.ui.components.Glyph
 import com.example.ui.components.KitGlyph
 import com.example.ui.components.SlabColor
 import com.example.ui.components.SlabSize
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -17,47 +16,28 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.PathMeasure
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -67,35 +47,18 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.example.data.AreaProgress
-import com.example.data.Suggestion
 import com.example.data.AreaPoints
-import com.example.data.DiscoveryKind
 import com.example.data.FinalesConSentido
-import com.example.ui.components.OnBoardText
-import com.example.ui.components.AREA_ORDER
-import com.example.ui.components.AreaBar
-import com.example.ui.components.LockTabSwipe
-import com.example.ui.components.NubiBubble
-import com.example.ui.components.BuildingIcon
-import com.example.ui.components.BuildingOnPedestal
 import com.example.ui.components.GameEmblem
-import com.example.ui.components.KitBar
 import com.example.ui.components.NubiMotion
-import com.example.data.LibraryOrder
-import com.example.ui.components.areaDescription
 import com.example.data.PlayMode
 import com.example.data.RetoChoice
 import com.example.data.TimeTrialDay
@@ -104,63 +67,34 @@ import com.example.ui.components.ClayClockIcon
 import com.example.ui.components.KitButton
 import com.example.data.GamePoints
 import com.example.data.Skill
-import com.example.data.measureText
-import com.example.data.StarMeasures
 import com.example.model.AgeBand
 import com.example.model.DomainType
 import com.example.model.GameDefinition
-import com.example.model.GameRegistry
 import com.example.ui.i18n.LocalAppLanguage
-import com.example.ui.i18n.getDomainName
 import com.example.ui.i18n.getGameTitle
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayCard
 import com.example.viewmodel.NeuroVidaViewModel
 import kotlinx.coroutines.delay
-import kotlin.math.abs
 
-/**
- * La ficha del juego y todo lo que necesita (Tarea 158, 21-oct): estaba en `GamesLibraryScreen.kt`, que se fue con la pestaña Juegos («La isla es el mapa»). La ficha ([GameSheet], [GameSheetContent], [GameSheetHost]) la abren las filas de la lámina de un lugar en Hoy,
- * las de la lámina de un área en Avance, las piedritas de «Tu ruta de hoy», «Tus medidas» y las filas de «Todos los juegos» (`AllGamesScreen.kt`).
- */
-private const val DAY_MS = 86_400_000L
-private val OnNight = Color(0xFFEAF0FF)
-private val OnNightDim = com.example.ui.theme.NubiTokens.OnNightDim
-private val TileClay = Color(0xFF28306E)
+// La ficha del juego y todo lo que necesita (Tarea 158, 21-oct): estaba en `GamesLibraryScreen.kt`, que se fue con la pestaña Juegos («La isla es el mapa»). La ficha ([GameSheet], [GameSheetContent], [GameSheetHost]) la abren las filas de la lámina de un lugar en Hoy,
+// las de la lámina de un área en Avance, las piedritas de «Tu ruta de hoy», «Tus medidas» y las filas de «Todos los juegos» (`AllGamesScreen.kt`).
 private val CardCream = Color(0xFFFFF8EC)
 private val CardMuted = Color(0xFF514B78) // sobre crema: 7:1
 private val CardTrack = Color(0xFFE2DAC8)
-private val ModeRow = Color(0xFFF6EEDE)
-private val ModeRowOn = Color(0xFFFFF0C8)
 
 // Tamaños pensados para adultos mayores (28-sep, pedido de Ricardo): ningún texto secundario bajo 14 sp.
 private val Small = 16.sp
-private val Body = 16.sp
-
-private fun dayIndex(ts: Long): Long = (ts + java.util.TimeZone.getDefault().getOffset(ts)) / DAY_MS
 
 /** Color del área oscurecido para texto sobre crema (contraste ≥ 4,5). */
 private fun onCream(domain: DomainType): Color = lerp(domain.color, Clay.Ink, 0.45f)
 
-/** Todo lo que muestran la casilla y la ficha de un juego (armado desde el ViewModel; separado para la foto de prueba). */
+/** Todo lo que muestra la ficha de un juego (armado desde el ViewModel; separado para la foto de prueba). Desde la Tarea 182 solo lleva lo que la ficha lee: el juego, su nombre y sus puntos. */
 data class GameCardData(
   val game: GameDefinition,
   val title: String,
-  val lastPlayed: String,
-  val playedToday: Boolean,
   /** Tus puntos en este juego (null = sin medir aún): «180 de 250 puntos», con su etapa (Tarea 159). */
-  val points: GamePoints?,
-  /** Tu marca de juego estrella: nombre ("Tu brújula"), valor ("a 18% de casa"), etiqueta y últimas partidas. */
-  val measureTitle: String? = null,
-  val measureValue: String? = null,
-  val measureTag: String? = null,
-  val measureSeries: List<Float> = emptyList(),
-  val lowerIsBetter: Boolean = false,
-  /** Partidas de este juego en los últimos 14 días. */
-  val playsLast14: Int = 0,
-  /** Su número de parada (1 a 3) si es de la ruta de hoy, y si ya se hizo en la ruta (Tarea 125). */
-  val routeStop: Int? = null,
-  val routeDone: Boolean = false
+  val points: GamePoints?
 )
 
 /**
@@ -178,9 +112,7 @@ internal fun sheetTimeTrialOf(gameId: String, title: String, record: Int?, dateK
  */
 @Composable
 internal fun GameSheetHost(game: GameDefinition, viewModel: NeuroVidaViewModel, onDismiss: () -> Unit, onPlay: (PlayMode, Boolean) -> Unit, onTutorial: () -> Unit = {}, onTimeTrial: () -> Unit = {}) {
-  val history by viewModel.gameHistory.collectAsState()
   val settings by viewModel.userSettings.collectAsState()
-  val measures by viewModel.starMeasures.collectAsState()
   val progressLog by viewModel.progressLog.collectAsState()
   val skill by viewModel.skill.collectAsState()
   val timeTrialResults by viewModel.timeTrialResults.collectAsState()
@@ -189,10 +121,7 @@ internal fun GameSheetHost(game: GameDefinition, viewModel: NeuroVidaViewModel, 
   // Los puntos del juego salen de los de su área, para que la ficha y la página del área digan lo mismo (el redondeo se reparte entre los juegos del área)
   val gamePoints = remember(game.id, progressLog, now) { AreaPoints.compute(game.domain.name, AreaPoints.gamesOf(game.domain.name), progressLog, now).perGame.firstOrNull { it.gameId == game.id } }
   val title = getGameTitle(game.id, lang, game.title)
-  val data = cardData(
-    game, title, history.filter { it.gameId == game.id }.maxOfOrNull { it.timestamp }, now, null, measures,
-    history.count { it.gameId == game.id && now - it.timestamp <= 14 * DAY_MS }, points = gamePoints
-  )
+  val data = cardData(game, title, null, points = gamePoints)
   GameSheet(
     data = data,
     age = settings.ageBand,
@@ -207,49 +136,14 @@ internal fun GameSheetHost(game: GameDefinition, viewModel: NeuroVidaViewModel, 
   )
 }
 
-/** Arma los datos de un juego: cuándo se jugó, avance, marca con su etiqueta y constancia. */
+/** Arma los datos de un juego: su nombre y sus puntos. */
 internal fun cardData(
   g: GameDefinition,
   title: String,
-  last: Long?,
-  now: Long,
   progress: Float?,
-  measures: List<com.example.data.MeasurePoint>,
-  playsLast14: Int,
   /** Los puntos del juego ya repartidos con el resto de su área ([AreaPoints.perGame]); sin ellos se calculan a solas desde [progress]. */
   points: GamePoints? = null
-): GameCardData {
-  val daysAgo = last?.let { (dayIndex(now) - dayIndex(it)).toInt() }
-  val lastText = when (daysAgo) {
-    null -> "Aún no lo juegas"
-    0 -> "Jugaste hoy"
-    1 -> "Jugaste ayer"
-    else -> "Jugaste hace $daysAgo días"
-  }
-  val def = StarMeasures.defForGame(g.id)
-  // Solo partidas comparables con la última (mismo reloj; nivel parecido si la marca depende del nivel).
-  val series = def?.let { d -> StarMeasures.comparable(measures.filter { it.key == d.key }) }.orEmpty()
-  val kind = if (def != null && series.size >= StarMeasures.MIN_POINTS) StarMeasures.discover(series, now)?.kind else null
-  return GameCardData(
-    game = g,
-    title = title,
-    lastPlayed = lastText,
-    playedToday = daysAgo == 0,
-    points = points ?: progress?.let { GamePoints.of(g.id, it) },
-    measureTitle = def?.short?.replaceFirstChar { it.uppercase() },
-    measureValue = def?.let { StarMeasures.zoneText(it, measures) }                        // Freno: la zona del promedio, no milisegundos
-      ?: series.lastOrNull()?.let { p -> def?.let { measureText(it, p.value) } },
-    measureTag = when (kind) {
-      DiscoveryKind.RECORD -> "Tu récord"
-      DiscoveryKind.IMPROVING -> "Mejorando"
-      DiscoveryKind.STEADY -> "Se mantiene"
-      null -> null
-    },
-    measureSeries = series.takeLast(StarMeasures.MAX_POINTS).map { it.value },
-    lowerIsBetter = def?.lowerIsBetter ?: false,
-    playsLast14 = playsLast14
-  )
-}
+): GameCardData = GameCardData(game = g, title = title, points = points ?: progress?.let { GamePoints.of(g.id, it) })
 
 /**
  * Ficha del juego (ventana superpuesta, crema): desde la Tarea 171 (25-oct) es una PORTADA (ver [GameSheetContent]; antes fue la propuesta «A · Compacta» de la Tarea 74 y la ficha con UNA decisión visible de la Tarea 140). Vive aquí lo que no es de la ficha misma: la ventana, la elección
@@ -673,27 +567,6 @@ private fun SelectedMark(on: Boolean) {
 @Composable
 private fun HorizontalLine() {
   Box(Modifier.fillMaxWidth().padding(vertical = 7.dp).height(1.dp).background(CardTrack))
-}
-
-@Composable
-private fun Tag(text: String, color: Color, modifier: Modifier = Modifier) {
-  com.example.ui.theme.ClayPill(text, modifier, color = color, compact = true)
-}
-
-/** Últimas partidas de la marca, con "mejor" siempre hacia arriba; la última en sol. */
-@Composable
-private fun CreamSparkline(values: List<Float>, lowerIsBetter: Boolean, color: Color, modifier: Modifier) {
-  Canvas(modifier) {
-    val lo = values.min(); val hi = values.max(); val span = (hi - lo).takeIf { abs(it) > 1e-6f } ?: 1f
-    val pad = 6.dp.toPx()
-    val pts = values.mapIndexed { i, v ->
-      val t = (v - lo) / span
-      Offset(pad + (size.width - 2 * pad) * i / (values.size - 1), pad + (size.height - 2 * pad) * (if (lowerIsBetter) t else 1f - t))
-    }
-    for (i in 0 until pts.size - 1) drawLine(color, pts[i], pts[i + 1], 2.5.dp.toPx(), StrokeCap.Round)
-    drawCircle(Clay.Sun, 4.dp.toPx(), pts.last())
-    drawCircle(Clay.Ink, 4.dp.toPx(), pts.last(), style = Stroke(1.5.dp.toPx()))
-  }
 }
 
 /** Cuánto cuesta un modo: 4 barras que crecen (se lee por la cantidad, no solo por el color). */

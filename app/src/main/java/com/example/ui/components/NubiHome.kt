@@ -1,41 +1,27 @@
 package com.example.ui.components
 
-import androidx.annotation.DrawableRes
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -43,19 +29,13 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.data.AreaPoints
-import com.example.data.Skill
 import com.example.ui.theme.Clay
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 
 /** La relación ancho / alto de `nubi_3d.webp` y de `nubi_3d_descansa.webp` (1080 × 713 px, Tarea 148): Nubi de plasticina de frente, con los ojos abiertos y con los ojos cerrados, recortadas a la MISMA caja (render de `isla.py --solo-nubi`, armado por `tools/isla/nubi_reposo.py`). */
 const val NUBI_ASPECT = 1080f / 713f
@@ -146,7 +126,6 @@ val AreaBarColor = Color(0xFFC4BAFF)
 private val AreaBarOnCard = Color(0xFF7B6BD6)
 /** Lo que bajó en la semana: lila suave, nunca rojo (sin culpa). */
 private val AreaDownColor = Color(0xFFB2A8E8)
-private val BubbleLabel = Color(0xFF605890)
 
 /** Orden de las áreas (30-sep, 4 áreas): en Hoy, índices pares a la izquierda y impares a la derecha. */
 val AREA_ORDER = listOf("MEMORIA", "ATENCION", "RAZONAMIENTO", "LENGUAJE")
@@ -203,23 +182,5 @@ fun NubiEmptyLine(text: String, modifier: Modifier = Modifier) {
     NubiClay(width = 72.dp)
     androidx.compose.foundation.layout.Spacer(Modifier.width(10.dp))
     OnBoardText(text, color = com.example.ui.theme.NubiTokens.OnNight, fontSize = 17.sp, fontWeight = FontWeight.SemiBold, lineHeight = 23.sp, modifier = Modifier.weight(1f))
-  }
-}
-
-/**
- * Globo de texto de Nubi (un diálogo de Nubi: el único recuadro de la pantalla): la losa crema del kit con su cola de plasticina (Tarea 125; `kit_cola_izq`, 16 × 12 dp) abajo: a la izquierda si Nubi está al lado ([tailLeft], como en la ventana de un área
- * de Juegos) o al centro si Nubi está debajo. El texto es de Compose. UNA sola forma de hablar (Tarea 147, P3): Nubi habla siempre en primera persona y siempre en su globo; el rótulo «Nubi» ([title]) solo va cuando habla SIN estar (un aviso, un correo): al lado de
- * Nubi repetiría lo que ya se ve.
- */
-@Composable
-fun NubiBubble(text: String, modifier: Modifier = Modifier, tailLeft: Boolean = false, title: String? = null) {
-  Box(modifier.padding(bottom = 8.dp)) {
-    ClaySlab(SlabColor.CREAM, Modifier.fillMaxWidth(), SlabSize.MEDIUM) {
-      Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
-        if (title != null) Text(title, color = BubbleLabel, fontSize = 16.sp)
-        Text(text, color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-      }
-    }
-    BubbleTail(left = true, Modifier.align(if (tailLeft) Alignment.BottomStart else Alignment.BottomCenter).offset(x = if (tailLeft) 26.dp else 0.dp, y = 2.dp))
   }
 }

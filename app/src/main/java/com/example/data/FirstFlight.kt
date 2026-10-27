@@ -51,7 +51,6 @@ enum class FlightStep(val game: Int? = null) {
   val isCard: Boolean get() = game != null && name.startsWith("TARJETA")
 
   companion object {
-    fun gameStep(index: Int): FlightStep = entries.first { it.game == index && it.isGame }
     fun cardStep(index: Int): FlightStep = entries.first { it.game == index && it.isCard }
   }
 }
@@ -363,7 +362,6 @@ object FlightCopy {
 
   /** Cuando un juego no trajo datos suficientes para una frase. */
   const val NO_DATA_LINE = "Con esta partida corta no alcanzó para un dato, pero tu medida quedó guardada."
-  const val SKIPPED_LINE = "Lo dejaste para después: por ahora lo estimamos."
 }
 
 // ------------------------------------------------------------------ guardado en disco

@@ -1,6 +1,5 @@
 package com.example.ui.components
 
-import android.os.Build
 import android.view.HapticFeedbackConstants
 import android.view.View
 import androidx.compose.runtime.Composable
@@ -24,22 +23,10 @@ fun rememberKitTap(): () -> Unit {
   return remember(view, enabled) { { if (enabled) KitHaptics.tap(view) } }
 }
 
-/** Un «listo» para quien llama (la ruta completa): no hace nada si la vibración de la app está apagada. */
-@Composable
-fun rememberKitConfirm(): () -> Unit {
-  val view = LocalView.current
-  val enabled = LocalHapticsEnabled.current
-  return remember(view, enabled) { { if (enabled) KitHaptics.confirm(view) } }
-}
-
 object KitHaptics {
   /** El tic de apoyar el dedo. */
   fun tap(view: View) {
     view.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
   }
 
-  /** El «listo» de completar la ruta: `CONFIRM` desde Android 11; antes, el mismo tic de apoyar. */
-  fun confirm(view: View) {
-    view.performHapticFeedback(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) HapticFeedbackConstants.CONFIRM else HapticFeedbackConstants.CONTEXT_CLICK)
-  }
 }

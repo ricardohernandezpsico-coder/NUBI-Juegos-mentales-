@@ -60,12 +60,12 @@ class Tarea172CapturasTest {
 
   private fun piloto(): GameCardData {
     val g = GameRegistry.getById("piloto")!!
-    return cardData(g, g.title, now - 4 * day, now, 0.92f, series("mandos", 41f, 47f, 44f, 52f, 55f, 58f), playsLast14 = 5)
+    return cardData(g, g.title, 0.92f)
   }
 
   private fun correo(): GameCardData {
     val g = GameRegistry.getById("correo")!!
-    return cardData(g, g.title, now - 2 * day, now, 0.48f, emptyList(), playsLast14 = 4)
+    return cardData(g, g.title, 0.48f)
   }
 
   private fun shot(data: GameCardData, name: String, fontScale: Float = 1f, timed: Boolean = true) {
@@ -110,7 +110,7 @@ class Tarea172CapturasTest {
       }
     }
     for (g in GameRegistry.allGames) {
-      data = cardData(g, g.title, now - day, now, 0.5f, emptyList(), playsLast14 = 3)
+      data = cardData(g, g.title, 0.5f)
       repeat(2) { rule.mainClock.advanceTimeBy(600); rule.waitForIdle() }
       rule.onNodeWithTag("frame").captureRoboImage(filePath = "$shots/propuesta-${g.id}.png")
     }

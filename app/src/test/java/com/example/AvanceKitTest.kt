@@ -14,7 +14,7 @@ import java.io.File
 
 /**
  * Las piezas del kit para Avance y Juegos (Tareas 124 y 125): `res/raw/kit_avance.json` y los WebP de `drawable-nodpi` son del mismo render (`tools/isla/kit_avance_app.py`), no sobra ni falta ninguna, y cada pieza trae lo que Compose necesita
- * (insets en el canal y el churro, la placa en las medallas, el pie en los edificios).
+ * (insets en el canal y el churro, la placa en las medallas; el pedestal, los edificios y las colas del globo se borraron en la Tarea 182).
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
@@ -33,11 +33,10 @@ class AvanceKitTest {
   private val families = listOf("constancia", "variedad", "volver")
 
   private val expected: Set<String> = buildSet {
-    addAll(listOf("canal_crema", "canal_cielo", "churro_sol", "churro_lima", "farola_off", "farola_on", "llama_off", "llama_on", "pedestal", "cola_izq", "cola_der"))
+    addAll(listOf("canal_crema", "canal_cielo", "churro_sol", "churro_lima", "farola_off", "farola_on", "llama_off", "llama_on"))
     games.forEach { add("emb_$it") }
     families.forEach { add("med_$it"); add("med_${it}_off") }
     RankTier.entries.forEach { add("escudo_" + it.name.lowercase()) }
-    areas.forEach { add("edif_$it") }
   }
 
   @Test
@@ -74,22 +73,17 @@ class AvanceKitTest {
   }
 
   @Test
-  fun `las medallas tienen su placa para el numero y los edificios su pie`() {
+  fun `las medallas tienen su placa para el numero`() {
     for (f in families) for (k in listOf("med_$f", "med_${f}_off")) {
       val plate = spec.piece(k).plate
       assertNotNull("placa de $k", plate)
       assertEquals(52f, plate!!.width, 0.1f); assertEquals(16f, plate.height, 0.1f)
     }
-    for (a in areas) {
-      val b = spec.piece("edif_$a")
-      assertTrue("el pie de $a cae dentro de la imagen", b.footX > 0f && b.footX < b.widthPx / 3f && b.footY > 0f && b.footY < b.heightPx / 3f)
-    }
   }
 
   @Test
-  fun `hay un escudo por liga y un pedestal de 150 dp`() {
+  fun `hay un escudo por liga`() {
     assertEquals(7, RankTier.entries.size)
-    assertEquals(150f, spec.piece("pedestal").bodyWidth, 3f)
     for (t in RankTier.entries) assertEquals("escudo ${t.name}", 108f, spec.piece("escudo_" + t.name.lowercase()).bodyWidth, 1f)
   }
 }

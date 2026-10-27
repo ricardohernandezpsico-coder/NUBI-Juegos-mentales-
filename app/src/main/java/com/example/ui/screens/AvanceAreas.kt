@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -36,9 +35,7 @@ import com.example.model.DomainType
 import com.example.ui.components.GameEmblem
 import com.example.ui.components.OnBoardText
 import com.example.ui.components.SpaceSectionTitle
-import com.example.ui.components.StageScale
 import com.example.ui.components.WeekLampRendered
-import com.example.ui.components.areaDescription
 import com.example.ui.theme.Clay
 import com.example.ui.theme.TitleFamily
 import com.example.ui.theme.ClayCard

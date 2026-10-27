@@ -85,7 +85,7 @@ class FinalBCapturesTest {
     val now = 400 * day + 3_600_000L
     val secuencia = GameRegistry.getById("secuencia")!!
     val series = listOf(4f, 5f, 4f, 5f, 4f, 5f).let { v -> v.mapIndexed { i, x -> MeasurePoint(now - (v.size - i) * day, "trail", x, 0.5f, true) } }
-    val data = cardData(secuencia, secuencia.title, now - day, now, 0.55f, series, playsLast14 = 6)
+    val data = cardData(secuencia, secuencia.title, 0.55f)
     rule.setContent {
       NeuroVidaTheme {
         Box(Modifier.width(393.dp).height(801.dp).background(Color(0xFF050823)).testTag("frame").padding(horizontal = 14.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {

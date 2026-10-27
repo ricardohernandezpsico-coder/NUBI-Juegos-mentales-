@@ -63,7 +63,7 @@ class Tarea181CapturasTest {
 
   private fun card(id: String, points: Float): GameCardData {
     val g = GameRegistry.getById(id)!!
-    return cardData(g, g.title, now - 2 * day, now, points, emptyList(), playsLast14 = 4)
+    return cardData(g, g.title, points)
   }
 
   /** La ficha de [id] en el marco de la ventana real (393 × 801 dp: lo que dejan las barras del sistema) con la letra [fontScale]; [unfold] la despliega («Más opciones»). */

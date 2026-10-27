@@ -71,7 +71,7 @@ class GameSheetDecisionTest {
     onPlay: () -> Unit = {}, onPlayDesafio: () -> Unit = {}, onAbout: () -> Unit = {}, onClose: () -> Unit = {}
   ) {
     val g = GameRegistry.getById(gameId)!!
-    val data = cardData(g, g.title, now - day, now, 0.55f, emptyList(), playsLast14 = 3)
+    val data = cardData(g, g.title, 0.55f)
     rule.setContent {
       NeuroVidaTheme {
         CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale)) {
@@ -395,7 +395,7 @@ class GameSheetDecisionTest {
   @Test
   fun una_ficha_sin_medir_dice_aun_sin_medir_y_sigue_con_los_tres_botones() {
     val g = GameRegistry.getById("stroop")!!
-    val data = cardData(g, g.title, null, now, null, emptyList(), playsLast14 = 0)
+    val data = cardData(g, g.title, null)
     rule.setContent {
       NeuroVidaTheme {
         Box(Modifier.width(393.dp).height(825.dp).background(Color(0xFF050823)).padding(horizontal = 14.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {

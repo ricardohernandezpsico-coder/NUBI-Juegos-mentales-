@@ -1,12 +1,8 @@
 package com.example.ui.screens
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,12 +15,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.clickable
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -39,28 +31,18 @@ import com.example.data.AchievementStats
 import com.example.data.Achievements
 import com.example.data.FamilyMedalState
 import com.example.data.LeagueRow
-import com.example.data.Skill
-import com.example.data.StarMeasures
-import com.example.data.Week
 import com.example.data.goalText
-import com.example.data.measureText
-import com.example.model.GameRegistry
 import com.example.ui.components.FamilyMedal
 import com.example.ui.components.Glyph
-import com.example.ui.components.KitBar
 import com.example.ui.components.KitCloseButton
 import com.example.ui.components.KitGlyph
 import com.example.ui.components.OnBoardText
 import com.example.ui.components.ShieldImage
-import com.example.ui.components.NubiBubble
 import com.example.ui.components.SlabSize
 import com.example.ui.components.SpaceSectionTitle
-import com.example.ui.components.WeekLampRendered
-import com.example.ui.components.areaDescription
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
 import com.example.ui.theme.ClayCard
-import com.example.ui.theme.ClayPill
 
 private val OnNight = androidx.compose.ui.graphics.Color(0xFFEAF0FF)
 private val OnNightDim = com.example.ui.theme.NubiTokens.OnNightDim

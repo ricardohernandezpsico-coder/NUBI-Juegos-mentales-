@@ -1,6 +1,5 @@
 package com.example.ui.components
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,14 +10,10 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -30,8 +25,6 @@ import androidx.compose.ui.unit.sp
 import com.example.data.Week
 import com.example.ui.theme.Clay
 import com.example.ui.theme.NubiTokens
-
-private val WeekLampCream = Color(0xFFF6EBD3)
 
 /** La caja de cada farola de la semana en Hoy: 36 dp (la farola del kit dibuja 28 dentro, como en Avance, y deja sitio al aro de «hoy»). */
 val HOY_LAMP_BOX = 36.dp
@@ -64,24 +57,6 @@ fun HoyWeek(lamps: Week.Lamps, streak: Int, streakNote: String? = null, lampSize
     if (streakNote != null) {
       OnBoardText(streakNote, color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.padding(top = 2.dp).testTag("streak_note"))
     }
-  }
-}
-
-/** Un farolito: encendido = disco sol con resplandor; apagado = anillo tenue (la forma cambia, no solo el color); hoy lleva además un aro lima. */
-@Composable
-fun WeekLamp(on: Boolean, today: Boolean, size: Dp = 22.dp) {
-  Canvas(Modifier.size(size)) {
-    val c = center
-    val r = this.size.minDimension * 0.34f
-    if (on) {
-      drawCircle(Brush.radialGradient(listOf(Clay.Sun.copy(alpha = 0.55f), Color.Transparent), c, this.size.minDimension / 2f), this.size.minDimension / 2f, c)
-      drawCircle(Clay.Sun, r, c)
-      drawCircle(Color.White.copy(alpha = 0.7f), r * 0.32f, Offset(c.x - r * 0.3f, c.y - r * 0.3f))
-    } else {
-      drawCircle(WeekLampCream.copy(alpha = 0.16f), r, c)
-      drawCircle(WeekLampCream.copy(alpha = 0.5f), r, c, style = Stroke(1.5.dp.toPx()))
-    }
-    if (today) drawCircle(Clay.Lime, this.size.minDimension / 2f - 1.5.dp.toPx(), c, style = Stroke(2.5.dp.toPx()))
   }
 }
 

@@ -20,8 +20,6 @@ object Vocabulary {
   /** Toques mínimos (comunes y raras) para comparar el tiempo de reconocimiento: Unity manda -1 si hay menos. */
   private const val MIN_BAND_FOR_MARK = 3
 
-  val FILTER_LABELS = listOf("obvias", "una letra cambiada", "letras cambiadas de lugar")
-
   /**
    * "Tu vocabulario" por banda: % de palabras reconocidas MENOS el % de inventadas tocadas en toda la partida (así no se
    * premia tocar todo). -1 en una banda con menos de [MIN_BAND_SEEN] palabras vistas. Siempre 6 valores.

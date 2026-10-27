@@ -61,12 +61,12 @@ class Tarea171CapturasTest {
 
   private fun piloto(): GameCardData {
     val g = GameRegistry.getById("piloto")!!
-    return cardData(g, g.title, now - 4 * day, now, 0.92f, series("mandos", 41f, 47f, 44f, 52f, 55f, 58f), playsLast14 = 5)
+    return cardData(g, g.title, 0.92f)
   }
 
   private fun correo(): GameCardData {
     val g = GameRegistry.getById("correo")!!
-    return cardData(g, g.title, now - 2 * day, now, 0.48f, emptyList(), playsLast14 = 4)
+    return cardData(g, g.title, 0.48f)
   }
 
   /** La ficha de [data] en el marco de la ventana real (393 × 825 dp: el alto que dejan las barras del sistema) con la letra [fontScale]; [unfold] la despliega («Más opciones»); [about] muestra «Sobre este juego» en su lugar. */
@@ -119,7 +119,7 @@ class Tarea171CapturasTest {
       }
     }
     for (g in GameRegistry.allGames) {
-      data = cardData(g, g.title, now - day, now, 0.5f, emptyList(), playsLast14 = 3)
+      data = cardData(g, g.title, 0.5f)
       repeat(2) { rule.mainClock.advanceTimeBy(600); rule.waitForIdle() }
       rule.onNodeWithTag("frame").captureRoboImage(filePath = "$shots/juego-${g.id}.png")
     }

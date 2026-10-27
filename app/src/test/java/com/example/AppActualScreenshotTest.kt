@@ -194,7 +194,7 @@ class AppActualScreenshotTest {
                     val g = GameRegistry.getById("radar")!!
                     val now = System.currentTimeMillis()
                     val glance = listOf(260f, 240f, 250f, 210f, 190f, 170f).let { v -> v.mapIndexed { i, x -> MeasurePoint(now - (v.size - i) * day, "glance", x, 0.5f, true) } }
-                    val data = cardData(g, g.title, now - day, now, 0.55f, glance, 6)
+                    val data = cardData(g, g.title, 0.55f)
                     GameSheetContent(data, AgeBand.ADULT, expertOpen = false, choice = PlayMode.A_TU_MEDIDA, onChoose = {}, onPlay = {}, timed = true, onChooseTimed = {})
                   }
                   Scene.AVANCE -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) {

@@ -9,7 +9,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import com.example.data.FirstFlight
 import com.example.data.FlightMode
 import com.example.data.FlightState
 import com.example.model.AgeBand

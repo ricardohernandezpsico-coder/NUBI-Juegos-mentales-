@@ -197,7 +197,7 @@ class AllGamesScreenshotTest {
   fun sheet() {
     val aterrizaje = GameRegistry.getById("aterrizaje")!!
     val points = listOf(31f, 27f, 29f, 24f, 22f, 18f).mapIndexed { i, v -> MeasurePoint(now - (6 - i) * day, "numline", v) }
-    val data = cardData(aterrizaje, aterrizaje.title, now - day, now, 0.45f, points, playsLast14 = 6)
+    val data = cardData(aterrizaje, aterrizaje.title, 0.45f)
     composeTestRule.setContent {
       NeuroVidaTheme {
         Box(Modifier.width(412.dp).background(Color(0xFF050823)).padding(14.dp)) {

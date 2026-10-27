@@ -3,8 +3,6 @@ package com.example.ui.screens
 import com.example.ui.components.SlabSize
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,13 +14,11 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -53,17 +49,13 @@ import com.example.data.AchievementDef
 import com.example.data.AchievementStats
 import com.example.data.Achievements
 import com.example.data.familyState
-import com.example.data.Streak
 import com.example.model.RankTier
 import com.example.ui.components.AchievementMedal
 import com.example.ui.components.medalColor
-import com.example.ui.components.DomainLegend
-import com.example.ui.components.LeagueShield
 import com.example.ui.components.SpaceSectionTitle
 import com.example.ui.components.levelWord
 import com.example.ui.components.overallIndex
 import com.example.ui.theme.Clay
-import com.example.ui.theme.ClayButton
 import com.example.viewmodel.NeuroVidaViewModel
 
 /**
@@ -130,8 +122,6 @@ fun TuScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) {
   val tier = RankTier.fromRating(avg)
   val index = overallIndex(levels)
   val medalCount = medals.sumOf { it.level }                    // los niveles ganados en las tres familias: el mismo número de «Tus medallas» (Tarea 145; antes «Mejor», el puntaje más alto, que no dice mejor en qué con 17 juegos de escalas distintas)
-
-  val prog = if (tier == RankTier.MAESTRO) ((avg - tier.minRating) % 250) / 250f else (avg - tier.minRating) / 250f
 
   Column(modifier.fillMaxSize().padding(bottom = com.example.ui.components.LocalBarInset.current)) {      // la franja de la barra de pestañas queda libre
   Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {

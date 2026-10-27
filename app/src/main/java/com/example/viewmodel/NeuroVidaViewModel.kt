@@ -697,28 +697,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     if (_lastResult.value == null) _activeGame.value = null
   }
 
-  fun finishActiveGame(score: Int, correct: Int, total: Int) {
-    val current = _activeGame.value ?: return
-    val result = GamePlayResult(
-      gameId = current.gameDef.id,
-      score = score.coerceIn(0, 100),
-      correctAnswers = correct,
-      totalTrials = total,
-      timed = current.timed,
-      level = current.level
-    )
-    viewModelScope.launch {
-      val outcome = repository.recordGameResult(result)
-      _promotion.value = if (com.example.Features.LEAGUES) outcome.promotion(result.gameId) else null
-      _achievementQueue.value = _achievementQueue.value + outcome.newAchievements
-      _lastResultDaily.value = current.isDailyFlow
-      _lastResult.value = Pair(result, outcome.didLevelUp)
-      _activeGame.value = null
-    }
-
-    triggerHapticFeedback(if (score >= 70) HapticType.SUCCESS else HapticType.LIGHT)
-  }
-
   /**
    * "Continuar" del resultado en la sesión diaria: el siguiente de los 3 juegos o, al terminar, el resumen de la
    * sesión ([sessionSummary]).

@@ -87,8 +87,4 @@ object RetoChoice {
     return listOfNotNull(mode.label, clock).joinToString(" · ")
   }
 
-  /** La línea de ayuda de la opción elegida. */
-  fun help(timed: Boolean): String =
-    if (timed) "Hay un tiempo límite: haz todo lo que puedas antes de que se acabe."
-    else "Sin prisa: juegas a tu ritmo, sin límite de tiempo."
 }

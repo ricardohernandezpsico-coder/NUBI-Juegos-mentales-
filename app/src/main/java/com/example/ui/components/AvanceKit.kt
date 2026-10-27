@@ -3,9 +3,7 @@ package com.example.ui.components
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,8 +19,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.text.font.FontWeight
@@ -64,9 +60,6 @@ private val EMBLEMS: Map<String, Int> = mapOf(
 
 /** El emblema (la ficha con el objeto del juego) de un juego, o null si es uno retirado. */
 internal fun emblemRes(gameId: String): Int? = EMBLEMS[gameId]
-
-/** Los ids de los juegos que tienen emblema (los 17 de la app). */
-internal val EMBLEM_GAME_IDS: Set<String> get() = EMBLEMS.keys
 
 private val MEDALS: Map<AchievementFamily, Pair<Int, Int>> = mapOf(
   AchievementFamily.CONSTANCIA to (R.drawable.kit_med_constancia to R.drawable.kit_med_constancia_off),
@@ -168,18 +161,6 @@ internal fun FarolaImage(on: Boolean, height: Dp, modifier: Modifier = Modifier)
   KitPieceImage(if (on) "farola_on" else "farola_off", if (on) R.drawable.kit_farola_on else R.drawable.kit_farola_off, modifier, height = height)
 }
 
-/** El pedestal de un lugar de Juegos: la losa crema de la isla con su base de tierra, de [width] dp de cuerpo. */
-@Composable
-internal fun PedestalImage(width: Dp, modifier: Modifier = Modifier) {
-  KitPieceImage("pedestal", R.drawable.kit_pedestal, modifier, width = width)
-}
-
-/** La cola del globo de Nubi (16 × 12 dp): con la punta hacia abajo a la izquierda o a la derecha. */
-@Composable
-internal fun BubbleTail(left: Boolean, modifier: Modifier = Modifier) {
-  if (left) KitPieceImage("cola_izq", R.drawable.kit_cola_izq, modifier) else KitPieceImage("cola_der", R.drawable.kit_cola_der, modifier)
-}
-
 /**
  * La medalla de una familia de logros: plasticina cruda si está bloqueada, con color y luz si no. De [height] dp de alto; si cabe (96 dp o más) escribe sobre su placa lisa el número del último nivel conseguido (7 días, 25 partidas…).
  */
@@ -208,43 +189,4 @@ internal fun FamilyMedal(state: FamilyMedalState, height: Dp, modifier: Modifier
 @Composable
 internal fun ShieldImage(tier: RankTier, height: Dp, modifier: Modifier = Modifier) {
   KitPieceImage("escudo_" + tier.name.lowercase(), SHIELDS.getValue(tier), modifier, height = height)
-}
-
-private val BUILDINGS: Map<String, Int> = mapOf(
-  "MEMORIA" to R.drawable.kit_edif_memoria, "ATENCION" to R.drawable.kit_edif_atencion, "RAZONAMIENTO" to R.drawable.kit_edif_razonamiento, "LENGUAJE" to R.drawable.kit_edif_lenguaje
-)
-
-private fun buildingRes(area: String): Int = BUILDINGS[area.uppercase()] ?: R.drawable.kit_edif_memoria
-
-/** Lo que sobresale el edificio más alto (la antena) sobre el suelo, en dp al tamaño del render: para reservar el alto de [BuildingOnPedestal]. */
-private const val BUILDING_ABOVE_DP = 72f
-/** Dónde está el centro de la cara de arriba del pedestal, en dp bajo el borde de arriba de su cuerpo (al tamaño del render). */
-private const val PEDESTAL_FACE_Y_DP = 21.7f
-
-/**
- * El edificio de un área sobre su pedestal (Tarea 125, la grilla de Juegos): el pedestal de [width] dp de cuerpo y, parado en el centro de su cara, el edificio de la isla (observatorio = Memoria, antena = Atención, hangar = Razonamiento,
- * biblioteca = Lenguaje) a la misma escala. Con [lamp], la farola encendida del lugar en la esquina del pedestal (la «Sugerida»); [overlay] va encima de la caja (el sello de «jugada hoy»).
- */
-@Composable
-internal fun BuildingOnPedestal(area: String, width: Dp, modifier: Modifier = Modifier, lamp: Boolean = false, overlay: @Composable BoxScope.() -> Unit = {}) {
-  val spec = rememberKitAvanceSpec()
-  val ped = spec.piece("pedestal"); val b = spec.piece("edif_" + area.lowercase())
-  val k = width.value / ped.bodyWidth
-  val above = BUILDING_ABOVE_DP * k
-  val faceY = above + PEDESTAL_FACE_Y_DP * k
-  Box(modifier.size(width, (ped.bodyHeight * k + above).dp)) {
-    PedestalImage(width, Modifier.align(Alignment.BottomCenter))
-    Image(
-      painterResource(buildingRes(area)), contentDescription = null, contentScale = ContentScale.FillBounds,
-      modifier = Modifier.size((b.widthPx / spec.pxPerDp * k).dp).offset(x = (ped.bodyWidth / 2f * k - b.footX * k).dp, y = (faceY - b.footY * k).dp)
-    )
-    if (lamp) FarolaImage(on = true, height = 28.dp, modifier = Modifier.align(Alignment.TopStart).offset(x = (ped.bodyWidth * 0.8f * k - 8f).dp, y = (faceY - 26f).dp))
-    overlay()
-  }
-}
-
-/** Solo el edificio de un área (sin pedestal), de [height] dp de alto de cuerpo: la cabecera de la ventana de un área. La caja es cuadrada de [box] dp para que las cabeceras se alineen. */
-@Composable
-internal fun BuildingIcon(area: String, height: Dp, box: Dp, modifier: Modifier = Modifier) {
-  Box(modifier.size(box), contentAlignment = Alignment.Center) { KitPieceImage("edif_" + area.lowercase(), buildingRes(area), height = height) }
 }

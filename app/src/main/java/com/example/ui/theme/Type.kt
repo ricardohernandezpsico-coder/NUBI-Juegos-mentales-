@@ -21,17 +21,6 @@ private fun fredoka(weight: FontWeight, variation: Int) = Font(
   variationSettings = FontVariation.Settings(FontVariation.weight(variation))
 )
 
-@OptIn(ExperimentalTextApi::class)
-val FredokaFamily = FontFamily(
-  fredoka(FontWeight.Light, 300),
-  fredoka(FontWeight.Normal, 400),
-  fredoka(FontWeight.Medium, 500),
-  fredoka(FontWeight.SemiBold, 600),
-  fredoka(FontWeight.Bold, 700),
-  fredoka(FontWeight.ExtraBold, 700),
-  fredoka(FontWeight.Black, 700)
-)
-
 /**
  * La familia de TODA la app: elige la fuente por el peso. Normal y medio = Nunito (subtítulos, comentarios, texto
  * secundario); seminegrita y negrita = Fredoka (títulos, encabezados, botones, números). Así la regla se cumple en

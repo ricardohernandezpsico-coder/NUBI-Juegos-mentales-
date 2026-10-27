@@ -157,6 +157,4 @@ object TimeTrialDay {
     if (record != null) append(", tu récord ").append(hitsText(record))
   }
 
-  /** Lo que lee el lector de pantalla del recuadro de «Marca nueva». */
-  fun newMarkDescription(hits: Int, title: String): String = newMarkLine(hits, title) + " Puedes jugar otra vez."
 }

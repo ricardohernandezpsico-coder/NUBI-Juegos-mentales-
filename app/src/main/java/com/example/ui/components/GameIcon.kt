@@ -1,11 +1,8 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -22,15 +19,9 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.text.TextMeasurer
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.sp
-import com.example.model.GameRegistry
 import com.example.ui.theme.Clay
-import com.example.ui.theme.AppFamily
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -397,15 +388,6 @@ private fun gearPath(c: Offset, tip: Float, root: Float, n: Int, startDeg: Float
 
 private fun circle(c: Offset, r: Float) = Path().apply { addOval(Rect(c.x - r, c.y - r, c.x + r, c.y + r)) }
 
-private fun diamond(c: Offset, w: Float, h: Float) = Path().apply {
-  moveTo(c.x, c.y - h); lineTo(c.x + w, c.y); lineTo(c.x, c.y + h); lineTo(c.x - w, c.y); close()
-}
-
-private fun plus(c: Offset, len: Float, bar: Float) = Path().apply {
-  addRoundRect(RoundRect(c.x - len / 2f, c.y - bar / 2f, c.x + len / 2f, c.y + bar / 2f, CornerRadius(bar / 2f)))
-  addRoundRect(RoundRect(c.x - bar / 2f, c.y - len / 2f, c.x + bar / 2f, c.y + len / 2f, CornerRadius(bar / 2f)))
-}
-
 /** Hexágono regular de radio [r] (con la punta hacia arriba). */
 private fun hexagon(c: Offset, r: Float) = Path().apply {
   for (i in 0 until 6) {
@@ -453,20 +435,4 @@ private fun DrawScope.curvedArrow(c: Offset, r: Float, startDeg: Float, sweep: F
   p.lineTo(tip.x + t.x * 2f, tip.y + t.y * 2f)
   p.lineTo(tip.x - t.x * head - n.x * head, tip.y - t.y * head - n.y * head)
   clayStroke(p, color, 6f)
-}
-
-/** Signo ">" de arcilla centrado en [c]. */
-private fun DrawScope.chevron(c: Offset, r: Float, color: Color) {
-  val p = Path().apply {
-    moveTo(c.x - r * 0.6f, c.y - r); lineTo(c.x + r * 0.6f, c.y); lineTo(c.x - r * 0.6f, c.y + r)
-  }
-  clayStroke(p, color, 7f)
-}
-
-/** Letra en Fredoka tinta, centrada en [c] (en unidades del lienzo 100x100). */
-private fun DrawScope.letter(measurer: TextMeasurer, text: String, c: Offset) {
-  // El lienzo está escalado: se pide la fuente en "unidades" (px antes de escalar).
-  val style = TextStyle(fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 34f.toSp(), color = Ink)
-  val layout = measurer.measure(text, style)
-  drawText(layout, topLeft = Offset(c.x - layout.size.width / 2f, c.y - layout.size.height / 2f))
 }

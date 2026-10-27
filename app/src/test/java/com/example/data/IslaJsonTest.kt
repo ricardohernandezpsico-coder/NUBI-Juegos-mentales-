@@ -83,19 +83,6 @@ class IslaJsonTest {
     assertEquals("proporción alto/ancho del recorte", 1.1204f, layout.heightPx.toFloat() / layout.widthPx, 0.001f)
   }
 
-  @Test
-  fun las_cuatro_miradas_de_Nubi_tienen_su_caja_y_su_imagen_del_mismo_render() {
-    assertEquals(setOf("observatorio", "antena", "biblioteca", "hangar"), layout.miraBoxes.keys)
-    for ((key, box) in layout.miraBoxes) {
-      assertTrue("$key dentro de 0-1", box.topLeft.x in 0f..1f && box.topLeft.y in 0f..1f && box.bottomRight.x in 0f..1f && box.bottomRight.y in 0f..1f)
-      assertEquals("isla_nubi_mira_$key mide lo que dice el JSON", box.widthPx to box.heightPx, webpSize("src/main/res/drawable-nodpi/isla_nubi_mira_$key.webp"))
-      val boxRatio = box.width * layout.widthPx / (box.height * layout.heightPx)
-      val imgRatio = box.widthPx.toFloat() / box.heightPx
-      assertTrue("$key: caja $boxRatio contra imagen $imgRatio", abs(boxRatio - imgRatio) / imgRatio < 0.01f)
-      // Cada mirada cae casi donde cae Nubi `hola` (la misma Nubi, otra cara): se funde sin saltar.
-      assertTrue("$key se parece en posición a hola", abs(box.topLeft.x - layout.nubiTopLeft.x) < 0.03f && abs(box.topLeft.y - layout.nubiTopLeft.y) < 0.03f)
-    }
-  }
 
   @Test
   fun las_farolas_encendidas_miden_el_doble_de_halo_y_caen_dentro_de_la_imagen() {

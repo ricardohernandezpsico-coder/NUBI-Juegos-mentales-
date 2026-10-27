@@ -71,13 +71,13 @@ class GameSheetFitScreenshotTest {
 
   private fun rescue(): GameCardData {
     val radar = GameRegistry.getById("radar")!!
-    return cardData(radar, radar.title, now - day, now, 0.55f, series("glance", 260f, 240f, 250f, 210f, 190f, 170f), playsLast14 = 6)
+    return cardData(radar, radar.title, 0.55f)
   }
 
   /** Un juego con «¿Con reloj?» (Freno de Emergencia): los cuatro con Contrarreloj ya no lo tienen (Tarea 181), así que lo desplegado de siempre se prueba con uno de los otros 13. */
   private fun withReto(): GameCardData {
     val freno = GameRegistry.getById("freno")!!
-    return cardData(freno, freno.title, now - day, now, 0.55f, series("glance", 260f, 240f, 250f, 210f, 190f, 170f), playsLast14 = 6)
+    return cardData(freno, freno.title, 0.55f)
   }
 
   /** [fontScale]: la letra del sistema (1,3 = al 130 %, como la usan muchas personas mayores). [unfold]: toca «Más opciones» antes de la captura (la ficha parte plegada). */
@@ -170,7 +170,7 @@ class GameSheetFitScreenshotTest {
   @Test
   fun piloto_plegada_con_la_marca_larga_cabe_entera_en_393_por_873() {
     val piloto = GameRegistry.getById("piloto")!!
-    val data = cardData(piloto, piloto.title, now, now, 0.4f, series("mandos", 41f, 47f, 44f, 52f, 55f, 58f), playsLast14 = 4)
+    val data = cardData(piloto, piloto.title, 0.4f)
     show(data, commonW, commonH, "ficha-piloto-393x873")
     assertFoldedFitsWithoutScrolling()
   }
@@ -178,7 +178,7 @@ class GameSheetFitScreenshotTest {
   @Test
   fun tinta_o_palabra_plegada_sin_medida_cabe_entera_en_393_por_873() {
     val stroop = GameRegistry.getById("stroop")!!
-    val data = cardData(stroop, stroop.title, now - 2 * day, now, 0.62f, emptyList(), playsLast14 = 3)
+    val data = cardData(stroop, stroop.title, 0.62f)
     show(data, commonW, commonH, "ficha-tinta-393x873", timed = false)
     assertFoldedFitsWithoutScrolling()
     assertEquals(listOf("Jugar", "a tu medida"), playTexts())
@@ -187,7 +187,7 @@ class GameSheetFitScreenshotTest {
   @Test
   fun la_primera_vez_plegada_dice_sin_medir_aun_y_cabe_entera_en_393_por_873() {
     val radar = GameRegistry.getById("radar")!!
-    val data = cardData(radar, radar.title, null, now, null, emptyList(), playsLast14 = 0)
+    val data = cardData(radar, radar.title, null)
     show(data, commonW, commonH, "ficha-primera-393x873", timed = false)
     assertFoldedFitsWithoutScrolling()
   }
@@ -215,7 +215,7 @@ class GameSheetFitScreenshotTest {
     }
     assertEquals("los 17 juegos de la app", 17, GameRegistry.allGames.size)
     for (g in GameRegistry.allGames) {
-      data = cardData(g, g.title, now - day, now, 0.5f, emptyList(), playsLast14 = 2)
+      data = cardData(g, g.title, 0.5f)
       composeTestRule.waitForIdle()
       val (text, source) = FinalesConSentido.sheetFor(g.id) ?: error("${g.id}: sin texto para la lámina")
       composeTestRule.onNodeWithTag("sheet_why").assertExists()

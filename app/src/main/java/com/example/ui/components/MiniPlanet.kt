@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,9 +14,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.model.DomainType
@@ -29,9 +26,6 @@ import com.example.ui.theme.Clay
 
 /** Nombre y color de un dominio a partir de su clave ([DomainType.name]). */
 fun domainOf(key: String): DomainType? = DomainType.fromStored(key)
-
-/** Color del dominio aclarado para texto sobre el cielo (contraste ≥ 4.5:1 con la noche). */
-fun domainTextColor(key: String): Color = com.example.ui.theme.NubiTokens.onSky(domainOf(key)?.color ?: Color.White)
 
 /** Un juego como planetita de arcilla (color de su dominio + ícono); [done] = ✓ lima de "ya jugado hoy". */
 @Composable

@@ -14,8 +14,6 @@ import java.util.Locale
  * NO hay ningún perfil de sesgo (tender a decir verdad o disparate): regla de patentes (US 11,839,472). Solo aciertos y tiempos.
  */
 object Reading {
-  /** Aciertos mínimos de un tipo para dar su tiempo (Unity ya manda -1 si hay menos). */
-  const val MIN_TYPE_HITS = 4
 
   val TYPE_LABELS = listOf("Frases cortas", "Complemento", "Negaciones", "Con pausa", "Todos / algunos", "Comparaciones")
 

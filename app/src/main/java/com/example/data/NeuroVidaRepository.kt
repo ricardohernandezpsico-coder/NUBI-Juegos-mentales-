@@ -1033,11 +1033,6 @@ class NeuroVidaRepository(
     domainMasteryDao.insertOrUpdate(DomainMasteryEntity(domain = domain.name, xp = current + amount))
   }
 
-  /**
-   * La racha de ahora (Tarea 124): la que PERDONA, derivada del historial (`Streak.compute`): a lo más un día de descanso por cada 7 corridos, siempre ≥ la estricta de antes. Sin estado nuevo.
-   */
-  fun calculateStreak(history: List<GamePlayResult>): Int = streakInfo(history).current
-
   /** La racha a partir de las marcas de tiempo de lo jugado (las partidas de siempre y las del Contrarreloj). */
   fun streakOfTimestamps(timestamps: List<Long>, now: Long = System.currentTimeMillis()): Streak.StreakInfo = Streak.fromTimestamps(timestamps, now)
 

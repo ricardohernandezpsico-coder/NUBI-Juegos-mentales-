@@ -19,13 +19,11 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,12 +36,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -61,9 +56,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
@@ -79,9 +71,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.BaselinePlan
@@ -93,21 +83,14 @@ import com.example.data.FlightStep
 import com.example.model.AgeBand
 import com.example.model.DomainType
 import com.example.model.GameRegistry
-import com.example.ui.components.GameIcon
 import com.example.ui.components.NubiClay
 import com.example.ui.components.rememberReduceMotion
 import com.example.ui.theme.AppFamily
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
-import kotlin.math.PI
-import kotlin.math.cos
 import kotlin.math.sin
 
-private val OnNight = Color(0xFFEAF0FF)
 private val OnNightDim = com.example.ui.theme.NubiTokens.OnNightDim
-private val RowFill = Color(0xFF0E0C30)
-private val RowSelectedFill = Color(0xFF231C48)
-private val TrackColor = Color(0xFF221D55)
 
 /** Lo que la pantalla le pide al ViewModel (la lógica vive en `NeuroVidaViewModel` y `data/FirstFlight.kt`). */
 class FlightActions(
@@ -349,20 +332,6 @@ private fun OptionRow(opt: Opt, selected: Boolean, multi: Boolean, onClick: () -
       Text(opt.label, color = Clay.Ink, fontFamily = AppFamily, fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold, fontSize = 18.sp, lineHeight = 23.sp)
       if (opt.sub != null) Text(opt.sub, color = Clay.InkMuted, fontFamily = AppFamily, fontSize = 18.sp, lineHeight = 23.sp)
     }
-  }
-}
-
-/** Marca de hecho dibujada (no un carácter de la fuente). */
-@Composable
-private fun CheckMark(modifier: Modifier, color: Color) {
-  Canvas(modifier) {
-    val w = size.width
-    val p = Path().apply {
-      moveTo(w * 0.12f, w * 0.52f)
-      lineTo(w * 0.42f, w * 0.8f)
-      lineTo(w * 0.9f, w * 0.22f)
-    }
-    drawPath(p, color, style = Stroke(w * 0.2f, cap = StrokeCap.Round, join = StrokeJoin.Round))
   }
 }
 

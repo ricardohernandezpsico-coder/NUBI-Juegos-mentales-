@@ -6,35 +6,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.abs
 
-/** Los tiempos y la mirada de Nubi cuando se toca un edificio de la isla (Tarea 85; desde la Tarea 163 no hay lámina: se fueron el velo, el vuelo y el globo), sin pantalla. */
+/** Los tiempos de lo que queda del toque a un edificio de la isla (Tarea 85; desde la Tarea 163 no hay lámina: se fueron el velo, el vuelo y el globo; la «mirada» de Nubi se borró en la Tarea 182), sin pantalla. */
 class PlaceMotionTest {
   @Test
   fun los_tiempos_son_los_del_boceto() {
-    assertEquals(180, PlaceMotion.LOOK_FADE_MS)
-    assertEquals(260, PlaceMotion.LOOK_SHIFT_MS)
     assertEquals("Nubi se queda mirando ~650 ms antes de que se abra «Todos los juegos»", 650, PlaceMotion.LOOK_HOLD_MS)
     assertEquals(320, PlaceMotion.GLOW_MS)
-  }
-
-  @Test
-  fun nubi_se_corre_hacia_el_lugar_y_se_ladea_hacia_el_mismo_lado() {
-    for (k in listOf("observatorio", "antena", "hangar")) {
-      val l = PlaceMotion.look(k)
-      assertTrue("$k a la izquierda", l.shift < 0f && l.tiltDeg < 0f)
-    }
-    val b = PlaceMotion.look("biblioteca")
-    assertTrue(b.shift > 0f && b.tiltDeg > 0f)
-    assertTrue("~4 % del ancho, entre 3 y 5 %", PlaceMotion.LOOKS.values.all { abs(it.shift) in 0.03f..0.05f })
-    assertTrue("entre 4 y 6 grados", PlaceMotion.LOOKS.values.all { abs(it.tiltDeg) in 4f..6f })
-    assertEquals(0f, PlaceMotion.look(null).shift, 0f)
-  }
-
-  @Test
-  fun el_fundido_de_la_mirada_termina_antes_que_el_corrimiento() {
-    assertEquals(0f, PlaceMotion.lookFade(0f), 0f)
-    assertEquals(1f, PlaceMotion.lookFade(1f), 0f)
-    assertEquals(1f, PlaceMotion.lookFade(180f / 260f), 1e-5f)
-    assertTrue(PlaceMotion.lookFade(0.3f) in 0.1f..1f)
   }
 
   @Test

@@ -29,7 +29,6 @@ import com.example.data.FigDetail
 import com.example.data.FigPt
 import com.example.data.Figure
 import com.example.ui.theme.AppFamily
-import com.example.ui.theme.Clay
 
 private val Gold = Color(0xFFE9C77B)
 private val LineGold = Color(0xFFFFD98A)

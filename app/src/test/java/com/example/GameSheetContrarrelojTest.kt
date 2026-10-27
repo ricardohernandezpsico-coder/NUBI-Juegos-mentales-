@@ -88,7 +88,7 @@ class GameSheetContrarrelojTest {
             var choice by remember { mutableStateOf(PlayMode.A_TU_MEDIDA) }
             var withClock by remember { mutableStateOf(c1.timed) }
             val g = GameRegistry.getById(c1.gameId)!!
-            val data = cardData(g, g.title, now - day, now, 0.55f, emptyList(), playsLast14 = 3)
+            val data = cardData(g, g.title, 0.55f)
             Box(Modifier.width(c1.width.dp).height(c1.height.dp).background(Color(0xFF050823)).testTag("frame").padding(horizontal = 14.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
               Box(Modifier.fillMaxWidth()) {
                 GameSheetContent(
