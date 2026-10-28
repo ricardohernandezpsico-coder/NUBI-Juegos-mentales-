@@ -30,7 +30,6 @@ import com.example.data.Achievements
 import com.example.data.FlightMode
 import com.example.data.FlightState
 import com.example.data.FlightStep
-import com.example.data.IslaPieza
 import com.example.data.MeasurePoint
 import com.example.data.PlayMode
 import com.example.data.local.DailySessionEntity
@@ -239,7 +238,7 @@ class AppActualScreenshotTest {
                   )
                   Scene.MEDALLA_PIEZA, Scene.MEDALLA_SIN -> CompositionLocalProvider(LocalReduceMotion provides true) {
                     val def = Achievements.byId(if (scene == Scene.MEDALLA_PIEZA) "racha_7" else "primer_paso")!!
-                    AchievementOverlay(def = def, unlockedCount = 6, totalCount = Achievements.all.size, streak = 7, onDismiss = {}, delayMs = 0L, soundEnabled = false, pieceSound = {})
+                    AchievementOverlay(def = def, unlockedCount = 6, totalCount = Achievements.all.size, streak = 7, onDismiss = {}, delayMs = 0L, soundEnabled = false)
                   }
                   Scene.CARGA -> CompositionLocalProvider(LocalReduceMotion provides true) {
                     com.example.ui.components.GameLoadingScreen(GameRegistry.getById("secuencia")!!, level = 3, timed = true, withSky = false)       // «Etapa Hábil · Con reloj» (Tarea 150, B1.2: antes «Reto»)
@@ -289,18 +288,6 @@ class AppActualScreenshotTest {
     r.shot("hoy-letra20", 873, 2f)                                                  // Tarea 165: con letra 2,0 Hoy se desliza (la tarjeta no se corta)
   }
 
-  /** La isla de Tú sin piezas y con las diez («Tu isla crece», Tarea 136; desde la Tarea 165 la isla y su revelación viven en Tú): se fijan con el mismo gancho que los botones «[Debug]» de Ajustes. */
-  @Test
-  fun tu_isla_con_0_y_con_10_piezas() {
-    val r = Rig(viewModel(), Scene.TU)
-    r.settle()
-    composeTestRule.runOnIdle { r.vm!!.debugSetIslaPieces(emptyList()) }
-    r.settle(); r.shot("tu-isla-0", 873)
-    composeTestRule.runOnIdle { r.vm!!.debugSetIslaPieces(IslaPieza.entries) }
-    r.settle(); r.shot("tu-isla-10", 873)
-    r.shot("tu-isla-10-letra13", 873, 1.3f)
-  }
-
   // ---------------------------------------------------------------- Todos los juegos
 
   /** La ventana con los 17 juegos, su buscador y los chips de área (Tarea 158): sin filtro, con «Memoria» y con letra 1,3. */
@@ -328,7 +315,7 @@ class AppActualScreenshotTest {
   }
 
   /** Juegos recién instalada la app (sin ninguna partida): la toma que faltaba (Tarea 147, P8): con todo en «Inicio». */
-  /** «Tú» recién instalada la app (sin partidas): la isla sin piezas, el nombre y las medallas por ganar. */
+  /** «Tú» recién instalada la app (sin partidas): Nubi, el nombre, los cuatro cuadros en cero y las medallas por ganar. */
   @Test
   fun tu_sin_partidas() {
     val r = Rig(NeuroVidaViewModel(app).also { viewModels.add(it) }, Scene.TU)
@@ -365,7 +352,7 @@ class AppActualScreenshotTest {
     r.shot("avance-vacio-letra13", 873, 1.3f)
   }
 
-  /** Tú (Tarea 158): tu isla con sus piezas, tu nombre con «Cambiar», Racha · Partidas · Medallas, las medallas y, al final, la losa «Ajustes». */
+  /** Tú (Tarea 158; rehecha en la Tarea 185): Nubi, tu nombre con «Cambiar», los cuatro cuadros, las medallas, «Cómo juegas», «Más ajustes», «En qué se basa Nubi» y «Contacto». */
   @Test
   fun tu() {
     val r = Rig(viewModel(), Scene.TU)
@@ -420,9 +407,9 @@ class AppActualScreenshotTest {
     r.shot("resultado-con-record-completa", 1700)
   }
 
-  /** La celebración de una medalla: con pieza de la isla («Y en tu isla aparece: …», Tarea 136) y sin pieza. */
+  /** La celebración de una medalla (la de racha traía una pieza de la isla hasta la Tarea 184; desde la 185 todas se ven igual, sin la línea de la isla). */
   @Test
-  fun medalla_con_y_sin_pieza() {
+  fun medalla_de_racha_y_primer_paso() {
     val r = Rig(null, Scene.MEDALLA_PIEZA)
     r.settle(); r.shot("medalla-con-pieza", 873)
     r.go(Scene.MEDALLA_SIN, 873); r.shot("medalla-sin-pieza", 873)

@@ -37,7 +37,7 @@ import java.io.File
 
 /**
  * Las costuras «de antes» de la app (Tarea 145; `auditoria-fable/revision-pulido-19-oct.md` §4 «Tarea C», ítems 14, 10 y 23 y los textos «C»):
- * la medalla de la celebración es la de plasticina, Licencias va sobre una losa crema, el cierre del Primer vuelo muestra la isla, el Perfil dice «Medallas N» y los textos que afirmaban de más.
+ * la medalla de la celebración es la de plasticina, Licencias va sobre una losa crema, el cierre del Primer vuelo muestra a Nubi (la isla salió en la Tarea 185), el Perfil dice «Medallas N» y los textos que afirmaban de más.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -58,9 +58,11 @@ class CosturasDeAntesTest {
     assertTrue(overlay.contains("if (medalState != null) FamilyMedal(medalState, MEDAL_HEIGHT)\n          else AchievementMedal("))
     // todo logro que SE OTORGA tiene familia: la celebración nunca cae en el respaldo
     assertTrue("todos los logros que se otorgan tienen familia", Achievements.all.all { it.family != null })
-    // y se conservan lo que siempre tuvo: título «Medalla nueva», la luz, el sonido de la pieza
-    for (kept in listOf("\"Medalla nueva\"", "Brush.radialGradient", "IslaPiezas.forAchievement", "NewPieceSound.play"))
+    // y se conservan lo que siempre tuvo: título «Medalla nueva» y la luz; la línea «Y en tu isla aparece: …» y su sonido se fueron con la isla (Tarea 185)
+    for (kept in listOf("\"Medalla nueva\"", "Brush.radialGradient"))
       assertTrue("la celebración conserva $kept", overlay.contains(kept))
+    for (gone in listOf("IslaPiezas", "NewPieceSound", "achievement_piece", "Y en tu isla"))
+      assertTrue("la celebración ya no menciona $gone (la isla salió de la app)", !overlay.contains(gone))
     // Tarea 148 (P4): sin el abanico de rayos vectoriales que giraba ni los destellos con puntas: un halo sol suave y seis luceros redondos que suben; el título en sol con el contorno de las pestañas
     assertTrue("el halo sol", overlay.contains("Clay.Sun.copy(alpha = 0.5f * a)"))
     assertTrue("seis luceros redondos", overlay.contains("sparks.take(6)") && overlay.contains("drawCircle(sparkColors"))
@@ -120,33 +122,39 @@ class CosturasDeAntesTest {
   }
 
   @Test
-  fun el_cierre_muestra_la_isla_con_las_dos_lineas_y_el_boton_sin_desplazar() {
+  fun el_cierre_muestra_a_Nubi_con_las_dos_lineas_y_el_boton_sin_desplazar() {
     closing(393, 873)
-    rule.onNodeWithTag("flight_island").assertIsDisplayed()
+    rule.onNodeWithTag("flight_nubi").assertIsDisplayed()
     rule.onNodeWithText("Tu primer vuelo fue tu ruta de hoy").assertIsDisplayed()
     rule.onNodeWithText("Mañana empieza tu ruta de 3 juegos", substring = true).assertIsDisplayed()
     rule.onNodeWithTag("btn_flight_finish").assertIsDisplayed()
-    val island = rule.onNodeWithTag("flight_island").getUnclippedBoundsInRoot()
+    val island = rule.onNodeWithTag("flight_nubi").getUnclippedBoundsInRoot()
     val title = rule.onNodeWithText("Tu primer vuelo fue tu ruta de hoy").getUnclippedBoundsInRoot()
     val sub = rule.onNodeWithText("Mañana empieza tu ruta de 3 juegos", substring = true).getUnclippedBoundsInRoot()
     val button = rule.onNodeWithTag("btn_flight_finish").getUnclippedBoundsInRoot()
-    assertTrue("la isla va sobre las dos líneas: ${island.bottom} y ${title.top}", island.bottom <= title.top + 1.dp)
+    assertTrue("Nubi va sobre las dos líneas: ${island.bottom} y ${title.top}", island.bottom <= title.top + 1.dp)
     assertTrue("y todo entra sobre el botón sin desplazar: ${sub.bottom} y ${button.top}", sub.bottom <= button.top + 1.dp)
-    assertTrue("la isla ocupa el alto que sobra (no es una miniatura): ${island.height}", island.height >= 250.dp)
+    assertTrue("el lugar de Nubi ocupa el alto que sobra: ${island.height}", island.height >= 250.dp)
+    // Nubi despierta (ojos abiertos, parpadea: Tarea 184) y grande (200 dp de ancho: `NubiSize.L`), centrada; y el cierre ya no habla de la isla (Tarea 185)
+    val nubi = rule.onNodeWithTag("nubi_ojos_abiertos", useUnmergedTree = true).getUnclippedBoundsInRoot()
+    assertEquals("Nubi mide 200 dp de ancho (el tamaño L)", 200f, (nubi.right - nubi.left).value, 1f)
+    assertTrue("y va centrada: ${nubi.left} y ${nubi.right}", kotlin.math.abs((nubi.left + nubi.right).value / 2f - 393f / 2f) < 2f)
+    assertEquals("ningún texto del cierre dice «isla»", 0, rule.onAllNodes(androidx.compose.ui.test.hasText("isla", substring = true, ignoreCase = true)).fetchSemanticsNodes().size)
+    assertEquals("ni su descripción", 0, rule.onAllNodes(androidx.compose.ui.test.hasContentDescription("isla", substring = true, ignoreCase = true), useUnmergedTree = true).fetchSemanticsNodes().size)
   }
 
   private fun closingStillShowsEverything(w: Int, h: Int, scale: Float) {
     closing(w, h, scale)
     val at = "${w}x$h letra $scale"
-    assertTrue("$at: la isla existe", rule.onAllNodesWithTagCount("flight_island") == 1)
+    assertTrue("$at: Nubi existe", rule.onAllNodesWithTagCount("flight_nubi") == 1)
     rule.onNodeWithTag("btn_flight_finish").assertIsDisplayed()                      // el botón de abajo está siempre a la vista
-    val island = rule.onNodeWithTag("flight_island").getUnclippedBoundsInRoot()
-    assertTrue("$at: la isla no baja de 170 dp (mide ${island.height})", island.height >= 169.dp)
+    val island = rule.onNodeWithTag("flight_nubi").getUnclippedBoundsInRoot()
+    assertTrue("$at: el lugar de Nubi no baja de 170 dp (mide ${island.height})", island.height >= 169.dp)
   }
 
-  @Test fun el_cierre_con_letra_1_3_sigue_mostrando_la_isla_y_el_boton() = closingStillShowsEverything(393, 873, 1.3f)
-  @Test fun el_cierre_en_360_por_640_sigue_mostrando_la_isla_y_el_boton() = closingStillShowsEverything(360, 640, 1f)
-  @Test fun el_cierre_con_letra_2_0_sigue_mostrando_la_isla_y_el_boton() = closingStillShowsEverything(393, 873, 2f)
+  @Test fun el_cierre_con_letra_1_3_sigue_mostrando_a_Nubi_y_el_boton() = closingStillShowsEverything(393, 873, 1.3f)
+  @Test fun el_cierre_en_360_por_640_sigue_mostrando_a_Nubi_y_el_boton() = closingStillShowsEverything(360, 640, 1f)
+  @Test fun el_cierre_con_letra_2_0_sigue_mostrando_a_Nubi_y_el_boton() = closingStillShowsEverything(393, 873, 2f)
 
   private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.onAllNodesWithTagCount(tag: String) =
     this.onAllNodes(androidx.compose.ui.test.hasTestTag(tag)).fetchSemanticsNodes().size
@@ -168,8 +176,8 @@ class CosturasDeAntesTest {
   @Test
   fun el_perfil_dice_medallas_N_con_los_niveles_ganados_en_vez_de_mejor() {
     val profile = source("ui/screens/ProfileScreen.kt")
-    assertTrue(profile.contains("StatText(\"Medallas\", \"\$medalCount\""))
-    assertTrue("ya no hay «Mejor» en la fila de cifras", !profile.contains("StatText(\"Mejor\""))
+    assertTrue("Tú dice «N de 15 medallas» en su cuadro con el mismo número (Tarea 185)", profile.contains("medals = medalCount"))
+    assertTrue("ya no hay «Mejor» ni la fila de tres cifras", !profile.contains("StatText("))
     assertTrue("N = los niveles ganados en las tres familias, el mismo número de «Tus medallas»", profile.contains("medals.sumOf { it.level }"))
     // y ese número es el de los logros que se otorgan y ya están conseguidos
     val unlocked = setOf("primer_paso", "racha_3", "racha_7", "dia_completo", "vuelta_1")

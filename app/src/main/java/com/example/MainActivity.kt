@@ -178,10 +178,12 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
           }
         }
 
-        // Los Ajustes, abiertos desde «Tú» (Tarea 158: el perfil es la pestaña «Tú» y los dos botones de arriba a la derecha se fueron).
+        // Los Ajustes y «En qué se basa Nubi», abiertos desde «Tú» (Tarea 158: el perfil es la pestaña «Tú» y los dos botones de arriba a la derecha se fueron; Tarea 185: «En qué se basa Nubi»).
         if (activeGame == null && lastResult == null && sessionSummary == null) when (topPanel) {
           com.example.viewmodel.TopPanel.AJUSTES ->
             com.example.ui.screens.SettingsPanel(viewModel = viewModel, onClose = { viewModel.openTopPanel(null) })
+          com.example.viewmodel.TopPanel.FUENTES ->
+            com.example.ui.screens.FuentesPanel(onClose = { viewModel.openTopPanel(null) })
           null -> {}
         }
 

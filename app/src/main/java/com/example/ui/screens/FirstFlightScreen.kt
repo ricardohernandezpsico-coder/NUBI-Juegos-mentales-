@@ -270,7 +270,7 @@ private fun PageFrame(
 ) {
   Column(Modifier.fillMaxSize()) {
     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = if (centered) Alignment.Center else Alignment.TopCenter) {
-      // [fill] = el cuerpo se ocupa de su propio alto (y de deslizarse): el cierre, donde la isla toma lo que sobra
+      // [fill] = el cuerpo se ocupa de su propio alto (y de deslizarse): el cierre, donde Nubi toma lo que sobra
       if (fill) Box(Modifier.fillMaxSize().padding(top = 10.dp)) { body() }
       else Column(
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(top = 10.dp),
@@ -573,8 +573,8 @@ private fun ReminderPage(s: FlightState, a: FlightActions) {
 
 /**
  * El último paso: los 3 juegos de hoy, elegidos por las metas y el punto de partida. «Empezar mi ruta» entra a Hoy.
- * Tarea 145 (ítem 23 de la revisión del 19-oct): antes Nubi y dos líneas con la mitad de la pantalla vacía; ahora la ISLA, la misma de Tú (el mismo render, con Nubi encima; desde la Tarea 165 Hoy ya no lleva isla salvo al completar la ruta), a un tamaño que entra sin desplazar, y las dos líneas de siempre (sin texto nuevo que prometa algo).
- * La isla se queda con lo que sobra de alto después de las dos líneas (se miden con la letra del sistema); con letra muy grande, donde ni así entra, la página se desliza como las demás.
+ * Tarea 145 (ítem 23 de la revisión del 19-oct): antes Nubi y dos líneas con la mitad de la pantalla vacía; luego la isla de Tú. Tarea 185 (28-oct): la isla salió de la app (Ricardo: arriba de Tú va SOLO Nubi), así que el cierre vuelve a Nubi: despierta y parpadeando, grande (`NubiSize.L`) y centrada, y las dos líneas
+ * de siempre (sin texto nuevo que prometa algo y sin decir «isla»). Nubi se centra en lo que sobra de alto después de las dos líneas (se miden con la letra del sistema); con letra muy grande, donde ni así entra, la página se desliza como las demás.
  */
 @Composable
 private fun TodayPathPage(todayGames: List<String>, a: FlightActions) {
@@ -593,12 +593,11 @@ private fun TodayPathPage(todayGames: List<String>, a: FlightActions) {
           (t.size.height + s.size.height).toDp() + 12.dp * 2
         }
       }
-      val islandHeight = (maxHeight - textHeight).coerceAtLeast(MIN_ISLAND_HEIGHT)
+      val nubiHeight = (maxHeight - textHeight).coerceAtLeast(MIN_NUBI_HEIGHT)
       Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        com.example.ui.components.Island(
-          description = "Tu isla, la que verás en Tú",
-          modifier = Modifier.fillMaxWidth().height(islandHeight).testTag("flight_island")
-        )
+        Box(Modifier.fillMaxWidth().height(nubiHeight).testTag("flight_nubi"), contentAlignment = Alignment.Center) {
+          com.example.ui.components.NubiClay(com.example.ui.components.NubiSize.L)
+        }
         Title(title, center = true)
         Sub(sub, center = true)
       }
@@ -606,5 +605,5 @@ private fun TodayPathPage(todayGames: List<String>, a: FlightActions) {
   }
 }
 
-/** Lo menos que mide la isla del cierre (dp): con letra muy grande la página se desliza antes que dejarla más chica. */
-private val MIN_ISLAND_HEIGHT = 170.dp
+/** Lo menos que mide el lugar de Nubi en el cierre (dp): con letra muy grande la página se desliza antes que dejarlo más chico. */
+private val MIN_NUBI_HEIGHT = 170.dp

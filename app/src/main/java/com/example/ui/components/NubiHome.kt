@@ -37,14 +37,14 @@ import com.example.R
 import com.example.data.AreaPoints
 import com.example.ui.theme.Clay
 
-/** La relación ancho / alto de `nubi_3d.webp` y de `nubi_3d_descansa.webp` (1080 × 713 px, Tarea 148): Nubi de plasticina de frente, con los ojos abiertos y con los ojos cerrados, recortadas a la MISMA caja (render de `isla.py --solo-nubi`, armado por `tools/isla/nubi_reposo.py`). */
+/** La relación ancho / alto de `nubi_3d.webp` y de `nubi_3d_descansa.webp` (1080 × 713 px, Tarea 148): Nubi de plasticina de frente, con los ojos abiertos y con los ojos cerrados, recortadas a la MISMA caja (render de `tools/isla/isla.py --solo-nubi`, armado por `tools/isla/nubi_reposo.py`). */
 const val NUBI_ASPECT = 1080f / 713f
 
-/** La tinta de la sombra de Nubi: la de la isla (`Island.kt`), la misma sombra en toda la app (Tarea 148, P3: antes `NubiClay` tenía una propia, más chica y más oscura). */
+/** La tinta de la sombra de Nubi: la que aprobó Ricardo con la isla (que salió de la app en la Tarea 185), la misma sombra en toda la app (Tarea 148, P3: antes `NubiClay` tenía una propia, más chica y más oscura). */
 internal val NubiShadowInk = Color(0xFF2B2451)
 
 /**
- * UNA sola sombra para Nubi (Tarea 148, P3): una elipse de borde difuso con la tinta y la opacidad de la isla, la que aprobó Ricardo. La isla la dibuja sobre su losa ([drawNubiShadowEllipse] con sus medidas de `isla.json`) y `NubiClay`, con las mismas, a ras del cuerpo.
+ * UNA sola sombra para Nubi (Tarea 148, P3): una elipse de borde difuso con la tinta y la opacidad que aprobó Ricardo (antes la isla la dibujaba sobre su losa con sus medidas de `isla.json`; la isla salió en la Tarea 185). `NubiClay` la dibuja a ras del cuerpo.
  * [center] = el centro; [rx]/[ry] = los radios del núcleo; [soft] = media franja de desenfoque a cada lado del borde; [alpha] = la opacidad en el núcleo.
  */
 internal fun DrawScope.drawNubiShadowEllipse(center: Offset, rx: Float, ry: Float, soft: Float, alpha: Float) {

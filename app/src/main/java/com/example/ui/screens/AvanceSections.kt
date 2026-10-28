@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.data.AchievementFamily
+import com.example.data.glueNumbers
 import com.example.data.AchievementStats
 import com.example.data.Achievements
 import com.example.data.FamilyMedalState
@@ -75,7 +76,7 @@ internal fun FamilyMedalCards(states: List<FamilyMedalState>, onTap: (Achievemen
               Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 FamilyMedal(st, 56.dp)
                 Text(st.family.title, color = if (st.unlocked) Clay.Ink else Clay.InkMuted, fontSize = 16.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, lineHeight = 20.sp, modifier = Modifier.padding(top = 4.dp))
-                st.captionLines.forEach { Text(it, color = Clay.InkMuted, fontSize = 16.sp, textAlign = TextAlign.Center, lineHeight = 20.sp) }
+                st.captionLines.forEach { Text(it.glueNumbers(), color = Clay.InkMuted, fontSize = 16.sp, textAlign = TextAlign.Center, lineHeight = 20.sp) }
               }
             }
           }

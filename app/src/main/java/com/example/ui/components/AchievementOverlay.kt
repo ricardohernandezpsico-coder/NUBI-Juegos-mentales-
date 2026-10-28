@@ -9,17 +9,10 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import com.example.data.IslaPiezas
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -71,8 +64,7 @@ private val MEDAL_HEIGHT = 160.dp
  * qué se hizo y cuántos logros llevas; "¡Genial!" y "Compartir" (tarjeta con la medalla, [ShareCard]).
  * Si hay varios logros seguidos se muestran de a uno. Atrás = "¡Genial!". Respeta "quitar animaciones".
  *
- * Si la medalla trae una pieza de la isla (`IslaPiezas.forAchievement`; Tarea 136, «Tu isla crece») se suma UNA línea, «Y en tu isla aparece: un muelle», con la pieza chica al lado (88 × 56 dp) y suena el `New` de la paleta Madera
- * junto con ella (`NewPieceSound`; con [soundEnabled] en false, no suena). Es la única celebración de la pieza: Hoy la revela después sin sonido ni vibración. Sin pieza, la celebración queda como era (sin sonido).
+ * Desde la Tarea 185 (28-oct) la celebración ya no lleva la línea de la pieza de la isla ni su sonido: la isla salió de la app (Ricardo: arriba de Tú va SOLO Nubi).
  */
 @Composable
 fun AchievementOverlay(
@@ -82,9 +74,7 @@ fun AchievementOverlay(
   streak: Int,
   onDismiss: () -> Unit,
   delayMs: Long = 1700L,
-  soundEnabled: Boolean = true,
-  /** Lo que suena con la línea de la pieza (las pruebas lo cambian para contar las veces): por defecto, el `New` de la paleta Madera. */
-  pieceSound: (android.content.Context) -> Unit = { NewPieceSound.play(it) }
+  soundEnabled: Boolean = true
 ) {
   val context = LocalContext.current
   val haptics = LocalHapticFeedback.current
@@ -113,13 +103,6 @@ fun AchievementOverlay(
     launch { medal.animateTo(1f, spring(dampingRatio = 0.45f, stiffness = 280f)) }
     delay(300)
     texts.animateTo(1f, tween(320))
-  }
-  // El sonido de la pieza nueva, junto con la línea (que aparece con los textos: 240 ms de velo + 300 ms). Con «quitar animaciones» suena en cuanto se ve.
-  val piece = remember(def.id) { IslaPiezas.forAchievement(def.id) }
-  LaunchedEffect(def.id) {
-    if (piece == null || !soundEnabled) return@LaunchedEffect
-    if (!reduceMotion) delay(240L + 300L)
-    pieceSound(context)
   }
   val color = def.medalColor()
   val light = lerp(color, Color.White, 0.45f)
@@ -206,24 +189,6 @@ fun AchievementOverlay(
           color = com.example.ui.theme.NubiTokens.OnNightDim,
           modifier = Modifier.padding(top = 10.dp)
         )
-        if (piece != null) {
-          // Una sola línea: la pieza chica y lo que apareció en la isla. El grupo lo dice completo el lector de pantalla.
-          Row(
-            modifier = Modifier.padding(top = 14.dp).semantics(mergeDescendants = true) { contentDescription = IslaPiezas.announcement(piece) }.testTag("achievement_piece"),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
-          ) {
-            Image(painterResource(islaPiezaChica(piece)), contentDescription = null, modifier = Modifier.size(width = 88.dp, height = 56.dp), contentScale = ContentScale.Fit)
-            Text(
-              text = IslaPiezas.announcement(piece),
-              fontFamily = AppFamily,
-              fontWeight = FontWeight.SemiBold,
-              fontSize = 16.sp,
-              color = Clay.Cream,
-              modifier = Modifier.weight(1f, fill = false)
-            )
-          }
-        }
         Spacer(Modifier.height(28.dp))
         ClayButton(text = "¡Genial!", onClick = onDismiss, modifier = Modifier.testTag("btn_achievement_ok"))
         Spacer(Modifier.height(14.dp))

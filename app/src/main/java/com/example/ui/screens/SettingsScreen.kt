@@ -1,9 +1,5 @@
 package com.example.ui.screens
 
-import android.os.Build
-import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,8 +8,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -23,7 +21,6 @@ import com.example.ui.components.ClayChoice
 import com.example.ui.components.ClayChoiceRow
 import com.example.ui.components.ClayDialog
 import com.example.ui.components.ClayPanel
-import com.example.ui.components.ClaySwitch
 import com.example.ui.components.Glyph
 import com.example.ui.components.KitGlyph
 import com.example.ui.components.PanelAccent
@@ -33,6 +30,11 @@ import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
 import com.example.viewmodel.NeuroVidaViewModel
 
+/**
+ * Los Ajustes (Tarea 185, 28-oct; Fable, `auditoria-fable/tu-pestana.md` §2.4): cuatro losas en vez de nueve bloques — **Juego**, **Recordatorio**, **Tus datos** y **Acerca de Nubi**. Una sola puerta por ajuste (regla de la Tarea 152): el sonido, la vibración y el sí o no del
+ * recordatorio viven SOLO en Tú («Cómo juegas», [ComoJuegasPanel]); aquí quedan la meta semanal, la edad y los estudios (Juego), la HORA del recordatorio y «Probar el aviso» (Recordatorio) y lo demás. «Enviar informe de errores» se mudó a «Contacto» de Tú (es contacto, no un
+ * ajuste). Ya no hay `Toast` de Android: cada cambio se ve en el control mismo y lo único que se explica es lo que no sale como se espera. Las herramientas de prueba salen solo en builds de depuración.
+ */
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
@@ -43,56 +45,11 @@ fun SettingsScreen(
 ) {
   val userSettings by viewModel.userSettings.collectAsState()
 
-  val nameInput = userSettings.name                              // el nombre se edita en el Perfil (Tarea 152): aquí solo se reenvía tal cual
   var weeklyGoal by remember(userSettings.weeklyGoal) { mutableStateOf(userSettings.weeklyGoal) }
-  var defaultTimed by remember(userSettings.defaultTimed) { mutableStateOf(userSettings.defaultTimed) }
-  var soundEnabled by remember(userSettings.soundEnabled) { mutableStateOf(userSettings.soundEnabled) }
-  var hapticsEnabled by remember(userSettings.hapticsEnabled) { mutableStateOf(userSettings.hapticsEnabled) }
-  var notificationsEnabled by remember(userSettings.notificationsEnabled) { mutableStateOf(userSettings.notificationsEnabled) }
   var reminderHour by remember(userSettings.reminderHour) { mutableStateOf(userSettings.reminderHour) }
   var reminderMinute by remember(userSettings.reminderMinute) { mutableStateOf(userSettings.reminderMinute) }
-
-  // Granular difficulty states
-  var difficultyMode by remember(userSettings.difficultyMode) { mutableStateOf(userSettings.difficultyMode) }
-  var cognitiveAssistance by remember(userSettings.cognitiveAssistance) { mutableStateOf(userSettings.cognitiveAssistance) }
-  var timeScaleFactor by remember(userSettings.timeScaleFactor) { mutableStateOf(userSettings.timeScaleFactor) }
-  // El tema es único (cosmos oscuro, ver Theme.kt): ya no hay selector; se reenvía el valor guardado tal cual.
-  val themeMode = userSettings.themeMode
   var appLanguage by remember(userSettings.language) { mutableStateOf(userSettings.language) }
   var ageBand by remember(userSettings.ageBand) { mutableStateOf(userSettings.ageBand ?: AgeBand.ADULT) }
-
-  val context = LocalContext.current
-  val notificationPermissionLauncher = rememberLauncherForActivityResult(
-    contract = ActivityResultContracts.RequestPermission()
-  ) { isGranted ->
-    if (isGranted) {
-      notificationsEnabled = true
-      viewModel.updateSettings(
-        name = nameInput,
-        weeklyGoal = weeklyGoal,
-        defaultTimed = defaultTimed,
-        sound = soundEnabled,
-        haptics = hapticsEnabled,
-        notificationsEnabled = true,
-        reminderHour = reminderHour,
-        reminderMinute = reminderMinute
-      )
-      Toast.makeText(context, "Recordatorio diario activado", Toast.LENGTH_SHORT).show()
-    } else {
-      notificationsEnabled = false
-      viewModel.updateSettings(
-        name = nameInput,
-        weeklyGoal = weeklyGoal,
-        defaultTimed = defaultTimed,
-        sound = soundEnabled,
-        haptics = hapticsEnabled,
-        notificationsEnabled = false,
-        reminderHour = reminderHour,
-        reminderMinute = reminderMinute
-      )
-      Toast.makeText(context, "Permiso de notificaciones denegado", Toast.LENGTH_SHORT).show()
-    }
-  }
 
   var showResetDialog by remember { mutableStateOf(false) }
 
@@ -106,168 +63,85 @@ fun SettingsScreen(
   ) {
     Spacer(modifier = Modifier.height(16.dp))
 
-    // (Tarea 143, A3) El título grande «Ajustes y Preferencias» se quitó: la cabecera del panel ya dice «Ajustes» (antes eran dos títulos seguidos, «Opciones» y este).
-
     // El selector de idioma: solo se muestra si hay más de un idioma TRADUCIDO (`AppLanguage.translated`). Hoy solo el español lo está: la app no se traduce al resto, así que elegirlos dejaba una app a medias.
     if (AppLanguage.selectable.size > 1) ClayPanel(modifier = Modifier.fillMaxWidth().testTag("card_language_selector"), verticalSpacing = 14.dp) {
-      run {
-        Row(
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.SpaceBetween,
-          modifier = Modifier.fillMaxWidth()
-        ) {
-          Row(verticalAlignment = Alignment.CenterVertically) {
-            KitGlyph(Glyph.GLOBE)
-            Spacer(modifier = Modifier.width(10.dp))
-            Column {
-              Text(
-                text = strings.languageCardTitle,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-              )
-              Text(
-                text = strings.languageCardSubtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-              )
-            }
-          }
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        KitGlyph(Glyph.GLOBE)
+        Spacer(modifier = Modifier.width(10.dp))
+        Column {
+          Text(text = strings.languageCardTitle, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+          Text(text = strings.languageCardSubtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
+      }
+      ClayChoiceRow {
+        AppLanguage.selectable.forEach { lang ->
+          val isSelected = appLanguage == lang
+          ClayChoice(
+            selected = isSelected,
+            modifier = Modifier.testTag("chip_lang_${lang.code}"),
+            onClick = {
+              appLanguage = lang
+              viewModel.updateSettings(
+                name = userSettings.name, weeklyGoal = weeklyGoal, defaultTimed = userSettings.defaultTimed,
+                sound = userSettings.soundEnabled, haptics = userSettings.hapticsEnabled, language = lang
+              )
+            },
+          ) { Text(text = lang.displayName, fontSize = 16.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium) }
+        }
+      }
+    }
 
+    // ---- 1. Juego: la meta semanal, la edad y los estudios
+    ClayPanel(modifier = Modifier.fillMaxWidth().testTag("card_juego"), verticalSpacing = 14.dp) {
+      Text(text = "Juego", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+
+      // Meta semanal (Tarea 130): 7 farolas del kit con su número (1 a 7) en lugar del Slider de Material: la meta se lee como CANTIDAD y es el mismo objeto de Hoy y Avance
+      Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.testTag("settings_weekly_goal")) {
+        Text(text = "Meta semanal de juego", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+        Text(text = "$weeklyGoal días por semana", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Black, color = PanelAccent)
+        WeeklyGoalLamps(goal = weeklyGoal, onGoal = { k -> weeklyGoal = k; viewModel.setWeeklyGoal(k) })
+      }
+
+      HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+
+      // Rango de edad (piloto de perfiles por edad, 20-sep): chips. Lo que hace cada uno lo dice la nota de abajo (el onboarding prometió «puedes cambiarlo cuando quieras desde Ajustes»: esto cumple esa promesa).
+      Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          KitGlyph(Glyph.PERSON)
+          Spacer(modifier = Modifier.width(10.dp))
+          Text(text = "Rango de edad", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+        }
         ClayChoiceRow {
-          AppLanguage.selectable.forEach { lang ->
-            val isSelected = appLanguage == lang
+          AgeBand.entries.forEach { band ->
             ClayChoice(
-              selected = isSelected,
-              modifier = Modifier.testTag("chip_lang_${lang.code}"),
-              onClick = {
-                appLanguage = lang
-                viewModel.updateSettings(
-                  name = nameInput,
-                  weeklyGoal = weeklyGoal,
-                  defaultTimed = defaultTimed,
-                  sound = soundEnabled,
-                  haptics = hapticsEnabled,
-                  notificationsEnabled = notificationsEnabled,
-                  reminderHour = reminderHour,
-                  reminderMinute = reminderMinute,
-                  themeMode = themeMode,
-                  language = lang
-                )
-              },
-            ) {
-              Text(
-                text = lang.displayName,
-                fontSize = 16.sp,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-              )
-            }
+              selected = ageBand == band,
+              onClick = { ageBand = band; viewModel.setAgeBand(band) },
+              modifier = Modifier.testTag("chip_age_band_${band.name.lowercase()}")
+            ) { Text(text = band.label, fontSize = 16.sp, fontWeight = if (ageBand == band) FontWeight.Bold else FontWeight.Medium) }
           }
         }
+        Text(text = "Cambia el ritmo y el tamaño de los juegos, no lo difícil: eso lo decide cómo juegas.", fontSize = 16.sp, lineHeight = 21.sp, color = Clay.InkMuted)
       }
-    }
 
-    // 2. Meta semanal de juego
-    ClayPanel(modifier = Modifier.fillMaxWidth()) {
-      run {
-        Text(
-          text = "Meta semanal de juego",
-          style = MaterialTheme.typography.titleMedium,
-          fontWeight = FontWeight.Bold
-        )
-        Text(
-          text = "$weeklyGoal días por semana",
-          style = MaterialTheme.typography.bodyLarge,
-          fontWeight = FontWeight.Black,
-          color = PanelAccent,
-          modifier = Modifier.padding(top = 4.dp)
-        )
+      HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Tarea 130: 7 farolas del kit con su número (1 a 7) en lugar del Slider de Material: la meta se lee como CANTIDAD y es el mismo objeto de Hoy y Avance
-        WeeklyGoalLamps(
-          goal = weeklyGoal,
-          onGoal = { k ->
-            weeklyGoal = k
-            viewModel.updateSettings(
-              name = nameInput,
-              weeklyGoal = weeklyGoal,
-              defaultTimed = defaultTimed,
-              sound = soundEnabled,
-              haptics = hapticsEnabled,
-              notificationsEnabled = notificationsEnabled,
-              reminderHour = reminderHour,
-              reminderMinute = reminderMinute,
-              difficultyMode = difficultyMode
-            )
-          }
-        )
-      }
-    }
-
-    // (28-sep) La tarjeta "Dificultad Cognitiva" (modo Principiante/Intermedio/Avanzado, niveles por dominio,
-    // asistencia y ritmo) se quitó: no llegaba a los juegos. La dificultad se elige por juego antes de jugar
-    // (Suave / A tu medida / Desafío / Experto): ver docs/dificultad-y-avance.md.
-
-    // Game Mode & Audio/Haptic Switches
-    ClayPanel(modifier = Modifier.fillMaxWidth(), verticalSpacing = 16.dp) {
-      run {
-        Text(
-          text = "Cómo juegas",
-          style = MaterialTheme.typography.titleMedium,
-          fontWeight = FontWeight.Bold
-        )
-
-        // (6-oct) El interruptor «Modo contra el reloj (Reto)» se quitó: «Sin reloj / Contra el reloj» se elige por juego en su ficha de Juegos, junto a la dificultad (data/RetoChoice.kt).
-        // Su último valor quedó como elección inicial de cada juego y sigue guardado en `defaultTimed`.
-
-        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
-
-        // Rango de edad (piloto de perfiles por edad, 20-sep): chips, mismo patrón visual
-        // que el selector de idioma. Cambia el DDA en Constelaciones
-        // únicamente por ahora -- el onboarding prometió "podés cambiarlo cuando
-        // quieras desde Ajustes", esto cumple esa promesa.
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-          Row(verticalAlignment = Alignment.CenterVertically) {
-            KitGlyph(Glyph.PERSON)
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-              text = "Rango de edad",
-              style = MaterialTheme.typography.bodyMedium,
-              fontWeight = FontWeight.SemiBold
-            )
-          }
-          ClayChoiceRow {
-            AgeBand.entries.forEach { band ->
-              ClayChoice(
-                selected = ageBand == band,
-                onClick = {
-                  ageBand = band
-                  viewModel.setAgeBand(band)
-                },
-                modifier = Modifier.testTag("chip_age_band_${band.name.lowercase()}")
-              ) { Text(text = band.label, fontSize = 16.sp, fontWeight = if (ageBand == band) FontWeight.Bold else FontWeight.Medium) }
-            }
-          }
+      // Tu nivel de estudios (Tarea 152, B5.2 y B6.5; Tarea 185: una línea con «Cambiar» que despliega las seis opciones, en lugar de seis casillas siempre abiertas —unas 300 dp para un dato opcional que se toca una sola vez—): solo ayuda a calcular el punto de partida si se salta la
+      // evaluación; no cambia la dificultad.
+      val education by viewModel.education.collectAsState()
+      var educationOpen by remember { mutableStateOf(false) }
+      Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.testTag("settings_education")) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
           Text(
-            text = "Cambia el ritmo y el tamaño de los juegos, no lo difícil: eso lo decide cómo juegas.",
-            fontSize = 16.sp, lineHeight = 21.sp,
-            color = com.example.ui.theme.Clay.InkMuted
+            text = "Tu nivel de estudios: ${education?.label?.lowercase() ?: "sin elegir"}", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.weight(1f).testTag("education_line")
           )
+          Spacer(Modifier.width(8.dp))
+          ClayChoice(selected = false, onClick = { educationOpen = !educationOpen }, modifier = Modifier.testTag("btn_education_change")) {
+            Text(text = if (educationOpen) "Listo" else "Cambiar", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+          }
         }
-
-        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
-
-        // Tu nivel de estudios (Tarea 152, B5.2 y B6.5: antes huérfano en el Perfil y sin decir para qué sirve): Ajustes es «cómo juega la app». Solo ayuda a calcular el punto de partida si se salta la evaluación; no cambia la dificultad.
-        val education by viewModel.education.collectAsState()
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.testTag("settings_education")) {
-          Text(text = "Tu nivel de estudios", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-          Text(
-            text = "Opcional. Ayuda a calcular tu punto de partida si saltas la evaluación.",
-            fontSize = 16.sp, lineHeight = 21.sp,
-            color = com.example.ui.theme.Clay.InkMuted
-          )
+        if (educationOpen) {
+          Text(text = "Opcional. Ayuda a calcular tu punto de partida si saltas la evaluación.", fontSize = 16.sp, lineHeight = 21.sp, color = Clay.InkMuted)
           Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             com.example.data.Education.entries.forEach { e ->
               val on = education == e
@@ -279,255 +153,101 @@ fun SettingsScreen(
             }
           }
         }
-
-        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
-
-        // Sound switch
-        Row(
-          modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.SpaceBetween,
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-            KitGlyph(Glyph.SPEAKER)
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-              text = "Efectos de sonido",
-              style = MaterialTheme.typography.bodyMedium,
-              fontWeight = FontWeight.SemiBold
-            )
-          }
-          ClaySwitch(
-            checked = soundEnabled,
-            onCheckedChange = {
-              soundEnabled = it
-              viewModel.updateSettings(
-                name = nameInput,
-                weeklyGoal = weeklyGoal,
-                defaultTimed = defaultTimed,
-                sound = it,
-                haptics = hapticsEnabled,
-                notificationsEnabled = notificationsEnabled,
-                reminderHour = reminderHour,
-                reminderMinute = reminderMinute
-              )
-            },
-            modifier = Modifier.testTag("switch_sound"),
-            label = "Efectos de sonido"
-          )
-        }
-
-        HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
-
-        // Haptics switch
-        Row(
-          modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.SpaceBetween,
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-            KitGlyph(Glyph.VIBRATION)
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-              text = "Vibración",
-              style = MaterialTheme.typography.bodyMedium,
-              fontWeight = FontWeight.SemiBold
-            )
-          }
-          ClaySwitch(
-            checked = hapticsEnabled,
-            onCheckedChange = {
-              hapticsEnabled = it
-              viewModel.updateSettings(
-                name = nameInput,
-                weeklyGoal = weeklyGoal,
-                defaultTimed = defaultTimed,
-                sound = soundEnabled,
-                haptics = it,
-                notificationsEnabled = notificationsEnabled,
-                reminderHour = reminderHour,
-                reminderMinute = reminderMinute
-              )
-            },
-            modifier = Modifier.testTag("switch_haptics"),
-            label = "Vibración"
-          )
-        }
       }
+
+      HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
+
+      // Las animaciones no son un ajuste de Nubi: la app ya respeta «quitar animaciones» de Android y no debe duplicar el del sistema (Fable, §2.4; la línea pasó de «Sonido y vibración» a «Juego» el 28-oct)
+      Text(
+        text = "Las animaciones se quitan desde los ajustes de Android y Nubi lo respeta.",
+        fontSize = 16.sp, lineHeight = 21.sp, color = Clay.InkMuted, modifier = Modifier.testTag("settings_animations_note")
+      )
     }
 
-    // Programmed Notifications Card (WorkManager)
-    ClayPanel(modifier = Modifier.fillMaxWidth().testTag("card_notifications_workmanager"), verticalSpacing = 16.dp) {
-      run {
-        Row(
-          modifier = Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.SpaceBetween,
-          verticalAlignment = Alignment.CenterVertically
-        ) {
-          Row(verticalAlignment = Alignment.CenterVertically) {
-            KitGlyph(Glyph.BELL)
-            Spacer(modifier = Modifier.width(8.dp))
-            Column {
-              Text(
-                text = "Recordatorio diario",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-              )
-              Text(
-                text = "Un aviso al día",
-                style = MaterialTheme.typography.labelMedium,
-                color = PanelAccent
-              )
+    // ---- 2. Recordatorio: la HORA y «Probar el aviso» (el sí o no vive en Tú, «Cómo juegas»). Apagado: las horas se ven apagadas y una línea dice dónde encenderlo.
+    val reminderOn = userSettings.notificationsEnabled
+    var testNote by remember { mutableStateOf<String?>(null) }
+    ClayPanel(modifier = Modifier.fillMaxWidth().testTag("card_notifications_workmanager"), verticalSpacing = 14.dp) {
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        KitGlyph(Glyph.BELL)
+        Spacer(modifier = Modifier.width(8.dp))
+        Column {
+          Text(text = "Recordatorio diario", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+          Text(text = "Un aviso al día", style = MaterialTheme.typography.labelMedium, color = PanelAccent)
+        }
+      }
+      if (reminderOn) {
+        Text(
+          text = "Un aviso cada día, a la hora que elijas, para acordarte de jugar. Se apaga en Tú, en «Cómo juegas».",
+          style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.testTag("reminder_state_note")
+        )
+      } else {
+        Text(
+          text = "El recordatorio está apagado. Enciéndelo en Tú, en «Cómo juegas».",
+          style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.testTag("reminder_off_note")
+        )
+      }
+
+      Text(text = "Hora del recordatorio", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+
+      // Las cuatro horas en una cuadrícula de 2 × 2: la elegida en lima, con su ✓ y quieta. Apagado: se ven a media luz y no se tocan.
+      Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.alpha(if (reminderOn) 1f else 0.5f).testTag("reminder_hours")) {
+        val times = listOf(Triple("Mañana", 9, 0), Triple("Tarde", 15, 0), Triple("Al atardecer", 19, 0), Triple("Noche", 21, 0))
+        times.chunked(2).forEach { pair -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { pair.forEach { (label, h, m) ->
+          val isSelected = reminderHour == h && reminderMinute == m
+          ClayChoice(
+            selected = isSelected,
+            modifier = Modifier.weight(1f).testTag("btn_time_${label.lowercase().replace(" ", "_")}").then(if (reminderOn) Modifier else Modifier.semantics { disabled() }),
+            onClick = { if (reminderOn) { reminderHour = h; reminderMinute = m; viewModel.setReminderTime(h, m) } }
+          ) {
+            Column(Modifier.weight(1f)) {
+              Text(text = label, fontSize = 16.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium)
+              Text(text = "%02d:%02d".format(h, m), fontSize = 16.sp, color = Clay.InkMuted)
             }
           }
+        } } }
+      }
 
-          ClaySwitch(
-            checked = notificationsEnabled,
-            onCheckedChange = { isChecked ->
-              if (isChecked) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                  notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                } else {
-                  notificationsEnabled = true
-                  viewModel.updateSettings(
-                    name = nameInput,
-                    weeklyGoal = weeklyGoal,
-                    defaultTimed = defaultTimed,
-                    sound = soundEnabled,
-                    haptics = hapticsEnabled,
-                    notificationsEnabled = true,
-                    reminderHour = reminderHour,
-                    reminderMinute = reminderMinute
-                  )
-                  Toast.makeText(context, "Recordatorio diario activado", Toast.LENGTH_SHORT).show()
-                }
-              } else {
-                notificationsEnabled = false
-                viewModel.updateSettings(
-                  name = nameInput,
-                  weeklyGoal = weeklyGoal,
-                  defaultTimed = defaultTimed,
-                  sound = soundEnabled,
-                  haptics = hapticsEnabled,
-                  notificationsEnabled = false,
-                  reminderHour = reminderHour,
-                  reminderMinute = reminderMinute
-                )
-                Toast.makeText(context, "Recordatorio desactivado", Toast.LENGTH_SHORT).show()
-              }
-            },
-            modifier = Modifier.testTag("switch_notifications_enabled"),
-            label = "Recordatorio diario"
-          )
-        }
-
-        Text(
-          text = "Un aviso cada día, a la hora que elijas, para acordarte de jugar. Puedes apagarlo cuando quieras.",
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant
+      // Probar el aviso: con el recordatorio apagado no se puede (la prueba llega por el mismo permiso). El «enviado» es una línea plana de 2 s, no un Toast.
+      Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        ClayButton(
+          text = "Probar el aviso ahora", color = Clay.Cream,
+          onClick = { if (reminderOn) { viewModel.triggerTestNotification(); testNote = "Aviso de prueba enviado" } },
+          modifier = Modifier.alpha(if (reminderOn) 1f else 0.5f).testTag("btn_test_notification").then(if (reminderOn) Modifier else Modifier.semantics { disabled() })
         )
-
-        if (notificationsEnabled) {
-          HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
-
-          // Schedule time selector
-          Text(
-            text = "Hora del recordatorio",
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold
-          )
-
-          // Las cuatro horas en una cuadrícula de 2 × 2: la elegida en lima, con su ✓ y quieta.
-          Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            val times = listOf(
-              Triple("Mañana", 9, 0),
-              Triple("Tarde", 15, 0),
-              Triple("Al atardecer", 19, 0),
-              Triple("Noche", 21, 0)
-            )
-
-            times.chunked(2).forEach { pair -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { pair.forEach { (label, h, m) ->
-              val isSelected = reminderHour == h && reminderMinute == m
-              ClayChoice(
-                selected = isSelected,
-                modifier = Modifier.weight(1f).testTag("btn_time_${label.lowercase().replace(" ", "_")}"),
-                onClick = {
-                  reminderHour = h
-                  reminderMinute = m
-                  viewModel.updateSettings(
-                    name = nameInput,
-                    weeklyGoal = weeklyGoal,
-                    defaultTimed = defaultTimed,
-                    sound = soundEnabled,
-                    haptics = hapticsEnabled,
-                    notificationsEnabled = true,
-                    reminderHour = h,
-                    reminderMinute = m
-                  )
-                  Toast.makeText(context, "Recordatorio fijado a las %02d:%02d".format(h, m), Toast.LENGTH_SHORT).show()
-                }
-              ) {
-                Column(Modifier.weight(1f)) {
-                  Text(text = label, fontSize = 16.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium)
-                  Text(text = "%02d:%02d".format(h, m), fontSize = 16.sp, color = Clay.InkMuted)
-                }
-              }
-            } } }
-          }
-
-          // Test notification button
-          ClayButton(
-            text = "Probar el aviso ahora", color = Clay.Cream,
-            onClick = {
-              viewModel.triggerTestNotification()
-              Toast.makeText(context, "Aviso de prueba enviado", Toast.LENGTH_SHORT).show()
-            },
-            modifier = Modifier.testTag("btn_test_notification")
-          )
-        }
+        TransientNote(testNote, "test_notification_note", onGone = { testNote = null })
       }
     }
 
-    // Privacy Card
-    ClayPanel(modifier = Modifier.fillMaxWidth(), padding = 16.dp) {
-      Row(
-        verticalAlignment = Alignment.CenterVertically
-      ) {
+    // ---- 3. Tus datos
+    ClayPanel(modifier = Modifier.fillMaxWidth().testTag("card_tus_datos"), verticalSpacing = 14.dp) {
+      Text(text = "Tus datos", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+      Row(verticalAlignment = Alignment.CenterVertically) {
         KitGlyph(Glyph.SHIELD)
         Spacer(modifier = Modifier.width(12.dp))
         Column {
-          Text(
-            text = "Tu progreso es tuyo",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = PanelAccent
-          )
+          Text(text = "Tu progreso es tuyo", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = PanelAccent)
           Text(
             text = "Sin cuenta, sin internet y sin anuncios. Tu progreso se guarda en tu teléfono y en la copia de seguridad de Android, si la tienes activada.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
           )
         }
       }
+      // Borra datos: va en coral (y su texto lo dice), no solo por el color.
+      ClayButton(text = "Restablecer datos y puntuaciones", onClick = { showResetDialog = true }, color = Clay.Coral, modifier = Modifier.testTag("btn_reset_data"))
     }
 
-    // Aviso de salud (lo exige Google Play; texto aprobado por Ricardo, Tarea 121): sección con título y letra de lectura, no una nota chica. El mismo texto va en «Licencias y créditos».
-    ClayPanel(modifier = Modifier.fillMaxWidth().testTag("health_notice"), padding = 16.dp) {
-      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    // ---- 4. Acerca de Nubi: licencias y el aviso de salud (lo exige Google Play; texto aprobado por Ricardo, Tarea 121: sección con título y letra de lectura, no una nota chica; el mismo texto va en «Licencias y créditos»). La política de privacidad todavía no está (queda pendiente en la hoja de ruta).
+    ClayPanel(modifier = Modifier.fillMaxWidth().testTag("card_acerca"), verticalSpacing = 14.dp) {
+      Text(text = "Acerca de Nubi", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+      ClayButton(text = "Licencias y créditos", onClick = onOpenLicenses, color = Clay.Cream, modifier = Modifier.testTag("btn_licenses"))
+      Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("health_notice")) {
         Row(verticalAlignment = Alignment.CenterVertically) {
           KitGlyph(Glyph.INFO)
           Spacer(modifier = Modifier.width(12.dp))
-          Text(
-            text = com.example.data.HealthNotice.TITLE,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface
-          )
+          Text(text = com.example.data.HealthNotice.TITLE, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
         }
-        Text(
-          text = com.example.data.HealthNotice.TEXT,
-          style = MaterialTheme.typography.bodyMedium,
-          color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Text(text = com.example.data.HealthNotice.TEXT, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
       }
     }
 
@@ -536,36 +256,6 @@ fun SettingsScreen(
       DebugTools(viewModel, userSettings.id, ageBand)
       Spacer(modifier = Modifier.height(12.dp))
     }
-
-    // Informe de errores, sin servidores ni cuentas: la persona lo comparte con quien le dio la app (ver diag/ErrorLog).
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-      ClayButton(
-        text = "Enviar informe de errores", color = Clay.Cream,
-        onClick = {
-          val send = android.content.Intent(android.content.Intent.ACTION_SEND)
-            .setType("text/plain")
-            .putExtra(android.content.Intent.EXTRA_SUBJECT, "Informe de errores de Nubi")
-            .putExtra(android.content.Intent.EXTRA_TEXT, com.example.diag.ErrorLog.report(context, viewModel.unclearReport()))
-          context.startActivity(
-            android.content.Intent.createChooser(send, "Enviar informe").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-          )
-        },
-        modifier = Modifier.testTag("btn_send_error_report")
-      )
-      Text(
-        text = "Si algo falla, comparte este informe con quien te dio la app. No incluye tu nombre; si una partida no se pudo guardar, incluye los datos de esa partida para encontrar el error.",
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-      )
-    }
-    Spacer(modifier = Modifier.height(12.dp))
-
-    ClayButton(text = "Licencias y créditos", onClick = onOpenLicenses, color = Clay.Cream, modifier = Modifier.testTag("btn_licenses"))
-    Spacer(modifier = Modifier.height(12.dp))
-
-    // Reset Data button
-    // Borra datos: va en coral (y su texto lo dice), no solo por el color.
-    ClayButton(text = "Restablecer datos y puntuaciones", onClick = { showResetDialog = true }, color = Clay.Coral, modifier = Modifier.testTag("btn_reset_data"))
 
     Spacer(modifier = Modifier.height(90.dp))
   }
@@ -584,6 +274,4 @@ fun SettingsScreen(
       confirmColor = Clay.Coral
     )
   }
-
-
 }

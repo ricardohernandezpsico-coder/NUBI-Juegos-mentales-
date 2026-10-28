@@ -62,8 +62,8 @@ class NubiAssetsTest {
   }
 
   @Test
-  fun `Nubi con los ojos cerrados mide lo mismo que con los abiertos, en la isla y de frente (Tarea 148)`() {
-    for ((abiertos, cerrados) in listOf("nubi_3d" to "nubi_3d_descansa", "isla_nubi_hola" to "isla_nubi_descansa")) {
+  fun `Nubi con los ojos cerrados mide lo mismo que con los abiertos (Tarea 148, la isla salió en la Tarea 185)`() {
+    for ((abiertos, cerrados) in listOf("nubi_3d" to "nubi_3d_descansa")) {
       val a = File(res, "drawable-nodpi/$abiertos.webp"); val c = File(res, "drawable-nodpi/$cerrados.webp")
       assertTrue("falta $cerrados", c.exists())
       assertEquals("$cerrados debe medir lo mismo que $abiertos (mismo recorte: el parpadeo es un fundido sin saltos)", imageSize(a), imageSize(c))
@@ -95,24 +95,6 @@ class NubiAssetsTest {
     val words = listOf("AvatarIds", "KitAvatar", "avatarRes", "kit_av_", "Tu avatar")
     val hits = (code() + xmls()).flatMap { (f, t) -> words.filter { it in t }.map { "$f: $it" } }
     assertTrue("Referencias a los avatares:\n" + hits.joinToString("\n"), hits.isEmpty())
-  }
-
-  @Test
-  fun `las diez piezas de la isla y sus imagenes chicas estan en la app (Tarea 136)`() {
-    val ids = listOf("c1", "c2", "c3", "c4", "v1", "v2", "v3", "vo1", "vo2", "vo3")
-    val base = imageSize(File(res, "drawable-nodpi/isla_base.webp"))
-    var kb = 0L
-    for (id in ids) {
-      val capa = File(res, "drawable-nodpi/isla_deco_$id.webp"); assertTrue("falta isla_deco_$id", capa.exists())
-      assertEquals("isla_deco_$id mide lo mismo que isla_base (mismo recorte)", base, imageSize(capa))
-      kb += capa.length() / 1024
-      val chica = File(res, "drawable-nodpi/kit_pz_deco_$id.webp"); assertTrue("falta kit_pz_deco_$id", chica.exists())
-      assertEquals("kit_pz_deco_$id: 88 × 56 dp a 3×", 264 to 168, imageSize(chica))
-      assertTrue("kit_pz_deco_$id pesa poco (${chica.length() / 1024} KB)", chica.length() < 30 * 1024)
-    }
-    assertTrue("las diez capas pesan $kb KB (tope 200)", kb <= 200)
-    val wav = File(res, "raw/madera_nuevo.wav").readBytes()
-    assertEquals("RIFF", String(wav, 0, 4)); assertEquals("WAVE", String(wav, 8, 4))
   }
 
   @Test

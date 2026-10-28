@@ -32,7 +32,7 @@ enum class AppTab(val title: String) {
 }
 
 /** Lo que se abre encima de una pestaña como panel: los Ajustes (desde «Tú»). El Perfil ya no es un panel: es la pestaña «Tú» (Tarea 158). */
-enum class TopPanel { AJUSTES }
+enum class TopPanel { AJUSTES, FUENTES }
 
 /**
  * «Todos los juegos» (la ventana de Hoy con los 17): el filtro de área (la clave, `MEMORIA`…; null = Todas), lo escrito en el buscador y el juego marcado (el último que se abrió o se jugó desde ahí). Vive en el ViewModel porque el pager se retira mientras hay un juego encima:
@@ -361,17 +361,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   /** Solo depuración (botón en Ajustes): muestra la celebración de un logro. */
   fun debugShowAchievement() {
     _achievementQueue.value = _achievementQueue.value + "racha_7"
-  }
-
-  /**
-   * Solo depuración (botones en Ajustes): las piezas de la isla que Hoy muestra EN LUGAR de las que dan las medallas reales (null = las reales). No guarda nada de progreso: sirve para ver la isla con 0, 3 y 10 piezas sin ganar las medallas.
-   * Los botones que lo usan solo se muestran con `BuildConfig.DEBUG` (`DebugTools`).
-   */
-  private val _debugIslaPieces = MutableStateFlow<List<com.example.data.IslaPieza>?>(null)
-  val debugIslaPieces: StateFlow<List<com.example.data.IslaPieza>?> = _debugIslaPieces.asStateFlow()
-
-  fun debugSetIslaPieces(pieces: List<com.example.data.IslaPieza>?) {
-    _debugIslaPieces.value = pieces
   }
 
   /** Solo depuración (botón en Ajustes): muestra la celebración sin tener que ganar 250 trofeos. */
@@ -846,6 +835,23 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     val s = userSettings.value
     updateSettings(name = name.trim(), weeklyGoal = s.weeklyGoal, defaultTimed = s.defaultTimed, sound = s.soundEnabled, haptics = s.hapticsEnabled)
   }
+
+  /**
+   * Los tres ajustes de uso diario de «Cómo juegas» en Tú (Tarea 185): UNA sola puerta cada uno (la regla de la Tarea 152: antes estaban en Ajustes y en otro sitio). Cada uno cambia solo su campo y deja el resto como está.
+   * El recordatorio también se programa o se cancela (`updateSettings`); pedir el permiso de notificaciones (Android 13+) es de la pantalla.
+   */
+  fun setSoundEnabled(on: Boolean) = withCurrentSettings { s -> updateSettings(name = s.name, weeklyGoal = s.weeklyGoal, defaultTimed = s.defaultTimed, sound = on, haptics = s.hapticsEnabled) }
+  fun setHapticsEnabled(on: Boolean) = withCurrentSettings { s -> updateSettings(name = s.name, weeklyGoal = s.weeklyGoal, defaultTimed = s.defaultTimed, sound = s.soundEnabled, haptics = on) }
+  fun setReminderEnabled(on: Boolean) =
+    withCurrentSettings { s -> updateSettings(name = s.name, weeklyGoal = s.weeklyGoal, defaultTimed = s.defaultTimed, sound = s.soundEnabled, haptics = s.hapticsEnabled, notificationsEnabled = on) }
+  /** La hora del recordatorio (Ajustes → «Recordatorio»): solo cambia la hora; si el recordatorio está encendido, se reprograma a la nueva. */
+  fun setReminderTime(hour: Int, minute: Int) =
+    withCurrentSettings { s -> updateSettings(name = s.name, weeklyGoal = s.weeklyGoal, defaultTimed = s.defaultTimed, sound = s.soundEnabled, haptics = s.hapticsEnabled, reminderHour = hour, reminderMinute = minute) }
+  /** La meta semanal de juego (Ajustes → «Juego»). */
+  fun setWeeklyGoal(goal: Int) =
+    withCurrentSettings { s -> updateSettings(name = s.name, weeklyGoal = goal, defaultTimed = s.defaultTimed, sound = s.soundEnabled, haptics = s.hapticsEnabled) }
+
+  private inline fun withCurrentSettings(block: (com.example.model.UserSettings) -> Unit) = block(userSettings.value)
 
   fun updateSettings(
     name: String,

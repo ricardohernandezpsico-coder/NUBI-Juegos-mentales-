@@ -25,8 +25,8 @@ class AjustesDepuradosTest {
   fun `el nivel de estudios esta en Ajustes con su para que sirve y ya no en el Perfil`() {
     val settings = src("ui/screens/SettingsScreen.kt")
     val profile = src("ui/screens/ProfileScreen.kt")
-    assertTrue(settings.contains("\"Tu nivel de estudios\"") && settings.contains("Ayuda a calcular tu punto de partida si saltas la evaluación."))
-    assertTrue("va dentro de «Cómo juegas», debajo del rango de edad", settings.indexOf("\"Rango de edad\"") < settings.indexOf("\"Tu nivel de estudios\"") && settings.indexOf("\"Tu nivel de estudios\"") < settings.indexOf("\"Efectos de sonido\""))
+    assertTrue(settings.contains("Tu nivel de estudios:") && settings.contains("Ayuda a calcular tu punto de partida si saltas la evaluación."))
+    assertTrue("va dentro de la losa «Juego» (Tarea 185), debajo del rango de edad y antes del recordatorio", settings.indexOf("\"Rango de edad\"") < settings.indexOf("Tu nivel de estudios:") && settings.indexOf("Tu nivel de estudios:") < settings.indexOf("\"Hora del recordatorio\""))
     assertFalse("el Perfil ya no lo trae (B5.2)", profile.contains("Tu nivel de estudios") || profile.contains("education_"))
   }
 

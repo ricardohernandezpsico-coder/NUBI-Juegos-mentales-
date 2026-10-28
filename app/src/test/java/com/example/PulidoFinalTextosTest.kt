@@ -90,8 +90,9 @@ class PulidoFinalTextosTest {
     val settings = src("ui/screens/SettingsScreen.kt")
     assertFalse("el título grande «Ajustes y Preferencias» ya no está (A3)", settings.contains("strings.settingsTitle"))
     assertTrue("la cabecera del panel dice «Ajustes»", src("ui/screens/ProfileScreen.kt").contains("PanelHeader(\"Ajustes\", onClose)"))
-    assertTrue("«Cómo juegas», no «Experiencia de Juego»", settings.contains("text = \"Cómo juegas\"") && !settings.contains("Experiencia de Juego"))
-    assertTrue("«Vibración», no «Vibración y respuesta háptica»", settings.contains("text = \"Vibración\"") && !settings.contains("Vibración y respuesta háptica\","))
+    val comoJuegas = src("ui/screens/ComoJuegas.kt")          // Tarea 185: el sonido, la vibración y el recordatorio viven en «Cómo juegas» de Tú; Ajustes trae «Juego»
+    assertTrue("«Juego» en Ajustes y «Cómo juegas» en Tú, no «Experiencia de Juego»", settings.contains("text = \"Juego\"") && comoJuegas.contains("text = \"Cómo juegas\"") && !settings.contains("Experiencia de Juego") && !comoJuegas.contains("Experiencia de Juego"))
+    assertTrue("«Vibración», no «Vibración y respuesta háptica»", comoJuegas.contains("\"Vibración\"") && !comoJuegas.contains("Vibración y respuesta háptica"))
     assertTrue("la nota de la edad dice lo que hace (A4)", settings.contains("Cambia el ritmo y el tamaño de los juegos, no lo difícil: eso lo decide cómo juegas."))
     assertFalse("y no el «Por ahora ajusta la dificultad de Constelaciones» que ya no era cierto", settings.contains("Por ahora ajusta la dificultad de Constelaciones"))
     assertTrue("la hora de las 21:00 es «Noche» y la de las 19:00 «Al atardecer»: «Más tarde» no es una hora (Tarea 152, C3)", settings.contains("Triple(\"Noche\", 21, 0)") && settings.contains("Triple(\"Al atardecer\", 19, 0)") && !settings.contains("Más tarde"))
@@ -107,11 +108,11 @@ class PulidoFinalTextosTest {
   }
 
   @Test
-  fun el_perfil_manda_con_la_isla_el_escudo_queda_chico_y_las_palabras_son_etapa_y_medallas() {
+  fun el_perfil_manda_con_Nubi_sola_el_escudo_queda_chico_y_las_palabras_son_etapa_y_medallas() {
     val profile = src("ui/screens/ProfileScreen.kt")
-    // Tarea 147 (P3): Nubi ya no va sobre el nombre (parecía su avatar): ahí va la isla en miniatura con las piezas de la persona
-    assertTrue("la isla en miniatura va sobre el nombre", profile.contains("testTag(\"profile_island\")") && profile.contains("IslaPiezas.earned(unlocks.keys)"))
-    assertFalse("y Nubi ya no", profile.contains("NubiClay("))
+    // Tarea 185 (decisión de Ricardo, 27-oct): arriba SOLO Nubi (despierta, 120 dp), sin la isla que la Tarea 147 había puesto sobre el nombre
+    assertTrue("Nubi (tamaño M) va sobre el nombre", profile.contains("NubiClay(com.example.ui.components.NubiSize.M") && profile.contains("testTag(\"tu_nubi\")"))
+    assertFalse("y la isla ya no", profile.contains("profile_island") || profile.contains("IslaPiezas") || profile.contains("Island("))
     assertFalse("el escudo grande ya no está (queda chico en «Tu liga»)", profile.contains("LeagueShield(tier = tier, size = 160.dp"))
     assertTrue("«Tu liga» con el escudo chico", profile.contains("SpaceSectionTitle(\"Tu liga\")") && profile.contains("ShieldImage(tier, 40.dp)"))
     assertTrue("«etapa», no «nivel hábil» (ítem 17)", profile.contains("\"Etapa general: \${levelWord(it / 100f)}\"") && !profile.contains("nivel \${levelWord"))

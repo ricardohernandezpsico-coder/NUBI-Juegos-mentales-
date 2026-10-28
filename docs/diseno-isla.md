@@ -1,5 +1,7 @@
 # Diseño «La isla»: dirección visual elegida para Nubi
 
+> **La isla salió de la app (Tarea 185, 28-oct-2026).** Ricardo decidió que arriba de Tú va SOLO Nubi, y con eso la isla (`Island`) se quedó sin ningún sitio: Tú y el cierre del Primer vuelo (que ahora muestra a Nubi). Se borraron el código (`Island.kt`, `IslaLayout`, `IslaPiezas`, `PieceFx`…), la línea «Y en tu isla aparece: …» de la medalla y los 26 recursos (`isla_*.webp`, `kit_pz_deco_*.webp`, `isla.json`): inventario en [`limpieza-185-inventario.md`](limpieza-185-inventario.md). Este documento queda como historia del diseño; el pipeline de Blender (`tools/isla/`) se conserva y la sombra y las poses de Nubi siguen saliendo de él (`NubiClay`). Lo que sigue vivo de la isla es solo `IslaLugar` (los nombres de los cuatro lugares, que usan Hoy y «Todos los juegos»).
+
 **Fecha:** 10-oct-2026. **Autor:** Fable 5.1 (solo lectura sobre el repo). **Para:** Opus → Sonnet (este documento vive en el repo como `docs/diseno-isla.md`; Tareas 82 y 83 lo cumplen en parte, ver «Valores finales»).
 **Decisión de Ricardo (10-oct):** «me gustó la de diorama, engancha más y le da el toque premium. además sus colores suaves no molestan a los adultos mayores, y los colores de tinte pastel pero con esa textura agrada».
 

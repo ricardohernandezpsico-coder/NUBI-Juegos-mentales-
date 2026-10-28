@@ -92,9 +92,10 @@ fun SettingsPanel(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
 }
 
 /**
- * Tú (la tercera pestaña, Tarea 158, 21-oct, «La isla es el mapa»; antes el Perfil era un panel que se abría con tu inicial, arriba a la derecha, y estaba escondido): lo tuyo en un solo sitio, con nombre. Tu isla con las piezas que ganaste, tu nombre con «Cambiar», Racha · Partidas · Medallas,
- * tus medallas (y las anteriores) y, al final, una losa «Ajustes» que abre los Ajustes como panel (Licencias sigue adentro). Es una página de pestaña como Hoy y Avance: sin X (se sale con la barra de abajo) y con la franja de la barra libre (`LocalBarInset`).
- * Cuando las ligas vuelvan (`Features.LEAGUES`), «Tu liga» va aquí, donde ya estaba en el perfil; hoy no se ve.
+ * Tú (la tercera pestaña, Tarea 158, 21-oct; rehecha en la Tarea 185, 28-oct, con «Lo tuyo en cuadros» de Fable y los cambios de Ricardo): lo tuyo en un solo sitio, con nombre. De arriba abajo: SOLO Nubi (despierta y parpadeando, 120 dp; la isla salió de la app),
+ * tu nombre con «Cambiar» y tu etapa general; cuatro cuadros 2 × 2 con datos reales y su unidad (racha, partidas, medallas y juegos probados; [TuCuadros], la variante «Centrada» que eligió Ricardo); tus medallas (y las anteriores); «Cómo juegas» con el sonido, la vibración y el recordatorio
+ * a mano ([ComoJuegasPanel]: una sola puerta por ajuste); «Más ajustes» (abre Ajustes); «En qué se basa Nubi» y, al final, «Contacto» ([ContactoSection]). Es una página de pestaña como Hoy y Avance: sin X (se sale con la barra de abajo) y con la franja de la barra libre
+ * (`LocalBarInset`). Cuando las ligas vuelvan (`Features.LEAGUES`), «Tu liga» va aquí, donde ya estaba en el perfil; hoy no se ve.
  */
 @Composable
 fun TuScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) {
@@ -109,19 +110,16 @@ fun TuScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) {
   var familyOpen by remember { mutableStateOf<com.example.data.AchievementFamily?>(null) }
   val medals = remember(unlocks, achStats) { com.example.data.AchievementFamily.entries.map { Achievements.familyState(it, unlocks.keys, achStats) } }
 
-  // Las piezas de la isla («Tu isla crece»; Tarea 165: la revelación pasó de Hoy a Tú): la primera vez con esta versión (o en un teléfono nuevo) lo que ya se tiene se siembra en silencio; una pieza nueva entra UNA vez al abrir Tú (de a una, sin sonido ni vibración:
-  // ya los dio la celebración de la medalla, que la anuncia con «Y en tu isla aparece: …») y se anota al empezar. Con «quitar animaciones» nace puesta. Si la celebración de una medalla está encima de Tú, la pieza espera a que se cierre.
-  val debugPieces by viewModel.debugIslaPieces.collectAsState()
-  val achievementQueue by viewModel.achievementQueue.collectAsState()
-  val earnedPieces = debugPieces ?: com.example.data.IslaPiezas.earned(unlocks.keys)
-  val appContext = androidx.compose.ui.platform.LocalContext.current
-  val pieceStore = remember { com.example.data.PrefsIslaPiezasStore(appContext) }
-  val pieceFx = com.example.ui.components.rememberPieceFx(earnedPieces, pieceStore, hold = achievementQueue.isNotEmpty())
-
   val avg = if (ranks.isEmpty()) 0 else ranks.sumOf { it.rating } / ranks.size
   val tier = RankTier.fromRating(avg)
   val index = overallIndex(levels)
   val medalCount = medals.sumOf { it.level }                    // los niveles ganados en las tres familias: el mismo número de «Tus medallas» (Tarea 145; antes «Mejor», el puntaje más alto, que no dice mejor en qué con 17 juegos de escalas distintas)
+  val tiles = remember(streak, achStats, history.size, medalCount, history.minOfOrNull { it.timestamp }) {
+    com.example.data.TuStats.tiles(
+      currentStreak = streak, bestStreak = achStats.bestStreak, games = history.size, firstPlayed = history.minOfOrNull { it.timestamp }, now = System.currentTimeMillis(),
+      medals = medalCount, medalsTotal = medals.sumOf { it.totalLevels }, distinctGames = achStats.distinctActiveGames, totalGames = com.example.model.GameRegistry.allGames.count { !com.example.model.GameRegistry.isRetired(it.id) }
+    )
+  }
 
   Column(modifier.fillMaxSize().padding(bottom = com.example.ui.components.LocalBarInset.current)) {      // la franja de la barra de pestañas queda libre
   Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -130,20 +128,15 @@ fun TuScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) {
   LazyColumn(
     modifier = Modifier
       .weight(1f)
-      .padding(horizontal = 22.dp),
+      .padding(horizontal = 22.dp)
+      .testTag("tu_lista"),
     contentPadding = PaddingValues(top = 8.dp, bottom = 28.dp),
     verticalArrangement = Arrangement.spacedBy(22.dp)
   ) {
-    // Nubi y tu nombre, sin recuadros (Tarea 143, R2 b: mientras las ligas esperan la decisión de negocio, el héroe del perfil es Nubi y el escudo, un dibujo «de antes», queda chico en «Tu liga»)
+    // Nubi y tu nombre, sin recuadros. Arriba SOLO Nubi (Tarea 185, decisión de Ricardo: la isla salió de la app), siempre despierta y parpadeando.
     item {
       Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        // La isla en miniatura con las piezas que la persona ya ganó (Tarea 147, P3: antes Nubi sobre el nombre, que parecía su avatar)
-        com.example.ui.components.Island(
-          description = "Tu isla" + com.example.data.IslaPiezas.description(earnedPieces),
-          modifier = Modifier.fillMaxWidth().height(150.dp).testTag("profile_island"),
-          pieces = earnedPieces,
-          pieceReveal = { pieceFx.progress(it) }
-        )
+        com.example.ui.components.NubiClay(com.example.ui.components.NubiSize.M, modifier = Modifier.testTag("tu_nubi"))
         // El nombre en GRANDE, como siempre, y un botón chico del kit «Cambiar» (Opus, 21-oct: un campo siempre abierto bajo la isla se leía como un formulario, sin rótulo, y le quitaba el protagonismo al nombre; es el mismo patrón de «Cambiar cómo jugar» de la ficha).
         // Al tocarlo, el nombre pasa a un campo con el rótulo «Tu nombre» y el teclado abierto; se guarda con «Listo» del teclado, al salir del campo o al salir del Perfil, y vuelve a texto (Tarea 153; antes de la 152 estaba en Ajustes con un botón «Guardar»).
         val focusManager = androidx.compose.ui.platform.LocalFocusManager.current
@@ -191,17 +184,9 @@ fun TuScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) {
       }
     }
 
-    // Tres cifras como texto grande, separadas por lineas finas
-    item {
-      Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        StatText("Racha", "$streak", com.example.ui.theme.NubiTokens.OnNight, Modifier.weight(1f), fire = true)
-        Box(Modifier.width(1.dp).height(44.dp).background(Color.White.copy(alpha = 0.14f)))
-        StatText("Partidas", "${history.size}", com.example.ui.theme.NubiTokens.OnNight, Modifier.weight(1f))
-        Box(Modifier.width(1.dp).height(44.dp).background(Color.White.copy(alpha = 0.14f)))
-        StatText("Medallas", "$medalCount", com.example.ui.theme.NubiTokens.OnNight, Modifier.weight(1f).testTag("profile_medal_count"))
-      }
-    }
-    // (Tarea 158: aquí NO va la frase de la racha ni la del descanso: vive solo en Hoy; quedan las cifras)
+    // Cuatro cuadros 2 × 2 con datos reales y su unidad (Tarea 185; antes tres cifras sin unidad: «7 Racha · 41 Partidas · 9 Medallas»)
+    item { TuCuadros(tiles = tiles, streakLit = streak > 0, medal = medalForTile(medals)) }
+    // (Tarea 158: aquí NO va la frase de la racha ni la del descanso: vive solo en Hoy)
 
     // Tu liga: el escudo chico y la liga (el escudo grande queda para cuando se decidan las ligas). Fuera de la v1 (Tarea 149): se ve solo con `Features.LEAGUES`.
     if (com.example.Features.LEAGUES) item {
@@ -238,12 +223,25 @@ fun TuScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) {
       }
     }
 
-    // Los Ajustes (antes el engranaje de arriba a la derecha): una losa del kit al final de lo tuyo; abre el panel de Ajustes.
+    // «Cómo juegas»: sonido, vibración y recordatorio a mano (una sola puerta por ajuste), y «Más ajustes» abre el resto (Tarea 185)
+    item { ComoJuegasPanel(viewModel) }
     item {
       com.example.ui.components.KitButton(
-        text = "Ajustes", onClick = { viewModel.openTopPanel(com.example.viewmodel.TopPanel.AJUSTES) }, color = com.example.ui.components.SlabColor.CREAM,
+        text = "Más ajustes", onClick = { viewModel.openTopPanel(com.example.viewmodel.TopPanel.AJUSTES) }, color = com.example.ui.components.SlabColor.CREAM,
         glyph = com.example.ui.components.Glyph.GEAR, fontSize = 18.sp, modifier = Modifier.testTag("btn_open_settings")
       )
+    }
+    // «En qué se basa Nubi»: de qué estudio sale la tarea de cada juego (Tarea 185)
+    item {
+      com.example.ui.components.KitButton(
+        text = "En qué se basa Nubi", onClick = { viewModel.openTopPanel(com.example.viewmodel.TopPanel.FUENTES) }, color = com.example.ui.components.SlabColor.CREAM,
+        glyph = com.example.ui.components.Glyph.INFO, fontSize = 18.sp, modifier = Modifier.testTag("btn_open_fuentes")
+      )
+    }
+    // «Contacto», al final (Tarea 185)
+    item {
+      val context = androidx.compose.ui.platform.LocalContext.current
+      ContactoSection(onSendReport = { sendErrorReport(context, viewModel) })
     }
   }
   }
@@ -298,20 +296,6 @@ private fun AchievementDetailDialog(def: AchievementDef, unlockedAt: Long?, stat
         }
       }
     }
-  }
-}
-
-@Composable
-private fun StatText(label: String, value: String, color: Color, modifier: Modifier, fire: Boolean = false) {
-  Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      if (fire) {
-        com.example.ui.components.KitLlama(lit = (value.toIntOrNull() ?: 0) > 0, size = 22.dp)
-        Spacer(Modifier.width(6.dp))
-      }
-      com.example.ui.components.OnBoardText(value, color = color, fontSize = 34.sp, fontWeight = FontWeight.Bold)
-    }
-    com.example.ui.components.OnBoardText(label, color = com.example.ui.theme.NubiTokens.OnNightDim, fontSize = 16.sp)
   }
 }
 

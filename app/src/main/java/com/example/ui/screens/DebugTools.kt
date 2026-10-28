@@ -15,11 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.collectAsState
 import com.example.bridge.UnityGameLauncher
-import com.example.data.IslaPieza
-import com.example.data.IslaPiezas
-import com.example.data.PrefsIslaPiezasStore
 import com.example.model.AgeBand
 import com.example.viewmodel.NeuroVidaViewModel
 
@@ -110,20 +106,7 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
   val context = LocalContext.current
   // Dibuja encima del tutorial los rectángulos del foco y el último toque (se pide a Unity con `debug_overlay`): para mandar una captura si un tutorial se traba.
   var tutorialOverlay by remember { mutableStateOf(false) }
-  // «Tu isla crece»: simula 0, 3 o las 10 piezas SIN tocar las medallas. Lo ya mostrado ([IslaPiezasStore]) pasa a ser lo que estaba a la vista antes de cambiar, así Tú revela (con su animación) solo lo que se SUMA.
-  val unlocks by viewModel.achievementUnlocks.collectAsState()
-  val shown by viewModel.debugIslaPieces.collectAsState()
-  val pieceStore = remember { PrefsIslaPiezasStore(context) }
-  fun showPieces(next: List<IslaPieza>?) {
-    val before = (shown ?: IslaPiezas.earned(unlocks.keys)).map { it.id }.toSet()
-    pieceStore.save(if (next == null) IslaPiezas.earned(unlocks.keys).map { it.id }.toSet() else before intersect next.map { it.id }.toSet())
-    viewModel.debugSetIslaPieces(next)
-  }
   Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-    DebugButton("[Debug] Isla: sin piezas", "btn_debug_isla_0") { showPieces(emptyList()) }
-    DebugButton("[Debug] Isla: 3 piezas (arbustos, banderines, muelle)", "btn_debug_isla_3") { showPieces(listOf(IslaPieza.C1, IslaPieza.V1, IslaPieza.VO1)) }
-    DebugButton("[Debug] Isla: las 10 piezas", "btn_debug_isla_10") { showPieces(IslaPieza.entries) }
-    DebugButton("[Debug] Isla: volver a mis piezas reales", "btn_debug_isla_real") { showPieces(null) }
     DebugButton(if (tutorialOverlay) "[Debug] Rectángulos del tutorial: SÍ (tocar para quitar)" else "[Debug] Rectángulos del tutorial: NO (tocar para ver)", "btn_debug_tutorial_overlay") { tutorialOverlay = !tutorialOverlay }
     if (com.example.Features.LEAGUES) DebugButton("[Debug] Ver celebración de ascenso de liga", "btn_debug_promotion") { viewModel.debugShowPromotion() }
     DebugButton("[Debug] Ver celebración de logro", "btn_debug_achievement") { viewModel.debugShowAchievement() }

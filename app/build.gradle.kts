@@ -56,8 +56,9 @@ android {
     compose = true
     buildConfig = true
   }
+  // Las pruebas de capturas de pantallas largas (Tú, Ajustes, «En qué se basa Nubi»: Tarea 185) se quedaban sin memoria con los 512 MB que Gradle da a cada JVM de pruebas por defecto: `maxHeapSize = "2g"`.
   // `DesignMdTest` lee `../docs/DESIGN.md` (fuera de `src/`): se declara como entrada de las pruebas para que un cambio del documento vuelva a correrlas (si no, Gradle las da por hechas).
-  testOptions { unitTests { isIncludeAndroidResources = true; all { it.inputs.file(rootProject.file("docs/DESIGN.md")).withPropertyName("designMd") } } }
+  testOptions { unitTests { isIncludeAndroidResources = true; all { it.inputs.file(rootProject.file("docs/DESIGN.md")).withPropertyName("designMd"); it.maxHeapSize = "2g" } } }
   // Las pruebas de migración de la base de datos leen los esquemas exportados de Room (schemas/<versión>.json). Robolectric
   // solo ve los assets de la app (no los de la carpeta de pruebas), así que van en la variante de depuración: pesan unos
   // KB, y la versión de tienda (release) no los lleva.
