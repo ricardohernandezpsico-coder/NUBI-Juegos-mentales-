@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import com.example.bridge.NativeReceiver
 import com.example.bridge.UnityGameLauncher
 import com.example.games.*
+import com.example.ui.components.tabFade
 import com.example.ui.i18n.LocalAppLanguage
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.ProgressScreen
@@ -132,8 +133,10 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   val swipeLock = remember { androidx.compose.runtime.mutableIntStateOf(0) }
   // Pestañas que se pasan deslizando con el dedo (29-sep, pedido de Ricardo), sincronizadas con la barra de abajo.
   val tabs = AppTab.entries
-  // El pager y su sincronía con la pestaña del ViewModel viven en `rememberTabPager` (Tarea 142); la barra lee el pager EN VIVO (`PagerNavBar`), no la pestaña ya asentada del ViewModel.
-  val pagerState = com.example.ui.components.rememberTabPager(currentTab) { viewModel.setTab(it) }
+  // El pager y su sincronía con la pestaña del ViewModel viven en `rememberTabPager` (Tarea 142); la barra lee el pager EN VIVO (`PagerNavBar`), no la pestaña ya asentada del ViewModel. Entre pestañas que no son vecinas
+  // (Hoy ↔ Tú) no desliza: hace un fundido, para no ver pasar Avance (Tarea 184, `tabFade`).
+  val tabPager = com.example.ui.components.rememberTabPager(currentTab) { viewModel.setTab(it) }
+  val pagerState = tabPager.state
   // Tras la primera celebración de una partida, las siguientes (más logros) aparecen enseguida.
   var celebratedOne by remember(lastResult) { mutableStateOf(false) }
 
@@ -164,7 +167,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
             androidx.compose.foundation.pager.HorizontalPager(
               state = pagerState,
               userScrollEnabled = swipeLock.intValue == 0,
-              modifier = Modifier.fillMaxSize()
+              modifier = Modifier.fillMaxSize().tabFade(tabPager)
             ) { page ->
               when (tabs[page]) {
                 AppTab.HOY -> HomeScreen(viewModel = viewModel)
@@ -299,7 +302,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
           enter = if (reduceBar) androidx.compose.animation.EnterTransition.None else androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(com.example.ui.components.NubiMotion.STATE_FAST_MS)),
           exit = if (reduceBar) androidx.compose.animation.ExitTransition.None else androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(com.example.ui.components.NubiMotion.STATE_FAST_MS))
         ) {
-          com.example.ui.components.PagerNavBar(pagerState = pagerState, onSelect = { viewModel.setTab(it) })
+          com.example.ui.components.PagerNavBar(tabPager = tabPager, onSelect = { viewModel.setTab(it) })
         }
       }
     }

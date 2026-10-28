@@ -28,7 +28,9 @@ import androidx.compose.ui.unit.dp
 import com.example.ui.components.BoardBackground
 import com.example.ui.components.LocalReduceMotion
 import com.example.ui.components.PagerNavBar
+import com.example.ui.components.TabPager
 import com.example.ui.components.rememberTabPager
+import com.example.ui.components.tabFade
 import com.example.ui.theme.NeuroVidaTheme
 import com.example.viewmodel.AppTab
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
@@ -54,6 +56,7 @@ class TabPagerBarTest {
 
   private var viewModelTab by mutableStateOf(AppTab.HOY)       // lo que guardaría el ViewModel (`currentTab`): solo cambia al asentarse el pager o al tocar una pestaña
   private lateinit var pager: PagerState
+  private lateinit var tabPager: TabPager
   private val settledCalls = mutableListOf<AppTab>()
 
   private fun show(reduce: Boolean = false) {
@@ -63,10 +66,10 @@ class TabPagerBarTest {
         NeuroVidaTheme {
           Box(Modifier.width(393.dp).height(700.dp)) {
             BoardBackground()
-            val state = rememberTabPager(viewModelTab) { viewModelTab = it; settledCalls += it }
-            pager = state
-            HorizontalPager(state = state, modifier = Modifier.fillMaxSize().testTag("tabs_pager")) { page -> Box(Modifier.fillMaxSize()) { Text("página $page") } }
-            Box(Modifier.align(Alignment.BottomCenter)) { PagerNavBar(pagerState = state, onSelect = { viewModelTab = it }) }
+            val tp: TabPager = rememberTabPager(viewModelTab) { viewModelTab = it; settledCalls += it }
+            pager = tp.state; tabPager = tp
+            HorizontalPager(state = tp.state, modifier = Modifier.fillMaxSize().testTag("tabs_pager").tabFade(tp)) { page -> Box(Modifier.fillMaxSize()) { Text("página $page") } }
+            Box(Modifier.align(Alignment.BottomCenter)) { PagerNavBar(tabPager = tp, onSelect = { viewModelTab = it }) }
           }
         }
       }
@@ -100,10 +103,13 @@ class TabPagerBarTest {
     assertEquals("…y el pager todavía no se asentó", 0, pager.settledPage)
     assertEquals("…ni el ViewModel (la lógica sigue con settledPage)", AppTab.HOY, viewModelTab)
     assertTrue("no hubo aviso de asentamiento", settledCalls.isEmpty())
+    assertEquals("deslizar con el dedo no hace fundido (Tarea 184): las páginas siguen a su opacidad y escala", 1f, tabPager.contentAlpha, 0f)
+    assertEquals(1f, tabPager.contentScale, 0f)
     rule.onNodeWithTag("tabs_pager").performTouchInput { up() }              // al soltar, el pager llega y entonces sí se guarda la pestaña
     rule.mainClock.advanceTimeBy(1_000)
     rule.waitForIdle()
     assertEquals(1, pager.settledPage)
+    assertEquals(1f, tabPager.contentAlpha, 0f)
     assertEquals(AppTab.PROGRESO, viewModelTab)
     assertEquals(listOf(AppTab.PROGRESO), settledCalls)
     assertOnlySelected("nav_item_progreso")

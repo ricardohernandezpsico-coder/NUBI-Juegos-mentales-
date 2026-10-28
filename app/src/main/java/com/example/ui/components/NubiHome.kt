@@ -73,9 +73,9 @@ enum class NubiSize(val width: Dp) { S(72.dp), M(120.dp), L(200.dp) }
 @Composable
 fun NubiClay(size: NubiSize, modifier: Modifier = Modifier, celebrate: Boolean = false) = NubiClay(size.width, modifier, celebrate)
 
-/** [asleep] = dormida (Tarea 165, la Nubi de la tarjeta de Hoy de noche): los ojos cerrados todo el tiempo (la misma imagen `descansa`), sin parpadear; sigue flotando apenas. Nunca según el desempeño. */
+/** Nubi siempre despierta (Tarea 184, 27-oct, decisión de Ricardo: la Tarea 165 la dormía de 20 a 6 en Hoy y la veía «siempre con los ojos cerrados»): flota y parpadea a cualquier hora, nunca según el desempeño. */
 @Composable
-fun NubiClay(width: Dp, modifier: Modifier = Modifier, celebrate: Boolean = false, asleep: Boolean = false) {
+fun NubiClay(width: Dp, modifier: Modifier = Modifier, celebrate: Boolean = false) {
   val reduceMotion = rememberReduceMotion()
   val hop = remember { Animatable(0f) }
   LaunchedEffect(celebrate, reduceMotion) {
@@ -97,7 +97,7 @@ fun NubiClay(width: Dp, modifier: Modifier = Modifier, celebrate: Boolean = fals
     }
     Box(Modifier.size(width, body).graphicsLayer { translationY = -(lift + idle.floatDp) * density; rotationZ = tilt }) {
       Image(painter = painterResource(R.drawable.nubi_3d), contentDescription = "Nubi", modifier = Modifier.fillMaxSize().testTag("nubi_ojos_abiertos"))
-      Image(painter = painterResource(R.drawable.nubi_3d_descansa), contentDescription = null, modifier = Modifier.fillMaxSize().graphicsLayer { alpha = if (asleep) 1f else idle.eyesClosed }.testTag("nubi_ojos_cerrados"))
+      Image(painter = painterResource(R.drawable.nubi_3d_descansa), contentDescription = null, modifier = Modifier.fillMaxSize().graphicsLayer { alpha = idle.eyesClosed }.testTag("nubi_ojos_cerrados"))
     }
   }
 }

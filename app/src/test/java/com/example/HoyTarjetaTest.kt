@@ -34,12 +34,12 @@ import com.example.data.Week
 import com.example.model.AppLanguage
 import com.example.model.RankTier
 import com.example.ui.components.BoardBackground
+import com.example.ui.components.NubiIdle
 import com.example.ui.screens.HomeTimeTrial
 import com.example.ui.screens.HomeContent
 import com.example.ui.screens.HomeUi
 import com.example.ui.screens.Sun
 import com.example.ui.screens.homeStops
-import com.example.ui.screens.isNight
 import com.example.ui.screens.sunOf
 import com.example.ui.theme.NeuroVidaTheme
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
@@ -55,10 +55,11 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.util.Calendar
+import kotlin.random.Random
 
 /**
  * Hoy con UNA sola tarjeta y el Contrarreloj de hoy (Tareas 165, 167 y 177; `auditoria-fable/hoy-reestructura.md`, `hoy-desafio-y-dia-completo.md` y `contrarreloj.md`, opción 1 «Dos botones, un solo sol a la vez»): saludo, la semana, UNA tarjeta crema con la ruta de hoy (título, «1 de 3 · unos 4 minutos», los tres juegos como filas con su estado en palabras que NO se tocan, y el botón sol ADENTRO), Nubi posada en
- * su esquina (de noche duerme) y, debajo, «Contrarreloj de hoy» (lila, con el reloj) junto a «Todos los juegos»; con la ruta completa la tarjeta se cierra sola (sin botón ni rótulo) y el sol pasa al Contrarreloj, a todo el ancho. **Un solo sol a la vez.** Ya NO hay isla en Hoy. Capturas a 393 × 873 dp (el teléfono de referencia), a 360 dp de ancho, con letra 1,3 y con letra 2,0,
+ * su esquina (siempre despierta, también de noche: Tarea 184) y, debajo, «Contrarreloj de hoy» (lila, con el reloj) junto a «Todos los juegos»; con la ruta completa la tarjeta se cierra sola (sin botón ni rótulo) y el sol pasa al Contrarreloj, a todo el ancho. **Un solo sol a la vez.** Ya NO hay isla en Hoy. Capturas a 393 × 873 dp (el teléfono de referencia), a 360 dp de ancho, con letra 1,3 y con letra 2,0,
  * sobre el fondo en dos capas y con las barras del sistema simuladas por margen (24 dp arriba; abajo 163: la barra de Android y la de pestañas con su aire). La regla que manda: con letra 1,0 y 1,3 TODO Hoy cabe sin deslizar a 393 × 873 en los cuatro estados (y la pausa); con letra más grande se desliza pero nada se corta, se superpone ni parte una palabra.
  * Ningún texto que va directo sobre el fondo cae sobre un lucero.
  */
@@ -70,7 +71,7 @@ class HoyTarjetaTest {
 
   // Un domingo a las 16:30 (para el saludo «Buenas tardes» y la fecha); la semana: lunes, martes y hoy.
   private val now = Calendar.getInstance().apply { set(2026, Calendar.OCTOBER, 11, 16, 30, 0) }.timeInMillis
-  private val night = Calendar.getInstance().apply { set(2026, Calendar.OCTOBER, 11, 22, 10, 0) }.timeInMillis
+  private val night = Calendar.getInstance().apply { set(2026, Calendar.OCTOBER, 11, 23, 0, 0) }.timeInMillis
   private val lamps = Week.Lamps(listOf(true, true, false, false, false, false, true), todayIndex = 6)
 
   // el Contrarreloj de hoy: Tinta o Palabra, con un récord de 41 aciertos (la línea «Tu récord» sale solo con el botón ancho)
@@ -388,19 +389,30 @@ class HoyTarjetaTest {
     assertEquals("y es UNA sola Nubi en Hoy", 1, composeTestRule.onAllNodes(hasTestTag("nubi_ojos_abiertos"), useUnmergedTree = true).fetchSemanticsNodes().size)
   }
 
+  /** Nubi siempre despierta (Tarea 184, 27-oct): Ricardo la veía «siempre con los ojos cerrados» porque la Tarea 165 la dormía de 20 a 6 y él prueba de noche. A las 23:00 la tarjeta es la misma de siempre y Nubi tiene los ojos abiertos y parpadea como de día. */
   @Test
-  fun de_noche_es_de_noche_de_las_20_a_las_6_y_Nubi_sigue_en_su_esquina() {
-    fun at(h: Int, m: Int = 0) = Calendar.getInstance().apply { set(2026, Calendar.OCTOBER, 11, h, m, 0) }.timeInMillis
-    assertTrue(isNight(at(20))); assertTrue(isNight(at(23, 59))); assertTrue(isNight(at(0))); assertTrue(isNight(at(5, 59)))
-    assertFalse(isNight(at(6))); assertFalse(isNight(at(12))); assertFalse(isNight(at(19, 59)))
-  }
-
-  @Test
-  fun de_noche_la_tarjeta_es_la_misma_con_Nubi_dormida() {
-    show(ui(completed = 1, at = night))
-    composeTestRule.onNodeWithText("Buenas noches, Ricardo").assertIsDisplayed()
-    assertTrue(exists("home_nubi") && exists("btn_home_play"))
-    composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-tarjeta-noche.png")
+  fun de_noche_la_tarjeta_es_la_misma_y_Nubi_esta_despierta_con_los_ojos_abiertos_y_parpadea() {
+    NubiIdle.seedForTests = 184L
+    try {
+      composeTestRule.mainClock.autoAdvance = false
+      show(ui(completed = 1, at = night), wait = false)
+      composeTestRule.onNodeWithText("Buenas noches, Ricardo").assertIsDisplayed()
+      assertTrue(exists("home_nubi") && exists("btn_home_play"))
+      val idle = NubiIdle.lastForTests ?: throw AssertionError("rememberNubiIdle no armó su estado")
+      assertEquals("a las 23:00 los ojos están abiertos (nada los cierra: ya no hay Nubi dormida)", 0f, idle.eyesClosed, 0f)
+      composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-tarjeta-noche.png")
+      val firstBlink = NubiIdle.waitMs(Random(184L))                      // la hora del primer parpadeo con la semilla fija (entre 4 y 7 s)
+      var now = 100L
+      var closed = 0f
+      while (now < firstBlink + 600) {                                    // por cuadros, para no perderse el cierre completo (dura 120 ms)
+        composeTestRule.mainClock.advanceTimeBy(16); now += 16
+        closed = maxOf(closed, idle.eyesClosed)
+      }
+      assertTrue("de noche parpadea igual que de día: los ojos se cierran del todo ($closed)", closed >= 0.9f)
+      assertEquals("y vuelven a abrirse", 0f, idle.eyesClosed, 0f)
+    } finally {
+      NubiIdle.seedForTests = null; NubiIdle.lastForTests = null
+    }
   }
 
   @Test

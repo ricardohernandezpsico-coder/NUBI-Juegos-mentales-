@@ -14,7 +14,7 @@ import androidx.compose.animation.core.tween
  * |---|---|---|---|
  * | Respuesta al dedo | 80 al apretar, 140 al soltar | suave | losas y discos del kit (`ClayKit`): la plasticina real se hunde rápido y recupera su forma un poco más lento |
  * | Cambio de estado | 150-200 | estándar | losa de la barra (150), interruptor (150), velo de la lámina (200) |
- * | Cambio de lugar | 300 pestaña · 400 lámina | enfatizada (arranca rápido, frena suave) | `animateScrollToPage`, la lámina de un lugar (sin espera) y los pasos del Primer vuelo (300) |
+ * | Cambio de lugar | 300 pestaña · 400 lámina | enfatizada (arranca rápido, frena suave) | `animateScrollToPage` entre pestañas vecinas; entre Hoy y Tú, un «fade through» de 90 + 210 ms (Tarea 184); la lámina de un lugar (sin espera) y los pasos del Primer vuelo (300) |
  * | Celebración | 600-900 | resorte suave | pulso 600 (entra una pieza de la isla, `PieceFx`) y saltito 900 (`NubiHop`) |
  *
  * Con «quitar animaciones» ([rememberReduceMotion]) todo cae a `snap()` y la lámina aparece en su sitio con un fundido de [REDUCED_FADE_MS]. `NubiMotionTest` fija la tabla.
@@ -32,6 +32,12 @@ object NubiMotion {
 
   /** Pasar de una pestaña a otra. */
   const val TAB_MS = 300
+  /** Entre pestañas que NO son vecinas (Hoy ↔ Tú) no se desliza, para no ver pasar Avance: la página de ahora se desvanece en esto… */
+  const val TAB_FADE_OUT_MS = 90
+  /** …y entra la nueva en esto (con [TAB_FADE_MIN_SCALE] → 1): 90 + 210 = [TAB_MS], el mismo tiempo de la pestaña. */
+  const val TAB_FADE_IN_MS = TAB_MS - TAB_FADE_OUT_MS
+  /** La escala desde la que entra la página nueva del fundido de pestañas. */
+  const val TAB_FADE_MIN_SCALE = 0.96f
   /** La lámina de un lugar sube (y baja). Sin espera: sale al toque. */
   const val SHEET_MS = 400
 

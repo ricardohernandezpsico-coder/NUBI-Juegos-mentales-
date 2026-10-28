@@ -194,12 +194,6 @@ internal fun greetingWord(now: Long): String {
   return when { h < 12 -> "Buenos días"; h < 20 -> "Buenas tardes"; else -> "Buenas noches" }
 }
 
-/** ¿Es de noche? (de las 20 a las 6): Nubi duerme en la tarjeta (`asleep`: ojos cerrados) en lugar de mirar de frente. */
-internal fun isNight(now: Long): Boolean {
-  val h = java.util.Calendar.getInstance().apply { timeInMillis = now }.get(java.util.Calendar.HOUR_OF_DAY)
-  return h >= 20 || h < 6
-}
-
 /** «Domingo 11 oct.» (con el mes abreviado: a 16 sp, «Miércoles 21 de octubre · 2 de 4 días de tu meta» no cabía en una línea a 393 dp; Tarea 153). */
 internal fun dateText(now: Long): String =
   java.text.SimpleDateFormat("EEEE d MMM", java.util.Locale("es")).format(java.util.Date(now)).replaceFirstChar { it.uppercase() }
@@ -275,7 +269,7 @@ private fun HoyCard(ui: HomeUi, onPlay: () -> Unit, onResume: () -> Unit, modifi
             )
           }
           Spacer(Modifier.width(8.dp))
-          NubiClay(width = 84.dp, asleep = isNight(ui.now), modifier = Modifier.testTag("home_nubi"))
+          NubiClay(width = 84.dp, modifier = Modifier.testTag("home_nubi"))
         }
         HoyStops(ui)
       }

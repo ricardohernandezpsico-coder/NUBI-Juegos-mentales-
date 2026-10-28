@@ -27,6 +27,14 @@ class NubiMotionTest {
   }
 
   @Test
+  fun el_fundido_entre_pestanas_no_vecinas_suma_el_tiempo_de_una_pestana() {
+    assertEquals("sale la página de ahora (Tarea 184)", 90, NubiMotion.TAB_FADE_OUT_MS)
+    assertEquals("entra la nueva", 210, NubiMotion.TAB_FADE_IN_MS)
+    assertEquals("90 + 210 = lo que dura una pestaña", NubiMotion.TAB_MS, NubiMotion.TAB_FADE_OUT_MS + NubiMotion.TAB_FADE_IN_MS)
+    assertEquals("entra con una escala mínima de 0,96", 0.96f, NubiMotion.TAB_FADE_MIN_SCALE, 0f)
+  }
+
+  @Test
   fun cada_clase_cae_en_su_rango() {
     assertTrue("estado 150-200", NubiMotion.STATE_FAST_MS in 150..200 && NubiMotion.STATE_MS in 150..200)
     assertTrue("lugar 300-400", NubiMotion.TAB_MS in 300..400 && NubiMotion.SHEET_MS in 300..400)
