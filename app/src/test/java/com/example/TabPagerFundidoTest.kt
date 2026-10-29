@@ -36,6 +36,7 @@ import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -49,14 +50,16 @@ import org.robolectric.annotation.GraphicsMode
  * «quitar animaciones» se salta de golpe. Estas pruebas arman el mismo cableado que `MainActivity` (`rememberTabPager` + `HorizontalPager` con `tabFade` + `PagerNavBar`) y REGISTRAN, cuadro por cuadro, qué páginas están visibles, compuestas y asentadas,
  * la opacidad y la escala de las páginas y lo que marca la barra.
  *
- * COSTO: cada prueba que mueve el pager con `animateScrollToPage` (un deslizamiento de verdad) tarda ~170 s en esta máquina, y casi todo es la espera de «Compose quieto» al final de la prueba (medido el 27-oct: los 30 cuadros de la animación tardan 40 ms y el
- * `waitForIdle` posterior 165 s, con o sin `autoAdvance`; las pruebas de `TabPagerBarTest` pagan lo mismo, sin tocarlas esta tarea). Por eso aquí SOLO UNA prueba desliza (Hoy → Avance, la que pide la tarea) y el resto usa el fundido y `scrollToPage`, que no lo pagan.
+ * COSTO (resuelto en la Tarea 187, 28-oct): cada prueba que movía el pager con `animateScrollToPage` (un deslizamiento de verdad) tardaba ~170 s, casi todo en `waitForIdle`. NO era una animación infinita sino el prefetch del pager contra el reloj virtual de Robolectric; `TestSupport.fastFrames()`
+ * (en el `@Before`) lo arregla y ahora tardan ~2 s. Por eso aquí desliza SOLO UNA prueba (Hoy → Avance, la que pide la tarea): se dejó así cuando salía carísimo; el resto usa el fundido y `scrollToPage`.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = RobolectricDeviceQualifiers.Pixel8, sdk = [36])
 class TabPagerFundidoTest {
   @get:Rule val rule = createComposeRule()
+
+  @Before fun fastFrames() = TestSupport.fastFrames()          // ver `TestSupport.fastFrames`: sin esto, una prueba que desliza el pager tardaba ~130 s
 
   private var viewModelTab by mutableStateOf(AppTab.HOY)
   private lateinit var tabPager: TabPager

@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.data.local.NeuroVidaDatabase
 import org.junit.Assert.fail
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.shadows.ShadowChoreographer
+import java.time.Duration
 
 /** Ayudas para las pruebas con Robolectric que crean el ViewModel de verdad (ver GameFlowTest). */
 object TestSupport {
@@ -40,6 +42,18 @@ object TestSupport {
   /** Cancela el trabajo de fondo de un repositorio que la prueba creó por su cuenta (`NeuroVidaRepository(app)`); va en el `@After`, antes de [resetDatabase]. */
   fun release(repository: com.example.data.NeuroVidaRepository) {
     runCatching { repository.close() }
+  }
+
+  /**
+   * Las pruebas que MUEVEN un pager o una lista (un arrastre, `animateScrollToPage`, `performScrollToNode`) tardaban ~130 s cada una en Robolectric (Tarea 187: 7 pruebas, unos 15 minutos por corrida completa); con esto tardan ~2 s. Va en el `@Before` de esas pruebas.
+   *
+   * La causa NO era una animación infinita (el flotar de Nubi, los luceros): era el prefetch de los diseños perezosos de Compose (`HorizontalPager`, `LazyColumn`; `AndroidPrefetchScheduler` en foundation 1.7). Para saber cuánto tiempo queda en el cuadro compara el tiempo de dibujo
+   * de la vista (el reloj VIRTUAL de Robolectric: ~100 ms) con `System.nanoTime()` (el REAL de la máquina: ~659 millones de ms, unos 7,6 días de encendida). Siempre le sale «no queda tiempo», así que no hace el prefetch y se vuelve a pedir al siguiente cuadro; Robolectric corre cada cuadro al
+   * momento, sin esperar, y `waitForIdle` gira (el hilo principal al 100 %, medido con `jstack`: `AndroidPrefetchScheduler.run` → `Choreographer.postFrameCallback` → `doVsync`) durante ~130 s por prueba. Con un retardo de cuadro largo el siguiente cuadro queda en el futuro virtual y `idle()` ya no lo corre.
+   * No cambia lo que las pruebas comprueban: Compose mueve el pager y sus animaciones con el reloj de pruebas (`mainClock`), no con el de Choreographer.
+   */
+  fun fastFrames() {
+    ShadowChoreographer.setFrameDelay(Duration.ofSeconds(1))
   }
 
   /**

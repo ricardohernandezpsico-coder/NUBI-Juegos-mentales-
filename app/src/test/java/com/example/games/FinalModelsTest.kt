@@ -46,7 +46,7 @@ class FinalModelsTest {
     // sin nada que se escapara: el truco general de la tabla
     val perfect = FinalModels.forGame(constelaciones.copy(correctAnswers = 9), emptyList())!!
     assertEquals("Da vuelta primero una luz nueva: te muestra más del cielo.", perfect.trick)
-    assertEquals("Pusiste en juego la memoria de lugar: recordar dónde quedó cada cosa. Recordar qué va con qué, como una cosa y su lugar, es la parte de la memoria que más atención pide con los años.", m.why)
+    assertEquals("Pusiste en juego la memoria de lugar: recordar dónde quedó cada cosa. Recordar qué va con qué, como una cosa y su lugar, es la parte de la memoria que más cambia con los años.", m.why)
     assertEquals("Fuente: Old y Naveh-Benjamin, 2008", m.source)
     assertEquals("Medida de esta partida. No es un diagnóstico.", m.note)
     // el récord nuevo lo dice el sello de arriba, no la tarjeta (ver `un record se dice UNA vez`)
@@ -57,6 +57,19 @@ class FinalModelsTest {
     // Tarea 186 (5b, Opus 28-oct): una partida son pocas rondas y el Corsi en pantalla es poco estable al repetirlo
     assertEquals("Resultado de esta partida. Puede variar de una a otra. No es un diagnóstico.", FinalModels.forGame(rastro, emptyList())!!.note)
     for (r in listOf(constelaciones, bodega, correo)) assertEquals("el pie de ${r.gameId} sigue siendo el de siempre", "Medida de esta partida. No es un diagnóstico.", FinalModels.forGame(r, emptyList())!!.note)
+  }
+
+  @Test
+  fun `Constelaciones dice lo mismo sobre los años en el final, en la ficha y en En que se basa Nubi`() {
+    // Tarea 187 (Opus, 28-oct): el «¿Por qué importa?» decía «…que más atención pide con los años»; Ricardo aprobó «…lo que más cambia con los años» (Old y Naveh-Benjamin, 2008, el déficit asociativo)
+    val copy = com.example.data.FinalesConSentido.copy("parejas")!!
+    assertTrue(copy.whyText, copy.whyText.endsWith("es la parte de la memoria que más cambia con los años."))
+    assertTrue(copy.sheetText, copy.sheetText.endsWith("es la parte de la memoria que más cambia con los años."))
+    assertTrue(com.example.data.Fuentes.byGame.getValue("parejas").taken.contains("más cambia con los años"))
+    for (id in com.example.model.GameRegistry.allGames.map { it.id }) {
+      val c = com.example.data.FinalesConSentido.copy(id) ?: continue
+      assertTrue("«más atención pide» ya no se dice de $id", !c.whyText.contains("más atención pide") && !c.sheetText.contains("más atención pide"))
+    }
   }
 
   @Test

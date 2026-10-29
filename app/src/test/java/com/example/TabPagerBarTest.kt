@@ -36,6 +36,7 @@ import com.example.viewmodel.AppTab
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -53,6 +54,8 @@ import org.robolectric.annotation.GraphicsMode
 @Config(qualifiers = RobolectricDeviceQualifiers.Pixel8, sdk = [36])
 class TabPagerBarTest {
   @get:Rule val rule = createComposeRule()
+
+  @Before fun fastFrames() = TestSupport.fastFrames()          // sin esto, cada prueba que mueve el pager tardaba ~130 s (ver `TestSupport.fastFrames`)
 
   private var viewModelTab by mutableStateOf(AppTab.HOY)       // lo que guardaría el ViewModel (`currentTab`): solo cambia al asentarse el pager o al tocar una pestaña
   private lateinit var pager: PagerState

@@ -54,7 +54,7 @@ object FinalesConSentido {
 
   private val ALL = listOf(
     Copy("parejas", "La memoria de lugar: recordar dónde quedó cada cosa.", "Da vuelta primero una luz nueva: te muestra más del cielo.",
-      "Recordar qué va con qué, como una cosa y su lugar, es la parte de la memoria que más atención pide con los años.", "Old y Naveh-Benjamin, 2008"),
+      "Recordar qué va con qué, como una cosa y su lugar, es la parte de la memoria que más cambia con los años.", "Old y Naveh-Benjamin, 2008"),
     Copy("secuencia", "La memoria de trabajo: sostener un orden en la cabeza mientras lo usas.", "Junta las luces de a dos o tres, como cuando dictas un número de teléfono.",
       "La usamos para comprender, razonar y aprender: guarda por un rato lo que necesitamos mientras lo usamos.", "Baddeley, 2003"),
     Copy("bodega", "Recordar dónde guardaste cada cosa.", "Imagina cada objeto dentro de su escotilla y dile su nombre en voz baja.",

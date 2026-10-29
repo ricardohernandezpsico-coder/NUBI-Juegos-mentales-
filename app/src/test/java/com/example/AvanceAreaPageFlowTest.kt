@@ -61,6 +61,7 @@ class AvanceAreaPageFlowTest {
   fun setUp() {
     app = ApplicationProvider.getApplicationContext()
     TestSupport.resetDatabase()
+    TestSupport.fastFrames()          // sin esto, `al_volver_de_la_pagina_la_lista_esta_donde_estaba` (deslizar la lista) tardaba ~140 s: ver `TestSupport.fastFrames`
   }
 
   @After

@@ -258,7 +258,7 @@ fun WhyItMatters(model: MeaningfulResultModel, modifier: Modifier = Modifier, to
   }
 }
 
-/** La nota de siempre al pie, centrada y en una línea: «Medida de esta partida. No es un diagnóstico.» Va en todos los estados. */
+/** La nota de siempre al pie, centrada: «Medida de esta partida. No es un diagnóstico.» (una línea en 412 dp). Va en todos los estados. La de Rastro de luz, «Resultado de esta partida. Puede variar de una a otra. No es un diagnóstico.» (Tarea 186), pasa a dos renglones: es más larga y nada se corta, con letra 1,0 y con letra grande. */
 @Composable
 fun ResultNote(model: MeaningfulResultModel, modifier: Modifier = Modifier) {
   OnBoardText(
