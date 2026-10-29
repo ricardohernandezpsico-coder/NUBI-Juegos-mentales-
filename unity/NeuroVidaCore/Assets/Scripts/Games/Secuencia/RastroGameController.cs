@@ -56,7 +56,6 @@ namespace NeuroVida.Games.Secuencia
         private RastroSession _session;
         private Phase _phase = Phase.Idle;
         private bool _senior;
-        private int _previousFrameRate;
         private float _angle;                     // giro actual del tablero (grados)
         private RastroMode _tintMode = RastroMode.Rastro;
         private float _clockStart, _clockComp;
@@ -95,7 +94,6 @@ namespace NeuroVida.Games.Secuencia
         private Image _cueIcon;
         private Text _cueText;
         private ExitButton _exit;
-        private CountdownScreen _countdown;
 
         private sealed class OrbView
         {
@@ -150,8 +148,6 @@ namespace NeuroVida.Games.Secuencia
             try { unlocked = PlayerPrefs.GetInt(UnlockKey, 0); } catch (System.Exception) { }
             _session = new RastroSession(config.config, _rng, unlocked);
 
-            _previousFrameRate = Application.targetFrameRate;
-            Application.targetFrameRate = 60;
 
             _phase = Phase.Idle;
             _angle = 0f;
@@ -178,10 +174,6 @@ namespace NeuroVida.Games.Secuencia
             StartCoroutine(GameLoop());
         }
 
-        private void OnDisable()
-        {
-            if (_previousFrameRate != 0) Application.targetFrameRate = _previousFrameRate;
-        }
 
         private float Elapsed => _clockOn ? GameClock.Time - _clockStart - _clockComp : 0f;
         // En la versión corta del inicio («Tu punto de partida») el tiempo NO corta una ronda empezada (se veía «¡Listo!» a mitad de un ejercicio): solo impide EMPEZAR otra (MainLoop).
@@ -189,20 +181,8 @@ namespace NeuroVida.Games.Secuencia
 
         private IEnumerator GameLoop()
         {
-            StartCoroutine(Prewarm());
-            if (TutorialWanted)
-            {
-                // el tutorial se juega sobre el cielo ya armado, antes de la cuenta regresiva
-                _safe.gameObject.SetActive(true);
-                yield return null;
-                ApplySafeArea(_safe);
-                Canvas.ForceUpdateCanvases();
-                Layout();
-                ResetHud(RastroMode.Rastro, RastroContract.GuidedLength);
-                yield return StartCoroutine(RunTutorialIfNeeded());
-            }
-            _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Rastro de luz", Assessment.Subtitle("Mira el camino y repítelo"), () => _safe.gameObject.SetActive(true)));
+            _safe.gameObject.SetActive(false);                                      // el tablero no se ve mientras se arma (sin acomodar los botones miden 100 u): se activa ya acomodado (Tarea 190)
+            yield return StartCoroutine(Prewarm());                                 // el arte y los sonidos de la partida, detrás de la pantalla de carga de la app (Tarea 190)
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
@@ -210,6 +190,17 @@ namespace NeuroVida.Games.Secuencia
             Layout();
             ResetHud(RastroMode.Rastro, 0);
             ClearRound();
+            yield return StartCoroutine(ShowBoardWhenReady());                  // el tablero entero a la vista: Android quita la pantalla de carga
+            if (TutorialWanted)
+            {
+                ResetHud(RastroMode.Rastro, RastroContract.GuidedLength);
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                ResetHud(RastroMode.Rastro, 0);
+                ClearRound();
+            }
+            yield return StartCoroutine(PlayGo());
 
             _clockStart = GameClock.Time;
             _clockOn = true;
@@ -1079,7 +1070,7 @@ namespace NeuroVida.Games.Secuencia
             _flash.raycastTarget = false;
             _flash.color = new Color(0f, 0f, 0f, 0f);
 
-            _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
+            _goCue = new GoCue(canvasGo.transform, UnitsPerDp);
         }
 
         /// <summary>El color de la ✗ del lucero errado: coral de siempre; con plasticina, tinta (la coral rendía entre 1,1 y 1,9:1 sobre los luceros claros; el aro coral de afuera sigue marcando el error).</summary>

@@ -97,7 +97,7 @@ namespace NeuroVida.Games.Engranajes.Tests
         {
             GameFeel.Warm("engranajes");
             EngranajesSounds.Request();
-            int guard = 0; while (!WoodCore.Idle) { WoodCore.Step(1f); Assert.Less(++guard, 200000); }
+            WoodCore.Drain();
             foreach (EngranajesSfx sfx in System.Enum.GetValues(typeof(EngranajesSfx))) Assert.IsNotNull(WoodCore.GetExtra(EngranajesSounds.Key(sfx)), "propio: " + sfx);
             foreach (var sfx in new[] { WoodSfx.Hum, WoodSfx.Clack, WoodSfx.Knock, WoodSfx.Perfect, WoodSfx.New }) Assert.IsNotNull(WoodCore.Get(sfx), sfx.ToString());
             for (int k = 1; k <= 8; k++) Assert.IsNotNull(WoodCore.Get(WoodSfx.Spark, k), "luz " + k);

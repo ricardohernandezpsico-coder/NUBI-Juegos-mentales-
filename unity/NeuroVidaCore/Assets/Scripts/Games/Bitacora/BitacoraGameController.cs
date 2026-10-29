@@ -63,7 +63,7 @@ namespace NeuroVida.Games.Bitacora
         private bool[] _learned, _recalled;
         private int[] _chosen;
         private readonly List<int> _routeTaps = new List<int>();
-        private int _points, _streak, _bestStreak, _caught, _previousFrameRate;
+        private int _points, _streak, _bestStreak, _caught;
         private float _startedAt;
         private bool _done;
 
@@ -85,7 +85,6 @@ namespace NeuroVida.Games.Bitacora
         private Image _findHint;
         private ExitButton _exit;
         private GameHud _hud;
-        private CountdownScreen _countdown;
 
         // ------------------------------------------------------------------ sesión
 
@@ -111,8 +110,6 @@ namespace NeuroVida.Games.Bitacora
             _done = false;
             _wait = Wait.None;
 
-            _previousFrameRate = Application.targetFrameRate;
-            Application.targetFrameRate = 60;
 
             _resultRoot.gameObject.SetActive(false);
             _exit.Hide();
@@ -121,21 +118,20 @@ namespace NeuroVida.Games.Bitacora
             StartCoroutine(GameLoop());
         }
 
-        private void OnDisable()
-        {
-            if (_previousFrameRate != 0) Application.targetFrameRate = _previousFrameRate;
-        }
 
         private IEnumerator GameLoop()
         {
             _safe.gameObject.SetActive(false);
-            string subtitle = _phaseMode == "encode" ? "Transmisión del día" : _phaseMode == "recall" ? "Informe de la bitácora" : "Prepárate";
-            yield return StartCoroutine(_countdown.Play("Bitácora de Misión", Assessment.Subtitle(subtitle), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
+            _hud.SetLevel(_m.Level);
+            UpdateHud("");
+            yield return StartCoroutine(ShowBoardWhenReady());                  // el tablero entero a la vista: Android quita la pantalla de carga
+            yield return StartCoroutine(PlayGo());
+
             _startedAt = GameClock.Time;
             _hud.SetLevel(_m.Level);
             UpdateHud("");
@@ -976,7 +972,7 @@ namespace NeuroVida.Games.Bitacora
             _flash.raycastTarget = false;
             _flash.color = new Color(0f, 0f, 0f, 0f);
 
-            _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
+            _goCue = new GoCue(canvasGo.transform, UnitsPerDp);
         }
 
         private PlanetView BuildPlanet(Transform parent)

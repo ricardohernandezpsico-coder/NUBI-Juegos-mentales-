@@ -114,11 +114,13 @@ namespace NeuroVida.Games.Acoplamiento
                 int n = DockingArt.AlignedPx;
                 var px = new Color32[n * n];
                 var it = DockingArt.FaceRoutine(new DockingArt.PieceGeo(trial.Shape), n, DockingArt.Bp, 0f, false, seated ? DockingArt.SeatedStyle() : DockingArt.RaisedStyle(), px);
-                while (it.MoveNext())
+                var work = Background.RunEnumerator(it);                                         // los pixeles se calculan en un hilo de trabajo (Tarea 190): el principal solo espera cuadro a cuadro
+                while (!work.IsDone)
                 {
                     yield return null;
                     if (_trial != trial) yield break;
                 }
+                if (work.Error != null) throw new System.AggregateException(work.Error);
                 if (_trial != trial) yield break;
                 if (seated) { if (_alignedSeated == null) _alignedSeated = DockingArt.MakeSprite(px, n); }
                 else if (_alignedRaised == null) _alignedRaised = DockingArt.MakeSprite(px, n);
@@ -172,14 +174,15 @@ namespace NeuroVida.Games.Acoplamiento
             var cordon = new Color32[nA * nA];
             var a = DockingArt.FaceRoutine(shown, nD, DockingArt.Bp, -trial.AngleDeg, trial.Mirrored, DockingArt.RaisedStyle(), disp);
             var b = DockingArt.PortRoutine(shown, nA, DockingArt.Bp, 31, cavity, cordon);
-            bool ra = true, rb = true;
-            while (ra || rb)
+            var workA = Background.RunEnumerator(a);                                           // los pixeles se calculan en hilos de trabajo (Tarea 190): el principal solo espera cuadro a cuadro
+            var workB = Background.RunEnumerator(b);
+            while (!workA.IsDone || !workB.IsDone)
             {
-                if (ra) ra = a.MoveNext();
-                if (rb) rb = b.MoveNext();
                 yield return null;
-                if (_preTrial != trial) yield break;                                             // se descartó (el tutorial desde la pausa, un reinicio)
+                if (_preTrial != trial) yield break;                                             // se descartó (el tutorial desde la pausa, un reinicio): los hilos terminan solos sobre arreglos que nadie usa
             }
+            if (workA.Error != null) throw new System.AggregateException(workA.Error);
+            if (workB.Error != null) throw new System.AggregateException(workB.Error);
             _preDisp = DockingArt.MakeSprite(disp, nD);
             yield return null;
             if (_preTrial != trial) { DockingArt.Release(_preDisp); _preDisp = null; yield break; }

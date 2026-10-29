@@ -58,7 +58,7 @@ namespace NeuroVida.Games.Piloto.Tests
         {
             GameFeel.Warm("piloto");
             PilotSounds.Request();
-            int guard = 0; while (!WoodCore.Idle) { WoodCore.Step(1f); Assert.Less(++guard, 200000); }
+            WoodCore.Drain();
             string key = WoodCore.CueKey(PilotSounds.BlipHz, PilotSounds.BlipSeconds);
             var clip = WoodCore.GetExtra(key);
             Assert.IsNotNull(clip, "el blip está pedido");
@@ -77,7 +77,7 @@ namespace NeuroVida.Games.Piloto.Tests
         {
             GameFeel.Warm("piloto");
             PilotSounds.Request();
-            int guard = 0; while (!WoodCore.Idle) { WoodCore.Step(1f); Assert.Less(++guard, 200000); }
+            WoodCore.Drain();
             for (int i = 0; i < 4; i++) Assert.IsNotNull(WoodCore.GetExtra(WoodCore.NoteKey(PilotSounds.BeaconHz(i), WoodVoice.Marimba)), "la nota de la baliza " + i);
             Assert.IsNotNull(WoodCore.GetExtra(PilotSounds.Key(PilotSfx.Mission)), "el aviso de misión");
             foreach (var sfx in new[] { WoodSfx.Knock, WoodSfx.SweepUp, WoodSfx.Streak, WoodSfx.Wrong }) Assert.IsNotNull(WoodCore.Get(sfx), sfx.ToString());

@@ -37,7 +37,7 @@ Con «quitar animaciones» activo:
 | `UiFx.Shake` | No mueve; las posiciones de origen no se tocan. |
 | `WorldBackdrop` (`WorldAmbient`, `CountdownAmbient`) | Estado de reposo dibujado UNA vez: alfa base, posiciones de casa, sin giro, sin órbitas, sin estrellas fugaces, letras flotantes quietas. Solo se redibuja si cambia el tamaño del área. |
 | `StarfieldFx` | Reposo dibujado una vez (estrellas en su lugar de casa, sin estela, alfa base); `Warp` se ignora. |
-| `CountdownScreen` | «3, 2, 1, ¡Ya!» con fundido cruzado (160 ms). Sin chispas, estrella en órbita, onda, destello central, rebote, respiración ni hiperespacio. Misma duración total. |
+| `GoCue` («¡Ya!», Tarea 190) | Fundido de 150 ms al entrar y al salir, sin rebote ni cambio de tamaño; misma duración total (0,8 s). (La cuenta regresiva 3-2-1 y sus chispas, estrella en órbita, onda, destello central e hiperespacio se quitaron.) |
 | `GameHud.Announce` (la fila de consigna habla) | Sin fundido ni rebote: el aviso cambia de una vez, con los mismos tiempos de lectura (1,2 s; 2 s con subtítulo) y la consigna vuelve de una vez. |
 | `PhasePill` | El texto nuevo entra con fundido (0,35 → 1 en 160 ms), sin rebote. |
 | `ProgressDots` | El punto pasa a verde/rojo con fundido de color, sin pop. |
@@ -59,7 +59,7 @@ Además: `GameClock.SimulatedDeltaTime` y `GameClock.RealDeltaTime` (solo para q
 
 | Dónde | Qué es | Frecuencia | Estado |
 |---|---|---|---|
-| `CountdownScreen` (línea ~364 antes) | `Sin(elapsed*30+i)` en el alfa de las 26 chispas de «¡Ya!» (±25 %) | 4,8 Hz | **Arreglado**: ahora `elapsed*12` (1,9 Hz). Con ReduceMotion no hay chispas. |
+| `CountdownScreen` (línea ~364 antes; quitada en la Tarea 190) | `Sin(elapsed*30+i)` en el alfa de las 26 chispas de «¡Ya!» (±25 %) | 4,8 Hz | **Quitado con la cuenta regresiva** (ya no hay chispas en la entrada). |
 | `Freno/BrakeGameController.cs:539` `Blink` | La baliza de la vía se prende y apaga 3 veces cada 0,08 s | 6,25 Hz (0,5 s) | **Arreglado (todos los modos)**: el brillo oscila solo entre 1 y ≈ 0,67 (antes 1 ↔ 0,18). Con ReduceMotion queda prendida 0,48 s (misma duración) sin parpadeo. |
 | `Freno:469` llama del cohete | Tamaño `0,8 + 0,25·Sin(t·60)` | 9,5 Hz | Decisión: cambia tamaño, no brillo, así que SE QUEDA en modo normal; con ReduceMotion el despegue no se dibuja (sin llama). |
 | `Aterrizaje/LandingGameController.Scene.cs` llama (rehecha el 10-oct) | Tamaño `30 + 6·Sin(t·20)` dp, solo mientras vuela | ≈ 3,2 Hz | Cambia tamaño, no brillo: se queda en normal; con ReduceMotion NO hay llama (la nave baja sin ella). |
@@ -92,11 +92,11 @@ Los destellos de acierto/error de pantalla completa son de UN solo pulso por res
 ## Pruebas y verificación
 
 - EditMode (`Games/Tests/MotionTests.cs`, 17 pruebas, ReduceMotion = true y se deja en false en el `TearDown`): ráfagas sin hijos, `Shake` quieto,
-  `WorldBackdrop` y `StarfieldFx` sin cambios en 240 cuadros, sin estrellas fugaces, la cuenta regresiva termina sin chispas/órbita/onda/rebote,
+  `WorldBackdrop` y `StarfieldFx` sin cambios en 240 cuadros, sin estrellas fugaces, el «¡Ya!» (`GoCue`) termina sin rebote y con el mismo tiempo,
   `FinishCurtain` termina, `PressScale` oscurece. Hay un control con ReduceMotion = false para probar que el fondo SÍ se mueve.
 - Smoke: `NUBI_REDUCE_MOTION=1` (lo lee `HeadlessPlaymodeSmokeTest`, que además comprueba que la bandera llegó al juego).
   `bash tools/verificar-todo.sh --sin-animaciones` corre escena piloto + smoke completo de Unity (todos sus arranques: los juegos de la app y los retirados que conservan código) con la bandera (no exporta, no corre Gradle, no instala).
-- Sello de la cuenta regresiva: `estilo 3-oct · movimiento B` (Fase B).
+- Sello de versión: `estilo 3-oct · movimiento B` (Fase B, historia); desde la Tarea 190 vive en la pausa (`PauseMenu.StyleStamp`) y solo en depuración.
 
 ## Inventario por juego (Fase B)
 

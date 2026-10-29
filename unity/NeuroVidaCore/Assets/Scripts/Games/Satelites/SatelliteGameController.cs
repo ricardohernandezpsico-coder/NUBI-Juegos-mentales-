@@ -46,7 +46,6 @@ namespace NeuroVida.Games.Satelites
         private bool _loopOn, _baked, _guided, _inputOn, _planetBig;
         private int _roundNo, _level, _bestRecord, _debugStage, _debugSurprise, _lightsShown, _lastTickSecond;
         private float _endsAt, _evalAt, _answerStartedAt;
-        private int _previousFrameRate;
         private Vector2? _press;
         private readonly bool[] _marked = new bool[SatPool];
         private readonly List<float[]> _framesX = new List<float[]>(), _framesY = new List<float[]>();
@@ -54,7 +53,6 @@ namespace NeuroVida.Games.Satelites
 
         private ExitButton _exit;
         private GameHud _hud;
-        private CountdownScreen _countdown;
 
         private bool Endless => _config != null && _config.config.timed;
         private float Now => GameClock.Time;
@@ -86,8 +84,6 @@ namespace NeuroVida.Games.Satelites
             _lightSpots.Clear();
 
             // Movimiento continuo: a 60 cuadros por segundo se ve fluido (Android da 30 por defecto).
-            _previousFrameRate = Application.targetFrameRate;
-            Application.targetFrameRate = 60;
 
             ResetRoundViews();
             ResetPlanet();
@@ -98,34 +94,27 @@ namespace NeuroVida.Games.Satelites
             StartCoroutine(GameLoop());
         }
 
-        private void OnDisable()
-        {
-            if (_previousFrameRate != 0) Application.targetFrameRate = _previousFrameRate;
-        }
 
         private IEnumerator GameLoop()
         {
-            StartCoroutine(Prewarm());
-            if (TutorialWanted)
-            {
-                // la ronda guiada se juega sobre la pantalla ya armada, antes de la cuenta regresiva
-                _safe.gameObject.SetActive(true);
-                yield return null;
-                ApplySafeArea(_safe);
-                Canvas.ForceUpdateCanvases();
-                Layout();
-                yield return StartCoroutine(RunTutorialIfNeeded());
-                ResetRoundViews();
-                ResetPlanet();
-            }
-            _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play(SatelliteContract.Title, Assessment.Subtitle(SatelliteContract.CountdownSub), () => _safe.gameObject.SetActive(true)));
-            while (!_baked) yield return null;
+            _safe.gameObject.SetActive(false);                                      // el tablero no se ve mientras se arma (sin acomodar los botones miden 100 u): se activa ya acomodado (Tarea 190)
+            yield return StartCoroutine(Prewarm());                                 // el arte y los sonidos de la partida, detrás de la pantalla de carga de la app (Tarea 190)
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
+            yield return StartCoroutine(ShowBoardWhenReady());                  // el tablero entero a la vista: Android quita la pantalla de carga
+            if (TutorialWanted)
+            {
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                ResetRoundViews();
+                ResetPlanet();
+                Canvas.ForceUpdateCanvases();
+                Layout();
+            }
+            yield return StartCoroutine(PlayGo());
+
             _endsAt = GameClock.Time + SatelliteContract.RetoSeconds;
             _timerBg.gameObject.SetActive(Endless);
             _loopOn = true;
@@ -147,7 +136,7 @@ namespace NeuroVida.Games.Satelites
         {
             if (!_baked)
             {
-                var sprites = SatelliteSprites.Prewarm();
+                var sprites = Background.Budgeted(SatelliteSprites.Prewarm());
                 while (sprites.MoveNext()) yield return null;
                 AssignSprites();
                 _baked = true;

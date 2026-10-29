@@ -63,7 +63,6 @@ namespace NeuroVida.Games.Meteoros
         private int RunSeconds => MeteorContract.RunSeconds(Assessment.Active);
         private bool Precision => !Endless;
         private bool Senior;
-        private int _previousFrameRate;
 
         private readonly List<Meteor> _active = new List<Meteor>();
         private readonly List<int> _allMs = new List<int>();
@@ -78,7 +77,6 @@ namespace NeuroVida.Games.Meteoros
         private readonly List<Image> _conStars = new List<Image>();
         private ExitButton _exit;
         private GameHud _hud;
-        private CountdownScreen _countdown;
         private float _playW, _playH, _spawnY, _atmosphereY, _bottom, _hudBottomY;
         /// <summary>Dónde nace el centro de la roca, desde arriba, como fracción de la altura del juego (Tarea 128: 0,20).</summary>
         public const float SpawnFraction = 0.20f;
@@ -98,8 +96,6 @@ namespace NeuroVida.Games.Meteoros
             _director = new MeteorDirector(_lexicon, _rng);
             _tally = new MeteorTally();
 
-            _previousFrameRate = Application.targetFrameRate;
-            Application.targetFrameRate = 60;
 
             _phase = Phase.Idle;
             ClearMeteors();
@@ -126,36 +122,29 @@ namespace NeuroVida.Games.Meteoros
             StartCoroutine(GameLoop());
         }
 
-        private void OnDisable()
-        {
-            if (_previousFrameRate != 0) Application.targetFrameRate = _previousFrameRate;
-        }
 
         private IEnumerator GameLoop()
         {
+            _safe.gameObject.SetActive(false);                                      // el tablero no se ve mientras se arma (sin acomodar los botones miden 100 u): se activa ya acomodado (Tarea 190)
             MeteorSounds.Request();                  // la señal de «dejar pasar una inventada» se pide ANTES de la cuenta (lo demás va con el núcleo)
-            StartCoroutine(PrewarmSprites());
             bool tutorialPlayed = false;
-            if (TutorialWanted)
-            {
-                // la ronda guiada se juega sobre el cielo ya armado, antes de la cuenta regresiva
-                _safe.gameObject.SetActive(true);
-                yield return null;
-                ApplySafeArea(_safe);
-                Canvas.ForceUpdateCanvases();
-                Layout();
-                UpdateHud();
-                yield return StartCoroutine(RunTutorialIfNeeded());
-                tutorialPlayed = !_tutorial.Skipped;
-            }
-            _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Lluvia de meteoros", Assessment.Subtitle(MeteorContract.Rule), () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(PrewarmSprites());                                 // el arte y los sonidos de la partida, detrás de la pantalla de carga de la app (Tarea 190)
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
             UpdateHud();
+            yield return StartCoroutine(ShowBoardWhenReady());                  // el tablero entero a la vista: Android quita la pantalla de carga
+            if (TutorialWanted)
+            {
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                tutorialPlayed = !_tutorial.Skipped;
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                UpdateHud();
+            }
+            yield return StartCoroutine(PlayGo());
 
             _endsAt = GameClock.Time + RunSeconds;
             // el primer meteoro nace 0,6 s DESPUÉS de que aparece la consigna (antes pisaba el letrero); la consigna vive en la fila del marcador (Tarea 127)
@@ -946,7 +935,7 @@ namespace NeuroVida.Games.Meteoros
             _flash.raycastTarget = false;
             _flash.color = new Color(0f, 0f, 0f, 0f);
 
-            _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
+            _goCue = new GoCue(canvasGo.transform, UnitsPerDp);
         }
 
         private void BuildConstellation()

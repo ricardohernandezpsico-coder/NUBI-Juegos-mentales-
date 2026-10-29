@@ -82,7 +82,6 @@ namespace NeuroVida.Games.Shared
         }
 
         /// <summary>El número de la cuenta regresiva (3, 2 o 1): una marimba que sube un escalón por número.</summary>
-        public static void Count(int number) => WoodCore.Play(WoodSfx.Count, number);
 
         /// <summary>«¡Ya!»: la salida de la cuenta regresiva.</summary>
         public static void Go() => WoodCore.Play(WoodSfx.Go);

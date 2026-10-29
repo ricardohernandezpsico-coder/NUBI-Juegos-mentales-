@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Threading;
 using UnityEngine;
 
 namespace NeuroVida.Games.Shared
@@ -9,9 +11,10 @@ namespace NeuroVida.Games.Shared
     /// <summary>
     /// El NÚCLEO COMÚN de «Madera cálida» (Tarea 120, Fase B) y los sonidos «EXTRA» de cada juego (paso 0 de las Fases C a E, Tarea 133): guarda los clips de la paleta (<see cref="WoodSounds"/>) que usan TODOS los juegos (acierto, error, nivel, tic, fin, cuenta regresiva, «¡Ya!», pausa, aviso y toque del kit), los calcula UNA vez y de a poco, y los suena por dos altavoces: el del juego (se calla con la pausa) y el de la interfaz
     /// (<c>ignoreListenerPause</c>: el toque de un botón de la pausa y los sonidos de abrir y seguir tienen que oírse con el audio congelado). Lo usa <see cref="GameFeel"/> y, desde las Fases C a E, cada juego para sus notas, sus variantes de la paleta y sus sonidos propios.
-    /// <para><b>Cuándo se calcula.</b> <see cref="Warm"/> corre al empezar la partida (<c>GameEntryPoint</c>, cuando llega la configuración): calcula de golpe lo que tiene que sonar DURANTE la cuenta regresiva (<see cref="EarlySet"/>: 3, 2, 1 y «¡Ya!», unos 0,2 s) y deja el resto del núcleo (<see cref="CoreSet"/>) en una cola que un
-    /// controlador oculto avanza unos milisegundos por cuadro (<see cref="FrameBudgetMs"/>; 8 ms mientras corre la cuenta regresiva: <see cref="CountdownRunning"/>), mientras corre la cuenta regresiva. Si un sonido del núcleo se pide antes de estar listo NO se calcula en ese momento (sería un tirón en pleno juego): no suena y queda contado en <see cref="Skipped"/>. Unity queda vivo entre partidas y los clips son estáticos:
-    /// el núcleo se calcula <b>una sola vez</b> (<see cref="BakeCount"/>) y se conserva; con «Efectos de sonido» apagado no se calcula ni suena nada.</para>
+    /// <para><b>Cuándo y dónde se calcula (Tarea 190).</b> <see cref="Warm"/> corre al empezar la partida (<c>GameEntryPoint</c>, cuando llega la configuración) y deja TODO en una cola: primero el «¡Ya!» (<see cref="EarlySet"/>), después el resto del núcleo (<see cref="CoreSet"/>) y, detrás, lo extra que pide el juego. Las MUESTRAS se calculan en HILOS DE TRABAJO
+    /// (<see cref="WoodSounds.BakeJob.ComputeSamples"/>: pura aritmética, nada de Unity; hasta <see cref="WorkerCount"/> a la vez) y el hilo principal solo hace lo que Unity exige que haga él: <c>AudioClip.Create</c> y <c>SetData</c>, con un tope de <see cref="FrameBudgetMs"/> (2 ms) por cuadro (el controlador oculto <see cref="WoodCoreDriver"/>), o de
+    /// <see cref="LoadingBudgetMs"/> mientras la pantalla de carga de la app tapa el juego (<see cref="Loading"/>). El juego muestra su tablero SOLO cuando <see cref="Ready"/> (nada en la cola, nada calculándose, nada por crear): después, ningún cálculo toca el hilo principal. Si un sonido del núcleo se pide antes de estar listo NO se calcula en ese momento
+    /// (sería un tirón en pleno juego): no suena y queda contado en <see cref="Skipped"/>. Unity queda vivo entre partidas y los clips son estáticos: el núcleo se calcula <b>una sola vez</b> (<see cref="BakeCount"/>) y se conserva; con «Efectos de sonido» apagado no se calcula ni suena nada.</para>
     /// <para><b>Lo extra de un juego.</b> El juego pide en su construcción, ANTES de la cuenta regresiva y en el orden en que suena cada cosa (lo que suena primero, primero): <see cref="Request(WoodSfx,int)"/> (una variante de la paleta fuera del núcleo), <see cref="RequestNote"/> (una nota con información),
     /// <see cref="RequestCue"/> (una señal corta) y <see cref="Request(string,Func{WoodSounds.Recipe},bool)"/> (un sonido PROPIO). Se encolan DETRÁS del núcleo y los hornea el mismo controlador oculto con el mismo presupuesto. Política si NO están listos al sonar: una variante de la paleta o un propio no suena y suma
     /// <see cref="Skipped"/> (nunca un tirón por un adorno); una nota o una señal SÍ se calcula en el momento (son la información del juego: mejor un tirón de unos 10 a 30 ms una vez que el silencio) y suma <see cref="LateBakes"/>. El smoke exige <see cref="Skipped"/> = 0 y <see cref="LateBakes"/> = 0 en toda partida con sonido.
@@ -19,8 +22,8 @@ namespace NeuroVida.Games.Shared
     /// </summary>
     public static class WoodCore
     {
-        /// <summary>Lo que tiene que estar listo ANTES de que empiece la cuenta regresiva (suena durante ella): 3, 2, 1 y «¡Ya!».</summary>
-        public static readonly (WoodSfx Sfx, int Arg)[] EarlySet = { (WoodSfx.Count, 3), (WoodSfx.Count, 2), (WoodSfx.Count, 1), (WoodSfx.Go, 0) };
+        /// <summary>Lo que tiene que estar listo ANTES de que se vea el tablero: el «¡Ya!» (Tarea 190: la cuenta regresiva 3-2-1 se quitó, así que ya no se calculan los tres números; <see cref="WoodSfx.Count"/> sigue en la paleta pero nadie la suena).</summary>
+        public static readonly (WoodSfx Sfx, int Arg)[] EarlySet = { (WoodSfx.Go, 0) };
 
         /// <summary>El resto del núcleo común, en el orden en que se calcula: primero lo de la interfaz y el acierto de la primera respuesta.</summary>
         public static readonly (WoodSfx Sfx, int Arg)[] CoreSet =
@@ -29,17 +32,23 @@ namespace NeuroVida.Games.Shared
             (WoodSfx.Correct, 4), (WoodSfx.Finish, 0), (WoodSfx.Correct, 5), (WoodSfx.Correct, 6), (WoodSfx.Correct, 7),
         };
 
-        /// <summary>Cuántos milisegundos por cuadro puede gastar el calculo del núcleo y de lo extra (para que ningún cuadro se trabe).</summary>
-        public const float FrameBudgetMs = 5f;
+        /// <summary>Cuántos milisegundos por cuadro puede gastar el HILO PRINCIPAL en crear los clips que los hilos de trabajo ya calcularon (<c>AudioClip.Create</c> y <c>SetData</c>; Tarea 190: antes eran 5 ms de síntesis).</summary>
+        public const float FrameBudgetMs = 2f;
 
-        /// <summary>El presupuesto mientras corre la cuenta regresiva (la pantalla de la cuenta es liviana): 8 ms por cuadro.</summary>
-        public const float CountdownBudgetMs = 8f;
+        /// <summary>El presupuesto mientras la pantalla de carga de la app tapa el juego (Tarea 190): nadie ve los cuadros, así que el hilo principal puede crear clips durante más tiempo.</summary>
+        public const float LoadingBudgetMs = 30f;
 
-        /// <summary>true mientras corre la cuenta regresiva (lo avisa <c>CountdownScreen</c>): el calculo usa <see cref="CountdownBudgetMs"/>; al empezar la partida vuelve a <see cref="FrameBudgetMs"/>.</summary>
-        public static bool CountdownRunning { get; set; }
+        /// <summary>true mientras el juego espera a mostrar su tablero (<c>GameControllerBase.ShowBoardWhenReady</c>): el presupuesto es <see cref="LoadingBudgetMs"/>.</summary>
+        public static bool Loading { get; set; }
 
         /// <summary>El presupuesto por cuadro de ahora.</summary>
-        public static float CurrentBudgetMs => CountdownRunning ? CountdownBudgetMs : FrameBudgetMs;
+        public static float CurrentBudgetMs => Loading ? LoadingBudgetMs : FrameBudgetMs;
+
+        /// <summary>Cuántos hilos de trabajo calculan muestras a la vez (uno menos que los núcleos del teléfono, entre 1 y 4: el hilo principal y el de Unity siguen libres).</summary>
+        public static int WorkerCount => Mathf.Clamp(SystemInfo.processorCount - 1, 1, 4);
+
+        /// <summary>El juego puede mostrar su tablero: no queda sonido por calcular ni por crear (con «Efectos de sonido» apagado, siempre).</summary>
+        public static bool Ready => Idle;
 
         /// <summary>La racha más alta con su propio escalón (de la 7 en adelante suena igual).</summary>
         public const int MaxCorrect = 7;
@@ -61,8 +70,21 @@ namespace NeuroVida.Games.Shared
         private static readonly Dictionary<int, AudioClip> Clips = new Dictionary<int, AudioClip>();             // el núcleo común (estático)
         private static readonly Dictionary<string, AudioClip> Extras = new Dictionary<string, AudioClip>();      // lo extra del juego de ahora (variantes de la paleta, notas, señales y propios)
         private static readonly Queue<Job> Pending = new Queue<Job>();
-        private static WoodSounds.BakeJob _job;
-        private static Job _jobItem;
+
+        /// <summary>Un clip que un hilo de trabajo está calculando (o ya calculó y espera su <c>AudioClip.Create</c> en el hilo principal).</summary>
+        private sealed class Work
+        {
+            public Job Item;
+            public WoodSounds.BakeJob Bake;
+            public int Generation;
+            public volatile bool Cancelled;       // lo extra de un juego que se soltó mientras se calculaba: el resultado se descarta
+            public float[] Left, Right;
+            public Exception Error;
+        }
+
+        private static readonly ConcurrentQueue<Work> Finished = new ConcurrentQueue<Work>();     // lo que los hilos terminaron, para crear el clip en el principal
+        private static readonly List<Work> InFlight = new List<Work>();                          // lo que se mandó a calcular y todavía no tiene su clip (solo el hilo principal lo toca)
+        private static int _generation;                                                          // sube con Reset: los resultados de una generación anterior se descartan
         private static string _extrasGame;
         private static GameObject _go;
         private static AudioSource _main, _ui;
@@ -87,8 +109,8 @@ namespace NeuroVida.Games.Shared
         /// <summary>El último momento (reloj real) en que sonó algo por el altavoz del juego: lo usa el aviso para no sonar encima de otro sonido (<see cref="NoticeUnlessCovered"/>).</summary>
         public static float LastMainAt { get; private set; } = -100f;
 
-        /// <summary>Para las pruebas: ¿el calculo ya terminó (no queda nada en la cola ni a medio hacer)?</summary>
-        public static bool Idle => _job == null && Pending.Count == 0;
+        /// <summary>¿Ya terminó todo (nada en la cola, nada calculándose en un hilo, nada esperando su clip)?</summary>
+        public static bool Idle => Pending.Count == 0 && InFlight.Count == 0;
 
         /// <summary>Los bytes que ocupan los clips del núcleo guardados (muestras de 32 bits, todos los canales).</summary>
         public static long StoredBytes()
@@ -158,43 +180,36 @@ namespace NeuroVida.Games.Shared
         // ------------------------------------------------------------------ calcular
 
         /// <summary>
-        /// Prepara el sonido de la partida: calcula de golpe lo de la cuenta regresiva (<see cref="EarlySet"/>), deja el resto del núcleo en la cola y, en el juego, crea el controlador que la avanza un poco por cuadro. Si ya está todo calculado no hace nada (el núcleo se calcula UNA vez).
-        /// Con los efectos de sonido apagados no calcula ni crea nada. <paramref name="gameId"/> (el juego que va a correr): si cambió respecto del anterior, suelta lo extra del anterior (<see cref="ReleaseExtras"/>); el mismo juego conserva lo suyo.
+        /// Prepara el sonido de la partida: deja en la cola el «¡Ya!» (<see cref="EarlySet"/>) y, detrás, el resto del núcleo (<see cref="CoreSet"/>), y en el juego crea el controlador que reparte el trabajo a los hilos y crea los clips (<see cref="WoodCoreDriver"/>). NO calcula nada en el hilo principal (Tarea 190: antes calculaba de golpe el «¡Ya!» y los tres números, unos 125 a 160 ms en el primer cuadro).
+        /// Si ya está todo calculado no hace nada (el núcleo se calcula UNA vez). Con los efectos de sonido apagados no calcula ni crea nada. <paramref name="gameId"/> (el juego que va a correr): si cambió respecto del anterior, suelta lo extra del anterior (<see cref="ReleaseExtras"/>); el mismo juego conserva lo suyo.
         /// </summary>
         public static void Warm(string gameId = null)
         {
-            CountdownRunning = false;                                              // una partida nueva: la cuenta regresiva todavía no empezó
+            Loading = false;                                                       // una partida nueva: todavía no espera a mostrar su tablero
             if (gameId != null)
             {
                 if (_extrasGame != null && _extrasGame != gameId) ReleaseExtras();
                 _extrasGame = gameId;
             }
             if (!GameFeel.SoundOn) return;
-            foreach (var (sfx, arg) in EarlySet) if (!Has(sfx, arg)) Bake(sfx, arg);
+            SoundKit.PrepareForThreads();                                          // el filtro de media frecuencia se arma acá, una vez, en el hilo principal (los hilos de trabajo solo lo leen)
+            foreach (var (sfx, arg) in EarlySet) if (!Has(sfx, arg) && !Queued(sfx, arg)) Pending.Enqueue(new Job { Sfx = sfx, Arg = arg });
             foreach (var (sfx, arg) in CoreSet) if (!Has(sfx, arg) && !Queued(sfx, arg)) Pending.Enqueue(new Job { Sfx = sfx, Arg = arg });
             if (!Idle) EnsureObject();
         }
 
         private static bool Queued(WoodSfx sfx, int arg)
         {
-            if (_jobItem != null && !_jobItem.Extra && _jobItem.Sfx == sfx && _jobItem.Arg == arg) return true;
+            foreach (var w in InFlight) if (!w.Item.Extra && w.Item.Sfx == sfx && w.Item.Arg == arg) return true;
             foreach (var p in Pending) if (!p.Extra && p.Sfx == sfx && p.Arg == arg) return true;
             return false;
         }
 
         private static bool Queued(string key)
         {
-            if (_jobItem != null && _jobItem.Key == key) return true;
+            foreach (var w in InFlight) if (!w.Cancelled && w.Item.Key == key) return true;
             foreach (var p in Pending) if (p.Key == key) return true;
             return false;
-        }
-
-        private static void Bake(WoodSfx sfx, int arg)
-        {
-            var job = new WoodSounds.BakeJob(sfx, arg);
-            while (!job.Step(int.MaxValue)) { }
-            Clips[KeyOf(sfx, arg)] = job.Clip;
-            BakeCount++;
         }
 
         // ------------------------------------------------------------------ pedir lo extra (ANTES de la cuenta regresiva, en el orden en que suena)
@@ -238,7 +253,7 @@ namespace NeuroVida.Games.Shared
         {
             foreach (var c in Extras.Values) if (c != null) UnityEngine.Object.DestroyImmediate(c);
             Extras.Clear();
-            if (_jobItem != null && _jobItem.Extra) { _job = null; _jobItem = null; }
+            foreach (var w in InFlight) if (w.Item.Extra) w.Cancelled = true;      // lo que un hilo estaba calculando de ese juego se descarta al terminar
             if (Pending.Count > 0)
             {
                 var keep = new List<Job>();
@@ -249,29 +264,90 @@ namespace NeuroVida.Games.Shared
         }
 
         /// <summary>
-        /// Avanza el calculo hasta <paramref name="budgetMs"/> milisegundos (la síntesis de un clip, un pedazo de su sala o su cierre cada vez), primero el núcleo y después lo extra, en el orden en que se pidió. Lo llama el controlador oculto en cada cuadro; las pruebas lo llaman con un presupuesto grande para terminar de una vez.
+        /// Lo que hace el HILO PRINCIPAL en cada cuadro (Tarea 190): manda a los hilos de trabajo los clips de la cola (hasta <see cref="WorkerCount"/> a la vez, primero el núcleo y después lo extra, en el orden en que se pidió) y crea (<c>AudioClip.Create</c> y <c>SetData</c>) los que ya terminaron,
+        /// durante a lo más <paramref name="budgetMs"/> milisegundos (siempre crea al menos uno si hay). Lo llama el controlador oculto en cada cuadro; las pruebas lo llaman con un presupuesto grande para terminar (<see cref="Drain"/>).
         /// </summary>
         public static void Step(float budgetMs)
         {
+            Dispatch();
             var watch = Stopwatch.StartNew();
-            while (true)
+            while (Finished.TryDequeue(out var w))
             {
-                if (_job == null)
-                {
-                    while (Pending.Count > 0 && Done(Pending.Peek())) Pending.Dequeue();
-                    if (Pending.Count == 0) return;
-                    _jobItem = Pending.Dequeue();
-                    _job = _jobItem.Extra ? new WoodSounds.BakeJob(_jobItem.Make, _jobItem.Key, _jobItem.Mono) : new WoodSounds.BakeJob(_jobItem.Sfx, _jobItem.Arg);
-                }
-                if (_job.Step())
-                {
-                    if (_jobItem.Extra) Extras[_jobItem.Key] = _job.Clip; else Clips[KeyOf(_jobItem.Sfx, _jobItem.Arg)] = _job.Clip;
-                    BakeCount++;
-                    _job = null;
-                    _jobItem = null;
-                }
-                if (watch.Elapsed.TotalMilliseconds >= budgetMs) return;
+                Realize(w);
+                Dispatch();
+                if (watch.Elapsed.TotalMilliseconds >= budgetMs) break;
             }
+        }
+
+        /// <summary>Para las pruebas: espera (con el hilo principal) a que TODO termine de calcularse y se cree. Devuelve cuántas veces tuvo que repartir y crear.</summary>
+        public static int Drain(int timeoutMs = 120000)
+        {
+            var watch = Stopwatch.StartNew();
+            int rounds = 0;
+            while (!Idle)
+            {
+                Step(1000f);
+                rounds++;
+                if (!Idle) Thread.Sleep(1);
+                if (watch.ElapsedMilliseconds > timeoutMs) throw new TimeoutException("WoodCore no terminó de calcular en " + timeoutMs + " ms");
+            }
+            return rounds;
+        }
+
+        private static void Dispatch()
+        {
+            int workers = WorkerCount;
+            while (InFlight.Count < workers && Pending.Count > 0)
+            {
+                var item = Pending.Dequeue();
+                if (Done(item) || StillInFlight(item)) continue;
+                var work = new Work { Item = item, Generation = _generation };
+                work.Bake = item.Extra ? new WoodSounds.BakeJob(item.Make, item.Key, item.Mono) : new WoodSounds.BakeJob(item.Sfx, item.Arg);
+                InFlight.Add(work);
+                ThreadPool.QueueUserWorkItem(Compute, work);
+            }
+        }
+
+        private static bool StillInFlight(Job item)
+        {
+            foreach (var w in InFlight)
+            {
+                if (w.Cancelled) continue;
+                if (item.Extra ? (w.Item.Extra && w.Item.Key == item.Key) : (!w.Item.Extra && w.Item.Sfx == item.Sfx && w.Item.Arg == item.Arg)) return true;
+            }
+            return false;
+        }
+
+        /// <summary>El trabajo de un hilo de trabajo: SOLO aritmética (ninguna API de Unity). Un error no se pierde: se guarda y el hilo principal lo informa.</summary>
+        private static void Compute(object state)
+        {
+            var work = (Work)state;
+            try
+            {
+                if (!work.Cancelled && work.Generation == _generation) work.Bake.ComputeSamples(out work.Left, out work.Right);
+            }
+            catch (Exception e)
+            {
+                work.Error = e;
+            }
+            Finished.Enqueue(work);
+        }
+
+        /// <summary>El hilo principal crea el clip de lo que un hilo terminó y lo guarda (o lo descarta si era de una generación anterior o de un juego que se soltó).</summary>
+        private static void Realize(Work w)
+        {
+            InFlight.Remove(w);
+            if (w.Generation != _generation || w.Cancelled) return;
+            if (w.Error != null)
+            {
+                UnityEngine.Debug.LogError("[WoodCore] no se pudo calcular " + w.Bake.ClipName + ": " + w.Error);
+                return;
+            }
+            var watch = Stopwatch.StartNew();
+            var clip = WoodSounds.MakeClip(w.Bake.ClipName, w.Left, w.Right);
+            if (w.Item.Extra) Extras[w.Item.Key] = clip; else Clips[KeyOf(w.Item.Sfx, w.Item.Arg)] = clip;
+            BakeCount++;
+            EntryProbe.Cost("sonido", watch.Elapsed.TotalMilliseconds);
         }
 
         private static bool Done(Job j) => j.Extra ? Extras.ContainsKey(j.Key) : Has(j.Sfx, j.Arg);
@@ -391,10 +467,11 @@ namespace NeuroVida.Games.Shared
             foreach (var c in Extras.Values) if (c != null) UnityEngine.Object.DestroyImmediate(c);
             Extras.Clear();
             Pending.Clear();
-            _job = null;
-            _jobItem = null;
+            _generation++;                                                         // lo que los hilos todavía calculan se descarta al terminar
+            foreach (var w in InFlight) w.Cancelled = true;
+            InFlight.Clear();
             _extrasGame = null;
-            CountdownRunning = false;
+            Loading = false;
             if (_go != null) UnityEngine.Object.DestroyImmediate(_go);
             _go = null;
             _main = _ui = null;

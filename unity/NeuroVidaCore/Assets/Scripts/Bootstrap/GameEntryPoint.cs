@@ -86,6 +86,9 @@ namespace NeuroVida.Bridge
             cam.backgroundColor = NeuroVida.Games.Shared.NeuroStyle.NightMid;
         }
 
+        /// <summary>Los cuadros por segundo de TODOS los juegos (antes cada controlador lo fijaba por su cuenta y seis nunca: Constelaciones, Bodega, Correo, Tinta o Palabra, Carga exacta y Engranajes).</summary>
+        public const int GameFrameRate = 60;
+
         private NeuroVida.Games.Shared.PauseMenu _pause;
         private bool _running; // en esta escena arrancó una partida
 
@@ -152,17 +155,20 @@ namespace NeuroVida.Bridge
             if (config?.config == null)
             {
                 Debug.LogError("[GameEntryPoint] JSON de configuración inválido o incompleto: " + json);
+                NativeBridge.NotifyGameShown();                          // sin juego que mostrar: que la pantalla de carga no se quede
                 return;
             }
 
             _running = true;
+            Application.targetFrameRate = GameFrameRate;                                           // UNA sola vez para todos los juegos (Tarea 190: seis nunca la fijaban y en Android el valor por omisión es otro)
+            NeuroVida.Games.Shared.GameReadiness.Reset();                                          // el tablero de ESTA partida todavía no se mostró
+            NeuroVida.Games.Shared.PauseMenu.DebugStamp = config.config.debug_build ? NeuroVida.Games.Shared.PauseMenu.StyleStamp : null;      // la marca de versión SOLO en las builds de depuración de la app
+            NeuroVida.Games.Shared.EntryProbe.Begin(config.config.debug_build, config.game_id);   // la medición de la entrada: solo con la bandera de depuración
             // Sonido y vibración comunes de los 9 juegos (ajustes de la app).
             NeuroVida.Games.Shared.GameFeel.SoundOn = config.config.sound_enabled;
             NeuroVida.Games.Shared.GameFeel.Warm(config.game_id);                               // el núcleo común de «Madera cálida»: lo de la cuenta regresiva ya, el resto de a poco (con el sonido apagado no hace nada)
             NeuroVida.Games.Shared.GameFeel.HapticsOn = config.config.haptics_enabled;
             NeuroVida.Games.Shared.GameFeel.ReduceMotion = config.config.reduce_motion;
-            NeuroVida.Games.Shared.CountdownScreen.GameId = config.game_id;                                    // el emblema del juego bajo el anillo de la cuenta (Tarea 148, P9)
-            NeuroVida.Games.Shared.CountdownScreen.Steps = config.config.countdown_steps == 2 ? 2 : 3;          // la app decide (primera partida del día o primera vez de un juego: 3; las demás: 2)
             NeuroVida.Games.Shared.NubiCoach.DebugOverlay = config.config.debug_overlay;       // solo desde los botones [Debug] de la app: dibuja los rectángulos del tutorial
             // Evaluación inicial ("Tu punto de partida"): subtítulo de la cuenta regresiva y calibración rápida.
             NeuroVida.Games.Shared.Assessment.Configure(config.config);
@@ -373,6 +379,7 @@ namespace NeuroVida.Bridge
                     break;
                 default:
                     Debug.LogError($"[GameEntryPoint] game_id {config.game_id} no tiene un controlador registrado todavía.");
+                    NativeBridge.NotifyGameShown();                      // sin juego que mostrar: que la pantalla de carga no se quede
                     break;
             }
         }

@@ -55,7 +55,6 @@ namespace NeuroVida.Games.Bodega
 
         private ExitButton _exit;
         private GameHud _hud;
-        private CountdownScreen _countdown;
 
         // ------------------------------------------------------------------ sesión
 
@@ -93,28 +92,24 @@ namespace NeuroVida.Games.Bodega
 
         private IEnumerator GameLoop()
         {
-            StartCoroutine(Prewarm());
-            if (TutorialWanted)
-            {
-                // la ronda guiada se juega sobre la bodega ya armada, antes de la cuenta regresiva
-                _safe.gameObject.SetActive(true);
-                yield return null;
-                ApplySafeArea(_safe);
-                Canvas.ForceUpdateCanvases();
-                Layout();
-                UpdateHud();
-                yield return StartCoroutine(RunTutorialIfNeeded());
-                ResetBoard();
-            }
-            _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Bodega de carga", Assessment.Subtitle("Recuerda dónde guarda cada cosa el robot"), () => _safe.gameObject.SetActive(true)));
-            while (!_baked) yield return null;
+            _safe.gameObject.SetActive(false);                                      // el tablero no se ve mientras se arma (sin acomodar los botones miden 100 u): se activa ya acomodado (Tarea 190)
+            yield return StartCoroutine(Prewarm());                                 // el arte y los sonidos de la partida, detrás de la pantalla de carga de la app (Tarea 190)
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
             UpdateHud();
+            yield return StartCoroutine(ShowBoardWhenReady());                  // el tablero entero a la vista: Android quita la pantalla de carga
+            if (TutorialWanted)
+            {
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                ResetBoard();
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                UpdateHud();
+            }
+            yield return StartCoroutine(PlayGo());
 
             _endsAt = GameClock.Time + BodegaContract.RetoSeconds;
             _loopOn = true;
@@ -140,7 +135,7 @@ namespace NeuroVida.Games.Bodega
             BodegaSounds.Request();
             if (!_baked)
             {
-                var sprites = BodegaSprites.Prewarm();
+                var sprites = Background.Budgeted(BodegaSprites.Prewarm());
                 while (sprites.MoveNext()) yield return null;
                 AssignSprites();
                 _baked = true;

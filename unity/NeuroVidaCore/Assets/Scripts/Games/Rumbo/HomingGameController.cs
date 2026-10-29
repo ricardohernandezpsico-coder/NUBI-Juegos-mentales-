@@ -54,7 +54,6 @@ namespace NeuroVida.Games.Rumbo
         private Phase _phase = Phase.Idle;
         private bool Endless => _config != null && _config.config.timed;
         private bool Precision => !Endless;
-        private int _previousFrameRate;
 
         // viaje en curso
         private HomingTrip _trip;
@@ -93,7 +92,6 @@ namespace NeuroVida.Games.Rumbo
         private Text _prompt, _detail, _hint;
         private ExitButton _exit;
         private GameHud _hud;
-        private CountdownScreen _countdown;
         private AudioSource _engine;
         private float _playW, _playH;
         private Vector2 _shipScreen;
@@ -111,8 +109,6 @@ namespace NeuroVida.Games.Rumbo
             _dda = new AdaptiveDifficulty(HomingContract.MaxLevel, age, start, stepUp: 0.5f, useReaction: false);
 
             // Giros y vuelo fluidos: 60 cuadros por segundo (Android da 30).
-            _previousFrameRate = Application.targetFrameRate;
-            Application.targetFrameRate = 60;
 
             _phase = Phase.Idle;
             _outcomes.Clear();
@@ -134,20 +130,20 @@ namespace NeuroVida.Games.Rumbo
 
         private void OnDisable()
         {
-            if (_previousFrameRate != 0) Application.targetFrameRate = _previousFrameRate;
             if (_engine != null) _engine.Stop();
         }
 
         private IEnumerator GameLoop()
         {
             _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Rumbo a Casa", Assessment.Subtitle("Prepárate"), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
             UpdateHud();
+            yield return StartCoroutine(ShowBoardWhenReady());                  // el tablero entero a la vista: Android quita la pantalla de carga
+            yield return StartCoroutine(PlayGo());
 
             _endsAt = GameClock.Time + HomingContract.RetoSeconds;
             while (!Finished())
@@ -983,7 +979,7 @@ namespace NeuroVida.Games.Rumbo
             _flash.raycastTarget = false;
             _flash.color = new Color(0f, 0f, 0f, 0f);
 
-            _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
+            _goCue = new GoCue(canvasGo.transform, UnitsPerDp);
         }
 
         private void BuildView()

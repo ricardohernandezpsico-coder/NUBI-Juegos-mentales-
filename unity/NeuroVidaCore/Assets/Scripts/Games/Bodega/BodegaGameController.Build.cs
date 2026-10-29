@@ -152,7 +152,7 @@ namespace NeuroVida.Games.Bodega
             _flash.raycastTarget = false;
             _flash.color = new Color(0f, 0f, 0f, 0f);
 
-            _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
+            _goCue = new GoCue(canvasGo.transform, UnitsPerDp);
             SetUpTutorial();
         }
 
@@ -206,6 +206,7 @@ namespace NeuroVida.Games.Bodega
             _cardDisc = MakeImage(_cardLayer, "Disc", DiscSprite.Get());
             _cardDisc.color = ClosedFill;
             _cardObj = MakeImage(_cardLayer, "Obj", null);
+            _cardObj.gameObject.SetActive(false);                                  // escondida hasta que la tarjeta pide un objeto (RefreshCard la enciende con su sprite y su tamaño): sin esto se veía como una imagen de fábrica (Tarea 190)
             _cardA = MakeLabel(_cardLayer, "LineA", 16f, UiFonts.Regular, CardInk(NeuroStyle.InkMuted, Lavender), TextAnchor.MiddleLeft);
             _cardB = MakeLabel(_cardLayer, "LineB", 20f, UiFonts.Bold, CardInk(NeuroStyle.Ink, Color.white), TextAnchor.MiddleLeft);
             foreach (var t in new[] { _cardA, _cardB }) { t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Overflow; }

@@ -41,7 +41,7 @@ namespace NeuroVida.Games.Acoplamiento
         /// <summary>true mientras corre <see cref="RevealRoutine"/> (la fase sigue siendo «Reveal» hasta que alguien pasa a la siguiente: el juego en <c>EndTrial</c>, la práctica del tutorial por su cuenta).</summary>
         private bool _revealing;
         private bool _loopOn, _baked, _guided, _inputOn, _landingPending, _revealDemo;
-        private int _previousFrameRate, _lastTickSecond;
+        private int _lastTickSecond;
         private float _endsAt;
 
         // el módulo en curso
@@ -63,7 +63,6 @@ namespace NeuroVida.Games.Acoplamiento
 
         private ExitButton _exit;
         private GameHud _hud;
-        private CountdownScreen _countdown;
 
         private bool Endless => _config != null && _config.config.timed;
         private bool Precision => !Endless;
@@ -91,8 +90,6 @@ namespace NeuroVida.Games.Acoplamiento
                 _retoSeconds = 16f;
             }
 #endif
-            _previousFrameRate = Application.targetFrameRate;
-            Application.targetFrameRate = 60;
 
             _phase = Phase.Idle;
             _loopOn = _guided = _inputOn = _landingPending = false;
@@ -112,10 +109,6 @@ namespace NeuroVida.Games.Acoplamiento
             StartCoroutine(GameLoop());
         }
 
-        private void OnDisable()
-        {
-            if (_previousFrameRate != 0) Application.targetFrameRate = _previousFrameRate;
-        }
 
         /// <summary>Las piezas se hornean en cada módulo: al cerrar el juego se liberan sus texturas.</summary>
         private void OnDestroy()
@@ -126,28 +119,34 @@ namespace NeuroVida.Games.Acoplamiento
 
         private IEnumerator GameLoop()
         {
-            StartCoroutine(Prewarm());
-            if (TutorialWanted)
-            {
-                // la ronda guiada se juega sobre la pantalla ya armada, antes de la cuenta regresiva
-                _safe.gameObject.SetActive(true);
-                yield return null;
-                ApplySafeArea(_safe);
-                Canvas.ForceUpdateCanvases();
-                Layout();
-                yield return StartCoroutine(RunTutorialIfNeeded());
-                ResetViews();
-            }
-            _safe.gameObject.SetActive(false);
-            StartPrebake();                                                                    // el primer módulo se hornea de a poco durante la cuenta regresiva
-            yield return StartCoroutine(_countdown.Play(DockingContract.Title, _tt != null ? TimeTrial.CountdownSub : Assessment.Subtitle(DockingContract.CountdownSub), () => _safe.gameObject.SetActive(true)));
-            while (!_baked) yield return null;
-            while (_preTrial != null && !_preReady) yield return null;
+            _safe.gameObject.SetActive(false);                                      // el tablero no se ve mientras se arma (sin acomodar los botones miden 100 u): se activa ya acomodado (Tarea 190)
+            yield return StartCoroutine(Prewarm());                                 // el arte y los sonidos de la partida, detrás de la pantalla de carga de la app (Tarea 190)
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
+            _timerTrack.gameObject.SetActive(Endless);
+            _timerFill.gameObject.SetActive(Endless);
+            UpdateHud();
+            if (!TutorialWanted)
+            {
+                StartPrebake();                                                                // el primer módulo se hornea ANTES de mostrar el tablero
+                while (_preTrial != null && !_preReady) yield return null;
+            }
+            yield return StartCoroutine(ShowBoardWhenReady());                  // el tablero entero a la vista: Android quita la pantalla de carga
+            if (TutorialWanted)
+            {
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                ResetViews();
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                UpdateHud();
+            }
+            StartPrebake();                                                                    // tras el tutorial, el primer módulo de la partida (sin tutorial ya está horneado: no hace nada)
+            while (_preTrial != null && !_preReady) yield return null;
+            yield return StartCoroutine(PlayGo());
+
             _endsAt = Now + ClockSeconds;
             _timerTrack.gameObject.SetActive(Endless);
             _timerFill.gameObject.SetActive(Endless);
@@ -173,13 +172,13 @@ namespace NeuroVida.Games.Acoplamiento
         private IEnumerator Prewarm()
         {
             if (_baked) yield break;
-            var sprites = DockingSprites.Prewarm();
+            var sprites = Background.Budgeted(DockingSprites.Prewarm());
             while (sprites.MoveNext()) yield return null;
             _baked = true;
             AssignSprites();
             if (SoundWanted)                                                                  // con «Efectos de sonido» apagado no se calcula ningún clip
             {
-                var sounds = DockingSounds.Prewarm();
+                var sounds = Background.Budgeted(DockingSounds.Prewarm());
                 while (sounds.MoveNext()) yield return null;
             }
             Layout();

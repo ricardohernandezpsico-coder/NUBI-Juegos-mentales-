@@ -93,7 +93,7 @@ namespace NeuroVida.Games.Secuencia.Tests
         {
             GameFeel.Warm("secuencia");
             RastroSounds.Request();
-            int guard = 0; while (!WoodCore.Idle) { WoodCore.Step(1f); Assert.Less(++guard, 200000); }
+            WoodCore.Drain();
             for (int i = 0; i < RastroBoard.Notes.Length; i++) Assert.IsNotNull(WoodCore.GetExtra(WoodCore.NoteKey(RastroSounds.OrbHz(i), WoodVoice.Marimba, RastroSounds.OrbTau)), "la nota del lucero " + i);
             foreach (RastroSfx sfx in System.Enum.GetValues(typeof(RastroSfx))) Assert.IsNotNull(WoodCore.GetExtra(RastroSounds.Key(sfx)), "aviso: " + sfx);
             foreach (var sfx in new[] { WoodSfx.SweepUp, WoodSfx.New, WoodSfx.Wrong }) Assert.IsNotNull(WoodCore.Get(sfx), sfx.ToString());

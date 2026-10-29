@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Diagnostics;
 using NUnit.Framework;
 using UnityEngine;
@@ -30,26 +31,25 @@ namespace NeuroVida.Games.Tests
             GameFeel.SoundOn = _soundWas;
         }
 
-        private static int Drain()
-        {
-            int steps = 0;
-            while (!WoodCore.Idle) { WoodCore.Step(1f); steps++; if (steps > 100000) Assert.Fail("el calculo del núcleo no termina"); }
-            return steps;
-        }
+        /// <summary>Espera a que los hilos de trabajo terminen y el hilo principal cree todos los clips (<see cref="WoodCore.Drain"/>).</summary>
+        private static int Drain() => WoodCore.Drain();
 
         private static GameObject Speakers() => GameObject.Find("WoodCore");
 
         [Test]
-        public void TheCountdownSounds_AreReadyBeforeTheCountdown_AndTheRestIsBakedInSlices()
+        public void Warm_CalculatesNothingOnTheMainThread_TheGoSoundGoesFirst_AndEverythingIsThereWhenItIsReady()
         {
+            Assert.AreEqual(1, WoodCore.EarlySet.Length, "la cuenta regresiva se quitó (Tarea 190): solo queda el «¡Ya!»");
+            Assert.AreEqual((WoodSfx.Go, 0), WoodCore.EarlySet[0]);
             GameFeel.Warm();
-            foreach (var (sfx, arg) in WoodCore.EarlySet) Assert.IsNotNull(WoodCore.Get(sfx, arg), "3, 2, 1 y «¡Ya!» ya están calculados al terminar Warm: " + sfx + arg);
-            Assert.AreEqual(WoodCore.EarlySet.Length, WoodCore.BakeCount);
-            Assert.IsFalse(WoodCore.Idle, "el resto del núcleo queda en la cola");
+            Assert.AreEqual(0, WoodCore.BakeCount, "Warm no calcula ni crea nada: todo queda en la cola para los hilos de trabajo");
+            Assert.IsFalse(WoodCore.Idle);
+            Assert.IsFalse(WoodCore.Ready, "todavía no se puede mostrar el tablero");
             Assert.IsNull(WoodCore.Get(WoodSfx.Finish), "el final todavía no");
-            int steps = Drain();
-            Assert.Greater(steps, WoodCore.CoreSet.Length * 2, "se calcula de a poco (varios pasos por clip), no de golpe");
+            Drain();
+            Assert.IsTrue(WoodCore.Ready);
             Assert.AreEqual(WoodCore.EarlySet.Length + WoodCore.CoreSet.Length, WoodCore.BakeCount);
+            foreach (var (sfx, arg) in WoodCore.EarlySet) Assert.IsNotNull(WoodCore.Get(sfx, arg), "el «¡Ya!»: " + sfx + arg);
             foreach (var (sfx, arg) in WoodCore.CoreSet) Assert.IsNotNull(WoodCore.Get(sfx, arg), sfx + "" + arg);
         }
 
@@ -76,7 +76,7 @@ namespace NeuroVida.Games.Tests
             GameFeel.SoundOn = false;
             GameFeel.Warm();
             GameFeel.Correct(1); GameFeel.Correct(9); GameFeel.Wrong(); GameFeel.LevelUp(); GameFeel.Tick(); GameFeel.Finish(); GameFeel.Notice(); GameFeel.Tap();
-            GameFeel.Count(3); GameFeel.Count(2); GameFeel.Count(1); GameFeel.Go(); GameFeel.PauseIn(); GameFeel.PauseOut();
+            GameFeel.Go(); GameFeel.PauseIn(); GameFeel.PauseOut();
             Assert.IsFalse(WoodCore.NoticeUnlessCovered(Time.realtimeSinceStartup + 10f));
             Assert.AreEqual(0, WoodCore.BakeCount, "no se calcula nada");
             Assert.AreEqual(0, WoodCore.PlayCount, "no suena nada");
@@ -173,7 +173,7 @@ namespace NeuroVida.Games.Tests
         private static WoodSounds.Recipe OwnRecipe() => new WoodSounds.Recipe(WoodKit.Woodblock(1000), 0.1, 0.1, WoodTier.Micro);
 
         [Test]
-        public void TheRequestedExtras_AreBakedInSlicesBehindTheCore_InTheOrderAsked()
+        public void TheRequestedExtras_AreBakedBehindTheCore_AndAllOfThemAreThereWhenReady()
         {
             GameFeel.Warm();
             WoodCore.Request(WoodSfx.Select, 3);
@@ -181,25 +181,105 @@ namespace NeuroVida.Games.Tests
             WoodCore.RequestCue(784.0, 0.06);
             WoodCore.Request("test.propio", OwnRecipe, true);
             Assert.IsFalse(WoodCore.Idle);
-            Assert.IsNull(WoodCore.Get(WoodSfx.Select, 3), "pedir no calcula nada: se calcula de a poco");
-            var seen = new List<string>();
-            int guard = 0;
-            while (!WoodCore.Idle)
-            {
-                WoodCore.Step(0f);                                                                 // un trozo por vez
-                if (++guard > 100000) Assert.Fail("el calculo no termina");
-                void Mark(string name, bool ready) { if (ready && !seen.Contains(name)) { seen.Add(name); if (seen.Count == 1) Assert.IsNotNull(WoodCore.Get(WoodSfx.Correct, WoodCore.MaxCorrect), "el núcleo va primero: cuando sale lo primero extra, ya está todo el núcleo"); } }
-                Mark("select3", WoodCore.Get(WoodSfx.Select, 3) != null);
-                Mark("nota", WoodCore.GetExtra(WoodCore.NoteKey(392.0, WoodVoice.Kalimba, 0.2)) != null);
-                Mark("señal", WoodCore.GetExtra(WoodCore.CueKey(784.0, 0.06)) != null);
-                Mark("propio", WoodCore.GetExtra("test.propio") != null);
-            }
-            CollectionAssert.AreEqual(new[] { "select3", "nota", "señal", "propio" }, seen, "se calculan en el orden en que se pidieron");
+            Assert.IsNull(WoodCore.Get(WoodSfx.Select, 3), "pedir no calcula nada: lo calculan los hilos de trabajo");
+            Drain();
+            Assert.IsNotNull(WoodCore.Get(WoodSfx.Select, 3));
+            Assert.IsNotNull(WoodCore.GetExtra(WoodCore.NoteKey(392.0, WoodVoice.Kalimba, 0.2)));
+            Assert.IsNotNull(WoodCore.GetExtra(WoodCore.CueKey(784.0, 0.06)));
+            Assert.IsNotNull(WoodCore.GetExtra("test.propio"));
             Assert.AreEqual(4, WoodCore.ExtraCount);
             Assert.AreEqual(WoodCore.EarlySet.Length + WoodCore.CoreSet.Length + 4, WoodCore.BakeCount);
             Assert.IsTrue(WoodCore.Play(WoodSfx.Select, 3) && WoodCore.Play("test.propio") && WoodCore.PlayNote(392.0, WoodVoice.Kalimba, 0.2) && WoodCore.PlayCue(784.0, 0.06), "ya listos, suenan");
             Assert.AreEqual(0, WoodCore.Skipped);
             Assert.AreEqual(0, WoodCore.LateBakes, "pedidos antes: nada se calcula tarde");
+        }
+
+        private static int _recipeThread = -1;
+
+        [Test]
+        public void TheSamplesAreCalculatedOnAWorkerThread_NotOnTheMainOne()
+        {
+            int main = Thread.CurrentThread.ManagedThreadId;
+            _recipeThread = -1;
+            GameFeel.Warm();
+            WoodCore.Request("test.hilo", () => { _recipeThread = Thread.CurrentThread.ManagedThreadId; return OwnRecipe(); }, true);
+            Drain();
+            Assert.AreNotEqual(-1, _recipeThread, "la receta se calculó");
+            Assert.AreNotEqual(main, _recipeThread, "la receta corrió en un hilo de trabajo, no en el principal");
+            Assert.IsNotNull(WoodCore.GetExtra("test.hilo"));
+        }
+
+        [Test]
+        public void TheMainThreadSpendsAtMostTheBudgetCreatingClips_AndTheWorkersKeepGoing()
+        {
+            GameFeel.Warm();
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            WoodCore.Step(WoodCore.FrameBudgetMs);                                                 // un «cuadro»: reparte el trabajo y crea lo que ya terminó (nada, recién empezó)
+            Assert.Less(watch.Elapsed.TotalMilliseconds, 50.0, "un cuadro de reparto no calcula nada: no se queda esperando a los hilos");
+            Assert.IsFalse(WoodCore.Idle, "los hilos siguen calculando");
+            Drain();
+            Assert.IsTrue(WoodCore.Idle);
+        }
+
+        [Test]
+        public void TheSamplesFromTheWorkerAreIdenticalToTheDirectRenderAndTheClipsHoldThem()
+        {
+            var cases = new List<(WoodSfx Sfx, int Arg)> { (WoodSfx.Go, 0), (WoodSfx.Correct, 1), (WoodSfx.Correct, 7), (WoodSfx.Wrong, 0), (WoodSfx.Finish, 0), (WoodSfx.Tap, 0), (WoodSfx.Tick, 0), (WoodSfx.LevelUp, 0), (WoodSfx.Notice, 0), (WoodSfx.PauseIn, 0) };
+            foreach (var (sfx, arg) in cases)
+            {
+                WoodSounds.RenderForClip(sfx, arg, out var wantL, out var wantR);
+                float[] gotL = null, gotR = null;
+                var worker = new Thread(() => new WoodSounds.BakeJob(sfx, arg).ComputeSamples(out gotL, out gotR));
+                worker.Start();
+                worker.Join();
+                CollectionAssert.AreEqual(wantL, gotL, sfx + "" + arg + ": el canal izquierdo sale idéntico desde un hilo");
+                if (wantR == null) Assert.IsNull(gotR, sfx + "" + arg + ": mono"); else CollectionAssert.AreEqual(wantR, gotR, sfx + "" + arg + ": el canal derecho sale idéntico desde un hilo");
+            }
+            // y el clip que crea el hilo principal guarda esas mismas muestras
+            GameFeel.Warm();
+            Drain();
+            foreach (var (sfx, arg) in new[] { (WoodSfx.Correct, 1), (WoodSfx.Finish, 0), (WoodSfx.Tap, 0) })
+            {
+                WoodSounds.RenderForClip(sfx, arg, out var l, out var r);
+                var clip = WoodCore.Get(sfx, arg);
+                Assert.IsNotNull(clip);
+                int channels = r == null ? 1 : 2;
+                Assert.AreEqual(channels, clip.channels);
+                Assert.AreEqual(l.Length, clip.samples);
+                var data = new float[l.Length * channels];
+                clip.GetData(data, 0);
+                for (int i = 0; i < l.Length; i += 97)
+                {
+                    Assert.AreEqual(l[i], data[i * channels], 1e-6f, sfx + "" + arg + " muestra " + i);
+                    if (r != null) Assert.AreEqual(r[i], data[i * 2 + 1], 1e-6f, sfx + "" + arg + " muestra " + i + " (derecha)");
+                }
+            }
+        }
+
+        [Test]
+        public void ReleasingTheExtrasWhileTheyAreBeingCalculated_DiscardsTheResult()
+        {
+            GameFeel.Warm("juegoA");
+            WoodCore.Request("test.a", OwnRecipe, true);
+            WoodCore.Step(0f);                                                                     // reparte a los hilos
+            GameFeel.Warm("juegoB");                                                               // cambia de juego: suelta lo extra del anterior
+            Drain();
+            Assert.IsNull(WoodCore.GetExtra("test.a"), "lo que un hilo calculaba del juego anterior no se guarda");
+            Assert.AreEqual(0, WoodCore.ExtraCount);
+            Assert.IsTrue(WoodCore.Idle);
+        }
+
+        [Test]
+        public void ResetWhileSomethingIsBeingCalculated_LeavesNoStrayClips()
+        {
+            GameFeel.Warm();
+            WoodCore.Step(0f);
+            WoodCore.Reset();
+            Thread.Sleep(300);                                                                     // los hilos terminan lo que ya tenían en la mano
+            WoodCore.Step(1000f);
+            Assert.AreEqual(0, WoodCore.ClipCount, "nada de la generación anterior vuelve a aparecer");
+            Assert.AreEqual(0, WoodCore.BakeCount);
+            Assert.IsTrue(WoodCore.Idle);
         }
 
         [Test]
@@ -359,15 +439,16 @@ namespace NeuroVida.Games.Tests
         }
 
         [Test]
-        public void TheBudget_IsEightMillisecondsDuringTheCountdown_AndFiveWhenTheGameStarts()
+        public void TheBudget_IsTwoMillisecondsForTheMainThread_AndThirtyWhileTheLoadingScreenCovers()
         {
+            Assert.AreEqual(2f, WoodCore.FrameBudgetMs);
             Assert.AreEqual(WoodCore.FrameBudgetMs, WoodCore.CurrentBudgetMs);
-            WoodCore.CountdownRunning = true;
-            Assert.AreEqual(WoodCore.CountdownBudgetMs, WoodCore.CurrentBudgetMs);
-            Assert.AreEqual(8f, WoodCore.CountdownBudgetMs);
-            GameFeel.Warm();                                                                       // una partida nueva empieza antes de su cuenta regresiva
-            Assert.IsFalse(WoodCore.CountdownRunning);
-            Assert.AreEqual(5f, WoodCore.CurrentBudgetMs);
+            WoodCore.Loading = true;
+            Assert.AreEqual(WoodCore.LoadingBudgetMs, WoodCore.CurrentBudgetMs);
+            Assert.AreEqual(30f, WoodCore.LoadingBudgetMs);
+            GameFeel.Warm();                                                                       // una partida nueva empieza antes de que su tablero espere
+            Assert.IsFalse(WoodCore.Loading);
+            Assert.AreEqual(2f, WoodCore.CurrentBudgetMs);
         }
 
         [Test]

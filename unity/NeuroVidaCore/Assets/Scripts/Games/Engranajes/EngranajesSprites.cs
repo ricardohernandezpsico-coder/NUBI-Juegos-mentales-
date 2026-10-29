@@ -68,9 +68,10 @@ namespace NeuroVida.Games.Engranajes
         private static Sprite Bake(string key, float wDp, float hDp, float ppd, PaintFn paint)
         {
             if (Cache.TryGetValue(key, out var cached) && cached != null) return cached;
+            var __swSprite = System.Diagnostics.Stopwatch.StartNew();
             int w = Mathf.CeilToInt(wDp * ppd), h = Mathf.CeilToInt(hDp * ppd);
             var pix = new Color32[w * h];
-            for (int iy = 0; iy < h; iy++)
+            Background.ForRows(h, iy =>                   // las filas se reparten entre los hilos de trabajo (Tarea 190): idénticas a las de un solo hilo
             {
                 float y = ((iy + 0.5f) / h - 0.5f) * hDp;
                 for (int ix = 0; ix < w; ix++)
@@ -80,12 +81,13 @@ namespace NeuroVida.Games.Engranajes
                     paint(ref p, x, y);
                     pix[iy * w + ix] = p.ToColor32();
                 }
-            }
+            }, w * h);
             var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
             tex.SetPixels32(pix);
             tex.Apply();
             var sprite = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), ppd);
             Cache[key] = sprite;
+            NeuroVida.Games.Shared.EntryProbe.Cost("sprites", __swSprite.Elapsed.TotalMilliseconds);
             return sprite;
         }
 
@@ -103,7 +105,17 @@ namespace NeuroVida.Games.Engranajes
 
         private static float[] GearPolygon(GearSize s)
         {
-            if (GearPts.TryGetValue(s, out var cached)) return cached;
+            lock (GearPts)                                                  // la leen varios hilos de trabajo a la vez (Tarea 190): una tabla que se llena a pedido necesita candado
+            {
+                if (GearPts.TryGetValue(s, out var cached)) return cached;
+                var pts = BuildGearPolygon(s);
+                GearPts[s] = pts;
+                return pts;
+            }
+        }
+
+        private static float[] BuildGearPolygon(GearSize s)
+        {
             float tip = TipOf(s), root = tip - EngranajesContract.ToothDepth;
             int n = TeethOf(s);
             var pts = new float[n * 8];
@@ -118,7 +130,6 @@ namespace NeuroVida.Games.Engranajes
                     pts[k2++] = Mathf.Sin(a) * r;
                 }
             }
-            GearPts[s] = pts;
             return pts;
         }
 

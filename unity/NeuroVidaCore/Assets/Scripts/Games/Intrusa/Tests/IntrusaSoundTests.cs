@@ -55,7 +55,7 @@ namespace NeuroVida.Games.Intrusa.Tests
         {
             GameFeel.Warm("intrusa");
             IntrusaSounds.Request();
-            int guard = 0; while (!WoodCore.Idle) { WoodCore.Step(1f); Assert.Less(++guard, 200000); }
+            WoodCore.Drain();
             for (int i = 0; i < IntrusaSounds.NoteCount; i++) Assert.IsNotNull(WoodCore.GetExtra(WoodCore.NoteKey(IntrusaSounds.NoteHz(i), WoodVoice.Marimba)), "la nota " + i);
             foreach (IntrusaSfx sfx in System.Enum.GetValues(typeof(IntrusaSfx))) Assert.IsNotNull(WoodCore.GetExtra(IntrusaSounds.Key(sfx)), "propio: " + sfx);
             foreach (var sfx in new[] { WoodSfx.Perfect, WoodSfx.Hum, WoodSfx.Knock, WoodSfx.Wrong }) Assert.IsNotNull(WoodCore.Get(sfx), sfx.ToString());

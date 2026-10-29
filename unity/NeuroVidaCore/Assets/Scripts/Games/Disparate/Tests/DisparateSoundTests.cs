@@ -53,7 +53,7 @@ namespace NeuroVida.Games.Disparate.Tests
             StringAssert.Contains("RequestSounds();", text);
             GameFeel.Warm("disparate");
             DisparateGameController.RequestSounds();
-            int guard = 0; while (!WoodCore.Idle) { WoodCore.Step(1f); Assert.Less(++guard, 200000); }
+            WoodCore.Drain();
             foreach (var sfx in new[] { WoodSfx.SweepUp, WoodSfx.Streak, WoodSfx.Wrong, WoodSfx.Notice }) Assert.IsNotNull(WoodCore.Get(sfx), sfx.ToString());
             for (int n = 1; n <= 7; n++) Assert.IsNotNull(WoodCore.Get(WoodSfx.Correct, n), "Correct " + n + " va con el núcleo");
             Assert.AreEqual(0, WoodCore.LateBakes);

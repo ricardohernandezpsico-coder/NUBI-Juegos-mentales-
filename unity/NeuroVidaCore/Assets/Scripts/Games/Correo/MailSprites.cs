@@ -45,9 +45,10 @@ namespace NeuroVida.Games.Correo
         private static Sprite Bake(string key, float boxW, float boxH, float ppd, PaintFn paint)
         {
             if (Cache.TryGetValue(key, out var cached) && cached != null) return cached;
+            var __swSprite = System.Diagnostics.Stopwatch.StartNew();
             int nx = Mathf.CeilToInt(boxW * ppd), ny = Mathf.CeilToInt(boxH * ppd);
             var pix = new Color32[nx * ny];
-            for (int iy = 0; iy < ny; iy++)
+            Background.ForRows(ny, iy =>                  // las filas se reparten entre los hilos de trabajo (Tarea 190): idénticas a las de un solo hilo
             {
                 float yUp = ((iy + 0.5f) / ny - 0.5f) * boxH;
                 for (int ix = 0; ix < nx; ix++)
@@ -57,12 +58,13 @@ namespace NeuroVida.Games.Correo
                     paint(ref p, x, -yUp);                // el boceto usa y hacia abajo
                     pix[iy * nx + ix] = p.ToColor32();
                 }
-            }
+            }, nx * ny);
             var tex = new Texture2D(nx, ny, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
             tex.SetPixels32(pix);
             tex.Apply();
             var sprite = Sprite.Create(tex, new Rect(0, 0, nx, ny), new Vector2(0.5f, 0.5f), ppd);
             Cache[key] = sprite;
+            NeuroVida.Games.Shared.EntryProbe.Cost("sprites", __swSprite.Elapsed.TotalMilliseconds);
             return sprite;
         }
 
@@ -354,7 +356,13 @@ namespace NeuroVida.Games.Correo
             float aa = 1f / SmallPpd;
             var dashes = FrameDashes();
             float d = float.MaxValue;
-            for (int i = 0; i < dashes.Count; i += 4) d = Mathf.Min(d, Capsule(x, y, dashes[i], dashes[i + 1], dashes[i + 2], dashes[i + 3], 1.5f));
+            float reach = 1.5f + 0.5f * aa + 0.01f;                    // más allá de esto un trazo no cubre nada del pixel (Cover vale 0): saltarlo no cambia el resultado (Tarea 190)
+            for (int i = 0; i < dashes.Count; i += 4)
+            {
+                float ax = dashes[i], ay = dashes[i + 1], bx = dashes[i + 2], by = dashes[i + 3];
+                if (x < Mathf.Min(ax, bx) - reach || x > Mathf.Max(ax, bx) + reach || y < Mathf.Min(ay, by) - reach || y > Mathf.Max(ay, by) + reach) continue;
+                d = Mathf.Min(d, Capsule(x, y, ax, ay, bx, by, 1.5f));
+            }
             p.Over(Color.white, Cover(d, aa));
         });
 

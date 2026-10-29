@@ -36,7 +36,7 @@ namespace NeuroVida.Games.Bodega.Tests
         {
             GameFeel.Warm("bodega");
             BodegaSounds.Request();
-            int guard = 0; while (!WoodCore.Idle) { WoodCore.Step(1f); Assert.Less(++guard, 200000); }
+            WoodCore.Drain();
             for (int h = 0; h < 12; h++) Assert.IsNotNull(WoodCore.GetExtra(WoodCore.NoteKey(BodegaSounds.NoteHz(h), WoodVoice.Kalimba)), "la nota de la escotilla " + h);
             foreach (BodegaSfx sfx in System.Enum.GetValues(typeof(BodegaSfx))) Assert.IsNotNull(WoodCore.GetExtra(BodegaSounds.Key(sfx)), "propio: " + sfx);
             for (int n = 1; n <= 8; n++) Assert.IsNotNull(WoodCore.Get(WoodSfx.Spark, n), "destello " + n);

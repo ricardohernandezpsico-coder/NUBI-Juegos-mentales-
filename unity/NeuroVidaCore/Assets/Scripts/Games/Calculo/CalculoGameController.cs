@@ -161,7 +161,6 @@ namespace NeuroVida.Games.Calculo
         private readonly Arc[] _arcs = new Arc[3];
         private ExitButton _exit;
         private GameHud _hud;
-        private CountdownScreen _countdown;
         private readonly List<KeyValuePair<Text, float>> _fonts = new List<KeyValuePair<Text, float>>();
         private string _sayFull = "";
         private float _sayAt = -10f;
@@ -207,28 +206,25 @@ namespace NeuroVida.Games.Calculo
 
         private IEnumerator GameLoop()
         {
+            _safe.gameObject.SetActive(false);                                      // el tablero no se ve mientras se arma (sin acomodar los botones miden 100 u): se activa ya acomodado (Tarea 190)
             CargaSounds.Request();                          // los sonidos de Madera que no van con el núcleo, antes de la cuenta regresiva (el cómputo corre detrás, de a poco)
-            StartCoroutine(Prewarm());
-            if (TutorialWanted)
-            {
-                // la ronda guiada se juega sobre el reactor ya armado, antes de la cuenta regresiva
-                _safe.gameObject.SetActive(true);
-                yield return null;
-                ApplySafeArea(_safe);
-                Canvas.ForceUpdateCanvases();
-                Layout();
-                UpdateHud();
-                yield return StartCoroutine(RunTutorialIfNeeded());
-                ClearLoad();
-            }
-            _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Carga exacta", Assessment.Subtitle("Combina las celdas"), () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(Prewarm());                                 // el arte y los sonidos de la partida, detrás de la pantalla de carga de la app (Tarea 190)
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
             UpdateHud();
+            yield return StartCoroutine(ShowBoardWhenReady());                  // el tablero entero a la vista: Android quita la pantalla de carga
+            if (TutorialWanted)
+            {
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                ClearLoad();
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                UpdateHud();
+            }
+            yield return StartCoroutine(PlayGo());
 
             _endsAt = GameClock.Time + CalculoContract.RetoSeconds;
             _loopOn = true;
@@ -1146,7 +1142,7 @@ namespace NeuroVida.Games.Calculo
             _flash.raycastTarget = false;
             _flash.color = new Color(0f, 0f, 0f, 0f);
 
-            _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
+            _goCue = new GoCue(canvasGo.transform, UnitsPerDp);
             BuildTutorial(_safe, GameHud.Height + 10f, "Carga exacta", "Junta las celdas de dos en dos hasta que una valga la carga que pide el reactor.", badgeAtBottom: true);
         }
 

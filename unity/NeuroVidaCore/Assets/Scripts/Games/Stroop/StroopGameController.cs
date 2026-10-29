@@ -97,7 +97,6 @@ namespace NeuroVida.Games.Stroop
         private PhasePill _pill;
         private ExitButton _exit;
         private GameHud _hud;
-        private CountdownScreen _countdown;
         // «Ahora: PALABRA»
         private RectTransform _ruleCardRoot;
         private CanvasGroup _ruleCardGroup;
@@ -154,26 +153,23 @@ namespace NeuroVida.Games.Stroop
 
         private IEnumerator GameLoop()
         {
+            _safe.gameObject.SetActive(false);                                      // el tablero no se ve mientras se arma (sin acomodar los botones miden 100 u): se activa ya acomodado (Tarea 190)
             StroopSounds.Request();                  // las tres señales (tarjeta de la regla y los dos cambios de regla) se piden ANTES de la cuenta: la señal del estímulo no puede esperar a calcularse
-            _safe.gameObject.SetActive(false);
-            if (TutorialWanted)
-            {
-                // la ronda guiada se juega sobre el cielo ya armado, antes de la cuenta regresiva
-                _safe.gameObject.SetActive(true);
-                yield return null;
-                ApplySafeArea(_safe);
-                Canvas.ForceUpdateCanvases();
-                Layout();
-                UpdateHudText();
-                yield return StartCoroutine(RunTutorialIfNeeded());
-            }
-            _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Tinta o Palabra", _tt != null ? TimeTrial.CountdownSub : Assessment.Subtitle(StroopContract.CountdownSub), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
-            yield return null; // deja que el Canvas calcule el rect del Safe Area antes de medir
+            yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
+            UpdateHudText();
+            yield return StartCoroutine(ShowBoardWhenReady());                  // el tablero entero a la vista: Android quita la pantalla de carga
+            if (TutorialWanted)
+            {
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                UpdateHudText();
+            }
+            yield return StartCoroutine(PlayGo());
 
             _roundEndsAt = GameClock.Time + RoundSeconds;
             _trialIndex = 0;
@@ -537,7 +533,7 @@ namespace NeuroVida.Games.Stroop
             _flash.raycastTarget = false;
             _flash.color = new Color(0f, 0f, 0f, 0f);
 
-            _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
+            _goCue = new GoCue(canvasGo.transform, UnitsPerDp);
         }
 
         private void BuildTimer()

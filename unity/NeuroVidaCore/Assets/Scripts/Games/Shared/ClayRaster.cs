@@ -65,7 +65,8 @@ namespace NeuroVida.Games.Shared
         public static Color32[] RenderClay(int size, float zoom, float line, float drop, float aa, ShapeFn body, PaintFn paint)
         {
             var pixels = new Color32[size * size];
-            for (int py = 0; py < size; py++)
+            // las filas se reparten entre los hilos de trabajo (Tarea 190): cada fila es independiente, así que los pixeles salen idénticos a los de un solo hilo
+            Background.ForRows(size, py =>
             {
                 for (int px = 0; px < size; px++)
                 {
@@ -77,7 +78,7 @@ namespace NeuroVida.Games.Shared
                     paint(ref p, x, y);
                     pixels[py * size + px] = p.ToColor32();
                 }
-            }
+            }, size * size);
             return pixels;
         }
 

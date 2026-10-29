@@ -53,7 +53,6 @@ namespace NeuroVida.Games.Correo
 
         private ExitButton _exit;
         private GameHud _hud;
-        private CountdownScreen _countdown;
 
         private float Now => GameClock.Time;
 
@@ -91,27 +90,24 @@ namespace NeuroVida.Games.Correo
 
         private IEnumerator GameLoop()
         {
-            StartCoroutine(Prewarm());
-            if (TutorialWanted)
-            {
-                // la ronda guiada se juega sobre la estación ya armada, antes de la cuenta regresiva
-                _safe.gameObject.SetActive(true);
-                yield return null;
-                ApplySafeArea(_safe);
-                Canvas.ForceUpdateCanvases();
-                Layout();
-                yield return StartCoroutine(RunTutorialIfNeeded());
-                ResetViews();
-                ShowOnly(null);
-            }
-            _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play(MailContract.TitleRun, Assessment.Subtitle(MailContract.CountdownSub), () => _safe.gameObject.SetActive(true)));
-            while (!_baked) yield return null;
+            _safe.gameObject.SetActive(false);                                      // el tablero no se ve mientras se arma (sin acomodar los botones miden 100 u): se activa ya acomodado (Tarea 190)
+            yield return StartCoroutine(Prewarm());                                 // el arte y los sonidos de la partida, detrás de la pantalla de carga de la app (Tarea 190)
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
+            yield return StartCoroutine(ShowBoardWhenReady());                  // el tablero entero a la vista: Android quita la pantalla de carga
+            if (TutorialWanted)
+            {
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                ResetViews();
+                ShowOnly(null);
+                Canvas.ForceUpdateCanvases();
+                Layout();
+            }
+            yield return StartCoroutine(PlayGo());
+
             _loopOn = true;
             yield return StartCoroutine(MainLoop());
         }
@@ -130,7 +126,7 @@ namespace NeuroVida.Games.Correo
             MailSounds.Request();
             if (!_baked)
             {
-                var sprites = MailSprites.Prewarm();
+                var sprites = Background.Budgeted(MailSprites.Prewarm());
                 while (sprites.MoveNext()) yield return null;
                 AssignSprites();
                 _baked = true;

@@ -66,7 +66,6 @@ namespace NeuroVida.Games.Intrusa
         private Phase _phase = Phase.Idle;
         private bool Endless => _config != null && _config.config.timed;
         private bool Senior;
-        private int _previousFrameRate;
         private float _endsAt;
         private int _lastTickSecond = -1;
         private int _streak, _points, _resolved;
@@ -103,7 +102,6 @@ namespace NeuroVida.Games.Intrusa
         private readonly List<Image> _trail = new List<Image>();
         private ExitButton _exit;
         private GameHud _hud;
-        private CountdownScreen _countdown;
         private bool _pulsing;
         private readonly Dictionary<string, float> _widthCache = new Dictionary<string, float>();
 
@@ -146,8 +144,6 @@ namespace NeuroVida.Games.Intrusa
             _director = new IntrusaDirector(_bank, _rng, IntrusaContract.RecentIds(recent), IntrusaContract.ReviewDue(_review, _today));
             _tally = new IntrusaTally();
 
-            _previousFrameRate = Application.targetFrameRate;
-            Application.targetFrameRate = 60;
 
             _phase = Phase.Idle;
             _spec = _nextSpec = null;
@@ -170,36 +166,28 @@ namespace NeuroVida.Games.Intrusa
             StartCoroutine(GameLoop());
         }
 
-        private void OnDisable()
-        {
-            if (_previousFrameRate != 0) Application.targetFrameRate = _previousFrameRate;
-        }
 
         private IEnumerator GameLoop()
         {
             _safe.gameObject.SetActive(false);
             _baked = false;
-            StartCoroutine(PrewarmSprites());
-            if (TutorialWanted)
-            {
-                // la ronda guiada se juega sobre el cielo ya armado, antes de la cuenta regresiva
-                _safe.gameObject.SetActive(true);
-                yield return null;
-                ApplySafeArea(_safe);
-                Canvas.ForceUpdateCanvases();
-                Layout();
-                UpdateHud();
-                yield return StartCoroutine(RunTutorialIfNeeded());
-                HideRound();
-                _safe.gameObject.SetActive(false);
-            }
-            yield return StartCoroutine(_countdown.Play("La estrella intrusa", Assessment.Subtitle(IntrusaContract.Rule), () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(PrewarmSprites());                                 // el arte y los sonidos de la partida, detrás de la pantalla de carga de la app (Tarea 190)
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
             UpdateHud();
+            yield return StartCoroutine(ShowBoardWhenReady());                  // el tablero entero a la vista: Android quita la pantalla de carga
+            if (TutorialWanted)
+            {
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                HideRound();
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                UpdateHud();
+            }
+            yield return StartCoroutine(PlayGo());
 
             _endsAt = GameClock.Time + IntrusaContract.RetoSeconds;
             _phase = Phase.Playing;
@@ -1470,7 +1458,7 @@ namespace NeuroVida.Games.Intrusa
             _flash.raycastTarget = false;
             _flash.color = new Color(0f, 0f, 0f, 0f);
 
-            _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
+            _goCue = new GoCue(canvasGo.transform, UnitsPerDp);
         }
 
         private void BuildTimer()

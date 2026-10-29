@@ -1,0 +1,18 @@
+# Tarea 190 · entrada al juego, PC (Editor sin gráficos). juego | antes: trabajo de entrada (s) | antes: p95 de la cuenta (ms) | antes: máx de la cuenta (ms) | después: «listo» (s) | después: p95 visible (ms) | después: máx visible (ms) | cuadros > 34 ms
+Rastro de luz | 1.79 | 37.8 | 55.9 | 1.08 | 17.0 | 18.0 | 0
+Constelaciones | 1.92 | 31.4 | 62.7 | 0.73 | 16.9 | 18.1 | 0
+Bodega de carga | 2.55 | 30.2 | 53.3 | 0.94 | 17.1 | 19.5 | 0
+Correo Estelar | 5.32 | 36.7 | 3523.6 | 1.28 | 17.0 | 19.2 | 0
+Tinta o Palabra | 1.00 | 27.9 | 53.9 | 0.44 | 16.8 | 17.4 | 0
+Piloto Estelar | 1.29 | 37.1 | 58.8 | 0.58 | 16.8 | 18.0 | 0
+Freno de Emergencia | 1.09 | 35.4 | 53.3 | 0.56 | 16.8 | 19.0 | 0
+Satélites | 1.92 | 36.4 | 53.5 | 0.82 | 16.9 | 18.2 | 0
+Rescate relámpago | 1.81 | 302.8 | 306.2 | 1.05 | 16.8 | 19.7 | 0
+Carga exacta | 1.23 | 27.4 | 53.8 | 0.61 | 17.0 | 20.8 | 0
+Engranajes | 3.53 | 76.2 | 974.8 | 1.39 | 17.2 | 36.1 | 1
+Acoplamiento | 1.63 | 40.8 | 62.6 | 0.96 | 17.1 | 20.8 | 0
+Aterrizaje Lunar | 1.30 | 88.7 | 290.6 | 0.98 | 16.9 | 20.6 | 0
+En la punta de la lengua | 1.69 | 33.2 | 57.3 | 0.71 | 17.0 | 17.6 | 0
+Lluvia de meteoros | 1.19 | 34.1 | 176.4 | 0.67 | 16.8 | 17.5 | 0
+¿Verdad o disparate? | 1.15 | 32.3 | 52.3 | 0.57 | 16.8 | 17.7 | 0
+La estrella intrusa | 1.65 | 33.7 | 63.3 | 0.77 | 17.2 | 28.1 | 0

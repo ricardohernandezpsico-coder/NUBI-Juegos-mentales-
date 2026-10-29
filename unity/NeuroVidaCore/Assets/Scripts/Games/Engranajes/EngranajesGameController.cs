@@ -63,7 +63,6 @@ namespace NeuroVida.Games.Engranajes
 
         private ExitButton _exit;
         private GameHud _hud;
-        private CountdownScreen _countdown;
 
         // ------------------------------------------------------------------ sesión
 
@@ -104,28 +103,24 @@ namespace NeuroVida.Games.Engranajes
 
         private IEnumerator GameLoop()
         {
-            StartCoroutine(Prewarm());
-            if (TutorialWanted)
-            {
-                // la ronda guiada se juega sobre la sala ya armada, antes de la cuenta regresiva
-                _safe.gameObject.SetActive(true);
-                yield return null;
-                ApplySafeArea(_safe);
-                Canvas.ForceUpdateCanvases();
-                Layout();
-                UpdateHud();
-                yield return StartCoroutine(RunTutorialIfNeeded());
-                ClearMachine();
-            }
-            _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Engranajes", Assessment.Subtitle("Arregla la máquina del cohete"), () => _safe.gameObject.SetActive(true)));
-            while (!_baked) yield return null;
+            _safe.gameObject.SetActive(false);                                      // el tablero no se ve mientras se arma (sin acomodar los botones miden 100 u): se activa ya acomodado (Tarea 190)
+            yield return StartCoroutine(Prewarm());                                 // el arte y los sonidos de la partida, detrás de la pantalla de carga de la app (Tarea 190)
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
             UpdateHud();
+            yield return StartCoroutine(ShowBoardWhenReady());                  // el tablero entero a la vista: Android quita la pantalla de carga
+            if (TutorialWanted)
+            {
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                ClearMachine();
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                UpdateHud();
+            }
+            yield return StartCoroutine(PlayGo());
 
             _endsAt = GameClock.Time + EngranajesContract.RetoSeconds;
             _loopOn = true;
@@ -152,7 +147,7 @@ namespace NeuroVida.Games.Engranajes
             EngranajesSounds.Request();             // los sonidos (el zumbido, los diez pasos, las piezas, las luces y el despegue) se piden ANTES de la cuenta: los calcula WoodCore de a poco, sin trabar
             if (!_baked)
             {
-                var sprites = EngranajesSprites.Prewarm();
+                var sprites = Background.Budgeted(EngranajesSprites.Prewarm());
                 while (sprites.MoveNext()) yield return null;
                 AssignSprites();
                 _baked = true;

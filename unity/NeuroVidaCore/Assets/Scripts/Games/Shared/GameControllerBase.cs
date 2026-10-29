@@ -24,6 +24,8 @@ namespace NeuroVida.Games.Shared
         protected RectTransform _resultRoot;
         /// <summary>Tutorial guiado común (<see cref="GuidedTutorial"/>); null hasta que el juego llama a <see cref="BuildTutorial"/>.</summary>
         protected GuidedTutorial _tutorial;
+        /// <summary>El «¡Ya!» (<see cref="GoCue"/>) de este juego: cada controlador lo crea en <see cref="BuildUi"/> sobre su lienzo (<c>_goCue = new GoCue(canvasGo.transform, UnitsPerDp)</c>); null en las pruebas que no lo arman.</summary>
+        protected GoCue _goCue;
         private string _tutorialTitle = "", _tutorialGoal = "";
         private bool _howToRunning;
 
@@ -63,6 +65,40 @@ namespace NeuroVida.Games.Shared
 
         /// <summary>Arma toda la UI del juego por código (llamado una sola vez, en <see cref="Awake"/>).</summary>
         protected abstract void BuildUi();
+
+        // ------------------------------------------------------------------ el tablero completo y el «¡Ya!» (Tarea 190)
+
+        /// <summary>
+        /// El tablero de la partida ya está armado y a la vista (el controlador activó su <c>_safe</c>, acomodó el lienzo y dejó el primer ensayo a punto): espera a que termine lo que falte por calcular (los sonidos de la partida) y AVISA a Android que quite la pantalla de carga
+        /// (<see cref="GameReadiness.Report"/>), con lo que el primer cuadro que la persona ve ya es el tablero entero. Después espera lo que tarda la capa en irse (<see cref="GameReadiness.CoverFadeSeconds"/>) para que ni el tutorial ni el «¡Ya!» empiecen debajo de ella. Se usa con
+        /// <c>yield return StartCoroutine(ShowBoardWhenReady())</c> ANTES del tutorial y del «¡Ya!» (<see cref="PlayGo"/>); desde ahí, nada pesado corre en el hilo principal.
+        /// </summary>
+        protected IEnumerator ShowBoardWhenReady()
+        {
+            float waited = 0f;
+            WoodCore.Loading = true;                         // la carga la tapa la app: el cálculo de sonido puede gastar más por cuadro (el juego todavía no se ve)
+            while (!WoodCore.Ready && waited < GameReadiness.MaxWaitSeconds)
+            {
+                waited += GameClock.RealDeltaTime;
+                yield return null;
+            }
+            WoodCore.Loading = false;
+            if (!WoodCore.Ready) Debug.LogWarning("[GameReadiness] el sonido no terminó de calcularse en " + GameReadiness.MaxWaitSeconds + " s; el juego arranca igual.");
+            yield return null;                               // un cuadro con el tablero terminado y quieto antes de destaparlo
+            GameReadiness.Report();
+            float hold = 0f;
+            while (hold < GameReadiness.CoverFadeSeconds)
+            {
+                hold += GameClock.RealDeltaTime;
+                yield return null;
+            }
+        }
+
+        /// <summary>El «¡Ya!» de 0,8 s (<see cref="GoCue"/>): lo último antes del primer ensayo y del reloj de la partida (el Contrarreloj incluido), que empiezan cuando termina.</summary>
+        protected IEnumerator PlayGo()
+        {
+            if (_goCue != null) yield return StartCoroutine(_goCue.Play());
+        }
 
         // ------------------------------------------------------------------ tutorial guiado (pieza común)
 

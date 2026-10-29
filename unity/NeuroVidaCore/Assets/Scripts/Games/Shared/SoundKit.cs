@@ -301,6 +301,12 @@ namespace NeuroVida.Games.Shared
         }
 
         /// <summary>Pasa las muestras a 22.050 Hz: un filtro de paso bajo de 10 kHz (63 coeficientes, ventana de Hann) y una de cada dos. Cuesta unos pocos milisegundos por clip.</summary>
+        /// <summary>Arma el filtro de media frecuencia ANTES de que varios hilos de trabajo lo lean (Tarea 190): así nadie lo arma a la vez.</summary>
+        public static void PrepareForThreads()
+        {
+            if (_halfRateFilter == null) _halfRateFilter = BuildHalfRateFilter();
+        }
+
         public static float[] HalveRate(float[] x)
         {
             var h = _halfRateFilter ?? (_halfRateFilter = BuildHalfRateFilter());

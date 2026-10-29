@@ -47,7 +47,8 @@ import kotlin.math.sin
 /**
  * Pantalla de espera mientras arranca un juego de Unity, con el sello "noche + arcilla": el planeta del juego
  * (el mismo de la biblioteca) con una luna de arcilla que lo orbita (la órbita ES el indicador de carga), el
- * nombre, nivel y modo, y "Cómo se juega" para que la espera sirva de algo.
+ * nombre, la etapa y el modo. Desde la Tarea 190 NO explica el juego (se fue «Cómo se juega» con su frase: la persona la lee en la ficha y en la pausa, y la
+ * explicación del tutorial sale una sola vez); cubre la carga de verdad: dura hasta que Unity tiene el tablero COMPLETO (`GameReadiness`).
  *
  * Se muestra en DOS lugares con el mismo aspecto, para que el paso app -> Unity no se note:
  * - en la app (`UnityGameHost`), sobre el cielo de la app, mientras Android levanta la Activity de Unity;
@@ -134,28 +135,7 @@ fun GameLoadingScreen(
         )
       }
 
-      Spacer(Modifier.height(34.dp))
-      Text(
-        text = "Cómo se juega",
-        fontFamily = AppFamily,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 16.sp,
-        letterSpacing = 1.5.sp,
-        color = com.example.ui.theme.NubiTokens.OnNightDim
-      )
-      Text(
-        text = game.instruction,
-        fontFamily = AppFamily,
-        fontSize = 18.sp,
-        lineHeight = 26.sp,
-        color = Color.White.copy(alpha = 0.92f),
-        textAlign = TextAlign.Center,
-        modifier = Modifier
-          .fillMaxWidth()
-          .padding(top = 8.dp)
-      )
-
-      Spacer(Modifier.height(40.dp))
+      Spacer(Modifier.height(44.dp))
       val shown = if (reduceMotion) 3 else dots.toInt()
       Text(
         // Los puntos que faltan van transparentes: el texto no "baila" al cambiar de largo.

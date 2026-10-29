@@ -143,7 +143,6 @@ namespace NeuroVida.Games.Anagramas
         private bool Endless => _config != null && _config.config.timed;
         private bool Precision => !Endless;
         private bool _senior;
-        private int _previousFrameRate;
         private float _endsAt;
         private int _lastTickSecond = -1;
         private int _streak, _bestStreak, _points, _resolved;
@@ -202,7 +201,6 @@ namespace NeuroVida.Games.Anagramas
         private Image _hintRing;
         private ExitButton _exit;
         private GameHud _hud;
-        private CountdownScreen _countdown;
         private float _sayAt = -10f;
         private bool _sayGood;
         private readonly List<KeyValuePair<Text, float>> _fonts = new List<KeyValuePair<Text, float>>();
@@ -226,8 +224,6 @@ namespace NeuroVida.Games.Anagramas
             _credit = new PuntaCredit();
             _tally = new PuntaTally(_pending);
 
-            _previousFrameRate = Application.targetFrameRate;
-            Application.targetFrameRate = 60;
 
             _phase = Phase.Idle;
             _loopOn = _guided = false;
@@ -255,36 +251,29 @@ namespace NeuroVida.Games.Anagramas
             StartCoroutine(GameLoop());
         }
 
-        private void OnDisable()
-        {
-            if (_previousFrameRate != 0) Application.targetFrameRate = _previousFrameRate;
-        }
 
         private IEnumerator GameLoop()
         {
+            _safe.gameObject.SetActive(false);                                      // el tablero no se ve mientras se arma (sin acomodar los botones miden 100 u): se activa ya acomodado (Tarea 190)
             PuntaSounds.Request();                          // las 10 notas de las casillas y los sonidos de Madera que no van con el núcleo, antes de la cuenta regresiva (el cómputo corre detrás, de a poco)
-            StartCoroutine(Prewarm());
-            if (TutorialWanted)
-            {
-                // la ronda guiada se juega sobre el cielo ya armado, antes de la cuenta regresiva
-                _safe.gameObject.SetActive(true);
-                yield return null;
-                ApplySafeArea(_safe);
-                Canvas.ForceUpdateCanvases();
-                Layout();
-                UpdateHud();
-                yield return StartCoroutine(RunTutorialIfNeeded());
-                ClearWordVisuals();
-                _reserve = 0f;
-            }
-            _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("En la punta de la lengua", Assessment.Subtitle("Encuentra la palabra"), () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(Prewarm());                                 // el arte y los sonidos de la partida, detrás de la pantalla de carga de la app (Tarea 190)
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
             UpdateHud();
+            yield return StartCoroutine(ShowBoardWhenReady());                  // el tablero entero a la vista: Android quita la pantalla de carga
+            if (TutorialWanted)
+            {
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                ClearWordVisuals();
+                _reserve = 0f;
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                UpdateHud();
+            }
+            yield return StartCoroutine(PlayGo());
 
             _endsAt = GameClock.Time + PuntaContract.RetoSeconds;
             _loopOn = true;
@@ -1512,7 +1501,7 @@ namespace NeuroVida.Games.Anagramas
             _flash.raycastTarget = false;
             _flash.color = new Color(0f, 0f, 0f, 0f);
 
-            _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
+            _goCue = new GoCue(canvasGo.transform, UnitsPerDp);
             BuildTutorial(_safe, GameHud.Height + 10f, "En la punta de la lengua", "Lee la definición y encuentra la palabra. Si no sale, pide una ayuda: siempre hay una.");
         }
 

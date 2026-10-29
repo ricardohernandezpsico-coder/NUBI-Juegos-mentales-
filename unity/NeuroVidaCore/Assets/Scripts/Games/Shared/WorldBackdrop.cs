@@ -228,7 +228,7 @@ namespace NeuroVida.Games.Shared
             if (world.Constellations > 0) AddConstellations(bgRect, ambient, world.Constellations, world.Name.GetHashCode());
             if (world.MeteorEverySeconds > 0f) ambient.EnableMeteors(world.MeteorEverySeconds);
             if (!string.IsNullOrEmpty(world.FloatingGlyphs)) ambient.AddGlyphs(world.FloatingGlyphs, 14);
-            if (world.Bokeh > 0) bgRect.gameObject.AddComponent<CountdownAmbient>().Build(bgRect, world.Bokeh);
+            if (world.Bokeh > 0) bgRect.gameObject.AddComponent<BokehAmbient>().Build(bgRect, world.Bokeh);
         }
 
         // ---- piezas ----

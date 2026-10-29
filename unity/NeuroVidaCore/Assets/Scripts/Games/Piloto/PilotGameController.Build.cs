@@ -140,7 +140,7 @@ namespace NeuroVida.Games.Piloto
 
             _engine = new PilotEngine(gameObject);                                 // el motor «Cohete»: tres capas en bucle (Tarea 66)
 
-            _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
+            _goCue = new GoCue(canvasGo.transform, UnitsPerDp);
             SetUpTutorial();
             ResetViews();
         }

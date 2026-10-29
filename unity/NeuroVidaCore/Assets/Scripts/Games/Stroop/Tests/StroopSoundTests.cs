@@ -43,7 +43,7 @@ namespace NeuroVida.Games.Stroop.Tests
         {
             GameFeel.Warm("stroop");
             StroopSounds.Request();
-            int guard = 0; while (!WoodCore.Idle) { WoodCore.Step(1f); Assert.Less(++guard, 200000); }
+            WoodCore.Drain();
             foreach (var (hz, seconds) in new[] { (StroopSounds.CardHz, StroopSounds.CardSeconds), (StroopSounds.InkHz, StroopSounds.RuleSeconds), (StroopSounds.WordHz, StroopSounds.RuleSeconds) })
                 Assert.IsNotNull(WoodCore.GetExtra(WoodCore.CueKey(hz, seconds)), "la señal de " + hz + " Hz");
             WoodCore.ResetCounters();

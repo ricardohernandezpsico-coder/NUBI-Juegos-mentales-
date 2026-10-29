@@ -14,7 +14,7 @@ namespace NeuroVida.Games.Shared
         /// <summary>Si alguno de los antepasados de un elemento se llama así, es ambiente (cielo, estrellas, fondo, efectos) y un aviso puede pasar por encima.</summary>
         private static readonly string[] AmbientAncestors =
         {
-            "Background", "Backdrop", "Starfield", "Stars", "Sky", "Nebula", "Aurora", "Ambient", "Fx", "Vignette", "Toast", "Hud", "PauseMenu", "NubiCoach", "CountdownScreen", "FinishCurtain", "Scrim", "Veil", "PhasePill",
+            "Background", "Backdrop", "Starfield", "Stars", "Sky", "Nebula", "Aurora", "Ambient", "Fx", "Vignette", "Toast", "Hud", "PauseMenu", "NubiCoach", "GoCue", "FinishCurtain", "Scrim", "Veil", "PhasePill",
         };
 
         /// <summary>Elementos sueltos que son adorno aunque tengan dibujo (brillos, sombras, estelas, destellos).</summary>

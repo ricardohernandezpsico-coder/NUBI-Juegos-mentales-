@@ -76,7 +76,7 @@ namespace NeuroVida.Games.Satelites.Tests
         {
             GameFeel.Warm("satelites");
             SatelliteSounds.Request();
-            int guard = 0; while (!WoodCore.Idle) { WoodCore.Step(1f); Assert.Less(++guard, 200000); }
+            WoodCore.Drain();
             for (int i = 0; i < 5; i++) Assert.IsNotNull(WoodCore.GetExtra(WoodCore.NoteKey(SatelliteSounds.CueHz(i), WoodVoice.Marimba)), "la campana " + i);
             for (int n = 1; n <= 7; n++) Assert.IsNotNull(WoodCore.Get(WoodSfx.Select, SatelliteSounds.MarkStep(n)), "marca " + n);
             for (int k = 1; k <= 5; k++) Assert.IsNotNull(WoodCore.Get(WoodSfx.Spark, k), "luz " + k);

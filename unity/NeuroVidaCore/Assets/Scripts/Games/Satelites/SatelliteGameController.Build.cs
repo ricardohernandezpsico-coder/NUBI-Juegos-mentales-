@@ -144,7 +144,7 @@ namespace NeuroVida.Games.Satelites
             _humSource.playOnAwake = false;
             _humSource.volume = 0f;
 
-            _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
+            _goCue = new GoCue(canvasGo.transform, UnitsPerDp);
             SetUpTutorial();
             ResetRoundViews();
         }

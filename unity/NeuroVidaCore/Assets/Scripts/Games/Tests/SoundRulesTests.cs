@@ -268,7 +268,7 @@ namespace NeuroVida.Games.Tests
                 foreach (var kv in Requests)
                 {
                     WoodCore.Reset(); GameFeel.Warm(kv.Value.Id); kv.Value.Request();
-                    int guard = 0; while (!WoodCore.Idle) { WoodCore.Step(1f); Assert.Less(++guard, 200000, "el cálculo no termina"); }
+                    WoodCore.Drain();
                     foreach (var file in MigratedControllers().Where(f => f.Replace('\\', '/').Contains("/" + kv.Key + "/")))
                         foreach (var (sfx, arg, at) in PaletteCalls(file))
                         {

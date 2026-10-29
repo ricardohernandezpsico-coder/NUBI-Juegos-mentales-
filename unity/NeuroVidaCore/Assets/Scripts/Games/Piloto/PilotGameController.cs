@@ -66,7 +66,7 @@ namespace NeuroVida.Games.Piloto
         private float _t, _dist, _shipX = PilotPlan.Width * 0.5f, _steerX = PilotPlan.Width * 0.5f;
         private float _nextSignalIn, _hyperLeft, _wobbleAt = -10f, _missionFreshAt = -10f, _beamAt = -10f, _beamX, _beamY, _steeredSeconds;
         private float _flightSeconds = PilotContract.FlightSeconds, _sectorSeconds = PilotContract.SectorSeconds;
-        private int _steerFinger = -1, _previousFrameRate;
+        private int _steerFinger = -1;
         /// <summary>Cuántas señales dura Precisión (24) y cada cuántas hay un sector nuevo (un tercio). El arranque de prueba del Editor las acorta para llegar al final.</summary>
         private int _precisionTotal = PilotContract.PrecisionSignals;
         private int PrecisionEvery => _precisionTotal / PilotContract.Sectors;
@@ -79,7 +79,6 @@ namespace NeuroVida.Games.Piloto
 
         private ExitButton _exit;
         private GameHud _hud;
-        private CountdownScreen _countdown;
 
         private bool Endless => _config != null && _config.config.timed;
         private float Now => GameClock.Time;
@@ -117,8 +116,6 @@ namespace NeuroVida.Games.Piloto
             _mouseSteer = false;
 
             // Movimiento continuo: a 60 cuadros por segundo se ve fluido (Android da 30 por defecto).
-            _previousFrameRate = Application.targetFrameRate;
-            Application.targetFrameRate = 60;
 
             ResetViews();
             _exit.Hide();
@@ -130,32 +127,28 @@ namespace NeuroVida.Games.Piloto
 
         private void OnDisable()
         {
-            if (_previousFrameRate != 0) Application.targetFrameRate = _previousFrameRate;
             StopEngine();
         }
 
         private IEnumerator GameLoop()
         {
-            StartCoroutine(Prewarm());
-            if (TutorialWanted)
-            {
-                // la ronda guiada se juega sobre la pantalla ya armada, antes de la cuenta regresiva
-                _safe.gameObject.SetActive(true);
-                yield return null;
-                ApplySafeArea(_safe);
-                Canvas.ForceUpdateCanvases();
-                Layout();
-                yield return StartCoroutine(RunTutorialIfNeeded());
-                ResetViews();
-            }
-            _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play(PilotContract.Title, Assessment.Subtitle(PilotContract.CountdownSub), () => _safe.gameObject.SetActive(true)));
-            while (!_baked) yield return null;
+            _safe.gameObject.SetActive(false);                                      // el tablero no se ve mientras se arma (sin acomodar los botones miden 100 u): se activa ya acomodado (Tarea 190)
+            yield return StartCoroutine(Prewarm());                                 // el arte y los sonidos de la partida, detrás de la pantalla de carga de la app (Tarea 190)
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
+            yield return StartCoroutine(ShowBoardWhenReady());                  // el tablero entero a la vista: Android quita la pantalla de carga
+            if (TutorialWanted)
+            {
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                ResetViews();
+                Canvas.ForceUpdateCanvases();
+                Layout();
+            }
+            yield return StartCoroutine(PlayGo());
+
             BeginFlight();
             _loopOn = true;
         }
@@ -165,11 +158,11 @@ namespace NeuroVida.Games.Piloto
         {
             PilotSounds.Request();                  // los sonidos (las balizas, el blip, el golpe, la misión, el soplo y el hiperimpulso) se piden ANTES de la cuenta: los calcula WoodCore de a poco, sin trabar
             if (_baked) yield break;
-            var sprites = PilotSignalSprites.Prewarm();
+            var sprites = Background.Budgeted(PilotSignalSprites.Prewarm());
             while (sprites.MoveNext()) yield return null;
             PilotShipSprite.Get();
             yield return null;
-            var engine = PilotSounds.PrewarmEngine();                 // el motor «Cohete» (tres capas en bucle) se calcula de a una por cuadro
+            var engine = Background.Budgeted(PilotSounds.PrewarmEngine());                 // el motor «Cohete» (tres capas en bucle) se calcula de a una por cuadro
             while (engine.MoveNext()) yield return null;
             _baked = true;
         }

@@ -39,7 +39,7 @@ namespace NeuroVida.Games.Radar
         private RadarRound _round;
         private Phase _phase = Phase.Idle;
         private bool _loopOn, _baked, _guided, _rescueTapped, _flashPaused;
-        private int _bestRecord, _debugStage, _lastTickSecond, _previousFrameRate;
+        private int _bestRecord, _debugStage, _lastTickSecond;
         private RetoClock _clock;
         private float _answerStartedAt, _actualMs;
         private int _trips;
@@ -52,7 +52,6 @@ namespace NeuroVida.Games.Radar
 
         private ExitButton _exit;
         private GameHud _hud;
-        private CountdownScreen _countdown;
 
         private bool Endless => _config != null && _config.config.timed;
         private float Now => GameClock.Time;
@@ -97,8 +96,6 @@ namespace NeuroVida.Games.Radar
             _trips = 0;
 
             // Los destellos son de decenas de milisegundos: a 30 cuadros por segundo (lo que Android da por defecto) los saltos serían gruesos. Se piden 60 mientras dura el juego.
-            _previousFrameRate = Application.targetFrameRate;
-            Application.targetFrameRate = 60;
 
             ResetViews();
             _exit.Hide();
@@ -110,33 +107,30 @@ namespace NeuroVida.Games.Radar
             StartCoroutine(GameLoop());
         }
 
-        private void OnDisable()
-        {
-            if (_previousFrameRate != 0) Application.targetFrameRate = _previousFrameRate;
-        }
 
         private IEnumerator GameLoop()
         {
-            StartCoroutine(Prewarm());
-            if (TutorialWanted)
-            {
-                // la ronda guiada se juega sobre la pantalla ya armada, antes de la cuenta regresiva
-                _safe.gameObject.SetActive(true);
-                yield return null;
-                ApplySafeArea(_safe);
-                Canvas.ForceUpdateCanvases();
-                Layout();
-                yield return StartCoroutine(RunTutorialIfNeeded());
-                ResetViews();
-            }
-            _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play(RadarContract.Title, _tt != null ? TimeTrial.CountdownSub : Assessment.Subtitle(RadarContract.CountdownSub), () => _safe.gameObject.SetActive(true)));
-            while (!_baked) yield return null;
+            _safe.gameObject.SetActive(false);                                      // el tablero no se ve mientras se arma (sin acomodar los botones miden 100 u): se activa ya acomodado (Tarea 190)
+            yield return StartCoroutine(Prewarm());                                 // el arte y los sonidos de la partida, detrás de la pantalla de carga de la app (Tarea 190)
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
+            _timerTrack.gameObject.SetActive(Endless);
+            _timerFill.gameObject.SetActive(Endless);
+            UpdateHud();
+            yield return StartCoroutine(ShowBoardWhenReady());                  // el tablero entero a la vista: Android quita la pantalla de carga
+            if (TutorialWanted)
+            {
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                ResetViews();
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                UpdateHud();
+            }
+            yield return StartCoroutine(PlayGo());
+
             _clock = new RetoClock(GameClock.Time, ClockSeconds);
             _timerTrack.gameObject.SetActive(Endless);
             _timerFill.gameObject.SetActive(Endless);
@@ -166,12 +160,12 @@ namespace NeuroVida.Games.Radar
         private IEnumerator Prewarm()
         {
             if (_baked) yield break;
-            var sprites = RadarSprites.Prewarm();
+            var sprites = Background.Budgeted(RadarSprites.Prewarm());
             while (sprites.MoveNext()) yield return null;
             AssignSprites();
             if (SoundWanted)                                                                  // con «Efectos de sonido» apagado no se calcula ningún clip
             {
-                var sounds = RadarSounds.Prewarm();
+                var sounds = Background.Budgeted(RadarSounds.Prewarm());
                 while (sounds.MoveNext()) yield return null;
             }
             _baked = true;

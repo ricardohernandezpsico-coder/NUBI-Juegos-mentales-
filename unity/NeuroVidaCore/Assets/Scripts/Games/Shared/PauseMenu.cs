@@ -25,6 +25,12 @@ namespace NeuroVida.Games.Shared
         private bool _confirming, _withHowTo;
         public const string SubtitleText = "Tu partida te espera", ConfirmText = "¿Empezar de nuevo esta partida?";
 
+        /// <summary>La marca de versión (Tarea 190: antes vivía en la cuenta regresiva y salía también en la app publicada). Se muestra SOLO en las builds de depuración de la app (<c>debug_build</c> de la config) y SOLO en la pausa, abajo del panel. <b>Cambiarla con cada cambio visible de Unity:</b> el export de Unity está fuera de git y, si no se reexporta, Gradle empaqueta el viejo sin avisar.</summary>
+        public const string StyleStamp = "entrada sin cuenta 28-oct";
+
+        /// <summary>El texto de la marca que se dibuja ahora (null = ninguna: release). Lo fija <c>GameEntryPoint</c> con cada partida.</summary>
+        public static string DebugStamp;
+
         /// <summary>true mientras el menú pregunta «¿Empezar de nuevo esta partida?» (Tarea 127: «Reiniciar» está justo debajo de «Continuar» y a 60 dp; ahora pide confirmación en una línea).</summary>
         public bool Confirming => _confirming;
 
@@ -106,6 +112,18 @@ namespace NeuroVida.Games.Shared
                 panelImg.type = Image.Type.Sliced;
                 panelImg.color = NeuroStyle.Surface;
                 NeuroStyle.ClayFrame(panelImg, 7f, 18f);
+            }
+
+            if (!string.IsNullOrEmpty(DebugStamp))
+            {
+                var stamp = MakeText(root, "StyleStamp", 48, TextAnchor.MiddleCenter, NeuroStyle.WithAlpha(NeuroStyle.Cream, 0.8f), 0f, 0f);      // 16 dp: ni la marca baja del mínimo
+                var stampRect = stamp.rectTransform;
+                stampRect.anchorMin = new Vector2(0f, 0f);
+                stampRect.anchorMax = new Vector2(1f, 0f);
+                stampRect.pivot = new Vector2(0.5f, 0f);
+                stampRect.sizeDelta = new Vector2(0f, 90f);
+                stampRect.anchoredPosition = new Vector2(0f, 60f);
+                stamp.text = DebugStamp;
             }
 
             var title = MakeText(_panel, "Title", 110, TextAnchor.MiddleCenter, _plastic ? NeuroStyle.Ink : NeuroStyle.Sun, 0f, 0f);

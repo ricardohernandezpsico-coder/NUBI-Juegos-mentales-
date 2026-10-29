@@ -65,7 +65,6 @@ namespace NeuroVida.Games.Disparate
         private bool Endless => _config != null && _config.config.timed;
         private bool Precision => !Endless;
         private bool Senior;
-        private int _previousFrameRate;
 
         private SentenceSpec _cur, _next;
         private PlateLayout _nextLayout;
@@ -94,7 +93,6 @@ namespace NeuroVida.Games.Disparate
         private readonly List<RawImage> _edgeStatic = new List<RawImage>();
         private ExitButton _exit;
         private GameHud _hud;
-        private CountdownScreen _countdown;
         private StarfieldFx _stars;
         private float _playW, _playH, _plateY, _sigY;
         private Vector2 _dishPos, _tipPos, _btnTrueCenter, _btnFalseCenter;
@@ -123,8 +121,6 @@ namespace NeuroVida.Games.Disparate
             _director.NoBursts = _tt != null;
             _tally = new DisparateTally();
 
-            _previousFrameRate = Application.targetFrameRate;
-            Application.targetFrameRate = 60;
 
             _phase = Phase.Idle;
             _cur = _next = null;
@@ -156,37 +152,29 @@ namespace NeuroVida.Games.Disparate
             StartCoroutine(GameLoop());
         }
 
-        private void OnDisable()
-        {
-            if (_previousFrameRate != 0) Application.targetFrameRate = _previousFrameRate;
-        }
 
         private IEnumerator GameLoop()
         {
             _safe.gameObject.SetActive(false);
             _baked = false;
             RequestSounds();                         // SweepUp y Streak (lo único que no va con el núcleo) se piden ANTES de la cuenta
-            StartCoroutine(PrewarmSprites());
-            if (TutorialWanted)
-            {
-                // la ronda guiada se juega sobre la sala de radio ya armada, antes de la cuenta regresiva
-                _safe.gameObject.SetActive(true);
-                yield return null;
-                ApplySafeArea(_safe);
-                Canvas.ForceUpdateCanvases();
-                Layout();
-                UpdateHud();
-                yield return StartCoroutine(RunTutorialIfNeeded());
-                ClearStage();
-                _safe.gameObject.SetActive(false);
-            }
-            yield return StartCoroutine(_countdown.Play("¿Verdad o disparate?", _tt != null ? TimeTrial.CountdownSub : Assessment.Subtitle(DisparateContract.Rule), () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(PrewarmSprites());                                 // el arte y los sonidos de la partida, detrás de la pantalla de carga de la app (Tarea 190)
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
             UpdateHud();
+            yield return StartCoroutine(ShowBoardWhenReady());                  // el tablero entero a la vista: Android quita la pantalla de carga
+            if (TutorialWanted)
+            {
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                ClearStage();
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                UpdateHud();
+            }
+            yield return StartCoroutine(PlayGo());
 
             _endsAt = GameClock.Time + RoundSeconds;
             _phase = Phase.Playing;
@@ -1325,7 +1313,7 @@ namespace NeuroVida.Games.Disparate
             _flash.raycastTarget = false;
             _flash.color = new Color(0f, 0f, 0f, 0f);
 
-            _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
+            _goCue = new GoCue(canvasGo.transform, UnitsPerDp);
         }
 
         private void BuildAurora()

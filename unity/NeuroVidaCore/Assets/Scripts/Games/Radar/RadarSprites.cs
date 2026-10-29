@@ -223,7 +223,8 @@ namespace NeuroVida.Games.Radar
         {
             var pixels = new Color32[size * size];
             float dp = GlassR / V4Glass;
-            for (int py = 0; py < size; py++)
+            Background.ForRows(size, py =>               // las filas se reparten entre los hilos de trabajo (Tarea 190): idénticas a las de un solo hilo
+            {
                 for (int px = 0; px < size; px++)
                 {
                     float x = ((px + 0.5f) / size * 2f - 1f) * ScopeZoom, y = ((py + 0.5f) / size * 2f - 1f) * ScopeZoom;
@@ -231,6 +232,7 @@ namespace NeuroVida.Games.Radar
                     PaintGlass(ref p, x, y, Mathf.Sqrt(x * x + y * y), dp, 0.006f);
                     pixels[py * size + px] = p.ToColor32();
                 }
+            }, size * size);
             return pixels;
         }
 
@@ -258,7 +260,7 @@ namespace NeuroVida.Games.Radar
         {
             var pixels = new Color32[size * size];
             const float trail = Mathf.PI * 0.42f;
-            for (int py = 0; py < size; py++)
+            Background.ForRows(size, py =>
             {
                 for (int px = 0; px < size; px++)
                 {
@@ -276,7 +278,7 @@ namespace NeuroVida.Games.Radar
                     }
                     pixels[py * size + px] = new Color32(255, 255, 255, (byte)(Mathf.Clamp01(a) * 255f));
                 }
-            }
+            }, size * size);
             return pixels;
         }
 
@@ -324,7 +326,8 @@ namespace NeuroVida.Games.Radar
         public static Color32[] RenderDashedRing(int size)
         {
             var pixels = new Color32[size * size];
-            for (int py = 0; py < size; py++)
+            Background.ForRows(size, py =>
+            {
                 for (int px = 0; px < size; px++)
                 {
                     float x = (px + 0.5f) / size * 2f - 1f, y = (py + 0.5f) / size * 2f - 1f;
@@ -332,6 +335,7 @@ namespace NeuroVida.Games.Radar
                     float a = Cover(Mathf.Abs(r - 0.82f) - 0.05f, 2.5f / size) * (Mathf.Sin(Mathf.Atan2(y, x) * 10f) > -0.15f ? 1f : 0f);
                     pixels[py * size + px] = new Color32(255, 255, 255, (byte)(Mathf.Clamp01(a) * 255f));
                 }
+            }, size * size);
             return pixels;
         }
 
@@ -508,8 +512,10 @@ namespace NeuroVida.Games.Radar
         {
             if (!Cache.TryGetValue(key, out var s) || s == null)
             {
+                var __swSprite = System.Diagnostics.Stopwatch.StartNew();
                 s = build();
                 Cache[key] = s;
+                NeuroVida.Games.Shared.EntryProbe.Cost("sprites", __swSprite.Elapsed.TotalMilliseconds);
             }
             return s;
         }

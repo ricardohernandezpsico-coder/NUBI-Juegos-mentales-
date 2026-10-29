@@ -86,7 +86,6 @@ namespace NeuroVida.Games.Tests
         private static void StepAll(Transform root, float dt)
         {
             foreach (var a in root.GetComponentsInChildren<WorldAmbient>(true)) a.Step(dt);
-            foreach (var a in root.GetComponentsInChildren<CountdownAmbient>(true)) a.Step(dt);
             foreach (var s in root.GetComponentsInChildren<StarfieldFx>(true)) s.Step(dt);
         }
 
@@ -277,48 +276,7 @@ namespace NeuroVida.Games.Tests
             Assert.AreEqual(first, Snapshot(area));
         }
 
-        // ------------------------------------------------------------------ cuenta regresiva y cierre
-
-        [Test]
-        public void Countdown_con_ReduceMotion_termina_sin_chispas_orbita_onda_ni_rebote()
-        {
-            var parent = NewArea();
-            var screen = new CountdownScreen(parent, 1f);
-            int reveals = 0;
-            var root = parent.Find("CountdownScreen");
-            Assert.IsNotNull(root);
-
-            int frames = Run(screen.Play("Nivel 1", "Mira bien", () => reveals++), () =>
-            {
-                foreach (var img in root.GetComponentsInChildren<Image>(true))
-                {
-                    if (img.name == "Sparkle" || img.name == "OrbitStar" || img.name == "Ripple" || img.name == "Burst")
-                        Assert.AreEqual(0f, img.color.a, img.name + " no debe verse");
-                }
-                foreach (var t in root.GetComponentsInChildren<Text>(true))
-                    if (t.name == "Number" || t.name == "NumberOut") Assert.AreEqual(Vector3.one, t.rectTransform.localScale, t.name + " sin rebote");
-            });
-
-            Assert.Greater(frames, 10);
-            Assert.AreEqual(1, reveals, "el juego se revela una sola vez");
-            Assert.IsFalse(root.gameObject.activeSelf, "la cuenta regresiva termina y se esconde");
-        }
-
-        [Test]
-        public void Countdown_el_subtitulo_largo_ocupa_el_ancho_de_la_pantalla_con_margen_y_pasa_a_otra_linea()
-        {
-            // el subtítulo de «Bodega de carga» se veía cortado: era una sola línea más ancha que la pantalla
-            var parent = NewArea("Pantalla", 1080f, 2400f);
-            new CountdownScreen(parent, 3f);
-            var sub = parent.Find("CountdownScreen/Subtitle").GetComponent<Text>();
-            Assert.AreEqual(HorizontalWrapMode.Wrap, sub.horizontalOverflow, "sin ajuste de línea se sale de la pantalla");
-            float w = sub.rectTransform.rect.width;
-            Assert.LessOrEqual(w, 1080f - 2f * 28f * 3f + 0.5f, "con un margen de 28 dp a cada lado");
-            Assert.Greater(w, 700f, "y no queda angosto");
-            var small = NewArea("Chica", 720f, 1280f);       // otra pantalla: el ancho sigue a la pantalla, no a una cifra fija
-            new CountdownScreen(small, 2f);
-            Assert.AreEqual(720f - 2f * 28f * 2f, small.Find("CountdownScreen/Subtitle").GetComponent<Text>().rectTransform.rect.width, 0.5f);
-        }
+        // ------------------------------------------------------------------ cierre (el «¡Ya!» de entrada tiene sus pruebas en GoCueTests)
 
         [Test]
         public void FinishCurtain_con_ReduceMotion_termina_sin_chispas_ni_rebote()

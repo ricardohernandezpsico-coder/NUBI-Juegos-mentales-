@@ -56,7 +56,7 @@ Estados: **inventario** → **render** → **integrado** → **aprobado por Rica
 
 ## Piezas comunes (fase 0): las que benefician a los 17
 
-Todo el HUD, la pausa, la cuenta regresiva y el cierre son de `Games/Shared`. Hoy son `RoundedRectSprite` 9-slice (33 archivos) más `Outline`/`Shadow` de Unity (`NeuroStyle.ClayFrame`, 19 archivos) con borde tinta y sombra dura. La fase 0 las pasa a las losas del kit de la app.
+Todo el HUD, la pausa, el «¡Ya!» (hasta la Tarea 190, la cuenta regresiva) y el cierre son de `Games/Shared`. Hoy son `RoundedRectSprite` 9-slice (33 archivos) más `Outline`/`Shadow` de Unity (`NeuroStyle.ClayFrame`, 19 archivos) con borde tinta y sombra dura. La fase 0 las pasa a las losas del kit de la app.
 
 | Pieza | Archivo | Hoy | Plasticina |
 |---|---|---|---|
@@ -65,7 +65,7 @@ Todo el HUD, la pausa, la cuenta regresiva y el cierre son de `Games/Shared`. Ho
 | Aviso y píldora de estado | `Toast`, `PhasePill` | `RoundedRect(64)` + `ClayFrame` | losa `md` crema, punto de color |
 | Casillas de respuesta (normal, elegida, acierto, «no estaba») | cada juego; Rescate y `TileSprites` son los modelos | gris 256 px estirado, sin 9-slice, teñido | losa `md` «noche» (oscura, para que los símbolos de color resalten), con marca ✓ / ✗ de plasticina y texto |
 | Paneles de pausa y de final (el de final ya no existe en Unity: Tarea 126, el resultado vive en la app) | `PauseMenu`, `GameControllerBase`, `RadarGameController.BuildEnd` | `RoundedRect(64)` azul noche + `ClayFrame` | losa `gr` crema |
-| Cuenta regresiva (título, anillo) | `CountdownScreen` | píldora de 3 capas, `RingSprite` | losa `ch` crema; anillo de plasticina |
+| Cuenta regresiva (título, anillo) → «¡Ya!» (Tarea 190) | `GoCue` (antes `CountdownScreen`) | la cuenta regresiva se quitó; queda la losa sol de «¡Ya!» (la de «¡Listo!») | losa `sol` de plasticina |
 | Cierre «¡Listo!» | `FinishCurtain` | texto con contorno tinta | placa `gr` sol detrás del texto; desde la Tarea 126 con el emblema del juego (atlas `emblemas`: las 17 fichas de la app a 6 px/dp, 2,1 MB de PNG / ≈ 1,5 MB con ASTC 6×6) en el momento del objeto y sobre «¡Listo!»; **sin la sombra dura horneada desde la Tarea 166** (`quita_sombra` en `empaqueta.py`; la ficha de la app conserva la suya) |
 | Marca de respuesta ✓ / ✗ | `AnswerMarkSprite` (Estrella intrusa, Disparate, Meteoros, Freno, Satélites, Acoplamiento, Rescate) | disco lima/coral con glifo tinta | disco de plasticina con glifo de churro tinta (la ✗ es un aspa, no una cruz) |
 | La Nubi de los tutoriales | `NubiTeacherSprite` | Nubi plana vieja con destellos en cruz y pizarra | `nubi_3d` (el render de la app, ojos abiertos), `nubi_3d_descansa` (ojos cerrados) y `nubi_sombra` (la sombra de la isla, aparte para que no flote con Nubi), armadas por `NubiFigure` (Tarea 148) |

@@ -53,7 +53,6 @@ namespace NeuroVida.Games.Freno
         // la versión corta del inicio (Assessment) es de lanzamientos fijos y sin reloj, aunque la config traiga timed
         private bool Endless => _config != null && _config.config.timed && !Assessment.Active;
         private bool Precision => !Endless;
-        private int _previousFrameRate;
 
         // ensayo en curso
         private int _tapLane = -1;
@@ -79,7 +78,6 @@ namespace NeuroVida.Games.Freno
         private readonly List<Image> _stars = new List<Image>();
         private ExitButton _exit;
         private GameHud _hud;
-        private CountdownScreen _countdown;
         private float _playW, _playH, _laneTop, _gaugeW;
 
         // ------------------------------------------------------------------ sesión
@@ -92,8 +90,6 @@ namespace NeuroVida.Games.Freno
             _dda = BrakeContract.CreateEngine(config.config);
 
             // Tiempos de respuesta y retrasos del alto en decenas de ms: 60 cuadros por segundo (Android da 30).
-            _previousFrameRate = Application.targetFrameRate;
-            Application.targetFrameRate = 60;
 
             _phase = Phase.Idle;
             _goRts.Clear();
@@ -121,31 +117,12 @@ namespace NeuroVida.Games.Freno
             StartCoroutine(GameLoop());
         }
 
-        private void OnDisable()
-        {
-            if (_previousFrameRate != 0) Application.targetFrameRate = _previousFrameRate;
-        }
 
         private IEnumerator GameLoop()
         {
+            _safe.gameObject.SetActive(false);                                      // el tablero no se ve mientras se arma (sin acomodar los botones miden 100 u): se activa ya acomodado (Tarea 190)
             BrakeSounds.Request();                  // la señal de salida (el ESTÍMULO) y el «¡Más rápido!» se piden ANTES de la cuenta: la señal nunca puede esperar a calcularse
             bool tutorialPlayed = false;
-            if (TutorialWanted)
-            {
-                // la ronda guiada se juega sobre la base ya armada, antes de la cuenta regresiva
-                _safe.gameObject.SetActive(true);
-                yield return null;
-                ApplySafeArea(_safe);
-                Canvas.ForceUpdateCanvases();
-                Layout();
-                SetupLanes(2);
-                UpdateGauge(false);
-                UpdateHud();
-                yield return StartCoroutine(RunTutorialIfNeeded());
-                tutorialPlayed = !_tutorial.Skipped;
-            }
-            _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Freno de Emergencia", Assessment.Subtitle(BrakeContract.GoRule), () => _safe.gameObject.SetActive(true)));
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
@@ -154,10 +131,26 @@ namespace NeuroVida.Games.Freno
             SetupLanes(BrakeContract.Pads(_dda.PresentedLevel));
             UpdateGauge(false);
             UpdateHud();
-
-            // Primera vez sin tutorial (o si lo saltó): las dos reglas, antes del primer lanzamiento.
             SetPrompt("", Color.white);
             _hud.SetPrompt(BrakeContract.GoRule);                              // la consigna vive en la fila del marcador (Tarea 127), siempre en el mismo lugar
+            yield return StartCoroutine(ShowBoardWhenReady());                  // el tablero entero a la vista: Android quita la pantalla de carga
+            if (TutorialWanted)
+            {
+                SetupLanes(2);
+                UpdateGauge(false);
+                UpdateHud();
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                tutorialPlayed = !_tutorial.Skipped;
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                SetupLanes(BrakeContract.Pads(_dda.PresentedLevel));
+                UpdateGauge(false);
+                UpdateHud();
+                SetPrompt("", Color.white);
+                _hud.SetPrompt(BrakeContract.GoRule);
+            }
+
+            // Primera vez sin tutorial (o si lo saltó): las dos reglas, antes del primer lanzamiento.
             if (!tutorialPlayed)
             {
                 yield return StartCoroutine(Wait(1.6f));
@@ -166,6 +159,7 @@ namespace NeuroVida.Games.Freno
                 yield return StartCoroutine(ShowStopPreview());
                 _hud.SetPrompt(BrakeContract.GoRule);
             }
+            yield return StartCoroutine(PlayGo());
 
             _endsAt = GameClock.Time + BrakeContract.RetoSeconds;
             _loopOn = true;
@@ -815,7 +809,7 @@ namespace NeuroVida.Games.Freno
             _flash.raycastTarget = false;
             _flash.color = new Color(0f, 0f, 0f, 0f);
 
-            _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
+            _goCue = new GoCue(canvasGo.transform, UnitsPerDp);
         }
 
         private Lane BuildLane(int i)

@@ -267,6 +267,38 @@ namespace NeuroVida.Bridge.EditorTools
         }
 
         private static readonly HashSet<string> _factorySeen = new HashSet<string>();
+        private static int _boardReports;
+
+        /// <summary>
+        /// «El primer cuadro VISIBLE ya es el tablero completo» (Tarea 190): se mira JUSTO antes de avisar a Android que quite la pantalla de carga. Ninguna imagen se ve con los valores de fábrica (la misma guardia de <see cref="ScanFactoryImages"/>, sin esperar cuadros) y, con sonido, ya no queda nada por calcular.
+        /// </summary>
+        private static void OnBoardAboutToShow()
+        {
+            _boardReports++;
+            var hits = NeuroVida.Games.Shared.FactoryImageGuard.Scan();
+            if (hits != null)
+                foreach (var h in hits)
+                {
+                    _errorCount++;
+                    Debug.Log($"[SmokeTest] Error capturado: el primer cuadro visible de {_current.Name} ({_current.Id}) trae una imagen de fábrica (el tablero no estaba completo): {h}");
+                }
+            if (CountdownSoundExpected() && !NeuroVida.Games.Shared.WoodCore.Ready)
+            {
+                _errorCount++;
+                Debug.Log($"[SmokeTest] Error capturado: {_current.Name} mostró el tablero con sonido todavía por calcular");
+            }
+            Debug.Log($"[SmokeTest] tablero completo de {_current.Name}: se muestra a los {EditorApplication.timeSinceStartup - _enteredPlayAt:F2} s de entrar en Play");
+        }
+
+        /// <summary>Cada partida avisa UNA vez que su tablero está completo (y lo hace antes de que termine la corrida).</summary>
+        private static void CheckBoardShown()
+        {
+            if (_boardReports != 1)
+            {
+                _errorCount++;
+                Debug.Log($"[SmokeTest] Error capturado: {_current.Name} avisó {_boardReports} vez/veces que su tablero estaba completo (tiene que ser UNA)");
+            }
+        }
 
         /// <summary>
         /// Ninguna imagen se ve con los valores de fábrica (Tarea 178): una <c>Image</c> activa de 100 × 100, blanca y en el centro de su padre es un efecto, un aviso o un lucero que se hizo visible antes de que el código le fijara posición, tamaño y color: se ve UN cuadro como un disco blanco
@@ -275,8 +307,7 @@ namespace NeuroVida.Bridge.EditorTools
         private static void ScanFactoryImages()
         {
             if (Time.frameCount % 3 != 0) return;                                  // cada 3 cuadros: mirar cada uno añadía ~40 min a la corrida (la mirada reúne todas las imágenes de la escena)
-            if (EditorApplication.timeSinceStartup - _enteredPlayAt < 5.0) return;  // los primeros segundos de cada corrida (el lienzo de revisión se acomoda y la cuenta regresiva tapa la escena): lo que todavía no está acomodado detrás no se ve; la píldora de Tinta se veía durante todo el primer ensayo, mucho después
-            if (GameObject.Find("CountdownScreen") != null) return;                // y mientras haya una cuenta regresiva a la vista
+            if (!NeuroVida.Games.Shared.GameReadiness.Shown) return;                // desde que el tablero se MOSTRÓ (Tarea 190): antes lo tapa la pantalla de carga de la app; ya no hay «los primeros 5 s» ni cuenta regresiva que tape lo que falte armar
             // NUBI_GUARD_EXPERIMENT=1: registra QUÉ marcaría cada regla (A, B, C), sin contar ninguna como error: sirve para elegir las reglas con datos de los juegos reales
             bool experiment = System.Environment.GetEnvironmentVariable("NUBI_GUARD_EXPERIMENT") == "1";
             var hits = experiment
@@ -493,6 +524,8 @@ namespace NeuroVida.Bridge.EditorTools
             _listRunning = true;
             _listPlaying = false;
             EditorApplication.update += OnUpdateList;
+            NeuroVida.Games.Shared.GameReadiness.BeforeReport -= OnBoardAboutToShow;
+            NeuroVida.Games.Shared.GameReadiness.BeforeReport += OnBoardAboutToShow;
             StartNextInList();
         }
 
@@ -566,6 +599,7 @@ namespace NeuroVida.Bridge.EditorTools
             NeuroVida.Games.Shared.NubiCoach.AuditSteps.Clear();
             _auditCanvases.Clear();
             _errorCount = 0;
+            _boardReports = 0;
             _enteredPlayAt = 0;
             _pauseStage = 0;
             _listPlaying = true;
@@ -729,7 +763,6 @@ namespace NeuroVida.Bridge.EditorTools
         /// <summary>Textos que a propósito van más chicos que <see cref="MinFontDp"/>: (juego, final de la ruta del objeto, por qué). Cualquier otro texto bajo 16 dp, en cualquier juego, hace FALLAR el smoke. Mantenerla CORTA y justificada.</summary>
         private static readonly (string Id, string PathEnd, string Why)[] TextSizeExceptions =
         {
-            ("*", "CountdownScreen/StyleStamp", "marca de versión de las builds de depuración (CountdownScreen.StyleStamp): no es parte del juego y se quita antes de publicar"),
             ("bitacora", "*", "Bitácora de Misión está RETIRADA de la app (5-oct): ya no se ve; su código y su arranque en el smoke se conservan sin rehacerle la letra"),
             ("rumbo", "*", "Rumbo a Casa está RETIRADO de la app (10-oct): ya no se ve; su código y su arranque en el smoke se conservan sin rehacerle la letra"),
             ("cosecha", "*", "Cosecha de palabras está RETIRADA de la app (10-oct): ya no se ve; su código y su arranque en el smoke se conservan sin rehacerle la letra"),
@@ -1226,24 +1259,24 @@ namespace NeuroVida.Bridge.EditorTools
             }
         }
 
-        /// <summary>Los juegos donde la partida arranca con la cuenta regresiva y hay sonido (no «Tutorial», «Corto», «Pantalla», «HowTo» ni «Aviso»): suenan al menos 3, 2, 1 y «¡Ya!».</summary>
+        /// <summary>Los juegos donde la partida arranca con el «¡Ya!» y hay sonido (no «Tutorial», «Corto», «Pantalla», «HowTo» ni «Aviso»): suena al menos el «¡Ya!» (Tarea 190: ya no hay cuenta regresiva 3-2-1).</summary>
         private static bool CountdownSoundExpected() =>
             !_current.Name.EndsWith("Mudo") && !_current.Name.StartsWith("Tutorial") && !_current.Name.StartsWith("Corto") && !_current.Name.StartsWith("Pantalla") && !_current.Name.StartsWith("HowTo") && !_current.Name.StartsWith("Aviso") && _currentHeight == 0
             && _current.Name != "Bitacora" && _current.Name != "Rumbo" && _current.Name != "Cosecha";
 
         /// <summary>
-        /// El sonido común de la partida (Fase B): con «Efectos de sonido» apagado no suena NADA de la paleta; con sonido suenan la cuenta regresiva y «¡Ya!»; y a lo más UN final por partida (el de <c>ExitButton</c>). Deja en el registro cuántos sonidos salieron, cuántos pidió el juego antes de estar listos y cuántos clips tiene el núcleo.
+        /// El sonido común de la partida (Fase B): con «Efectos de sonido» apagado no suena NADA de la paleta; con sonido suena el «¡Ya!»; y a lo más UN final por partida (el de <c>ExitButton</c>). Deja en el registro cuántos sonidos salieron, cuántos pidió el juego antes de estar listos y cuántos clips tiene el núcleo.
         /// </summary>
         private static void CheckSound()
         {
             int played = NeuroVida.Games.Shared.WoodCore.PlayCount, finals = NeuroVida.Games.Shared.WoodCore.FinishPlays, skipped = NeuroVida.Games.Shared.WoodCore.Skipped, late = NeuroVida.Games.Shared.WoodCore.LateBakes;
             Debug.Log($"[SmokeTest] sonido común de {_current.Name}: {played} sonidos, {finals} final(es), {skipped} omitidos por no estar listos, {late} calculados tarde, {NeuroVida.Games.Shared.WoodCore.ClipCount} clips en el núcleo y {NeuroVida.Games.Shared.WoodCore.ExtraCount} extra");
-            // paso 0 de las Fases C a E: en una partida con cuenta regresiva y sonido nada se omite ni se calcula tarde (si pasa, la cuenta no alcanzó o el juego no pidió algo antes)
-            if (CountdownSoundExpected() && skipped > 0) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: en {_current.Name} {skipped} sonido(s) se pidieron antes de estar listos y no sonaron (Skipped): la cuenta regresiva no alcanzó o el juego no pidió algo antes de ella"); }
-            if (CountdownSoundExpected() && late > 0) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: en {_current.Name} {late} nota(s) o señal(es) se calcularon en el momento de sonar (LateBakes): el juego tiene que pedirlas antes de la cuenta regresiva"); }
+            // paso 0 de las Fases C a E: en una partida con sonido nada se omite ni se calcula tarde (si pasa, la carga no alcanzó a calcularlo o el juego no pidió algo antes de mostrar el tablero)
+            if (CountdownSoundExpected() && skipped > 0) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: en {_current.Name} {skipped} sonido(s) se pidieron antes de estar listos y no sonaron (Skipped): la carga no alcanzó o el juego no pidió algo antes de mostrar el tablero"); }
+            if (CountdownSoundExpected() && late > 0) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: en {_current.Name} {late} nota(s) o señal(es) se calcularon en el momento de sonar (LateBakes): el juego tiene que pedirlas antes de mostrar el tablero"); }
             if (finals > 1) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: sonaron {finals} finales en {_current.Name}: tiene que sonar UNO por partida"); }
             if (_current.Name.EndsWith("Mudo") && played > 0) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: con el sonido apagado la paleta sonó {played} vez/veces en {_current.Name}"); }
-            if (CountdownSoundExpected() && played < 4) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: en {_current.Name} no sonaron ni la cuenta regresiva ni «¡Ya!» (salieron {played} sonidos)"); }
+            if (CountdownSoundExpected() && played < 1) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: en {_current.Name} no sonó ni el «¡Ya!» (salieron {played} sonidos)"); }
         }
 
         /// <summary>
@@ -1318,6 +1351,7 @@ namespace NeuroVida.Bridge.EditorTools
                 CheckHowTo();
                 CheckTimeTrial();
                 CheckAnnounce();
+                CheckBoardShown();
                 CheckSound();
                 if (_current.Name == "Piloto" || _current.Name == "Radar" || _current.Name == "Acoplamiento" || _current.Name == "Aterrizaje")
                     Debug.Log("[SmokeTest] control de audio de " + _current.Name + ": " + (_audioHeard ? "se oyó sonido (el instrumento sirve)" : "NO se detectó ningún sonido: la prueba de «sonido apagado» no sería concluyente"));

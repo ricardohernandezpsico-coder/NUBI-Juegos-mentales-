@@ -340,6 +340,23 @@ namespace NeuroVida.Games.Shared
 
             public bool Done => _stage >= 3;
 
+            /// <summary>El nombre con que se crea el clip (la clave del sonido).</summary>
+            public string ClipName => _make != null ? _key : KeyOf(_sfx, _arg);
+
+            /// <summary>
+            /// Calcula las muestras del clip DE UNA VEZ —la receta, la sala, el cierre y el guardado— sin tocar ninguna API de Unity (solo aritmética): es lo que corre en un HILO DE TRABAJO (Tarea 190, <see cref="WoodCore"/>); el hilo principal solo crea el clip con <see cref="MakeClip"/>.
+            /// Da exactamente las mismas muestras que los <see cref="Step"/> sucesivos y que <see cref="RenderForClip(WoodSfx,int,out float[],out float[])"/> (la prueba lo mide).
+            /// </summary>
+            public void ComputeSamples(out float[] left, out float[] right)
+            {
+                var recipe = _make != null ? _make() : MakeRecipe(_sfx, _arg);
+                var reverb = new ReverbJob(recipe.X, recipe.Verb);
+                reverb.Run(int.MaxValue);
+                reverb.Result(out var l, out var r);
+                Close(l, r, recipe, out var cl, out var cr);
+                Store(_mono, cl, cr, out left, out right);
+            }
+
             /// <summary>El clip, una vez que <see cref="Done"/>.</summary>
             public AudioClip Clip { get; private set; }
 

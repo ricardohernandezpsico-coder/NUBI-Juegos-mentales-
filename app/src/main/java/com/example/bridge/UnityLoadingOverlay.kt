@@ -17,22 +17,26 @@ import org.json.JSONObject
 import java.lang.ref.WeakReference
 
 /**
- * Pantalla de carga ENCIMA de la Activity de Unity mientras el motor arranca en frío (primera partida tras abrir
- * la app, o si Android cerró el proceso `:unity`). Antes, esos segundos se veían en negro o con el indicador
- * genérico de la app. Ahora se ve [GameLoadingScreen], la misma pantalla que la app muestra un instante antes
- * (`UnityGameHost`), así el paso app -> Unity no se nota.
+ * Pantalla de carga ENCIMA de la Activity de Unity mientras el juego se arma: tanto en el arranque en frío (primera
+ * partida tras abrir la app, o si Android cerró el proceso `:unity`) como con Unity ya vivo (Tarea 190: antes en
+ * caliente no había capa y se veía el azul vacío de Unity y, después, la cuenta regresiva). Se ve [GameLoadingScreen]
+ * (planeta, nombre y etapa), la misma pantalla que la app muestra un instante antes (`UnityGameHost`), así el paso
+ * app -> Unity no se nota.
  *
- * Se instala desde `NeuroVidaApplication` (corre en cada proceso; solo actúa sobre la Activity de Unity). La capa
- * se agrega en el primer onStart de cada Activity de Unity (después de que Unity armó su vista; en onCreate
- * Unity la reemplazaría) y se quita con un fundido cuando Unity avisa que ya pintó el juego
- * (`NativeBridge.NotifyGameShown` -> [NativeReceiver.onGameShown]). Si ese aviso no llega (Unity viejo en el
- * APK, error), se quita sola a los [TIMEOUT_MS]. Con Unity ya vivo (REORDER_TO_FRONT) no hay onCreate: no se
- * muestra.
+ * Se instala desde `NeuroVidaApplication` (corre en cada proceso; solo actúa sobre la Activity de Unity). En frío la
+ * capa se agrega en el primer onStart de la Activity (después de que Unity armó su vista; en onCreate Unity la
+ * reemplazaría); en caliente, en el onResume con un Intent de partida NUEVA (otro id de lanzamiento: volver a una partida en pausa
+ * con el mismo id no la tapa). Se quita con un fundido cuando Unity avisa que su TABLERO ESTÁ COMPLETO
+ * (`NativeBridge.NotifyGameShown` -> [NativeReceiver.onGameShown], desde `GameReadiness.Report`: la escena armada, el
+ * arte horneado y el sonido calculado; ya no tres cuadros después de la configuración). Si ese aviso no llega
+ * (Unity viejo en el APK, error), se quita sola a los [TIMEOUT_MS].
  */
 object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
   private const val TAG = "UnityLoadingOverlay"
-  private const val TIMEOUT_MS = 20_000L
-  private const val FADE_MS = 280L
+  private const val TIMEOUT_MS = 45_000L // más que el tope de espera de Unity (30 s para el sonido) y su arte: en un teléfono lento el juego más pesado puede tardar bastante
+  private const val FADE_MS = 250L
+  private const val FADE_CALM_MS = 150L // con «quitar animaciones»
+  private const val WARM_CONTENT_DELAY_MS = 250L // en caliente el contenido espera un poco para no destellar si el juego llega rápido
   private const val NIGHT = 0xFF100F3A.toInt() // = NeuroStyle.NightMid: el tono del medio del cielo único de la app (CosmosBackground, Tarea 126)
 
   /** Activity de Unity recién creada que todavía no tiene la capa (se agrega en su onStart). */
@@ -41,6 +45,13 @@ object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
   /** Capa visible; se lee desde el hilo de Unity al avisar. */
   @Volatile
   private var overlay: WeakReference<View>? = null
+
+  /** El id del último lanzamiento que esta capa ya tapó: un Intent con otro id es una partida nueva (y se tapa); el mismo, volver a una partida en pausa (no). */
+  private var coveredLaunchId: String? = null
+
+  /** Cuánto dura el fundido al irse: 250 ms, 150 ms con «quitar animaciones» (se decide al mostrar la capa, con la config de la partida). */
+  @Volatile
+  private var fadeMs = FADE_MS
 
   fun install(app: Application) = app.registerActivityLifecycleCallbacks(this)
 
@@ -52,7 +63,7 @@ object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
     if (pending?.get() !== activity) return
     pending = null
     try {
-      show(activity)
+      show(activity, warm = false)
     } catch (e: Exception) {
       // Nunca debe impedir que el juego arranque.
       Log.e(TAG, "No se pudo mostrar la pantalla de carga", e)
@@ -60,11 +71,13 @@ object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
     }
   }
 
-  private fun show(activity: Activity) {
+  private fun show(activity: Activity, warm: Boolean) {
     val json = activity.intent?.getStringExtra(UnityGameLauncher.EXTRA_CONFIG_JSON) ?: return
     val root = JSONObject(json)
+    coveredLaunchId = activity.intent?.getStringExtra(UnityGameLauncher.EXTRA_LAUNCH_ID)
     val game = GameRegistry.allGames.find { it.id == root.optString("game_id") } ?: return
     val config = root.optJSONObject("config")
+    fadeMs = if (config?.optBoolean("reduce_motion") == true) FADE_CALM_MS else FADE_MS
     val level = config?.optInt("level", 0)?.takeIf { it > 0 }
     // Los cuatro juegos con Contrarreloj ya no eligen el reloj (Tarea 181): la carga no dice «Sin reloj»; un Contrarreloj dice su nombre («de hoy» solo si la pista es la del día de ese juego)
     val timeTrial = config?.optBoolean("time_trial") == true && TimeTrialDay.supports(game.id)
@@ -83,7 +96,7 @@ object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
         ComposeView(activity).apply {
           setContent {
             GameLoadingScreen(
-              game = game, level = level, timed = timed, withSky = true,
+              game = game, level = level, timed = timed, withSky = true, fadeInDelayMs = if (warm) WARM_CONTENT_DELAY_MS else 0L,
               assessmentStep = assessmentStep, assessmentTotal = assessmentTotal, timeTrialName = timeTrialName
             )
           }
@@ -108,12 +121,23 @@ object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
   private fun hide(layer: View) {
     if (overlay?.get() !== layer) return
     overlay = null
-    layer.animate().alpha(0f).setDuration(FADE_MS).withEndAction {
+    layer.animate().alpha(0f).setDuration(fadeMs).withEndAction {
       (layer.parent as? ViewGroup)?.removeView(layer)
     }.start()
   }
 
-  override fun onActivityResumed(activity: Activity) = Unit
+  /** Unity ya vivo y una partida NUEVA (otro id de lanzamiento): se tapa mientras el juego se arma. */
+  override fun onActivityResumed(activity: Activity) {
+    if (activity !is UnityPlayerGameActivity || overlay?.get() != null) return
+    val id = activity.intent?.getStringExtra(UnityGameLauncher.EXTRA_LAUNCH_ID) ?: return
+    if (id == coveredLaunchId) return
+    try {
+      show(activity, warm = true)
+    } catch (e: Exception) {
+      Log.e(TAG, "No se pudo mostrar la pantalla de carga sobre Unity en caliente", e)
+      com.example.diag.ErrorLog.record("PANTALLA", "No se pudo mostrar la pantalla de carga sobre Unity en caliente.", e)
+    }
+  }
   override fun onActivityPaused(activity: Activity) = Unit
   override fun onActivityStopped(activity: Activity) = Unit
   override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit

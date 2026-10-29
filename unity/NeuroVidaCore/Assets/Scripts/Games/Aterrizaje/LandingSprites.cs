@@ -396,8 +396,10 @@ namespace NeuroVida.Games.Aterrizaje
         {
             if (!Cache.TryGetValue(key, out var s) || s == null)
             {
+                var __swSprite = System.Diagnostics.Stopwatch.StartNew();
                 s = build();
                 Cache[key] = s;
+                NeuroVida.Games.Shared.EntryProbe.Cost("sprites", __swSprite.Elapsed.TotalMilliseconds);
             }
             return s;
         }

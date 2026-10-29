@@ -40,7 +40,7 @@ namespace NeuroVida.Games.Freno.Tests
         {
             GameFeel.Warm("freno");
             BrakeSounds.Request();
-            int guard = 0; while (!WoodCore.Idle) { WoodCore.Step(1f); Assert.Less(++guard, 200000); }
+            WoodCore.Drain();
             Assert.IsNotNull(WoodCore.GetExtra(WoodCore.CueKey(BrakeSounds.ExitHz, BrakeSounds.ExitSeconds)), "la señal de salida está pedida");
             Assert.IsNotNull(WoodCore.Get(WoodSfx.Knock), "«¡Más rápido!»");
             WoodCore.ResetCounters();

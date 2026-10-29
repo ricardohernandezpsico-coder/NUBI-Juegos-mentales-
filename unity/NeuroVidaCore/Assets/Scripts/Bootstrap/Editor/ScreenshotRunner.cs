@@ -1096,43 +1096,37 @@ namespace NeuroVida.Bridge.EditorTools
 
         // ------------------------------------------------------------------ piezas
 
-        private static Transform _countdownRoot;
+        private static Transform _goCueRoot;
 
-        /// <summary>Espera a que termine la cuenta regresiva (el objeto «CountdownScreen» se apaga) y deja 0,8 s para que la primera pantalla se asiente. Si nunca se ve la cuenta, a los 14 s sigue igual.</summary>
+        /// <summary>Espera a que el juego esté LISTO para jugarse (Tarea 190): primero el tablero completo (<c>GameReadiness.Shown</c>: lo que la persona ve cuando la pantalla de carga de la app se retira; toma «tablero») y después el «¡Ya!» (el objeto «GoCue»; toma «ya» cuando la losa ya entró; con tutorial, el «¡Ya!» llega
+        /// después de él) hasta que se va; deja 0,8 s para que la primera pantalla se asiente. Si nunca se ve, a los 30 s (el tablero) o 14 s (el «¡Ya!») sigue igual.</summary>
         private static IEnumerator WaitPlayable()
         {
-            bool seen = false, shotTaken = false, shot3 = false, shot1 = false;
-            string lastLabel = null; double labelSince = 0;
-            double start = Now, lastFind = 0, seenAt = 0;
-            _countdownRoot = null;
+            double start = Now;
+            yield return Wait.Until(() => NeuroVida.Games.Shared.GameReadiness.Shown || Now - start > 30.0, 40);
+            if (!NeuroVida.Games.Shared.GameReadiness.Shown) GameNotes.Add("el juego no avisó que su tablero estaba completo; la 'primera' toma es a los 30 s");
+            else { yield return Wait.For(0.12); Shot("tablero"); }
+            bool seen = false, shotYa = false;
+            double goStart = Now, lastFind = 0, seenAt = 0;
+            _goCueRoot = null;
             yield return Wait.Until(() =>
             {
-                if (_countdownRoot == null && Now - lastFind > 0.1)
+                if (_goCueRoot == null && Now - lastFind > 0.1)
                 {
                     lastFind = Now;
                     foreach (var t in UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-                        if (t.name == "CountdownScreen") { _countdownRoot = t; break; }
+                        if (t.name == "GoCue") { _goCueRoot = t; break; }
                 }
-                bool active = _countdownRoot != null && _countdownRoot.gameObject.activeInHierarchy;
+                bool active = _goCueRoot != null && _goCueRoot.gameObject.activeInHierarchy;
                 if (active)
                 {
                     if (!seen) seenAt = Now;
                     seen = true;
-                    // la cuenta regresiva (el anillo, el título, el emblema y el numeral de plasticina) en sus tres pasos (Tarea 148, P9): una toma 0,3 s después de que el número cambia (cuando ya se asentó y el anterior se fue); la de 2 pasos no tiene el «3»
-                    string label = null;
-                    var numberText = _countdownRoot.Find("Number/Text");
-                    if (numberText != null) label = numberText.GetComponent<UnityEngine.UI.Text>()?.text;
-                    if (label != lastLabel) { lastLabel = label; labelSince = Now; }
-                    if (Now - labelSince > 0.3)
-                    {
-                        if (label == "3" && !shot3) { shot3 = true; Shot("cuenta-3"); }
-                        else if (label == "2" && !shotTaken) { shotTaken = true; Shot("cuenta"); }
-                        else if (label == "1" && !shot1) { shot1 = true; Shot("cuenta-1"); }
-                    }
+                    if (!shotYa && Now - seenAt > 0.3) { shotYa = true; Shot("ya"); }
                 }
-                return (seen && !active) || Now - start > 14.0;
+                return (seen && !active) || Now - goStart > 14.0;
             }, 20);
-            if (!seen) GameNotes.Add("no se vio la cuenta regresiva; la 'primera' toma es a los 14 s");
+            if (!seen) GameNotes.Add("no se vio el «¡Ya!»; la 'primera' toma es a los 14 s");
             yield return Wait.For(0.8);
         }
 

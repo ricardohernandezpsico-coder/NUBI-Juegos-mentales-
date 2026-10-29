@@ -102,19 +102,9 @@ namespace NeuroVida.Bridge
             s_startedLaunchId = launchId;
             _startedHere = true;
             NativeBridge.GameFinished = false;
-            gameEntryPoint.InitializeGameConfig(json);
-            StartCoroutine(NotifyShownAfterFirstFrames());
+            gameEntryPoint.InitializeGameConfig(json);                // el aviso de «ya se ve» lo da el juego cuando su tablero está completo (GameReadiness.Report, Tarea 190)
 #endif
         }
 
-        /// <summary>Espera a que el juego pinte sus primeros cuadros y avisa a Android para que quite la pantalla de
-        /// carga del arranque en frío (ver <c>bridge/UnityLoadingOverlay.kt</c>). Reloj real: no depende de la pausa.</summary>
-        private System.Collections.IEnumerator NotifyShownAfterFirstFrames()
-        {
-            yield return null;
-            yield return new WaitForEndOfFrame();
-            yield return null;
-            NativeBridge.NotifyGameShown();
-        }
     }
 }

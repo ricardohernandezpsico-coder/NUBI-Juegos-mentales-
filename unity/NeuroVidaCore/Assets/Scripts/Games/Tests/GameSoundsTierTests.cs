@@ -125,8 +125,7 @@ namespace NeuroVida.Games.Tests
                 GameFeel.SoundOn = true;
                 GameFeel.Warm(g.Id);
                 g.Request();
-                int steps = 0;
-                while (!WoodCore.Idle) { WoodCore.Step(1f); if (++steps > 200000) Assert.Fail(g.Id + ": el calculo no termina"); }
+                WoodCore.Drain();
                 Assert.Greater(WoodCore.ExtraCount, 0, g.Id + ": pide algo");
                 Assert.LessOrEqual(WoodCore.ExtraBytes(), 10L * 1024 * 1024, g.Id + ": lo extra pesa " + (WoodCore.ExtraBytes() / 1048576.0).ToString("0.0") + " MB (techo 10 MB)");
                 foreach (var (key, recipe, mono) in g.All()) Assert.IsNotNull(WoodCore.GetExtra(key), g.Id + ": el propio «" + key + "» se pidió y se calculó");

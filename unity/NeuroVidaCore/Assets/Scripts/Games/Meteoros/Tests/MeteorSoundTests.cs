@@ -38,7 +38,7 @@ namespace NeuroVida.Games.Meteoros.Tests
         {
             GameFeel.Warm("meteoros");
             MeteorSounds.Request();
-            int guard = 0; while (!WoodCore.Idle) { WoodCore.Step(1f); Assert.Less(++guard, 200000); }
+            WoodCore.Drain();
             Assert.IsNotNull(WoodCore.GetExtra(WoodCore.CueKey(MeteorSounds.LetPassHz, MeteorSounds.LetPassSeconds)), "la señal está pedida");
             WoodCore.ResetCounters();
             MeteorSounds.PlayLetPass();

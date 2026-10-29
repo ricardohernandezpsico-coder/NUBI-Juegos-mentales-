@@ -35,7 +35,7 @@ namespace NeuroVida.Games.Anagramas.Tests
         {
             GameFeel.Warm("anagramas");
             PuntaSounds.Request();
-            int guard = 0; while (!WoodCore.Idle) { WoodCore.Step(1f); Assert.Less(++guard, 200000); }
+            WoodCore.Drain();
             for (int k = 0; k < PuntaSounds.Penta.Length; k++)
                 Assert.IsNotNull(WoodCore.GetExtra(WoodCore.NoteKey(PuntaSounds.Penta[k], WoodVoice.Kalimba)), "la nota " + k + " ya está calculada");
             Assert.AreEqual(0, WoodCore.LateBakes, "nada se calculó tarde");

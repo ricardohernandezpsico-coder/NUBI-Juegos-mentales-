@@ -137,7 +137,7 @@ namespace NeuroVida.Games.Aterrizaje
             _flash.raycastTarget = false;
             _flash.color = new Color(0f, 0f, 0f, 0f);
 
-            _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
+            _goCue = new GoCue(canvasGo.transform, UnitsPerDp);
             _hoverSource = gameObject.AddComponent<AudioSource>();
             _hoverSource.playOnAwake = false;
             _hoverSource.loop = true;

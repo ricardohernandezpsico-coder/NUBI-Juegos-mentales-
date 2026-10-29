@@ -78,7 +78,6 @@ namespace NeuroVida.Games.Cosecha
         private Phase _phase = Phase.Idle;
         private bool Precision => _config != null && !_config.config.timed;
         private bool Senior;
-        private int _previousFrameRate;
 
         private int _cosecha, _points, _level = 1, _lastTickSecond = -1;
         private float _endsAt, _cosechaSeconds, _lastActionAt;
@@ -104,7 +103,6 @@ namespace NeuroVida.Games.Cosecha
         private RectTransform _treeRect;
         private ExitButton _exit;
         private GameHud _hud;
-        private CountdownScreen _countdown;
         private StarfieldFx _stars;
         private float _playW, _playH, _planetR, _trayY, _orbitCx, _orbitCy, _rx, _ry, _slotStep;
         private Vector2 _btnSowCenter, _btnClearCenter, _btnSowSize, _btnClearSize;
@@ -129,8 +127,6 @@ namespace NeuroVida.Games.Cosecha
             _usedSet.Clear();
             _tally = new CosechaTally();
 
-            _previousFrameRate = Application.targetFrameRate;
-            Application.targetFrameRate = 60;
 
             _phase = Phase.Idle;
             _loopOn = false;
@@ -156,35 +152,27 @@ namespace NeuroVida.Games.Cosecha
             StartCoroutine(GameLoop());
         }
 
-        private void OnDisable()
-        {
-            if (_previousFrameRate != 0) Application.targetFrameRate = _previousFrameRate;
-        }
 
         private IEnumerator GameLoop()
         {
             _safe.gameObject.SetActive(false);
             _baked = false;
-            StartCoroutine(Prewarm());
-            if (TutorialWanted)
-            {
-                // la ronda guiada se juega sobre el planeta ya armado, antes de la cuenta regresiva
-                _safe.gameObject.SetActive(true);
-                yield return null;
-                ApplySafeArea(_safe);
-                Canvas.ForceUpdateCanvases();
-                Layout();
-                yield return StartCoroutine(RunTutorialIfNeeded());
-                HideBoard();
-                _session = null;
-                _safe.gameObject.SetActive(false);
-            }
-            yield return StartCoroutine(_countdown.Play("Cosecha de palabras", Assessment.Subtitle("Forma palabras y haz crecer tu huerto"), () => _safe.gameObject.SetActive(true)));
+            yield return StartCoroutine(Prewarm());                                 // el arte y los sonidos de la partida, detrás de la pantalla de carga de la app (Tarea 190)
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
+            yield return StartCoroutine(ShowBoardWhenReady());                  // el tablero entero a la vista: Android quita la pantalla de carga
+            if (TutorialWanted)
+            {
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                HideBoard();
+                _session = null;
+                Canvas.ForceUpdateCanvases();
+                Layout();
+            }
+            yield return StartCoroutine(PlayGo());
 
             _loopOn = true;
             _cosecha = 0;
@@ -1260,7 +1248,7 @@ namespace NeuroVida.Games.Cosecha
             _flash.raycastTarget = false;
             _flash.color = new Color(0f, 0f, 0f, 0f);
 
-            _countdown = new CountdownScreen(canvasGo.transform, UnitsPerDp);
+            _goCue = new GoCue(canvasGo.transform, UnitsPerDp);
         }
 
         private void BuildPlanet()

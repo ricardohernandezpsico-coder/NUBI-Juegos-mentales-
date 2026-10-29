@@ -56,7 +56,6 @@ namespace NeuroVida.Games.Parejas
 
         private ExitButton _exit;
         private GameHud _hud;
-        private CountdownScreen _countdown;
 
         private float NowMs => GameClock.Time * 1000f;
 
@@ -98,28 +97,24 @@ namespace NeuroVida.Games.Parejas
 
         private IEnumerator GameLoop()
         {
-            StartCoroutine(Prewarm());
-            if (TutorialWanted)
-            {
-                // la ronda guiada se juega sobre el cielo ya armado, antes de la cuenta regresiva
-                _safe.gameObject.SetActive(true);
-                yield return null;
-                ApplySafeArea(_safe);
-                Canvas.ForceUpdateCanvases();
-                Layout();
-                UpdateHud();
-                yield return StartCoroutine(RunTutorialIfNeeded());
-                ResetBoardViews();
-            }
-            _safe.gameObject.SetActive(false);
-            yield return StartCoroutine(_countdown.Play("Constelaciones", Assessment.Subtitle("Encuentra las parejas y únelas con luz"), () => _safe.gameObject.SetActive(true)));
-            while (!_baked) yield return null;
+            _safe.gameObject.SetActive(false);                                      // el tablero no se ve mientras se arma (sin acomodar los botones miden 100 u): se activa ya acomodado (Tarea 190)
+            yield return StartCoroutine(Prewarm());                                 // el arte y los sonidos de la partida, detrás de la pantalla de carga de la app (Tarea 190)
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
             Canvas.ForceUpdateCanvases();
             Layout();
             UpdateHud();
+            yield return StartCoroutine(ShowBoardWhenReady());                  // el tablero entero a la vista: Android quita la pantalla de carga
+            if (TutorialWanted)
+            {
+                yield return StartCoroutine(RunTutorialIfNeeded());
+                ResetBoardViews();
+                Canvas.ForceUpdateCanvases();
+                Layout();
+                UpdateHud();
+            }
+            yield return StartCoroutine(PlayGo());
 
             _endsAt = GameClock.Time + ConstelacionContract.RetoSeconds;
             _loopOn = true;
@@ -145,7 +140,7 @@ namespace NeuroVida.Games.Parejas
             ConstelacionSounds.Request();
             if (!_baked)
             {
-                var sprites = ConstelacionSprites.Prewarm();
+                var sprites = Background.Budgeted(ConstelacionSprites.Prewarm());
                 while (sprites.MoveNext()) yield return null;
                 AssignSprites();
                 _baked = true;

@@ -62,9 +62,10 @@ namespace NeuroVida.Games.Bodega
         private static Sprite Bake(string key, float wDp, float hDp, float ppd, PaintFn paint)
         {
             if (Cache.TryGetValue(key, out var cached) && cached != null) return cached;
+            var __swSprite = System.Diagnostics.Stopwatch.StartNew();
             int w = Mathf.CeilToInt(wDp * ppd), h = Mathf.CeilToInt(hDp * ppd);
             var pix = new Color32[w * h];
-            for (int iy = 0; iy < h; iy++)
+            Background.ForRows(h, iy =>                   // las filas se reparten entre los hilos de trabajo (Tarea 190): idénticas a las de un solo hilo
             {
                 float y = ((iy + 0.5f) / h - 0.5f) * hDp;
                 for (int ix = 0; ix < w; ix++)
@@ -74,12 +75,13 @@ namespace NeuroVida.Games.Bodega
                     paint(ref p, x, y);
                     pix[iy * w + ix] = p.ToColor32();
                 }
-            }
+            }, w * h);
             var tex = new Texture2D(w, h, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
             tex.SetPixels32(pix);
             tex.Apply();
             var sprite = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f), ppd);
             Cache[key] = sprite;
+            NeuroVida.Games.Shared.EntryProbe.Cost("sprites", __swSprite.Elapsed.TotalMilliseconds);
             return sprite;
         }
 

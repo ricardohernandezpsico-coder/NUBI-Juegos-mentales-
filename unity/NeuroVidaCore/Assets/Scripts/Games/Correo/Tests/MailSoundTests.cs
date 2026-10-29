@@ -38,7 +38,7 @@ namespace NeuroVida.Games.Correo.Tests
         {
             GameFeel.Warm("correo");
             MailSounds.Request();
-            int guard = 0; while (!WoodCore.Idle) { WoodCore.Step(1f); Assert.Less(++guard, 200000); }
+            WoodCore.Drain();
             foreach (float hz in MailContract.PlanetNotes) Assert.IsNotNull(WoodCore.GetExtra(WoodCore.NoteKey(hz, WoodVoice.Kalimba)), "la nota de " + hz + " Hz");
             foreach (MailSfx sfx in System.Enum.GetValues(typeof(MailSfx))) Assert.IsNotNull(WoodCore.GetExtra(MailSounds.Key(sfx)), "propio: " + sfx);
             for (int n = 1; n <= 8; n++) Assert.IsNotNull(WoodCore.Get(WoodSfx.Spark, n), "brillo " + n);

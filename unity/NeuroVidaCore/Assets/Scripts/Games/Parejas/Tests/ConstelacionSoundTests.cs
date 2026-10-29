@@ -37,7 +37,7 @@ namespace NeuroVida.Games.Parejas.Tests
         {
             GameFeel.Warm("parejas");
             ConstelacionSounds.Request();
-            int guard = 0; while (!WoodCore.Idle) { WoodCore.Step(1f); Assert.Less(++guard, 200000); }
+            WoodCore.Drain();
             for (int g = 0; g < 11; g++) Assert.IsNotNull(WoodCore.GetExtra(WoodCore.NoteKey(ConstelacionContract.NoteHz(g), WoodVoice.Kalimba)), "la nota del grupo " + g);
             foreach (var sfx in new[] { WoodSfx.Hum, WoodSfx.Knock, WoodSfx.Perfect, WoodSfx.New, WoodSfx.Unselect }) Assert.IsNotNull(WoodCore.Get(sfx), sfx.ToString());
             foreach (var (sfx, arg) in new[] { (WoodSfx.Tap, 0), (WoodSfx.Correct, 1), (WoodSfx.Correct, 7) }) Assert.IsNotNull(WoodCore.Get(sfx, arg), "va con el núcleo: " + sfx + arg);
@@ -52,7 +52,7 @@ namespace NeuroVida.Games.Parejas.Tests
             Assert.IsFalse(System.Text.RegularExpressions.Regex.IsMatch(text, @"WoodSfx\.Spark|ConstelacionSounds\.Spark"), "el destello se quitó: el par de Correct ya sube con la racha");
             StringAssert.DoesNotContain("PlayClip", text, "el juego suena todo por WoodCore");
             GameFeel.Warm("parejas"); ConstelacionSounds.Request();
-            int guard = 0; while (!WoodCore.Idle) { WoodCore.Step(1f); Assert.Less(++guard, 200000); }
+            WoodCore.Drain();
             Assert.IsNull(WoodCore.Get(WoodSfx.Spark, 1), "ni siquiera se calcula");
         }
 
@@ -63,7 +63,7 @@ namespace NeuroVida.Games.Parejas.Tests
             CollectionAssert.Contains(WoodCore.AllowedGainsDb, ConstelacionSounds.HintGainDb);
             GameFeel.Warm("parejas");
             ConstelacionSounds.Request();
-            int guard = 0; while (!WoodCore.Idle) { WoodCore.Step(1f); Assert.Less(++guard, 200000); }
+            WoodCore.Drain();
             WoodCore.ResetCounters();
             int baked = WoodCore.BakeCount;
             for (int g = 0; g < 11; g++) ConstelacionSounds.PlayHint(g);
