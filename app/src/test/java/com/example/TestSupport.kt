@@ -103,18 +103,26 @@ object TestSupport {
   fun release(vararg viewModels: androidx.lifecycle.ViewModel) {
     // los trabajos de cada ViewModel se anotan ANTES de soltarlo: después de clear() hay que esperar a que terminen (una lectura de Room a medias no se puede interrumpir y no puede seguir corriendo cuando se cierre la base)
     val jobs = viewModels.mapNotNull { vm -> runCatching { vm.viewModelScope.coroutineContext[kotlinx.coroutines.Job] }.getOrNull() }
-    for (vm in viewModels) {
-      runCatching {
-        val clear = androidx.lifecycle.ViewModel::class.java.getDeclaredMethod("clear")
-        clear.isAccessible = true
-        clear.invoke(vm)
-      }
-    }
+    for (vm in viewModels) clearViewModel(vm)
     val limit = System.nanoTime() + 10_000_000_000L
     while (jobs.any { !it.isCompleted } && System.nanoTime() < limit) {
       runCatching { shadowOf(Looper.getMainLooper()).idle() }       // lo que sigue pendiente puede necesitar el hilo principal para terminar
       Thread.sleep(2)
     }
     runCatching { shadowOf(Looper.getMainLooper()).idle() }
+    // el tope de 10 s NO se baja: si algo no termina, la prueba falla diciendo qué trabajo sigue vivo (antes se quedaba callada los 10 s completos)
+    val stuck = jobs.filter { !it.isCompleted }
+    check(stuck.isEmpty()) { "Tras soltar los ViewModel sigue trabajo de fondo sin terminar después de 10 s: " + stuck.map { job -> job.toString() + " hijos=" + job.children.toList() } }
+  }
+
+  /**
+   * Hace lo que hace Android al soltar un ViewModel: `clear()`, que cierra su `viewModelScope` (cancela su trabajo) y llama a `onCleared()`. Desde lifecycle 2.8 ese método es `internal` en Kotlin y se llama `clear$lifecycle_viewmodel_release`: el `getDeclaredMethod("clear")` de antes
+   * fallaba con `NoSuchMethodException`, la falla se tragaba en silencio, el `viewModelScope` NUNCA se cancelaba y `release` esperaba los 10 s COMPLETOS del tope en cada prueba con un ViewModel (~96 pruebas, ~950 s por corrida; Tarea 188). Se busca por nombre; si ya no existe, falla a gritos.
+   */
+  private fun clearViewModel(vm: androidx.lifecycle.ViewModel) {
+    val clear = androidx.lifecycle.ViewModel::class.java.declaredMethods.firstOrNull { it.name == "clear" || it.name.startsWith("clear$") }
+      ?: error("ViewModel ya no tiene un método clear: hay que actualizar TestSupport.clearViewModel")
+    clear.isAccessible = true
+    clear.invoke(vm)
   }
 }
