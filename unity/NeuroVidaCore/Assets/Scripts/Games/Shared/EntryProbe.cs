@@ -37,12 +37,23 @@ namespace NeuroVida.Games.Shared
         private static float _restartAt = -1f;                            // el toque en «Sí, empezar de nuevo» (reloj real), hasta que la partida siguiente lo consume
         private static float _restartTap = -1f;                           // el toque que pertenece a la partida que se mide ahora
         private static float _restartConfig = -1f;                        // lo que tardó la escena en recargarse hasta que llegó la configuración
+        private static long _launchAtMs;                                  // la hora del toque en «Jugar» (reloj del teléfono: la manda la app, que es otro proceso; 0 = no la mandó)
+        private static long _configAtMs;                                  // cuándo llegó la configuración a Unity
+        private static long _shownAtMs;                                   // cuándo se mostró el tablero («listo»)
+        private static string _note = "";                                 // la última marca de la partida («listo», «¡Ya!», «primer ensayo») y cuándo se puso
+        private static float _noteAt;
+        private static int _fontRebuilds, _fontRebuildsPrev, _collectionsPrev;     // reconstrucciones de la textura de letras y recolecciones de memoria: lo que, aparte del dibujo, alarga un cuadro
+        private static bool _touchedPrev;
+
+        private static long NowMs() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+        private static void OnFontRebuilt(Font f) => _fontRebuilds++;
 
         /// <summary>La última línea escrita (para las pruebas).</summary>
         public static string LastLine => _lastLine;
 
         /// <summary>Empieza a medir esta partida (lo llama <c>GameEntryPoint.InitializeGameConfig</c>). Sin bandera de depuración (ni <c>NUBI_PROBE=1</c> en el Editor) apaga todo.</summary>
-        public static void Begin(bool debugBuild, string gameId)
+        public static void Begin(bool debugBuild, string gameId, long launchAtMs = 0L)
         {
             if (Enabled && _shownAt >= 0f && Visible.Count > 0) Finish(true);       // la partida anterior se cortó antes de los 5 s (un reinicio, salir): se escribe lo que haya
             _debug = debugBuild;
@@ -50,11 +61,21 @@ namespace NeuroVida.Games.Shared
             Enabled = (debugBuild || env) && Application.isPlaying;
             if (!Enabled)
             {
+                Font.textureRebuilt -= OnFontRebuilt;
                 if (_driver != null) UnityEngine.Object.Destroy(_driver.gameObject);
                 _driver = null;
                 return;
             }
             _game = gameId ?? "";
+            _launchAtMs = launchAtMs;
+            _configAtMs = NowMs();
+            _shownAtMs = 0L;
+            _note = "";
+            _fontRebuilds = _fontRebuildsPrev = 0;
+            _collectionsPrev = GC.CollectionCount(0);
+            _touchedPrev = false;
+            Font.textureRebuilt -= OnFontRebuilt;
+            Font.textureRebuilt += OnFontRebuilt;
             _beganAt = Time.realtimeSinceStartup;
             _shownAt = -1f;
             _restartTap = _restartAt;                                        // si esta partida nació de un «Reiniciar»: cuánto tardó la escena en llegar hasta acá
@@ -83,6 +104,31 @@ namespace NeuroVida.Games.Shared
             _restartAt = Time.realtimeSinceStartup;
         }
 
+        /// <summary>Una marca de la partida («listo», «¡Ya!», «primer ensayo»): un cuadro largo dice cuál fue la última y cuánto hace. Solo con la bandera de depuración.</summary>
+        public static void Note(string what)
+        {
+            if (!Enabled) return;
+            _note = what ?? "";
+            _noteAt = Time.realtimeSinceStartup;
+        }
+
+        /// <summary>La línea de un cuadro largo (pura, para la prueba): a los cuántos segundos del «listo», cuánto duró, la última marca y qué más pasó en ese cuadro (letras reconstruidas, recolecciones de memoria, un toque).</summary>
+        public static string FormatHitch(string game, float sinceShown, float periodMs, string note, float noteAgeSeconds, int fontRebuilds, int collections, bool touched)
+        {
+            var inv = CultureInfo.InvariantCulture;
+            string mark = string.IsNullOrEmpty(note) ? "sin marca" : "última marca «" + note + "» hace " + noteAgeSeconds.ToString("F2", inv) + " s";
+            return string.Format(inv, "[sonda-entrada-cuadro] juego={0} a los {1:F2} s de «listo»: cuadro de {2:F0} ms | {3} | letras reconstruidas en ese cuadro: {4} | recolecciones de memoria: {5} | toque: {6}",
+                game, sinceShown, periodMs, mark, fontRebuilds, collections, touched ? "sí" : "no");
+        }
+
+        /// <summary>El reparto de la espera desde el toque en «Jugar» (pura, para la prueba): hasta la llegada de la configuración a Unity y hasta su «listo». Vacío si la app no mandó la hora del toque.</summary>
+        public static string HandoffText(long launchAtMs, long configAtMs, long shownAtMs)
+        {
+            if (launchAtMs <= 0L) return "";
+            var inv = CultureInfo.InvariantCulture;
+            return string.Format(inv, " | traspaso: del toque en «Jugar» a la configuración en Unity {0:F2} s y al «listo» {1:F2} s", (configAtMs - launchAtMs) / 1000.0, (shownAtMs - launchAtMs) / 1000.0);
+        }
+
         /// <summary>Suma <paramref name="ms"/> al costo de <paramref name="what"/> («sonido», «sprites») en el hilo principal desde que llegó la configuración.</summary>
         public static void Cost(string what, double ms)
         {
@@ -96,11 +142,14 @@ namespace NeuroVida.Games.Shared
         {
             if (!Enabled || _shownAt >= 0f) return;
             _shownAt = Time.realtimeSinceStartup;
+            _shownAtMs = NowMs();
+            _note = "listo";
+            _noteAt = _shownAt;
             _costsAtShown = 0.0;
             foreach (var kv in Costs) _costsAtShown += kv.Value;
         }
 
-        private static void Frame(float periodMs)
+        private static void Frame(float periodMs, int fontRebuilds, int collections, bool touched)
         {
             if (_shownAt < 0f)
             {
@@ -111,7 +160,7 @@ namespace NeuroVida.Games.Shared
             if (since > VisibleWindowSeconds) { Finish(); return; }
             Visible.Add(periodMs);
             if (periodMs > HitchMs && Hitches.Count < 20)
-                Hitches.Add(string.Format(CultureInfo.InvariantCulture, "[sonda-entrada-cuadro] juego={0} a los {1:F2} s de «listo»: cuadro de {2:F0} ms", _game, since, periodMs));
+                Hitches.Add(FormatHitch(_game, since, periodMs, _note, Time.realtimeSinceStartup - _noteAt, fontRebuilds, collections, touched));
         }
 
         private static double Percentile(List<float> sorted, double p)
@@ -125,6 +174,7 @@ namespace NeuroVida.Games.Shared
         {
             if (!Enabled) return;
             Enabled = false;                                                      // una sola línea por partida
+            Font.textureRebuilt -= OnFontRebuilt;
             var vis = new List<float>(Visible);
             vis.Sort();
             var load = new List<float>(Loading);
@@ -152,6 +202,7 @@ namespace NeuroVida.Games.Shared
                 Environment.ProcessorCount, Background.Workers, WoodCore.WorkerCount, Time.realtimeSinceStartup - _shownAt, partial ? " (corta: se salió antes de los 5 s)" : ""));
             if (_restartTap >= 0f)
                 sb.Append(string.Format(CultureInfo.InvariantCulture, " | reinicio: la escena tardó {0:F2} s en llegar y desde el toque hasta «listo» pasaron {1:F2} s (el azul de Unity, sin pantalla de carga)", _restartConfig, _shownAt - _restartTap));
+            sb.Append(HandoffText(_launchAtMs, _configAtMs, _shownAtMs));
             _lastLine = sb.ToString();
             Debug.Log(_lastLine);
             NativeBridge.AppendProbe(_lastLine);                                  // al archivo de la app (files/sonda-entrada.txt): el logcat del teléfono se rota en minutos
@@ -168,7 +219,18 @@ namespace NeuroVida.Games.Shared
             private void Update()
             {
                 if (!Enabled) return;
-                Frame(Time.unscaledDeltaTime * 1000f);
+                int collections = GC.CollectionCount(0), fonts = _fontRebuilds;
+                bool touching = Touching();
+                Frame(Time.unscaledDeltaTime * 1000f, fonts - _fontRebuildsPrev, collections - _collectionsPrev, touching || _touchedPrev);   // lo ocurrido desde el cuadro anterior: ese intervalo es el del cuadro que se mide
+                _fontRebuildsPrev = fonts;
+                _collectionsPrev = collections;
+                _touchedPrev = touching;
+            }
+
+            private static bool Touching()
+            {
+                try { return Input.touchCount > 0 || Input.GetMouseButton(0); }
+                catch (InvalidOperationException) { return false; }                    // sin el sistema de entrada clásico
             }
         }
     }

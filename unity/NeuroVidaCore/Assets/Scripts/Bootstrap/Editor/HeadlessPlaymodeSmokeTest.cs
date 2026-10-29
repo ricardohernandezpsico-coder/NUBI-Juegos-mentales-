@@ -181,8 +181,8 @@ namespace NeuroVida.Bridge.EditorTools
             foreach (var g in Catalog)
             {
                 if (g.Name.StartsWith("Tutorial") || g.Name.StartsWith("Corto")) continue;
-                if (g.Name != "Correo" && g.Name != "Satelites" && g.Name != "Piloto" && g.Name != "Radar" && g.Name != "Acoplamiento" && g.Name != "Aterrizaje" && withTutorial.Contains(g.Id ?? "secuencia")) continue;
-                list.Add(("Pantalla" + g.Name, g.Id, g.Name == "Correo" ? 40f : g.Name == "Satelites" ? 55f : g.Name == "Piloto" || g.Name == "Radar" || g.Name == "Acoplamiento" || g.Name == "Aterrizaje" ? 30f : Mathf.Min(g.Seconds, 9f)));
+                if (g.Name != "Correo" && g.Name != "Satelites" && g.Name != "Piloto" && g.Name != "Radar" && g.Name != "Acoplamiento" && g.Name != "Aterrizaje" && g.Name != "Engranajes" && withTutorial.Contains(g.Id ?? "secuencia")) continue;
+                list.Add(("Pantalla" + g.Name, g.Id, g.Name == "Correo" ? 40f : g.Name == "Satelites" ? 55f : g.Name == "Piloto" || g.Name == "Radar" || g.Name == "Acoplamiento" || g.Name == "Aterrizaje" || g.Name == "Engranajes" ? 30f : Mathf.Min(g.Seconds, 9f)));
             }
             return list.ToArray();
         }
@@ -267,6 +267,37 @@ namespace NeuroVida.Bridge.EditorTools
         }
 
         private static readonly HashSet<string> _factorySeen = new HashSet<string>();
+        private static readonly HashSet<string> _overlapSeen = new HashSet<string>();
+
+        /// <summary>
+        /// DIAGNÓSTICO (<c>NUBI_TEXT_OVERLAP=1</c>; solo en las corridas en forma de teléfono): cada cuadro, todo texto visible que se cruza con otro texto visible (que no sea su padre ni su hijo) por más de 150 unidades cuadradas. La guardia de textos común (<see cref="ScanTextPlacement"/>) NO compara un texto con otro:
+        /// solo mira que quepa en la pantalla, en su padre y en su alto, y <see cref="ScanHudCover"/> solo mira lo que tapa el marcador; dos textos que se pisan en otra parte del juego no los ve ninguna.
+        /// </summary>
+        private static void ScanTextOverlap()
+        {
+            if (_currentHeight <= 0 || Environment.GetEnvironmentVariable("NUBI_TEXT_OVERLAP") != "1") return;
+            var list = new List<(UnityEngine.UI.Text t, Rect r)>();
+            foreach (var t in UnityEngine.Object.FindObjectsOfType<UnityEngine.UI.Text>())
+            {
+                if (t == null || !t.isActiveAndEnabled || string.IsNullOrWhiteSpace(t.text) || t.canvasRenderer == null) continue;
+                if (t.color.a * t.canvasRenderer.GetInheritedAlpha() < 0.15f) continue;
+                if (Mathf.Abs(t.transform.lossyScale.y) < 0.01f) continue;
+                var r = GuardTextRect(t);
+                if (r.width < 2f || r.height < 2f) continue;
+                list.Add((t, r));
+            }
+            for (int i = 0; i < list.Count; i++)
+                for (int j = i + 1; j < list.Count; j++)
+                {
+                    var a = list[i]; var b = list[j];
+                    if (a.t.transform.IsChildOf(b.t.transform) || b.t.transform.IsChildOf(a.t.transform)) continue;
+                    float w = Mathf.Min(a.r.xMax, b.r.xMax) - Mathf.Max(a.r.xMin, b.r.xMin), h = Mathf.Min(a.r.yMax, b.r.yMax) - Mathf.Max(a.r.yMin, b.r.yMin);
+                    if (w < 4f || h < 4f || w * h < 150f) continue;
+                    string key = _current.Name + "|" + _currentHeight + "|" + PathOf(a.t.transform) + "|" + a.t.text + "|" + PathOf(b.t.transform) + "|" + b.t.text;
+                    if (_overlapSeen.Add(key))
+                        Debug.Log($"[Solape] {_current.Name} 1080x{_currentHeight} a los {EditorApplication.timeSinceStartup - _enteredPlayAt:F1} s: «{a.t.text.Replace("\n", " / ")}» ({PathOf(a.t.transform)}) se cruza con «{b.t.text.Replace("\n", " / ")}» ({PathOf(b.t.transform)}) en {w:0} × {h:0} u (a las {Mathf.RoundToInt(a.r.yMin)} y {Mathf.RoundToInt(b.r.yMin)} de alto)");
+                }
+        }
         private static int _boardReports;
 
         /// <summary>
@@ -599,6 +630,7 @@ namespace NeuroVida.Bridge.EditorTools
             NeuroVida.Games.Shared.NubiCoach.AuditSteps.Clear();
             _auditCanvases.Clear();
             _errorCount = 0;
+            _overlapSeen.Clear();
             _boardReports = 0;
             _enteredPlayAt = 0;
             _pauseStage = 0;
@@ -1334,6 +1366,7 @@ namespace NeuroVida.Bridge.EditorTools
                 double played = EditorApplication.timeSinceStartup - _enteredPlayAt;
                 ScanTextPlacement();
                 ScanFactoryImages();
+                ScanTextOverlap();
                 if (_current.Name.EndsWith("Mudo") || _current.Name == "Piloto" || _current.Name == "Radar" || _current.Name == "Acoplamiento" || _current.Name == "Aterrizaje") SampleAudio();
                 if (_current.Name.StartsWith("Aviso") && !_sampleAnnounceShown && played >= 5.5) ShowSampleAnnounce();
                 if (_current.Name.StartsWith("Seguidos") && !_sampleStreakShown && played >= 5.5) ShowSampleStreak();

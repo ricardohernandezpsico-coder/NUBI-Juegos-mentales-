@@ -57,6 +57,9 @@ object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
   /** La sonda de la animación de la carga (Tarea 190b, SOLO en depuración): mide cada cuadro mientras la capa está visible. */
   private var jank: LoadingFrameProbe? = null
 
+  /** La hora (reloj del teléfono) en que Android arrancó por última vez la pantalla de Unity: para repartir la espera del traspaso (Tarea 190c, solo se lee en depuración). */
+  private var startedAtMs = 0L
+
   fun install(app: Application) = app.registerActivityLifecycleCallbacks(this)
 
   override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {
@@ -64,6 +67,7 @@ object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
   }
 
   override fun onActivityStarted(activity: Activity) {
+    if (activity is UnityPlayerGameActivity) startedAtMs = System.currentTimeMillis()
     if (pending?.get() !== activity) return
     pending = null
     try {
@@ -115,7 +119,7 @@ object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
     overlay = WeakReference(layer)
     layer.postDelayed({ hide(layer) }, TIMEOUT_MS)
     if (com.example.BuildConfig.DEBUG) {
-      jank = LoadingFrameProbe(game.id, warm, activity).also { it.start() }
+      jank = LoadingFrameProbe(game.id, warm, activity, tapAtMs = config?.optLong("launch_at_ms", 0L) ?: 0L, startedAtMs = startedAtMs, shownAtMs = System.currentTimeMillis()).also { it.start() }
     }
   }
 
@@ -128,6 +132,7 @@ object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
   private fun hide(layer: View) {
     if (overlay?.get() !== layer) return
     overlay = null
+    jank?.fadeStarted()
     layer.animate().alpha(0f).setDuration(fadeMs).withEndAction {
       (layer.parent as? ViewGroup)?.removeView(layer)
       jank?.stopAndWrite()

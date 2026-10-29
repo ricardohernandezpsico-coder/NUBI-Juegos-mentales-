@@ -59,6 +59,17 @@ class ProbeLogTest {
     }
   }
 
+  @Test fun `el traspaso reparte la espera desde el toque en Jugar y sin la hora del toque no dice nada`() {
+    val text = LoadingFrameProbe.handoffText(tapAtMs = 1_000_000L, startedAtMs = 1_000_450L, shownAtMs = 1_000_700L, fadeAtMs = 1_001_300L, endAtMs = 1_001_550L)
+    assertTrue(text, text.contains("a que Unity se muestra 0.45 segundos"))
+    assertTrue(text, text.contains("a la carga puesta 0.70 segundos"))
+    assertTrue(text, text.contains("a que empieza el fundido 1.30 segundos"))
+    assertTrue(text, text.contains("a que se va 1.55 segundos"))
+    assertTrue(LoadingFrameProbe.handoffText(1_000_000L, 0L, 1_000_700L, 1_001_300L, 1_001_550L).contains("a que Unity se muestra ? segundos"))
+    assertEquals("", LoadingFrameProbe.handoffText(0L, 1L, 2L, 3L, 4L))
+    assertTrue(LoadingFrameProbe.format("stroop", true, emptyList(), 1.0, 8, 60f, text).endsWith(text))
+  }
+
   @Test fun `la linea de la sonda de la carga trae los cuadros, los percentiles, los nucleos y la pantalla`() {
     val gaps = List(97) { 16.7f } + listOf(40f, 60f, 20f)
     val line = LoadingFrameProbe.format("engranajes", warm = true, gapsMs = gaps, visibleSeconds = 1.234, cores = 8, refreshHz = 60f)

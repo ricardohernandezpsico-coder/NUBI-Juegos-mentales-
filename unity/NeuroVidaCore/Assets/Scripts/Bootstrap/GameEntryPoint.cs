@@ -163,7 +163,7 @@ namespace NeuroVida.Bridge
             Application.targetFrameRate = GameFrameRate;                                           // UNA sola vez para todos los juegos (Tarea 190: seis nunca la fijaban y en Android el valor por omisión es otro)
             NeuroVida.Games.Shared.GameReadiness.Reset();                                          // el tablero de ESTA partida todavía no se mostró
             NeuroVida.Games.Shared.PauseMenu.DebugStamp = config.config.debug_build ? NeuroVida.Games.Shared.PauseMenu.StyleStamp : null;      // la marca de versión SOLO en las builds de depuración de la app
-            NeuroVida.Games.Shared.EntryProbe.Begin(config.config.debug_build, config.game_id);   // la medición de la entrada: solo con la bandera de depuración
+            NeuroVida.Games.Shared.EntryProbe.Begin(config.config.debug_build, config.game_id, config.config.launch_at_ms);   // la medición de la entrada: solo con la bandera de depuración
             // Sonido y vibración comunes de los 9 juegos (ajustes de la app).
             NeuroVida.Games.Shared.GameFeel.SoundOn = config.config.sound_enabled;
             NeuroVida.Games.Shared.GameFeel.Warm(config.game_id);                               // el núcleo común de «Madera cálida»: lo de la cuenta regresiva ya, el resto de a poco (con el sonido apagado no hace nada)

@@ -73,6 +73,7 @@ namespace NeuroVida.Bridge
                 return;
             }
 
+            if (int.TryParse(System.Environment.GetEnvironmentVariable("NUBI_EDITOR_LEVEL"), out int envLevel) && envLevel >= 1) level = Mathf.Min(5, envLevel);          // diagnóstico: el nivel (1 a 5) con que arranca la partida, para ver las etapas altas de un juego
             var config = new SequenceInitConfig
             {
                 user_id = "editor_playtest",

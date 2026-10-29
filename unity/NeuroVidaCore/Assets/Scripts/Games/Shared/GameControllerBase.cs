@@ -97,7 +97,9 @@ namespace NeuroVida.Games.Shared
         /// <summary>El «¡Ya!» de 0,8 s (<see cref="GoCue"/>): lo último antes del primer ensayo y del reloj de la partida (el Contrarreloj incluido), que empiezan cuando termina.</summary>
         protected IEnumerator PlayGo()
         {
+            EntryProbe.Note("¡Ya!");                                       // solo con la sonda de depuración: la marca que acompaña a un cuadro largo (Tarea 190c)
             if (_goCue != null) yield return StartCoroutine(_goCue.Play());
+            EntryProbe.Note("primer ensayo");
         }
 
         // ------------------------------------------------------------------ tutorial guiado (pieza común)

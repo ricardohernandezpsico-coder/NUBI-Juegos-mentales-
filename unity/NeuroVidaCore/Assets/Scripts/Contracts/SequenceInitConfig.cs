@@ -64,6 +64,8 @@ namespace NeuroVida.Contracts
         public int countdown_steps;
         /// <summary>true SOLO en las builds de depuración de la app (<c>BuildConfig.DEBUG</c>, Tarea 190): Unity muestra la marca de versión en la pausa (<c>PauseMenu.DebugStamp</c>) y mide la entrada al juego, cuadro por cuadro, en el registro de Android (<c>EntryProbe</c>, etiqueta <c>sonda-entrada</c>). En release no se manda: ni sello ni medición.</summary>
         public bool debug_build;
+        /// <summary>SOLO depuración (Tarea 190c): la hora del toque en «Jugar» (reloj del teléfono, milisegundos desde 1970). La comparten la app y Unity (dos procesos del mismo teléfono): <c>EntryProbe</c> reparte con ella la espera entre el toque y el «listo». 0 = la app no la mandó (release).</summary>
+        public long launch_at_ms;
         /// <summary>SOLO depuración (botones [Debug] de la app): dibuja encima del tutorial los rectángulos del foco y el último toque (<c>NubiCoach.DebugOverlay</c>), para mandar una captura de lo que pasa en el teléfono.</summary>
         public bool debug_overlay;
         /// <summary>Solo «En la punta de la lengua» (id <c>anagramas</c>): las palabras que Nubi tuvo que mostrar en partidas anteriores («las azules»), separadas por «;»

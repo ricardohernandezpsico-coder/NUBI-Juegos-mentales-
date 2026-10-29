@@ -53,6 +53,8 @@ object UnityGameLauncher {
     // SOLO en las builds de depuración de la app (BuildConfig.DEBUG, Tarea 190): Unity muestra la marca de versión en la pausa y mide la entrada al juego en el registro de Android (EntryProbe). En release va false: ni sello ni medición.
     // (La cuenta regresiva 3-2-1 y su `countdown_steps` se quitaron en la Tarea 190: la entrada es el tablero completo y un «¡Ya!» de 0,8 s.)
     val debug_build: Boolean = false,
+    // SOLO en las builds de depuración (Tarea 190c): la hora del toque en «Jugar» (reloj del teléfono, milisegundos desde 1970), para repartir la espera hasta el «listo» de Unity. En release va 0.
+    val launch_at_ms: Long = 0L,
     // SOLO depuración (botones [Debug]): Unity dibuja encima del tutorial los rectángulos del foco y el último toque, para mandar una captura de lo que pasa en el teléfono.
     val debug_overlay: Boolean = false,
     // Solo «En la punta de la lengua» (anagramas): las palabras que Nubi mostró en partidas anteriores («las azules»), separadas por «;». Vuelven en otra partida.
@@ -188,6 +190,7 @@ object UnityGameLauncher {
         ) == 0f,
         show_tutorial = forceTutorial || shouldShowTutorial(gameId, com.example.NeuroVidaApplication.instance.repository.gameHistory.value),
         debug_build = com.example.BuildConfig.DEBUG,
+        launch_at_ms = if (com.example.BuildConfig.DEBUG) System.currentTimeMillis() else 0L,
         debug_overlay = debugOverlay,
         punta_pending = if (gameId == "anagramas") com.example.data.Punta.encode(com.example.NeuroVidaApplication.instance.repository.puntaPending.value) else "",
         engr_lights = if (gameId == "engranajes") com.example.NeuroVidaApplication.instance.repository.engranajesRocket.value.lights else 0,

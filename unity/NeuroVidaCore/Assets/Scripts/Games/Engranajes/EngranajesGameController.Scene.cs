@@ -1017,6 +1017,30 @@ namespace NeuroVida.Games.Engranajes
             return problems;
         }
 
+        /// <summary>Para las pruebas (Tarea 190c): la zona de las 10 luces de «Cohete número N» está registrada en el marcador (el chip «N seguidos» no la cruza) y las cubre todas, con aire.</summary>
+        public List<string> AuditLightsZone()
+        {
+            var problems = new List<string>();
+            if (_lightsZone == null) { problems.Add("no hay zona de las luces"); return problems; }
+            bool registered = false;
+            for (int z = 0; z < _hud.StreakAvoidZones.Count; z++) if (_hud.StreakAvoidZones[z] == _lightsZone) registered = true;
+            if (!registered) problems.Add("la zona de las luces no está registrada con AvoidForStreak: el chip «seguidos» cae encima de ellas");
+            _s = 3f; _playW = 1080f; _playH = 1920f; _logicalH = 640f;
+            _lay = EngranajesLayout.Compute(_logicalH);
+            LayoutStrip();
+            var zone = _lightsZone;
+            float zl = zone.anchoredPosition.x - zone.sizeDelta.x * 0.5f, zr = zone.anchoredPosition.x + zone.sizeDelta.x * 0.5f;
+            float zt = zone.anchoredPosition.y + zone.sizeDelta.y * 0.5f, zb = zone.anchoredPosition.y - zone.sizeDelta.y * 0.5f;
+            for (int k = 0; k < _lights.Length; k++)
+            {
+                var r = _lights[k].rectTransform;
+                float l = r.anchoredPosition.x - r.sizeDelta.x * 0.5f, rr = r.anchoredPosition.x + r.sizeDelta.x * 0.5f, t = r.anchoredPosition.y + r.sizeDelta.y * 0.5f, b = r.anchoredPosition.y - r.sizeDelta.y * 0.5f;
+                if (l < zl + 6f * _s || rr > zr - 6f * _s || t > zt || b < zb) problems.Add("la luz " + k + " no cae dentro de la zona de las luces con 6 dp de aire a los lados");
+            }
+            if (zone.sizeDelta.x > 190f * _s) problems.Add("la zona de las luces es demasiado ancha (" + zone.sizeDelta.x / _s + " dp): taparía el chip de más");
+            return problems;
+        }
+
         // ------------------------------------------------------------------ la mesa de taller y el aviso crema (Tarea 164)
 
         /// <summary>Para las pruebas: la mesa de taller (losa crema DEBAJO de todo, con la ventanilla noche del tamaño y en el lugar del panel de antes, un paso más clara que el cielo y hundida, y los cuatro tornillos en el marco, no sobre la ventanilla)

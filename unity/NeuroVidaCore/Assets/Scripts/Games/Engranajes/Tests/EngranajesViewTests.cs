@@ -364,6 +364,23 @@ namespace NeuroVida.Games.Engranajes.Tests
         }
 
         [Test]
+        public void TheRocketLights_AreAZoneTheStreakChipNeverCrosses()
+        {
+            // el chip «N seguidos» caía encima de las luces 5 a 10 de «Cohete número N» desde la racha 2: ahora la fila va registrada como zona prohibida (Tarea 190c)
+            var go = new GameObject("EngranajesLightsZone");
+            try
+            {
+                var controller = go.AddComponent<EngranajesGameController>();
+                var build = typeof(EngranajesGameController).GetMethod("BuildUi", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                build.Invoke(controller, null);
+                go.SetActive(true);
+                var problems = controller.AuditLightsZone();
+                Assert.IsEmpty(problems, string.Join(" | ", problems));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(go); }
+        }
+
+        [Test]
         public void TheVolume_EveryGearHasItsCantoAndItsSoftShadowBelowAllTheGears_AndTheCantoNeverTurnsWithTheGear()
         {
             var go = new GameObject("EngranajesVolume");

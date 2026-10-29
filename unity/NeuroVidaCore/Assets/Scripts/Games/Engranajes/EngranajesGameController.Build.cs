@@ -117,6 +117,7 @@ namespace NeuroVida.Games.Engranajes
         private readonly Image[] _windows = new Image[EngranajesContract.RocketLights];
         private readonly Image[] _windowGlows = new Image[EngranajesContract.RocketLights];
         private readonly Image[] _lights = new Image[EngranajesContract.RocketLights];
+        private RectTransform _lightsZone;                                  // el rectángulo de las 10 luces de «Cohete número N»: el chip «N seguidos» no lo cruza (Tarea 190c)
         private readonly RectTransform[] _partRoots = new RectTransform[4];
         private readonly CanvasGroup[] _partGroups = new CanvasGroup[4];
         private Image _dish, _fan, _door, _cargoFrame, _cargoBox, _cargoPlate, _turbineFlame;
@@ -243,6 +244,12 @@ namespace NeuroVida.Games.Engranajes
         /// <summary>«Cohete n.º N», las 10 luces y «N cohetes en órbita» (como la cabecera del boceto).</summary>
         private void BuildStrip()
         {
+            // las luces miden 12 dp y la guardia de colocación no las ve como estímulo (menos de 80 unidades): sin esta zona el chip «N seguidos» caía ENCIMA de las luces 5 a 10 desde la racha 2 (Tarea 190c; lo mismo que hace Acoplamiento con su fila, Tarea 144)
+            var zone = new GameObject("LightsZone");
+            zone.transform.SetParent(_stripLayer, false);
+            _lightsZone = zone.AddComponent<RectTransform>();
+            _lightsZone.anchorMin = _lightsZone.anchorMax = _lightsZone.pivot = new Vector2(0.5f, 0.5f);
+            _hud.AvoidForStreak(_lightsZone);
             _stripGlow = MakeImage(_stripLayer, "LightGlow", RadialGlowSprite.Get());
             _stripGlow.color = Gold;
             _stripGlow.gameObject.SetActive(false);
@@ -812,6 +819,18 @@ namespace NeuroVida.Games.Engranajes
             r.anchoredPosition = P(cx, cy);
         }
 
+        /// <summary>La cabecera: «Cohete número N», las 10 luces (x = LightsX0 + LightsStep k), la zona de las luces que el chip «seguidos» esquiva y los cohetes en órbita.</summary>
+        private void LayoutStrip()
+        {
+            float row1 = _lay.StripTop + 14f, row2 = _lay.StripTop + 34f;
+            SetRect(_rocketTitle.rectTransform, 14f + EngranajesLayout.TitleW / 2f, row1, EngranajesLayout.TitleW, 24f);
+            SetRect(_orbitText.rectTransform, 14f + 100f, row2, 200f, 20f);
+            for (int i = 0; i < _lights.Length; i++) SetRect(_lights[i].rectTransform, EngranajesLayout.LightsX0 + i * EngranajesLayout.LightsStep, row1, 12f, 12f);
+            SetRect(_stripGlow.rectTransform, EngranajesLayout.LightsX0, row1, 36f, 36f);
+            float span = (_lights.Length - 1) * EngranajesLayout.LightsStep;
+            SetRect(_lightsZone, EngranajesLayout.LightsX0 + span * 0.5f, row1, span + 12f + 16f, 36f);       // las luces con 8 dp de aire a cada lado y el alto de su resplandor
+        }
+
         private void Layout()
         {
             Canvas.ForceUpdateCanvases();
@@ -831,12 +850,7 @@ namespace NeuroVida.Games.Engranajes
             _sceneRoot.anchoredPosition = P(EngranajesLayout.W / 2f + EngranajesLayout.SceneShiftX, _lay.SceneCenterLogicalY);
             foreach (var kv in _sceneFonts) kv.Key.fontSize = Mathf.RoundToInt(kv.Value * Su / k);
 
-            // cabecera: «Cohete número N», las 10 luces (x = LightsX0 + LightsStep k) y los cohetes en órbita
-            float row1 = _lay.StripTop + 14f, row2 = _lay.StripTop + 34f;
-            SetRect(_rocketTitle.rectTransform, 14f + EngranajesLayout.TitleW / 2f, row1, EngranajesLayout.TitleW, 24f);
-            SetRect(_orbitText.rectTransform, 14f + 100f, row2, 200f, 20f);
-            for (int i = 0; i < _lights.Length; i++) SetRect(_lights[i].rectTransform, EngranajesLayout.LightsX0 + i * EngranajesLayout.LightsStep, row1, 12f, 12f);
-            SetRect(_stripGlow.rectTransform, EngranajesLayout.LightsX0, row1, 36f, 36f);
+            LayoutStrip();
 
             // consigna: dos líneas
             float qy = _lay.QuestionTop + EngranajesLayout.QuestionH / 2f;
