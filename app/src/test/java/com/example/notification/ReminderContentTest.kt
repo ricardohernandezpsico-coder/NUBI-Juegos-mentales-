@@ -28,7 +28,7 @@ class ReminderContentTest {
   @Test
   fun `racha en juego y medalla al llegar a un hito`() {
     val normal = buildReminder(input(streak = 4))!!
-    assertEquals("Ricardo, ¡tu racha de 4 días sigue viva!", normal.title)
+    assertEquals("Ricardo, ¡llevas 4 días seguidos!", normal.title)
     assertTrue(normal.text.contains("5 días"))
     val milestone = buildReminder(input(streak = 6))!!
     assertEquals("¡Hoy llegas a 7 días seguidos!", milestone.title)

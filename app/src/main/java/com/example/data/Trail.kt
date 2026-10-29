@@ -63,8 +63,14 @@ object Trail {
 
   // ------------------------------------------------------------------ lectura en palabras (Nubi científica)
 
-  /** Qué mide el rastro, en una oración. */
-  const val WORKING_MEMORY = "Tu rastro mide tu memoria de trabajo: lo que sostienes en la cabeza mientras lo usas."
+  /**
+   * Qué es el rastro de la pantalla final, en el detalle (Tarea 186, revisión 5b, Opus 28-oct): ES el rastro de ESTA partida, no una medida firme de tu memoria de trabajo (antes decía «Tu rastro mide tu memoria de trabajo…»): el Corsi en pantalla da puntajes poco estables
+   * al repetirlo (Claessen y otros, 2014; White y otros, 2018) y una partida son pocas rondas.
+   */
+  const val THIS_GAME = "Es el rastro de esta partida: sostener luces en orden mientras las usas. De una partida a otra puede variar, así que mira varias juntas."
+
+  /** El pie del final de Rastro de luz (el de los demás juegos dice «Medida de esta partida. No es un diagnóstico.»). */
+  const val NOTE = "Resultado de esta partida. Puede variar de una a otra. No es un diagnóstico."
 
   /** Una línea por modo (el que tuvo rondas suficientes), sin números: qué pide ese modo. */
   fun modeLine(mode: Int): String? = when (mode) {

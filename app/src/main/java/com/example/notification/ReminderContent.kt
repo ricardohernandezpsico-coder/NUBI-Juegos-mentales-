@@ -62,7 +62,7 @@ fun buildReminder(input: ReminderInput): ReminderMessage? {
     val next = streak + 1
     val milestone = next in StreakMilestones
     return ReminderMessage(
-      title = if (milestone) "¡Hoy llegas a $next días seguidos!" else cap("${hi}¡tu racha de $streak días sigue viva!"),
+      title = if (milestone) "¡Hoy llegas a $next días seguidos!" else cap("${hi}¡llevas $streak días seguidos!"),
       text = (if (milestone) "¡Juega hoy y consigues la medalla de $next días!" else "Juega hoy y sube a $next días. ¡Son ${DailyPath.minutesText(DailyPath.SIZE)}!") + weekLine
     )
   }

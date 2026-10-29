@@ -80,7 +80,7 @@ class VisibleTextsGuardTest {
       assertTrue("la guardia no atrapa «$bad»", NoLossGuard.hit(bad, banned) != null)
       assertTrue("la guardia no atrapa «$bad» dentro de un Text(...)", visibleLiteralsOf("""Text("$bad", fontSize = 20.sp)""").any { NoLossGuard.hit(it, banned) != null })
     }
-    for (good in listOf("no pierdes nada si dudas", "Descansaste el martes: tu racha sigue.", "antes de que se acabe", "Un día de descanso por semana no la corta.", "Si un día no puedes, tu racha espera.")) {
+    for (good in listOf("no pierdes nada si dudas", "Descansaste el martes: tu racha sigue.", "antes de que se acabe", "Un día de descanso por semana no la corta.", "Si un día no puedes, tu racha espera.", "Tu racha empieza hoy", "Tu mejor racha: 12 días.", "Tu racha empieza con tu próxima partida", "¡Llevas 5 días seguidos!")) {
       assertTrue("la guardia atrapa «$good» sin motivo (por «${NoLossGuard.hit(good, banned)}»)", NoLossGuard.hit(good, banned) == null)
     }
   }

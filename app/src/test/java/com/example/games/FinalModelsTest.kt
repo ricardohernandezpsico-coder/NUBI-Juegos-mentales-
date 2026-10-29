@@ -53,6 +53,13 @@ class FinalModelsTest {
   }
 
   @Test
+  fun `solo el pie de Rastro de luz dice que el resultado puede variar de una partida a otra`() {
+    // Tarea 186 (5b, Opus 28-oct): una partida son pocas rondas y el Corsi en pantalla es poco estable al repetirlo
+    assertEquals("Resultado de esta partida. Puede variar de una a otra. No es un diagnóstico.", FinalModels.forGame(rastro, emptyList())!!.note)
+    for (r in listOf(constelaciones, bodega, correo)) assertEquals("el pie de ${r.gameId} sigue siendo el de siempre", "Medida de esta partida. No es un diagnóstico.", FinalModels.forGame(r, emptyList())!!.note)
+  }
+
+  @Test
   fun `Constelaciones sin oportunidades no inventa un porcentaje`() {
     val m = FinalModels.forGame(constelaciones.copy(correctAnswers = 0, totalTrials = 0), listOf(MeasurePoint(100L, "place", 60f, 0.5f, false)))!!
     assertEquals("—", m.headline)

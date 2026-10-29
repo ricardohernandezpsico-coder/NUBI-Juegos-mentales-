@@ -94,21 +94,28 @@ class TrailTest {
   }
 
   @Test
-  fun `el parrafo de memoria de trabajo es una sola oracion`() {
-    assertEquals(1, Trail.WORKING_MEMORY.count { it == '.' })
-    assertTrue(Trail.WORKING_MEMORY.endsWith("."))
-    assertTrue(Trail.WORKING_MEMORY.length < 100)
+  fun `el parrafo del detalle dice que es el rastro de esta partida y que puede variar`() {
+    // Tarea 186 (5b): ya no dice «Tu rastro mide tu memoria de trabajo»; dice que ES el rastro de ESTA partida y que puede variar
+    assertEquals("Es el rastro de esta partida: sostener luces en orden mientras las usas. De una partida a otra puede variar, así que mira varias juntas.", Trail.THIS_GAME)
+    assertEquals(2, Trail.THIS_GAME.count { it == '.' })
+    assertTrue(Trail.THIS_GAME.endsWith(".") && Trail.THIS_GAME.length < 160)
+    assertFalse("no presenta una partida como una medida firme", Trail.THIS_GAME.contains("mide", ignoreCase = true))
+  }
+
+  @Test
+  fun `el pie de Rastro de luz dice que el resultado puede variar`() {
+    assertEquals("Resultado de esta partida. Puede variar de una a otra. No es un diagnóstico.", Trail.NOTE)
+    assertTrue(Trail.NOTE.endsWith("No es un diagnóstico."))
   }
 
   @Test
   fun `la lectura no promete salud ni compara con otras personas`() {
-    val all = listOf(Trail.WORKING_MEMORY) + (1..3).flatMap { listOfNotNull(Trail.modeLine(it), Trail.trick(it)) }
+    val all = listOf(Trail.THIS_GAME, Trail.NOTE) + (1..3).flatMap { listOfNotNull(Trail.modeLine(it), Trail.trick(it)) }
     for (t in all) {
       assertFalse(t, t.contains("neurona", ignoreCase = true))
       assertFalse(t, t.contains("mejora", ignoreCase = true))
       assertFalse(t, t.contains("%"))
     }
-    assertTrue(Trail.WORKING_MEMORY.contains("memoria de trabajo"))
   }
 
   @Test

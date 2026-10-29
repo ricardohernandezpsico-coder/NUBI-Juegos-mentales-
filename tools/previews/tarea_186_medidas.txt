@@ -1,0 +1,11 @@
+Con los grupos de «Cómo está hecha Nubi» PLEGADOS en «Estudios (N)» (lo que quedó, después del OK de Opus del 28-oct):
+Letra 1,0: «En qué se basa Nubi» mide 7009 dp de largo con todo plegado; «Cómo está hecha Nubi» (del título a «Las palabras») mide 1781 dp; «Más estudios» de Constelaciones mide 48 dp de alto
+Letra 1,3: «En qué se basa Nubi» mide 8698 dp de largo con todo plegado; «Cómo está hecha Nubi» (del título a «Las palabras») mide 2121 dp; «Más estudios» de Constelaciones mide 48 dp de alto
+Letra 2,0: «En qué se basa Nubi» mide 13315 dp de largo con todo plegado; «Cómo está hecha Nubi» (del título a «Las palabras») mide 3324 dp; «Más estudios» de Constelaciones mide 50 dp de alto
+Letra 1,0: con los 10 grupos de «Cómo está hecha Nubi» desplegados la sección mide 6965 dp (plegados: ver arriba)
+Letra 1,0: con los 17 «Más estudios» desplegados mide 12871 dp de largo; las filas de estudio miden entre 121 y 164 dp de alto (48 dp es el mínimo que se pide)
+Letra 1,3: con los 17 «Más estudios» desplegados mide 16290 dp de largo; las filas de estudio miden entre 171 y 225 dp de alto (48 dp es el mínimo que se pide)
+Antes de plegar los grupos (la primera versión, la de las capturas de la lámina): con letra 1,0 la pantalla medía 11 571 dp y «Cómo está hecha Nubi» 6 343 dp; con 1,3, 14 636 y 8 086; con 2,0, 23 289 y 13 372 (con los 17 «Más estudios» desplegados, 17 433 dp con 1,0 y 22 228 con 1,3). En la T185 la pantalla medía 3 917 dp con 1,0.
+«Más estudios» y «Estudios» miden 48 dp de alto con letra 1,0 y 1,3 (50 con 2,0) y cada fila de estudio entre 121 y 164 dp (171 a 225 con 1,3): se tocan enteras. Letra mínima 16 sp en todo; los títulos de los grupos, en Rubik Bold de 18 sp.
+Estudios nuevos: 69 (37 en «Más estudios», 29 en «Cómo está hecha Nubi» y 3 en «Lo que no decimos»); con los 21 que ya estaban desde la T185, la pantalla muestra 90 DOI, ninguno repetido. Los 69 se comprobaron en doi.org (responden) y en Crossref (68 coinciden en autor y año; Facal 2012 se comprobó por la ficha de doi.org).
+Verificación (verificar-todo.sh --solo-app): TODO OK, 1 446 pruebas Kotlin en el informe de Gradle (90 son capturas que solo corren al grabar; 1 356 se ejecutan siempre), 0 fallos; Lint (:app:lintDebug): BUILD SUCCESSFUL, sin errores.

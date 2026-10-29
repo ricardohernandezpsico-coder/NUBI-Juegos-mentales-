@@ -491,7 +491,7 @@ fun GameResultScreen(
           }
         }
         reading.forEach { DetailLine(it, "rastro_reading", strong = true) }
-        DetailLine(trail.WORKING_MEMORY, "rastro_working_memory")
+        DetailLine(trail.THIS_GAME, "rastro_this_game")
       })
     }
 

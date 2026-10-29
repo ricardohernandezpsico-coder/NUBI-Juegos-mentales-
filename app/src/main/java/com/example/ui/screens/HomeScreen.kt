@@ -100,12 +100,15 @@ fun HomeScreen(
   val completed = dailySession.completedCount
   // La racha que perdona (Tarea 124): con el día de descanso, si lo hubo esta semana.
   val streakInfo = remember(activity, clock) { Streak.fromTimestamps(activity, clock) }
+  // Con la racha en 0, Hoy dice cuál fue la mejor (Tarea 186, 5a): la más larga de siempre solo se calcula entonces
+  val bestStreak = remember(activity, clock) { if (streakInfo.current > 0) 0 else Streak.longest(activity.map(Streak::dayOf)) }
   val ui = HomeUi(
     name = settings.name,
     now = clock,
     tier = tier,
     streak = streakInfo.current,
-    streakNote = Streak.forgivenLine(streakInfo) ?: Streak.REST_LINE,
+    streakText = Streak.counterText(streakInfo.current, bestStreak),
+    streakNote = Streak.noteFor(streakInfo, bestStreak),
     weeklyGoal = settings.weeklyGoal,
     lamps = Week.lampsFor(activity, clock),
     stops = homeStops(dailySession.gameIds, completed, lang),
@@ -138,7 +141,9 @@ internal data class HomeUi(
   val now: Long,
   val tier: RankTier,
   val streak: Int,
-  /** Debajo de la racha: «Descansaste el martes: tu racha sigue.» si hubo un día de descanso perdonado en los últimos 7 días; si no, «Un día de descanso por semana no la corta.» (null: sin línea). */
+  /** Junto a la llama: «N días»; con la racha en 0, «Tu racha empieza hoy» (hubo una mejor antes) o «Tu racha empieza con tu próxima partida» (Tarea 186; null: «N días»). */
+  val streakText: String? = null,
+  /** Debajo de la racha: «Descansaste el martes: tu racha sigue.» si hubo un día de descanso perdonado en los últimos 7 días; si no, «Un día de descanso por semana no la corta.»; con la racha en 0, «Tu mejor racha: 12 días.» (null: sin línea). */
   val streakNote: String? = null,
   val weeklyGoal: Int,
   val lamps: Week.Lamps,
@@ -237,7 +242,7 @@ internal fun HomeContent(
         "${dateText(ui.now)} · ${Week.caption(ui.lamps.daysPlayed, ui.weeklyGoal)}",
         color = HoySoft, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 2.dp).testTag("home_date")
       )
-      com.example.ui.components.HoyWeek(ui.lamps, ui.streak, ui.streakNote)
+      com.example.ui.components.HoyWeek(ui.lamps, ui.streak, ui.streakNote, streakText = ui.streakText)
       Spacer(Modifier.height(10.dp))
       if (ui.stops.isNotEmpty() || ui.pausedTitle != null) HoyCard(ui, onPlay = onPlay, onResume = onResume, modifier = Modifier.padding(horizontal = 16.dp))
       HoyBelow(ui, onAllGames = onAllGames, onTimeTrial = onTimeTrial, onBaseline = onBaseline)

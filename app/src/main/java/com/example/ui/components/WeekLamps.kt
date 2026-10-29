@@ -31,11 +31,11 @@ val HOY_LAMP_BOX = 36.dp
 
 /**
  * Los siete farolitos de la semana (los días jugados, encendidos; hoy con un aro lima) y tu racha a su lado, a la izquierda, donde el fondo no tiene luceros. Lo usa Hoy (22 dp) y lo usará Avance («Tu semana», 28 dp con la farola
- * renderizada del kit): antes vivía dentro de `HomeScreen` (Tarea 124). [streakNote] = la línea de debajo: «Descansaste el martes: tu racha sigue.» (el día perdonado, si lo hubo) o, por defecto, «Un día de descanso por semana no la corta.».
+ * renderizada del kit): antes vivía dentro de `HomeScreen` (Tarea 124). [streakNote] = la línea de debajo: «Descansaste el martes: tu racha sigue.» (el día perdonado, si lo hubo) o, por defecto, «Un día de descanso por semana no la corta.». [streakText] = lo que va junto a la llama (por defecto «N días»; con la racha en 0, «Tu racha empieza hoy»: Tarea 186).
  */
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-fun HoyWeek(lamps: Week.Lamps, streak: Int, streakNote: String? = null, lampSize: Dp = HOY_LAMP_BOX, modifier: Modifier = Modifier) {
+fun HoyWeek(lamps: Week.Lamps, streak: Int, streakNote: String? = null, lampSize: Dp = HOY_LAMP_BOX, modifier: Modifier = Modifier, streakText: String? = null) {
   Column(modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 4.dp, bottom = 2.dp)) {
     // Las farolas a 28 dp, como en Avance, Ajustes y el Primer vuelo (Tarea 147, P7: antes 22-24 y la fila se veía más chica que todo lo demás); si «7 días» no cabe al lado, baja en vez de apretarlas
     androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -49,7 +49,7 @@ fun HoyWeek(lamps: Week.Lamps, streak: Int, streakNote: String? = null, lampSize
         KitLlama(lit = streak > 0, size = 16.dp)
         Spacer(Modifier.width(6.dp))
         OnBoardText(
-          if (streak == 1) "1 día" else "$streak días", color = NubiTokens.OnNight, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+          streakText ?: if (streak == 1) "1 día" else "$streak días", color = NubiTokens.OnNight, fontSize = 16.sp, fontWeight = FontWeight.Bold,
           modifier = Modifier.testTag("streak_pill")
         )
       }

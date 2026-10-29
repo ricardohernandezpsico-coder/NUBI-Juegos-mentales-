@@ -57,7 +57,7 @@ class LaFraseDeLaRachaTest {
       f.readLines().forEachIndexed { i, raw ->
         val line = raw.trim()
         if (line.startsWith("//") || line.startsWith("*") || line.startsWith("/*")) return@forEachIndexed
-        if (line.contains("forgivenLine(") || line.contains("REST_LINE") || line.contains("Un día de descanso por semana")) usos += "$rel:${i + 1}"
+        if (line.contains("forgivenLine(") || line.contains("REST_LINE") || line.contains("noteFor(") || line.contains("counterText(") || line.contains("Un día de descanso por semana")) usos += "$rel:${i + 1}"
       }
     }
     val permitidos = setOf("data/Streak.kt", "ui/screens/HomeScreen.kt")

@@ -145,7 +145,8 @@ object FinalModels {
       unit = if (best != null) "seguidas, bien repetidas" else trail.noTrailLine(rounds),
       dataLine = reading.firstOrNull(),
       conditionalTrick = reading.getOrNull(1)?.let { ResultAdvice.tipOf(it) },
-      notice = trail.newModeNotice(result.rasNewModes)
+      notice = trail.newModeNotice(result.rasNewModes),
+      note = trail.NOTE
     )
   }
 
@@ -418,7 +419,9 @@ object FinalModels {
     recordNew: Boolean = false,
     recordText: String? = null,
     /** Lo que ESTA partida anuncia y es nuevo («Modo nuevo: En marcha», «¡Despegó tu cohete n.º 3!»): va como aviso, no como dato del detalle (spec-final-B §1.1). */
-    notice: String? = null
+    notice: String? = null,
+    /** El pie del final: «Medida de esta partida. No es un diagnóstico.», salvo en los juegos que dicen algo más justo (Rastro de luz: «Resultado de esta partida. Puede variar de una a otra…»). */
+    note: String = FinalesConSentido.NOTE
   ): MeaningfulResultModel {
     // la partida de hoy tal como se guarda como medida: así se compara con las ANTERIORES (la misma marca de tiempo no se cuenta dos veces)
     val today = todayValue?.let { MeasurePoint(result.timestamp, key, it, result.endRating?.coerceIn(0f, 1f) ?: -1f, result.timed, result.playMode) }
@@ -446,7 +449,7 @@ object FinalModels {
       whyTitle = FinalesConSentido.WHY_TITLE,
       why = copy.whyText,
       source = copy.sourceText,
-      note = FinalesConSentido.NOTE,
+      note = note,
       spoken = FinalesConSentido.spoken(who, "$headline $unit", phrase, notice, FinalesConSentido.TRICK_TITLE + ": " + (conditionalTrick ?: copy.trick)),
       recordSeal = if (sealed) (recordText?.takeIf { recordNew } ?: "¡Récord nuevo!") else null
     )

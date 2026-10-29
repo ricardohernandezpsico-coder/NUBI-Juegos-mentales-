@@ -91,4 +91,30 @@ object Streak {
 
   /** La explicación fija que va bajo la racha. */
   const val REST_LINE = "Un día de descanso por semana no la corta."
+
+  /** Con la racha en 0 y una mejor de antes, Hoy dice esto junto a la llama (Tarea 186, revisión 5a, Opus 28-oct): «0 días» ponía la pérdida en un número. */
+  const val STARTS_TODAY = "Tu racha empieza hoy"
+
+  /** Con la racha en 0 y ninguna mejor (nunca hubo una), la misma frase que dice Tú. */
+  const val STARTS_NEXT = "Tu racha empieza con tu próxima partida"
+
+  /**
+   * Lo que dice Hoy junto a la llama: «N días» si hay racha; con la racha en 0, «Tu racha empieza hoy» si hubo una mejor antes ([best] > 0) y «Tu racha empieza con tu próxima partida» si nunca la hubo. Nunca «0 días».
+   * [best] = la racha más larga de siempre (`longest`); solo hace falta cuando [current] es 0.
+   */
+  fun counterText(current: Int, best: Int): String = when {
+    current > 0 -> if (current == 1) "1 día" else "$current días"
+    best > 0 -> STARTS_TODAY
+    else -> STARTS_NEXT
+  }
+
+  /**
+   * La línea bajo la llama de Hoy: con racha, «Descansaste el martes: tu racha sigue.» (si hubo un día perdonado) o «Un día de descanso por semana no la corta.»; con la racha en 0 y una mejor antes, «Tu mejor racha: 12 días.» (el mismo dato de Tú, con el número pegado
+   * a su unidad); en 0 y sin mejor, ninguna (la frase de la llama ya lo dice). La regla del descanso solo va cuando hay una racha que explicar.
+   */
+  fun noteFor(info: StreakInfo, best: Int): String? = when {
+    info.current > 0 -> forgivenLine(info) ?: REST_LINE
+    best > 0 -> "Tu mejor racha: ${if (best == 1) "1 día" else "$best días"}.".glueNumbers()
+    else -> null
+  }
 }

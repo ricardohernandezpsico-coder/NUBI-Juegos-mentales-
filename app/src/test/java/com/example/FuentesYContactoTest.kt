@@ -14,6 +14,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -26,6 +27,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.Fuentes
+import com.example.data.FuentesMas
 import com.example.data.HealthNotice
 import com.example.data.NubiContact
 import com.example.model.DomainType
@@ -128,38 +130,182 @@ class FuentesYContactoTest {
   }
 
   @Test
-  fun al_final_el_metodo_las_palabras_y_lo_que_no_decimos_con_el_aviso_de_salud() {
+  fun al_final_las_palabras_y_lo_que_no_decimos_con_cuatro_revisiones_y_el_aviso_de_salud() {
     showFuentes()
-    rule.onNodeWithTag("fuentes_metodo").performScrollTo().assertIsDisplayed()
-    rule.onNodeWithText(Fuentes.METHOD_TEXT).performScrollTo().assertIsDisplayed()
-    for (e in Fuentes.method) rule.onNodeWithTag("estudio_${e.doi}").performScrollTo().assertIsDisplayed()
+    assertEquals("«Cómo se ajusta la dificultad» ya no es una sección aparte: es el primer grupo de «Cómo está hecha Nubi»", 0, rule.onAllNodes(hasTestTag("fuentes_metodo")).fetchSemanticsNodes().size)
     rule.onNodeWithText(Fuentes.WORDS_TEXT).performScrollTo().assertIsDisplayed()
     rule.onNodeWithTag("fuentes_no_decimos").performScrollTo().assertIsDisplayed()
     rule.onNodeWithTag("fuentes_no_decir_texto").performScrollTo().assertIsDisplayed()
-    rule.onNodeWithTag("estudio_${Fuentes.simons.doi}").performScrollTo().performClick()
-    assertEquals(Fuentes.simons.url, opened.last())
+    for (e in FuentesMas.noDecir) {
+      rule.onNodeWithTag("estudio_${e.doi}").performScrollTo().assertIsDisplayed().performClick()
+      assertEquals(e.url, opened.last())
+      rule.onNodeWithText(e.line, useUnmergedTree = true).assertExists()
+    }
+    assertEquals(listOf("Simons y otros, 2016", "Melby-Lervåg y otros, 2016", "Sala y otros, 2018", "Gates y otros, 2020"), FuentesMas.noDecir.map { it.cite })
     rule.onNodeWithText(HealthNotice.TEXT).performScrollTo().assertIsDisplayed()
+    // el aviso de salud sigue al final, después de las cuatro revisiones
+    assertTrue(top("estudio_${FuentesMas.noDecir.last().doi}") < rule.onNodeWithText(HealthNotice.TEXT).fetchSemanticsNode().positionInRoot.y)
+  }
+
+  // ------------------------------------------------------------------ Tarea 186: Más estudios, Cómo está hecha Nubi
+
+  private fun top(tag: String): Float = rule.onNodeWithTag(tag).fetchSemanticsNode().positionInRoot.y          // sin recorte: sirve también para lo que está fuera de la ventana
+  private fun count(tag: String): Int = rule.onAllNodes(hasTestTag(tag)).fetchSemanticsNodes().size
+  private fun stateOf(tag: String): String? = rule.onNodeWithTag(tag).fetchSemanticsNode().config.getOrNull(SemanticsProperties.StateDescription)
+
+  @Test
+  fun bajo_cada_losa_hay_Mas_estudios_plegado_y_al_tocarlo_se_despliegan_en_el_mismo_lugar() {
+    showFuentes()
+    val more = FuentesMas.byGame.getValue("parejas")
+    // plegado por defecto: el botón dice cuántos hay y ningún estudio extra está en pantalla
+    rule.onNodeWithTag("mas_parejas").performScrollTo().assertIsDisplayed()
+    rule.onNodeWithTag("mas_parejas").assertTextContains("Más estudios (${more.size})")
+    assertEquals("estudios ocultos", stateOf("mas_parejas"))
+    for (e in more) assertEquals("«${e.cite}» no debe verse con «Más estudios» plegado", 0, count("estudio_${e.doi}"))
+    // el botón está bajo SU losa y sobre la siguiente
+    assertTrue(top("fuente_parejas") < top("mas_parejas") && top("mas_parejas") < top("fuente_secuencia"))
+    // desplegar: cada estudio en su fila (cita, línea y «Ver el estudio ›») y, en el mismo lugar, entre su botón y la losa que sigue
+    rule.onNodeWithTag("mas_parejas").performClick()
+    assertEquals("estudios visibles", stateOf("mas_parejas"))
+    for (e in more) {
+      rule.onNodeWithTag("estudio_${e.doi}").performScrollTo().assertIsDisplayed()
+      rule.onNodeWithText(e.cite, useUnmergedTree = true).assertExists()
+      rule.onNodeWithText(e.line, useUnmergedTree = true).assertExists()
+      assertTrue("«${e.cite}» queda bajo «Más estudios» y sobre la losa que sigue", top("mas_parejas") < top("estudio_${e.doi}") && top("estudio_${e.doi}") < top("fuente_secuencia"))
+    }
+    assertEquals("la losa principal sigue igual y abre el estudio principal", 1, count("fuente_parejas"))
+    // tocar una fila abre SU DOI; la losa principal, el suyo
+    rule.onNodeWithTag("estudio_${more[1].doi}").performScrollTo().performClick()
+    assertEquals(more[1].url, opened.last())
+    rule.onNodeWithTag("fuente_parejas").performScrollTo().performClick()
+    assertEquals(Fuentes.byGame.getValue("parejas").url, opened.last())
+    // plegar otra vez
+    rule.onNodeWithTag("mas_parejas").performScrollTo().performClick()
+    assertEquals("estudios ocultos", stateOf("mas_parejas"))
+    for (e in more) assertEquals(0, count("estudio_${e.doi}"))
   }
 
   @Test
-  fun con_letra_1_3_cada_losa_crece_y_nada_se_sale_del_ancho() {
-    showFuentes(1.3f)
+  fun los_17_juegos_traen_su_Mas_estudios_y_cada_estudio_extra_abre_el_suyo() {
+    showFuentes()
+    val expected = mutableListOf<String>()
+    for (g in GameRegistry.allGames.filter { !GameRegistry.isRetired(it.id) }) {
+      val more = FuentesMas.byGame.getValue(g.id)
+      rule.onNodeWithTag("mas_${g.id}").performScrollTo().assertIsDisplayed()
+      rule.onNodeWithTag("mas_${g.id}").assertTextContains("Más estudios (${more.size})")
+      rule.onNodeWithTag("mas_${g.id}").performClick()
+      for (e in more) {
+        rule.onNodeWithTag("estudio_${e.doi}").performScrollTo().performClick()
+        expected += e.url
+      }
+    }
+    assertEquals(expected, opened)
+    assertEquals("37 estudios extra", 37, opened.size)
+    assertEquals("sin aviso de «sin navegador»", 0, count("fuentes_no_browser"))
+  }
+
+  /** El botón «Más estudios» y las filas de tres juegos, con la letra [scale]: 48 dp o más de alto y nada fuera del ancho. */
+  private fun checkMoreRows(scale: Float) {
+    showFuentes(scale)
+    val dp = rule.density.density
     val root = rule.onRoot().fetchSemanticsNode().boundsInRoot
-    for (id in listOf("parejas", "disparate", "satelites")) {
-      val b = rule.onNodeWithTag("fuente_$id").performScrollTo().fetchSemanticsNode().boundsInRoot
-      assertTrue("«$id» se sale del ancho: $b", b.left >= 0f && b.right <= root.right + 1f)
+    for (id in listOf("parejas", "correo", "intrusa")) {
+      val button = rule.onNodeWithTag("mas_$id").performScrollTo().fetchSemanticsNode()
+      assertTrue("«Más estudios» de $id mide ${button.size.height / dp} dp con letra $scale", button.size.height >= 48 * dp - 1f)
+      assertTrue("«Más estudios» de $id se sale del ancho", button.boundsInRoot.left >= 0f && button.boundsInRoot.right <= root.right + 1f)
+      rule.onNodeWithTag("mas_$id").performClick()
+      for (e in FuentesMas.byGame.getValue(id)) {
+        val row = rule.onNodeWithTag("estudio_${e.doi}").performScrollTo().fetchSemanticsNode()
+        assertTrue("«${e.cite}» mide ${row.size.height / dp} dp con letra $scale", row.size.height >= 48 * dp)
+        assertTrue("«${e.cite}» se sale del ancho con letra $scale: ${row.boundsInRoot}", row.boundsInRoot.left >= 0f && row.boundsInRoot.right <= root.right + 1f)
+      }
     }
   }
 
   @Test
-  fun con_letra_2_0_las_losas_siguen_enteras() {
-    showFuentes(2f)
-    val root = rule.onRoot().fetchSemanticsNode().boundsInRoot
-    for (id in listOf("parejas", "disparate", "satelites")) {
-      val b = rule.onNodeWithTag("fuente_$id").performScrollTo().fetchSemanticsNode().boundsInRoot
-      assertTrue("«$id» se sale del ancho: $b", b.left >= 0f && b.right <= root.right + 1f)
+  fun el_boton_y_las_filas_miden_48_dp_o_mas_y_caben_en_el_ancho_con_letra_1_0() = checkMoreRows(1f)
+
+  @Test
+  fun el_boton_y_las_filas_miden_48_dp_o_mas_y_caben_en_el_ancho_con_letra_2_0() = checkMoreRows(2f)
+
+  @Test
+  fun Como_esta_hecha_Nubi_va_entre_los_juegos_y_las_palabras_con_sus_diez_grupos_plegados() {
+    showFuentes()
+    rule.onNodeWithTag("fuentes_mecanismos").performScrollTo().assertIsDisplayed()
+    rule.onNodeWithText(FuentesMas.MECHANISMS_TITLE).assertIsDisplayed()
+    assertTrue(
+      "entre la última losa de juegos y «Las palabras»",
+      top("fuente_intrusa") < top("fuentes_mecanismos") && top("fuentes_mecanismos") < top("fuentes_palabras") && top("fuentes_palabras") < top("fuentes_no_decimos")
+    )
+    var previous = "fuentes_mecanismos"
+    for (m in FuentesMas.mechanisms) {
+      // a la vista: el título (un encabezado), la frase de lo que hace Nubi y «Estudios (N)» plegado; los estudios, no (Opus, 28-oct: «lo simple primero»)
+      val title = rule.onNodeWithTag("mecanismo_titulo_${m.key}").performScrollTo().assertIsDisplayed()
+      assertTrue("«${m.title}» es un encabezado para el lector de pantalla", title.fetchSemanticsNode().config.contains(SemanticsProperties.Heading))
+      assertTrue("los grupos van en orden", top(previous) < top("mecanismo_titulo_${m.key}")); previous = "mecanismo_titulo_${m.key}"
+      rule.onNodeWithTag("mecanismo_texto_${m.key}").performScrollTo().assertIsDisplayed()
+      rule.onNodeWithText(m.text, useUnmergedTree = true).assertExists()
+      rule.onNodeWithTag("estudios_${m.key}").performScrollTo().assertIsDisplayed().assertTextContains("Estudios (${m.studies.size})")
+      assertEquals("estudios ocultos", stateOf("estudios_${m.key}"))
+      for (e in m.studies) assertEquals("«${e.cite}» no debe verse con «Estudios» plegado", 0, count("estudio_${e.doi}"))
     }
   }
+
+  @Test
+  fun cada_grupo_despliega_sus_fuentes_bajo_su_frase_y_cada_una_abre_la_suya() {
+    showFuentes()
+    val expected = mutableListOf<String>()
+    for (m in FuentesMas.mechanisms) {
+      rule.onNodeWithTag("estudios_${m.key}").performScrollTo().performClick()
+      assertEquals("estudios visibles", stateOf("estudios_${m.key}"))
+      for (e in m.studies) {
+        rule.onNodeWithTag("estudio_${e.doi}").performScrollTo().assertIsDisplayed().performClick()
+        expected += e.url
+        assertTrue("«${e.cite}» va bajo el botón «Estudios» de «${m.title}»", top("estudios_${m.key}") < top("estudio_${e.doi}") && top("mecanismo_texto_${m.key}") < top("estudios_${m.key}"))
+      }
+    }
+    assertEquals(expected, opened)
+    assertEquals("32 fuentes en los diez grupos", 32, expected.size)
+    // plegar de nuevo
+    val first = FuentesMas.mechanisms.first()
+    rule.onNodeWithTag("estudios_${first.key}").performScrollTo().performClick()
+    assertEquals("estudios ocultos", stateOf("estudios_${first.key}"))
+    for (e in first.studies) assertEquals(0, count("estudio_${e.doi}"))
+  }
+
+  @Test
+  fun la_dificultad_se_acomoda_a_ti_trae_el_metodo_y_Wilson_y_Salthouse_abre_Mas_tiempo_desde_los_65() {
+    showFuentes()
+    rule.onNodeWithText(Fuentes.METHOD_TEXT).performScrollTo().assertIsDisplayed()
+    rule.onNodeWithTag("estudios_dificultad").performScrollTo().performClick()
+    for (e in Fuentes.method + FuentesMas.mechanisms.first { it.key == "dificultad" }.studies.last()) {
+      rule.onNodeWithTag("estudio_${e.doi}").performScrollTo().assertIsDisplayed()
+      rule.onNodeWithText(e.line, useUnmergedTree = true).assertExists()
+    }
+    rule.onNodeWithText("En modelos de aprendizaje, el punto más provechoso está cerca de 85 aciertos de cada 100.", useUnmergedTree = true).assertExists()
+    assertEquals("Salthouse ya no está en la dificultad", 0, count("estudio_${Fuentes.salthouse.doi}"))
+    rule.onNodeWithTag("estudios_mas_tiempo").performScrollTo().performClick()
+    rule.onNodeWithTag("estudio_${Fuentes.salthouse.doi}").performScrollTo().assertIsDisplayed()
+    assertTrue("va primero, bajo su botón", top("estudios_mas_tiempo") < top("estudio_${Fuentes.salthouse.doi}"))
+  }
+
+  /** «Estudios (N)» de los grupos: 48 dp o más y dentro del ancho, con la letra [scale]. */
+  private fun checkGroupFold(scale: Float) {
+    showFuentes(scale)
+    val dp = rule.density.density
+    val root = rule.onRoot().fetchSemanticsNode().boundsInRoot
+    for (key in listOf("dificultad", "meta_racha", "ver_y_tocar")) {
+      val button = rule.onNodeWithTag("estudios_$key").performScrollTo().fetchSemanticsNode()
+      assertTrue("«Estudios» de $key mide ${button.size.height / dp} dp con letra $scale", button.size.height >= 48 * dp - 1f)
+      assertTrue("«Estudios» de $key se sale del ancho", button.boundsInRoot.left >= 0f && button.boundsInRoot.right <= root.right + 1f)
+    }
+  }
+
+  @Test
+  fun el_boton_de_los_grupos_mide_48_dp_o_mas_con_letra_1_0() = checkGroupFold(1f)
+
+  @Test
+  fun el_boton_de_los_grupos_mide_48_dp_o_mas_con_letra_2_0() = checkGroupFold(2f)
 
   // ------------------------------------------------------------------ Contacto
 

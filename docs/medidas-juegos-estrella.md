@@ -392,7 +392,7 @@ de memoria de trabajo y se relaciona con el razonamiento: Broadway y Engle, 2010
 - **Por modo.** Para al revés, el cielo gira y en marcha: aciertos de rondas por modo, solo con **3 rondas o más** (con menos no se dice nada). El de menor
   tasa se marca con el TEXTO «el que más te costó» (además del color coral) y solo si hay dos o más modos y no empatan todos. Bajo las filas, SOLO la línea del
   modo marcado (qué pide: «Al revés pide reordenar en la cabeza: suele costar un poco más») y su truco concreto; sin modo marcado, ninguna.
-- **Lectura.** «Tu rastro mide tu memoria de trabajo: lo que sostienes en la cabeza mientras lo usas» (una oración). Y, si hubo, «Desbloqueaste un modo nuevo: …» (un dato, una sola vez).
+- **Lectura.** «Es el rastro de esta partida: sostener luces en orden mientras las usas. De una partida a otra puede variar, así que mira varias juntas.» (Tarea 186, 28-oct: antes decía «Tu rastro mide tu memoria de trabajo…», que presentaba UNA partida como una medida firme; el Corsi en pantalla es poco estable al repetirlo: Claessen y otros, 2014; White y otros, 2018). El pie de Rastro de luz también es propio: «Resultado de esta partida. Puede variar de una a otra. No es un diagnóstico.» Y, si hubo, «Desbloqueaste un modo nuevo: …» (un dato, una sola vez).
 
 **Qué NO se dice.** Ningún percentil ni comparación con otras personas o con estudios (la condición no es comparable: luces, giro y sonido propios). No se
 dice que mida «tu memoria» como rasgo ni que entrene nada. Con pocas rondas es una pista, no un resultado: la nota común del pie lo recuerda. El límite

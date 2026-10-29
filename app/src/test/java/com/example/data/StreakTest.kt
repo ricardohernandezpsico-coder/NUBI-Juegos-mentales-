@@ -76,6 +76,38 @@ class StreakTest {
   }
 
   @Test
+  fun `con la racha en cero Hoy no dice 0 dias, dice que empieza hoy y cual fue la mejor`() {
+    // Tarea 186, revisión 5a (Opus, 28-oct): «0 días» ponía la pérdida en un número y la línea del descanso sonaba a regla incumplida
+    val cut = Streak.compute(days(-5, -6, -7), today)               // dos días sin jugar: la racha se cortó
+    assertEquals(0, cut.current)
+    assertEquals("Tu racha empieza hoy", Streak.counterText(cut.current, best = 12))
+    assertEquals("Tu mejor racha: 12${NBSP}días.", Streak.noteFor(cut, best = 12))
+    assertEquals("sin la regla del descanso, que solo va cuando hay una racha que explicar", false, Streak.noteFor(cut, best = 12)!!.contains("descanso"))
+    // con la mejor de 1 día, en singular
+    assertEquals("Tu mejor racha: 1${NBSP}día.", Streak.noteFor(cut, best = 1))
+    // nunca hubo una racha: la frase de Tú y ninguna línea debajo
+    val none = Streak.compute(emptySet(), today)
+    assertEquals("Tu racha empieza con tu próxima partida", Streak.counterText(none.current, best = 0))
+    assertNull(Streak.noteFor(none, best = 0))
+    assertEquals(Streak.STARTS_TODAY, "Tu racha empieza hoy"); assertEquals(Streak.STARTS_NEXT, "Tu racha empieza con tu próxima partida")
+  }
+
+  @Test
+  fun `con racha Hoy dice los dias y la linea del descanso o el dia perdonado como siempre`() {
+    val s = cur(0, -1, -3)
+    assertEquals("3 días", Streak.counterText(s.current, best = 0))
+    assertEquals("1 día", Streak.counterText(cur(0).current, best = 0))
+    assertEquals(Streak.forgivenLine(s), Streak.noteFor(s, best = 0))
+    assertEquals(Streak.REST_LINE, Streak.noteFor(cur(0, -1, -2), best = 0))
+    // con racha, «best» no cambia nada
+    assertEquals("3 días", Streak.counterText(3, best = 40))
+    assertEquals(Streak.REST_LINE, Streak.noteFor(cur(0, -1, -2), best = 40))
+    for (t in listOf(Streak.STARTS_TODAY, Streak.STARTS_NEXT, Streak.noteFor(Streak.compute(days(-5), today), 7)!!)) {
+      for (w in listOf("perdiste", "perdió", "rompi", "cortó", "cero", "0 días")) assertFalse("«$t» dice «$w»", w in t.lowercase())
+    }
+  }
+
+  @Test
   fun `el perdon de hace mas de 7 dias ya no se muestra y vuelve a quedar uno`() {
     val s = Streak.compute(setOf(today, today - 1, today - 2, today - 3, today - 4, today - 5, today - 6, today - 7, today - 9), today)      // hueco en -8: hace 8 días
     assertEquals(9, s.current)
