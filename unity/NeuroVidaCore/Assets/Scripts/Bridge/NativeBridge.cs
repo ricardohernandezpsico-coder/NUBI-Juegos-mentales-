@@ -113,6 +113,27 @@ namespace NeuroVida.Bridge
         /// carga que cubre el arranque en frío de Unity. Si no hay pantalla de carga (Unity ya estaba vivo), no hace
         /// nada. En el Editor solo loguea.
         /// </summary>
+        /// <summary>
+        /// SOLO depuración (Tarea 190b): añade una línea al archivo de diagnóstico de la app (<c>files/sonda-entrada.txt</c>, <c>NativeReceiver.appendProbe</c> → <c>ProbeLog</c>), que se lee con <c>adb shell run-as … cat</c>. El logcat de un teléfono real se rota en minutos y pierde las partidas anteriores.
+        /// En el Editor no hace nada.
+        /// </summary>
+        public static void AppendProbe(string line)
+        {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            try
+            {
+                using (var jc = new AndroidJavaClass(AndroidReceiverClass))
+                {
+                    jc.CallStatic("appendProbe", line);
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError("[NativeBridge] No se pudo escribir la sonda: " + e.Message);
+            }
+#endif
+        }
+
         public static void NotifyGameShown()
         {
 #if UNITY_ANDROID && !UNITY_EDITOR

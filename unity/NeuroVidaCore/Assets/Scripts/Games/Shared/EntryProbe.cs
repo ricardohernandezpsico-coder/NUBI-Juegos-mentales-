@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using UnityEngine;
+using NeuroVida.Bridge;
 
 namespace NeuroVida.Games.Shared
 {
@@ -32,6 +33,10 @@ namespace NeuroVida.Games.Shared
         private static double _costsAtShown;
         private static Driver _driver;
         private static string _lastLine = "";
+        private static bool _debug;                                       // la bandera de depuración de la app (se conserva entre partidas: el reinicio ocurre cuando la medición ya terminó)
+        private static float _restartAt = -1f;                            // el toque en «Sí, empezar de nuevo» (reloj real), hasta que la partida siguiente lo consume
+        private static float _restartTap = -1f;                           // el toque que pertenece a la partida que se mide ahora
+        private static float _restartConfig = -1f;                        // lo que tardó la escena en recargarse hasta que llegó la configuración
 
         /// <summary>La última línea escrita (para las pruebas).</summary>
         public static string LastLine => _lastLine;
@@ -39,6 +44,8 @@ namespace NeuroVida.Games.Shared
         /// <summary>Empieza a medir esta partida (lo llama <c>GameEntryPoint.InitializeGameConfig</c>). Sin bandera de depuración (ni <c>NUBI_PROBE=1</c> en el Editor) apaga todo.</summary>
         public static void Begin(bool debugBuild, string gameId)
         {
+            if (Enabled && _shownAt >= 0f && Visible.Count > 0) Finish(true);       // la partida anterior se cortó antes de los 5 s (un reinicio, salir): se escribe lo que haya
+            _debug = debugBuild;
             bool env = Application.isEditor && Environment.GetEnvironmentVariable("NUBI_PROBE") == "1";
             Enabled = (debugBuild || env) && Application.isPlaying;
             if (!Enabled)
@@ -50,6 +57,9 @@ namespace NeuroVida.Games.Shared
             _game = gameId ?? "";
             _beganAt = Time.realtimeSinceStartup;
             _shownAt = -1f;
+            _restartTap = _restartAt;                                        // si esta partida nació de un «Reiniciar»: cuánto tardó la escena en llegar hasta acá
+            _restartConfig = _restartAt >= 0f ? _beganAt - _restartAt : -1f;
+            _restartAt = -1f;
             Loading.Clear();
             Visible.Clear();
             Hitches.Clear();
@@ -61,6 +71,16 @@ namespace NeuroVida.Games.Shared
                 UnityEngine.Object.DontDestroyOnLoad(go);
                 _driver = go.AddComponent<Driver>();
             }
+        }
+
+        /// <summary>
+        /// «Reiniciar» desde la pausa (lo llama <c>LaunchIntentConfigReader.RestartCurrentGame</c>): anota la hora del toque. La partida que nace de ese reinicio dice cuánto tardó en recargarse la escena y cuánto pasó hasta su «listo» (el tiempo en que se ve el azul de Unity,
+        /// porque el reinicio no tiene pantalla de carga). Solo en depuración.
+        /// </summary>
+        public static void MarkRestart()
+        {
+            if (!_debug) return;
+            _restartAt = Time.realtimeSinceStartup;
         }
 
         /// <summary>Suma <paramref name="ms"/> al costo de <paramref name="what"/> («sonido», «sprites») en el hilo principal desde que llegó la configuración.</summary>
@@ -101,7 +121,7 @@ namespace NeuroVida.Games.Shared
             return sorted[Math.Max(0, i)];
         }
 
-        private static void Finish()
+        private static void Finish(bool partial = false)
         {
             if (!Enabled) return;
             Enabled = false;                                                      // una sola línea por partida
@@ -128,13 +148,23 @@ namespace NeuroVida.Games.Shared
             }
             if (first) sb.Append("sin horneo");
             sb.Append(string.Format(CultureInfo.InvariantCulture, " (de ellos, tras «listo»: {0:F0} ms)", costAll - costLoad));
+            sb.Append(string.Format(CultureInfo.InvariantCulture, " | núcleos {0}, hilos de horneo {1}, hilos de sonido {2} | ventana {3:F1} s{4}",
+                Environment.ProcessorCount, Background.Workers, WoodCore.WorkerCount, Time.realtimeSinceStartup - _shownAt, partial ? " (corta: se salió antes de los 5 s)" : ""));
+            if (_restartTap >= 0f)
+                sb.Append(string.Format(CultureInfo.InvariantCulture, " | reinicio: la escena tardó {0:F2} s en llegar y desde el toque hasta «listo» pasaron {1:F2} s (el azul de Unity, sin pantalla de carga)", _restartConfig, _shownAt - _restartTap));
             _lastLine = sb.ToString();
             Debug.Log(_lastLine);
-            foreach (var h in Hitches) Debug.Log(h);
+            NativeBridge.AppendProbe(_lastLine);                                  // al archivo de la app (files/sonda-entrada.txt): el logcat del teléfono se rota en minutos
+            foreach (var h in Hitches) { Debug.Log(h); NativeBridge.AppendProbe(h); }
         }
 
         private sealed class Driver : MonoBehaviour
         {
+            private void OnApplicationPause(bool paused)
+            {
+                if (paused && Enabled && _shownAt >= 0f && Visible.Count > 0) Finish(true);       // salió a segundo plano antes de los 5 s
+            }
+
             private void Update()
             {
                 if (!Enabled) return;

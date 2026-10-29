@@ -244,6 +244,7 @@ class VisibleTextsGuardTest {
     val found = mutableListOf<String>()
     File("src/main/java").walkTopDown().filter { it.extension == "kt" }.forEach { f ->
       if (f.path.replace('\\', '/').endsWith("com/example/data/StarMeasures.kt")) return@forEach
+      if (f.path.replace('\\', '/').endsWith("com/example/bridge/LoadingFrameProbe.kt")) return@forEach          // la línea de la sonda de la carga (Tarea 190b): va a un archivo de diagnóstico SOLO en depuración, nunca a la pantalla
       f.readLines().forEachIndexed { i, raw ->
         for (text in visibleLiteralsOf(raw)) {
           if (Regex("(^|[\\s\\d}])ms\\b").containsMatchIn(text) || "milisegundo" in text.lowercase()) found += "${f.path.removePrefix("src/main/java/")}:${i + 1} «$text»"

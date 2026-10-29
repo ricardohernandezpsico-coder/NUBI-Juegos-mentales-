@@ -311,6 +311,12 @@ object NativeReceiver {
   fun onGameShown() = UnityLoadingOverlay.hideFromAnyThread()
 
   /**
+   * Desde Unity (proceso `:unity`), SOLO en depuración (Tarea 190b): añade una línea de la sonda de entrada al archivo `files/sonda-entrada.txt` ([com.example.diag.ProbeLog]). En release no escribe.
+   */
+  @JvmStatic
+  fun appendProbe(line: String) = com.example.diag.ProbeLog.append(line)
+
+  /**
    * Desde Unity (proceso `:unity`): anota una línea de diagnóstico en el registro de errores del teléfono (Ajustes → «Enviar informe de errores»).
    * Sirve para ver lo que solo pasa en el teléfono real (hoy, los toques del tutorial). Nunca lanza.
    */

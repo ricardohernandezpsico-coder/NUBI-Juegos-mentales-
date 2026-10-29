@@ -4,6 +4,7 @@ import android.app.Activity
 import android.app.Application
 import android.os.Bundle
 import android.util.Log
+import android.view.Choreographer
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
@@ -52,6 +53,9 @@ object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
   /** Cuánto dura el fundido al irse: 250 ms, 150 ms con «quitar animaciones» (se decide al mostrar la capa, con la config de la partida). */
   @Volatile
   private var fadeMs = FADE_MS
+
+  /** La sonda de la animación de la carga (Tarea 190b, SOLO en depuración): mide cada cuadro mientras la capa está visible. */
+  private var jank: LoadingFrameProbe? = null
 
   fun install(app: Application) = app.registerActivityLifecycleCallbacks(this)
 
@@ -110,6 +114,9 @@ object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
     )
     overlay = WeakReference(layer)
     layer.postDelayed({ hide(layer) }, TIMEOUT_MS)
+    if (com.example.BuildConfig.DEBUG) {
+      jank = LoadingFrameProbe(game.id, warm, activity).also { it.start() }
+    }
   }
 
   /** Unity ya pintó el juego (cualquier hilo). */
@@ -123,6 +130,8 @@ object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
     overlay = null
     layer.animate().alpha(0f).setDuration(fadeMs).withEndAction {
       (layer.parent as? ViewGroup)?.removeView(layer)
+      jank?.stopAndWrite()
+      jank = null
     }.start()
   }
 

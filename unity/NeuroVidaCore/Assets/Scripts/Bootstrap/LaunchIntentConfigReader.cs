@@ -38,6 +38,7 @@ namespace NeuroVida.Bridge
         /// <summary>"Reiniciar" del menú de pausa: la misma partida (mismo Intent) desde cero, en una escena limpia.</summary>
         public static void RestartCurrentGame()
         {
+            NeuroVida.Games.Shared.EntryProbe.MarkRestart();                          // solo depuración: cuánto se ve el azul de Unity hasta el «listo» de la partida nueva (Tarea 190b)
             s_startedLaunchId = null;
             NeuroVida.Games.Shared.GameClock.Reset();
             UnityEngine.SceneManagement.SceneManager.LoadScene(

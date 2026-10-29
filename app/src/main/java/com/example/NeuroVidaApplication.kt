@@ -19,6 +19,8 @@ class NeuroVidaApplication : Application() {
     instance = this
     // Registro de errores en el teléfono (cierres y avisos que antes solo iban al logcat): ver diag/ErrorLog.
     com.example.diag.ErrorLog.install(this)
+    // Archivo de las sondas de entrada al juego (solo escribe en depuración): ver diag/ProbeLog.
+    com.example.diag.ProbeLog.install(filesDir)
     // Pantalla de carga sobre Unity mientras arranca en frío (solo actúa en el proceso `:unity`).
     com.example.bridge.UnityLoadingOverlay.install(this)
   }
