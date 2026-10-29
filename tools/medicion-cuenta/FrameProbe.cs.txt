@@ -1,0 +1,139 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Text;
+using UnityEngine;
+
+namespace NeuroVida.Games.Shared
+{
+    /// <summary>
+    /// TEMPORAL (Tarea 189, solo medición; se borra al terminar): registra el tiempo de cada cuadro desde que llega la configuración de la partida hasta un segundo después de la cuenta regresiva, con la FASE (armado, cuenta 3/2/1, «¡Ya!»…),
+    /// lo que gastó el cálculo de sonido (<see cref="WoodCore"/>) en cada cuadro, los costos síncronos (Warm, armado del juego, carga de atlas) y las recolecciones de basura. Escribe líneas «[PROBE…]» en el registro del Editor.
+    /// </summary>
+    public sealed class FrameProbe : MonoBehaviour
+    {
+        private struct Frame { public float PeriodMs; public string Phase; public float WoodMs; public float WoodMaxStep; public int Gc0; public int Pending; public float RasterMs; public int RasterCalls; public float RasterMax; }
+
+        private static FrameProbe _inst;
+        private static int _runs;
+        private static readonly List<Frame> Frames = new List<Frame>();
+        private static readonly List<string> Costs = new List<string>();
+        private static string _game = "";
+        private static bool _cold;
+        private static double _t0;
+        private static double _lastAt;
+        private static double _endAt = -1;
+        private static float _woodMs, _woodMaxStep, _rasterMs, _rasterMax; private static int _rasterCalls; private static double _rasterTotal;
+        private static int _gc0Start, _bakeStart;
+        private static double _atlasMs; private static int _atlasLoads; private static readonly List<string> AtlasNames = new List<string>();
+        private static readonly Dictionary<string, double> Syncs = new Dictionary<string, double>();
+        public static string Phase = "armado";
+        private static int _frameNo;
+        private static int _logged;
+
+        public static void Begin(string game)
+        {
+            if (_inst != null) { UnityEngine.Object.Destroy(_inst.gameObject); _inst = null; }
+            _runs++;
+            _cold = _runs == 1;
+            _game = game;
+            Frames.Clear(); Costs.Clear(); Syncs.Clear(); AtlasNames.Clear();
+            _chunkTotal = 0; _chunkMax = 0; _chunkCount = 0; _chunkBig = 0;
+            _rasterTotal = 0; _rasterMs = 0; _rasterMax = 0; _rasterCalls = 0;
+            _atlasMs = 0; _atlasLoads = 0; _woodMs = 0; _woodMaxStep = 0; _frameNo = 0; _logged = 0; _endAt = -1;
+            Phase = "armado";
+            _t0 = Time.realtimeSinceStartupAsDouble; _lastAt = _t0;
+            _gc0Start = GC.CollectionCount(0);
+            _bakeStart = WoodCore.BakeCount;
+            var go = new GameObject("FrameProbe");
+            _inst = go.AddComponent<FrameProbe>();
+        }
+
+        public static void Mark(string phase)
+        {
+            if (_inst == null) return;
+            Phase = phase;
+            UnityEngine.Debug.Log(FormattableString.Invariant($"[PROBE] {_game} t={(Time.realtimeSinceStartupAsDouble - _t0) * 1000.0:F0} ms marca={phase} pendientes={WoodCore.PendingCountForProbe}"));
+        }
+
+        public static void Sync(string name, Stopwatch sw)
+        {
+            if (_inst == null) return;
+            Syncs[name] = sw.Elapsed.TotalMilliseconds;
+            UnityEngine.Debug.Log(FormattableString.Invariant($"[PROBE] {_game} costo síncrono {name} = {sw.Elapsed.TotalMilliseconds:F1} ms"));
+        }
+
+        public static void Atlas(string name, double ms)
+        {
+            if (_inst == null) return;
+            _atlasMs += ms; _atlasLoads++; AtlasNames.Add(name + "=" + ms.ToString("F1", System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        public static void Raster(double ms) { if (_inst == null) return; _rasterMs += (float)ms; _rasterCalls++; _rasterTotal += ms; if (ms > _rasterMax) _rasterMax = (float)ms; }
+        private static double _chunkTotal, _chunkMax; private static int _chunkCount, _chunkBig;
+        public static bool TimedMove(System.Collections.IEnumerator it, string tag)
+        {
+            var sw = Stopwatch.StartNew(); bool r = it.MoveNext(); double ms = sw.Elapsed.TotalMilliseconds;
+            if (_inst != null)
+            {
+                _chunkTotal += ms; _chunkCount++; if (ms > _chunkMax) _chunkMax = ms;
+                if (ms >= 30) { _chunkBig++; UnityEngine.Debug.Log(FormattableString.Invariant($"[PROBE-C] {tag} trozo de armado de sprites = {ms:F1} ms (cuadro {_frameNo}, fase {Phase})")); }
+            }
+            return r;
+        }
+        public static void WoodStep(double ms) { if (ms > _woodMaxStep) _woodMaxStep = (float)ms; }
+        public static void WoodFrame(double ms) { _woodMs += (float)ms; }
+        public static void End() { if (_inst != null) _endAt = Time.realtimeSinceStartupAsDouble + 1.0; }
+
+        private void LateUpdate()
+        {
+            double now = Time.realtimeSinceStartupAsDouble;
+            float period = (float)((now - _lastAt) * 1000.0);
+            _lastAt = now;
+            _frameNo++;
+            var f = new Frame { PeriodMs = period, Phase = Phase, WoodMs = _woodMs, WoodMaxStep = _woodMaxStep, Gc0 = GC.CollectionCount(0) - _gc0Start, Pending = WoodCore.PendingCountForProbe, RasterMs = _rasterMs, RasterCalls = _rasterCalls, RasterMax = _rasterMax };
+            Frames.Add(f);
+            if ((period >= 20f || _woodMaxStep >= 12f || _rasterMs >= 8f) && _logged < 120)
+            {
+                _logged++;
+                UnityEngine.Debug.Log(FormattableString.Invariant($"[PROBE-F] {_game} f={_frameNo} t={(now - _t0) * 1000.0:F0} ms periodo={period:F1} ms fase={f.Phase} sonido={f.WoodMs:F1} ms (paso máx {f.WoodMaxStep:F1}) gc0={f.Gc0} raster={f.RasterMs:F1} ms ({f.RasterCalls} llamadas, máx {f.RasterMax:F1})"));
+            }
+            _woodMs = 0; _woodMaxStep = 0; _rasterMs = 0; _rasterMax = 0; _rasterCalls = 0;
+            if ((_endAt > 0 && now >= _endAt) || now - _t0 > 20.0) Finish();
+        }
+
+        private static double Percentile(List<float> sorted, double p) => sorted.Count == 0 ? 0 : sorted[Math.Min(sorted.Count - 1, (int)Math.Floor(p * (sorted.Count - 1)))];
+
+        private void Finish()
+        {
+            var sb = new StringBuilder();
+            string inv(double v) => v.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+            var phases = new List<string>();
+            foreach (var f in Frames) if (!phases.Contains(f.Phase)) phases.Add(f.Phase);
+            float maxAll = 0; string maxPhase = "-"; int over25 = 0, over50 = 0, gcFrames = 0, prevGc = 0; double woodTotal = 0; float woodFrameMax = 0, woodStepMax = 0;
+            foreach (var f in Frames)
+            {
+                if (f.PeriodMs > maxAll) { maxAll = f.PeriodMs; maxPhase = f.Phase; }
+                if (f.PeriodMs >= 25f) over25++;
+                if (f.PeriodMs >= 50f) over50++;
+                if (f.Gc0 != prevGc) gcFrames++;
+                prevGc = f.Gc0;
+                woodTotal += f.WoodMs; if (f.WoodMs > woodFrameMax) woodFrameMax = f.WoodMs; if (f.WoodMaxStep > woodStepMax) woodStepMax = f.WoodMaxStep;
+            }
+            UnityEngine.Debug.Log(FormattableString.Invariant($"[PROBE-SUM] juego={_game} {(_cold ? "FRIO" : "caliente")} corrida={_runs} cuadros={Frames.Count} maxCuadro={inv(maxAll)} ms (en {maxPhase}) cuadros>=25ms={over25} cuadros>=50ms={over50} trozosSprites={_chunkCount} trozosTotal={inv(_chunkTotal)} ms trozoMax={inv(_chunkMax)} ms trozos>=30ms={_chunkBig} rasterTotal={inv(_rasterTotal)} ms sonidoTotal={inv(woodTotal)} ms sonidoMaxCuadro={inv(woodFrameMax)} ms sonidoPasoMax={inv(woodStepMax)} ms clipsHorneados={WoodCore.BakeCount - _bakeStart} pendientesAlFinal={WoodCore.PendingCountForProbe} gcCuadros={gcFrames} gc0={Frames[Frames.Count - 1].Gc0}"));
+            var sync = new StringBuilder();
+            foreach (var kv in Syncs) sync.Append(kv.Key).Append('=').Append(inv(kv.Value)).Append(" ms; ");
+            UnityEngine.Debug.Log(FormattableString.Invariant($"[PROBE-SYNC] juego={_game} {(_cold ? "FRIO" : "caliente")} {sync}atlas({_atlasLoads})={inv(_atlasMs)} ms [{string.Join(", ", AtlasNames)}]"));
+            foreach (var ph in phases)
+            {
+                var list = new List<float>(); double wood = 0;
+                foreach (var f in Frames) if (f.Phase == ph) { list.Add(f.PeriodMs); wood += f.WoodMs; }
+                list.Sort();
+                double mean = 0; foreach (var v in list) mean += v; mean /= Math.Max(1, list.Count);
+                UnityEngine.Debug.Log(FormattableString.Invariant($"[PROBE-PH] juego={_game} fase={ph} cuadros={list.Count} media={inv(mean)} p95={inv(Percentile(list, 0.95))} max={inv(list.Count > 0 ? list[list.Count - 1] : 0)} sonidoMs={inv(wood)}"));
+            }
+            _inst = null;
+            Destroy(gameObject);
+        }
+    }
+}

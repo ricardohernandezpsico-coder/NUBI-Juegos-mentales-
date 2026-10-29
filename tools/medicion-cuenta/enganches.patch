@@ -1,0 +1,280 @@
+diff --git a/unity/NeuroVidaCore/Assets/Scripts/Bootstrap/GameEntryPoint.cs b/unity/NeuroVidaCore/Assets/Scripts/Bootstrap/GameEntryPoint.cs
+index 5d2b1f3f..6ad9e413 100644
+--- a/unity/NeuroVidaCore/Assets/Scripts/Bootstrap/GameEntryPoint.cs
++++ b/unity/NeuroVidaCore/Assets/Scripts/Bootstrap/GameEntryPoint.cs
+@@ -156,9 +156,12 @@ namespace NeuroVida.Bridge
+             }
+ 
+             _running = true;
++            NeuroVida.Games.Shared.FrameProbe.Begin(config.game_id);
+             // Sonido y vibración comunes de los 9 juegos (ajustes de la app).
+             NeuroVida.Games.Shared.GameFeel.SoundOn = config.config.sound_enabled;
+-            NeuroVida.Games.Shared.GameFeel.Warm(config.game_id);                               // el núcleo común de «Madera cálida»: lo de la cuenta regresiva ya, el resto de a poco (con el sonido apagado no hace nada)
++            var __warm = System.Diagnostics.Stopwatch.StartNew();
++            NeuroVida.Games.Shared.GameFeel.Warm(config.game_id);
++            NeuroVida.Games.Shared.FrameProbe.Sync("Warm(horneo de la cuenta)", __warm);                               // el núcleo común de «Madera cálida»: lo de la cuenta regresiva ya, el resto de a poco (con el sonido apagado no hace nada)
+             NeuroVida.Games.Shared.GameFeel.HapticsOn = config.config.haptics_enabled;
+             NeuroVida.Games.Shared.GameFeel.ReduceMotion = config.config.reduce_motion;
+             NeuroVida.Games.Shared.CountdownScreen.GameId = config.game_id;                                    // el emblema del juego bajo el anillo de la cuenta (Tarea 148, P9)
+@@ -168,6 +171,7 @@ namespace NeuroVida.Bridge
+             NeuroVida.Games.Shared.Assessment.Configure(config.config);
+             // Modo elegido antes de jugar (Suave / Desafío / Experto): techo o piso de todos los DDA de la partida.
+             NeuroVida.Games.AdaptiveDifficulty.ConfigureMode(config.config);
++            var __build = System.Diagnostics.Stopwatch.StartNew();
+             switch (config.game_id)
+             {
+                 case RastroGameController.GameId:
+@@ -375,6 +379,8 @@ namespace NeuroVida.Bridge
+                     Debug.LogError($"[GameEntryPoint] game_id {config.game_id} no tiene un controlador registrado todavía.");
+                     break;
+             }
++            NeuroVida.Games.Shared.FrameProbe.Sync("armado del juego+StartSession", __build);
++            NeuroVida.Games.Shared.FrameProbe.Mark("tras-armado");
+         }
+     }
+ }
+diff --git a/unity/NeuroVidaCore/Assets/Scripts/Games/Acoplamiento/DockingGameController.cs b/unity/NeuroVidaCore/Assets/Scripts/Games/Acoplamiento/DockingGameController.cs
+index 893a0a12..1355c4df 100644
+--- a/unity/NeuroVidaCore/Assets/Scripts/Games/Acoplamiento/DockingGameController.cs
++++ b/unity/NeuroVidaCore/Assets/Scripts/Games/Acoplamiento/DockingGameController.cs
+@@ -174,7 +174,7 @@ namespace NeuroVida.Games.Acoplamiento
+         {
+             if (_baked) yield break;
+             var sprites = DockingSprites.Prewarm();
+-            while (sprites.MoveNext()) yield return null;
++            while (NeuroVida.Games.Shared.FrameProbe.TimedMove(sprites, "acoplamiento")) yield return null;
+             _baked = true;
+             AssignSprites();
+             if (SoundWanted)                                                                  // con «Efectos de sonido» apagado no se calcula ningún clip
+diff --git a/unity/NeuroVidaCore/Assets/Scripts/Games/Aterrizaje/LandingGameController.cs b/unity/NeuroVidaCore/Assets/Scripts/Games/Aterrizaje/LandingGameController.cs
+index 40d4c9da..886de4b9 100644
+--- a/unity/NeuroVidaCore/Assets/Scripts/Games/Aterrizaje/LandingGameController.cs
++++ b/unity/NeuroVidaCore/Assets/Scripts/Games/Aterrizaje/LandingGameController.cs
+@@ -163,7 +163,7 @@ namespace NeuroVida.Games.Aterrizaje
+         {
+             if (_baked) yield break;
+             var sprites = LandingSprites.Prewarm();
+-            while (sprites.MoveNext()) yield return null;
++            while (NeuroVida.Games.Shared.FrameProbe.TimedMove(sprites, "aterrizaje")) yield return null;
+             _baked = true;
+             AssignSprites();
+             if (SoundWanted)                                                                  // con «Efectos de sonido» apagado no se calcula ningún clip
+diff --git a/unity/NeuroVidaCore/Assets/Scripts/Games/Bodega/BodegaGameController.cs b/unity/NeuroVidaCore/Assets/Scripts/Games/Bodega/BodegaGameController.cs
+index 21fe4c72..f87f8b5d 100644
+--- a/unity/NeuroVidaCore/Assets/Scripts/Games/Bodega/BodegaGameController.cs
++++ b/unity/NeuroVidaCore/Assets/Scripts/Games/Bodega/BodegaGameController.cs
+@@ -141,7 +141,7 @@ namespace NeuroVida.Games.Bodega
+             if (!_baked)
+             {
+                 var sprites = BodegaSprites.Prewarm();
+-                while (sprites.MoveNext()) yield return null;
++                while (NeuroVida.Games.Shared.FrameProbe.TimedMove(sprites, "bodega")) yield return null;
+                 AssignSprites();
+                 _baked = true;
+             }
+diff --git a/unity/NeuroVidaCore/Assets/Scripts/Games/Correo/MailGameController.cs b/unity/NeuroVidaCore/Assets/Scripts/Games/Correo/MailGameController.cs
+index 0b0d8d20..313a4557 100644
+--- a/unity/NeuroVidaCore/Assets/Scripts/Games/Correo/MailGameController.cs
++++ b/unity/NeuroVidaCore/Assets/Scripts/Games/Correo/MailGameController.cs
+@@ -131,7 +131,7 @@ namespace NeuroVida.Games.Correo
+             if (!_baked)
+             {
+                 var sprites = MailSprites.Prewarm();
+-                while (sprites.MoveNext()) yield return null;
++                while (NeuroVida.Games.Shared.FrameProbe.TimedMove(sprites, "correo")) yield return null;
+                 AssignSprites();
+                 _baked = true;
+             }
+diff --git a/unity/NeuroVidaCore/Assets/Scripts/Games/Engranajes/EngranajesGameController.cs b/unity/NeuroVidaCore/Assets/Scripts/Games/Engranajes/EngranajesGameController.cs
+index 9cbad862..53605b4d 100644
+--- a/unity/NeuroVidaCore/Assets/Scripts/Games/Engranajes/EngranajesGameController.cs
++++ b/unity/NeuroVidaCore/Assets/Scripts/Games/Engranajes/EngranajesGameController.cs
+@@ -153,7 +153,7 @@ namespace NeuroVida.Games.Engranajes
+             if (!_baked)
+             {
+                 var sprites = EngranajesSprites.Prewarm();
+-                while (sprites.MoveNext()) yield return null;
++                while (NeuroVida.Games.Shared.FrameProbe.TimedMove(sprites, "engranajes")) yield return null;
+                 AssignSprites();
+                 _baked = true;
+             }
+diff --git a/unity/NeuroVidaCore/Assets/Scripts/Games/Parejas/ConstelacionGameController.cs b/unity/NeuroVidaCore/Assets/Scripts/Games/Parejas/ConstelacionGameController.cs
+index adf17124..9eb3a05b 100644
+--- a/unity/NeuroVidaCore/Assets/Scripts/Games/Parejas/ConstelacionGameController.cs
++++ b/unity/NeuroVidaCore/Assets/Scripts/Games/Parejas/ConstelacionGameController.cs
+@@ -146,7 +146,7 @@ namespace NeuroVida.Games.Parejas
+             if (!_baked)
+             {
+                 var sprites = ConstelacionSprites.Prewarm();
+-                while (sprites.MoveNext()) yield return null;
++                while (NeuroVida.Games.Shared.FrameProbe.TimedMove(sprites, "parejas")) yield return null;
+                 AssignSprites();
+                 _baked = true;
+             }
+diff --git a/unity/NeuroVidaCore/Assets/Scripts/Games/Piloto/PilotGameController.cs b/unity/NeuroVidaCore/Assets/Scripts/Games/Piloto/PilotGameController.cs
+index c30cb26c..17349a60 100644
+--- a/unity/NeuroVidaCore/Assets/Scripts/Games/Piloto/PilotGameController.cs
++++ b/unity/NeuroVidaCore/Assets/Scripts/Games/Piloto/PilotGameController.cs
+@@ -166,7 +166,7 @@ namespace NeuroVida.Games.Piloto
+             PilotSounds.Request();                  // los sonidos (las balizas, el blip, el golpe, la misión, el soplo y el hiperimpulso) se piden ANTES de la cuenta: los calcula WoodCore de a poco, sin trabar
+             if (_baked) yield break;
+             var sprites = PilotSignalSprites.Prewarm();
+-            while (sprites.MoveNext()) yield return null;
++            while (NeuroVida.Games.Shared.FrameProbe.TimedMove(sprites, "piloto")) yield return null;
+             PilotShipSprite.Get();
+             yield return null;
+             var engine = PilotSounds.PrewarmEngine();                 // el motor «Cohete» (tres capas en bucle) se calcula de a una por cuadro
+diff --git a/unity/NeuroVidaCore/Assets/Scripts/Games/Radar/RadarGameController.cs b/unity/NeuroVidaCore/Assets/Scripts/Games/Radar/RadarGameController.cs
+index 224d3c46..d48c7847 100644
+--- a/unity/NeuroVidaCore/Assets/Scripts/Games/Radar/RadarGameController.cs
++++ b/unity/NeuroVidaCore/Assets/Scripts/Games/Radar/RadarGameController.cs
+@@ -167,7 +167,7 @@ namespace NeuroVida.Games.Radar
+         {
+             if (_baked) yield break;
+             var sprites = RadarSprites.Prewarm();
+-            while (sprites.MoveNext()) yield return null;
++            while (NeuroVida.Games.Shared.FrameProbe.TimedMove(sprites, "radar")) yield return null;
+             AssignSprites();
+             if (SoundWanted)                                                                  // con «Efectos de sonido» apagado no se calcula ningún clip
+             {
+diff --git a/unity/NeuroVidaCore/Assets/Scripts/Games/Satelites/SatelliteGameController.cs b/unity/NeuroVidaCore/Assets/Scripts/Games/Satelites/SatelliteGameController.cs
+index 98cd7986..834353b9 100644
+--- a/unity/NeuroVidaCore/Assets/Scripts/Games/Satelites/SatelliteGameController.cs
++++ b/unity/NeuroVidaCore/Assets/Scripts/Games/Satelites/SatelliteGameController.cs
+@@ -148,7 +148,7 @@ namespace NeuroVida.Games.Satelites
+             if (!_baked)
+             {
+                 var sprites = SatelliteSprites.Prewarm();
+-                while (sprites.MoveNext()) yield return null;
++                while (NeuroVida.Games.Shared.FrameProbe.TimedMove(sprites, "satelites")) yield return null;
+                 AssignSprites();
+                 _baked = true;
+             }
+diff --git a/unity/NeuroVidaCore/Assets/Scripts/Games/Shared/ClayRaster.cs b/unity/NeuroVidaCore/Assets/Scripts/Games/Shared/ClayRaster.cs
+index 3217dce9..53d55c39 100644
+--- a/unity/NeuroVidaCore/Assets/Scripts/Games/Shared/ClayRaster.cs
++++ b/unity/NeuroVidaCore/Assets/Scripts/Games/Shared/ClayRaster.cs
+@@ -64,6 +64,7 @@ namespace NeuroVida.Games.Shared
+         /// </summary>
+         public static Color32[] RenderClay(int size, float zoom, float line, float drop, float aa, ShapeFn body, PaintFn paint)
+         {
++            var __sw = System.Diagnostics.Stopwatch.StartNew();
+             var pixels = new Color32[size * size];
+             for (int py = 0; py < size; py++)
+             {
+@@ -78,6 +79,7 @@ namespace NeuroVida.Games.Shared
+                     pixels[py * size + px] = p.ToColor32();
+                 }
+             }
++            FrameProbe.Raster(__sw.Elapsed.TotalMilliseconds);
+             return pixels;
+         }
+ 
+@@ -86,6 +88,7 @@ namespace NeuroVida.Games.Shared
+ 
+         public static Sprite ToSprite(Color32[] pixels, int size, float pixelsPerUnit)
+         {
++            var __sw2 = System.Diagnostics.Stopwatch.StartNew();
+             var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
+             {
+                 wrapMode = TextureWrapMode.Clamp,
+@@ -93,7 +96,9 @@ namespace NeuroVida.Games.Shared
+             };
+             tex.SetPixels32(pixels);
+             tex.Apply();
+-            return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), pixelsPerUnit);
++            var __spr = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), pixelsPerUnit);
++            FrameProbe.Raster(__sw2.Elapsed.TotalMilliseconds);
++            return __spr;
+         }
+ 
+         // ------------------------------------------------------------------ colores
+diff --git a/unity/NeuroVidaCore/Assets/Scripts/Games/Shared/CountdownScreen.cs b/unity/NeuroVidaCore/Assets/Scripts/Games/Shared/CountdownScreen.cs
+index e7e47001..47ce6089 100644
+--- a/unity/NeuroVidaCore/Assets/Scripts/Games/Shared/CountdownScreen.cs
++++ b/unity/NeuroVidaCore/Assets/Scripts/Games/Shared/CountdownScreen.cs
+@@ -204,6 +204,7 @@ namespace NeuroVida.Games.Shared
+         /// contenido (queda visible debajo mientras la pantalla se desvanece).</summary>
+         public IEnumerator Play(string title, string subtitle, Action onRevealStart)
+         {
++            FrameProbe.Mark("cuenta:entra");
+             _root.gameObject.SetActive(true);
+             _group.alpha = 0f;
+             _stars.Warp = 0.03f;
+@@ -248,15 +249,19 @@ namespace NeuroVida.Games.Shared
+             int steps = Mathf.Clamp(Steps, 2, 3);                                               // 2 pasos («2 · 1 · ¡Ya!») salvo la primera partida del día y la primera vez de un juego
+             for (int s = steps; s >= 1; s--)
+             {
++                FrameProbe.Mark("cuenta:" + s);
+                 GameFeel.Count(s);                                                              // una marimba que sube un escalón por número (calculada ANTES de la cuenta: WoodCore.EarlySet)
+                 var step = calm ? TickCalm(s.ToString(), 3 - s, s < steps) : Tick(s.ToString(), 3 - s, s < steps);
+                 while (step.MoveNext()) yield return step.Current;
+             }
+ 
++            FrameProbe.Mark("cuenta:Ya");
+             GameFeel.Go();
+             var go = calm ? GoCalm(onRevealStart) : Go(onRevealStart);
+             while (go.MoveNext()) yield return go.Current;
+             WoodCore.CountdownRunning = false;
++            FrameProbe.Mark("partida");
++            FrameProbe.End();
+ 
+             _stars.Warp = 0f;
+             _root.gameObject.SetActive(false);
+diff --git a/unity/NeuroVidaCore/Assets/Scripts/Games/Shared/PlasticArt.cs b/unity/NeuroVidaCore/Assets/Scripts/Games/Shared/PlasticArt.cs
+index 0f65c244..ecfbea84 100644
+--- a/unity/NeuroVidaCore/Assets/Scripts/Games/Shared/PlasticArt.cs
++++ b/unity/NeuroVidaCore/Assets/Scripts/Games/Shared/PlasticArt.cs
+@@ -105,6 +105,7 @@ namespace NeuroVida.Games.Shared
+             if (Disabled) return null;
+             if (Groups.TryGetValue(name, out var g) && g != null && g.Atlas != null) return g;
+             if (Missing.Contains(name)) return null;
++            var __sw = System.Diagnostics.Stopwatch.StartNew();
+             var atlas = Resources.Load<Texture2D>(Folder + name + "/atlas");
+             var json = Resources.Load<TextAsset>(Folder + name + "/manifest");
+             if (atlas == null || json == null)
+@@ -122,6 +123,7 @@ namespace NeuroVida.Games.Shared
+             }
+             g = new PlasticGroup(name, atlas, manifest);
+             Groups[name] = g;
++            FrameProbe.Atlas(name, __sw.Elapsed.TotalMilliseconds);
+             return g;
+         }
+ 
+diff --git a/unity/NeuroVidaCore/Assets/Scripts/Games/Shared/WoodCore.cs b/unity/NeuroVidaCore/Assets/Scripts/Games/Shared/WoodCore.cs
+index c6420fe4..dd869794 100644
+--- a/unity/NeuroVidaCore/Assets/Scripts/Games/Shared/WoodCore.cs
++++ b/unity/NeuroVidaCore/Assets/Scripts/Games/Shared/WoodCore.cs
+@@ -89,6 +89,7 @@ namespace NeuroVida.Games.Shared
+ 
+         /// <summary>Para las pruebas: ¿el calculo ya terminó (no queda nada en la cola ni a medio hacer)?</summary>
+         public static bool Idle => _job == null && Pending.Count == 0;
++        public static int PendingCountForProbe => Pending.Count + (_job != null ? 1 : 0);
+ 
+         /// <summary>Los bytes que ocupan los clips del núcleo guardados (muestras de 32 bits, todos los canales).</summary>
+         public static long StoredBytes()
+@@ -263,7 +264,10 @@ namespace NeuroVida.Games.Shared
+                     _jobItem = Pending.Dequeue();
+                     _job = _jobItem.Extra ? new WoodSounds.BakeJob(_jobItem.Make, _jobItem.Key, _jobItem.Mono) : new WoodSounds.BakeJob(_jobItem.Sfx, _jobItem.Arg);
+                 }
+-                if (_job.Step())
++                long __t0 = watch.ElapsedTicks;
++                bool __done = _job.Step();
++                FrameProbe.WoodStep((watch.ElapsedTicks - __t0) * 1000.0 / Stopwatch.Frequency);
++                if (__done)
+                 {
+                     if (_jobItem.Extra) Extras[_jobItem.Key] = _job.Clip; else Clips[KeyOf(_jobItem.Sfx, _jobItem.Arg)] = _job.Clip;
+                     BakeCount++;
+diff --git a/unity/NeuroVidaCore/Assets/Scripts/Games/Shared/WoodCoreDriver.cs b/unity/NeuroVidaCore/Assets/Scripts/Games/Shared/WoodCoreDriver.cs
+index 409d1a9f..16e4ad1f 100644
+--- a/unity/NeuroVidaCore/Assets/Scripts/Games/Shared/WoodCoreDriver.cs
++++ b/unity/NeuroVidaCore/Assets/Scripts/Games/Shared/WoodCoreDriver.cs
+@@ -7,7 +7,7 @@ namespace NeuroVida.Games.Shared
+     {
+         private void Update()
+         {
+-            if (!WoodCore.Idle) WoodCore.Step(WoodCore.CurrentBudgetMs);
++            if (!WoodCore.Idle) { var __sw = System.Diagnostics.Stopwatch.StartNew(); WoodCore.Step(WoodCore.CurrentBudgetMs); FrameProbe.WoodFrame(__sw.Elapsed.TotalMilliseconds); }
+         }
+     }
+ }
