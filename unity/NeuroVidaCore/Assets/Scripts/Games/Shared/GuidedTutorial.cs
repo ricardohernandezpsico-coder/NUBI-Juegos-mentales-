@@ -43,6 +43,8 @@ namespace NeuroVida.Games.Shared
         /// <summary>SOLO EN EL EDITOR (smoke de «Engranajes»): la partida real (sin tutorial) se juega sola, para que el arranque de prueba pase por todo el recorrido de una máquina (armar, cambiar,
         /// arrancar, veredicto, luz del cohete). En el teléfono no existe.</summary>
         public static bool EditorAutoPlayGame;
+        /// <summary>SOLO EN EL EDITOR («Primera*» del smoke, Tarea 191): el tutorial se recorre solo y, cuando termina, la partida se juega sola (<see cref="EditorAutoPlayGame"/> se enciende recién ahí, para no pisar los toques de prueba del tutorial).</summary>
+        public static bool EditorAutoPlayAfterTutorial;
         /// <summary>SOLO EN EL EDITOR (smoke): un toque «de verdad» en <see cref="EditorPressPos"/> (píxeles de pantalla) que ven TODOS los que leen toques durante el cuadro <see cref="EditorPressFrame"/>,
         /// como un dedo. Sirve para comprobar que lo que un paso del tutorial ilumina se puede tocar. En el teléfono no existe.</summary>
         public static Vector2 EditorPressPos;

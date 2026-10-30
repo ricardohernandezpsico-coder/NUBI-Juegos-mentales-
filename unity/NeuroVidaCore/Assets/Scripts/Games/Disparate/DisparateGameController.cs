@@ -73,7 +73,6 @@ namespace NeuroVida.Games.Disparate
         private int _streak, _points, _resolved;
         private float _endsAt;
         private int _lastTickSecond = -1;
-        private bool _hintDone;
         private bool _perfectShown;
 
         // entrada
@@ -86,7 +85,7 @@ namespace NeuroVida.Games.Disparate
         private RectTransform _btnTrue, _btnFalse, _sigBar, _sigFillRect;
         private CanvasGroup _plateGroup;
         private Image _plateImg, _plateGlow, _tipGlow, _ribbon, _sigFill, _mark;
-        private Text _label, _fix, _measure, _hint, _swipeTrue, _swipeFalse, _sigLabel;
+        private Text _label, _fix, _measure, _swipeTrue, _swipeFalse, _sigLabel;
         private readonly List<Image> _rings = new List<Image>();
         private readonly List<Image> _meter = new List<Image>();
         private readonly List<Image> _aurora = new List<Image>();
@@ -128,7 +127,7 @@ namespace NeuroVida.Games.Disparate
             _streak = _points = _resolved = 0;
             _endsAt = 0f;
             _lastTickSecond = -1;
-            _hintDone = _perfectShown = false;
+            _perfectShown = false;
             _warpTarget = 0f;
             _lit = 0;
             _loopOn = _guided = false;
@@ -140,7 +139,6 @@ namespace NeuroVida.Games.Disparate
             _sigLabel.gameObject.SetActive(!Precision && _tt == null);
             SetButtonsLive(true);
             _hud.SetStreak(0);
-            _hint.gameObject.SetActive(false);
             _plate.gameObject.SetActive(false);
             _mark.gameObject.SetActive(false);
             _swipeTrue.gameObject.SetActive(false);
@@ -152,6 +150,13 @@ namespace NeuroVida.Games.Disparate
             StartCoroutine(GameLoop());
         }
 
+
+        /// <summary>Las frases vienen de datos y no se pueden listar de antemano: se precalienta el alfabeto completo del español en el tamaño real de la frase y de su corrección (Tarea 191; 4 ms por cuadro, detrás de la carga).</summary>
+        protected override IEnumerable<(Text sample, string chars, int fontSize)> GlyphExtras()
+        {
+            if (_label != null) yield return (_label, GlyphWarm.Alphabet, 0);
+            if (_fix != null) yield return (_fix, GlyphWarm.Alphabet, 0);
+        }
 
         private IEnumerator GameLoop()
         {
@@ -603,7 +608,6 @@ namespace NeuroVida.Games.Disparate
                 _tally.Add(spec.S, correct, correct ? ms : -1);
                 _resolved++;
             }
-            if (!_hintDone) { _hintDone = true; _hint.gameObject.SetActive(false); }
             if (!spec.Burst) Register(correct);
 
             if (correct) yield return StartCoroutine(CorrectFeedback(spec));
@@ -1045,7 +1049,6 @@ namespace NeuroVida.Games.Disparate
             _points = 0;
             SetMeter(0, false);
             _hud.SetStreak(0);
-            _hint.gameObject.SetActive(false);
             _timerBg.gameObject.SetActive(false);
             _phase = Phase.Playing;
             _allow = Allow.None;
@@ -1136,7 +1139,6 @@ namespace NeuroVida.Games.Disparate
             _wasBurst = keptBurst;
             _cur = keptCur;
             _timerBg.gameObject.SetActive(Endless);
-            _hint.gameObject.SetActive(_loopOn && !_hintDone);
             UpdateHud();
             _guided = false;
             _phase = Phase.Idle;                                       // la partida (o «Cómo se juega») sigue desde su bucle
@@ -1293,9 +1295,6 @@ namespace NeuroVida.Games.Disparate
             BuildSignalBar();
             BuildButtons();
 
-            _hint = CenteredText(_play, "Hint", 56, new Color(1f, 1f, 1f, 0.95f));
-            NeuroStyle.ClayText(_hint, 3f, 4f);
-            _hint.gameObject.SetActive(false);
 
             _measure = MakeText(_play, "Measure", 72, TextAnchor.UpperLeft, Color.white, 0f, 0f);
             _measure.font = UiFonts.Word;
@@ -1631,8 +1630,6 @@ namespace NeuroVida.Games.Disparate
             _sigY = _plateY - 270f;
             _sigBar.anchoredPosition = new Vector2(80f, _sigY);
             _sigLabel.rectTransform.anchoredPosition = new Vector2(-300f, _sigY);
-            _hint.rectTransform.sizeDelta = new Vector2(_playW - MarginU * 2f, 160f);
-            _hint.rectTransform.anchoredPosition = new Vector2(0f, _sigY - 190f);
 
             _plate.anchoredPosition = new Vector2(0f, _plateY);
             _ribbon.rectTransform.anchoredPosition = _dishPos;

@@ -164,6 +164,13 @@ namespace NeuroVida.Games.Stroop
 
         private const int PromptUnits = 60;
 
+        /// <summary>La marca de «ya vio la tarjeta Ahora: PALABRA» (<see cref="SeenMarks"/>; progreso: va en el respaldo).</summary>
+        private const string CardsKey = "tinta_cards";
+        private const int WordCardBit = 1;
+
+        /// <summary>El tutorial ya enseñó la orilla de la PALABRA (Tarea 191): la tarjeta queda vista.</summary>
+        protected override void TutorialTaught() => SeenMarks.Mark(CardsKey, WordCardBit);
+
         private IEnumerator GameLoop()
         {
             _safe.gameObject.SetActive(false);                                      // el tablero no se ve mientras se arma (sin acomodar los botones miden 100 u): se activa ya acomodado (Tarea 190)
@@ -251,9 +258,10 @@ namespace NeuroVida.Games.Stroop
             ResetButtons();
 
             // la primera vez que una palabra llega por la orilla de la PALABRA, una tarjeta lo explica (no le gasta tiempo al Reto)
-            if (_trial.Rule == StroopRule.Word && !_taughtWord)
+            if (_trial.Rule == StroopRule.Word && !_taughtWord && !SeenMarks.IsSeen(CardsKey, WordCardBit))
             {
                 _taughtWord = true;
+                SeenMarks.Mark(CardsKey, WordCardBit);                  // una sola vez en la vida de la persona, no en cada partida (Tarea 191): vista apenas se muestra
                 yield return StartCoroutine(ShowRuleCard());
             }
             yield return StartCoroutine(SlideIn(_trial, StroopContract.ArrivalSeconds(_effLevel, Senior), _trial.Switched));

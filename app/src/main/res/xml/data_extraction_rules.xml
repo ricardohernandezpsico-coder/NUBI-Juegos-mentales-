@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Qué se respalda en Android 12+ (copia en la nube y traspaso de teléfono a teléfono). Es la misma lista que
-  backup_rules.xml (Android 11 e inferior): solo el progreso, no el estado pasajero. Explicación completa allá.
+  backup_rules.xml (Android 11 e inferior): solo el progreso, no el estado pasajero (incluido el archivo de preferencias de Unity, que es progreso: las marcas de «ya visto» y el repaso de Intrusa). Explicación completa allá.
 -->
 <data-extraction-rules>
     <cloud-backup>
@@ -26,6 +26,7 @@
         <include domain="sharedpref" path="achievements.xml" />
         <include domain="sharedpref" path="mission_log.xml" />
         <include domain="sharedpref" path="profile_extra.xml" />
+        <include domain="sharedpref" path="com.nubibraingames.app.v2.playerprefs.xml" />
     </cloud-backup>
     <device-transfer>
         <include domain="database" path="neurovida_database" />
@@ -49,5 +50,6 @@
         <include domain="sharedpref" path="achievements.xml" />
         <include domain="sharedpref" path="mission_log.xml" />
         <include domain="sharedpref" path="profile_extra.xml" />
+        <include domain="sharedpref" path="com.nubibraingames.app.v2.playerprefs.xml" />
     </device-transfer>
 </data-extraction-rules>

@@ -122,7 +122,7 @@ namespace NeuroVida.Games.Freno
         {
             _safe.gameObject.SetActive(false);                                      // el tablero no se ve mientras se arma (sin acomodar los botones miden 100 u): se activa ya acomodado (Tarea 190)
             BrakeSounds.Request();                  // la señal de salida (el ESTÍMULO) y el «¡Más rápido!» se piden ANTES de la cuenta: la señal nunca puede esperar a calcularse
-            bool tutorialPlayed = false;
+            bool tutorialSkipped = false;
             _safe.gameObject.SetActive(true);
             yield return null;
             ApplySafeArea(_safe);
@@ -140,7 +140,7 @@ namespace NeuroVida.Games.Freno
                 UpdateGauge(false);
                 UpdateHud();
                 yield return StartCoroutine(RunTutorialIfNeeded());
-                tutorialPlayed = !_tutorial.Skipped;
+                tutorialSkipped = _tutorial.Skipped;
                 Canvas.ForceUpdateCanvases();
                 Layout();
                 SetupLanes(BrakeContract.Pads(_dda.PresentedLevel));
@@ -150,9 +150,10 @@ namespace NeuroVida.Games.Freno
                 _hud.SetPrompt(BrakeContract.GoRule);
             }
 
-            // Primera vez sin tutorial (o si lo saltó): las dos reglas, antes del primer lanzamiento.
-            if (!tutorialPlayed)
+            // Solo en la partida en que se ofreció el tutorial y se saltó (Tarea 191; antes salía en TODA partida sin tutorial): las dos reglas, antes del primer lanzamiento y del «¡Ya!».
+            if (tutorialSkipped)
             {
+                EntrySequence.Note("reglas");
                 yield return StartCoroutine(Wait(1.6f));
                 _hud.SetPrompt(BrakeContract.StopRule);
                 _hud.PulsePrompt();

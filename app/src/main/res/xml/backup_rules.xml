@@ -5,8 +5,11 @@
   que forman parte de ese avance. Con esto un teléfono nuevo o restaurado recupera la liga, los logros, el avance de
   cada juego y la historia de la semana.
   NO se respalda el estado pasajero: la partida en pausa (paused_game), la sesión en curso (game_session), el inicio a medias (first_flight), la
-  bandeja de resultados de Unity (unity_results), dónde quedó Juegos (library_focus) ni las preferencias de Unity.
+  bandeja de resultados de Unity (unity_results), dónde quedó Juegos (library_focus) ni el pedido de borrado de las preferencias de Unity (unity_reset).
   Restaurarlos en otro teléfono dejaría una partida "fantasma" a medias.
+  SÍ se respalda el archivo de preferencias de Unity entero (com.nubibraingames.app.v2.playerprefs.xml: el nombre es el applicationId + «.v2.playerprefs.xml»; Tarea 191): lleva las marcas de «ya visto» de las tarjetas «NUEVO» (sin ellas, un teléfono restaurado
+  no repite el tutorial pero vuelve a mostrar todas las tarjetas), los modos de Rastro de luz que ya se desbloquearon, el repaso de reglas falladas y las láminas de La estrella intrusa (avance de verdad) y las ventanas de «lo último que salió» de Punta, Disparate e Intrusa
+  (chicas e inofensivas al restaurar). Una partida a medias NO vive ahí. «Borrar datos» lo borra entero (bridge/UnityPrefs).
   Si se agrega un archivo de preferencias nuevo que sea progreso, hay que sumarlo aquí Y en data_extraction_rules.xml
   (hay una prueba, BackupRulesTest, que avisa si una preferencia no está en ninguna de las dos listas).
 -->
@@ -32,4 +35,5 @@
     <include domain="sharedpref" path="achievements.xml" />
     <include domain="sharedpref" path="mission_log.xml" />
     <include domain="sharedpref" path="profile_extra.xml" />
+    <include domain="sharedpref" path="com.nubibraingames.app.v2.playerprefs.xml" />
 </full-backup-content>

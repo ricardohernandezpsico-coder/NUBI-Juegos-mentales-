@@ -23,9 +23,30 @@ object UnityGameLauncher {
    *  para el inicio nuevo («Primer vuelo con Nubi»). Para sumar otro juego: ver docs/diseno-rastro-de-luz.md. */
   val TUTORIAL_GAMES = setOf("secuencia", "freno", "aterrizaje", "meteoros", "stroop", "anagramas", "calculo", "engranajes", "bodega", "parejas", "correo", "disparate", "intrusa", "satelites", "piloto", "radar", "acoplamiento")
 
-  /** La app manda `show_tutorial` si el juego tiene tutorial y la persona NO tiene partidas de él en el historial (la ronda guiada no se guarda). */
-  fun shouldShowTutorial(gameId: String, history: List<com.example.model.GamePlayResult>): Boolean =
-    gameId in TUTORIAL_GAMES && history.none { it.gameId == gameId }
+  /**
+   * La app manda `show_tutorial` si el juego tiene tutorial y la persona NO tiene partidas de él en el historial (la ronda guiada no se guarda). Desde la Tarea 191 una partida de CONTRARRELOJ también cuenta como historial
+   * (vive en su propia tabla, `time_trial_results`): el tutorial sale UNA sola vez por juego, sea cual sea el primer modo.
+   */
+  fun shouldShowTutorial(gameId: String, history: List<com.example.model.GamePlayResult>, timeTrials: List<com.example.data.TimeTrialResult> = emptyList()): Boolean =
+    gameId in TUTORIAL_GAMES && history.none { it.gameId == gameId } && timeTrials.none { it.gameId == gameId }
+
+  /**
+   * La PRIMERA partida normal de un juego sin historial (Tarea 191, «abajo y sube rápido»): la que hoy lleva el tutorial. El DDA parte en la etapa 1 (la que enseña el tutorial) y sube un paso por cada ensayo bien hecho hasta el nivel sembrado.
+   * No lo es la evaluación del Primer vuelo, el Contrarreloj, Suave, Desafío ni Al límite, ni «Cómo se juega» de la ficha (tutorial forzado: es una partida real de alguien que ya puede tener historial).
+   */
+  fun isFirstGame(
+    gameId: String,
+    history: List<com.example.model.GamePlayResult>,
+    timeTrials: List<com.example.data.TimeTrialResult>,
+    mode: com.example.data.PlayMode,
+    assessment: Boolean,
+    timeTrial: Boolean,
+    forceTutorial: Boolean
+  ): Boolean = !assessment && !timeTrial && !forceTutorial && mode == com.example.data.PlayMode.A_TU_MEDIDA && shouldShowTutorial(gameId, history, timeTrials)
+
+  /** Las partidas de «Jugar como la primera vez» (solo botones [Debug]): su id de lanzamiento lleva este prefijo y su resultado NO se guarda. */
+  const val FRESH_LAUNCH_PREFIX = "primera-vez-"
+  fun isFreshLaunch(launchId: String?): Boolean = launchId != null && launchId.startsWith(FRESH_LAUNCH_PREFIX)
 
   @JsonClass(generateAdapter = true)
   data class ConfigDetailsDto(
@@ -55,6 +76,12 @@ object UnityGameLauncher {
     val debug_build: Boolean = false,
     // SOLO en las builds de depuración (Tarea 190c): la hora del toque en «Jugar» (reloj del teléfono, milisegundos desde 1970), para repartir la espera hasta el «listo» de Unity. En release va 0.
     val launch_at_ms: Long = 0L,
+    // La PRIMERA partida normal de un juego sin historial (Tarea 191, `isFirstGame`): el DDA parte en la etapa 1 y sube un paso por ensayo bien hecho hasta el nivel sembrado.
+    val first_game: Boolean = false,
+    // SOLO depuración (botón [Debug] «Jugar como la primera vez»): tutorial, subida y tarjetas «NUEVO» como alguien nuevo; las marcas de «ya visto» no se leen ni se guardan y el resultado no se guarda.
+    val fresh_start: Boolean = false,
+    // «Borrar datos» (Tarea 191, H4): Unity borra SUS preferencias (marcas de «ya visto», rotación de palabras) al empezar esta partida, esté vivo o no su proceso. La app lo manda hasta que lanza la siguiente partida (`UnityPrefs`).
+    val reset_unity_prefs: Boolean = false,
     // SOLO depuración (botones [Debug]): Unity dibuja encima del tutorial los rectángulos del foco y el último toque, para mandar una captura de lo que pasa en el teléfono.
     val debug_overlay: Boolean = false,
     // Solo «En la punta de la lengua» (anagramas): las palabras que Nubi mostró en partidas anteriores («las azules»), separadas por «;». Vuelven en otra partida.
@@ -139,8 +166,9 @@ object UnityGameLauncher {
     pilSectorS: Int = 0,            // solo las herramientas de prueba: segundos por sector de Piloto (0 = 30)
     rescStage: Int = 0,             // solo las herramientas de prueba: Rescate relámpago empieza en este nivel (0 = normal)
     timeTrial: Boolean = false,     // el Contrarreloj de hoy (Tarea 177): la pista fija del día (la fecha va en track_seed), 120 s y sin dificultad adaptativa
-    trackSeed: Int = 0              // la fecha del Contrarreloj (aaaammdd); solo se lee con timeTrial
-  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, mode, forceTutorial, debugOverlay, conStage, mailStage, satStage, satSurprise, pilStage, pilSectorS, rescStage, timeTrial, trackSeed)
+    trackSeed: Int = 0,             // la fecha del Contrarreloj (aaaammdd); solo se lee con timeTrial
+    freshStart: Boolean = false     // solo las herramientas de prueba: «Jugar como la primera vez» (tutorial, subida y tarjetas como alguien nuevo; el resultado no se guarda: el id de lanzamiento lleva FRESH_LAUNCH_PREFIX)
+  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, mode, forceTutorial, debugOverlay, conStage, mailStage, satStage, satSurprise, pilStage, pilSectorS, rescStage, timeTrial, trackSeed, freshStart)
 
   private fun buildIntent(
     context: Context,
@@ -165,9 +193,12 @@ object UnityGameLauncher {
     pilSectorS: Int = 0,
     rescStage: Int = 0,
     timeTrial: Boolean = false,
-    trackSeed: Int = 0
+    trackSeed: Int = 0,
+    freshStart: Boolean = false
   ): Intent {
     val assessment = assessmentStep > 0
+    val repo = com.example.NeuroVidaApplication.instance.repository
+    val firstGame = freshStart || isFirstGame(gameId, repo.gameHistory.value, repo.timeTrialResults.value, mode, assessment, timeTrial, forceTutorial)
     val savedRating = if (assessment) -1f else com.example.NeuroVidaApplication.instance.repository.gameDdaRating.value[gameId] ?: -1f
     val bounds = if (assessment) com.example.data.ModeBounds() else com.example.data.Skill.bounds(gameId, savedRating, mode, ageBand)
     val config = InitConfigDto(
@@ -188,7 +219,10 @@ object UnityGameLauncher {
         reduce_motion = android.provider.Settings.Global.getFloat(
           context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f
         ) == 0f,
-        show_tutorial = forceTutorial || shouldShowTutorial(gameId, com.example.NeuroVidaApplication.instance.repository.gameHistory.value),
+        show_tutorial = forceTutorial || freshStart || shouldShowTutorial(gameId, repo.gameHistory.value, repo.timeTrialResults.value),
+        first_game = firstGame,
+        fresh_start = freshStart,
+        reset_unity_prefs = UnityPrefs.resetPending(context),
         debug_build = com.example.BuildConfig.DEBUG,
         launch_at_ms = if (com.example.BuildConfig.DEBUG) System.currentTimeMillis() else 0L,
         debug_overlay = debugOverlay,
@@ -220,6 +254,6 @@ object UnityGameLauncher {
     return Intent(context, UnityPlayerGameActivity::class.java)
       .addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
       .putExtra(EXTRA_CONFIG_JSON, json)
-      .putExtra(EXTRA_LAUNCH_ID, launchId ?: java.util.UUID.randomUUID().toString())
+      .putExtra(EXTRA_LAUNCH_ID, launchId ?: (if (freshStart) FRESH_LAUNCH_PREFIX else "") + java.util.UUID.randomUUID().toString())
   }
 }

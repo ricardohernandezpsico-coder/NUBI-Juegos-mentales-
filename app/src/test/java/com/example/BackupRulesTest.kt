@@ -12,7 +12,7 @@ import org.junit.Test
 class BackupRulesTest {
   // Estado pasajero: se pierde a propósito al cambiar de teléfono (una partida o un recorrido del inicio «fantasma» a medias no sirven).
   // `first_flight` = «Primer vuelo con Nubi» en curso (data/FirstFlight.kt). (`route_celebrations`, qué farolas de la ruta y qué ruta completa se celebraron hoy —Tarea 88—, se RETIRÓ en la Tarea 168: ya no se escribe; si un teléfono conserva el archivo, queda sin uso y no se respalda.) (`desafio_hoy`, cuál era el Desafío de hoy y cómo iba —Tarea 167—, se RETIRÓ en la Tarea 177 con `DailyChallenge`: el Contrarreloj de hoy se DERIVA de la tabla `time_trial_results`, que va en la base y sí se respalda; si un teléfono conserva el archivo, queda sin uso y no se respalda.) `isla_piezas` = qué piezas de la isla (las que dan las medallas) Hoy ya mostró (data/IslaPiezasSeen.kt; Tarea 136): las piezas se DERIVAN de las medallas, que sí se respaldan, así que al restaurar solo se pierde el «ya la vi» y Hoy siembra en silencio. color_vision NO es pasajero: vive en profile_extra, que sí se respalda (igual que lo que quedó guardado de result_focus / coach_tone, que ya no se lee).
-  private val transient = setOf("paused_game", "game_session", "unity_results", "library_focus", "first_flight", "isla_piezas")
+  private val transient = setOf("paused_game", "game_session", "unity_results", "library_focus", "first_flight", "isla_piezas", "unity_reset")
 
   private fun xml(name: String) = File("src/main/res/xml/$name").readText()
 
@@ -58,6 +58,18 @@ class BackupRulesTest {
         "Súmalas a backup_rules.xml y data_extraction_rules.xml, o a la lista `transient` de esta prueba.",
       undecided.isEmpty()
     )
+  }
+
+  @Test
+  fun `el archivo de preferencias de Unity se respalda entero con su nombre real (son marcas de ya visto y avance)`() {
+    // Tarea 191 (H4): sin él, un teléfono restaurado no repite el tutorial pero vuelve a mostrar todas las tarjetas «NUEVO», y se pierden el repaso y las láminas de Intrusa. El nombre es el applicationId + «.v2.playerprefs.xml».
+    val applicationId = Regex("""applicationId = "([^"]+)"""").find(File("build.gradle.kts").readText())!!.groupValues[1]
+    val name = "$applicationId.v2.playerprefs.xml"
+    assertEquals("com.nubibraingames.app.v2.playerprefs.xml", name)
+    for (text in listOf(xml("backup_rules.xml"), cloudSection(xml("data_extraction_rules.xml")), transferSection(xml("data_extraction_rules.xml")))) {
+      assertTrue("falta $name en las reglas de respaldo", includes(text, "sharedpref").contains(name))
+    }
+    assertTrue("el pedido de borrado de «Borrar datos» es pasajero: no se respalda", !includes(xml("backup_rules.xml"), "sharedpref").contains("unity_reset.xml"))
   }
 
   @Test

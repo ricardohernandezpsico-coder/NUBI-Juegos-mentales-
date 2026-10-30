@@ -80,11 +80,24 @@ class EmojiSweepTest {
     assertTrue("Emojis en los recursos:\n" + hits.joinToString("\n"), hits.isEmpty())
   }
 
+  /** La palabra vetada que lleva la línea, sin contar el applicationId (`com.nubibraingames.app`, que lleva «brain» dentro: es el id de la app, no un texto; Tarea 191: el archivo de preferencias de Unity se llama como él). */
+  private fun bannedIn(line: String, words: List<String>): String? = line.lowercase().replace("com.nubibraingames.app", "").let { clean -> words.firstOrNull { it in clean } }
+
+  @Test
+  fun `el applicationId no cuenta como la palabra brain pero brain en cualquier otra parte sigue fallando`() {
+    val words = listOf("cerebro", "brain", "🧠")
+    assertEquals(null, bannedIn("""<include domain="sharedpref" path="com.nubibraingames.app.v2.playerprefs.xml" />""", words))
+    assertEquals("brain", bannedIn("https://nubibraingames.com", words))
+    assertEquals("brain", bannedIn("Nubi - Brain Games", words))
+    assertEquals("brain", bannedIn("com.nubibraingames.app y otra vez nubibraingames", words))
+    assertEquals("cerebro", bannedIn("el cerebro", words))
+  }
+
   @Test
   fun `ni el codigo ni los recursos hablan de cerebro, brain ni usan el emoji del cerebro`() {
     val words = listOf("cerebro", "brain", "🧠")
-    val code = kotlinSources().flatMap { (f, t) -> t.lines().mapIndexedNotNull { i, l -> words.firstOrNull { it in l.lowercase() }?.let { "$f:${i + 1} «$it»" } } }
-    val res = resourceFiles().flatMap { f -> f.readText().lines().mapIndexedNotNull { i, l -> words.firstOrNull { it in l.lowercase() }?.let { "${f.path}:${i + 1} «$it»" } } }
+    val code = kotlinSources().flatMap { (f, t) -> t.lines().mapIndexedNotNull { i, l -> bannedIn(l, words)?.let { "$f:${i + 1} «$it»" } } }
+    val res = resourceFiles().flatMap { f -> f.readText().lines().mapIndexedNotNull { i, l -> bannedIn(l, words)?.let { "${f.path}:${i + 1} «$it»" } } }
     assertTrue("«cerebro»/«brain» en el código o los recursos:\n" + (code + res).joinToString("\n"), (code + res).isEmpty())
   }
 

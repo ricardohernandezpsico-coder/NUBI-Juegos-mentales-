@@ -46,14 +46,17 @@ namespace NeuroVida.Games.Parejas.Tests
         }
 
         [Test]
-        public void TheNewCardsComeAtTheRightStage_AndAnyoneStartingHigherSeesThemAll()
+        public void TheNewCardsComeAtTheRightStage_AndNothingIsFilledInBackwards()
         {
-            Assert.AreEqual(new[] { ConIntro.Cielo }, ConstelacionContract.IntrosFor(1).ToArray());
-            Assert.AreEqual(new[] { ConIntro.Cielo }, ConstelacionContract.IntrosFor(6).ToArray());
-            Assert.AreEqual(new[] { ConIntro.Cielo, ConIntro.Gemelos }, ConstelacionContract.IntrosFor(7).ToArray());
-            Assert.AreEqual(new[] { ConIntro.Cielo, ConIntro.Gemelos, ConIntro.Trios }, ConstelacionContract.IntrosFor(10).ToArray());
-            Assert.AreEqual(new[] { ConIntro.Cielo, ConIntro.Gemelos, ConIntro.Trios, ConIntro.Mezcla }, ConstelacionContract.IntrosFor(13).ToArray());
-            Assert.AreEqual(new[] { ConIntro.Cielo, ConIntro.Gemelos, ConIntro.Trios, ConIntro.Mezcla, ConIntro.Grande }, ConstelacionContract.IntrosFor(16).ToArray());
+            // Tarea 191: solo las de las etapas que se PISAN; quien parte en la etapa 9 no ve «Cielo» y «Gemelos» juntas
+            Assert.AreEqual(new[] { ConIntro.Cielo }, ConstelacionContract.IntrosBetween(0, 1).ToArray());
+            Assert.IsEmpty(ConstelacionContract.IntrosBetween(1, 6).ToArray());
+            Assert.AreEqual(new[] { ConIntro.Gemelos }, ConstelacionContract.IntrosBetween(6, 7).ToArray());
+            Assert.IsEmpty(ConstelacionContract.IntrosBetween(8, 9).ToArray(), "partir en la etapa 9 no trae las de las etapas de atrás");
+            Assert.AreEqual(new[] { ConIntro.Gemelos, ConIntro.Trios }, ConstelacionContract.IntrosBetween(5, 11).ToArray(), "si la subida salta de etapa, salen las que se pisaron, en orden");
+            Assert.AreEqual(new[] { ConIntro.Trios }, ConstelacionContract.IntrosBetween(9, 10).ToArray());
+            Assert.AreEqual(new[] { ConIntro.Mezcla }, ConstelacionContract.IntrosBetween(12, 13).ToArray());
+            Assert.AreEqual(new[] { ConIntro.Cielo, ConIntro.Gemelos, ConIntro.Trios, ConIntro.Mezcla, ConIntro.Grande }, ConstelacionContract.IntrosBetween(0, 18).ToArray());
             Assert.AreEqual(ConIntro.Gemelos, ConstelacionContract.Stage(7).Intro);
             Assert.AreEqual(ConIntro.Trios, ConstelacionContract.Stage(10).Intro);
             Assert.AreEqual(ConIntro.Mezcla, ConstelacionContract.Stage(13).Intro);

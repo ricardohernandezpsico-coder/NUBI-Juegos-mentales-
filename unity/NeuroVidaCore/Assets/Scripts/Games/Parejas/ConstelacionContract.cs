@@ -107,11 +107,12 @@ namespace NeuroVida.Games.Parejas
         /// <summary>El grupo de etapas (1..6) de un nivel: 3 etapas por grupo.</summary>
         public static int GroupOf(int level) => (Math.Max(1, Math.Min(MaxLevel, level)) - 1) / StagesPerGroup + 1;
 
-        /// <summary>Las tarjetas «NUEVO» que trae la etapa (la de la etapa y las anteriores de la escalera que la persona nunca vio, por si empieza más arriba), de la más nueva a la más vieja no: en orden de aparición.</summary>
-        public static IEnumerable<ConIntro> IntrosFor(int level)
+        /// <summary>Las tarjetas «NUEVO» de las etapas que se PISAN al pasar de <paramref name="previousLevel"/> (la última etapa ya atendida; en la primera, la de antes) a <paramref name="level"/>, en orden de aparición: sin relleno hacia atrás (Tarea 191: quien parte en la etapa 9 no ve «Cielo» y «Gemelos» juntas).
+        /// Con la subida de la primera partida pasa por cada etapa, así que cada tarjeta sale de a una, en la etapa que la trae.</summary>
+        public static IEnumerable<ConIntro> IntrosBetween(int previousLevel, int level)
         {
-            int l = Math.Max(1, Math.Min(MaxLevel, level));
-            for (int i = 1; i <= l; i++)
+            int lo = Math.Max(0, Math.Min(MaxLevel, previousLevel)), hi = Math.Max(1, Math.Min(MaxLevel, level));
+            for (int i = lo + 1; i <= hi; i++)
             {
                 var intro = Stages[i - 1].Intro;
                 if (intro != ConIntro.None) yield return intro;

@@ -151,14 +151,7 @@ namespace NeuroVida.Games.Bodega
             SetUpOrder(order);
             _errs = 0;                       // los errores se cuentan POR PEDIDO: «perfecto» es un pedido sin errores, aunque antes hubiera habido otros
             UpdateHud();
-            foreach (var intro in BodegaContract.IntrosFor(order.Level))
-            {
-                if (IntroSeen(intro)) continue;
-                float before = GameClock.Time;
-                yield return StartCoroutine(ShowIntro(intro));
-                _endsAt = HowToClock.Shift(_endsAt, GameClock.Time - before);       // la tarjeta «NUEVO» no gasta tiempo del Reto
-                MarkIntroSeen(intro);
-            }
+            yield return StartCoroutine(ShowIntrosFor(order.Level, true));
             _aborted = false;
             yield return StartCoroutine(StorePhase(order));
             if (!_aborted) yield return StartCoroutine(MovePhase(order));
@@ -524,18 +517,36 @@ namespace NeuroVida.Games.Bodega
 
         private static bool IntroSeen(Intro intro)
         {
-            try { return (PlayerPrefs.GetInt(IntroKey, 0) & (1 << (int)intro)) != 0; }
-            catch (System.Exception) { return false; }
+            return SeenMarks.IsSeen(IntroKey, 1 << (int)intro);
         }
 
         private static void MarkIntroSeen(Intro intro)
         {
-            try { PlayerPrefs.SetInt(IntroKey, PlayerPrefs.GetInt(IntroKey, 0) | (1 << (int)intro)); PlayerPrefs.Save(); }
-            catch (System.Exception) { }
+            SeenMarks.Mark(IntroKey, 1 << (int)intro);
         }
+
+        /// <summary>Las tarjetas «NUEVO» de lo que trae la etapa del pedido, una a una, cada una marcada como vista apenas se muestra (Tarea 191); no gastan tiempo del Reto.</summary>
+        private IEnumerator ShowIntrosFor(int level, bool shiftClock)
+        {
+            foreach (var intro in BodegaContract.IntrosFor(level))
+            {
+                if (IntroSeen(intro)) continue;
+                MarkIntroSeen(intro);
+                float before = GameClock.Time;
+                yield return StartCoroutine(ShowIntro(intro));
+                if (shiftClock) _endsAt = HowToClock.Shift(_endsAt, GameClock.Time - before);
+            }
+        }
+
+        /// <summary>Las tarjetas del primer pedido, antes del «¡Ya!» (Tarea 191).</summary>
+        protected override IEnumerator BeforeGoCards() => ShowIntrosFor(_dda.PresentedLevel, false);
+
+        /// <summary>«Bodega» repite lo que enseñó el tutorial (Tarea 191): queda vista.</summary>
+        protected override void TutorialTaught() => MarkIntroSeen(Intro.Bodega);
 
         private IEnumerator ShowIntro(Intro intro)
         {
+            EntrySequence.Note("tarjeta");
             _phase = Phase.Intro;
             _introTapped = false;
             _introKind = intro;

@@ -63,6 +63,8 @@ namespace NeuroVida.Games.Correo
             _config = config;
             _rng = new System.Random();
             _dda = MailContract.CreateEngine(config.config);
+            _introLevel = -1;
+            _dayPrepared = false;
             _bestRecord = Mathf.Max(0, config.config.mail_best);
             _debugStage = Mathf.Max(0, config.config.mail_stage);
             _run = new MailRun(MailContract.StartLevel(_dda), _bestRecord, _rng)
@@ -144,19 +146,55 @@ namespace NeuroVida.Games.Correo
             return MailContract.DaySeconds;
         }
 
-        private IEnumerator PlayDay()
+        /// <summary>El día ya armado (y sus tarjetas «NUEVO» vistas) antes del «¡Ya!»: el primer día de la partida (Tarea 191).</summary>
+        private bool _dayPrepared;
+
+        /// <summary>La última etapa cuyas tarjetas ya se atendieron (-1 = ninguna: el primer día solo cuenta la de la etapa de partida, sin relleno hacia atrás).</summary>
+        private int _introLevel = -1;
+
+        private void PrepareDay()
         {
             _aborted = false;
             _day = _run.NextDay(DaySeconds());
             BindDay(_day);
             UpdateHud();
             _phase = Phase.Idle;
-            foreach (var intro in MailContract.IntrosFor(_run.Level))
+        }
+
+        /// <summary>Las tarjetas «NUEVO» de las etapas que se pisan hasta la del día, una a una, cada una marcada como vista apenas se muestra (Tarea 191).</summary>
+        private IEnumerator ShowIntrosForDay()
+        {
+            int level = _run.Level;
+            int previous = _introLevel < 0 ? level - 1 : _introLevel;
+            _introLevel = Mathf.Max(_introLevel, level);
+            foreach (var intro in MailContract.IntrosBetween(previous, level))
             {
                 if (IntroSeen(intro)) continue;
-                yield return StartCoroutine(ShowIntro(intro));
                 MarkIntroSeen(intro);
+                yield return StartCoroutine(ShowIntro(intro));
             }
+        }
+
+        /// <summary>El primer día se arma y muestra sus tarjetas ANTES del «¡Ya!»; la hoja de la mañana, que es juego, va después (Tarea 191).</summary>
+        protected override IEnumerator BeforeGoCards()
+        {
+            PrepareDay();
+            yield return StartCoroutine(ShowIntrosForDay());
+            _dayPrepared = true;
+        }
+
+        /// <summary>«Estación» y «Hora» repiten la meta y los focos del tutorial (Tarea 191): quedan vistas.</summary>
+        protected override void TutorialTaught()
+        {
+            MarkIntroSeen(MailIntro.Estacion);
+            MarkIntroSeen(MailIntro.Hora);
+        }
+
+        private IEnumerator PlayDay()
+        {
+            if (_dayPrepared) _dayPrepared = false;
+            else PrepareDay();
+            yield return StartCoroutine(ShowIntrosForDay());
             yield return StartCoroutine(ShowBrief());
             BeginPlay();
             while (!_day.Ended && !_aborted) yield return null;
@@ -212,6 +250,7 @@ namespace NeuroVida.Games.Correo
 
         private IEnumerator ShowBrief()
         {
+            EntrySequence.Note("hoja");
             _phase = Phase.Brief;
             BindBrief();
             ShowOnly(_briefLayer);
@@ -267,18 +306,17 @@ namespace NeuroVida.Games.Correo
 
         private static bool IntroSeen(MailIntro intro)
         {
-            try { return (PlayerPrefs.GetInt(IntroKey, 0) & (1 << (int)intro)) != 0; }
-            catch (System.Exception) { return false; }
+            return SeenMarks.IsSeen(IntroKey, 1 << (int)intro);
         }
 
         private static void MarkIntroSeen(MailIntro intro)
         {
-            try { PlayerPrefs.SetInt(IntroKey, PlayerPrefs.GetInt(IntroKey, 0) | (1 << (int)intro)); PlayerPrefs.Save(); }
-            catch (System.Exception) { }
+            SeenMarks.Mark(IntroKey, 1 << (int)intro);
         }
 
         private IEnumerator ShowIntro(MailIntro intro)
         {
+            EntrySequence.Note("tarjeta");
             _phase = Phase.Intro;
             _tapped = false;
             _introKind = intro;

@@ -171,3 +171,8 @@ Para las pantallas previas (para Fable y Opus; solo propuestas, nada hecho):
 8. **Sacar la instrucción larga de la pantalla de carga** (la ficha y la pausa ya la ofrecen); es lo que la T190 pide.
 9. **Contrarreloj (H5) y Freno (H6):** decidir si el tutorial también cuenta con las marcas del Contrarreloj, y qué hace el pre-roll de Freno cuando ya se jugó.
 10. **«Cómo se juega» de la ficha** (H7): si debe ser solo la ronda guiada, necesita su propio camino (hoy lanza una partida que se guarda).
+
+## 4. Estado tras la Tarea 191 (30-oct)
+
+Detalle en `docs/entrada-al-juego.md` §9. **H1:** el Primer vuelo ya no repite la línea de cómo se juega (H8); la carga no explica desde la T190. **H2:** al terminar o saltar el tutorial quedan vistas las tarjetas que repiten lo que enseñó. **H3:** la primera partida normal de un juego sin historial parte en la etapa 1 y sube un paso por ensayo bien hecho hasta el sembrado; las tarjetas salen de a una, sin relleno hacia atrás, antes del «¡Ya!» (la hoja de Correo, después).
+**H4:** el archivo de preferencias de Unity se respalda y «Borrar datos» lo borra (con el proceso `:unity` vivo o no). **H5:** el Contrarreloj cuenta como historial para el tutorial. **H6:** el repaso de Freno solo sale cuando se ofreció el tutorial y se saltó. **H7:** «Cómo se juega» de la ficha se queda como estaba (una partida real que se guarda). **H9:** quitado el código muerto y corregidos los comentarios; una tarjeta cuenta como vista apenas se muestra.

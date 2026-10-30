@@ -174,6 +174,8 @@ namespace NeuroVida.Bridge
             NeuroVida.Games.Shared.Assessment.Configure(config.config);
             // Modo elegido antes de jugar (Suave / Desafío / Experto): techo o piso de todos los DDA de la partida.
             NeuroVida.Games.AdaptiveDifficulty.ConfigureMode(config.config);
+            // «Jugar como la primera vez» (solo botones [Debug]): las marcas de «ya visto» no se leen ni se guardan (Tarea 191).
+            NeuroVida.Games.Shared.SeenMarks.Configure(config.config);
             switch (config.game_id)
             {
                 case RastroGameController.GameId:

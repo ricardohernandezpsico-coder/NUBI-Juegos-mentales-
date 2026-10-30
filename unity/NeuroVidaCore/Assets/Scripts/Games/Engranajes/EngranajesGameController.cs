@@ -168,13 +168,7 @@ namespace NeuroVida.Games.Engranajes
             if (_firstMachine != null) { m = _firstMachine; _firstMachine = null; }                    // la primera ya se armó detrás de la carga
             else { m = EngranajesContract.Generate(_dda.PresentedLevel, _rng); ShowMachine(m); }
             UpdateHud();
-            if (m.Stage.Intro != Intro.None && !IntroSeen(m.Stage.Intro))
-            {
-                float before = GameClock.Time;
-                yield return StartCoroutine(ShowIntro(m.Stage.Intro));
-                _endsAt = HowToClock.Shift(_endsAt, GameClock.Time - before);       // la tarjeta «NUEVO» no gasta tiempo del Reto
-                MarkIntroSeen(m.Stage.Intro);
-            }
+            yield return StartCoroutine(ShowIntroFor(m.Stage.Intro, true));
             _phase = Phase.Play;
             _inputOn = true;
             _press = null;
@@ -283,18 +277,33 @@ namespace NeuroVida.Games.Engranajes
 
         private static bool IntroSeen(Intro intro)
         {
-            try { return (PlayerPrefs.GetInt(IntroKey, 0) & (1 << (int)intro)) != 0; }
-            catch (System.Exception) { return false; }
+            return SeenMarks.IsSeen(IntroKey, 1 << (int)intro);
         }
 
         private static void MarkIntroSeen(Intro intro)
         {
-            try { PlayerPrefs.SetInt(IntroKey, PlayerPrefs.GetInt(IntroKey, 0) | (1 << (int)intro)); PlayerPrefs.Save(); }
-            catch (System.Exception) { }
+            SeenMarks.Mark(IntroKey, 1 << (int)intro);
         }
+
+        /// <summary>La tarjeta «NUEVO» de la etapa de la máquina, si la trae y no se vio; marcada como vista apenas se muestra (Tarea 191); no gasta tiempo del Reto.</summary>
+        private IEnumerator ShowIntroFor(Intro intro, bool shiftClock)
+        {
+            if (intro == Intro.None || IntroSeen(intro)) yield break;
+            MarkIntroSeen(intro);
+            float before = GameClock.Time;
+            yield return StartCoroutine(ShowIntro(intro));
+            if (shiftClock) _endsAt = HowToClock.Shift(_endsAt, GameClock.Time - before);
+        }
+
+        /// <summary>La tarjeta de la primera máquina, antes del «¡Ya!» (Tarea 191).</summary>
+        protected override IEnumerator BeforeGoCards() => ShowIntroFor(EngranajesContract.StageFor(_dda.PresentedLevel).Intro, false);
+
+        /// <summary>«Taller» repite el foco del tutorial (Tarea 191): queda vista.</summary>
+        protected override void TutorialTaught() => MarkIntroSeen(Intro.Taller);
 
         private IEnumerator ShowIntro(Intro intro)
         {
+            EntrySequence.Note("tarjeta");
             _phase = Phase.Intro;
             _introTapped = false;
             _introTitle.text = "Nuevo";

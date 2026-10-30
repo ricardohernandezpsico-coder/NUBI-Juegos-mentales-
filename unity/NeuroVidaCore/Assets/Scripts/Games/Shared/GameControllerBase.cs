@@ -9,11 +9,11 @@ using static NeuroVida.Games.Shared.UiKit;
 namespace NeuroVida.Games.Shared
 {
     /// <summary>
-    /// Base de los juegos del DDA común (Stroop, Comparación, Ruta del Tesoro, Series, Cálculo,
-    /// Anagramas): el estado y los comportamientos que cada controlador tenía copiados idénticos. Cada juego arma
+    /// Base de los juegos del DDA común (los 17 juegos de la app y los retirados; hasta Rastro
+    /// de luz y Constelaciones lo heredan): el estado y los comportamientos que cada controlador tenía copiados idénticos. Cada juego arma
     /// su propia UI en <see cref="BuildUi"/> (se llama una vez desde <see cref="Awake"/>) y debe asignar
     /// <see cref="_flash"/> (destello de pantalla completa) y <see cref="_resultRoot"/> (panel de resultado, con un
-    /// hijo "Score" de tipo Text). Secuencia y Parejas tienen estructura propia y no heredan de acá.
+    /// hijo "Score" de tipo Text).
     /// </summary>
     public abstract class GameControllerBase : MonoBehaviour
     {
@@ -107,12 +107,24 @@ namespace NeuroVida.Games.Shared
         /// </summary>
         protected virtual IEnumerable<(Text sample, string text, int fontSize)> GlyphWords() { yield break; }
 
+        /// <summary>
+        /// Las tarjetas «NUEVO» (y las reglas que se repasan) con que empieza el PRIMER ensayo (Tarea 191): salen después del tutorial y ANTES del «¡Ya!», que va siempre justo antes del primer ensayo. Las que salen a mitad de partida (porque la etapa sube) van antes de su
+        /// ensayo, sin otro «¡Ya!». Una tarjeta cuenta como vista apenas se muestra (<see cref="SeenMarks"/>). Por omisión, ninguna.
+        /// </summary>
+        protected virtual IEnumerator BeforeGoCards() { yield break; }
+
+        /// <summary>El tutorial terminó o se saltó (el de la entrada y «Cómo se juega» de la pausa): el juego marca como vistas las tarjetas que repiten lo que enseñó (Tarea 191). Por omisión, ninguna.</summary>
+        protected virtual void TutorialTaught() { }
+
         /// <summary>El «¡Ya!» de 0,8 s (<see cref="GoCue"/>): lo último antes del primer ensayo y del reloj de la partida (el Contrarreloj incluido), que empiezan cuando termina.</summary>
         protected IEnumerator PlayGo()
         {
+            yield return StartCoroutine(BeforeGoCards());                  // las tarjetas «NUEVO» y las reglas de la etapa con que empieza el primer ensayo van ANTES del «¡Ya!» (Tarea 191)
+            EntrySequence.Note("ya");
             EntryProbe.Note("¡Ya!");                                       // solo con la sonda de depuración: la marca que acompaña a un cuadro largo (Tarea 190c)
             if (_goCue != null) yield return StartCoroutine(_goCue.Play());
             EntryProbe.Note("primer ensayo");
+            EntrySequence.Note("primer ensayo");
         }
 
         // ------------------------------------------------------------------ tutorial guiado (pieza común)
@@ -148,6 +160,10 @@ namespace NeuroVida.Games.Shared
             yield return StartCoroutine(_tutorial.Intro(_tutorialTitle, _tutorialGoal));
             if (!_tutorial.Skipped) yield return StartCoroutine(GuidedRound(_tutorial));
             _tutorial.Hide();
+            TutorialTaught();
+#if UNITY_EDITOR
+            if (GuidedTutorial.EditorAutoPlayAfterTutorial) GuidedTutorial.EditorAutoPlayGame = true;          // «Primera*» del smoke: tras el tutorial, la partida se juega sola
+#endif
         }
 
         // ------------------------------------------------------------------ «Cómo se juega» desde la pausa
@@ -185,6 +201,7 @@ namespace NeuroVida.Games.Shared
             yield return StartCoroutine(_tutorial.Intro(_tutorialTitle, _tutorialGoal));
             if (!_tutorial.Skipped) yield return StartCoroutine(GuidedRound(_tutorial));
             _tutorial.Hide();
+            TutorialTaught();
             float spent = clock.Finish(GameClock.Time);
             _howToRunning = false;
             HowToResume(spent);

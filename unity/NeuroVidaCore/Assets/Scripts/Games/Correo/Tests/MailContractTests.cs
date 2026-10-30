@@ -62,11 +62,15 @@ namespace NeuroVida.Games.Correo.Tests
         }
 
         [Test]
-        public void TheNewCards_AppearOnceInTheStageThatBringsThemAndTheEarlierOnesAreOwedWhenStartingHigher()
+        public void TheNewCards_AppearOnceInTheStageThatBringsThem_AndNothingIsFilledInBackwards()
         {
-            CollectionAssert.AreEqual(new[] { MailIntro.Estacion }, MailContract.IntrosFor(1).ToArray());
-            CollectionAssert.AreEqual(new[] { MailIntro.Estacion, MailIntro.Hora }, MailContract.IntrosFor(2).ToArray());
-            CollectionAssert.AreEqual(new[] { MailIntro.Estacion, MailIntro.Hora, MailIntro.Rutina, MailIntro.Cancela, MailIntro.Lazo }, MailContract.IntrosFor(8).ToArray());
+            // Tarea 191: solo las de las etapas que se PISAN (antes quien partía en la 5 veía las cinco seguidas)
+            CollectionAssert.AreEqual(new[] { MailIntro.Estacion }, MailContract.IntrosBetween(0, 1).ToArray());
+            CollectionAssert.AreEqual(new[] { MailIntro.Hora }, MailContract.IntrosBetween(1, 2).ToArray());
+            CollectionAssert.IsEmpty(MailContract.IntrosBetween(4, 4).ToArray(), "la misma etapa no repite su tarjeta");
+            CollectionAssert.AreEqual(new[] { MailIntro.Lazo }, MailContract.IntrosBetween(4, 5).ToArray(), "partir en la etapa 5 trae solo la tarjeta de la 5");
+            CollectionAssert.AreEqual(new[] { MailIntro.Rutina, MailIntro.Cancela }, MailContract.IntrosBetween(2, 4).ToArray(), "si la etapa salta, salen las que se pisaron, en orden");
+            CollectionAssert.AreEqual(new[] { MailIntro.Estacion, MailIntro.Hora, MailIntro.Rutina, MailIntro.Cancela, MailIntro.Lazo }, MailContract.IntrosBetween(0, 10).ToArray());
             foreach (MailIntro intro in new[] { MailIntro.Estacion, MailIntro.Hora, MailIntro.Rutina, MailIntro.Cancela, MailIntro.Lazo })
             {
                 var lines = MailContract.IntroLines(intro);
@@ -816,7 +820,8 @@ namespace NeuroVida.Games.Correo.Tests
             Assert.AreEqual("al mediodía", MailContract.MomentPhrase(MailMoment.Mediodia));
             Assert.AreEqual("Al mediodía,", MailContract.TimeLineA(MailMoment.Mediodia));
             Assert.AreEqual("A media tarde,", MailContract.TimeLineA(MailMoment.Tarde));
-            Assert.AreEqual("Si llega una carta con sello dorado,", MailContract.CueLineA(MailCue.Gold));
+            Assert.AreEqual("Si llega una carta con sello dorado,", MailContract.CueLineA(MailCue.Gold).Replace('\u00A0', ' '), "el texto que se lee no cambió");
+            Assert.AreEqual("Si llega una carta con\u00A0sello\u00A0dorado,", MailContract.CueLineA(MailCue.Gold), "«con sello dorado,» va con espacios duros: si no cabe, corta «Si llega una carta / con sello dorado,»");
             Assert.AreEqual("Si llega una carta con lazo,", MailContract.CueLineA(MailCue.Lazo));
             Assert.AreEqual("Se pasó la hora: al anochecer", MailContract.FloatLateWindow(MailMoment.Noche));
             Assert.AreEqual("¡10 seguidos!", MailContract.FloatCombo(10));

@@ -18,6 +18,8 @@ class NeuroVidaRepository(
   context: Context,
   private val database: NeuroVidaDatabase = NeuroVidaDatabase.getDatabase(context)
 ) {
+  private val appContext: Context = context.applicationContext
+
   private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
   /**
@@ -1088,6 +1090,7 @@ class NeuroVidaRepository(
     _goals.value = emptySet()
     _baseline.value = null
     _colorVision.value = ColorVision.DEFAULT
+    com.example.bridge.UnityPrefs.clear(appContext)                    // las marcas de «ya visto» de Unity también (Tarea 191, H4): si no, tras borrar vuelve el tutorial pero las tarjetas «NUEVO» no
     initializeDatabaseDefaults()
   }
 }

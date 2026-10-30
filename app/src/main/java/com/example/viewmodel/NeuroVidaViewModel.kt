@@ -487,6 +487,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
    * Las partidas lanzadas desde los botones de depuración (sin sesión activa) solo se guardan.
    */
   fun onUnityResult(rawResult: GamePlayResult, launchId: String? = null) {
+    if (com.example.bridge.UnityGameLauncher.isFreshLaunch(launchId)) return          // «Jugar como la primera vez» (solo botones [Debug], Tarea 191): se probó como alguien nuevo, así que nada de esa partida se guarda
     // La sesión viva, o la anotada en disco si Android cerró la app durante el juego (ViewModel nuevo).
     val live = _activeGame.value?.takeIf { it.gameDef.id == rawResult.gameId }
     val stored = GameSessionStore.inFlight(launchId)?.takeIf { it.gameId == rawResult.gameId }?.let(::sessionFrom)
@@ -639,6 +640,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   /** `UnityGameHost` acaba de traer al frente la pantalla de juego (Unity). */
   fun onUnityLaunched(launchId: String) {
     awaitingUnityReturn = true
+    com.example.bridge.UnityPrefs.clearPending(getApplication())                 // Unity ya recibió el pedido de borrar sus preferencias («Borrar datos», Tarea 191)
     _activeGame.value?.let {
       GameSessionStore.saveInFlight(
         GameSessionStore.InFlight(launchId, it.gameDef.id, it.level, it.timed, it.isDailyFlow, it.intensity, it.assessmentStep, it.mode, it.timeTrialDay.orEmpty())

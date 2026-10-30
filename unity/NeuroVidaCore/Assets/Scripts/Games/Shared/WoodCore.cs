@@ -15,7 +15,7 @@ namespace NeuroVida.Games.Shared
     /// (<see cref="WoodSounds.BakeJob.ComputeSamples"/>: pura aritmética, nada de Unity; hasta <see cref="WorkerCount"/> a la vez) y el hilo principal solo hace lo que Unity exige que haga él: <c>AudioClip.Create</c> y <c>SetData</c>, con un tope de <see cref="FrameBudgetMs"/> (2 ms) por cuadro (el controlador oculto <see cref="WoodCoreDriver"/>), o de
     /// <see cref="LoadingBudgetMs"/> mientras la pantalla de carga de la app tapa el juego (<see cref="Loading"/>). El juego muestra su tablero SOLO cuando <see cref="Ready"/> (nada en la cola, nada calculándose, nada por crear): después, ningún cálculo toca el hilo principal. Si un sonido del núcleo se pide antes de estar listo NO se calcula en ese momento
     /// (sería un tirón en pleno juego): no suena y queda contado en <see cref="Skipped"/>. Unity queda vivo entre partidas y los clips son estáticos: el núcleo se calcula <b>una sola vez</b> (<see cref="BakeCount"/>) y se conserva; con «Efectos de sonido» apagado no se calcula ni suena nada.</para>
-    /// <para><b>Lo extra de un juego.</b> El juego pide en su construcción, ANTES de la cuenta regresiva y en el orden en que suena cada cosa (lo que suena primero, primero): <see cref="Request(WoodSfx,int)"/> (una variante de la paleta fuera del núcleo), <see cref="RequestNote"/> (una nota con información),
+    /// <para><b>Lo extra de un juego.</b> El juego pide en su construcción, ANTES del «listo» y en el orden en que suena cada cosa (lo que suena primero, primero): <see cref="Request(WoodSfx,int)"/> (una variante de la paleta fuera del núcleo), <see cref="RequestNote"/> (una nota con información),
     /// <see cref="RequestCue"/> (una señal corta) y <see cref="Request(string,Func{WoodSounds.Recipe},bool)"/> (un sonido PROPIO). Se encolan DETRÁS del núcleo y los hornea el mismo controlador oculto con el mismo presupuesto. Política si NO están listos al sonar: una variante de la paleta o un propio no suena y suma
     /// <see cref="Skipped"/> (nunca un tirón por un adorno); una nota o una señal SÍ se calcula en el momento (son la información del juego: mejor un tirón de unos 10 a 30 ms una vez que el silencio) y suma <see cref="LateBakes"/>. El smoke exige <see cref="Skipped"/> = 0 y <see cref="LateBakes"/> = 0 en toda partida con sonido.
     /// Lo extra es de UN juego a la vez: <see cref="Warm"/> con el id del juego suelta lo del juego anterior (<see cref="ReleaseExtras"/>); el núcleo sigue estático.</para>
@@ -141,7 +141,6 @@ namespace NeuroVida.Games.Shared
             switch (sfx)
             {
                 case WoodSfx.Correct: return Mathf.Clamp(arg, 1, MaxCorrect);
-                case WoodSfx.Count: return Mathf.Clamp(arg, 1, 3);
                 case WoodSfx.Select: return Mathf.Clamp(arg, 0, 9);
                 case WoodSfx.Spark: return Mathf.Clamp(arg, 1, 8);
                 default: return WoodSounds.Variants(sfx).Length > 1 ? arg : 0;
@@ -212,7 +211,7 @@ namespace NeuroVida.Games.Shared
             return false;
         }
 
-        // ------------------------------------------------------------------ pedir lo extra (ANTES de la cuenta regresiva, en el orden en que suena)
+        // ------------------------------------------------------------------ pedir lo extra (ANTES del «listo», en el orden en que suena)
 
         private static void Enqueue(string key, Func<WoodSounds.Recipe> make, bool mono)
         {

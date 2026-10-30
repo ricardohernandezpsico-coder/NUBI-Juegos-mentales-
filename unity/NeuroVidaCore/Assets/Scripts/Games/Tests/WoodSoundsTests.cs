@@ -72,7 +72,6 @@ namespace NeuroVida.Games.Tests
             Assert.AreEqual(7, WoodSounds.Variants(WoodSfx.Correct).Length, "la racha 7 en adelante suena igual que la 7");
             Assert.AreEqual(10, WoodSounds.Variants(WoodSfx.Select).Length);
             Assert.AreEqual(8, WoodSounds.Variants(WoodSfx.Spark).Length);
-            Assert.AreEqual(3, WoodSounds.Variants(WoodSfx.Count).Length);
             var keys = new HashSet<string>();
             foreach (var x in All()) Assert.IsTrue(keys.Add(WoodSounds.KeyOf(x.Sfx, x.Arg)), "las claves de los sonidos son únicas: " + WoodSounds.KeyOf(x.Sfx, x.Arg));
             foreach (WoodSfx sfx in Enum.GetValues(typeof(WoodSfx))) Assert.IsTrue(Enum.IsDefined(typeof(WoodTier), WoodSounds.TierOf(sfx)));

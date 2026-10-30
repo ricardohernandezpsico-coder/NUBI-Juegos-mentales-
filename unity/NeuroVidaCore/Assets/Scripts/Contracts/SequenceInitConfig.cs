@@ -60,6 +60,13 @@ namespace NeuroVida.Contracts
         /// <summary>La persona nunca jugó este juego (la app lo sabe por el historial): el juego abre con su tutorial guiado
         /// (<c>Games/Shared/GuidedTutorial</c>). Hoy lo usa Rastro de luz; los demás juegos lo ignoran.</summary>
         public bool show_tutorial;
+        /// <summary>La PRIMERA partida normal (A tu medida) de un juego sin historial (Tarea 191; la que lleva el tutorial): el DDA parte en la etapa 1, la que enseña el tutorial, y sube UN paso por cada ensayo bien hecho hasta el nivel sembrado
+        /// (<c>AdaptiveDifficulty.Ramping</c>); al primer error sigue el ajuste de siempre desde donde esté. La app lo manda en false en el Contrarreloj, la evaluación, Suave, Desafío, Al límite y «Cómo se juega» de la ficha.</summary>
+        public bool first_game;
+        /// <summary>SOLO depuración (botón [Debug] «Jugar como la primera vez», Tarea 191): tutorial, subida rápida y tarjetas «NUEVO» como las ve alguien nuevo; las marcas de «ya visto» no se leen ni se guardan (<c>SeenMarks.Fresh</c>) y la app no guarda el resultado.</summary>
+        public bool fresh_start;
+        /// <summary>«Borrar datos» de la app (Tarea 191, H4): Unity borra SUS preferencias (marcas de «ya visto», rotación de palabras) al empezar esta partida, DENTRO de su proceso (que queda vivo detrás de la app y las tiene en memoria): <c>SeenMarks.Configure</c>.</summary>
+        public bool reset_unity_prefs;
         /// <summary>YA NO SE USA (Tarea 190, 28-oct: la cuenta regresiva 3-2-1 se quitó; la entrada es el tablero completo y un «¡Ya!» de 0,8 s). Se conserva el campo para que un JSON de una app vieja siga leyéndose; la app nueva no lo manda.</summary>
         public int countdown_steps;
         /// <summary>true SOLO en las builds de depuración de la app (<c>BuildConfig.DEBUG</c>, Tarea 190): Unity muestra la marca de versión en la pausa (<c>PauseMenu.DebugStamp</c>) y mide la entrada al juego, cuadro por cuadro, en el registro de Android (<c>EntryProbe</c>, etiqueta <c>sonda-entrada</c>). En release no se manda: ni sello ni medición.</summary>

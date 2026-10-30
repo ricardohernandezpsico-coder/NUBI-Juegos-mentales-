@@ -33,7 +33,7 @@ namespace NeuroVida.Games.Shared
         // ------------------------------------------------------------------ API
 
         /// <summary>
-        /// Prepara el sonido de la partida (<see cref="WoodCore.Warm"/>): calcula lo de la cuenta regresiva y deja el resto del núcleo común para que se calcule de a poco. Lo llama <c>GameEntryPoint</c> en cuanto llega la configuración (ya con <see cref="SoundOn"/>).
+        /// Prepara el sonido de la partida (<see cref="WoodCore.Warm"/>): calcula lo del «¡Ya!» y deja el resto del núcleo común para que se calcule de a poco. Lo llama <c>GameEntryPoint</c> en cuanto llega la configuración (ya con <see cref="SoundOn"/>).
         /// </summary>
         public static void Warm(string gameId = null) => WoodCore.Warm(gameId);
 
@@ -81,9 +81,7 @@ namespace NeuroVida.Games.Shared
             Haptic(HapticKind.Light);                                                  // el tic del toque (Tarea 123): con el mismo ajuste de vibración de la app, suene o no el golpecito (Fable §3.5)
         }
 
-        /// <summary>El número de la cuenta regresiva (3, 2 o 1): una marimba que sube un escalón por número.</summary>
-
-        /// <summary>«¡Ya!»: la salida de la cuenta regresiva.</summary>
+        /// <summary>«¡Ya!»: la marimba de salida, justo antes del primer ensayo (<see cref="GoCue"/>).</summary>
         public static void Go() => WoodCore.Play(WoodSfx.Go);
 
         /// <summary>Se abre la pausa (por el altavoz de la interfaz: suena aunque el audio se congele).</summary>

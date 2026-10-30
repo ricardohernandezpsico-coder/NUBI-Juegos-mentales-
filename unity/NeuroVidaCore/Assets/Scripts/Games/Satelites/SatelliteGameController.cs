@@ -429,14 +429,12 @@ namespace NeuroVida.Games.Satelites
 
         private static bool IntroSeen(Surprise s)
         {
-            try { return (PlayerPrefs.GetInt(IntroKey, 0) & (int)s) != 0; }
-            catch (System.Exception) { return false; }
+            return SeenMarks.IsSeen(IntroKey, (int)s);
         }
 
         private static void MarkIntroSeen(Surprise s)
         {
-            try { PlayerPrefs.SetInt(IntroKey, PlayerPrefs.GetInt(IntroKey, 0) | (int)s); PlayerPrefs.Save(); }
-            catch (System.Exception) { }
+            SeenMarks.Mark(IntroKey, (int)s);
         }
 
         /// <summary>El aviso se muestra ANTES de la presentación (nunca durante el seguimiento): 1,7 s, y 2,6 s con la etiqueta «NUEVO» la primera vez que sale cada sorpresa.</summary>

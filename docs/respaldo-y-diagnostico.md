@@ -21,6 +21,7 @@ Estos recorridos están cubiertos por `flow/GameFlowTest` (ViewModel y base de d
   (`paused_game`, `game_session`, `unity_results`, `library_focus`): restaurarlo en otro teléfono dejaría una partida
   fantasma. Antes eran las plantillas de AI Studio (Android respaldaba todo sin decidirlo). **Si se agrega un archivo de
   preferencias nuevo**, `BackupRulesTest` falla hasta que se decida: sumarlo a las dos listas XML o a `transient` de la prueba.
+- **Las preferencias de Unity** (Tarea 191): el archivo `com.nubibraingames.app.v2.playerprefs.xml` (el applicationId + `.v2.playerprefs.xml`) se respalda ENTERO, porque lleva progreso (las marcas de «ya visto» de las tarjetas «NUEVO», los modos de Rastro, el repaso y las láminas de Intrusa) y ninguna partida a medias; «Borrar datos» lo borra entero (`bridge/UnityPrefs`: el proceso `:unity` lo tiene en memoria, así que la app le PIDE borrarlo en la próxima partida con `reset_unity_prefs`, y solo si Unity no está vivo lo borra ella al instante). El inventario de claves y sus pruebas: `docs/entrada-al-juego.md` §9.
 - **Registro de errores en el teléfono** (`diag/ErrorLog`, sin servidores): guarda en `files/errores.txt` (tope ~96 KB)
   los cierres inesperados (app y `:unity`, Java; un cierre nativo del motor no pasa por ahí) y los avisos que antes solo
   iban al logcat: sobre todo un resultado de Unity que no se pudo leer y por eso NO se guardó (`NativeReceiver.parse`).

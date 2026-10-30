@@ -314,8 +314,8 @@ class FirstFlightTest {
   fun `cada juego del inicio tiene sus textos sin promesas de salud`() {
     for (step in BaselinePlan.steps) {
       val c = FlightCopy.of(step.gameId)
-      assertTrue(c.how.isNotBlank() && c.short.isNotBlank() && c.why.isNotBlank())
-      val all = (c.how + c.short + c.why).lowercase()
+      assertTrue(c.short.isNotBlank() && c.why.isNotBlank())
+      val all = (c.short + c.why).lowercase()
       listOf("neurona", "cerebro", "salud", "mejora", "octágono").forEach { assertFalse(all, all.contains(it)) }
     }
     assertEquals("memoria de trabajo", FlightCopy.of("secuencia").short)

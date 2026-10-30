@@ -50,7 +50,14 @@ namespace NeuroVida.Games
             bool on = config != null && !config.assessment;
             ModeFloor = on ? config.mode_floor : -1f;
             ModeCeiling = on ? config.mode_ceiling : -1f;
+            RampPending = on && config.first_game && !config.time_trial;
         }
+
+        /// <summary>
+        /// «Abajo y sube rápido» (Tarea 191, decisión de Ricardo): la PRIMERA partida normal de un juego sin historial parte en la etapa 1 (la que enseña el tutorial) y no en la que corresponde al nivel sembrado (<c>1 + rating × etapas</c>: de la 4 a la 9 con el 0,45 de partida).
+        /// Cada DDA que se cree en esa partida (Piloto y Correo tienen dos) la lleva; la fija <see cref="ConfigureMode"/> con cada config.
+        /// </summary>
+        public static bool RampPending;
         private const int FastProvisionalTrials = 10;
         private const float FastProvisionalBoost = 2.2f;
         private const float StruggleExtraDrop = 0.15f;
@@ -88,8 +95,14 @@ namespace NeuroVida.Games
         /// <summary>Nivel "real" del usuario ahora (1..MaxLevel).</summary>
         public int Level => Math.Max(1, Math.Min(MaxLevel, (int)Math.Floor(Rating)));
 
-        /// <summary>Nivel a presentar: durante el calentamiento, uno por debajo.</summary>
-        public int PresentedLevel => Trials < WarmupTrials ? Math.Max(1, Level - 1) : Level;
+        /// <summary>Nivel a presentar: durante el calentamiento, uno por debajo (en la subida de la primera partida no: ya parte en lo más fácil).</summary>
+        public int PresentedLevel => !Ramping && Trials < WarmupTrials ? Math.Max(1, Level - 1) : Level;
+
+        /// <summary>true mientras la primera partida de un juego sube hacia el nivel sembrado: un paso (una etapa) por ensayo bien hecho. Termina al llegar o al primer error.</summary>
+        public bool Ramping { get; private set; }
+        private float _rampTarget;
+        /// <summary>El rating sembrado hacia el que sube la primera partida (solo vale mientras <see cref="Ramping"/>).</summary>
+        public float RampTarget => _rampTarget;
 
         /// <summary>Rating normalizado 0..1 (para guardarlo entre sesiones y compararlo entre juegos).</summary>
         public float RatingNormalized => Math.Max(0f, Math.Min(1f, (Rating - 1f) / MaxLevel));
@@ -114,6 +127,12 @@ namespace NeuroVida.Games
             if (ModeFloor >= 0f) _minRating = Math.Min(_maxRating, 1f + Math.Min(1f, ModeFloor) * MaxLevel);
             if (ModeCeiling >= 0f) _maxRating = Math.Max(_minRating, 1f + Math.Min(1f, ModeCeiling) * MaxLevel);
             Rating = Clamp(startRating);
+            if (RampPending && !FastCalibration && Rating >= _minRating + 1f)
+            {
+                _rampTarget = Rating;            // el rating sembrado queda como meta; la partida empieza en lo más fácil que permita el modo
+                Rating = _minRating;
+                Ramping = true;
+            }
             PeakLevel = Level;
         }
 
@@ -151,6 +170,21 @@ namespace NeuroVida.Games
                 if (correct) ScoredCorrect++;
             }
             float z = UpdateReactionZ(reactionMs);
+            if (Ramping)
+            {
+                if (correct)
+                {
+                    // un ensayo bien hecho = un paso (una etapa) hacia el nivel sembrado, sin pasarse de él: el rating guardado nunca sube más que su punto de partida por la subida
+                    Correct++;
+                    _consecutiveOk++;
+                    _consecutiveErr = 0;
+                    Rating = Clamp(Math.Min(_rampTarget, (float)Math.Floor(Rating) + 1f));
+                    if (Rating >= _rampTarget - 0.001f) Ramping = false;
+                    PeakLevel = Math.Max(PeakLevel, Level);
+                    return Level > before ? DdaChange.Up : DdaChange.None;
+                }
+                Ramping = false;                 // el primer error: vuelve el ajuste de siempre desde donde esté
+            }
             float provisional = FastCalibration
                 ? (Trials <= FastProvisionalTrials ? FastProvisionalBoost : 1f)
                 : (Trials <= ProvisionalTrials ? ProvisionalBoost : 1f);

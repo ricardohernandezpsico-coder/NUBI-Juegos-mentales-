@@ -167,6 +167,12 @@ namespace NeuroVida.Games.Intrusa
         }
 
 
+        /// <summary>Los nombres de las figuras vienen de datos y no se pueden listar de antemano: se precalienta el alfabeto completo del español en el tamaño real de la placa de la palabra (Tarea 191; 4 ms por cuadro, detrás de la carga).</summary>
+        protected override IEnumerable<(Text sample, string chars, int fontSize)> GlyphExtras()
+        {
+            if (_slots[0] != null && _slots[0].Label != null) yield return (_slots[0].Label, GlyphWarm.Alphabet, 0);
+        }
+
         private IEnumerator GameLoop()
         {
             _safe.gameObject.SetActive(false);

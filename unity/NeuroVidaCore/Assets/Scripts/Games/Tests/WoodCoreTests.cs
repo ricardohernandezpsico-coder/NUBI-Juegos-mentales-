@@ -452,11 +452,10 @@ namespace NeuroVida.Games.Tests
         }
 
         [Test]
-        public void TheStreakAndTheCount_AreClampedToTheirVariants()
+        public void TheStreak_IsClampedToItsVariants()
         {
             Assert.AreEqual(1, WoodCore.Normalize(WoodSfx.Correct, 0));
             Assert.AreEqual(WoodCore.MaxCorrect, WoodCore.Normalize(WoodSfx.Correct, 40));
-            Assert.AreEqual(3, WoodCore.Normalize(WoodSfx.Count, 9));
             Assert.AreEqual(0, WoodCore.Normalize(WoodSfx.Finish, 5));
         }
     }

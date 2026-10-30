@@ -419,7 +419,7 @@ private fun DatoPage(a: FlightActions) {
   }
 }
 
-/** Antes de cada juego: cuál toca y una línea de cómo se juega (el tutorial vive dentro del juego). «Terminar después» deja el resto para estimar. */
+/** Antes de cada juego: cuál toca. Cómo se juega lo dice el tutorial, dentro del juego (Tarea 191: la página ya no repite esa línea). «Terminar después» deja el resto para estimar. */
 @Composable
 private fun GameIntroPage(index: Int, s: FlightState, a: FlightActions) {
   val step = BaselinePlan.steps[index]
@@ -433,7 +433,6 @@ private fun GameIntroPage(index: Int, s: FlightState, a: FlightActions) {
     Eyebrow(step.domain.displayName, center = true)
     Title(game?.title ?: step.gameId, center = true)
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { NubiClay(com.example.ui.components.NubiSize.M) }
-    Say(FlightCopy.of(step.gameId).how, center = true)
     Sub("Empieza con una ronda de práctica que no cuenta. Dura alrededor de un minuto.", center = true)
   }
 }

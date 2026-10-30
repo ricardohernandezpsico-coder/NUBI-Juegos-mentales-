@@ -31,6 +31,8 @@ namespace NeuroVida.Bridge
 
         /// <summary>Solo para el smoke test headless: arranca el juego con su tutorial guiado (<c>show_tutorial</c> de la config).</summary>
         public static bool ShowTutorialOverride;
+        /// <summary>«Primera*» del smoke (Tarea 191): la primera partida de un juego sin historial: tutorial, subida de etapa desde la 1 hasta el nivel sembrado (0,45) y tarjetas «NUEVO» como alguien nuevo (<c>fresh_start</c>: no lee ni guarda las marcas).</summary>
+        public static bool FirstGameOverride;
 
         /// <summary>Solo para el smoke test headless: arranca la versión corta del inicio («Tu punto de partida», <c>assessment</c> de la config).</summary>
         public static bool AssessmentOverride;
@@ -91,7 +93,11 @@ namespace NeuroVida.Bridge
                     age_band = ageBand,
                     sound_enabled = !SoundOffOverride,
                     reduce_motion = ReduceMotionOverride,
-                    show_tutorial = ShowTutorialOverride,
+                    show_tutorial = ShowTutorialOverride || FirstGameOverride,
+                    first_game = FirstGameOverride,
+                    fresh_start = FirstGameOverride,
+                    has_dda_rating = FirstGameOverride,
+                    dda_rating = FirstGameOverride ? 0.45f : 0f,
                     assessment = AssessmentOverride,
                     assessment_step = AssessmentOverride ? 1 : 0,
                     assessment_total = AssessmentOverride ? 4 : 0,

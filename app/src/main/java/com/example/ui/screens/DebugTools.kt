@@ -111,6 +111,24 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
     if (com.example.Features.LEAGUES) DebugButton("[Debug] Ver celebración de ascenso de liga", "btn_debug_promotion") { viewModel.debugShowPromotion() }
     DebugButton("[Debug] Ver celebración de logro", "btn_debug_achievement") { viewModel.debugShowAchievement() }
     DebugButton("[Debug] Repetir el inicio (sin borrar datos)", "btn_debug_onboarding") { viewModel.debugRestartOnboarding() }
+    // «Jugar como la primera vez» (Tarea 191): tutorial, subida rápida de etapa y tarjetas «NUEVO» como las ve alguien nuevo, sin tocar tu progreso: las marcas de «ya visto» no se leen ni se guardan y el resultado no se guarda.
+    com.example.model.GameRegistry.allGames.forEach { g ->
+      DebugButton("[Debug] Jugar como la primera vez: ${g.title}", "btn_debug_first_${g.id}") {
+        context.startActivity(
+          UnityGameLauncher.buildGameIntent(
+            context = context,
+            gameId = g.id,
+            userId = userId.toString(),
+            level = 1,
+            baseIntensity = 0,
+            timed = false,
+            ageBand = ageBand,
+            debugOverlay = tutorialOverlay,
+            freshStart = true
+          )
+        )
+      }
+    }
     DebugGames.forEach { g ->
       DebugButton("[Debug] Probar ${g.label}", "btn_debug_unity_${g.tag}") {
         context.startActivity(

@@ -69,11 +69,11 @@ namespace NeuroVida.Games.Meteoros
         private int _streak, _bestStreak, _points, _rescued, _resolved;
         private float _endsAt, _lastSpawn;
         private int _lastTickSecond = -1;
-        private bool _hintDone, _wasShower;
+        private bool _wasShower;
 
         // UI
         private RectTransform _safe, _play, _fxRect, _meteorLayer, _timerBg, _timerFill, _atmosphere;
-        private Text _hint, _prompt;
+        private Text _prompt;
         private readonly List<Image> _conStars = new List<Image>();
         private ExitButton _exit;
         private GameHud _hud;
@@ -103,7 +103,6 @@ namespace NeuroVida.Games.Meteoros
             _streak = _bestStreak = _points = _rescued = _resolved = 0;
             _endsAt = _lastSpawn = 0f;
             _lastTickSecond = -1;
-            _hintDone = false;
             _wasShower = false;
             _pending = null;
             _shrunkWords.Clear();
@@ -111,7 +110,6 @@ namespace NeuroVida.Games.Meteoros
             _exit.Hide();
             _timerBg.gameObject.SetActive(Endless);
             _hud.SetStreak(0);
-            _hint.gameObject.SetActive(false);
             SetPrompt("", Color.white);
             SetConstellation(0);
             _loopOn = false;
@@ -127,7 +125,6 @@ namespace NeuroVida.Games.Meteoros
         {
             _safe.gameObject.SetActive(false);                                      // el tablero no se ve mientras se arma (sin acomodar los botones miden 100 u): se activa ya acomodado (Tarea 190)
             MeteorSounds.Request();                  // la señal de «dejar pasar una inventada» se pide ANTES de la cuenta (lo demás va con el núcleo)
-            bool tutorialPlayed = false;
             yield return StartCoroutine(PrewarmSprites());                                 // el arte y los sonidos de la partida, detrás de la pantalla de carga de la app (Tarea 190)
             _safe.gameObject.SetActive(true);
             yield return null;
@@ -139,7 +136,6 @@ namespace NeuroVida.Games.Meteoros
             if (TutorialWanted)
             {
                 yield return StartCoroutine(RunTutorialIfNeeded());
-                tutorialPlayed = !_tutorial.Skipped;
                 Canvas.ForceUpdateCanvases();
                 Layout();
                 UpdateHud();
@@ -548,11 +544,6 @@ namespace NeuroVida.Games.Meteoros
         private void AfterResolve()
         {
             _hud.SetStreak(_streak);
-            if (!_hintDone)
-            {
-                _hintDone = true;
-                _hint.gameObject.SetActive(false);
-            }
             UpdateHud();
         }
 
@@ -915,9 +906,6 @@ namespace NeuroVida.Games.Meteoros
 
             BuildConstellation();
 
-            _hint = CenteredText(_play, "Hint", 54, new Color(1f, 1f, 1f, 0.92f));
-            NeuroStyle.ClayText(_hint, 3f, 4f);
-            _hint.gameObject.SetActive(false);
             _prompt = CenteredText(_play, "Prompt", 60, Color.white);
             NeuroStyle.ClayText(_prompt, 3.5f, 5f);
 
@@ -1035,8 +1023,6 @@ namespace NeuroVida.Games.Meteoros
                 _conStars[i].rectTransform.anchoredPosition = new Vector2((i - 2) * 130f, cy + (i % 2 == 0 ? 0f : -26f));
             _starTarget = _conStars[2].rectTransform.anchoredPosition;
 
-            _hint.rectTransform.sizeDelta = new Vector2(contentW, 150f);
-            _hint.rectTransform.anchoredPosition = new Vector2(0f, top - (GameHud.Height + 330f));
             _prompt.rectTransform.sizeDelta = new Vector2(contentW, 90f);
             _prompt.rectTransform.anchoredPosition = new Vector2(0f, top - (GameHud.Height + 200f));
 
@@ -1082,7 +1068,6 @@ namespace NeuroVida.Games.Meteoros
             ClearMeteors();
             foreach (Transform c in _fxRect) Destroy(c.gameObject);
             _pending = null;
-            _hint.gameObject.SetActive(false);
             SetPrompt("", Color.white);
             SetConstellation(_rescued % _conStars.Count);
         }
@@ -1100,7 +1085,6 @@ namespace NeuroVida.Games.Meteoros
             _guided = true;
             ClearMeteors();
             _pending = null;
-            _hint.gameObject.SetActive(false);
             SetPrompt("", Color.white);
             _phase = Phase.Playing;
             var coach = t.Coach;

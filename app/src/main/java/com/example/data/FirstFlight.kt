@@ -327,8 +327,6 @@ object FirstFlight {
 /** Los textos del recorrido que dependen del juego (tarjeta de entrada y tarjeta «Acabas de usar tu…»). Aprobados en la maqueta. */
 object FlightCopy {
   class GameCopy(
-    /** Una línea de cómo se juega (el tutorial está dentro del juego). */
-    val how: String,
     /** «Acabas de usar tu [short]». */
     val short: String,
     /** Para qué sirve esa capacidad en la vida diaria (una línea; sin promesas de salud). */
@@ -337,22 +335,18 @@ object FlightCopy {
 
   val games: Map<String, GameCopy> = mapOf(
     "secuencia" to GameCopy(
-      how = "Mira qué luces se encienden y tócalas en el mismo orden.",
       short = "memoria de trabajo",
       why = "La memoria de trabajo sostiene información unos segundos mientras la usas: seguir una receta, recordar un número."
     ),
     "freno" to GameCopy(
-      how = "Toca el cohete que se enciende, pero si aparece la señal ¡ALTO!, no toques.",
       short = "control de impulsos",
       why = "Frenar a tiempo una respuesta automática es parte del control de la atención."
     ),
     "aterrizaje" to GameCopy(
-      how = "Aterriza la nave en el número que te piden, sobre una regla sin marcas.",
       short = "sentido de los números",
       why = "Ubicar cantidades en una recta es la base del cálculo aproximado del día a día."
     ),
     "meteoros" to GameCopy(
-      how = "Toca las palabras que existen. Las inventadas, déjalas caer.",
       short = "vocabulario",
       why = "Reconocer palabras rápido apoya la lectura y la conversación."
     )

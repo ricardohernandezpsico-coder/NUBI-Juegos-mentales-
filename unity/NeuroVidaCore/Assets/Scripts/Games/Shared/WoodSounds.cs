@@ -9,7 +9,7 @@ namespace NeuroVida.Games.Shared
     public enum WoodSfx
     {
         // micro: pasan todo el tiempo y casi no se notan
-        Tap, Unselect, Tick, Count,
+        Tap, Unselect, Tick,
         // respuesta: lo que el juego te dice de lo que acabas de hacer
         Select, Correct, Wrong, Knock, Hint, New, Notice, Spark,
         // hito y cierre: lo que se celebra
@@ -69,7 +69,7 @@ namespace NeuroVida.Games.Shared
         {
             switch (sfx)
             {
-                case WoodSfx.Tap: case WoodSfx.Unselect: case WoodSfx.Tick: case WoodSfx.Count: case WoodSfx.PauseIn: case WoodSfx.PauseOut: return WoodTier.Micro;
+                case WoodSfx.Tap: case WoodSfx.Unselect: case WoodSfx.Tick: case WoodSfx.PauseIn: case WoodSfx.PauseOut: return WoodTier.Micro;
                 case WoodSfx.Select: case WoodSfx.Correct: case WoodSfx.Wrong: case WoodSfx.Knock: case WoodSfx.Hint: case WoodSfx.New: case WoodSfx.Notice: case WoodSfx.Spark: return WoodTier.Respuesta;
                 case WoodSfx.Streak: case WoodSfx.LevelUp: case WoodSfx.Perfect: case WoodSfx.Go: return WoodTier.Hito;
                 case WoodSfx.Record: case WoodSfx.Finish: return WoodTier.Cierre;
@@ -85,7 +85,6 @@ namespace NeuroVida.Games.Shared
                 case WoodSfx.Correct: return new[] { 1, 2, 3, 4, 5, 6, 7 };                       // la racha 7 en adelante suena igual que la 7
                 case WoodSfx.Spark: return new[] { 1, 2, 3, 4, 5, 6, 7, 8 };
                 case WoodSfx.Select: return new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
-                case WoodSfx.Count: return new[] { 3, 2, 1 };
                 default: return new[] { 0 };
             }
         }
@@ -108,8 +107,6 @@ namespace NeuroVida.Games.Shared
                     return new Recipe(WoodKit.Kalimba(392, 0.07), 0.16, 0.18);
                 case WoodSfx.Tick:                                                                     // el último tramo del reloj: un bloque de madera
                     return new Recipe(WoodKit.Woodblock(1250), 0.22, 0.25);
-                case WoodSfx.Count:                                                                    // la cuenta regresiva 3, 2, 1: una marimba que sube un escalón por número
-                    return new Recipe(WoodKit.Marimba(P[Clamp(3 - arg, 0, 2)], 0.12), 0.14, 0.18);
 
                 case WoodSfx.Correct:                                                                  // acertar: una kalimba de DOS notas que suben; la pareja sube por la escala con la racha
                 {

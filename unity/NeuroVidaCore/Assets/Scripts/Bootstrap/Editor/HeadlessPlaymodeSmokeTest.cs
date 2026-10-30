@@ -186,6 +186,8 @@ namespace NeuroVida.Bridge.EditorTools
             }
             // las tarjetas «NUEVO» y las hojas con TODO lo que pueden decir (Tarea 190d): Correo a la etapa 10 (sus cinco tarjetas, la hoja con todos los encargos y el resumen), Constelaciones a la 18, Bodega y Engranajes al nivel 5; 45 s para que pasen todas (el piloto las cierra solas) y la guardia de tarjetas mira que ningún texto se salga de la suya
             foreach (var card in new[] { ("TarjetasCorreo", "correo"), ("TarjetasParejas", "parejas"), ("TarjetasBodega", "bodega"), ("TarjetasEngranajes", "engranajes") }) list.Add((card.Item1, card.Item2, 45f));
+            // «Primera*» (Tarea 191): la primera partida de un juego sin historial (tutorial → tarjetas de la etapa que se pisa → «¡Ya!» → subida desde la etapa 1), con las marcas de «ya visto» en blanco
+            foreach (var first in new[] { ("PrimeraCorreo", "correo"), ("PrimeraParejas", "parejas"), ("PrimeraBodega", "bodega"), ("PrimeraEngranajes", "engranajes"), ("PrimeraSatelites", "satelites") }) list.Add((first.Item1, first.Item2, 60f));
             return list.ToArray();
         }
 
@@ -638,7 +640,7 @@ namespace NeuroVida.Bridge.EditorTools
                 foreach (var h in new[] { 2400, 1920 }) { _queue.Enqueue(g); _heights.Enqueue(h); }
                 return;
             }
-            if (g.Name.StartsWith("Pantalla") || g.Name.StartsWith("Tarjetas"))
+            if (g.Name.StartsWith("Pantalla") || g.Name.StartsWith("Tarjetas") || g.Name.StartsWith("Primera"))
             {
                 // la guardia de textos en forma de TELÉFONO (ver PantallaCatalog)
                 foreach (var h in g.Name == "PantallaCorreo" || g.Name == "TarjetasCorreo" ? new[] { 2400, 1920 } : new[] { 2400 }) { _queue.Enqueue(g); _heights.Enqueue(h); }
@@ -664,6 +666,7 @@ namespace NeuroVida.Bridge.EditorTools
             _hudPrev.Clear();
             _hudSeen.Clear();
             _sampleAnnounceShown = false;
+            NeuroVida.Games.Shared.EntrySequence.Reset();
             _announceMeasured = 0;
             _announceRetries = 0;
             _announceBackChecked = false;
@@ -700,6 +703,8 @@ namespace NeuroVida.Bridge.EditorTools
             // «Tutorial*» = con la tarjeta de Nubi (sigue sola en el Editor) y la ronda guiada; «Corto*» = la versión corta del inicio (assessment)
             bool tutorial = _current.Name.StartsWith("Tutorial");
             EditorPlaytestBootstrap.ShowTutorialOverride = tutorial;
+            bool firstGame = _current.Name.StartsWith("Primera");
+            EditorPlaytestBootstrap.FirstGameOverride = firstGame;
             bool cards = _current.Name.StartsWith("Tarjetas");
             EditorPlaytestBootstrap.MailStageOverride = cards ? 10 : 0;                                                      // «Tarjetas*» (Tarea 190d): TODAS las tarjetas «NUEVO» y hojas: Correo a la etapa 10, Constelaciones a la 18, Bodega y Engranajes al nivel 5
             EditorPlaytestBootstrap.ConStageOverride = cards ? 18 : 0;
@@ -714,8 +719,9 @@ namespace NeuroVida.Bridge.EditorTools
             _audioHeard = _audioReported = false;
             NeuroVida.Games.Shared.WoodCore.ResetCounters();                                                                 // lo que suena por partida (Fase B): los sonidos, los omitidos y los finales
             EditorPlaytestBootstrap.AssessmentOverride = _current.Name.StartsWith("Corto");
-            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial || _current.Name.StartsWith("HowTo");      // «HowTo*» no arranca con tutorial: lo abre el smoke desde la partida
-            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = _current.Name == "PilotoMudo" || _current.Name == "RadarMudo" || _current.Name == "Engranajes" || _current.Name == "Bodega" || _current.Name == "Parejas" || _current.Name == "Correo" || _current.Name == "Satelites" || _current.Name == "PantallaSatelites" || _current.Name == "Piloto" || _current.Name == "PilotoReto" || _current.Name == "PantallaPiloto" || _current.Name == "Radar" || _current.Name == "RadarReto" || _current.Name == "PantallaRadar" || _current.Name == "PantallaCorreo" || _current.Name == "PantallaEngranajes" || _current.Name == "PantallaBodega" || _current.Name == "PantallaParejas" || _current.Name == "Acoplamiento" || _current.Name == "AcoplamientoReto" || _current.Name == "AcoplamientoMudo" || _current.Name == "PantallaAcoplamiento" || _current.Name == "Aterrizaje" || _current.Name == "AterrizajeReto" || _current.Name == "AterrizajeMudo" || _current.Name == "PantallaAterrizaje" || _current.Name.StartsWith("Tarjetas") || timeTrial;      // la partida de Engranajes se juega sola (máquinas pares: la solución; impares: sin tocar)
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial || firstGame || _current.Name.StartsWith("HowTo");      // «HowTo*» no arranca con tutorial: lo abre el smoke desde la partida
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = _current.Name == "PilotoMudo" || _current.Name == "RadarMudo" || _current.Name == "Engranajes" || _current.Name == "Bodega" || _current.Name == "Parejas" || _current.Name == "Correo" || _current.Name == "Satelites" || _current.Name == "PantallaSatelites" || _current.Name == "Piloto" || _current.Name == "PilotoReto" || _current.Name == "PantallaPiloto" || _current.Name == "Radar" || _current.Name == "RadarReto" || _current.Name == "PantallaRadar" || _current.Name == "PantallaCorreo" || _current.Name == "PantallaEngranajes" || _current.Name == "PantallaBodega" || _current.Name == "PantallaParejas" || _current.Name == "Acoplamiento" || _current.Name == "AcoplamientoReto" || _current.Name == "AcoplamientoMudo" || _current.Name == "PantallaAcoplamiento" || _current.Name == "Aterrizaje" || _current.Name == "AterrizajeReto" || _current.Name == "AterrizajeMudo" || _current.Name == "PantallaAterrizaje" || _current.Name.StartsWith("Tarjetas") || timeTrial;
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayAfterTutorial = firstGame;                                    // «Primera*»: el tutorial se recorre solo y después la partida se juega sola      // la partida de Engranajes se juega sola (máquinas pares: la solución; impares: sin tocar)
             EditorApplication.EnterPlaymode();
         }
 
@@ -1176,6 +1182,17 @@ namespace NeuroVida.Bridge.EditorTools
         }
 
         /// <summary>Al terminar cada corrida: cuántos avisos dijo la fila y cuántos pisó otro antes de leerse su primera línea (1,2 s); en las «Aviso*», que el aviso de prueba se midió.</summary>
+        /// <summary>El orden de la entrada (Tarea 191): las tarjetas y las reglas antes del «¡Ya!», un solo «¡Ya!» justo antes del primer ensayo y la hoja de la mañana de Correo después. En todas las corridas.</summary>
+        private static void CheckEntrySequence()
+        {
+            var problems = NeuroVida.Games.Shared.EntrySequence.Problems(NeuroVida.Games.Shared.EntrySequence.Events);
+            foreach (var p in problems)
+            {
+                _errorCount++;
+                Debug.Log($"[SmokeTest] Error capturado: orden de la entrada en {_current.Name}: {p} (eventos: {string.Join(", ", NeuroVida.Games.Shared.EntrySequence.Events)})");
+            }
+        }
+
         private static void CheckAnnounce()
         {
             if (NeuroVida.Games.Shared.GameHud.AnnouncesShown > 0)
@@ -1460,6 +1477,7 @@ namespace NeuroVida.Bridge.EditorTools
                 CheckHowTo();
                 CheckTimeTrial();
                 CheckAnnounce();
+                CheckEntrySequence();
                 CheckBoardShown();
                 CheckSound();
                 if (_current.Name == "Piloto" || _current.Name == "Radar" || _current.Name == "Acoplamiento" || _current.Name == "Aterrizaje")

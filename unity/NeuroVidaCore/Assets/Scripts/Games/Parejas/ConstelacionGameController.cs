@@ -68,6 +68,7 @@ namespace NeuroVida.Games.Parejas
             var age = DdaUserProfileConfig.ParseAgeBand(config.config.age_band);
             _senior = age == AgeBand.Senior;
             _dda = ConstelacionContract.CreateEngine(config.config);
+            _introLevel = -1;
             _tally = new ConTally();
             _bestRecord = Mathf.Max(0, config.config.con_best);
             _debugStage = Mathf.Max(0, config.config.con_stage);
@@ -159,14 +160,7 @@ namespace NeuroVida.Games.Parejas
             BindBoard(_sky);
             UpdateHud();
             _phase = Phase.Idle;
-            foreach (var intro in ConstelacionContract.IntrosFor(_level))
-            {
-                if (IntroSeen(intro)) continue;
-                float before = GameClock.Time;
-                yield return StartCoroutine(ShowIntro(intro));
-                _endsAt = HowToClock.Shift(_endsAt, GameClock.Time - before);       // la tarjeta «NUEVO» no gasta tiempo del Reto
-                MarkIntroSeen(intro);
-            }
+            yield return StartCoroutine(ShowIntrosUpTo(_level, true));
             _aborted = false;
             BeginSky();
             float waitedTap = 0f;
@@ -380,18 +374,45 @@ namespace NeuroVida.Games.Parejas
 
         private static bool IntroSeen(ConIntro intro)
         {
-            try { return (PlayerPrefs.GetInt(IntroKey, 0) & (1 << (int)intro)) != 0; }
-            catch (System.Exception) { return false; }
+            return SeenMarks.IsSeen(IntroKey, 1 << (int)intro);
         }
 
         private static void MarkIntroSeen(ConIntro intro)
         {
-            try { PlayerPrefs.SetInt(IntroKey, PlayerPrefs.GetInt(IntroKey, 0) | (1 << (int)intro)); PlayerPrefs.Save(); }
-            catch (System.Exception) { }
+            SeenMarks.Mark(IntroKey, 1 << (int)intro);
         }
+
+        /// <summary>La última etapa cuyas tarjetas ya se atendieron (-1 = ninguna: la primera vez solo cuenta la de la etapa de partida, sin relleno hacia atrás).</summary>
+        private int _introLevel = -1;
+
+        /// <summary>Las tarjetas «NUEVO» de las etapas que se pisan hasta <paramref name="level"/> (Tarea 191): una a una, cada una marcada como vista apenas se muestra; no gastan tiempo del Reto.</summary>
+        private IEnumerator ShowIntrosUpTo(int level, bool shiftClock)
+        {
+            int previous = _introLevel < 0 ? level - 1 : _introLevel;
+            _introLevel = Mathf.Max(_introLevel, level);
+            foreach (var intro in ConstelacionContract.IntrosBetween(previous, level))
+            {
+                if (IntroSeen(intro)) continue;
+                MarkIntroSeen(intro);
+                float before = GameClock.Time;
+                yield return StartCoroutine(ShowIntro(intro));
+                if (shiftClock) _endsAt = HowToClock.Shift(_endsAt, GameClock.Time - before);
+            }
+        }
+
+        /// <summary>La tarjeta del primer cielo, antes del «¡Ya!» (Tarea 191).</summary>
+        protected override IEnumerator BeforeGoCards()
+        {
+            int first = _debugStage > 0 ? Mathf.Clamp(_debugStage, 1, ConstelacionContract.MaxLevel) : _dda.PresentedLevel;
+            yield return StartCoroutine(ShowIntrosUpTo(first, false));
+        }
+
+        /// <summary>«Cielo» repite lo que enseñó el tutorial (Tarea 191): queda vista.</summary>
+        protected override void TutorialTaught() => MarkIntroSeen(ConIntro.Cielo);
 
         private IEnumerator ShowIntro(ConIntro intro)
         {
+            EntrySequence.Note("tarjeta");
             _phase = Phase.Intro;
             _introTapped = false;
             _introKind = intro;

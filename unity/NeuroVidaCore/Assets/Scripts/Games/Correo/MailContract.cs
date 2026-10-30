@@ -144,11 +144,11 @@ namespace NeuroVida.Games.Correo
         /// <summary>Cuántos sacos caen en un día: 1 hasta la etapa 4 y 2 desde la 5.</summary>
         public static int RushCount(int level) => level >= 5 ? 2 : 1;
 
-        /// <summary>Las tarjetas «NUEVO» que trae la etapa (y las anteriores que la persona nunca vio, por si empieza más arriba), en orden de aparición.</summary>
-        public static IEnumerable<MailIntro> IntrosFor(int level)
+        /// <summary>Las tarjetas «NUEVO» de las etapas que se PISAN al pasar de <paramref name="previousLevel"/> (la última etapa ya atendida; en el primer día, la de antes) a <paramref name="level"/>, en orden de aparición: sin relleno hacia atrás (Tarea 191: antes quien partía en la etapa 5 veía las cinco seguidas).</summary>
+        public static IEnumerable<MailIntro> IntrosBetween(int previousLevel, int level)
         {
-            int l = Math.Max(1, Math.Min(MaxLevel, level));
-            for (int i = 1; i <= l; i++)
+            int lo = Math.Max(0, Math.Min(MaxLevel, previousLevel)), hi = Math.Max(1, Math.Min(MaxLevel, level));
+            for (int i = lo + 1; i <= hi; i++)
             {
                 var intro = Stages[i - 1].Intro;
                 if (intro != MailIntro.None) yield return intro;
@@ -292,7 +292,8 @@ namespace NeuroVida.Games.Correo
         public const string RecapUp = "Mañana: un poco más difícil", RecapSame = "Mañana: mismo ritmo";
         public static string RecapNext(int day) => day >= Days ? "Ver resultado" : "Siguiente día";
 
-        public static string CueLineA(MailCue cue) => cue == MailCue.Gold ? "Si llega una carta con sello dorado," : "Si llega una carta con lazo,";
+        /// <summary>«Si llega una carta con sello dorado,» (o «con lazo,»): «con sello dorado,» va con espacios duros (U+00A0) para que, si la línea no cabe, corte «Si llega una carta / con sello dorado,» y no deje «dorado,» solo (Tarea 191). El texto que se lee es el mismo.</summary>
+        public static string CueLineA(MailCue cue) => cue == MailCue.Gold ? "Si llega una carta con\u00A0sello\u00A0dorado," : "Si llega una carta con lazo,";
         public const string CueLineB = "guárdala en la caja fuerte";
         public static string TimeLineA(MailMoment m)
         {
