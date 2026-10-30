@@ -1,12 +1,32 @@
 package com.example
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.graphics.Canvas
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.createFontFamilyResolver
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.test.core.app.ApplicationProvider
+import com.example.ui.components.haloLayoutOf
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -70,5 +90,65 @@ class OnBoardTextTest {
       assertEquals("$b mide lo mismo que $a de ancho", ra.width, rb.width, 0.5f)
       assertEquals("$b mide lo mismo que $a de alto", ra.height, rb.height, 0.5f)
     }
+  }
+
+  // ---------------------------------------------------------------- la orilla de un texto con tramos de color (Tarea 194)
+
+  private val sunTone = Color(0xFFFFE6A6)
+
+  /** El texto del vuelo («Practicar poco y seguido…») con «poco y seguido» en amarillo, medido con el estilo de `Say` (Fredoka SemiBold 20 sp, blanco). */
+  private fun layoutWithYellowSpan(measurer: TextMeasurer) = measurer.measure(
+    text = buildAnnotatedString { append("Practicar "); withStyle(SpanStyle(color = sunTone)) { append("poco y seguido") }; append(" rinde más") },
+    style = TextStyle(color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold),
+    constraints = Constraints(maxWidth = 640)
+  )
+
+  /** Dibuja la orilla (el trazo de 3,5 dp) de [layout] en un bitmap transparente y cuenta los píxeles AMARILLOS (rojo y verde altos, azul medio): con el halo bien hecho no hay ninguno. */
+  private fun yellowPixelsOfHalo(layout: androidx.compose.ui.text.TextLayoutResult): Int {
+    val w = 700; val h = 120
+    val bitmap = ImageBitmap(w, h)
+    val density = Density(2.625f)
+    CanvasDrawScope().draw(density, LayoutDirection.Ltr, Canvas(bitmap), Size(w.toFloat(), h.toFloat())) {
+      drawText(layout, color = OnBoardHalo.Tone, drawStyle = Stroke(width = OnBoardHalo.Outline.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+    }
+    val px = IntArray(w * h); bitmap.readPixels(px)
+    return px.count { c ->
+      val a = (c ushr 24) and 0xFF; val r = (c ushr 16) and 0xFF; val g = (c ushr 8) and 0xFF
+      a > 40 && r > 0xC0 && g > 0xA0                                        // el amarillo suave: nada parecido al navy de la orilla (#151539)
+    }
+  }
+
+  @Test
+  fun la_orilla_de_un_tramo_amarillo_se_dibuja_en_navy_y_no_en_amarillo() {
+    val measurer = TextMeasurer(createFontFamilyResolver(ApplicationProvider.getApplicationContext()), Density(2.625f), LayoutDirection.Ltr)
+    val layout = layoutWithYellowSpan(measurer)
+    // control: con el diseño ORIGINAL (el que se usaba) la orilla de «poco y seguido» sale amarilla: la prueba SÍ detecta el defecto
+    val before = yellowPixelsOfHalo(layout)
+    assertTrue("el control debe encontrar píxeles amarillos en el trazo del diseño original (encontró $before)", before > 200)
+    // con el diseño de la orilla (copia sin los colores de los tramos) no hay ninguno
+    val halo = measurer.haloLayoutOf(layout)
+    assertEquals("la copia mide lo mismo (el trazado coincide letra por letra)", layout.size, halo.size)
+    assertEquals(layout.lineCount, halo.lineCount)
+    for (i in layout.layoutInput.text.text.indices step 3) assertEquals("la letra $i está en el mismo lugar", layout.getBoundingBox(i), halo.getBoundingBox(i))
+    assertEquals("la orilla de un tramo amarillo es navy (OnBoardHalo.Tone): ningún píxel amarillo", 0, yellowPixelsOfHalo(halo))
+  }
+
+  @Test
+  fun un_texto_con_tramo_amarillo_sigue_siendo_un_solo_nodo_con_su_medida() {
+    val annotated = buildAnnotatedString { append("Practicar "); withStyle(SpanStyle(color = sunTone)) { append("poco y seguido") }; append(" rinde más") }
+    rule.setContent {
+      NeuroVidaTheme {
+        Column(Modifier.width(300.dp)) {
+          Text(annotated, modifier = Modifier.testTag("t"), color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+          OnBoardText(annotated, modifier = Modifier.testTag("o"), color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+        }
+      }
+    }
+    rule.waitForIdle()
+    assertEquals("un solo nodo con ese texto", 1, rule.onAllNodes(hasText("Practicar poco y seguido rinde más")).fetchSemanticsNodes().filter { it.config.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.TestTag) == "o" }.size)
+    val ra = rule.onNodeWithTag("t").fetchSemanticsNode().boundsInRoot
+    val rb = rule.onNodeWithTag("o").fetchSemanticsNode().boundsInRoot
+    assertEquals("mide lo mismo de ancho", ra.width, rb.width, 0.5f)
+    assertEquals("mide lo mismo de alto", ra.height, rb.height, 0.5f)
   }
 }

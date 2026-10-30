@@ -143,8 +143,8 @@ class HoyTarjetaTest {
    * Cuánto se pasa Hoy de la barra a 393 × 873 (dp; Tarea 180: dos botones a todo el ancho y el título «Modos de juego» sumaron alto; la regla de la tarea es MEDIR e informar, no achicar). Con letra 1,0 solo se pasa «marca nueva con la ruta a medias» (+16); con 1,3, los estados con la ruta a medias (+2) y la marca nueva (+13); «Todos los juegos» mide 48 dp (el mínimo de toque).
    * Lo que no está aquí tiene que caber (la ruta completa y el Contrarreloj jugado, los de todos los días, caben con 1,0 y con 1,3).
    */
-  /** Lo máximo que se pasa de la barra el día del vuelo con 4 filas y letra 1,3 (dp; medido el 30-oct, Tarea 193: 90,5; con 3 filas, 29,1; con 2 y con 1 caben). */
-  private val FLIGHT_DAY_13_MAX_OVER = 91f
+  /** Lo máximo que se pasa de la barra el día del vuelo con 4 filas y letra 1,3 (dp; medido el 30-oct: Tarea 193, 90,5; Tarea 194, con la línea del vuelo pegada a las filas, 78,7; con 3 filas, 17,3; con 2 y con 1 caben). */
+  private val FLIGHT_DAY_13_MAX_OVER = 79f
 
   private val scrollsAt393 = mapOf(1f to mapOf("marca nueva con la ruta a medias" to 16f), 1.3f to mapOf("primera hora" to 2f, "a mitad de ruta" to 2f, "marca nueva" to 13f, "marca nueva con la ruta a medias" to 85f, "partida en pausa" to 65f))
 
@@ -925,6 +925,27 @@ class HoyTarjetaTest {
     val medidas = (1..4).associateWith { n -> flightDayOverflow(flightFour.take(n), 1.3f) }
     println("HOY día del vuelo con letra 1,3 (dp que se pasa de la barra, por número de filas): $medidas")
     assertTrue("con 4 filas y letra 1,3 se pasa como mucho %.0f dp (lo medido el 30-oct: ver la salida de esta prueba)".format(FLIGHT_DAY_13_MAX_OVER), medidas.getValue(4) <= FLIGHT_DAY_13_MAX_OVER)
+  }
+
+  /**
+   * Tarea 194 (Ricardo: «se ve desplazado hacia abajo, debe estar más arriba»): cuando la tarjeta NO tiene botón y solo dice «Tu primer vuelo fue tu ruta de hoy.», la línea queda pegada al ritmo de las filas, con UN espacio chico (6 dp) bajo la última (antes 10 + 8 = 18 dp). Con botón, la línea sigue
+   * 8 dp bajo él y el botón 10 dp bajo la última fila.
+   */
+  @Test
+  fun la_linea_del_vuelo_sin_boton_queda_pegada_a_la_ultima_fila() {
+    assertEquals("el espacio sin botón es chico", 6f, com.example.ui.screens.CAPTION_ONLY_GAP.value, 0.01f)
+    var noButton = 0f
+    for (n in 1..4) {
+      show(ui(completed = n, ids = flightFour.take(n), flightDay = true, timeTrial = stroop))
+      noButton = dp(unclipped("home_flight_day").top - unclipped("home_stop_$n").bottom)
+      println("HOY día del vuelo con $n fila(s): la línea empieza %.1f dp bajo la caja de la última fila".format(noButton))
+      assertTrue("con $n fila(s) la línea empieza %.1f dp bajo la última fila: debe quedar pegada (antes, con 18 dp de espacio, medía unos 14 entre cajas)".format(noButton), noButton <= 4f)
+    }
+    // con botón (la ruta sigue y hay una partida en pausa) el botón sigue separado de la última fila por el espacio de 10 dp (6 de la línea sola: unos 4 dp más)
+    show(ui(paused = "Carga exacta", completed = 1))
+    val buttonGap = dp(unclipped("btn_resume_paused").top - unclipped("home_stop_3").bottom)
+    println("HOY con botón: el botón empieza %.1f dp bajo la caja de la última fila".format(buttonGap))
+    assertTrue("con botón, el botón sigue %.1f dp bajo la última fila, más que la línea sola (%.1f)".format(buttonGap, noButton), buttonGap >= noButton + 3f)
   }
 
   @Test

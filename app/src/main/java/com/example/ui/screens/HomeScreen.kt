@@ -165,6 +165,9 @@ internal data class HomeUi(
 
 internal enum class StopState { DONE, NEXT, LATER }
 
+/** El espacio bajo la última fila cuando la tarjeta no tiene botón y solo dice una línea (Tarea 194). */
+internal val CAPTION_ONLY_GAP = 6.dp
+
 /** Lo más que muestra la tarjeta: la ruta normal trae 3 juegos y el día del Primer vuelo, hasta los 4 del vuelo (Tarea 193). */
 internal const val MAX_STOPS = 4
 
@@ -283,7 +286,9 @@ private fun HoyCard(ui: HomeUi, onPlay: () -> Unit, onResume: () -> Unit, modifi
         }
         HoyStops(ui)
       }
-      if (paused || pending > 0 || caption != null) Spacer(Modifier.height(10.dp))
+      // Con botón (la ruta sigue o hay una partida en pausa): 10 dp antes del botón. Sin botón, solo la línea («Tu primer vuelo fue tu ruta de hoy.», Tarea 194): pegada al ritmo de las filas, un solo espacio chico bajo la última (antes 10 + 8 = 18 dp, y se veía bajada).
+      val hasButton = paused || pending > 0
+      if (hasButton) Spacer(Modifier.height(10.dp))
       when {
         paused -> ClayButton(text = "Seguir tu partida", onClick = onResume, glyph = Glyph.PLAY, fontSize = 18.sp, modifier = Modifier.testTag("btn_resume_paused"))
         pending > 0 -> {
@@ -294,7 +299,7 @@ private fun HoyCard(ui: HomeUi, onPlay: () -> Unit, onResume: () -> Unit, modifi
       caption?.let { line ->
         Text(
           line, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 21.sp, textAlign = TextAlign.Center,
-          modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag(if (ui.flightDay) "home_flight_day" else "home_caption")
+          modifier = Modifier.fillMaxWidth().padding(top = if (hasButton) 8.dp else CAPTION_ONLY_GAP).testTag(if (ui.flightDay) "home_flight_day" else "home_caption")
         )
       }
     }

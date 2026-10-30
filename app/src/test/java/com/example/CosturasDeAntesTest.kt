@@ -66,7 +66,7 @@ class CosturasDeAntesTest {
     // Tarea 148 (P4): sin el abanico de rayos vectoriales que giraba ni los destellos con puntas: un halo sol suave y seis luceros redondos que suben; el título en sol con el contorno de las pestañas
     assertTrue("el halo sol", overlay.contains("Clay.Sun.copy(alpha = 0.5f * a)"))
     assertTrue("seis luceros redondos", overlay.contains("sparks.take(6)") && overlay.contains("drawCircle(sparkColors"))
-    assertTrue("el título en sol con el contorno de los títulos de las pestañas", overlay.contains("OnBoardText(def.title, color = Clay.Sun"))
+    assertTrue("el título en el amarillo suave del texto sobre el cielo (Tarea 194; antes el sol) con el contorno de los títulos de las pestañas", overlay.contains("OnBoardText(def.title, color = com.example.ui.theme.NubiTokens.SunOnNight"))
     for (gone in listOf("drawGlint(", "val spin", "rotate("))
       assertTrue("la celebración ya no usa $gone (rayos que giran, destellos con puntas)", !overlay.contains(gone))
   }

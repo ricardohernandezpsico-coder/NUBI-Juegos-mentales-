@@ -130,7 +130,7 @@ fun AchievementOverlay(
         fontFamily = com.example.ui.theme.TitleFamily,
         fontWeight = FontWeight.Bold,
         fontSize = 16.sp,
-        color = Clay.Sun
+        color = com.example.ui.theme.NubiTokens.SunOnNight
       )
       Box(modifier = Modifier.size(270.dp), contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize()) {
@@ -172,7 +172,7 @@ fun AchievementOverlay(
         modifier = Modifier.alpha(texts.value),
         horizontalAlignment = Alignment.CenterHorizontally
       ) {
-        OnBoardText(def.title, color = Clay.Sun, fontSize = 36.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, textAlign = TextAlign.Center)          // sol con el contorno de los títulos de las pestañas (Tarea 148, P4)
+        OnBoardText(def.title, color = com.example.ui.theme.NubiTokens.SunOnNight, fontSize = 36.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, textAlign = TextAlign.Center)          // sol con el contorno de los títulos de las pestañas (Tarea 148, P4)
         Text(
           text = def.description,
           fontFamily = AppFamily,

@@ -170,7 +170,7 @@ private fun LastGames(marks: List<Int>, weekLine: String?) {
         val today = i == marks.lastIndex
         Column(Modifier.weight(1f).testTag("timetrial_bar_$i").clearAndSetSemantics { }, horizontalAlignment = Alignment.CenterHorizontally) {
           // la cifra encima: 16 sp (rótulo de gráfico), la de hoy en sol y en negrita
-          Text(n.toString(), color = if (today) Clay.Sun else NubiTokens.OnNightDim, fontSize = 16.sp, fontWeight = if (today) FontWeight.Bold else FontWeight.SemiBold, fontFamily = AppFamily, textAlign = TextAlign.Center)
+          Text(n.toString(), color = if (today) com.example.ui.theme.NubiTokens.SunOnNight else NubiTokens.OnNightDim, fontSize = 16.sp, fontWeight = if (today) FontWeight.Bold else FontWeight.SemiBold, fontFamily = AppFamily, textAlign = TextAlign.Center)
           val h = TimeTrialBarMin + (TimeTrialBarMax - TimeTrialBarMin) * (n.toFloat() / most)
           Box(
             Modifier.padding(top = 4.dp).width(36.dp).height(h)
@@ -178,7 +178,7 @@ private fun LastGames(marks: List<Int>, weekLine: String?) {
               .border(2.dp, Clay.Ink, RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
           )
           // «hoy» bajo la barra de hoy; las otras, en blanco: todas ocupan el mismo alto
-          Text(if (today) "hoy" else " ", color = if (today) Clay.Sun else NubiTokens.OnNightDim, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, fontFamily = AppFamily, modifier = Modifier.padding(top = 2.dp))
+          Text(if (today) "hoy" else " ", color = if (today) com.example.ui.theme.NubiTokens.SunOnNight else NubiTokens.OnNightDim, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, fontFamily = AppFamily, modifier = Modifier.padding(top = 2.dp))
         }
       }
       // si hay menos de 5, el resto del ancho queda vacío a la derecha: las barras no se estiran

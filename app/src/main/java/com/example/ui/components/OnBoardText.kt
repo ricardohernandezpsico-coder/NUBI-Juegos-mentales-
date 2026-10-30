@@ -14,12 +14,15 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -43,7 +46,26 @@ object OnBoardHalo {
   val Tone: Color = Color(0xFF151539)
 }
 
-/** Lo mismo con un texto de varios estilos (una palabra en sol dentro de una frase): el contorno se dibuja con el mismo diseño del texto. */
+/**
+ * El mismo texto SIN los colores de sus tramos (el resto del estilo, igual: negrita, tamaño…; así el trazado coincide letra por letra con el del texto). Es lo que se dibuja como orilla: el `color` de `drawText` NO pisa el color de un `SpanStyle`, así que con un tramo en amarillo el trazo de 3,5 dp
+ * de esa palabra salía AMARILLO y no navy: la palabra se veía inflada y borrosa (Tarea 194; Ricardo: «las letras amarillas se ven saturadas y no se puede leer»).
+ */
+internal fun AnnotatedString.withoutSpanColors(): AnnotatedString =
+  AnnotatedString(text, spanStyles = spanStyles.map { r -> r.copy(item = r.item.copy(color = Color.Unspecified)) }, paragraphStyles = paragraphStyles)
+
+/** El diseño de la orilla de [layout]: el mismo texto, con la misma medida y los mismos saltos de línea, pero sin los colores de sus tramos (ver [withoutSpanColors]). */
+internal fun TextMeasurer.haloLayoutOf(layout: TextLayoutResult): TextLayoutResult {
+  val i = layout.layoutInput
+  return measure(
+    text = i.text.withoutSpanColors(), style = i.style, overflow = i.overflow, softWrap = i.softWrap, maxLines = i.maxLines,
+    placeholders = i.placeholders, constraints = i.constraints, layoutDirection = i.layoutDirection, density = i.density
+  )
+}
+
+/**
+ * Lo mismo con un texto de varios estilos (una palabra en sol dentro de una frase). La orilla se dibuja con una COPIA del texto sin los colores de sus tramos ([haloLayoutOf]): siempre en [OnBoardHalo.Tone], sin importar de qué color sea cada tramo.
+ * Sigue siendo UN solo nodo de texto para el lector y con la misma medida (la copia solo se dibuja).
+ */
 @Composable
 fun OnBoardText(
   text: androidx.compose.ui.text.AnnotatedString,
@@ -57,10 +79,14 @@ fun OnBoardText(
 ) {
   var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
   val strokePx = with(LocalDensity.current) { OnBoardHalo.Outline.toPx() }
+  val measurer = rememberTextMeasurer()
+  // Sin tramos de color el texto ya es su propia orilla; con ellos, la copia sin colores.
+  val coloredSpans = text.spanStyles.any { it.item.color != Color.Unspecified || it.item.brush != null }
+  val halo = remember(layout, coloredSpans) { layout?.let { l -> if (coloredSpans) measurer.haloLayoutOf(l) else l } }
   Text(
     text = text,
     modifier = modifier.drawBehind {
-      if (strokePx > 0f) layout?.let { drawText(it, color = OnBoardHalo.Tone, drawStyle = Stroke(width = strokePx, cap = StrokeCap.Round, join = StrokeJoin.Round)) }
+      if (strokePx > 0f) halo?.let { drawText(it, color = OnBoardHalo.Tone, drawStyle = Stroke(width = strokePx, cap = StrokeCap.Round, join = StrokeJoin.Round)) }
     },
     color = color, fontSize = fontSize, fontWeight = fontWeight, fontFamily = fontFamily, textAlign = textAlign, lineHeight = lineHeight,
     onTextLayout = { layout = it }

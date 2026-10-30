@@ -154,7 +154,7 @@ fun LeaguePromotionOverlay(
         fontWeight = FontWeight.Bold,
         fontSize = 16.sp,
         letterSpacing = 3.sp,
-        color = Clay.Sun,
+        color = com.example.ui.theme.NubiTokens.SunOnNight,
         modifier = Modifier.alpha(0.4f + 0.6f * scrim.value)
       )
       Spacer(Modifier.height(8.dp))

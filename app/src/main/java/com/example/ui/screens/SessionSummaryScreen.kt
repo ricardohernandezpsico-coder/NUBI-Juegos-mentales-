@@ -68,11 +68,11 @@ fun SessionSummaryScreen(
       if (streak > 0) Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 10.dp)) {
         com.example.ui.components.KitLlama(lit = true, size = 20.dp)
         Spacer(Modifier.width(6.dp))
-        Text(if (streak == 1) "Racha: 1 día" else "Racha: $streak días", color = Clay.Sun, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Text(if (streak == 1) "Racha: 1 día" else "Racha: $streak días", color = com.example.ui.theme.NubiTokens.SunOnNight, fontSize = 16.sp, fontWeight = FontWeight.Bold)
       }
 
       Text(
-        "TUS JUEGOS", color = Clay.Sun, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily,
+        "TUS JUEGOS", color = com.example.ui.theme.NubiTokens.SunOnNight, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily,
         modifier = Modifier.fillMaxWidth().padding(top = 22.dp, bottom = 4.dp)
       )
       summary.games.forEach { g ->
@@ -93,7 +93,7 @@ fun SessionSummaryScreen(
       }
 
       Text(
-        "TU AVANCE", color = Clay.Sun, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily,
+        "TU AVANCE", color = com.example.ui.theme.NubiTokens.SunOnNight, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily,
         modifier = Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 4.dp)
       )
       summary.areas.forEachIndexed { i, a ->

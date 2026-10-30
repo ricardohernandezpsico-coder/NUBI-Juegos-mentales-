@@ -131,7 +131,7 @@ fun GameLoadingScreen(
           fontFamily = AppFamily,
           fontWeight = FontWeight.SemiBold,
           fontSize = 16.sp,
-          color = Clay.Sun,
+          color = com.example.ui.theme.NubiTokens.SunOnNight,
           textAlign = TextAlign.Center,
           modifier = Modifier.padding(top = 6.dp)
         )

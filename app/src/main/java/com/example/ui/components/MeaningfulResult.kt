@@ -229,7 +229,7 @@ fun DetailSection(content: @Composable ColumnScope.() -> Unit) {
 fun DetailText(text: String, tag: String, strong: Boolean = false, modifier: Modifier = Modifier) {
   val celebrate = text.startsWith("¡")
   OnBoardText(
-    text = text, color = if (celebrate) Clay.Sun else NubiTokens.OnNight, fontFamily = AppFamily,
+    text = text, color = if (celebrate) com.example.ui.theme.NubiTokens.SunOnNight else NubiTokens.OnNight, fontFamily = AppFamily,
     fontWeight = if (celebrate || strong) FontWeight.SemiBold else FontWeight.Normal, fontSize = 17.sp, lineHeight = 24.sp,
     modifier = modifier.fillMaxWidth().padding(start = 4.dp, top = 4.dp, bottom = 4.dp).testTag(tag)
   )
@@ -239,7 +239,7 @@ fun DetailText(text: String, tag: String, strong: Boolean = false, modifier: Mod
 @Composable
 fun DetailTitle(text: String, modifier: Modifier = Modifier) {
   OnBoardText(
-    text = text, color = Clay.Sun, fontFamily = com.example.ui.theme.TitleFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp, lineHeight = 24.sp,
+    text = text, color = com.example.ui.theme.NubiTokens.SunOnNight, fontFamily = com.example.ui.theme.TitleFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp, lineHeight = 24.sp,
     modifier = modifier.fillMaxWidth().padding(start = 4.dp, top = 12.dp, bottom = 4.dp)
   )
 }

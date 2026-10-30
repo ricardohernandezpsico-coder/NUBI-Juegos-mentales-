@@ -335,7 +335,7 @@ fun GameResultScreen(
         }
         result.lexRareWords?.takeIf { it.isNotEmpty() }?.let { words ->
           Row(Modifier.fillMaxWidth().padding(start = 4.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            OnBoardText("Tu colección", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = com.example.ui.theme.TitleFamily, modifier = Modifier.weight(1f))
+            OnBoardText("Tu colección", color = com.example.ui.theme.NubiTokens.SunOnNight, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = com.example.ui.theme.TitleFamily, modifier = Modifier.weight(1f))
             OnBoardText(
               text = "${words.size} palabra${if (words.size == 1) "" else "s"} rara${if (words.size == 1) "" else "s"}",
               color = Clay.Lime, fontWeight = FontWeight.Bold, fontSize = 17.sp, fontFamily = AppFamily
@@ -520,7 +520,7 @@ fun GameResultScreen(
         }
         streak?.takeIf { "Más seguidos: ${result.svBestStreak}" != model.dataLine }?.let { line ->
           Row(Modifier.fillMaxWidth().padding(start = 4.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            OnBoardText("Más seguidos", color = Clay.Sun, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = com.example.ui.theme.TitleFamily, modifier = Modifier.weight(1f))
+            OnBoardText("Más seguidos", color = com.example.ui.theme.NubiTokens.SunOnNight, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = com.example.ui.theme.TitleFamily, modifier = Modifier.weight(1f))
             OnBoardText(line, color = Clay.Lime, fontWeight = FontWeight.Bold, fontSize = 18.sp, fontFamily = AppFamily)
           }
         }
@@ -638,7 +638,7 @@ internal fun RecordLine(text: String) {
       contentAlignment = Alignment.Center
     ) { com.example.ui.components.KitGlyph(Glyph.CHECK, size = 22.dp) }
     Spacer(Modifier.width(10.dp))
-    OnBoardText(text = text, color = Clay.Sun, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+    OnBoardText(text = text, color = com.example.ui.theme.NubiTokens.SunOnNight, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 20.sp)
   }
 }
 

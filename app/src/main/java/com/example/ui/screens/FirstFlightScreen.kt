@@ -285,7 +285,7 @@ private fun PageFrame(
 @Composable
 private fun Eyebrow(text: String, center: Boolean = false) =
   com.example.ui.components.OnBoardText(
-    text, color = Clay.Sun, fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 18.sp,
+    text, color = com.example.ui.theme.NubiTokens.SunOnNight, fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 18.sp,        // el amarillo claro del texto sobre el cielo (Tarea 194), no el sol de los botones
     textAlign = if (center) TextAlign.Center else TextAlign.Start, modifier = if (center) Modifier.fillMaxWidth() else Modifier
   )
 
@@ -303,7 +303,7 @@ private fun Say(text: String, highlight: String? = null, center: Boolean = false
     if (highlight == null || at < 0) append(text)
     else {
       append(text.substring(0, at))
-      withStyle(SpanStyle(color = Clay.Sun)) { append(highlight) }
+      withStyle(SpanStyle(color = com.example.ui.theme.NubiTokens.SunOnNight)) { append(highlight) }
       append(text.substring(at + highlight.length))
     }
   }
@@ -535,7 +535,7 @@ private fun FirstStar() {
         drawCircle(Color.White.copy(alpha = 0.55f), r * 0.22f, Offset(c.x - r * 0.35f, c.y - r * 0.38f))
       }
     }
-    Text("¡Nace tu primer lucero!", color = Clay.Sun, fontFamily = com.example.ui.theme.TitleFamily, fontWeight = FontWeight.Bold, fontSize = 20.sp, textAlign = TextAlign.Center)
+    Text("¡Nace tu primer lucero!", color = com.example.ui.theme.NubiTokens.SunOnNight, fontFamily = com.example.ui.theme.TitleFamily, fontWeight = FontWeight.Bold, fontSize = 20.sp, textAlign = TextAlign.Center)
     Text("Cada partida hace nacer un lucero en el cielo de Nubi.", color = OnNightDim, fontFamily = AppFamily, fontSize = 18.sp, lineHeight = 24.sp, textAlign = TextAlign.Center)
   }
 }

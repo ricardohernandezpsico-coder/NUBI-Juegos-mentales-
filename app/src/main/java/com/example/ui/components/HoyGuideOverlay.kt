@@ -212,9 +212,9 @@ private fun GuideGlobe(step: GuideStep, onNext: () -> Unit, startingPoint: Boole
             .semantics { traversalIndex = 0f }
             .clearAndSetSemantics { contentDescription = HoyGuide.spoken(step, startingPoint); liveRegion = LiveRegionMode.Polite },
           label = "texto de la guía"
-        ) { s -> Text(HoyGuide.text(s, startingPoint), color = Clay.Ink, fontSize = 18.sp, lineHeight = 25.sp, fontWeight = FontWeight.Medium, fontFamily = AppFamily) }
+        ) { s -> Text(HoyGuide.text(s, startingPoint), color = Clay.Ink, fontSize = 18.sp, lineHeight = 25.sp, fontWeight = FontWeight.SemiBold, fontFamily = AppFamily) }
       }
-      val counter: @Composable (Modifier) -> Unit = { m -> Text(HoyGuide.counter(step), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 21.sp, modifier = m.testTag("guide_counter").clearAndSetSemantics { }) }
+      val counter: @Composable (Modifier) -> Unit = { m -> Text(HoyGuide.counter(step), color = Clay.Ink, fontSize = 16.sp, lineHeight = 21.sp, fontWeight = FontWeight.Normal, modifier = m.testTag("guide_counter").clearAndSetSemantics { }) }
       val chip: @Composable () -> Unit = {
         KitButton(
           text = HoyGuide.chipLabel(step), onClick = onNext, color = SlabColor.LILAC, wide = false, minHeight = 48.dp, fontSize = 17.sp,

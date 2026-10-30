@@ -378,10 +378,20 @@ class HoyGuideOverlayTest {
 
   @Test
   fun la_guia_no_pide_el_sol_ni_un_texto_bajo_16_sp() {
-    val src = java.io.File("src/main/java/com/example/ui/components/HoyGuideOverlay.kt").readText().replace("\r\n", "\n")
-    val code = src.lines().filterNot { it.trim().startsWith("*") || it.trim().startsWith("/**") || it.trim().startsWith("//") }.joinToString("\n")
+    val code = java.io.File("src/main/java/com/example/ui/components/HoyGuideOverlay.kt").readLines().filterNot { it.trim().startsWith("*") || it.trim().startsWith("/**") || it.trim().startsWith("//") }.joinToString("\n")
     assertFalse("la guía no pide el sol (el único sol de Hoy es el Contrarreloj iluminado)", code.contains("Clay.Sun") || code.contains("SlabColor.SUN"))
     for (m in Regex("""fontSize = (\d+(?:\.\d+)?)\.sp""").findAll(code)) assertTrue("texto de ${m.groupValues[1]} sp: la app no baja de 16 sp", m.groupValues[1].toFloat() >= 16f)
+  }
+
+  /** Tarea 194 (Ricardo: «las letras de los recuadros me gustaría que se vean algo más oscuras o remarcadas»): el texto del globo va en tinta, 18 sp y `SemiBold` (con `AppFamily`, Fredoka SemiBold, como los botones); «Paso N de 3» en tinta y peso normal; ya no se usa la tinta apagada. */
+  @Test
+  fun el_globo_va_en_tinta_con_el_texto_firme_y_el_contador_en_tinta() {
+    val code = java.io.File("src/main/java/com/example/ui/components/HoyGuideOverlay.kt").readLines().filterNot { it.trim().startsWith("*") || it.trim().startsWith("/**") || it.trim().startsWith("//") }
+    val text = code.single { it.contains("HoyGuide.text(s, startingPoint)") }
+    assertTrue("el texto del globo: tinta, 18 sp y SemiBold: $text", text.contains("color = Clay.Ink") && text.contains("fontSize = 18.sp") && text.contains("FontWeight.SemiBold") && !text.contains("FontWeight.Medium"))
+    val counter = code.single { it.contains("HoyGuide.counter(step)") }
+    assertTrue("«Paso N de 3» en tinta y peso normal: $counter", counter.contains("color = Clay.Ink") && counter.contains("FontWeight.Normal") && !counter.contains("InkMuted"))
+    assertFalse("ninguna letra de la guía va en la tinta apagada", code.any { it.contains("InkMuted") })
   }
 
   // ---------------------------------------------------------------- quien la aloja: cuándo sale (con el ViewModel de verdad)
