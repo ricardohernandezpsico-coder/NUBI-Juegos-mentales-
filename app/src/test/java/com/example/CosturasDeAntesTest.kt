@@ -11,6 +11,7 @@ import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
@@ -134,7 +135,14 @@ class CosturasDeAntesTest {
     val button = rule.onNodeWithTag("btn_flight_finish").getUnclippedBoundsInRoot()
     assertTrue("Nubi va sobre las dos líneas: ${island.bottom} y ${title.top}", island.bottom <= title.top + 1.dp)
     assertTrue("y todo entra sobre el botón sin desplazar: ${sub.bottom} y ${button.top}", sub.bottom <= button.top + 1.dp)
-    assertTrue("el lugar de Nubi ocupa el alto que sobra: ${island.height}", island.height >= 250.dp)
+    // Tarea 194b (Ricardo: «se ve desplazado hacia abajo, debe estar más arriba»): Nubi ya no se estira; Nubi, el título y la frase son UN bloque centrado en el alto disponible, como «¿Sabías que…?»
+    assertTrue("Nubi ya no se estira: su lugar mide lo que mide ella (%.0f dp)".format(island.height.value), island.height <= 200.dp)
+    assertTrue("hay aire entre la frase y el botón (bloque centrado, no pegado a él): ${sub.bottom} y ${button.top}", button.top - sub.bottom >= 60.dp)
+    val stepText = rule.onNodeWithTag("flight_step_text").getUnclippedBoundsInRoot()
+    val above = island.top.value - stepText.bottom.value                      // lo que queda entre «Paso 6 de 6» y Nubi
+    val below = (button.top - sub.bottom).value - 10f                         // y entre la frase y el botón (el pie deja 10 dp sobre él)
+    assertTrue("el bloque está centrado en el alto disponible: sobra %.0f dp arriba y %.0f dp abajo (casi lo mismo)".format(above, below), kotlin.math.abs(above - below) <= 20f)
+    println("CIERRE 393 x 873 letra 1,0: título empieza en %.0f dp, la frase termina en %.0f dp y el botón empieza en %.0f dp".format(title.top.value, sub.bottom.value, button.top.value))
     // Nubi despierta (ojos abiertos, parpadea: Tarea 184) y grande (200 dp de ancho: `NubiSize.L`), centrada; y el cierre ya no habla de la isla (Tarea 185)
     val nubi = rule.onNodeWithTag("nubi_ojos_abiertos", useUnmergedTree = true).getUnclippedBoundsInRoot()
     assertEquals("Nubi mide 200 dp de ancho (el tamaño L)", 200f, (nubi.right - nubi.left).value, 1f)
@@ -148,8 +156,14 @@ class CosturasDeAntesTest {
     val at = "${w}x$h letra $scale"
     assertTrue("$at: Nubi existe", rule.onAllNodesWithTagCount("flight_nubi") == 1)
     rule.onNodeWithTag("btn_flight_finish").assertIsDisplayed()                      // el botón de abajo está siempre a la vista
-    val island = rule.onNodeWithTag("flight_nubi").getUnclippedBoundsInRoot()
-    assertTrue("$at: el lugar de Nubi no baja de 170 dp (mide ${island.height})", island.height >= 169.dp)
+    // con la letra muy grande el bloque se desliza: se llega a la frase y queda SOBRE el botón (nada se corta ni se tapa)
+    rule.onNodeWithText("Mañana empieza tu ruta de 3 juegos", substring = true).performScrollTo()
+    val sub = rule.onNodeWithText("Mañana empieza tu ruta de 3 juegos", substring = true).getUnclippedBoundsInRoot()
+    val button = rule.onNodeWithTag("btn_flight_finish").getUnclippedBoundsInRoot()
+    assertTrue("$at: la frase (termina en ${sub.bottom}) no se tapa con el botón (empieza en ${button.top})", sub.bottom <= button.top + 1.dp)
+    rule.onNodeWithText("Mañana empieza tu ruta de 3 juegos", substring = true).assertIsDisplayed()
+    rule.onNodeWithText("Tu primer vuelo fue tu ruta de hoy").performScrollTo()
+    rule.onNodeWithText("Tu primer vuelo fue tu ruta de hoy").assertIsDisplayed()
   }
 
   @Test fun el_cierre_con_letra_1_3_sigue_mostrando_a_Nubi_y_el_boton() = closingStillShowsEverything(393, 873, 1.3f)

@@ -65,7 +65,6 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -265,14 +264,11 @@ private data class Opt(val value: String, val label: String, val sub: String? = 
 private fun PageFrame(
   centered: Boolean = false,
   footer: @Composable () -> Unit,
-  fill: Boolean = false,
   body: @Composable () -> Unit
 ) {
   Column(Modifier.fillMaxSize()) {
     Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = if (centered) Alignment.Center else Alignment.TopCenter) {
-      // [fill] = el cuerpo se ocupa de su propio alto (y de deslizarse): el cierre, donde Nubi toma lo que sobra
-      if (fill) Box(Modifier.fillMaxSize().padding(top = 10.dp)) { body() }
-      else Column(
+      Column(
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(top = 10.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = if (centered) Alignment.CenterHorizontally else Alignment.Start
@@ -573,36 +569,15 @@ private fun ReminderPage(s: FlightState, a: FlightActions) {
 /**
  * El último paso: los 3 juegos de hoy, elegidos por las metas y el punto de partida. «Empezar mi ruta» entra a Hoy.
  * Tarea 145 (ítem 23 de la revisión del 19-oct): antes Nubi y dos líneas con la mitad de la pantalla vacía; luego la isla de Tú. Tarea 185 (28-oct): la isla salió de la app (Ricardo: arriba de Tú va SOLO Nubi), así que el cierre vuelve a Nubi: despierta y parpadeando, grande (`NubiSize.L`) y centrada, y las dos líneas
- * de siempre (sin texto nuevo que prometa algo y sin decir «isla»). Nubi se centra en lo que sobra de alto después de las dos líneas (se miden con la letra del sistema); con letra muy grande, donde ni así entra, la página se desliza como las demás.
+ * de siempre (sin texto nuevo que prometa algo y sin decir «isla»). Tarea 194b (Ricardo: «se ve desplazado hacia abajo, debe estar más arriba»): antes Nubi se quedaba con TODO el alto que sobraba y empujaba el título y la frase hasta pegarlos al botón; ahora se arma como «¿Sabías que…?» ([DatoPage]):
+ * Nubi, el título y la frase son UN bloque centrado en el alto disponible, con el espacio de siempre (12 dp) y sin estirar a Nubi. Con letra muy grande, donde el bloque no entra, la página se desliza como las demás (sin cortar nada y sin pasar por debajo del botón).
  */
 @Composable
 private fun TodayPathPage(todayGames: List<String>, a: FlightActions) {
   // El día del Primer vuelo, la ruta de hoy ya quedó cumplida con el vuelo (repository.completeTodayWithFlight): no se juegan 7 juegos. Mañana empieza la ruta de 3 juegos.
-  val title = "Tu primer vuelo fue tu ruta de hoy"
-  val sub = "Mañana empieza tu ruta de 3 juegos, elegida por tus metas y por lo que más conviene reforzar."
-  PageFrame(footer = { MainButton("Empezar mi ruta", tag = "btn_flight_finish", onClick = a.onContinue) }, fill = true) {
-    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
-      val measurer = androidx.compose.ui.text.rememberTextMeasurer()
-      val density = androidx.compose.ui.platform.LocalDensity.current
-      val textHeight = remember(maxWidth, density.fontScale) {
-        with(density) {
-          val width = maxWidth.roundToPx()
-          val t = measurer.measure(title, TextStyle(fontFamily = com.example.ui.theme.TitleFamily, fontWeight = FontWeight.Bold, fontSize = 28.sp, lineHeight = 33.sp, textAlign = TextAlign.Center), constraints = androidx.compose.ui.unit.Constraints(maxWidth = width))
-          val s = measurer.measure(sub, TextStyle(fontFamily = AppFamily, fontSize = 18.sp, lineHeight = 25.sp, textAlign = TextAlign.Center), constraints = androidx.compose.ui.unit.Constraints(maxWidth = width))
-          (t.size.height + s.size.height).toDp() + 12.dp * 2
-        }
-      }
-      val nubiHeight = (maxHeight - textHeight).coerceAtLeast(MIN_NUBI_HEIGHT)
-      Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(Modifier.fillMaxWidth().height(nubiHeight).testTag("flight_nubi"), contentAlignment = Alignment.Center) {
-          com.example.ui.components.NubiClay(com.example.ui.components.NubiSize.L)
-        }
-        Title(title, center = true)
-        Sub(sub, center = true)
-      }
-    }
+  PageFrame(centered = true, footer = { MainButton("Empezar mi ruta", tag = "btn_flight_finish", onClick = a.onContinue) }) {
+    com.example.ui.components.NubiClay(com.example.ui.components.NubiSize.L, Modifier.testTag("flight_nubi"))
+    Title("Tu primer vuelo fue tu ruta de hoy", center = true)
+    Sub("Mañana empieza tu ruta de 3 juegos, elegida por tus metas y por lo que más conviene reforzar.", center = true)
   }
 }
-
-/** Lo menos que mide el lugar de Nubi en el cierre (dp): con letra muy grande la página se desliza antes que dejarlo más chico. */
-private val MIN_NUBI_HEIGHT = 170.dp
