@@ -1173,6 +1173,9 @@ namespace NeuroVida.Bridge.EditorTools
                 return;
             }
             if (since < 5.0 || _announceBackChecked) return;                                  // el aviso de prueba dura unos 3,8 s con sus dos tiempos
+            // La fila se mide QUIETA (T191b): al terminar un aviso la consigna vuelve con un fundido de 0,2 s, y el juego puede estar diciendo un aviso suyo («¡Nueva plataforma!»); medir en pleno fundido daba un falso «no volvió» (AvisoFreno encadenado,
+            // texto igual y opacidad menor a 0,99). Si sigue sin quedar quieta a los 7 s del aviso de prueba, se juzga lo que haya: una fila que se queda hablando o a medias de verdad sigue fallando.
+            if ((hud.Announcing || hud.RowTextComponent.color.a < 0.99f) && since < 7.0) return;
             _announceBackChecked = true;
             if (hud.RowText != hud.PromptText || hud.RowTextComponent.color.a < 0.99f)
             {
