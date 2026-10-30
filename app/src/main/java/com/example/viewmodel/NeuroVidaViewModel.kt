@@ -94,6 +94,9 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   /** La marca «ya la vio» (`hoy_guide_seen`): se escribe al TERMINAR la guía, no al empezar. */
   val hoyGuideSeen: StateFlow<Boolean> = repository.hoyGuideSeen
 
+  /** La marca «terminó el Primer vuelo completo» (`first_flight_done`): lo que dispara la guía (Tarea 193b). */
+  val firstFlightDone: StateFlow<Boolean> = repository.firstFlightDone
+
   /** En qué paso va la guía (null = cerrada). Vive acá y no en la pantalla para que sobreviva a que se recree la Activity (p. ej. el cambio de tema del sistema); si Android cierra la app a mitad, vuelve a salir desde el paso 1 ese mismo día. */
   private val _guideStep = MutableStateFlow<com.example.data.GuideStep?>(null)
   val guideStep: StateFlow<com.example.data.GuideStep?> = _guideStep.asStateFlow()
@@ -313,6 +316,8 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     // El día que se completa el Primer vuelo (el recorrido entero, no «repetir la evaluación»), ese día queda cumplido: el camino de hoy se da por hecho con el vuelo (ver repository.completeTodayWithFlight).
     val flight = _flight.value
     val completesTheDay = flight != null && flight.mode == com.example.data.FlightMode.FULL && flight.applied
+    // Terminó el Primer vuelo COMPLETO (Tarea 193b): jugara los juegos que jugara, incluso ninguno. Es lo que dispara la guía de Hoy; «Repetir la evaluación» no.
+    if (flight?.mode == com.example.data.FlightMode.FULL) repository.markFirstFlightDone()
     // La tarjeta de ese día muestra los juegos que de verdad se jugaron en el vuelo, en el orden del vuelo (Tarea 193): los que se dejaron para después («Terminar después») no aparecen.
     if (completesTheDay) {
       val played = com.example.data.BaselinePlan.steps.map { it.gameId }.filter { flight != null && it in flight.measured }

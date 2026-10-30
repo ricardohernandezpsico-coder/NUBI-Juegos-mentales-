@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -387,15 +388,23 @@ class HoyGuideOverlayTest {
 
   private fun today(): String = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
-  /** Un ViewModel con el camino de hoy cumplido con el vuelo (o con uno normal), el arranque ya terminado. */
-  private fun viewModelFor(flightDay: Boolean, seenAlready: Boolean = false): NeuroVidaViewModel {
+  /**
+   * Un ViewModel con el arranque ya terminado. [flightDone] = la marca `first_flight_done` (terminó el Primer vuelo completo); [flightDayRoute] = el camino de hoy quedó cumplido con los 4 juegos del vuelo (si no, uno normal sin empezar: un vuelo sin jugar nada, u otro día);
+   * [games] = cuántas partidas guardadas hay (Avance muestra «un punto de partida» con al menos una).
+   */
+  private fun viewModelFor(flightDone: Boolean = true, seenAlready: Boolean = false, flightDayRoute: Boolean = false, games: Int = 0): NeuroVidaViewModel {
     runBlocking {
-      NeuroVidaDatabase.getDatabase(app).dailySessionDao().insertOrUpdate(
-        if (flightDay) DailySessionEntity(today(), "secuencia,freno,aterrizaje,meteoros", completedCount = 4, scoresRaw = "")
+      val db = NeuroVidaDatabase.getDatabase(app)
+      db.dailySessionDao().insertOrUpdate(
+        if (flightDayRoute) DailySessionEntity(today(), "secuencia,freno,aterrizaje,meteoros", completedCount = 4, scoresRaw = "")
         else DailySessionEntity(today(), "bodega,calculo,intrusa", completedCount = 0, scoresRaw = "")
       )
+      repeat(games) { i -> db.gameResultDao().insert(com.example.data.local.GameResultEntity("g$i", "radar", 80, 8, 10, false, 2, System.currentTimeMillis() - i * 1000L)) }
     }
-    if (seenAlready) app.getSharedPreferences("profile_extra", android.content.Context.MODE_PRIVATE).edit().putBoolean("hoy_guide_seen", true).commit()
+    val prefs = app.getSharedPreferences("profile_extra", android.content.Context.MODE_PRIVATE).edit()
+    if (seenAlready) prefs.putBoolean("hoy_guide_seen", true)
+    if (flightDone) prefs.putBoolean("first_flight_done", true)
+    prefs.commit()
     val vm = NeuroVidaViewModel(app).also { viewModels.add(it) }
     TestSupport.awaitUntil(message = "el arranque no quedó listo") { vm.startupStage.value == StartupStage.READY }
     return vm
@@ -423,8 +432,8 @@ class HoyGuideOverlayTest {
   private fun putAbove(value: Boolean) { composeTestRule.runOnUiThread { above = value }; composeTestRule.waitForIdle() }
 
   @Test
-  fun el_dia_del_vuelo_sin_marca_sale_600_ms_despues_y_con_las_medallas_cerradas() {
-    val vm = viewModelFor(flightDay = true)
+  fun al_terminar_el_vuelo_sin_marca_sale_600_ms_despues_y_con_las_medallas_cerradas() {
+    val vm = viewModelFor(flightDone = true, flightDayRoute = true, games = 4)
     assertTrue("el camino de hoy quedó cumplido con el vuelo", vm.dailySession.value.isFlightDay)
     above = true                                                      // una medalla encima: no sale, ni pasado el tiempo
     showHost(vm)
@@ -442,7 +451,7 @@ class HoyGuideOverlayTest {
 
   @Test
   fun una_medalla_que_llega_a_mitad_de_la_espera_la_cancela() {
-    val vm = viewModelFor(flightDay = true)
+    val vm = viewModelFor(flightDone = true, flightDayRoute = true, games = 4)
     showHost(vm)
     composeTestRule.mainClock.advanceTimeBy(400)
     putAbove(true)                                                     // llega una medalla tarde
@@ -455,7 +464,7 @@ class HoyGuideOverlayTest {
 
   @Test
   fun si_llega_algo_con_la_guia_abierta_se_esconde_y_vuelve_cuando_Hoy_queda_libre() {
-    val vm = viewModelFor(flightDay = true)
+    val vm = viewModelFor(flightDone = true, flightDayRoute = true, games = 4)
     showHost(vm)
     composeTestRule.mainClock.advanceTimeBy(1_000)
     assertEquals(GuideStep.CONTRARRELOJ, vm.guideStep.value)
@@ -470,27 +479,94 @@ class HoyGuideOverlayTest {
   }
 
   @Test
-  fun sin_flightDay_o_con_la_marca_no_sale_nunca() {
-    run {
-      val vm = viewModelFor(flightDay = false)
-      showHost(vm)
-      composeTestRule.mainClock.advanceTimeBy(5_000)
-      assertNull("un día normal no tiene guía", vm.guideStep.value); assertFalse(exists("guide_veil"))
-    }
-  }
-
-  @Test
-  fun con_la_marca_puesta_no_sale_ni_el_dia_del_vuelo() {
-    val vm = viewModelFor(flightDay = true, seenAlready = true)
-    assertTrue(vm.hoyGuideSeen.value)
+  fun sin_haber_terminado_el_vuelo_completo_no_sale_ni_con_la_ruta_cumplida() {
+    // el camino cumplido sin la marca (p. ej. quien terminó el vuelo antes de esta versión) NO dispara la guía: lo que la dispara es «terminó el vuelo»
+    val vm = viewModelFor(flightDone = false, flightDayRoute = true, games = 4)
+    assertTrue(vm.dailySession.value.isFlightDay)
     showHost(vm)
     composeTestRule.mainClock.advanceTimeBy(5_000)
     assertNull(vm.guideStep.value); assertFalse(exists("guide_veil"))
   }
 
   @Test
+  fun con_la_marca_puesta_no_sale_nunca() {
+    val vm = viewModelFor(flightDone = true, seenAlready = true, flightDayRoute = true, games = 4)
+    assertTrue(vm.hoyGuideSeen.value)
+    showHost(vm)
+    composeTestRule.mainClock.advanceTimeBy(5_000)
+    assertNull(vm.guideStep.value); assertFalse(exists("guide_veil"))
+  }
+
+  /** Tarea 193b (Ricardo, 30-oct): el vuelo terminó con «Terminar después» en todo: ningún juego, sin medalla y con la ruta de hoy normal para jugarla. La guía sale igual. */
+  @Test
+  fun un_vuelo_terminado_sin_jugar_ningun_juego_tambien_sale_con_la_ruta_normal() {
+    val vm = viewModelFor(flightDone = true, flightDayRoute = false, games = 0)
+    assertFalse("hoy no es un día de vuelo cumplido: la ruta es la normal, sin empezar", vm.dailySession.value.isFlightDay)
+    assertEquals(0, vm.dailySession.value.completedCount)
+    assertTrue(vm.achievementQueue.value.isEmpty())
+    showHost(vm)
+    composeTestRule.mainClock.advanceTimeBy(1_000)
+    assertEquals(GuideStep.CONTRARRELOJ, vm.guideStep.value)
+    composeTestRule.mainClock.advanceTimeBy(300)
+    assertTrue(exists("guide_veil")); assertTrue(exists("btn_guide_next")); assertTrue(exists("btn_guide_skip"))
+    assertEquals(HoyGuide.spoken(GuideStep.CONTRARRELOJ), describe("guide_globe"))
+  }
+
+  @Test
+  fun sin_partidas_el_paso_3_dice_como_vas_en_cada_area_y_con_partidas_el_punto_de_partida() {
+    val sin = viewModelFor(flightDone = true, games = 0)
+    showHost(sin)
+    composeTestRule.mainClock.advanceTimeBy(1_300)
+    composeTestRule.runOnUiThread { sin.guideNext(); sin.guideNext() }; composeTestRule.waitForIdle()
+    assertEquals(GuideStep.BARRA, sin.guideStep.value)
+    assertEquals(HoyGuide.spoken(GuideStep.BARRA, startingPoint = false), describe("guide_globe"))
+  }
+
+  @Test
+  fun con_partidas_el_paso_3_dice_tu_punto_de_partida() {
+    val con = viewModelFor(flightDone = true, flightDayRoute = true, games = 2)
+    showHost(con)
+    composeTestRule.mainClock.advanceTimeBy(1_300)
+    composeTestRule.runOnUiThread { con.guideNext(); con.guideNext() }; composeTestRule.waitForIdle()
+    assertEquals(GuideStep.BARRA, con.guideStep.value)
+    assertEquals(HoyGuide.spoken(GuideStep.BARRA, startingPoint = true), describe("guide_globe"))
+  }
+
+  /** Con «Terminar después» Hoy suma «Encuentra tu punto de partida» bajo «Todos los juegos»: el enlace no choca con los huecos ni con el globo, con letra 1,0 y 1,3 (se mide con los rectángulos). */
+  private fun zeroGamesUi() = HomeUi(
+    name = "Ana", now = now, tier = RankTier.fromRating(0), streak = 0, weeklyGoal = 4, lamps = lamps,
+    stops = homeStops(listOf("bodega", "calculo", "intrusa"), 0, AppLanguage.SPANISH), pausedTitle = null, flightDay = false, hasBaseline = false, baselineInvite = true, timeTrial = stroop
+  )
+
+  private fun unclippedTop(tag: String): Float { val n = composeTestRule.onNodeWithTag(tag).fetchSemanticsNode(); return n.layoutInfo.coordinates.positionInRoot().y }
+  private fun unclippedBottom(tag: String): Float { val n = composeTestRule.onNodeWithTag(tag).fetchSemanticsNode(); return n.layoutInfo.coordinates.positionInRoot().y + n.layoutInfo.height }
+
+  private fun assertInviteClear(fontScale: Float) {
+    show(fontScale = fontScale, ui = zeroGamesUi())
+    val d = composeTestRule.density.density
+    val gap = unclippedTop("btn_home_baseline") - unclippedBottom("btn_all_games")         // lo que separa al enlace de «Todos los juegos»: no cambia al deslizar Hoy
+    start()
+    for (s in HoyGuide.steps) {
+      composeTestRule.runOnUiThread { step = s }; composeTestRule.waitForIdle()
+      assertGlobeClearOfHole(s, 393, 873, "sin juegos, letra $fontScale")
+      if (s == GuideStep.TODOS) {
+        val hole = bounds("guide_hole")
+        val linkTop = targets.rects.getValue(GuideTarget.ALL_GAMES).bottom + gap
+        assertTrue("sin juegos, letra $fontScale: el aro del paso 2 (llega a ${hole.bottom}) no debe llegar al texto del enlace (empieza ~12 dp bajo $linkTop)", hole.bottom <= linkTop + 12f * d)
+        assertTrue("y el globo queda ARRIBA del hueco, lejos del enlace", bounds("guide_globe_slab").bottom <= hole.top + 1f)
+      }
+    }
+  }
+
+  @Test
+  fun sin_juegos_con_el_enlace_del_punto_de_partida_los_huecos_y_el_globo_no_chocan_con_letra_1_0() = assertInviteClear(1f)
+
+  @Test
+  fun sin_juegos_con_el_enlace_del_punto_de_partida_los_huecos_y_el_globo_no_chocan_con_letra_1_3() = assertInviteClear(1.3f)
+
+  @Test
   fun el_paso_vive_en_el_ViewModel_y_los_botones_lo_mueven_y_terminan_con_la_marca() {
-    val vm = viewModelFor(flightDay = true)
+    val vm = viewModelFor(flightDone = true, flightDayRoute = true, games = 4)
     vm.startGuide()
     assertEquals(GuideStep.CONTRARRELOJ, vm.guideStep.value)
     vm.startGuide()                                                     // otra llamada no la reinicia
@@ -506,7 +582,7 @@ class HoyGuideOverlayTest {
 
   @Test
   fun saltar_desde_cualquier_paso_marca_y_si_la_app_se_cierra_a_mitad_vuelve_desde_el_paso_1() {
-    val vm = viewModelFor(flightDay = true)
+    val vm = viewModelFor(flightDone = true, flightDayRoute = true, games = 4)
     vm.startGuide(); vm.guideNext()
     assertEquals(GuideStep.TODOS, vm.guideStep.value)
     // otro ViewModel (la app se cerró en el paso 2): sin marca, la guía arranca de nuevo desde el paso 1
@@ -516,5 +592,41 @@ class HoyGuideOverlayTest {
     assertEquals(GuideStep.CONTRARRELOJ, vm2.guideStep.value)
     vm2.guideSkip()
     assertNull(vm2.guideStep.value); assertTrue(vm2.hoyGuideSeen.value)
+  }
+
+  /** Tarea 193b: ya no se limita al día del vuelo. Cerrada a mitad, la app se reabre OTRO día (la ruta de hoy es una normal, no la del vuelo) y la guía vuelve desde el paso 1. */
+  @Test
+  fun cerrada_a_mitad_y_con_la_app_reabierta_otro_dia_vuelve_desde_el_paso_1() {
+    val first = viewModelFor(flightDone = true, flightDayRoute = true, games = 4)
+    first.startGuide(); first.guideNext()
+    assertEquals(GuideStep.TODOS, first.guideStep.value)
+    // «otro día»: ya no es el día del vuelo (la ruta de hoy es normal y está sin empezar)
+    runBlocking { NeuroVidaDatabase.getDatabase(app).dailySessionDao().insertOrUpdate(DailySessionEntity(today(), "bodega,calculo,intrusa", completedCount = 0, scoresRaw = "")) }
+    TestSupport.release(first); viewModels.remove(first)
+    val vm = NeuroVidaViewModel(app).also { viewModels.add(it) }
+    TestSupport.awaitUntil(message = "el arranque no quedó listo") { vm.startupStage.value == StartupStage.READY }
+    TestSupport.awaitUntil(message = "la ruta de hoy no cambió") { !vm.dailySession.value.isFlightDay }
+    assertFalse("otro día, sin vuelo cumplido", vm.dailySession.value.isFlightDay)
+    assertTrue("la marca del vuelo sigue (en disco)", vm.firstFlightDone.value)
+    assertFalse(vm.hoyGuideSeen.value)
+    showHost(vm)
+    composeTestRule.mainClock.advanceTimeBy(1_000)
+    assertEquals("vuelve desde el paso 1", GuideStep.CONTRARRELOJ, vm.guideStep.value)
+  }
+
+  @Test
+  fun despues_de_Listo_nunca_mas_ni_en_otra_sesion() {
+    val vm = viewModelFor(flightDone = true, flightDayRoute = true, games = 4)
+    vm.startGuide(); vm.guideNext(); vm.guideNext(); vm.guideNext()                  // el tercer «Listo»
+    assertNull(vm.guideStep.value); assertTrue(vm.hoyGuideSeen.value)
+    TestSupport.release(vm); viewModels.remove(vm)
+    val vm2 = NeuroVidaViewModel(app).also { viewModels.add(it) }
+    TestSupport.awaitUntil(message = "el arranque no quedó listo") { vm2.startupStage.value == StartupStage.READY }
+    assertTrue("la marca se guardó en disco", vm2.hoyGuideSeen.value)
+    showHost(vm2)
+    composeTestRule.mainClock.advanceTimeBy(10_000)
+    assertNull(vm2.guideStep.value); assertFalse(exists("guide_veil"))
+    vm2.startGuide()
+    assertNull(vm2.guideStep.value)
   }
 }

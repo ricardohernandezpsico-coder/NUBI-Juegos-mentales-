@@ -69,8 +69,14 @@ class HoyGuideScreenshotTest {
     stops = homeStops(ids, ids.size, AppLanguage.SPANISH), pausedTitle = null, flightDay = true, hasBaseline = true, timeTrial = stroop
   )
 
+  /** El vuelo terminó con «Terminar después» en todo (Tarea 193b): ningún juego, la ruta de hoy normal sin empezar (el sol en la tarjeta, el Contrarreloj en lila) y el enlace «Encuentra tu punto de partida» bajo los botones. */
+  private fun zeroGamesUi() = HomeUi(
+    name = "Ana", now = now, tier = RankTier.fromRating(0), streak = 0, weeklyGoal = 4, lamps = lamps,
+    stops = homeStops(queue, 0, AppLanguage.SPANISH), pausedTitle = null, flightDay = false, hasBaseline = false, baselineInvite = true, timeTrial = stroop
+  )
+
   /** Hoy con su barra, como los aloja `NeuroVidaApp` (las barras del sistema simuladas por margen: 24 dp arriba y abajo), y la guía encima si [step] no es null. */
-  private fun shot(file: String, fontScale: Float, ids: List<String>, step: GuideStep? = null) {
+  private fun shot(file: String, fontScale: Float, ids: List<String>, step: GuideStep? = null, ui: HomeUi = ui(ids), startingPoint: Boolean = true) {
     val targets = GuideTargets()
     composeTestRule.setContent {
       val base = LocalDensity.current
@@ -80,11 +86,11 @@ class HoyGuideScreenshotTest {
             BoardBackground()
             Box(Modifier.fillMaxSize().padding(top = 24.dp, bottom = 24.dp).hiddenUntil(step == null)) {
               CompositionLocalProvider(LocalBarInset provides (if (fontScale >= 1.3f) 95.dp else 88.dp)) {
-                HomeContent(ui = ui(ids), onAllGames = {}, onPlay = {}, onResume = {}, onBaseline = {}, onTimeTrial = {})
+                HomeContent(ui = ui, onAllGames = {}, onPlay = {}, onResume = {}, onBaseline = {}, onTimeTrial = {})
               }
               Box(Modifier.align(Alignment.BottomCenter)) { NeuroNavBar(current = AppTab.HOY, onSelect = {}) }
             }
-            if (step != null) HoyGuideOverlay(step = step, targets = targets, onNext = {}, onSkip = {})
+            if (step != null) HoyGuideOverlay(step = step, targets = targets, onNext = {}, onSkip = {}, startingPoint = startingPoint)
           }
         }
       }
@@ -103,6 +109,16 @@ class HoyGuideScreenshotTest {
   @Test fun paso1_13() = shot("paso1_13", 1.3f, flight, GuideStep.CONTRARRELOJ)
   @Test fun paso2_13() = shot("paso2_13", 1.3f, flight, GuideStep.TODOS)
   @Test fun paso3_13() = shot("paso3_13", 1.3f, flight, GuideStep.BARRA)
+
+  // Tarea 193b: la guía con el vuelo terminado sin jugar ningún juego (lámina `docs/previews/tarea-193b.png`)
+  @Test fun cero_paso1_10() = shot("cero_paso1_10", 1f, queue, GuideStep.CONTRARRELOJ, zeroGamesUi(), startingPoint = false)
+  @Test fun cero_paso2_10() = shot("cero_paso2_10", 1f, queue, GuideStep.TODOS, zeroGamesUi(), startingPoint = false)
+  @Test fun cero_paso3_10() = shot("cero_paso3_10", 1f, queue, GuideStep.BARRA, zeroGamesUi(), startingPoint = false)
+  @Test fun cero_despues_10() = shot("cero_despues_10", 1f, queue, null, zeroGamesUi())
+  @Test fun cero_paso1_13() = shot("cero_paso1_13", 1.3f, queue, GuideStep.CONTRARRELOJ, zeroGamesUi(), startingPoint = false)
+  @Test fun cero_paso2_13() = shot("cero_paso2_13", 1.3f, queue, GuideStep.TODOS, zeroGamesUi(), startingPoint = false)
+  @Test fun cero_paso3_13() = shot("cero_paso3_13", 1.3f, queue, GuideStep.BARRA, zeroGamesUi(), startingPoint = false)
+  @Test fun cero_despues_13() = shot("cero_despues_13", 1.3f, queue, null, zeroGamesUi())
 
   /** La medalla única que se celebra al terminar el vuelo: «Primer paso» (con las otras dos ya ganadas: «3 de 15 medallas»). */
   @Test

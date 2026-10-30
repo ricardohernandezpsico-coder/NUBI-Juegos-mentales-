@@ -68,17 +68,32 @@ class HoyGuideTest {
   }
 
   @Test
-  fun solo_sale_con_flightDay_sin_marca_sin_nada_encima_y_con_el_arranque_listo() {
-    assertTrue(HoyGuide.shouldShow(flightDay = true, seen = false, somethingAbove = false, startupReady = true))
+  fun solo_sale_si_termino_el_vuelo_completo_sin_marca_sin_nada_encima_y_con_el_arranque_listo() {
+    assertTrue(HoyGuide.shouldShow(firstFlightDone = true, seen = false, somethingAbove = false, startupReady = true))
     // todas las demás combinaciones de las cuatro condiciones: ninguna la muestra
     for (mask in 0 until 16) {
-      val flightDay = mask and 1 != 0
+      val done = mask and 1 != 0
       val seen = mask and 2 != 0
       val above = mask and 4 != 0
       val ready = mask and 8 != 0
-      val expected = flightDay && !seen && !above && ready
-      assertEquals("flightDay=$flightDay seen=$seen somethingAbove=$above startupReady=$ready", expected, HoyGuide.shouldShow(flightDay, seen, above, ready))
+      val expected = done && !seen && !above && ready
+      assertEquals("firstFlightDone=$done seen=$seen somethingAbove=$above startupReady=$ready", expected, HoyGuide.shouldShow(done, seen, above, ready))
     }
+  }
+
+  /** Tarea 193b: si el vuelo terminó sin jugar ningún juego, Avance solo dice «Todavía no hay nada aquí» y la invitación: el paso 3 habla de lo que se verá, no de un punto de partida que todavía no existe. */
+  @Test
+  fun sin_ninguna_partida_el_paso_3_dice_como_vas_en_cada_area_y_los_pasos_1_y_2_no_cambian() {
+    assertEquals("En Avance ves cómo vas en cada área. En Tú, tu nombre y tus ajustes.", HoyGuide.text(GuideStep.BARRA, startingPoint = false))
+    assertEquals("con partidas, el texto de siempre", "En Avance ves tu punto de partida. En Tú, tu nombre y tus ajustes.", HoyGuide.text(GuideStep.BARRA, startingPoint = true))
+    assertEquals("por omisión, el de siempre", HoyGuide.text(GuideStep.BARRA, startingPoint = true), HoyGuide.text(GuideStep.BARRA))
+    for (step in listOf(GuideStep.CONTRARRELOJ, GuideStep.TODOS)) assertEquals(HoyGuide.text(step, startingPoint = true), HoyGuide.text(step, startingPoint = false))
+    assertGlobe(HoyGuide.text(GuideStep.BARRA, startingPoint = false), "paso 3 sin partidas")
+    assertEquals(
+      "Paso 3 de 3. Las pestañas Avance y Tú, en la barra de abajo. En Avance ves cómo vas en cada área. En Tú, tu nombre y tus ajustes.",
+      HoyGuide.spoken(GuideStep.BARRA, startingPoint = false)
+    )
+    assertEquals(HoyGuide.spoken(GuideStep.CONTRARRELOJ), HoyGuide.spoken(GuideStep.CONTRARRELOJ, startingPoint = false))
   }
 
   @Test

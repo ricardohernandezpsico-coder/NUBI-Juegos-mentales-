@@ -155,6 +155,7 @@ class FirstFlightFlowTest {
 
     vm.flightContinue() // «Empezar mi camino»
     assertNull(vm.flight.value)
+    assertTrue("terminó el Primer vuelo completo: queda la marca que dispara la guía de Hoy (Tarea 193b)", vm.firstFlightDone.value)
     assertNull("no queda nada del recorrido en disco", FlightStore.load(app))
     assertEquals(AgeBand.SENIOR, vm.userSettings.value.ageBand)
     TestSupport.awaitUntil { savedResults() == 4 }

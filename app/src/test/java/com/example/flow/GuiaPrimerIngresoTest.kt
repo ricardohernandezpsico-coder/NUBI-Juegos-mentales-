@@ -79,6 +79,7 @@ class GuiaPrimerIngresoTest {
     vm.flightAchievements = listOf("primer_paso", "dia_completo", "dominios")
     vm.finishFlight()
     assertEquals(listOf("primer_paso"), vm.achievementQueue.value)
+    assertTrue("terminó el vuelo completo: eso dispara la guía de Hoy (Tarea 193b)", vm.firstFlightDone.value)
     assertNull("el vuelo terminó", vm.flight.value)
     assertEquals(AppTab.HOY, vm.currentTab.value)
     assertNull("el ViewModel no abre la guía solo: la abre quien la aloja cuando la cola se vacía", vm.guideStep.value)
@@ -129,6 +130,57 @@ class GuiaPrimerIngresoTest {
     assertTrue("ni queda una celebración pendiente", vm.achievementQueue.value.isEmpty())
   }
 
+  // ---------------------------------------------------------------- 193b: lo que dispara la guía es «terminó el Primer vuelo completo»
+
+  private fun profileExtra() = app.getSharedPreferences("profile_extra", android.content.Context.MODE_PRIVATE)
+
+  private fun assertFlightMark(measured: Map<String, Float>) {
+    val vm = viewModelWithFlight(fullFlight(measured = measured))
+    assertFalse("antes de terminar no hay marca", profileExtra().getBoolean("first_flight_done", false))
+    vm.finishFlight()
+    assertTrue("terminó el vuelo completo", vm.firstFlightDone.value)
+    assertTrue("la marca queda en disco (sobrevive a cerrar la app)", profileExtra().getBoolean("first_flight_done", false))
+  }
+
+  @Test fun terminar_el_vuelo_completo_con_los_4_juegos_deja_la_marca_en_disco() = assertFlightMark(flightGames.associateWith { 0.6f })
+  @Test fun terminar_el_vuelo_completo_con_un_solo_juego_deja_la_marca_en_disco() = assertFlightMark(mapOf(flightGames[0] to 0.6f))
+  @Test fun terminar_el_vuelo_completo_sin_ningun_juego_deja_la_marca_en_disco() = assertFlightMark(emptyMap())
+
+  @Test
+  fun un_vuelo_sin_jugar_ningun_juego_no_toca_la_ruta_ni_da_medallas_pero_dispara_la_guia() {
+    val vm = viewModelWithFlight(fullFlight(measured = emptyMap()))
+    TestSupport.awaitUntil(message = "el arranque no quedó listo") { vm.startupStage.value == com.example.viewmodel.StartupStage.READY }
+    val before = vm.dailySession.value
+    vm.finishFlight()
+    val end = System.currentTimeMillis() + 300
+    while (System.currentTimeMillis() < end) { org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle(); Thread.sleep(20) }
+    assertTrue("la marca que dispara la guía", vm.firstFlightDone.value)
+    assertFalse("sin la marca de vista", vm.hoyGuideSeen.value)
+    assertEquals("la ruta de hoy queda normal, para jugarla", before.gameIds, vm.dailySession.value.gameIds)
+    assertEquals(0, vm.dailySession.value.completedCount)
+    assertFalse(vm.dailySession.value.isFlightDay)
+    assertTrue("sin partidas no hay medallas que celebrar", vm.achievementQueue.value.isEmpty())
+  }
+
+  @Test
+  fun repetir_la_evaluacion_nunca_pone_la_marca_del_vuelo() {
+    val vm = viewModelWithFlight(FlightState(FlightMode.GAMES, FlightStep.JUEGO_1, measured = flightGames.associateWith { 0.5f }, applied = true))
+    vm.finishFlight()
+    assertFalse("«Repetir la evaluación» no es el Primer vuelo: no dispara la guía", vm.firstFlightDone.value)
+    assertFalse(profileExtra().getBoolean("first_flight_done", false))
+  }
+
+  @Test
+  fun Borrar_datos_limpia_las_dos_marcas_y_tras_un_vuelo_nuevo_la_guia_vuelve() {
+    val vm = viewModelWithFlight(fullFlight())
+    vm.finishFlight()
+    vm.startGuide(); vm.guideSkip()
+    assertTrue(vm.firstFlightDone.value); assertTrue(vm.hoyGuideSeen.value)
+    runBlocking { repository.resetData() }
+    assertFalse(repository.firstFlightDone.value); assertFalse(repository.hoyGuideSeen.value)
+    assertFalse(profileExtra().contains("first_flight_done")); assertFalse(profileExtra().contains("hoy_guide_seen"))
+  }
+
   // ---------------------------------------------------------------- PARTE 3: la tarjeta del día del vuelo con los juegos de verdad
 
   @Test
@@ -157,6 +209,7 @@ class GuiaPrimerIngresoTest {
 
   @Test
   fun si_no_se_jugo_ninguno_el_dia_no_se_da_por_cumplido() {
+    TestSupport.awaitUntil(message = "el repositorio no terminó de cargar") { repository.isFirstLoadDone() }      // si no, `dailySession` todavía es el de fábrica y no el de hoy
     val before = repository.dailySession.value
     runBlocking { repository.completeTodayWithFlight(emptyList()) }
     val after = repository.dailySession.value

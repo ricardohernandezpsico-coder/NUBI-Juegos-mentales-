@@ -98,8 +98,9 @@ internal fun HoyGuideHost(viewModel: NeuroVidaViewModel, targets: GuideTargets, 
   val step by viewModel.guideStep.collectAsState()
   val seen by viewModel.hoyGuideSeen.collectAsState()
   val stage by viewModel.startupStage.collectAsState()
-  val daily by viewModel.dailySession.collectAsState()
-  val due = step == null && HoyGuide.shouldShow(daily.isFlightDay, seen, somethingAbove, stage == StartupStage.READY)
+  val flightDone by viewModel.firstFlightDone.collectAsState()
+  val history by viewModel.gameHistory.collectAsState()
+  val due = step == null && HoyGuide.shouldShow(flightDone, seen, somethingAbove, stage == StartupStage.READY)
   // La espera cuenta desde que todo está libre; si en el camino llega una medalla (o algo) la espera se cancela y vuelve a empezar cuando se cierre.
   LaunchedEffect(due) {
     if (due) {
@@ -107,7 +108,9 @@ internal fun HoyGuideHost(viewModel: NeuroVidaViewModel, targets: GuideTargets, 
       viewModel.startGuide()
     }
   }
-  step?.takeIf { !somethingAbove }?.let { HoyGuideOverlay(step = it, targets = targets, onNext = viewModel::guideNext, onSkip = viewModel::guideSkip) }
+  // Avance muestra «un punto de partida» (las áreas con sus puntos) si hay al menos una partida de un juego que se ve; sin ninguna (el vuelo terminó con «Terminar después» en todo), el paso 3 habla de «cómo vas en cada área».
+  val startingPoint = remember(history) { history.any { !com.example.model.GameRegistry.isRetired(it.gameId) } }
+  step?.takeIf { !somethingAbove }?.let { HoyGuideOverlay(step = it, targets = targets, onNext = viewModel::guideNext, onSkip = viewModel::guideSkip, startingPoint = startingPoint) }
 }
 
 /**
@@ -120,7 +123,7 @@ internal fun HoyGuideHost(viewModel: NeuroVidaViewModel, targets: GuideTargets, 
  * - Letra 1,3: Nubi pasa a S. Letra 2,0: el elemento se trae a la vista antes del paso y, si el texto no cabe, se desliza dentro del globo (nunca se corta, nunca tapa el hueco ni «Saltar la guía»).
  */
 @Composable
-internal fun HoyGuideOverlay(step: GuideStep, targets: GuideTargets, onNext: () -> Unit, onSkip: () -> Unit, modifier: Modifier = Modifier) {
+internal fun HoyGuideOverlay(step: GuideStep, targets: GuideTargets, onNext: () -> Unit, onSkip: () -> Unit, modifier: Modifier = Modifier, startingPoint: Boolean = true) {
   val density = LocalDensity.current
   val reduce = rememberReduceMotion()
   val target = targetOf(step)
@@ -181,7 +184,7 @@ internal fun HoyGuideOverlay(step: GuideStep, targets: GuideTargets, onNext: () 
     GuideAnchored(hole = shownHole, topLimit = topInset + skipBand.toInt(), gap = gap, modifier = Modifier.fillMaxSize()) {
       Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.Bottom) {
         NubiClay(if (bigText) NubiSize.S else NubiSize.M, Modifier.testTag("guide_nubi").clearAndSetSemantics { })
-        Box(Modifier.weight(1f).padding(start = 4.dp)) { GuideGlobe(step, onNext) }
+        Box(Modifier.weight(1f).padding(start = 4.dp)) { GuideGlobe(step, onNext, startingPoint) }
       }
     }
     // «Saltar la guía»: arriba a la derecha, en los tres pasos.
@@ -196,7 +199,7 @@ internal fun HoyGuideOverlay(step: GuideStep, targets: GuideTargets, onNext: () 
 
 /** El globo: una losa crema con el texto de Nubi a 18 sp, «Paso 1 de 3» y el chip lila. Lo que dice TalkBack es [HoyGuide.spoken] (con el lugar de lo iluminado), no el texto suelto. */
 @Composable
-private fun GuideGlobe(step: GuideStep, onNext: () -> Unit) {
+private fun GuideGlobe(step: GuideStep, onNext: () -> Unit, startingPoint: Boolean) {
   val reduce = rememberReduceMotion()
   ClaySlab(SlabColor.CREAM, Modifier.fillMaxWidth().testTag("guide_globe_slab"), size = SlabSize.MEDIUM, onClick = null, role = null) {
     Column(Modifier.padding(start = 16.dp, end = 12.dp, top = 12.dp, bottom = 8.dp)) {
@@ -207,9 +210,9 @@ private fun GuideGlobe(step: GuideStep, onNext: () -> Unit) {
           modifier = Modifier
             .testTag("guide_globe")
             .semantics { traversalIndex = 0f }
-            .clearAndSetSemantics { contentDescription = HoyGuide.spoken(step); liveRegion = LiveRegionMode.Polite },
+            .clearAndSetSemantics { contentDescription = HoyGuide.spoken(step, startingPoint); liveRegion = LiveRegionMode.Polite },
           label = "texto de la guía"
-        ) { s -> Text(HoyGuide.text(s), color = Clay.Ink, fontSize = 18.sp, lineHeight = 25.sp, fontWeight = FontWeight.Medium, fontFamily = AppFamily) }
+        ) { s -> Text(HoyGuide.text(s, startingPoint), color = Clay.Ink, fontSize = 18.sp, lineHeight = 25.sp, fontWeight = FontWeight.Medium, fontFamily = AppFamily) }
       }
       val counter: @Composable (Modifier) -> Unit = { m -> Text(HoyGuide.counter(step), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 21.sp, modifier = m.testTag("guide_counter").clearAndSetSemantics { }) }
       val chip: @Composable () -> Unit = {

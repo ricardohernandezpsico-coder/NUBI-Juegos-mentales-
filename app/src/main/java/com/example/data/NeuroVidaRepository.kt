@@ -470,6 +470,16 @@ class NeuroVidaRepository(
     profilePrefs.edit().putBoolean("hoy_guide_seen", true).apply()
   }
 
+  // «Terminó el Primer vuelo COMPLETO» (Tarea 193b, `first_flight_done` en `profile_extra`: sobrevive a cerrar la app, va en el respaldo y «Borrar datos» la limpia). Es lo que dispara la guía de Hoy, jugara la persona 0, 1, 2, 3 o 4 juegos; «Repetir la evaluación» no la pone. Quien terminó el vuelo antes de esta
+  // tarea no la tiene (la guía es para quien termina el vuelo de ahora en adelante).
+  private val _firstFlightDone = MutableStateFlow(profilePrefs.getBoolean("first_flight_done", false))
+  val firstFlightDone: StateFlow<Boolean> = _firstFlightDone.asStateFlow()
+
+  fun markFirstFlightDone() {
+    _firstFlightDone.value = true
+    profilePrefs.edit().putBoolean("first_flight_done", true).apply()
+  }
+
   private val _education = MutableStateFlow(
     profilePrefs.getString("education", null)?.let { n -> Education.values().firstOrNull { it.name == n } }
   )
@@ -1187,6 +1197,7 @@ class NeuroVidaRepository(
     _progressLog.value = emptyList()
     profilePrefs.edit().clear().apply()
     _hoyGuideSeen.value = false                                        // «Borrar datos» limpia la marca de la guía (Tarea 193): tras un nuevo Primer vuelo, vuelve a salir
+    _firstFlightDone.value = false                                     // y la de «terminó el Primer vuelo» (Tarea 193b)
     _retoChoices.value = emptyMap()
     _education.value = null
     _goals.value = emptySet()
