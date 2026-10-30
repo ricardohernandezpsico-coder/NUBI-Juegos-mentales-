@@ -146,12 +146,14 @@ namespace NeuroVida.Games.Engranajes
             _counterRoot.gameObject.SetActive(true);
             _start.Root.gameObject.SetActive(true);
             LayoutBottom();
+            AnimateBelts(m, GameClock.Time, true, false);      // las tiras de las correas se dibujan YA: una correa que sale por primera vez (la 4.ª) se veía como un rectángulo blanco de 100 × 100 hasta el primer cuadro del juego (Tarea 190d)
             _appearAt = GameClock.Time;
         }
 
         private void ClearMachine()
         {
             _mach = null;
+            _firstMachine = null;                              // si se vació el tablero, la primera máquina armada de antemano ya no vale
             _blockAt = -10f;                                   // la moneda de un toque bloqueado no pasa a la máquina siguiente
             _blockId = int.MinValue;
             _counterPulseAt = -10f;
@@ -1038,6 +1040,34 @@ namespace NeuroVida.Games.Engranajes
                 if (l < zl + 6f * _s || rr > zr - 6f * _s || t > zt || b < zb) problems.Add("la luz " + k + " no cae dentro de la zona de las luces con 6 dp de aire a los lados");
             }
             if (zone.sizeDelta.x > 190f * _s) problems.Add("la zona de las luces es demasiado ancha (" + zone.sizeDelta.x / _s + " dp): taparía el chip de más");
+            return problems;
+        }
+
+        /// <summary>Para las pruebas (Tarea 190d): al armar una máquina, las tiras de TODAS sus correas ya están dibujadas (tamaño puesto): una correa que sale por primera vez se veía como un rectángulo blanco de 100 × 100 hasta el primer cuadro del juego.</summary>
+        public List<string> AuditBeltsAtOnce()
+        {
+            var problems = new List<string>();
+            _s = 3f; _playW = 1080f; _playH = 1920f; _logicalH = 640f;
+            _lay = EngranajesLayout.Compute(_logicalH);
+            if (_rng == null) _rng = new System.Random(1);
+            var bake = EngranajesSprites.Prewarm();
+            while (bake.MoveNext()) { }
+            AssignSprites();
+            int most = 0;
+            for (int level = 1; level <= EngranajesContract.MaxLevel; level++)
+                for (int n = 0; n < 12; n++)
+                {
+                    var m = EngranajesContract.Generate(level, _rng);
+                    ShowMachine(m);
+                    most = Mathf.Max(most, _beltLinks.Count);
+                    for (int b = 0; b < _beltLinks.Count; b++)
+                        for (int i = 2; i < 6; i++)                                                  // las tiras de las capas 1 y 2 (la 0 es el resplandor y solo se ve al dar una pista)
+                        {
+                            var line = _belts[b].Lines[i];
+                            if (line.Img.gameObject.activeSelf && line.Rt.sizeDelta == new Vector2(100f, 100f)) problems.Add("nivel " + level + ": la correa " + b + " tiene la tira " + i + " con el tamaño de fábrica (100 × 100) al armar la máquina");
+                        }
+                }
+            if (most < 3) problems.Add("la prueba no vio máquinas con 3 correas o más (vio hasta " + most + ")");
             return problems;
         }
 

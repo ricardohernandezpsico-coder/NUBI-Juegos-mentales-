@@ -26,7 +26,7 @@ namespace NeuroVida.Games.Shared
         public const string SubtitleText = "Tu partida te espera", ConfirmText = "¿Empezar de nuevo esta partida?";
 
         /// <summary>La marca de versión (Tarea 190: antes vivía en la cuenta regresiva y salía también en la app publicada). Se muestra SOLO en las builds de depuración de la app (<c>debug_build</c> de la config) y SOLO en la pausa, abajo del panel. <b>Cambiarla con cada cambio visible de Unity:</b> el export de Unity está fuera de git y, si no se reexporta, Gradle empaqueta el viejo sin avisar.</summary>
-        public const string StyleStamp = "entrada sin cuenta 28-oct";
+        public const string StyleStamp = "pulido de entrada 29-oct";
 
         /// <summary>El texto de la marca que se dibuja ahora (null = ninguna: release). Lo fija <c>GameEntryPoint</c> con cada partida.</summary>
         public static string DebugStamp;

@@ -543,6 +543,7 @@ namespace NeuroVida.Games.Bodega
             _introLayer.gameObject.SetActive(true);
             LayoutIntro(BodegaContract.IntroText(intro));
             _introAt = GameClock.Time;
+            AnimateIntro(_introAt);                                                  // la ilustración (sprite, tamaño y lugar) ya puesta en ESTE cuadro: sin esto nacía un cuadro como un cuadro blanco de 100 × 100 (Tarea 190d; lo cazó la guardia de imágenes de fábrica)
             WoodCore.Play(WoodSfx.New);
             _inputOn = true;
             _press = null;

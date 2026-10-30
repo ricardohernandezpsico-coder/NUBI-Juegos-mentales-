@@ -822,13 +822,13 @@ namespace NeuroVida.Games.Engranajes
         /// <summary>La cabecera: «Cohete número N», las 10 luces (x = LightsX0 + LightsStep k), la zona de las luces que el chip «seguidos» esquiva y los cohetes en órbita.</summary>
         private void LayoutStrip()
         {
-            float row1 = _lay.StripTop + 14f, row2 = _lay.StripTop + 34f;
+            float row1 = _lay.StripTop + EngranajesLayout.LightsRowDp, row2 = _lay.StripTop + 34f;           // (Tarea 190d: las luces suben 4 dp y en pantallas bajas la mesa baja 8: el chip «N seguidos» (24 dp) cabe entre las luces y la mesa; ver EngranajesLayout.LightsRowDp)
             SetRect(_rocketTitle.rectTransform, 14f + EngranajesLayout.TitleW / 2f, row1, EngranajesLayout.TitleW, 24f);
             SetRect(_orbitText.rectTransform, 14f + 100f, row2, 200f, 20f);
             for (int i = 0; i < _lights.Length; i++) SetRect(_lights[i].rectTransform, EngranajesLayout.LightsX0 + i * EngranajesLayout.LightsStep, row1, 12f, 12f);
             SetRect(_stripGlow.rectTransform, EngranajesLayout.LightsX0, row1, 36f, 36f);
             float span = (_lights.Length - 1) * EngranajesLayout.LightsStep;
-            SetRect(_lightsZone, EngranajesLayout.LightsX0 + span * 0.5f, row1, span + 12f + 16f, 36f);       // las luces con 8 dp de aire a cada lado y el alto de su resplandor
+            SetRect(_lightsZone, EngranajesLayout.LightsX0 + span * 0.5f, row1, span + 12f + 16f, 14f);       // las luces con 8 dp de aire a cada lado y 1 dp arriba y abajo (el resplandor del primer foco queda a la izquierda, lejos del chip)
         }
 
         private void Layout()

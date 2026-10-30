@@ -63,6 +63,7 @@ namespace NeuroVida.Games.Engranajes
 
         private ExitButton _exit;
         private GameHud _hud;
+        private Machine _firstMachine;                                          // la primera máquina de la partida, armada detrás de la pantalla de carga (Tarea 190d); PlayMachine la toma en vez de generar otra
 
         // ------------------------------------------------------------------ sesión
 
@@ -111,6 +112,12 @@ namespace NeuroVida.Games.Engranajes
             Canvas.ForceUpdateCanvases();
             Layout();
             UpdateHud();
+            if (!TutorialWanted)
+            {
+                _firstMachine = EngranajesContract.Generate(_dda.PresentedLevel, _rng);        // la primera máquina se arma DETRÁS de la carga (Tarea 190d): en el teléfono su armado costaba 67 ms en el primer cuadro del ensayo, con la persona mirando
+                ShowMachine(_firstMachine);
+                UpdateHud();
+            }
             yield return StartCoroutine(ShowBoardWhenReady());                  // el tablero entero a la vista: Android quita la pantalla de carga
             if (TutorialWanted)
             {
@@ -157,8 +164,9 @@ namespace NeuroVida.Games.Engranajes
         /// <summary>Una máquina: se arma, se mira, se hacen los cambios, se arranca y se cuenta. Si se acaba el tiempo del Reto mientras se mira, no cuenta (ni a favor ni en contra).</summary>
         private IEnumerator PlayMachine()
         {
-            var m = EngranajesContract.Generate(_dda.PresentedLevel, _rng);
-            ShowMachine(m);
+            Machine m;
+            if (_firstMachine != null) { m = _firstMachine; _firstMachine = null; }                    // la primera ya se armó detrás de la carga
+            else { m = EngranajesContract.Generate(_dda.PresentedLevel, _rng); ShowMachine(m); }
             UpdateHud();
             if (m.Stage.Intro != Intro.None && !IntroSeen(m.Stage.Intro))
             {

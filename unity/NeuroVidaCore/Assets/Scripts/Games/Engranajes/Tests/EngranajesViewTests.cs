@@ -51,6 +51,20 @@ namespace NeuroVida.Games.Engranajes.Tests
         }
 
         [Test]
+        public void BetweenTheLightsAndTheTable_TheStreakChipFitsInEveryHeight_SoItCoversNeitherTheLightsNorTheMachine()
+        {
+            // Tarea 190d: el chip «N seguidos» mide 24 dp, va bajo las luces (que miden 12 dp y su zona 1 dp más arriba y abajo) y el borde de la mesa (la losa) sobresale ~5 dp de donde empieza la escena
+            const float chipH = 24f, slabAboveScene = 5f;
+            foreach (float h in Heights)
+            {
+                var m = EngranajesLayout.Compute(h);
+                float sceneTop = m.SceneCenterLogicalY - EngranajesLayout.SceneHeight * m.SceneScale / 2f;
+                float lightsZoneBottom = m.StripTop + EngranajesLayout.LightsRowDp + 7f;
+                Assert.GreaterOrEqual(sceneTop - slabAboveScene - lightsZoneBottom, chipH, "alto " + h + ": entre las luces y la mesa caben los " + chipH + " dp del chip");
+            }
+        }
+
+        [Test]
         public void TheWorkshopTable_StartsUnderTheRocketHeader_TheAirIsSpread_AndTheSayGoes10DpUnderTheButtons()
         {
             // Tarea 164 (partes E y «aire repartido») y 166 (botones de 88 dp: el aire va a la mesa y a la separación): la mesa empieza bajo «Cohete número N» (a 16 dp de él y, si sobra aire, hasta 44 dp más abajo), los botones van a 8 dp de la mesa más lo que se reparta y el aviso queda 10 dp bajo ellos
@@ -59,8 +73,9 @@ namespace NeuroVida.Games.Engranajes.Tests
                 var m = EngranajesLayout.Compute(h);
                 string where = "alto " + h;
                 float tableTop = m.SceneCenterLogicalY - EngranajesLayout.SceneHeight * m.SceneScale / 2f;
+                float shortExtra = h < EngranajesLayout.ShortScreenDp ? EngranajesLayout.ShortScreenExtraDp : 0f;                      // pantallas bajas: la mesa baja 8 dp más (Tarea 190d)
                 Assert.GreaterOrEqual(tableTop, EngranajesLayout.TableTopDp - 0.01f, where + ": la mesa empieza bajo la cabecera");
-                Assert.LessOrEqual(tableTop, EngranajesLayout.TableTopDp + EngranajesLayout.MaxTopShift + 0.01f, where + ": la mesa no baja más de 44 dp de la cabecera");
+                Assert.LessOrEqual(tableTop, EngranajesLayout.TableTopDp + shortExtra + EngranajesLayout.MaxTopShift + 0.01f, where + ": la mesa no baja más de 44 dp de la cabecera");
                 Assert.AreEqual(EngranajesLayout.SayGap, m.SayTop - (m.ButtonsTop + m.ButtonH), 0.01f, where + ": el aviso queda 10 dp bajo los botones");
                 Assert.LessOrEqual(m.ButtonsTop - (tableTop + EngranajesLayout.SceneHeight * m.SceneScale), 8f + EngranajesLayout.MaxGap + 0.01f, where + ": los botones no se despegan de la mesa más de 72 dp");
             }
@@ -358,6 +373,23 @@ namespace NeuroVida.Games.Engranajes.Tests
                 build.Invoke(controller, null);
                 go.SetActive(true);
                 var problems = controller.AuditTable();
+                Assert.IsEmpty(problems, string.Join(" | ", problems));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(go); }
+        }
+
+        [Test]
+        public void EveryBeltOfAMachine_IsDrawnTheMomentTheMachineIsShown_SoNoneShowsAsAFactoryWhiteBox()
+        {
+            // la 4.ª correa (nunca antes usada) se veía como 6 rectángulos blancos de 100 × 100 hasta el primer cuadro del juego; el smoke a nivel 5 la cazó (Tarea 190d)
+            var go = new GameObject("EngranajesBelts");
+            try
+            {
+                var controller = go.AddComponent<EngranajesGameController>();
+                var build = typeof(EngranajesGameController).GetMethod("BuildUi", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                build.Invoke(controller, null);
+                go.SetActive(true);
+                var problems = controller.AuditBeltsAtOnce();
                 Assert.IsEmpty(problems, string.Join(" | ", problems));
             }
             finally { UnityEngine.Object.DestroyImmediate(go); }

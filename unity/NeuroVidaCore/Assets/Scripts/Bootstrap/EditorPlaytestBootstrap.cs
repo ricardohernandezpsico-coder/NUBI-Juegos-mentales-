@@ -38,6 +38,9 @@ namespace NeuroVida.Bridge
         /// <summary>Solo para las capturas (<c>--capturas</c>): la etapa (1..10) con que arranca «La estación de correo» (<c>mail_stage</c> de la config; 0 = la que corresponde).</summary>
         public static int MailStageOverride;
 
+        /// <summary>Solo para el smoke (corridas «Tarjetas…», Tarea 190d): la etapa (1..18) con que arranca «Constelaciones» (<c>con_stage</c>; 0 = la que corresponde) y el nivel (1..5) de la partida (0 = el de la escena), para ver TODAS las tarjetas «NUEVO».</summary>
+        public static int ConStageOverride, LevelOverride;
+
         /// <summary>Solo para las capturas (<c>--capturas</c>): el nivel (1..12) con que arranca «Satélites» (<c>sat_stage</c> de la config; 0 = el que corresponde).</summary>
         public static int SatStageOverride;
 
@@ -74,6 +77,8 @@ namespace NeuroVida.Bridge
             }
 
             if (int.TryParse(System.Environment.GetEnvironmentVariable("NUBI_EDITOR_LEVEL"), out int envLevel) && envLevel >= 1) level = Mathf.Min(5, envLevel);          // diagnóstico: el nivel (1 a 5) con que arranca la partida, para ver las etapas altas de un juego
+            if (LevelOverride > 0) level = Mathf.Min(5, LevelOverride);
+            int envStage = int.TryParse(System.Environment.GetEnvironmentVariable("NUBI_EDITOR_STAGE"), out int es) ? es : 0;          // diagnóstico: la etapa con que arrancan las escaleras con tarjetas «NUEVO» (Correo 1 a 10, Constelaciones 1 a 18, Satélites 1 a 12)
             var config = new SequenceInitConfig
             {
                 user_id = "editor_playtest",
@@ -90,8 +95,9 @@ namespace NeuroVida.Bridge
                     assessment = AssessmentOverride,
                     assessment_step = AssessmentOverride ? 1 : 0,
                     assessment_total = AssessmentOverride ? 4 : 0,
-                    mail_stage = MailStageOverride,
-                    sat_stage = SatStageOverride,
+                    mail_stage = envStage > 0 ? Mathf.Min(10, envStage) : MailStageOverride,
+                    con_stage = envStage > 0 ? Mathf.Min(18, envStage) : ConStageOverride,
+                    sat_stage = envStage > 0 ? Mathf.Min(12, envStage) : SatStageOverride,
                     sat_surprise = SatSurpriseOverride,
                     pil_stage = PilStageOverride,
                     pil_sector_s = PilSectorOverride,

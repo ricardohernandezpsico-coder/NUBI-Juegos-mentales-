@@ -393,7 +393,7 @@ namespace NeuroVida.Games.Parejas
             ArtImage(ConstelacionSprites.Object(kind, variant), cx, cy, ConstelacionSprites.ObjBox * (r * 1.32f / 40f));
         }
 
-        private void ArtLabel(int i, float cx, float cy, string text, float dp = 14f)
+        private void ArtLabel(int i, float cx, float cy, string text, float dp = 16f)
         {
             var t = _introLabels[i];
             t.text = text;

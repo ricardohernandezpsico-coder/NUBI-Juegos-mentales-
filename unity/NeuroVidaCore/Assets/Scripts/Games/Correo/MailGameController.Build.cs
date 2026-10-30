@@ -572,6 +572,7 @@ namespace NeuroVida.Games.Correo
             r.A = MakeLabel(r.Root, "A", 16f, brief ? UiFonts.Regular : UiFonts.Bold, brief ? OnCream(NeuroStyle.InkMuted, Soft) : OnCream(InkEdge, TextColor), TextAnchor.MiddleLeft);
             r.B = MakeLabel(r.Root, "B", brief ? 17f : 16f, brief ? UiFonts.Bold : UiFonts.Regular, brief ? OnCream(InkEdge, Color.white) : OnCream(NeuroStyle.InkMuted, Lavender), TextAnchor.MiddleLeft);
             foreach (var t in new[] { r.A, r.B }) t.horizontalOverflow = HorizontalWrapMode.Overflow;
+            if (brief) { r.A.horizontalOverflow = HorizontalWrapMode.Wrap; r.A.verticalOverflow = VerticalWrapMode.Overflow; }       // la línea A de la hoja de la mañana pasa a otra línea si no cabe (Tarea 190d: «Si llega una carta con sello dorado,» se salía 9 dp de la tarjeta)
             r.Pill = Rr(r.Root, "Pill", OnCream(NeuroStyle.Sun, Violet), 9f);                       // «TODOS LOS DÍAS»: chip sol con tinta sobre la crema
             r.PillText = MakeLabel(r.Pill.transform, "PillText", 16f, UiFonts.Bold, InkEdge, TextAnchor.MiddleCenter);
             r.PillText.horizontalOverflow = HorizontalWrapMode.Overflow;

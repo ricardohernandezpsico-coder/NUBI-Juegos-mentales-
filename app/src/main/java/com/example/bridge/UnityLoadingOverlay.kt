@@ -37,7 +37,8 @@ object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
   private const val TIMEOUT_MS = 45_000L // más que el tope de espera de Unity (30 s para el sonido) y su arte: en un teléfono lento el juego más pesado puede tardar bastante
   private const val FADE_MS = 250L
   private const val FADE_CALM_MS = 150L // con «quitar animaciones»
-  private const val WARM_CONTENT_DELAY_MS = 250L // en caliente el contenido espera un poco para no destellar si el juego llega rápido
+  private const val WARM_CONTENT_DELAY_MS = 400L // en caliente el contenido espera un poco para no destellar si el juego llega rápido (Tarea 190d: 400 ms, antes 250; con la carga a 60 cuadros por segundo una espera de 0,35 s dejaba ver solo un fantasma del planeta)
+  private const val WARM_FADE_IN_MS = 200 // y entra en 200 ms (antes 320); en frío no cambia: no espera y entra en 320 ms
   private const val NIGHT = 0xFF100F3A.toInt() // = NeuroStyle.NightMid: el tono del medio del cielo único de la app (CosmosBackground, Tarea 126)
 
   /** Activity de Unity recién creada que todavía no tiene la capa (se agrega en su onStart). */
@@ -104,7 +105,7 @@ object UnityLoadingOverlay : Application.ActivityLifecycleCallbacks {
         ComposeView(activity).apply {
           setContent {
             GameLoadingScreen(
-              game = game, level = level, timed = timed, withSky = true, fadeInDelayMs = if (warm) WARM_CONTENT_DELAY_MS else 0L,
+              game = game, level = level, timed = timed, withSky = true, fadeInDelayMs = if (warm) WARM_CONTENT_DELAY_MS else 0L, fadeInMs = if (warm) WARM_FADE_IN_MS else 320,
               assessmentStep = assessmentStep, assessmentTotal = assessmentTotal, timeTrialName = timeTrialName
             )
           }

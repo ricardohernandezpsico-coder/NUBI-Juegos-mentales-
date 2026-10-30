@@ -42,14 +42,17 @@
              el código nativo cuando corresponda. allowBackup se pisa arriba porque
              unityLibrary declara "false" y el merger de manifests no resuelve solo un
              valor distinto al del host. screenOrientation se fija en vertical: los 9 juegos arman su interfaz para
-             1080x1920 vertical y al girar se desarmaban (el export de Unity traía autorrotación). -->
+             1080x1920 vertical y al girar se desarmaban (el export de Unity traía autorrotación).
+             hardwareAccelerated se pone en TRUE (Tarea 190d): el export de Unity lo trae en false y la pantalla de carga de la app (Compose) se agrega a esa misma ventana, así que se dibujaba con el
+             procesador: la sonda midió un cuadro cada 150 ms (la luna «pegada»); con la aceleración, de 8 a 17 ms. Riesgos y cómo se miran: docs/entrada-al-juego.md §7. -->
         <activity
             android:name="com.unity3d.player.UnityPlayerGameActivity"
             android:exported="false"
+            android:hardwareAccelerated="true"
             android:process=":unity"
             android:screenOrientation="portrait"
             tools:node="merge"
-            tools:replace="android:exported,android:screenOrientation">
+            tools:replace="android:exported,android:screenOrientation,android:hardwareAccelerated">
             <intent-filter tools:node="removeAll" />
         </activity>
         <receiver

@@ -151,6 +151,19 @@ namespace NeuroVida.Games.Stroop
             StartCoroutine(GameLoop());
         }
 
+        /// <summary>Las cuatro palabras de colores (ROJO, AZUL, AMARILLO, BLANCO) con la fuente y el tamaño de la palabra del ensayo (190 unidades): la sonda del teléfono midió 4 reconstrucciones de la textura de letras en el primer ensayo (83 ms) (Tarea 190d).</summary>
+        protected override IEnumerable<(Text sample, string text, int fontSize)> GlyphWords()
+        {
+            if (_wordText != null) foreach (var name in StroopContract.Names) yield return (_wordText, name, 0);          // la palabra se ajusta entre 80 y 190 unidades: cada una visita sus propios tamaños
+            if (_hud != null)
+            {
+                yield return (_hud.RowTextComponent, "Responde: TINTA", PromptUnits);                                     // la consigna de Tinta va a 20 dp (60 unidades), no a los 17 dp de las demás
+                yield return (_hud.RowTextComponent, "Responde: PALABRA", PromptUnits);
+            }
+        }
+
+        private const int PromptUnits = 60;
+
         private IEnumerator GameLoop()
         {
             _safe.gameObject.SetActive(false);                                      // el tablero no se ve mientras se arma (sin acomodar los botones miden 100 u): se activa ya acomodado (Tarea 190)
@@ -975,7 +988,7 @@ namespace NeuroVida.Games.Stroop
             _shoreGroup[1].alpha = ink ? 0.35f : 1f;
             // la regla en la fila de consigna del marcador (18 dp): «Responde: TINTA» con la palabra del color de su orilla y el ícono de su orilla (gota / libro): nunca solo color
             var light = StroopContract.RuleLight(rule);
-            _hud.SetPrompt("Responde: <color=#" + ColorUtility.ToHtmlStringRGB(light) + ">" + (ink ? "TINTA" : "PALABRA") + "</color>", ink ? StroopSprites.Drop() : StroopSprites.Book(), 60);
+            _hud.SetPrompt("Responde: <color=#" + ColorUtility.ToHtmlStringRGB(light) + ">" + (ink ? "TINTA" : "PALABRA") + "</color>", ink ? StroopSprites.Drop() : StroopSprites.Book(), PromptUnits);
             _hud.SetPromptIcon(ink ? StroopSprites.Drop() : StroopSprites.Book(), light);
             if (_cardBorderSlab != null) PlasticSlab.SetCustom(_cardBorderSlab, Plastic, ink ? "losa_gr_tarjeta_tinta" : "losa_gr_tarjeta_palabra");
             else _cardBorder.color = new Color(shore.r, shore.g, shore.b, 0.98f);

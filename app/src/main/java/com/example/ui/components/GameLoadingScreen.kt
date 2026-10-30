@@ -67,6 +67,8 @@ fun GameLoadingScreen(
   modifier: Modifier = Modifier,
   withSky: Boolean = false,
   fadeInDelayMs: Long = 0L,
+  // Cuánto tarda el contenido en aparecer una vez pasada la espera (Tarea 190d: en caliente, 200 ms; el arranque en frío conserva los 320 de siempre).
+  fadeInMs: Int = 320,
   // Evaluación inicial: "Punto de partida · 1 de 3" en vez de nivel y modo (ver data/Baseline.kt).
   assessmentStep: Int = 0,
   assessmentTotal: Int = 0,
@@ -78,7 +80,7 @@ fun GameLoadingScreen(
   LaunchedEffect(Unit) {
     if (appear.value >= 1f) return@LaunchedEffect
     kotlinx.coroutines.delay(fadeInDelayMs)
-    appear.animateTo(1f, tween(320))
+    appear.animateTo(1f, tween(fadeInMs))
   }
 
   val transition = rememberInfiniteTransition(label = "loading")

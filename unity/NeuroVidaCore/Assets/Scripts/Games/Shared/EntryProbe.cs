@@ -42,12 +42,19 @@ namespace NeuroVida.Games.Shared
         private static long _shownAtMs;                                   // cuándo se mostró el tablero («listo»)
         private static string _note = "";                                 // la última marca de la partida («listo», «¡Ya!», «primer ensayo») y cuándo se puso
         private static float _noteAt;
+        private static int _fontRebuildsAtShown;
         private static int _fontRebuilds, _fontRebuildsPrev, _collectionsPrev;     // reconstrucciones de la textura de letras y recolecciones de memoria: lo que, aparte del dibujo, alarga un cuadro
         private static bool _touchedPrev;
 
         private static long NowMs() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
-        private static void OnFontRebuilt(Font f) => _fontRebuilds++;
+        private static readonly List<string> RebuildLog = new List<string>();
+
+        private static void OnFontRebuilt(Font f)
+        {
+            _fontRebuilds++;
+            if (_shownAt >= 0f && RebuildLog.Count < 8) RebuildLog.Add(string.Format(CultureInfo.InvariantCulture, "{0:F2} s tras «{1}»", Time.realtimeSinceStartup - _shownAt, _note));          // cuándo y después de qué marca se reconstruyó la textura de letras
+        }
 
         /// <summary>La última línea escrita (para las pruebas).</summary>
         public static string LastLine => _lastLine;
@@ -72,6 +79,7 @@ namespace NeuroVida.Games.Shared
             _shownAtMs = 0L;
             _note = "";
             _fontRebuilds = _fontRebuildsPrev = 0;
+            RebuildLog.Clear();
             _collectionsPrev = GC.CollectionCount(0);
             _touchedPrev = false;
             Font.textureRebuilt -= OnFontRebuilt;
@@ -143,6 +151,7 @@ namespace NeuroVida.Games.Shared
             if (!Enabled || _shownAt >= 0f) return;
             _shownAt = Time.realtimeSinceStartup;
             _shownAtMs = NowMs();
+            _fontRebuildsAtShown = _fontRebuilds;
             _note = "listo";
             _noteAt = _shownAt;
             _costsAtShown = 0.0;
@@ -202,6 +211,7 @@ namespace NeuroVida.Games.Shared
                 Environment.ProcessorCount, Background.Workers, WoodCore.WorkerCount, Time.realtimeSinceStartup - _shownAt, partial ? " (corta: se salió antes de los 5 s)" : ""));
             if (_restartTap >= 0f)
                 sb.Append(string.Format(CultureInfo.InvariantCulture, " | reinicio: la escena tardó {0:F2} s en llegar y desde el toque hasta «listo» pasaron {1:F2} s (el azul de Unity, sin pantalla de carga)", _restartConfig, _shownAt - _restartTap));
+            sb.Append(string.Format(CultureInfo.InvariantCulture, " | textura de letras: {0} reconstrucciones antes del «listo» y {1} después{2}", _fontRebuildsAtShown, _fontRebuilds - _fontRebuildsAtShown, RebuildLog.Count > 0 ? " (" + string.Join(", ", RebuildLog) + ")" : ""));
             sb.Append(HandoffText(_launchAtMs, _configAtMs, _shownAtMs));
             _lastLine = sb.ToString();
             Debug.Log(_lastLine);

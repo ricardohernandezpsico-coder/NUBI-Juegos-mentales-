@@ -84,6 +84,7 @@ namespace NeuroVida.Games.Shared
             }
             WoodCore.Loading = false;
             if (!WoodCore.Ready) Debug.LogWarning("[GameReadiness] el sonido no terminó de calcularse en " + GameReadiness.MaxWaitSeconds + " s; el juego arranca igual.");
+            yield return StartCoroutine(GlyphWarm.Run(GetComponentsInChildren<Text>(true), GlyphExtras(), GlyphWords()));      // las letras del primer ensayo, rasterizadas detrás de la carga (Tarea 190d)
             yield return null;                               // un cuadro con el tablero terminado y quieto antes de destaparlo
             GameReadiness.Report();
             float hold = 0f;
@@ -93,6 +94,18 @@ namespace NeuroVida.Games.Shared
                 yield return null;
             }
         }
+
+        /// <summary>
+        /// Las letras que el tablero todavía no muestra y el primer ensayo sí (Tarea 190d): tríos (un texto de muestra con la fuente y el estilo con que se van a dibujar, las letras y el tamaño en unidades del lienzo; 0 = el de la muestra). <see cref="GlyphWarm"/> las rasteriza durante la carga para que el primer ensayo no las pida en pleno cuadro.
+        /// Lo que ya está escrito en pantalla y el renglón de avisos del marcador se piden solos. Por omisión, ninguna: un juego cuyas palabras vienen de datos no las puede listar.
+        /// </summary>
+        protected virtual IEnumerable<(Text sample, string chars, int fontSize)> GlyphExtras() { yield break; }
+
+        /// <summary>
+        /// Lo mismo para un texto con AJUSTE AUTOMÁTICO de tamaño (<c>resizeTextForBestFit</c>): cada texto que el juego pondrá en <c>sample</c> (y el tamaño que le pondrá; 0 = el suyo) se genera tal cual, con la misma búsqueda, porque cada palabra visita tamaños distintos
+        /// y las letras de un tamaño no sirven para otro. Por omisión, ninguno.
+        /// </summary>
+        protected virtual IEnumerable<(Text sample, string text, int fontSize)> GlyphWords() { yield break; }
 
         /// <summary>El «¡Ya!» de 0,8 s (<see cref="GoCue"/>): lo último antes del primer ensayo y del reloj de la partida (el Contrarreloj incluido), que empiezan cuando termina.</summary>
         protected IEnumerator PlayGo()

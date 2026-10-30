@@ -184,6 +184,8 @@ namespace NeuroVida.Bridge.EditorTools
                 if (g.Name != "Correo" && g.Name != "Satelites" && g.Name != "Piloto" && g.Name != "Radar" && g.Name != "Acoplamiento" && g.Name != "Aterrizaje" && g.Name != "Engranajes" && withTutorial.Contains(g.Id ?? "secuencia")) continue;
                 list.Add(("Pantalla" + g.Name, g.Id, g.Name == "Correo" ? 40f : g.Name == "Satelites" ? 55f : g.Name == "Piloto" || g.Name == "Radar" || g.Name == "Acoplamiento" || g.Name == "Aterrizaje" || g.Name == "Engranajes" ? 30f : Mathf.Min(g.Seconds, 9f)));
             }
+            // las tarjetas «NUEVO» y las hojas con TODO lo que pueden decir (Tarea 190d): Correo a la etapa 10 (sus cinco tarjetas, la hoja con todos los encargos y el resumen), Constelaciones a la 18, Bodega y Engranajes al nivel 5; 45 s para que pasen todas (el piloto las cierra solas) y la guardia de tarjetas mira que ningún texto se salga de la suya
+            foreach (var card in new[] { ("TarjetasCorreo", "correo"), ("TarjetasParejas", "parejas"), ("TarjetasBodega", "bodega"), ("TarjetasEngranajes", "engranajes") }) list.Add((card.Item1, card.Item2, 45f));
             return list.ToArray();
         }
 
@@ -268,6 +270,61 @@ namespace NeuroVida.Bridge.EditorTools
 
         private static readonly HashSet<string> _factorySeen = new HashSet<string>();
         private static readonly HashSet<string> _overlapSeen = new HashSet<string>();
+        private static readonly HashSet<string> _cardSeen = new HashSet<string>();
+
+        /// <summary>
+        /// DIAGNÓSTICO (<c>NUBI_CARD_OVERFLOW=1</c>; solo en las corridas en forma de teléfono): cada 0,25 s, todo texto visible cuyo centro cae sobre una tarjeta (una imagen llamada «Card» o «ArtBox») y que se sale de ella (o queda a menos de 10 unidades del borde).
+        /// La guardia de textos común NO lo ve: compara el texto con su PADRE solo si el padre es una imagen (botón o píldora) y solo por el CENTRO del texto; los textos de las tarjetas «NUEVO» son hijos de una capa vacía y la tarjeta es su hermana.
+        /// </summary>
+        private static void ScanCardOverflow()
+        {
+            if (_currentHeight <= 0) return;
+            bool verbose = Environment.GetEnvironmentVariable("NUBI_CARD_OVERFLOW") == "1";
+            double now = EditorApplication.timeSinceStartup;
+            if (now - _cardScanAt < 0.25) return;
+            _cardScanAt = now;
+            var cards = new List<(UnityEngine.UI.Image im, Rect r, Transform layer)>();
+            foreach (var im in UnityEngine.Object.FindObjectsOfType<UnityEngine.UI.Image>())
+            {
+                if (im == null || !im.isActiveAndEnabled || im.canvasRenderer == null) continue;
+                if (im.name != "Card" && im.name != "ArtBox") continue;
+                if (im.canvasRenderer.GetInheritedAlpha() < 0.3f) continue;                       // el «Card» de plasticina tiene alfa 0 (la losa que se ve es otra imagen): no se mira su color, solo su rectángulo
+                var r = GuardWorldRect(im.rectTransform);
+                if (r.width < 20f || r.height < 20f) continue;
+                var layer = im.transform;                                                         // la capa de la tarjeta: el hijo de «Play» que la contiene (Brief, Recap, Intro…); lo que está en otra capa no cuenta (puede estar tapado por la tarjeta)
+                while (layer.parent != null && layer.parent.name != "Play") layer = layer.parent;
+                if (layer.parent == null) layer = im.transform.parent;
+                cards.Add((im, r, layer));
+            }
+            if (cards.Count == 0) return;
+            foreach (var t in UnityEngine.Object.FindObjectsOfType<UnityEngine.UI.Text>())
+            {
+                if (t == null || !t.isActiveAndEnabled || string.IsNullOrWhiteSpace(t.text) || t.canvasRenderer == null) continue;
+                if (t.color.a * t.canvasRenderer.GetInheritedAlpha() < 0.3f) continue;
+                if (Mathf.Abs(t.transform.lossyScale.y) < 0.01f) continue;
+                bool onPill = false;
+                for (var p = t.transform.parent; p != null && !onPill; p = p.parent) { if (p.name == "Pill") onPill = true; if (p.name == "Play") break; }
+                if (onPill) continue;                                                              // la etiqueta «Todos los días» cuelga a propósito del borde de arriba de la fila de la hoja
+                var d = GuardTextRect(t);
+                if (d.width < 2f || d.height < 2f) continue;
+                foreach (var (im, r, layer) in cards)
+                {
+                    if (!t.transform.IsChildOf(layer) || !r.Contains(d.center)) continue;
+                    float left = d.xMin - r.xMin, right = r.xMax - d.xMax, below = d.yMin - r.yMin, above = r.yMax - d.yMax;
+                    float worst = Mathf.Min(Mathf.Min(left, right), Mathf.Min(below, above));
+                    string kind = worst < 0f ? "SE SALE" : worst < 10f ? "justo" : "ok";
+                    if (kind != "SE SALE" && !verbose) continue;
+                    string key = _current.Name + "|" + _currentHeight + "|" + kind + "|" + PathOf(t.transform) + "|" + t.text;
+                    if (!_cardSeen.Add(key)) continue;
+                    string msg = $"{_current.Name} 1080x{_currentHeight} a los {EditorApplication.timeSinceStartup - _enteredPlayAt:F1} s: {kind}: «{t.text.Replace("\n", " / ")}» ({PathOf(t.transform)}, {(t.horizontalOverflow == HorizontalWrapMode.Overflow ? "sin ajuste de línea" : "con ajuste de línea")}) sobre [{im.name}]: texto de {d.xMin:0} a {d.xMax:0} y de {d.yMin:0} a {d.yMax:0}, tarjeta de {r.xMin:0} a {r.xMax:0} y de {r.yMin:0} a {r.yMax:0}; margen izquierdo {left:0}, derecho {right:0}, arriba {above:0}, abajo {below:0} u";
+                    if (kind == "SE SALE") { _errorCount++; Debug.Log("[SmokeTest] Error capturado: guardia de tarjetas: el texto se sale de su tarjeta: " + msg); }
+                    else Debug.Log("[Tarjeta] " + msg);
+                }
+            }
+        }
+
+        private static double _cardScanAt;
+
 
         /// <summary>
         /// DIAGNÓSTICO (<c>NUBI_TEXT_OVERLAP=1</c>; solo en las corridas en forma de teléfono): cada cuadro, todo texto visible que se cruza con otro texto visible (que no sea su padre ni su hijo) por más de 150 unidades cuadradas. La guardia de textos común (<see cref="ScanTextPlacement"/>) NO compara un texto con otro:
@@ -581,10 +638,10 @@ namespace NeuroVida.Bridge.EditorTools
                 foreach (var h in new[] { 2400, 1920 }) { _queue.Enqueue(g); _heights.Enqueue(h); }
                 return;
             }
-            if (g.Name.StartsWith("Pantalla"))
+            if (g.Name.StartsWith("Pantalla") || g.Name.StartsWith("Tarjetas"))
             {
                 // la guardia de textos en forma de TELÉFONO (ver PantallaCatalog)
-                foreach (var h in g.Name == "PantallaCorreo" ? new[] { 2400, 1920 } : new[] { 2400 }) { _queue.Enqueue(g); _heights.Enqueue(h); }
+                foreach (var h in g.Name == "PantallaCorreo" || g.Name == "TarjetasCorreo" ? new[] { 2400, 1920 } : new[] { 2400 }) { _queue.Enqueue(g); _heights.Enqueue(h); }
                 return;
             }
             _queue.Enqueue(g);
@@ -608,6 +665,7 @@ namespace NeuroVida.Bridge.EditorTools
             _hudSeen.Clear();
             _sampleAnnounceShown = false;
             _announceMeasured = 0;
+            _announceRetries = 0;
             _announceBackChecked = false;
             _announceFirstAt = 0;
             _sampleStreakShown = false;
@@ -631,6 +689,8 @@ namespace NeuroVida.Bridge.EditorTools
             _auditCanvases.Clear();
             _errorCount = 0;
             _overlapSeen.Clear();
+            _cardSeen.Clear();
+            if (Environment.GetEnvironmentVariable("NUBI_CARD_OVERFLOW") == "1") PlayerPrefs.DeleteAll();          // diagnóstico: las tarjetas «NUEVO» salen otra vez aunque ya se hayan visto
             _boardReports = 0;
             _enteredPlayAt = 0;
             _pauseStage = 0;
@@ -640,6 +700,11 @@ namespace NeuroVida.Bridge.EditorTools
             // «Tutorial*» = con la tarjeta de Nubi (sigue sola en el Editor) y la ronda guiada; «Corto*» = la versión corta del inicio (assessment)
             bool tutorial = _current.Name.StartsWith("Tutorial");
             EditorPlaytestBootstrap.ShowTutorialOverride = tutorial;
+            bool cards = _current.Name.StartsWith("Tarjetas");
+            EditorPlaytestBootstrap.MailStageOverride = cards ? 10 : 0;                                                      // «Tarjetas*» (Tarea 190d): TODAS las tarjetas «NUEVO» y hojas: Correo a la etapa 10, Constelaciones a la 18, Bodega y Engranajes al nivel 5
+            EditorPlaytestBootstrap.ConStageOverride = cards ? 18 : 0;
+            EditorPlaytestBootstrap.LevelOverride = cards ? 5 : 0;
+            if (cards) PlayerPrefs.DeleteAll();                                                                              // las tarjetas «NUEVO» salen otra vez aunque ya se hayan visto
             EditorPlaytestBootstrap.TimedOverride = _current.Name == "PilotoReto" || _current.Name == "RadarReto" || _current.Name == "AcoplamientoReto" || _current.Name == "AterrizajeReto";            // el Reto (con reloj) de Piloto; las demás corridas son Precisión
             bool timeTrial = _current.Name.StartsWith("Contrarreloj");
             EditorPlaytestBootstrap.TimeTrialOverride = timeTrial;                                                            // «Contrarreloj*»: la partida es un Contrarreloj de 16 s (Tarea 176)
@@ -650,7 +715,7 @@ namespace NeuroVida.Bridge.EditorTools
             NeuroVida.Games.Shared.WoodCore.ResetCounters();                                                                 // lo que suena por partida (Fase B): los sonidos, los omitidos y los finales
             EditorPlaytestBootstrap.AssessmentOverride = _current.Name.StartsWith("Corto");
             NeuroVida.Games.Shared.GuidedTutorial.EditorAutoContinue = tutorial || _current.Name.StartsWith("HowTo");      // «HowTo*» no arranca con tutorial: lo abre el smoke desde la partida
-            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = _current.Name == "PilotoMudo" || _current.Name == "RadarMudo" || _current.Name == "Engranajes" || _current.Name == "Bodega" || _current.Name == "Parejas" || _current.Name == "Correo" || _current.Name == "Satelites" || _current.Name == "PantallaSatelites" || _current.Name == "Piloto" || _current.Name == "PilotoReto" || _current.Name == "PantallaPiloto" || _current.Name == "Radar" || _current.Name == "RadarReto" || _current.Name == "PantallaRadar" || _current.Name == "PantallaCorreo" || _current.Name == "PantallaEngranajes" || _current.Name == "PantallaBodega" || _current.Name == "PantallaParejas" || _current.Name == "Acoplamiento" || _current.Name == "AcoplamientoReto" || _current.Name == "AcoplamientoMudo" || _current.Name == "PantallaAcoplamiento" || _current.Name == "Aterrizaje" || _current.Name == "AterrizajeReto" || _current.Name == "AterrizajeMudo" || _current.Name == "PantallaAterrizaje" || timeTrial;      // la partida de Engranajes se juega sola (máquinas pares: la solución; impares: sin tocar)
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = _current.Name == "PilotoMudo" || _current.Name == "RadarMudo" || _current.Name == "Engranajes" || _current.Name == "Bodega" || _current.Name == "Parejas" || _current.Name == "Correo" || _current.Name == "Satelites" || _current.Name == "PantallaSatelites" || _current.Name == "Piloto" || _current.Name == "PilotoReto" || _current.Name == "PantallaPiloto" || _current.Name == "Radar" || _current.Name == "RadarReto" || _current.Name == "PantallaRadar" || _current.Name == "PantallaCorreo" || _current.Name == "PantallaEngranajes" || _current.Name == "PantallaBodega" || _current.Name == "PantallaParejas" || _current.Name == "Acoplamiento" || _current.Name == "AcoplamientoReto" || _current.Name == "AcoplamientoMudo" || _current.Name == "PantallaAcoplamiento" || _current.Name == "Aterrizaje" || _current.Name == "AterrizajeReto" || _current.Name == "AterrizajeMudo" || _current.Name == "PantallaAterrizaje" || _current.Name.StartsWith("Tarjetas") || timeTrial;      // la partida de Engranajes se juega sola (máquinas pares: la solución; impares: sin tocar)
             EditorApplication.EnterPlaymode();
         }
 
@@ -1048,7 +1113,8 @@ namespace NeuroVida.Bridge.EditorTools
         }
 
         private static bool _sampleAnnounceShown, _announceBackChecked;
-        private static int _announceMeasured, _announceRunIndex;
+        private static int _announceMeasured, _announceRunIndex, _announceRetries;
+        private static NeuroVida.Games.Shared.AnnounceTone _announceTone;
         private static double _announceFirstAt;
         private static NeuroVida.Games.Shared.GameHud _announceHud;
 
@@ -1059,6 +1125,7 @@ namespace NeuroVida.Bridge.EditorTools
             var hud = FindGameHud();
             if (hud == null) { Debug.Log($"[SmokeTest] aviso de prueba: {_current.Name} no tiene marcador común"); return; }
             var tone = NeuroVida.Games.Shared.AnnounceStyle.All[_announceRunIndex++ % NeuroVida.Games.Shared.AnnounceStyle.All.Length];
+            _announceTone = tone;
             _announceHud = hud;
             _announceFirstAt = EditorApplication.timeSinceStartup;
             hud.Announce("Aviso de prueba", tone, 0f, "Una frase de explicación que no cabe junto a su título en una línea", sound: false);
@@ -1073,6 +1140,14 @@ namespace NeuroVida.Bridge.EditorTools
             if (!_current.Name.StartsWith("Aviso") || !_sampleAnnounceShown || _announceHud == null) return;
             var hud = _announceHud;
             double since = EditorApplication.timeSinceStartup - _announceFirstAt;
+            if (!hud.Announcing && _announceMeasured == 0 && since > 0.4 && _announceRetries < 4)
+            {
+                // el juego pisó el aviso de prueba antes de que terminara de entrar (una consigna DISTINTA lo termina, Tarea 179; Rescate cambia su consigna en cada fase y, según el momento, coincidía): se repite para poder medirlo
+                _announceRetries++;
+                _announceFirstAt = EditorApplication.timeSinceStartup;
+                hud.Announce("Aviso de prueba", _announceTone, 0f, "Una frase de explicación que no cabe junto a su título en una línea", sound: false);
+                return;
+            }
             if (hud.Announcing)
             {
                 var text = hud.RowTextComponent;
@@ -1367,6 +1442,7 @@ namespace NeuroVida.Bridge.EditorTools
                 ScanTextPlacement();
                 ScanFactoryImages();
                 ScanTextOverlap();
+                ScanCardOverflow();
                 if (_current.Name.EndsWith("Mudo") || _current.Name == "Piloto" || _current.Name == "Radar" || _current.Name == "Acoplamiento" || _current.Name == "Aterrizaje") SampleAudio();
                 if (_current.Name.StartsWith("Aviso") && !_sampleAnnounceShown && played >= 5.5) ShowSampleAnnounce();
                 if (_current.Name.StartsWith("Seguidos") && !_sampleStreakShown && played >= 5.5) ShowSampleStreak();

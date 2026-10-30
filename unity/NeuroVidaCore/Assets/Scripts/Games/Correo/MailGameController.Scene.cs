@@ -716,6 +716,12 @@ namespace NeuroVida.Games.Correo
             LayoutBrief();
         }
 
+        /// <summary>El ancho de la línea A de una fila de la hoja de la mañana: desde 84 dp a la izquierda del centro (a la derecha del ícono) hasta 12 dp antes del borde de la tarjeta. Si el texto no cabe, pasa a dos líneas y la fila crece <see cref="BriefWrapExtra"/> dp.</summary>
+        private const float BriefAWidth = 234f, BriefWrapExtra = 20f;
+
+        /// <summary>Lo mismo para las filas del resumen del día: A de 105 dp a la izquierda del centro hasta 12 dp antes del borde; con dos líneas la fila crece <see cref="RecapWrapExtra"/> dp.</summary>
+        private const float RecapAWidth = 255f, RecapWrapExtra = 14f;
+
         private void LayoutBrief()
         {
             if (_briefItems.Count == 0 && !_briefRoutineCard) return;
@@ -726,12 +732,17 @@ namespace NeuroVida.Games.Correo
             int n = _briefItems.Count;
             float rowsTop = 124f + dy, bottom = h - 170f;
             float items = n + (_briefRoutineCard ? 1f : 0f);
-            float per = Mathf.Clamp((bottom - rowsTop) / Mathf.Max(1f, items), 56f, 88f);
-            float bh = per - 12f;
+            var wraps = new bool[n];
+            int nw = 0;
+            for (int i = 0; i < n; i++) { wraps[i] = _briefRows[i].A.preferredWidth / _s > BriefAWidth + 0.5f; if (wraps[i]) nw++; }          // la línea A que no cabe pasa a dos líneas (Tarea 190d): esas filas piden 20 dp más
+            float per = Mathf.Clamp((bottom - rowsTop - BriefWrapExtra * nw) / Mathf.Max(1f, items), 56f, 88f);
+            float rowY = rowsTop;
             for (int i = 0; i < n; i++)
             {
                 var r = _briefRows[i];
-                float y = rowsTop + per * i + per / 2f;
+                float perI = per + (wraps[i] ? BriefWrapExtra : 0f), bh = perI - 12f;
+                float y = rowY + perI / 2f;
+                rowY += perI;
                 SetRect(r.Root, cx, y, MailLayout.W - 36f, bh);
                 SetChild(r.CardRim.rectTransform, 0f, 0f, MailLayout.W - 33f, bh + 3f);
                 SetChild(r.Card.rectTransform, 0f, 0f, MailLayout.W - 36f, bh);
@@ -744,8 +755,9 @@ namespace NeuroVida.Games.Correo
                     SetChild(r.Check.rectTransform, -124f, 4f - 12f, MailSprites.LampBox * 0.6f, MailSprites.LampBox * 0.6f);
                 }
                 else SetChild(r.Icon.rectTransform, -124f, 4f, MailSprites.LetterBoxW * 0.42f, MailSprites.LetterBoxH * 0.42f);
-                SetChild(r.A.rectTransform, -84f + 130f, -6f, 260f, 20f);
-                SetChild(r.B.rectTransform, -84f + 130f, 14f, 260f, 22f);
+                float aMid = -84f + BriefAWidth / 2f;
+                if (wraps[i]) { SetChild(r.A.rectTransform, aMid, -11f, BriefAWidth, 38f); SetChild(r.B.rectTransform, -84f + 130f, 19f, 260f, 22f); }
+                else { SetChild(r.A.rectTransform, aMid, -6f, BriefAWidth, 20f); SetChild(r.B.rectTransform, -84f + 130f, 14f, 260f, 22f); }
                 if (_briefItems[i].Routine)
                 {
                     float tw = r.PillText.preferredWidth / _s + 16f;
@@ -753,7 +765,7 @@ namespace NeuroVida.Games.Correo
                     SetChild(r.PillText.rectTransform, 0f, 0f, tw + 20f, 22f);
                 }
             }
-            float y2 = rowsTop + per * n;
+            float y2 = rowY;
             _routineCard.gameObject.SetActive(_briefRoutineCard);
             _routineCardRim.gameObject.SetActive(_briefRoutineCard);
             _routineT1.gameObject.SetActive(_briefRoutineCard);
@@ -789,6 +801,7 @@ namespace NeuroVida.Games.Correo
                 if (!on) continue;
                 var it = r.Items[i];
                 row.A.text = it.Text;
+                if (row.A.preferredWidth / _s > RecapAWidth && it.Text.IndexOf(" · ", System.StringComparison.Ordinal) >= 0) row.A.text = it.Text.Replace(" · ", "\n");          // «Faro a media mañana · de todos los días» no cabe en una línea: cada parte en la suya (Tarea 190d)
                 row.B.text = it.Detail;
                 row.Check.sprite = it.Ok ? MailSprites.CheckOk() : MailSprites.CheckNo();
                 row.Check.gameObject.SetActive(true);
@@ -818,19 +831,26 @@ namespace NeuroVida.Games.Correo
             SetRect(_recapTitle.rectTransform, cx, 92f, 330f, 36f);
             int n = _recap.Items.Count;
             float rowsTop = 122f, bottom = h - 200f;
-            float per = Mathf.Clamp((bottom - rowsTop) / Mathf.Max(1, n), 50f, 66f);
+            int nw = 0;
+            for (int i = 0; i < n; i++) if (_recapRows[i].A.text.IndexOf('\n') >= 0) nw++;
+            float per = Mathf.Clamp((bottom - rowsTop - RecapWrapExtra * nw) / Mathf.Max(1, n), 50f, 66f);
+            float rowY = rowsTop;
             for (int i = 0; i < n; i++)
             {
                 var row = _recapRows[i];
-                float y = rowsTop + per * i + per / 2f, ch = per - 8f;
+                bool two = row.A.text.IndexOf('\n') >= 0;
+                float perI = per + (two ? RecapWrapExtra : 0f);
+                float y = rowY + perI / 2f, ch = perI - 8f;
+                rowY += perI;
                 SetRect(row.Root, cx, y, MailLayout.W - 36f, ch);
                 SetChild(row.CardRim.rectTransform, 0f, 0f, MailLayout.W - 33f, ch + 3f);
                 SetChild(row.Card.rectTransform, 0f, 0f, MailLayout.W - 36f, ch);
                 SetChild(row.Check.rectTransform, -134f, 0f, MailSprites.CheckBox, MailSprites.CheckBox);
-                SetChild(row.A.rectTransform, -110f + 150f, -ch * 0.16f, 290f, 20f);
-                SetChild(row.B.rectTransform, -110f + 150f, ch * 0.22f, 290f, 20f);
+                float aMid = -105f + RecapAWidth / 2f;
+                if (two) { SetChild(row.A.rectTransform, aMid, -ch / 2f + 24f, RecapAWidth, 38f); SetChild(row.B.rectTransform, aMid, ch / 2f - 18f, RecapAWidth, 20f); }
+                else { SetChild(row.A.rectTransform, aMid, -ch * 0.16f, RecapAWidth, 20f); SetChild(row.B.rectTransform, aMid, ch * 0.22f, RecapAWidth, 20f); }
             }
-            float y2 = rowsTop + per * n + 14f;
+            float y2 = rowY + 14f;
             SetRect(_recapLine1.rectTransform, cx, y2, 340f, 22f);
             SetRect(_recapLine2.rectTransform, cx, y2 + 24f, 340f, 22f);
             SetRect(_recapRecord.rectTransform, cx, y2 + 50f, 340f, 22f);

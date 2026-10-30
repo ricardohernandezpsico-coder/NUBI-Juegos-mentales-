@@ -922,7 +922,7 @@ namespace NeuroVida.Bridge.EditorTools
         private static IEnumerator CorreoScript()
         {
             Configure("correo", tutorial: false, reduceMotion: false);
-            EditorPlaytestBootstrap.MailStageOverride = 5;
+            EditorPlaytestBootstrap.MailStageOverride = int.TryParse(System.Environment.GetEnvironmentVariable("NUBI_SHOTS_MAIL_STAGE"), out int shotStage) && shotStage >= 1 ? shotStage : 5;          // la etapa 1 trae la fila del sello dorado (la de «Si llega una carta con sello dorado,»; Tarea 190d)
             NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = false;
             NeuroVida.Games.Correo.MailGameController.EditorShotMode = true;
             UnityEngine.PlayerPrefs.DeleteKey("mail_intros");                       // para que las tarjetas «NUEVO» salgan aunque ya se hayan visto

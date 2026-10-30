@@ -41,6 +41,12 @@ namespace NeuroVida.Games.Engranajes
         /// <summary>El borde derecho del cartel más ancho (boceto) y el margen mínimo que debe dejar a la derecha (dp).</summary>
         public const float CartelRight = 369f, CartelMargin = 16f;
 
+        /// <summary>
+        /// Tarea 190d: el chip «N seguidos» mide 24 dp y va a la derecha, justo bajo las luces (que llegan hasta 8 dp del borde derecho). Las luces suben a <see cref="LightsRowDp"/> bajo el borde de la cabecera y, en una pantalla BAJA (menos de <see cref="ShortScreenDp"/>: 1080 × 1920 son 640),
+        /// donde ya no sobra aire, la mesa baja <see cref="ShortScreenExtraDp"/> más: así entre las luces y la mesa caben los 24 dp del chip sin tapar ni unas ni otra (antes quedaban 20 y la guardia «seguidos» fallaba en esa pantalla).
+        /// </summary>
+        public const float LightsRowDp = 10f, ShortScreenDp = 700f, ShortScreenExtraDp = 8f;
+
         public struct Metrics
         {
             public float StripTop, QuestionTop, SceneCenterLogicalY, SceneScale, ButtonsTop, ButtonH, SayTop, SayH, Bottom;
@@ -51,7 +57,8 @@ namespace NeuroVida.Games.Engranajes
             var m = new Metrics();
             float buttonH = 88f, sayH = 84f;
             // si ni así cabe a escala 0,6, el aviso y los botones se bajan al mínimo
-            float fixedTop = TableTopDp;
+            float tableTop0 = TableTopDp + (height < ShortScreenDp ? ShortScreenExtraDp : 0f);
+            float fixedTop = tableTop0;
             float fixedBottom = 8f + buttonH + SayGap + sayH + 6f;
             float avail = height - fixedTop - fixedBottom;
             float scale = Math.Min(MaxScale, avail / SceneHeight);
@@ -72,7 +79,7 @@ namespace NeuroVida.Games.Engranajes
             m.QuestionTop = m.StripTop + StripH + 4f;
             float topShift = Math.Min(MaxTopShift, free * 0.30f);   // la mesa baja un poco de la cabecera (en un teléfono de 800 dp, 44 dp: sigue ~20 dp más arriba que antes de la Tarea 164)
             float gap = Math.Min(MaxGap, free * 0.45f);             // y los botones se separan de la mesa: quedan más a mano del pulgar
-            float sceneTop = TableTopDp + topShift;
+            float sceneTop = tableTop0 + topShift;
             m.SceneScale = scale;
             m.SceneCenterLogicalY = sceneTop + sceneH / 2f;
             m.ButtonH = buttonH;
