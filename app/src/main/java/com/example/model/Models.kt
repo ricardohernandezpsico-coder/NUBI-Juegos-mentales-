@@ -514,7 +514,9 @@ data class RecordOutcome(
   /** Desafío o Experto superado en esta partida (ver data/Skill.kt): el avance subió. */
   val modePassed: Boolean = false,
   /** Primer Desafío superado en ese juego: se abrió Experto. */
-  val expertUnlocked: Boolean = false
+  val expertUnlocked: Boolean = false,
+  /** Esta partida (este id de lanzamiento) YA estaba guardada: no se guardó de nuevo y las demás cifras no valen (Tarea 192: la doble entrega no duplica). */
+  val alreadySaved: Boolean = false
 ) {
   /** Ascenso de liga para celebrar: primero la liga general (más rara y más importante), si no la del juego. */
   fun promotion(gameId: String): LeaguePromotion? = globalPromotion() ?: gamePromotion(gameId)

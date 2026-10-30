@@ -17,6 +17,8 @@ class NeuroVidaApplication : Application() {
   override fun onCreate() {
     super.onCreate()
     instance = this
+    // StrictMode solo en depuración y solo en el proceso principal (Tarea 192): lo primero, para cubrir también lo que hacen los instaladores de abajo.
+    com.example.diag.StrictModeDebug.install(this)
     // Registro de errores en el teléfono (cierres y avisos que antes solo iban al logcat): ver diag/ErrorLog.
     com.example.diag.ErrorLog.install(this)
     // Archivo de las sondas de entrada al juego (solo escribe en depuración): ver diag/ProbeLog.

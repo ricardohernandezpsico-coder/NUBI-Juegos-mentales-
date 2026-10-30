@@ -18,6 +18,10 @@ interface GameResultDao {
   @Query("SELECT COUNT(*) FROM game_results")
   suspend fun getCount(): Int
 
+  /** Cuántas filas hay con este id (0 o 1): el id de la fila es el del lanzamiento de Unity, así que «1» = esta partida ya se guardó (Tarea 192). */
+  @Query("SELECT COUNT(*) FROM game_results WHERE id = :id")
+  suspend fun countById(id: String): Int
+
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insert(result: GameResultEntity)
 
@@ -87,6 +91,10 @@ interface TimeTrialResultDao {
 
   @Query("SELECT * FROM time_trial_results ORDER BY timestamp DESC")
   suspend fun getAllSync(): List<TimeTrialResultEntity>
+
+  /** Cuántas filas hay con este id (0 o 1): el id de la fila es el del lanzamiento de Unity (Tarea 192). */
+  @Query("SELECT COUNT(*) FROM time_trial_results WHERE id = :id")
+  suspend fun countById(id: String): Int
 
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun insert(result: TimeTrialResultEntity)

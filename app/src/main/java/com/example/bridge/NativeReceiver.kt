@@ -387,7 +387,17 @@ object NativeReceiver {
     } else {
       scope.launch {
         Log.i(TAG, "Persistiendo resultado de Unity: $result")
-        NeuroVidaApplication.instance.repository.recordGameResult(result)
+        try {
+          // el id de la fila es el del lanzamiento: la base reconoce una doble entrega (Tarea 192); la marca de la bandeja va DESPUÉS de guardar
+          NeuroVidaApplication.instance.repository.recordGameResult(if (!launchId.isNullOrEmpty()) result.copy(id = launchId) else result)
+          UnityResultInbox.markHandled(launchId)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+          UnityResultInbox.release(launchId)
+          throw e
+        } catch (e: Exception) {
+          UnityResultInbox.release(launchId)
+          ErrorLog.record("GUARDAR", "No se pudo guardar el resultado de la partida", e)
+        }
       }
     }
   }

@@ -78,6 +78,7 @@ object TimeTrialDay {
 
   /** La partida que Unity devolvió, ya en la forma que se guarda: la marca (`tt_hits`), los errores, el paso más alto de la pista, los segundos y la versión de la pista con que se jugó (sin ella, la de hoy). [day] = el día de la pista. */
   fun resultOf(raw: com.example.model.GamePlayResult, day: String): TimeTrialResult = TimeTrialResult(
+    id = raw.id,                                  // el del lanzamiento cuando lo hay (Tarea 192: la doble entrega no guarda dos veces)
     gameId = raw.gameId, day = day, trackVersion = raw.ttTrackVersion ?: trackVersion(raw.gameId), hits = raw.ttHits ?: 0,
     errors = raw.ttErrors ?: (raw.totalTrials - raw.correctAnswers).coerceAtLeast(0), level = raw.ttPeakLevel ?: 1, seconds = raw.ttSeconds ?: SECONDS, timestamp = raw.timestamp
   )

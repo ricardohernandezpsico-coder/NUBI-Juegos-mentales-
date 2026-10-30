@@ -1,6 +1,8 @@
 package com.example.viewmodel
 
 import android.app.Application
+import android.os.Handler
+import android.os.Looper
 import android.content.Context
 import android.os.Build
 import android.os.VibrationEffect
@@ -20,6 +22,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 /**
  * Las 3 pestañas (Tarea 158, 21-oct, «La isla es el mapa»): Hoy (jugar: la isla es el mapa de los juegos), Avance (ver cómo voy) y Tú (lo mío: tu isla, tu nombre, tus medallas y los Ajustes). Antes eran Hoy, Juegos y Avance (29-sep): Juegos repetía lo de Hoy y de Avance
@@ -67,6 +71,23 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   private val repository = (application as? com.example.NeuroVidaApplication)?.repository ?: NeuroVidaRepository(application)
 
   val userSettings = repository.userSettings
+
+  /**
+   * En qué punto del arranque en frío va la carga de los datos (Tarea 192, parte 2; `StartupGate`). [StartupStage.PROFILE]: el perfil ya es el de la base, así que se sabe si toca Hoy o el Primer vuelo y el contenido ya se puede componer (todavía invisible). [StartupStage.READY]: además
+   * llegaron las partidas, el Contrarreloj y el camino de hoy, y los flujos que este ViewModel deriva de ellos (`activityTimestamps`, `gameRanks`…, que se recalculan en el hilo principal, un paso detrás de la base) ya corrieron: se esperan DOS giros del hilo principal después de la carga, y
+   * lo que se encola antes de cada giro corre antes de que siga. Solo sube; no vuelve atrás.
+   */
+  private val _startupStage = MutableStateFlow(StartupStage.LOADING)
+  val startupStage: StateFlow<StartupStage> = _startupStage.asStateFlow()
+  init {
+    viewModelScope.launch {
+      repository.awaitSettingsLoaded()
+      _startupStage.value = StartupStage.PROFILE
+      repository.awaitFirstLoad()
+      awaitMainTurn(); awaitMainTurn()
+      _startupStage.value = StartupStage.READY
+    }
+  }
   val gameHistory = repository.gameHistory
   val gameLevels = repository.gameLevels
   val gameIntensity = repository.gameIntensity
@@ -270,13 +291,13 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   }
 
   /** Llegó el resultado de un juego del inicio: se guarda como cualquier partida (sin avanzar el camino de hoy), se anota su medida y su primer dato, y se pasa a su tarjeta. */
-  private fun onFlightResult(session: ActiveGameSession, result: GamePlayResult) {
+  private fun onFlightResult(session: ActiveGameSession, result: GamePlayResult, launchId: String?) {
     val rating = result.endRating ?: (result.score / 100f)
     _activeGame.value = null
-    viewModelScope.launch {
+    saveAndMark(launchId) {
       val outcome = repository.recordGameResult(result, countsForDailySession = false)
       flightAchievements = flightAchievements + outcome.newAchievements
-      val s = _flight.value ?: return@launch // sin recorrido (se perdió o fue un botón de prueba): la partida solo se guarda
+      val s = _flight.value ?: return@saveAndMark // sin recorrido (se perdió o fue un botón de prueba): la partida solo se guarda
       setFlight(com.example.data.FirstFlight.withResult(s, session.gameDef.id, rating, com.example.data.FirstData.phrase(result)))
       triggerHapticFeedback(HapticType.LIGHT)
     }
@@ -486,19 +507,39 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
    * vez en Room; si coincide con la sesión activa se muestra la pantalla de resultado de la app.
    * Las partidas lanzadas desde los botones de depuración (sin sesión activa) solo se guardan.
    */
-  fun onUnityResult(rawResult: GamePlayResult, launchId: String? = null) {
-    if (com.example.bridge.UnityGameLauncher.isFreshLaunch(launchId)) return          // «Jugar como la primera vez» (solo botones [Debug], Tarea 191): se probó como alguien nuevo, así que nada de esa partida se guarda
+  /**
+   * Guarda lo que llegó de Unity y, SOLO si se guardó, anota el lanzamiento en la bandeja (`UnityResultInbox.markHandled`: antes se anotaba al llegar y una muerte del proceso entre la marca y el guardado perdía la partida, Tarea 192).
+   * Si falla, suelta la reserva (otra entrega puede reintentar) y lo deja en el registro de errores, sin cerrar la app.
+   */
+  private fun saveAndMark(launchId: String?, block: suspend () -> Unit) = viewModelScope.launch {
+    try {
+      block()
+      com.example.bridge.UnityResultInbox.markHandled(launchId)
+    } catch (e: kotlinx.coroutines.CancellationException) {
+      com.example.bridge.UnityResultInbox.release(launchId)
+      throw e
+    } catch (e: Exception) {
+      com.example.bridge.UnityResultInbox.release(launchId)
+      com.example.diag.ErrorLog.record("GUARDAR", "No se pudo guardar el resultado de la partida", e)
+    }
+  }
+
+  fun onUnityResult(raw: GamePlayResult, launchId: String? = null) {
+    if (com.example.bridge.UnityGameLauncher.isFreshLaunch(launchId)) { com.example.bridge.UnityResultInbox.markHandled(launchId); return }
+    // El id de la fila es el del lanzamiento (un UUID por partida): la base reconoce una doble entrega y no guarda dos veces (Tarea 192).
+    val rawResult = if (!launchId.isNullOrEmpty()) raw.copy(id = launchId) else raw
+             // «Jugar como la primera vez» (solo botones [Debug], Tarea 191): se probó como alguien nuevo, así que nada de esa partida se guarda
     // La sesión viva, o la anotada en disco si Android cerró la app durante el juego (ViewModel nuevo).
     val live = _activeGame.value?.takeIf { it.gameDef.id == rawResult.gameId }
     val stored = GameSessionStore.inFlight(launchId)?.takeIf { it.gameId == rawResult.gameId }?.let(::sessionFrom)
     if (live != null || stored != null) GameSessionStore.clearInFlight()
     val current = live ?: stored
     if (rawResult.isTimeTrial) {
-      onTimeTrialResult(rawResult, current)
+      onTimeTrialResult(rawResult, current, launchId)
       return
     }
     if (current != null && current.assessmentStep > 0) {
-      onFlightResult(current, rawResult)
+      onFlightResult(current, rawResult, launchId)
       return
     }
     val withMode = if (current != null) rawResult.copy(playMode = current.mode) else rawResult
@@ -510,8 +551,13 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
         satelites = repository.satelitesRecord.value, bodega = repository.bodegaRecord.value, constelaciones = repository.constelacionesRecord.value
       )
     )
-    viewModelScope.launch {
+    saveAndMark(launchId) {
       val outcome = repository.recordGameResult(result)
+      if (outcome.alreadySaved) {
+        // ya estaba guardada (la doble entrega o la reentrega tras un reinicio del proceso): no se vuelve a celebrar; solo se cierra la sesión si la había
+        if (current != null && _lastResult.value == null) _activeGame.value = null
+        return@saveAndMark
+      }
       if (current != null) {
         _modeNote.value = modeNote(result.playMode, outcome)
         _promotion.value = if (com.example.Features.LEAGUES) outcome.promotion(result.gameId) else null                 // sin ligas en la v1 (Tarea 149): no hay celebración de ascenso (el dato se guarda igual)
@@ -528,10 +574,10 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
    * El final del Contrarreloj (Tarea 177): se guarda en `time_trial_results` (NO en `game_results`: no mueve el nivel, los puntos ni lo «medido») y se muestra su final (`TimeTrialResultScreen`) con el récord de antes, las últimas 5 y la mejor de la semana. El día de la pista es el de la sesión
    * (la partida pudo cruzar la medianoche); sin sesión (una partida lanzada desde las herramientas de prueba, o la sesión se perdió), el día en que terminó. Solo se muestra si hay sesión, como las partidas de siempre.
    */
-  private fun onTimeTrialResult(raw: GamePlayResult, current: ActiveGameSession?) {
+  private fun onTimeTrialResult(raw: GamePlayResult, current: ActiveGameSession?, launchId: String?) {
     val day = current?.timeTrialDay ?: repository.dateKeyOf(raw.timestamp)
     val saved = com.example.data.TimeTrialDay.resultOf(raw, day)
-    viewModelScope.launch {
+    saveAndMark(launchId) {
       val outcome = repository.recordTimeTrial(saved)
       if (current != null) {
         _lastTimeTrial.value = outcome
@@ -978,4 +1024,15 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       com.example.diag.ErrorLog.record("VIBRACION", "No se pudo vibrar.", e)
     }
   }
+}
+
+/** La carga de los datos al arrancar, en orden (ver `NeuroVidaViewModel.startupStage`). */
+enum class StartupStage { LOADING, PROFILE, READY }
+
+/** Un giro del hilo principal: cuando sigue, todo lo que se encoló antes de pedirlo ya corrió (los flujos derivados que se despachan al hilo principal, por ejemplo). */
+private suspend fun awaitMainTurn() = suspendCancellableCoroutine<Unit> { cont ->
+  val handler = Handler(Looper.getMainLooper())
+  val turn = Runnable { cont.resume(Unit) }
+  handler.post(turn)
+  cont.invokeOnCancellation { handler.removeCallbacks(turn) }
 }

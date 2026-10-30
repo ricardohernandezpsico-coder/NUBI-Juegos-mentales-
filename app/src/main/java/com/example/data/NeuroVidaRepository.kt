@@ -1,6 +1,7 @@
 package com.example.data
 
 import android.content.Context
+import androidx.room.withTransaction
 import com.example.data.local.*
 import com.example.model.*
 import kotlinx.coroutines.CoroutineScope
@@ -9,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
@@ -21,6 +23,34 @@ class NeuroVidaRepository(
   private val appContext: Context = context.applicationContext
 
   private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+  // Lo primero que Hoy dibuja (Tarea 192, parte 2): los `StateFlow` nacen con un valor vacío y Room los llena después. Cada uno marca su bit DESPUÉS de asignar el valor de verdad (`stateInMarkingLoad`);
+  // `NeuroVidaViewModel.startupReady` y `StartupGate` esperan a que estén todos para mostrar el contenido. Va ANTES de los flujos: sus colectores arrancan al construirse y lo usan enseguida.
+  private val firstLoad = MutableStateFlow(0)
+  private fun markLoaded(bit: Int) { firstLoad.update { it or bit } }
+  private companion object {
+    const val LOAD_SETTINGS = 1
+    const val LOAD_HISTORY = 2
+    const val LOAD_TIME_TRIAL = 4
+    const val LOAD_SESSION = 8
+    const val LOAD_ALL = 15
+  }
+
+  /** `true` cuando el perfil, las partidas, el Contrarreloj y el camino de hoy ya llegaron de la base (valor de verdad, no el inicial). */
+  fun isFirstLoadDone(): Boolean = firstLoad.value == LOAD_ALL
+
+  /** Espera a [isFirstLoadDone]. */
+  suspend fun awaitFirstLoad() { firstLoad.first { it == LOAD_ALL } }
+
+  /** Espera a que el perfil sea el de la base: desde ahí se sabe si toca Hoy o el Primer vuelo. */
+  suspend fun awaitSettingsLoaded() { firstLoad.first { it and LOAD_SETTINGS != 0 } }
+
+  /** Igual que `stateIn(Eagerly)`, pero anota que llegó la primera lectura real (aunque sea igual al valor inicial, que un `StateFlow` no vuelve a emitir). */
+  private fun <T> Flow<T>.stateInMarkingLoad(bit: Int, initial: T): StateFlow<T> {
+    val state = MutableStateFlow(initial)
+    repositoryScope.launch { collect { state.value = it; markLoaded(bit) } }
+    return state
+  }
 
   /**
    * Cancela el trabajo de fondo del repositorio (lo que sigue leyendo la base) Y ESPERA a que termine (hasta 10 s). Solo lo usan las pruebas, al terminar cada una; la app vive con el proceso.
@@ -55,20 +85,12 @@ class NeuroVidaRepository(
   // 1. Reactive Settings Flow from Room (el perfil activo; desde el 8-oct ya no se crean, cambian ni borran perfiles: la tabla user_profile y su DAO se quedan)
   val userSettings: StateFlow<UserSettings> = userProfileDao.getActiveProfile()
     .map { entity -> entity?.toDomain() ?: userProfileDao.getUserProfileSync()?.toDomain() ?: UserSettings() }
-    .stateIn(
-      scope = repositoryScope,
-      started = SharingStarted.Eagerly,
-      initialValue = UserSettings()
-    )
+    .stateInMarkingLoad(LOAD_SETTINGS, UserSettings())
 
   // 2. Reactive Game History Flow from Room
   val gameHistory: StateFlow<List<GamePlayResult>> = gameResultDao.getAllResults()
     .map { list -> list.map { it.toDomain() } }
-    .stateIn(
-      scope = repositoryScope,
-      started = SharingStarted.Eagerly,
-      initialValue = emptyList()
-    )
+    .stateInMarkingLoad(LOAD_HISTORY, emptyList())
 
   // 3. Reactive Game Levels Map from Room
   val gameLevels: StateFlow<Map<String, Int>> = gameProgressDao.getAllProgress()
@@ -662,7 +684,7 @@ class NeuroVidaRepository(
   private val timeTrialResultDao = database.timeTrialResultDao()
   val timeTrialResults: StateFlow<List<TimeTrialResult>> = timeTrialResultDao.getAll()
     .map { list -> list.map { it.toDomain() } }
-    .stateIn(scope = repositoryScope, started = SharingStarted.Eagerly, initialValue = emptyList())
+    .stateInMarkingLoad(LOAD_TIME_TRIAL, emptyList())
 
   /** El día de hoy como «yyyy-MM-dd» (hora local): la clave del Contrarreloj de hoy. */
   fun todayKey(): String = getTodayDateKey()
@@ -674,14 +696,21 @@ class NeuroVidaRepository(
    * Guarda una partida de Contrarreloj y devuelve lo que el final necesita (récord de antes, últimas 5, mejor de la semana). NO toca el nivel, los puntos, lo medido ni la ruta de hoy: es otra cosa que una partida de siempre (cuenta como día jugado para la racha y las farolas).
    */
   suspend fun recordTimeTrial(result: TimeTrialResult): TimeTrialStats.Outcome = withContext(Dispatchers.IO) {
-    timeTrialResultDao.insert(result.toEntity())
-    val all = timeTrialResultDao.getAllSync().map { it.toDomain() }
-    TimeTrialStats.outcome(all, result)
+    // Mismo trato que una partida (Tarea 192): una transacción, el candado de los guardados y idempotente por `id` (el del lanzamiento): la doble entrega no guarda dos veces.
+    saveLock.withLock {
+      database.withTransaction {
+        if (timeTrialResultDao.countById(result.id) == 0) timeTrialResultDao.insert(result.toEntity())
+        beforeCommitForTest?.invoke()
+        val all = timeTrialResultDao.getAllSync().map { it.toDomain() }
+        TimeTrialStats.outcome(all, result)
+      }
+    }
   }
 
   init {
     repositoryScope.launch {
       initializeDatabaseDefaults()
+      markLoaded(LOAD_SESSION)                       // el camino de hoy ya es el de la base (lo asigna `initializeDatabaseDefaults`)
       observeDailySession()
       seedAchievementsIfNeeded()
     }
@@ -843,8 +872,48 @@ class NeuroVidaRepository(
   }
 
   /** [countsForDailySession] false = no avanza el camino de hoy (juegos de la evaluación inicial). */
+  // ---------------------------------------------------------------- guardar una partida: TODO O NADA (Tarea 192)
+  //
+  // Lo que va en Room (la partida, el avance del juego, la ruta de hoy, la maestría y los desafíos de la semana) se escribe en UNA transacción, con las lecturas que calculan el nivel adentro: si algo falla, no queda nada a medias.
+  // Las preferencias y los StateFlows (el avance de Skill, los récords, las medidas, las ligas...) se escriben DESPUÉS de confirmar la transacción, así un fallo no deja las preferencias contando una partida que Room no tiene.
+  // Es IDEMPOTENTE: la fila lleva como `id` el del lanzamiento de Unity (un UUID por partida: `UnityGameHost`; sin id, uno nuevo como antes), y dentro de la transacción, si esa fila ya está, no se guarda nada más. Un candado serializa los guardados
+  // (la vuelta con el Intent y el broadcast de respaldo pueden llegar a la vez). Ver docs/guardado-de-una-partida.md.
+  private val saveLock = kotlinx.coroutines.sync.Mutex()
+
+  /** SOLO PARA LAS PRUEBAS: se corre DENTRO de la transacción, justo antes de confirmarla (un fallo aquí no debe dejar nada guardado). */
+  @androidx.annotation.VisibleForTesting
+  internal var beforeCommitForTest: (suspend () -> Unit)? = null
+
+  /** Lo que una partida deja para DESPUÉS de confirmar la transacción: lo que se escribe en preferencias y en memoria, y los números del resultado. */
+  private class SavedGame(
+    val result: GamePlayResult,
+    val skillNext: SkillState?,
+    val progressPoint: ProgressPoint?,
+    val dailySession: DailySessionState?,
+    val newClaims: Set<String>,
+    val allResults: List<GamePlayResult>,
+    val ratingsAfter: Map<String, Int>,
+    val didLevelUp: Boolean,
+    val gameRatingBefore: Int,
+    val gameRatingAfter: Int,
+    val globalBefore: Int,
+    val globalAfter: Int,
+    val modePassed: Boolean,
+    val expertUnlocked: Boolean
+  )
+
   suspend fun recordGameResult(result: GamePlayResult, countsForDailySession: Boolean = true): RecordOutcome = withContext(Dispatchers.IO) {
-    seedAchievementsIfNeeded() // antes de guardar: lo que consiga ESTA partida sí se celebra
+    saveLock.withLock {
+      seedAchievementsIfNeeded() // antes de guardar: lo que consiga ESTA partida sí se celebra
+      val saved = database.withTransaction { writeGameResult(result, countsForDailySession) }
+        ?: return@withLock RecordOutcome(didLevelUp = false, gameRatingBefore = 0, gameRatingAfter = 0, globalBefore = 0, globalAfter = 0, alreadySaved = true)
+      applySavedGame(saved)
+    }
+  }
+
+  /** DENTRO de la transacción: todo lo de Room y los números del resultado. Devuelve null si esta partida (este id) ya estaba guardada. */
+  private suspend fun writeGameResult(result: GamePlayResult, countsForDailySession: Boolean): SavedGame? {
+    if (gameResultDao.countById(result.id) > 0) return null
     // 1. Add to Room game_results table
     gameResultDao.insert(result.toEntity())
 
@@ -896,10 +965,10 @@ class NeuroVidaRepository(
     val newDdaRating = result.endRating?.let { Skill.nextRating(currentProgress.ddaRating, it, result.playMode, modePassed) }
       ?: currentProgress.ddaRating
     val expertUnlocked = modePassed && result.playMode == PlayMode.DESAFIO && result.gameId !in _skill.value.expertOpen
-    if (counted) {
-      saveSkill(_skill.value.after(result.gameId, true, modePassed && result.playMode == PlayMode.DESAFIO,
-        Skill.progress(result.gameId, newDdaRating, age), result.timestamp))
-    }
+    val skillNext = if (counted) {
+      _skill.value.after(result.gameId, true, modePassed && result.playMode == PlayMode.DESAFIO,
+        Skill.progress(result.gameId, newDdaRating, age), result.timestamp)
+    } else null
 
     // Con rating del DDA, el nivel 1-5 ES la etapa del avance (Inicio…Maestro, data/Skill.kt): una sola escala.
     // Sube solo si la partida contó; "¡Subes!" se celebra al pasar de etapa.
@@ -925,17 +994,18 @@ class NeuroVidaRepository(
     )
     gameProgressDao.insertOrUpdate(updatedProgress)
     // El avance que muestran las cartas (mismo cálculo que NeuroVidaViewModel.gameProgress), para la semana de Hoy.
-    if (result.endRating != null && counted) {
-      logProgress(result.gameId, result.timestamp, Skill.progress(result.gameId, newDdaRating, age))
+    val progressPoint = if (result.endRating != null && counted) {
+      ProgressPoint(result.gameId, result.timestamp, Skill.progress(result.gameId, newDdaRating, age))
     } else if (result.endRating == null && result.gameId in _skill.value.measured) {
-      logProgress(result.gameId, result.timestamp, (newLevel - 1) / 5f + 0.1f)
-    }
+      ProgressPoint(result.gameId, result.timestamp, (newLevel - 1) / 5f + 0.1f)
+    } else null
     val ratingsAfter = ratingsBefore + (result.gameId to newRating)
     val globalOf = { m: Map<String, Int> -> GameRegistry.allGames.sumOf { m[it.id] ?: 0 } / GameRegistry.allGames.size }
 
     // 3. Advance Daily Session in Room if game matches current queue
     val today = getTodayDateKey()
     val currentSessionEntity = dailySessionDao.getDailySessionSync(today)
+    var dailyNext: DailySessionState? = null
     if (currentSessionEntity != null && countsForDailySession) {
       val domainSession = currentSessionEntity.toDomain()
       if (domainSession.completedCount < domainSession.gameIds.size) {
@@ -945,7 +1015,7 @@ class NeuroVidaRepository(
           val updatedScores = domainSession.scores + result.score
           val updatedSession = domainSession.copy(completedCount = updatedCount, scores = updatedScores)
           dailySessionDao.insertOrUpdate(updatedSession.toEntity())
-          _dailySession.value = updatedSession
+          dailyNext = updatedSession
         }
       }
     }
@@ -964,22 +1034,39 @@ class NeuroVidaRepository(
     // partida y, si no se había reclamado ya, otorga el bono una sola vez.
     val weekKey = getWeekKey()
     val progressNow = computeWeeklyProgress(allResults, _claimedChallenges.value, weekKey)
+    val newClaims = mutableSetOf<String>()
     progressNow.filter { it.isComplete && !it.claimed }.forEach { wp ->
       val claimId = "$weekKey|${wp.def.key}"
       claimedWeeklyChallengeDao.insert(ClaimedWeeklyChallengeEntity(claimId))
       DomainType.values().forEach { d -> awardDomainXp(d, WeeklyChallengeRegistry.XP_REWARD_PER_DOMAIN) }
-      _claimedChallenges.value = _claimedChallenges.value + claimId
+      newClaims += claimId
     }
 
+    beforeCommitForTest?.invoke()
+    return SavedGame(
+      result = result, skillNext = skillNext, progressPoint = progressPoint, dailySession = dailyNext, newClaims = newClaims, allResults = allResults, ratingsAfter = ratingsAfter,
+      didLevelUp = didLevelUp, gameRatingBefore = currentProgress.eloRating, gameRatingAfter = newRating, globalBefore = globalOf(ratingsBefore), globalAfter = globalOf(ratingsAfter),
+      modePassed = modePassed, expertUnlocked = expertUnlocked
+    )
+  }
+
+  /** DESPUÉS de confirmar la transacción: las preferencias y la memoria (en el mismo orden de siempre) y el resultado. */
+  private fun applySavedGame(saved: SavedGame): RecordOutcome {
+    val result = saved.result
+    saved.skillNext?.let { saveSkill(it) }
+    saved.progressPoint?.let { logProgress(it.gameId, it.time, it.progress) }
+    saved.dailySession?.let { _dailySession.value = it }
+    if (saved.newClaims.isNotEmpty()) _claimedChallenges.value = _claimedChallenges.value + saved.newClaims
+
     val outcome = RecordOutcome(
-      didLevelUp = didLevelUp,
-      gameRatingBefore = currentProgress.eloRating,
-      gameRatingAfter = newRating,
-      globalBefore = globalOf(ratingsBefore),
-      globalAfter = globalOf(ratingsAfter),
-      newAchievements = unlockNewAchievements(computeAchievementStats(allResults, ratingsAfter), result.timestamp),
-      modePassed = modePassed,
-      expertUnlocked = expertUnlocked
+      didLevelUp = saved.didLevelUp,
+      gameRatingBefore = saved.gameRatingBefore,
+      gameRatingAfter = saved.gameRatingAfter,
+      globalBefore = saved.globalBefore,
+      globalAfter = saved.globalAfter,
+      newAchievements = unlockNewAchievements(computeAchievementStats(saved.allResults, saved.ratingsAfter), result.timestamp),
+      modePassed = saved.modePassed,
+      expertUnlocked = saved.expertUnlocked
     )
     recordLeagueEvents(outcome, result.gameId, result.timestamp)
     // Las marcas se comparan solo entre partidas a tu medida (docs/dificultad-y-avance.md).
@@ -1006,7 +1093,7 @@ class NeuroVidaRepository(
     recordAcoplamiento(result)
     // Las cúpulas de Aterrizaje también, en cualquier modo.
     recordAterrizaje(result)
-    outcome
+    return outcome
   }
 
   // Cuánto sube o baja el ELO de un juego tras una partida. A mayor tier, más

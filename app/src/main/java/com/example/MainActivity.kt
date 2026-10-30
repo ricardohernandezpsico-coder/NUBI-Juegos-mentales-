@@ -62,13 +62,17 @@ class MainActivity : ComponentActivity() {
         LocalAppLanguage provides userSettings.language
       ) {
         NeuroVidaTheme(darkTheme = darkTheme) {
-          // Primera experiencia («Primer vuelo con Nubi», ver FirstFlightHost): mientras no se resuelva `ageBand`, o haya un
-          // recorrido en curso (el inicio retomado tras un cierre de Android, o «Hacer la evaluación»), no se monta la app normal.
-          val flight by viewModel.flight.collectAsState()
-          if (userSettings.ageBand == null || flight != null) {
-            com.example.ui.screens.FirstFlightHost(viewModel)
-          } else {
-            NeuroVidaApp(viewModel = viewModel)
+          // El cielo sale en el primer cuadro, el contenido se compone invisible con el perfil y entra con un fundido cuando la base ya respondió: sin racha ni semana de una persona nueva por un instante (Tarea 192, parte 2; ver StartupGate).
+          val startupStage by viewModel.startupStage.collectAsState()
+          StartupGate(stage = startupStage) {
+            // Primera experiencia («Primer vuelo con Nubi», ver FirstFlightHost): mientras no se resuelva `ageBand`, o haya un
+            // recorrido en curso (el inicio retomado tras un cierre de Android, o «Hacer la evaluación»), no se monta la app normal.
+            val flight by viewModel.flight.collectAsState()
+            if (userSettings.ageBand == null || flight != null) {
+              com.example.ui.screens.FirstFlightHost(viewModel)
+            } else {
+              NeuroVidaApp(viewModel = viewModel)
+            }
           }
         }
       }
