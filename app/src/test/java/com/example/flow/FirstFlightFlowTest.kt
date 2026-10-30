@@ -160,8 +160,9 @@ class FirstFlightFlowTest {
     TestSupport.awaitUntil { savedResults() == 4 }
     // El día del Primer vuelo no son 7 juegos: el camino de hoy queda CUMPLIDO con el vuelo, sin puntajes ni partidas duplicadas.
     TestSupport.awaitUntil(message = "El camino de hoy no quedó cumplido con el Primer vuelo") { vm.dailySession.value.completedCount == vm.dailySession.value.gameIds.size }
-    assertEquals(3, vm.dailySession.value.gameIds.size)
+    assertEquals("Tarea 193: la tarjeta de ese día muestra los 4 juegos que de verdad se jugaron en el vuelo, en su orden (no la cola de tres que armó DailyPath)", com.example.data.BaselinePlan.steps.map { it.gameId }, vm.dailySession.value.gameIds)
     assertTrue("un camino cumplido sin puntajes es el del Primer vuelo", vm.dailySession.value.scores.isEmpty())
+    assertTrue("y sigue siendo el día del vuelo", vm.dailySession.value.isFlightDay)
     assertEquals("no se duplican partidas", 4, savedResults())
     // y con eso el día cuenta para la racha
     assertEquals(1, vm.currentStreak.value)

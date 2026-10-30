@@ -143,6 +143,9 @@ class HoyTarjetaTest {
    * Cuánto se pasa Hoy de la barra a 393 × 873 (dp; Tarea 180: dos botones a todo el ancho y el título «Modos de juego» sumaron alto; la regla de la tarea es MEDIR e informar, no achicar). Con letra 1,0 solo se pasa «marca nueva con la ruta a medias» (+16); con 1,3, los estados con la ruta a medias (+2) y la marca nueva (+13); «Todos los juegos» mide 48 dp (el mínimo de toque).
    * Lo que no está aquí tiene que caber (la ruta completa y el Contrarreloj jugado, los de todos los días, caben con 1,0 y con 1,3).
    */
+  /** Lo máximo que se pasa de la barra el día del vuelo con 4 filas y letra 1,3 (dp; medido el 30-oct, Tarea 193: 90,5; con 3 filas, 29,1; con 2 y con 1 caben). */
+  private val FLIGHT_DAY_13_MAX_OVER = 91f
+
   private val scrollsAt393 = mapOf(1f to mapOf("marca nueva con la ruta a medias" to 16f), 1.3f to mapOf("primera hora" to 2f, "a mitad de ruta" to 2f, "marca nueva" to 13f, "marca nueva con la ruta a medias" to 85f, "partida en pausa" to 65f))
 
   /** Hoy se ve entero sin deslizar, salvo lo que dice [tolerance] (lo medido): lo último, «Todos los juegos» (o la invitación al punto de partida, si toca), termina antes de la barra (a 163 dp del borde de abajo). */
@@ -802,7 +805,7 @@ class HoyTarjetaTest {
   fun el_primer_vuelo_no_repite_la_frase_de_manana() {
     show(ui(completed = 3, flightDay = true))
     composeTestRule.onAllNodes(hasText("Mañana te espera una ruta nueva.")).assertCountEquals(0)
-    composeTestRule.onNodeWithText("Tu primer vuelo fue tu ruta de hoy. Mañana empieza tu ruta.").assertExists()
+    composeTestRule.onNodeWithText("Tu primer vuelo fue tu ruta de hoy.").assertExists()
   }
 
   @Test
@@ -820,7 +823,7 @@ class HoyTarjetaTest {
   fun si_el_camino_fue_el_primer_vuelo_Hoy_lo_dice_y_no_hay_boton_de_jugar() {
     show(ui(completed = 3, flightDay = true))
     composeTestRule.onNodeWithTag("home_flight_day").assertIsDisplayed()
-    composeTestRule.onNodeWithText("Tu primer vuelo fue tu ruta de hoy. Mañana empieza tu ruta.").assertExists()
+    composeTestRule.onNodeWithText("Tu primer vuelo fue tu ruta de hoy.").assertExists()
   }
 
   @Test
@@ -880,4 +883,56 @@ class HoyTarjetaTest {
   @Test fun sin_luceros_bajo_el_texto_con_ruta_completa_360() = assertNoLucerosUnderTexts(ui(completed = 3, hasBaseline = false), 360, 780)
   @Test fun sin_luceros_bajo_el_texto_en_el_emulador_411() = assertNoLucerosUnderTexts(ui(hasBaseline = false), 411, 914)
   @Test fun sin_luceros_bajo_el_texto_en_el_emulador_411_con_partida_en_pausa() = assertNoLucerosUnderTexts(ui(paused = "Carga exacta", hasBaseline = false), 411, 914)
+
+  /**
+   * Tarea 193 (Ricardo, 30-oct): el día del Primer vuelo la tarjeta muestra con «Hecho» los juegos que de verdad se jugaron en el vuelo: hasta CUATRO filas (la ruta normal trae tres). Con letra 1,0 y 1,3 Hoy cabe entero a 393 × 873 con las cuatro: la tarjeta crece una fila y las demás piezas siguen donde cabían.
+   * El encabezado usa la lógica de siempre («4 de 4 · ruta completa»).
+   */
+  private val flightFour = listOf("secuencia", "freno", "aterrizaje", "meteoros")
+
+  /** Cuánto se pasa «Todos los juegos» de donde empieza la barra (dp; negativo = sobra), con la tarjeta del día del vuelo de [ids] y la letra [fontScale]. */
+  private fun flightDayOverflow(ids: List<String>, fontScale: Float): Float {
+    show(ui(completed = ids.size, ids = ids, flightDay = true, timeTrial = stroop), fontScale = fontScale)
+    assertNoWordSplit()
+    composeTestRule.onNodeWithText("${ids.size} de ${ids.size} · ruta completa").assertExists()
+    composeTestRule.onNodeWithTag("home_flight_day").assertExists()
+    for (tag in listOf("home_stop_${ids.size}", "btn_timetrial", "btn_all_games")) composeTestRule.onNodeWithTag(tag).assertExists()
+    val viewportBottom = dp((873 - 163) * composeTestRule.density.density)
+    val over = unclippedBottomDp("btn_all_games") - 6f - viewportBottom
+    println("HOY día del vuelo, %d filas, letra %.1f: «Todos los juegos» termina %.1f dp %s de donde empieza la barra".format(ids.size, fontScale, Math.abs(over), if (over > 0) "DESPUÉS" else "ANTES"))
+    return over
+  }
+
+  /**
+   * Tarea 193 (decisión de Ricardo y de Opus, 30-oct): el día del Primer vuelo la tarjeta muestra con «Hecho» los juegos que de verdad se jugaron: hasta CUATRO filas (la ruta normal trae tres), con la línea en UNA frase («Tu primer vuelo fue tu ruta de hoy.»). Con letra 1,0 Hoy cabe entero a 393 × 873 con las
+   * cuatro (y con 1, 2 y 3). El encabezado usa la lógica de siempre («4 de 4 · ruta completa»).
+   */
+  @Test
+  fun el_dia_del_vuelo_con_4_filas_cabe_sin_deslizar_con_letra_1_0() {
+    for (n in 1..4) {
+      val over = flightDayOverflow(flightFour.take(n), 1f)
+      assertTrue("el día del vuelo con $n fila(s) a 393 × 873 y letra 1,0: «Todos los juegos» termina %.1f dp DESPUÉS de donde empieza la barra: Hoy se desliza".format(over), over <= 1f)
+      for (tag in listOf("home_greeting", "home_card", "home_stop_$n", "btn_timetrial", "btn_all_games", "home_flight_day")) composeTestRule.onNodeWithTag(tag).assertIsDisplayed()
+    }
+  }
+
+  /**
+   * Con letra 1,3 el día del vuelo es el único estado en que Hoy se desliza (la tarjeta de ese día suma la línea del vuelo y, con 4 juegos, una fila más): se MIDE y queda documentado. Todo se alcanza deslizando y nada se corta ni se parte; la guía de Nubi trae cada elemento a la vista antes de
+   * iluminarlo. En los estados de siempre sigue valiendo «cabe entero» (`hoy_a_393_por_873_con_letra_1_3_...`).
+   */
+  @Test
+  fun el_dia_del_vuelo_con_letra_1_3_se_mide_y_puede_deslizar() {
+    val medidas = (1..4).associateWith { n -> flightDayOverflow(flightFour.take(n), 1.3f) }
+    println("HOY día del vuelo con letra 1,3 (dp que se pasa de la barra, por número de filas): $medidas")
+    assertTrue("con 4 filas y letra 1,3 se pasa como mucho %.0f dp (lo medido el 30-oct: ver la salida de esta prueba)".format(FLIGHT_DAY_13_MAX_OVER), medidas.getValue(4) <= FLIGHT_DAY_13_MAX_OVER)
+  }
+
+  @Test
+  fun la_tarjeta_muestra_hasta_cuatro_paradas_y_en_el_orden_que_se_le_da() {
+    val four = listOf("secuencia", "freno", "aterrizaje", "meteoros")
+    val stops = homeStops(four, 4, AppLanguage.SPANISH)
+    assertEquals(four, stops.map { it.gameId })
+    assertTrue("las cuatro con «Hecho»", stops.all { it.state == com.example.ui.screens.StopState.DONE })
+    assertEquals(4, homeStops(four + "bodega", 0, AppLanguage.SPANISH).size)
+  }
 }

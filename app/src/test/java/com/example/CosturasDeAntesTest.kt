@@ -170,7 +170,7 @@ class CosturasDeAntesTest {
     for (path in listOf("ui/screens/FirstFlightScreen.kt", "ui/screens/HomeScreen.kt"))
       assertTrue("«primer vuelo» va en minúscula en $path", !source(path).contains("Tu Primer vuelo fue"))
     assertTrue(source("ui/screens/FirstFlightScreen.kt").contains("\"Tu primer vuelo fue tu ruta de hoy\""))
-    assertTrue(source("ui/screens/HomeScreen.kt").contains("\"Tu primer vuelo fue tu ruta de hoy. Mañana empieza tu ruta.\""))
+    assertTrue(source("ui/screens/HomeScreen.kt").contains("\"Tu primer vuelo fue tu ruta de hoy.\""))
   }
 
   @Test

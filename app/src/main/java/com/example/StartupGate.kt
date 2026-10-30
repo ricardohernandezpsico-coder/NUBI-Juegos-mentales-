@@ -11,11 +11,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import com.example.ui.components.BoardBackground
 import com.example.ui.components.NubiMotion
+import com.example.ui.components.hiddenUntil
 import com.example.ui.components.rememberReduceMotion
 import com.example.viewmodel.StartupStage
 import kotlinx.coroutines.delay
@@ -48,10 +46,3 @@ internal fun StartupGate(stage: StartupStage, capMs: Long = STARTUP_CAP_MS, cont
     if (compose) Box(Modifier.fillMaxSize().hiddenUntil(visible).graphicsLayer { alpha = fade }) { content() }
   }
 }
-
-/** Mientras [visible] sea falso: sin lector de pantalla y sin que nada reciba el toque (el contenido todavía no se ve). */
-private fun Modifier.hiddenUntil(visible: Boolean): Modifier =
-  if (visible) this
-  else clearAndSetSemantics { }.pointerInput(Unit) {
-    awaitPointerEventScope { while (true) awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() } }
-  }

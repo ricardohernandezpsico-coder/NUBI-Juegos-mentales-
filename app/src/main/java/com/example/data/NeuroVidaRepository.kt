@@ -461,6 +461,15 @@ class NeuroVidaRepository(
     _retoChoices.value = _retoChoices.value + (gameId to timed)
     profilePrefs.edit().putBoolean(RetoChoice.key(gameId), timed).apply()
   }
+  // La guía de Nubi en la primera entrada a Hoy (Tarea 193, `HoyGuide`): la marca «ya la vio» (`hoy_guide_seen` en `profile_extra`: va en el respaldo, así un teléfono restaurado no la repite, y «Borrar datos» la limpia). Se escribe al TERMINAR la guía («Listo» o «Saltar la guía»), no al empezar.
+  private val _hoyGuideSeen = MutableStateFlow(profilePrefs.getBoolean("hoy_guide_seen", false))
+  val hoyGuideSeen: StateFlow<Boolean> = _hoyGuideSeen.asStateFlow()
+
+  fun markHoyGuideSeen() {
+    _hoyGuideSeen.value = true
+    profilePrefs.edit().putBoolean("hoy_guide_seen", true).apply()
+  }
+
   private val _education = MutableStateFlow(
     profilePrefs.getString("education", null)?.let { n -> Education.values().firstOrNull { it.name == n } }
   )
@@ -859,14 +868,19 @@ class NeuroVidaRepository(
 
   /**
    * El día que se completa el Primer vuelo, el camino de ese día queda CUMPLIDO con el vuelo: cuenta como día jugado (la racha, la meta semanal y los desafíos de días salen de las partidas del vuelo, que ya se guardaron) sin sumar
-   * puntos ni partidas. Un camino cumplido SIN puntajes es, justamente, el del Primer vuelo (Hoy lo dice). Si el camino de hoy ya se completó jugándolo, no se toca.
+   * puntos ni partidas. Un camino cumplido SIN puntajes es, justamente, el del Primer vuelo (Hoy lo dice: `DailySessionState.isFlightDay`). Si el camino de hoy ya se completó jugándolo, no se toca.
+   *
+   * Tarea 193 (decisión de Ricardo, 30-oct): ese día la tarjeta muestra con «Hecho» los juegos que DE VERDAD se jugaron en el vuelo ([playedGameIds], en el orden del vuelo), no la cola que había armado `pickSessionQueue` (que podía traer, por ejemplo, Bodega de carga
+   * a quien nunca la jugó). Con «Terminar después» hubo juegos sin jugar: esos no aparecen. Se guarda en Room (sobrevive a cerrar la app). Si NO se jugó ninguno, el día no se da por cumplido: la ruta de hoy queda como estaba para jugarla.
    */
-  suspend fun completeTodayWithFlight() = withContext(Dispatchers.IO) {
+  suspend fun completeTodayWithFlight(playedGameIds: List<String>) = withContext(Dispatchers.IO) {
+    if (playedGameIds.isEmpty()) return@withContext
     val today = getTodayDateKey()
     val current = dailySessionDao.getDailySessionSync(today)?.toDomain()
-      ?: DailySessionState(dateKey = today, gameIds = pickSessionQueue(gameResultDao.getAllResultsSync().map { it.toDomain() }), completedCount = 0)
-    if (current.scores.isNotEmpty()) return@withContext        // un camino ya jugado (en parte o completo) no se toca
-    val entity = DailySessionEntity(dateKey = today, gameIdsRaw = current.gameIds.joinToString(","), completedCount = current.gameIds.size, scoresRaw = "")
+    if (current != null && current.scores.isNotEmpty()) return@withContext        // un camino ya jugado (en parte o completo) no se toca
+    val ids = playedGameIds.distinct().filter { GameRegistry.getById(it) != null }
+    if (ids.isEmpty()) return@withContext
+    val entity = DailySessionEntity(dateKey = today, gameIdsRaw = ids.joinToString(","), completedCount = ids.size, scoresRaw = "")
     dailySessionDao.insertOrUpdate(entity)
     _dailySession.value = entity.toDomain()
   }
@@ -1172,6 +1186,7 @@ class NeuroVidaRepository(
     progressPrefs.edit().clear().apply()
     _progressLog.value = emptyList()
     profilePrefs.edit().clear().apply()
+    _hoyGuideSeen.value = false                                        // «Borrar datos» limpia la marca de la guía (Tarea 193): tras un nuevo Primer vuelo, vuelve a salir
     _retoChoices.value = emptyMap()
     _education.value = null
     _goals.value = emptySet()

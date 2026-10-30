@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import com.example.bridge.NativeReceiver
 import com.example.bridge.UnityGameLauncher
 import com.example.games.*
+import com.example.ui.components.hiddenUntil
 import com.example.ui.components.tabFade
 import com.example.ui.i18n.LocalAppLanguage
 import com.example.ui.screens.HomeScreen
@@ -143,7 +144,11 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   val pagerState = tabPager.state
   // Tras la primera celebración de una partida, las siguientes (más logros) aparecen enseguida.
   var celebratedOne by remember(lastResult) { mutableStateOf(false) }
+  // La guía de Nubi en la primera entrada a Hoy (Tarea 193, `HoyGuide`): dónde están los elementos que ilumina (los publican Hoy y la barra) y en qué paso va (vive en el ViewModel).
+  val guideTargets = remember { com.example.ui.components.GuideTargets() }
+  val guideStep by viewModel.guideStep.collectAsState()
 
+  androidx.compose.runtime.CompositionLocalProvider(com.example.ui.components.LocalGuideTargets provides guideTargets) {
   Box(modifier = Modifier.fillMaxSize()) {
     // El fondo de toda la app: el tablero azul marino de la isla (Tarea 82). Una sola capa detrás del pager: al deslizar entre Hoy, Avance y Tú no salta.
     // La lámina y los luceros, fijos detrás de las tres pestañas (Tarea 87: sin fundido por pestaña).
@@ -151,10 +156,14 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
     // La barra de pestañas es una capa FIJA encima de las páginas (Tarea 123): no es el `bottomBar` de un Scaffold, así que NO se encoge cuando se abre una lámina o una ventana (que la tapan) y las páginas no saltan; tampoco hay
     // desvanecido de página (`PAGE_BOTTOM_FADE` se quitó): cada pestaña deja la franja de la barra libre con `LocalBarInset` y su contenido termina nítido sobre ella. La barra tiene su propio inset (las barras del sistema).
     val barVisible = activeGame == null && lastResult == null && promotion == null && achievementQueue.isEmpty() && sessionSummary == null && topPanel == null && allGames == null
+    // La guía solo vive sobre Hoy a la vista, sin nada encima y sin que el dedo esté pasando de pestaña (con una ventana abierta, `swipeLock` > 0).
+    val hoyFree = barVisible && swipeLock.intValue == 0 && pagerState.currentPage == AppTab.HOY.ordinal && !pagerState.isScrollInProgress
+    val guideOpen = guideStep != null && hoyFree
     val density = androidx.compose.ui.platform.LocalDensity.current
     // Lo que mide la barra: se recuerda aunque se esconda (la página no cambia de tamaño al abrir o cerrar una ventana).
     var barHeightPx by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableIntStateOf(0) }
-    Box(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
+    // Con la guía abierta, Hoy y la barra quedan fuera del lector de pantalla y sin toques (el velo las tapa): `hiddenUntil`.
+    Box(modifier = Modifier.fillMaxSize().safeDrawingPadding().hiddenUntil(!guideOpen)) {
       androidx.compose.runtime.CompositionLocalProvider(
         com.example.ui.components.LocalBarInset provides with(density) { barHeightPx.toDp() },
         com.example.ui.components.LocalHapticsEnabled provides userSettings.hapticsEnabled      // «Vibración y respuesta háptica» de Ajustes: el tic del kit (KitHaptics)
@@ -312,5 +321,8 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
         }
       }
     }
+    // La guía de Nubi: encima de todo, también de la barra (el paso 3 la ilumina).
+    com.example.ui.components.HoyGuideHost(viewModel = viewModel, targets = guideTargets, somethingAbove = !hoyFree)
+  }
   }
 }

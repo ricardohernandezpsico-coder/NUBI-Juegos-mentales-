@@ -88,6 +88,37 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       _startupStage.value = StartupStage.READY
     }
   }
+
+  // ---------------------------------------------------------------- la guía de Nubi en la primera entrada a Hoy (Tarea 193, `HoyGuide`)
+
+  /** La marca «ya la vio» (`hoy_guide_seen`): se escribe al TERMINAR la guía, no al empezar. */
+  val hoyGuideSeen: StateFlow<Boolean> = repository.hoyGuideSeen
+
+  /** En qué paso va la guía (null = cerrada). Vive acá y no en la pantalla para que sobreviva a que se recree la Activity (p. ej. el cambio de tema del sistema); si Android cierra la app a mitad, vuelve a salir desde el paso 1 ese mismo día. */
+  private val _guideStep = MutableStateFlow<com.example.data.GuideStep?>(null)
+  val guideStep: StateFlow<com.example.data.GuideStep?> = _guideStep.asStateFlow()
+
+  /** Sale la guía desde el paso 1 (la pantalla ya decidió que toca: `HoyGuide.shouldShow` y el retraso de 600 ms). No hace nada si ya está abierta o ya se vio. */
+  fun startGuide() {
+    if (_guideStep.value == null && !repository.hoyGuideSeen.value) _guideStep.value = com.example.data.HoyGuide.steps.first()
+  }
+
+  /** «Seguir» o tocar lo iluminado: el paso que sigue; después del último («Listo») la guía termina y queda marcada. Nunca abre lo iluminado. */
+  fun guideNext() {
+    val step = _guideStep.value ?: return
+    val next = com.example.data.HoyGuide.next(step)
+    if (next == null) finishGuide() else _guideStep.value = next
+  }
+
+  /** «Saltar la guía» y Atrás de Android: cierra y la marca como vista, desde cualquier paso. */
+  fun guideSkip() {
+    if (_guideStep.value != null) finishGuide()
+  }
+
+  private fun finishGuide() {
+    _guideStep.value = null
+    repository.markHoyGuideSeen()
+  }
   val gameHistory = repository.gameHistory
   val gameLevels = repository.gameLevels
   val gameIntensity = repository.gameIntensity
@@ -120,8 +151,9 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   private val _flight = MutableStateFlow<com.example.data.FlightState?>(com.example.data.FlightStore.load(application))
   val flight: StateFlow<com.example.data.FlightState?> = _flight.asStateFlow()
 
-  /** Logros conseguidos durante los juegos del inicio: se celebran al terminar el recorrido, no entre juego y juego. */
-  private var flightAchievements: List<String> = emptyList()
+  /** Logros conseguidos durante los juegos del inicio: al terminar el Primer vuelo completo se celebra solo «Primer paso» (Tarea 193); los demás se ganan igual y quedan en Tú › Medallas. */
+  @androidx.annotation.VisibleForTesting
+  internal var flightAchievements: List<String> = emptyList()
 
   /** El punto de partida se está guardando (evita que un doble toque en «Continuar» lo aplique dos veces). */
   private var flightApplying = false
@@ -281,12 +313,19 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     // El día que se completa el Primer vuelo (el recorrido entero, no «repetir la evaluación»), ese día queda cumplido: el camino de hoy se da por hecho con el vuelo (ver repository.completeTodayWithFlight).
     val flight = _flight.value
     val completesTheDay = flight != null && flight.mode == com.example.data.FlightMode.FULL && flight.applied
-    if (completesTheDay) viewModelScope.launch { repository.completeTodayWithFlight() }
+    // La tarjeta de ese día muestra los juegos que de verdad se jugaron en el vuelo, en el orden del vuelo (Tarea 193): los que se dejaron para después («Terminar después») no aparecen.
+    if (completesTheDay) {
+      val played = com.example.data.BaselinePlan.steps.map { it.gameId }.filter { flight != null && it in flight.measured }
+      viewModelScope.launch { repository.completeTodayWithFlight(played) }
+    }
     setFlight(null)
     // También se cierra el panel de arriba (Ajustes / Perfil): si el inicio se abrió desde ahí (Debug «Repetir el inicio»), si no seguiría tapando Hoy.
     _topPanel.value = null
     setTab(AppTab.HOY)
-    if (flightAchievements.isNotEmpty()) _achievementQueue.value = _achievementQueue.value + flightAchievements
+    // Tarea 193 (Ricardo, 30-oct): en el Primer vuelo COMPLETO se celebra SOLO «Primer paso»; «Día completo» y «Mente completa» se ganan igual (ya están guardadas) y quedan en Tú › Medallas. Si «Primer paso» no está entre las nuevas, no se celebra ninguna.
+    // «Repetir la evaluación» (solo juegos) queda como estaba.
+    val celebrate = if (flight?.mode == com.example.data.FlightMode.FULL) flightAchievements.filter { it == FIRST_FLIGHT_MEDAL } else flightAchievements
+    if (celebrate.isNotEmpty()) _achievementQueue.value = _achievementQueue.value + celebrate
     flightAchievements = emptyList()
   }
 
@@ -1025,6 +1064,9 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     }
   }
 }
+
+/** La única medalla que se celebra al terminar el Primer vuelo completo (Tarea 193): «Primer paso». */
+private const val FIRST_FLIGHT_MEDAL = "primer_paso"
 
 /** La carga de los datos al arrancar, en orden (ver `NeuroVidaViewModel.startupStage`). */
 enum class StartupStage { LOADING, PROFILE, READY }

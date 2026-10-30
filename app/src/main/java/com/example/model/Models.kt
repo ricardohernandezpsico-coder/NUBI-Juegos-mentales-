@@ -424,6 +424,9 @@ data class DailySessionState(
 ) {
   /** El juego que sigue en la ruta de hoy (`gameIds[completedCount]`); null cuando ya se jugaron los de la ruta. Lo usan «Continuar» (`continueDailyFlow`) y el botón «Siguiente: …» del final de partida (Tarea 146). */
   val nextGameId: String? get() = gameIds.getOrNull(completedCount)
+
+  /** El camino de hoy quedó cumplido SIN jugarlo: es el día del Primer vuelo (`completeTodayWithFlight`: la ruta se da por hecha con los juegos del vuelo, sin puntajes). Hoy lo dice con «Tu primer vuelo fue tu ruta de hoy» y de él nace la guía de Nubi (`HoyGuide`). Solo es verdadero ese día. */
+  val isFlightDay: Boolean get() = gameIds.isNotEmpty() && completedCount >= gameIds.size && scores.isEmpty()
 }
 
 

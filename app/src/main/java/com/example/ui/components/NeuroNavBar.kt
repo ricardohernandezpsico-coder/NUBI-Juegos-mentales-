@@ -54,6 +54,7 @@ fun NeuroNavBar(current: AppTab, onSelect: (AppTab) -> Unit, modifier: Modifier 
   Row(
     modifier
       .fillMaxWidth()
+      .guideTarget(GuideTarget.TAB_BAR)                       // la guía de Nubi en Hoy (Tarea 193) ilumina Avance y Tú: sus dos tercios de la derecha
       .testTag("bottom_nav_bar")
       .background(BarTone)
       .drawBehind { drawRect(EdgeTone, size = Size(size.width, EDGE_DP.dp.toPx())) }

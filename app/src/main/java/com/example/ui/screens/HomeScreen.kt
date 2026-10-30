@@ -52,6 +52,8 @@ import com.example.ui.components.AreaSquares
 import com.example.ui.components.ClayClockIcon
 import com.example.ui.components.GameEmblem
 import com.example.ui.components.Glyph
+import com.example.ui.components.GuideTarget
+import com.example.ui.components.guideTarget
 import com.example.ui.components.KitButton
 import com.example.ui.components.KitGlyph
 import com.example.ui.components.NubiClay
@@ -113,7 +115,7 @@ fun HomeScreen(
     lamps = Week.lampsFor(activity, clock),
     stops = homeStops(dailySession.gameIds, completed, lang),
     pausedTitle = pausedGameId?.let { GameRegistry.getById(it) }?.let { getGameTitle(it.id, lang, it.title) },
-    flightDay = dailySession.gameIds.isNotEmpty() && completed >= dailySession.gameIds.size && dailySession.scores.isEmpty(),
+    flightDay = dailySession.isFlightDay,
     hasBaseline = baseline != null,
     baselineInvite = com.example.data.BaselinePlan.showHomeInvite(baseline != null, history.size, history.minOfOrNull { it.timestamp }, clock),
     timeTrial = timeTrialOf(timeTrialResults, viewModel.todayKey(), lang)
@@ -163,6 +165,9 @@ internal data class HomeUi(
 
 internal enum class StopState { DONE, NEXT, LATER }
 
+/** Lo más que muestra la tarjeta: la ruta normal trae 3 juegos y el día del Primer vuelo, hasta los 4 del vuelo (Tarea 193). */
+internal const val MAX_STOPS = 4
+
 /**
  * El Contrarreloj de hoy tal como lo muestra Hoy: el juego del día (con su nombre visible), cómo va (pendiente, jugado sin marca nueva —«otra vez»— o con marca nueva), la mejor marca de HOY y el récord de la persona en ese juego (los dos null si no hay).
  */
@@ -182,9 +187,9 @@ internal fun timeTrialOf(results: List<com.example.data.TimeTrialResult>, dateKe
 /** Una parada del camino de hoy: el juego, su lugar en la isla (el de su área) y si ya se hizo, es la que sigue o viene después. */
 internal data class HomeStop(val gameId: String, val title: String, val area: String, val place: String, val state: StopState)
 
-/** Las tres paradas de hoy en orden: las [completed] primeras están hechas, la siguiente es «la que sigue». */
+/** Las paradas de hoy en orden (tres juegos; cuatro el día del Primer vuelo, que muestra los que se jugaron en el vuelo): las [completed] primeras están hechas, la siguiente es «la que sigue». */
 internal fun homeStops(gameIds: List<String>, completed: Int, lang: com.example.model.AppLanguage): List<HomeStop> =
-  gameIds.take(3).mapIndexedNotNull { i, id ->
+  gameIds.take(MAX_STOPS).mapIndexedNotNull { i, id ->
     GameRegistry.getById(id)?.let { def ->
       HomeStop(
         gameId = id, title = getGameTitle(id, lang, def.title), area = def.domain.name, place = IslaLugar.nameOfArea(def.domain.name).orEmpty(),
@@ -382,7 +387,7 @@ internal const val ALL_GAMES_LABEL = "Todos los juegos"
 /** Lo que Hoy dice dentro de la tarjeta, bajo el botón, cuando hay algo que decir: la partida en pausa o el Primer vuelo. (Con la ruta completa la tarjeta ya no dice nada: el «Mañana…» pasó al bloque del Desafío, [HoyBelow].) */
 internal fun captionLine(ui: HomeUi): String? = when {
   ui.pausedTitle != null -> "Tienes una partida en pausa: ${ui.pausedTitle}."
-  ui.flightDay -> "Tu primer vuelo fue tu ruta de hoy. Mañana empieza tu ruta."
+  ui.flightDay -> "Tu primer vuelo fue tu ruta de hoy."                    // UNA frase (Tarea 193): «Mañana empieza tu ruta.» ya lo dijo el cierre del vuelo, y la línea va igual con 1, 2, 3 o 4 filas
   else -> null
 }
 
@@ -434,7 +439,7 @@ private fun TimeTrialButton(t: HomeTimeTrial, sun: Boolean, again: Boolean, onCl
   KitButton(
     text = if (again) TIME_TRIAL_AGAIN else TIME_TRIAL_BUTTON_LABEL, onClick = onClick, color = color, leading = { ClayClockIcon() }, fontSize = 18.sp, minHeight = 64.dp,
     secondLine = timeTrialSecondLine(t), secondLineSize = 16.sp,
-    modifier = modifier.semantics(mergeDescendants = true) { contentDescription = if (again) "$TIME_TRIAL_AGAIN, $TIME_TRIAL_LABEL, ${t.title}" else timeTrialDescription(t) }.testTag("btn_timetrial")
+    modifier = modifier.semantics(mergeDescendants = true) { contentDescription = if (again) "$TIME_TRIAL_AGAIN, $TIME_TRIAL_LABEL, ${t.title}" else timeTrialDescription(t) }.testTag("btn_timetrial").guideTarget(GuideTarget.TIME_TRIAL)
   )
 }
 
@@ -478,7 +483,7 @@ private fun AllGamesButton(onAllGames: () -> Unit, modifier: Modifier = Modifier
   KitButton(
     text = ALL_GAMES_LABEL, onClick = onAllGames, color = SlabColor.CREAM, fontSize = 17.sp, minHeight = 48.dp,
     leading = { AreaSquares(size = 28.dp) },
-    modifier = modifier.testTag("btn_all_games")
+    modifier = modifier.testTag("btn_all_games").guideTarget(GuideTarget.ALL_GAMES)
   )
 }
 
