@@ -236,4 +236,37 @@ class TimeTrialPaceTest {
     assertEquals("y los errores", g.errors, p.halves.sumOf { it.errors })
     assertNotNull(p.result.trials)
   }
+
+  // ------------------------------------------------------------------ la losa «Tu ritmo en la última partida» (Tarea 201)
+
+  @Test
+  fun `los textos de la losa son los de la lamina de Fable`() {
+    assertEquals("Tu ritmo en la última partida", TimeTrialMarks.PACE_TITLE)
+    assertEquals("Tu ritmo aparece desde tu próxima partida del Contrarreloj.", TimeTrialMarks.PACE_WAIT)
+    assertEquals("Barras lila: aciertos. Barras coral: errores.", TimeTrialMarks.PACE_LEGEND)
+    assertEquals("un rótulo por medio minuto, sin abreviaturas (la regla «sin palabras sueltas» no deja «s» por «segundos»)", listOf("0 a 30", "30 a 60", "60 a 90", "90 a 120"), TimeTrialMarks.PACE_AXIS)
+    assertEquals("y la unidad, escrita completa, una sola vez", "segundos", TimeTrialMarks.PACE_AXIS_UNIT)
+    assertEquals(TimeTrialMarks.HALF_MINUTES, TimeTrialMarks.PACE_AXIS.size)
+  }
+
+  @Test
+  fun `el lector de pantalla dice cada medio minuto con sus unidades`() {
+    val p = paceOf(half(0, 11), half(1, 14), half(2, 12, listOf(4)), half(3, 9, listOf(4, 4), hitLevel = 4))
+    assertEquals(
+      "De 0 a 30 segundos: 11 aciertos y 0 errores. De 30 a 60 segundos: 14 aciertos y 0 errores. De 60 a 90 segundos: 12 aciertos y 1 error. De 90 a 120 segundos: 9 aciertos y 2 errores.",
+      TimeTrialMarks.paceSpoken(p)
+    )
+    val one = paceOf(half(0, 1), half(1, 0), half(2, 0), half(3, 0))
+    assertTrue("un acierto en singular y cero con su unidad", TimeTrialMarks.paceSpoken(one).startsWith("De 0 a 30 segundos: 1 acierto y 0 errores. De 30 a 60 segundos: 0 aciertos y 0 errores."))
+    val low = TimeTrialMarks.paceSpoken(p).lowercase()
+    for (bad in listOf("velocidad", "capacidad", "rendimiento", "nivel", "puntaje", "edad mental", "ranking", "cerebro", "cognitiv")) assertFalse("lo que se lee dice «$bad»", bad in low)
+  }
+
+  @Test
+  fun `se resalta el mejor medio minuto, los empatados en lo mas alto, y ninguno si fueron parejos o no hubo aciertos`() {
+    assertEquals(listOf(1), TimeTrialMarks.paceHighlight(paceOf(half(0, 10), half(1, 14), half(2, 12), half(3, 11))))
+    assertEquals("los empatados en lo más alto", listOf(0, 3), TimeTrialMarks.paceHighlight(paceOf(half(0, 14), half(1, 10), half(2, 12), half(3, 14))))
+    assertEquals("los cuatro parejos: no hay un «mejor» que destacar", emptyList<Int>(), TimeTrialMarks.paceHighlight(paceOf(half(0, 5), half(1, 5), half(2, 5), half(3, 5))))
+    assertEquals("sin aciertos no se destaca nada", emptyList<Int>(), TimeTrialMarks.paceHighlight(paceOf(half(0, 0, listOf(1)), half(1, 0), half(2, 0), half(3, 0))))
+  }
 }

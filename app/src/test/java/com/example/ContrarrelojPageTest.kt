@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsNode
@@ -20,8 +22,11 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.data.NBSP
 import com.example.data.TimeTrialResult
+import com.example.data.TimeTrialTrials
 import com.example.ui.components.BoardBackground
 import com.example.ui.components.LocalReduceMotion
+import com.example.ui.theme.Clay
+import com.example.ui.theme.NubiTokens
 import com.example.ui.screens.ContrarrelojPage
 import com.example.ui.theme.NeuroVidaTheme
 import org.junit.Assert.assertEquals
@@ -57,7 +62,19 @@ class ContrarrelojPageTest {
     TimeTrialResult(id = "r-$game-$day-$mark", gameId = game, day = "2026-10-%02d".format(day), trackVersion = version, hits = mark + errors, errors = errors, level = 4, seconds = 120, timestamp = at(day))
 
   private val now = at(28, 18)
-  private val ten = listOf(r(31, 8), r(35, 10), r(39, 13), r(36, 15), r(44, 17), r(38, 19, 3), r(41, 22, 3), r(37, 26, 3), r(42, 27, 3), r(43, 28, 3))
+  /** El registro de una partida: por cada medio minuto, [hits] aciertos y luego [errors] errores, en el paso [levels] de la pista (el mismo de los dos). Las horas crecen dentro de cada medio minuto. */
+  private fun paceTrials(hits: List<Int>, errors: List<Int>, levels: List<Int> = listOf(1, 2, 4, 4)): TimeTrialTrials {
+    val t = mutableListOf<Int>(); val ok = mutableListOf<Int>(); val lv = mutableListOf<Int>()
+    for (h in 0..3) {
+      val n = hits[h] + errors[h]
+      for (k in 0 until n) { t += h * 30_000 + 500 + k * (28_000 / maxOf(n, 1)); ok += if (k < hits[h]) 1 else 0; lv += levels[h] }
+    }
+    return TimeTrialTrials.of(t, ok, lv)!!
+  }
+
+  /** La partida de hoy (43 de marca) con el ritmo de la lámina de Fable: 11, 14, 12 y 9 aciertos por medio minuto, 1 error en el tercero y 2 en el último, todos en el paso 4 de la pista. */
+  private val lastGame = r(43, 28, 3).copy(trials = paceTrials(listOf(11, 14, 12, 9), listOf(0, 0, 1, 2)))
+  private val ten = listOf(r(31, 8), r(35, 10), r(39, 13), r(36, 15), r(44, 17), r(38, 19, 3), r(41, 22, 3), r(37, 26, 3), r(42, 27, 3), lastGame)
   private val others = listOf(r(31, 21, game = "disparate"), r(27, 23, game = "radar"), r(19, 24, game = "acoplamiento"), r(38, 12, errors = 0, version = 1))
 
   private var density = 1f
@@ -106,7 +123,8 @@ class ContrarrelojPageTest {
   private val split = listOf("contrarreloj_split_title", "contrarreloj_split_(record|recent)_title", "contrarreloj_split_(record|recent)_(hits|errors)_(bar|value)", "contrarreloj_rule")
   private val older = listOf("contrarreloj_older_title", "contrarreloj_older_text", "contrarreloj_note")
   private val header = listOf("contrarreloj_back", "contrarreloj_title", "contrarreloj_subtitle")
-  private val cards = listOf("contrarreloj_record", "contrarreloj_weeks", "contrarreloj_split", "contrarreloj_older")
+  private val rhythm = listOf("contrarreloj_rhythm_(title|legend|sentence|wait)", "contrarreloj_rhythm_(fig|bar)_(hit|err)_\\d", "contrarreloj_rhythm_axis_(\\d|unit)")
+  private val cards = listOf("contrarreloj_record", "contrarreloj_rhythm", "contrarreloj_weeks", "contrarreloj_split", "contrarreloj_older")
   private val games = listOf("stroop", "disparate", "radar", "acoplamiento")
 
   private fun groupOf(map: Map<String, Rect>, patterns: List<String>) = map.filterKeys { k -> patterns.any { Regex(it).matches(k) } }
@@ -115,7 +133,7 @@ class ContrarrelojPageTest {
     show(widthDp, scale)
     val all = boxes()
     val label = "a $widthDp dp con letra $scale"
-    val groups = mutableMapOf("la cabecera" to groupOf(all, header), "Tu récord" to groupOf(all, record), "Esta semana y la pasada" to groupOf(all, weeks), "Aciertos y errores" to groupOf(all, split), "Pistas anteriores" to groupOf(all, older))
+    val groups = mutableMapOf("la cabecera" to groupOf(all, header), "Tu récord" to groupOf(all, record), "Tu ritmo" to groupOf(all, rhythm), "Esta semana y la pasada" to groupOf(all, weeks), "Aciertos y errores" to groupOf(all, split), "Pistas anteriores" to groupOf(all, older))
     for (g in games) groups["la losa de $g"] = groupOf(all, listOf("contrarreloj_game_(emblem|name|value)_$g"))
     val problems = mutableListOf<String>()
     for ((name, g) in groups) {
@@ -260,8 +278,179 @@ class ContrarrelojPageTest {
     assertEquals("Todavía no tienes marcas en este juego. Cuando juegues su Contrarreloj, aquí aparece tu récord.", textOf("contrarreloj_record_empty"))
     val b = boxes()
     assertNull(b["contrarreloj_weeks"]); assertNull(b["contrarreloj_split"])
+    assertNull("sin marcas en el juego no hay losa de ritmo", b["contrarreloj_rhythm"])
     assertNotNull("la nota de siempre sigue al pie", b["contrarreloj_note"])
     assertEquals("sin marca aún", textOf("contrarreloj_game_value_radar"))
+  }
+
+  // ---------------------------------------------------------------- Tarea 201: orden, líneas, ventanilla noche y «Tu ritmo»
+
+  @Test fun el_orden_de_las_losas_es_selector_record_ritmo_semana_aciertos_y_pistas() {
+    show()
+    val b = boxes()
+    assertTrue("el selector va arriba de «Tu récord»", b.getValue("contrarreloj_game_radar").b < b.getValue("contrarreloj_record").y)
+    for ((a, c) in listOf("contrarreloj_record", "contrarreloj_rhythm", "contrarreloj_weeks", "contrarreloj_split", "contrarreloj_older").zipWithNext()) {
+      assertTrue("«$a» va antes que «$c»", b.getValue(a).b < b.getValue(c).y)
+      assertEquals("y 16 dp de aire entre las dos losas", 16f, b.getValue(c).y - b.getValue(a).b, 1f)
+    }
+    assertNull("todavía no hay rótulos de sección (llegan con la comparación, Tarea 202)", b["contrarreloj_section_marks"])
+  }
+
+  @Test fun las_lineas_de_separacion_van_donde_una_losa_junta_dos_ideas_y_en_ningun_otro_lado() {
+    show()
+    val b = boxes()
+    val dividers = b.keys.filter { it.startsWith("contrarreloj_divider_") }.toSet()
+    assertEquals(
+      "cuatro lugares: Tu récord, las dos semanas y los dos grupos de Aciertos y errores; no en Tu ritmo ni en Pistas anteriores",
+      setOf("contrarreloj_divider_record", "contrarreloj_divider_weeks", "contrarreloj_divider_split_record", "contrarreloj_divider_split_recent"), dividers
+    )
+    for (d in dividers) {
+      val line = b.getValue(d)
+      assertEquals("«$d» mide 1 dp", 1f, line.h, 0.1f)
+      val card = b.getValue(if (d.endsWith("_record") && "split" !in d) "contrarreloj_record" else if ("weeks" in d) "contrarreloj_weeks" else "contrarreloj_split")
+      assertEquals("«$d» va de margen a margen de la losa (16 dp de relleno)", card.x + 16f, line.x, 0.6f)
+      assertEquals(card.r - 16f, line.r, 0.6f)
+    }
+    // 16 dp de aire arriba y abajo (medido a las cajas de lo que separa)
+    fun air(d: String, above: String, aboveGap: Float, below: String) {
+      assertEquals("«$d»: aire sobre la línea", aboveGap, b.getValue(d).y - b.getValue(above).b, 1f)
+      assertEquals("«$d»: aire bajo la línea", 16f, b.getValue(below).y - b.getValue(d).b, 1f)
+    }
+    air("contrarreloj_divider_record", "contrarreloj_record_step", 16f, "contrarreloj_chart_title")
+    air("contrarreloj_divider_weeks", "contrarreloj_week_this_1", 12f, "contrarreloj_week_last_title")      // la última fila de la semana ya trae 4 dp de aire propio: 12 + 4 = 16 a la vista
+    air("contrarreloj_divider_split_record", "contrarreloj_split_record_errors", 16f, "contrarreloj_split_recent_title")
+    air("contrarreloj_divider_split_recent", "contrarreloj_split_recent_errors", 16f, "contrarreloj_rule")
+  }
+
+  @Test fun sin_el_segundo_grupo_de_aciertos_y_errores_queda_una_sola_linea_antes_de_la_regla() {
+    show(results = listOf(r(31, 28)))
+    val b = boxes()
+    assertEquals(setOf("contrarreloj_divider_record", "contrarreloj_divider_weeks", "contrarreloj_divider_split_record"), b.keys.filter { it.startsWith("contrarreloj_divider_") }.toSet())
+    assertTrue("la línea queda entre el récord y la regla", b.getValue("contrarreloj_divider_split_record").y > b.getValue("contrarreloj_split_record_errors").b && b.getValue("contrarreloj_divider_split_record").b < b.getValue("contrarreloj_rule").y)
+  }
+
+  @Test fun sin_marcas_en_el_juego_no_hay_ninguna_linea() {
+    show(selected = "radar", results = listOf(r(31, 28)))
+    assertEquals(emptyList<String>(), boxes().keys.filter { it.startsWith("contrarreloj_divider_") })
+  }
+
+  @Test fun los_graficos_de_barras_verticales_van_en_la_ventanilla_noche_con_12_dp_de_relleno() {
+    show()
+    val b = boxes()
+    val marks = Regex("contrarreloj_(figure_\\d+|barshape_\\d+|coin|axis_(left|right)|baseline)")
+    val pace = Regex("contrarreloj_rhythm_((fig|bar)_(hit|err)_\\d|axis_(\\d|unit)|baseline)")
+    for ((win, pieces) in listOf("contrarreloj_chart_window" to marks, "contrarreloj_rhythm_window" to pace)) {
+      val w = b.getValue(win)
+      assertEquals("«$win» llena el ancho de la losa menos su relleno de 16 dp", 393f - 64f, w.w, 1f)
+      val inside = b.filterKeys { pieces.matches(it) }
+      assertTrue("«$win» tiene piezas adentro", inside.size >= 8)
+      for ((tag, p) in inside) assertTrue("«$tag» queda a 12 dp o más del borde de la ventanilla", p.x >= w.x + 11.5f && p.r <= w.r - 11.5f && p.y >= w.y + 11.5f && p.b <= w.b - 11.5f)
+    }
+    // las barras horizontales de «Aciertos y errores» siguen en crema, fuera de toda ventanilla
+    val splitBar = b.getValue("contrarreloj_split_record_hits_bar")
+    for (win in listOf("contrarreloj_chart_window", "contrarreloj_rhythm_window")) assertTrue("las barras de Aciertos y errores no están en «$win»", splitBar.y > b.getValue(win).b || splitBar.b < b.getValue(win).y)
+  }
+
+  @Test fun tu_ritmo_dice_su_titulo_su_leyenda_y_la_frase_de_la_lamina() {
+    show()
+    assertEquals("Tu ritmo en la última partida", textOf("contrarreloj_rhythm_title"))
+    assertEquals("Barras lila: aciertos. Barras coral: errores.", textOf("contrarreloj_rhythm_legend"))
+    assertEquals("Tu mejor medio minuto fue el segundo, con 14 aciertos. Tus 3 errores llegaron en el último minuto, en el paso 4 de la pista.", textOf("contrarreloj_rhythm_sentence").replace(NBSP, " "))
+    val b = boxes()
+    assertTrue("la leyenda va bajo el gráfico y la frase bajo la leyenda", b.getValue("contrarreloj_rhythm_window").b < b.getValue("contrarreloj_rhythm_legend").y && b.getValue("contrarreloj_rhythm_legend").b < b.getValue("contrarreloj_rhythm_sentence").y)
+    assertEquals("cuatro rótulos de eje, uno por medio minuto", 4, b.keys.count { Regex("contrarreloj_rhythm_axis_\\d").matches(it) })
+    val unit = b.getValue("contrarreloj_rhythm_axis_unit")
+    assertTrue("y la unidad, escrita («segundos»), una sola vez bajo los cuatro rótulos", (0..3).all { b.getValue("contrarreloj_rhythm_axis_$it").b <= unit.y } && unit.y > b.getValue("contrarreloj_rhythm_baseline").b)
+    assertTrue("la unidad queda al centro de la ventanilla", Math.abs((unit.x + unit.r) / 2 - (b.getValue("contrarreloj_rhythm_window").x + b.getValue("contrarreloj_rhythm_window").r) / 2) < 1f)
+  }
+
+  @Test fun el_grafico_del_ritmo_son_cuatro_columnas_con_las_cifras_en_una_fila_y_una_base_comun() {
+    show()
+    val b = boxes()
+    assertEquals("cuatro barras de aciertos", 4, b.keys.count { it.startsWith("contrarreloj_rhythm_bar_hit_") })
+    assertEquals("solo dos de errores: un medio minuto sin errores no dibuja esa barra", setOf("contrarreloj_rhythm_bar_err_2", "contrarreloj_rhythm_bar_err_3"), b.keys.filter { it.startsWith("contrarreloj_rhythm_bar_err_") }.toSet())
+    assertEquals("cuatro cifras de aciertos y dos de errores (el 0 de los errores no se escribe)", 4 to 2, b.keys.count { it.startsWith("contrarreloj_rhythm_fig_hit_") } to b.keys.count { it.startsWith("contrarreloj_rhythm_fig_err_") })
+    val figs = b.filterKeys { it.startsWith("contrarreloj_rhythm_fig_") }.values
+    assertTrue("las cifras van en UNA fila", figs.all { Math.abs(it.y - figs.first().y) < 0.5f })
+    val bars = b.filterKeys { it.startsWith("contrarreloj_rhythm_bar_") }.values
+    assertTrue("las barras parten de una base común", bars.all { Math.abs(it.b - bars.first().b) < 0.5f })
+    assertTrue("bajo la base común va el eje, a 4 dp o más", (0..3).all { b.getValue("contrarreloj_rhythm_axis_$it").y >= bars.first().b + 4f })
+    // la misma escala para aciertos y errores: 14 aciertos = el alto máximo (96 dp)
+    val h = (0..3).map { b.getValue("contrarreloj_rhythm_bar_hit_$it").h }
+    assertEquals(96f, h[1], 0.6f)
+    assertEquals(96f * 11 / 14, h[0], 0.6f); assertEquals(96f * 12 / 14, h[2], 0.6f); assertEquals(96f * 9 / 14, h[3], 0.6f)
+    assertEquals("2 errores a la misma escala", 96f * 2 / 14, b.getValue("contrarreloj_rhythm_bar_err_3").h, 0.6f)
+    assertEquals("1 error serían 6,9 dp, pero una barra no baja de 8 dp", 8f, b.getValue("contrarreloj_rhythm_bar_err_2").h, 0.6f)
+    // cada medio minuto: aciertos a la izquierda, errores a la derecha y más angostos; los medios minutos van de izquierda a derecha
+    for (i in 2..3) assertTrue("el error del medio minuto $i va a la derecha de sus aciertos y es más angosto", b.getValue("contrarreloj_rhythm_bar_err_$i").x >= b.getValue("contrarreloj_rhythm_bar_hit_$i").r && b.getValue("contrarreloj_rhythm_bar_err_$i").w < b.getValue("contrarreloj_rhythm_bar_hit_$i").w)
+    for (i in 0..2) assertTrue("los medios minutos van de izquierda a derecha", b.getValue("contrarreloj_rhythm_bar_hit_${i + 1}").x > b.getValue("contrarreloj_rhythm_bar_hit_$i").r)
+    // el rótulo del eje va centrado bajo su columna (el par de barras): entre las barras de aciertos de su medio minuto y del siguiente
+    for (i in 0..3) {
+      val axis = b.getValue("contrarreloj_rhythm_axis_$i"); val center = (axis.x + axis.r) / 2; val hit = b.getValue("contrarreloj_rhythm_bar_hit_$i")
+      val nextHit = b["contrarreloj_rhythm_bar_hit_${i + 1}"]
+      assertTrue("el rótulo del eje $i queda bajo su columna", center >= hit.x && (nextHit == null || center < nextHit.x) && center - hit.x < 76f)
+    }
+  }
+
+  @Test fun el_lector_de_pantalla_dice_el_ritmo_medio_minuto_por_medio_minuto() {
+    show()
+    assertEquals(
+      "De 0 a 30 segundos: 11 aciertos y 0 errores. De 30 a 60 segundos: 14 aciertos y 0 errores. De 60 a 90 segundos: 12 aciertos y 1 error. De 90 a 120 segundos: 9 aciertos y 2 errores.",
+      descriptionOf("contrarreloj_rhythm_window")
+    )
+    assertEquals("el gráfico se dice una vez: las barras y las cifras sueltas no se leen aparte", 1, rule.onAllNodes(hasTestTag("contrarreloj_rhythm_window")).fetchSemanticsNodes().size)
+  }
+
+  @Test fun con_marcas_pero_sin_ritmo_guardado_la_losa_solo_dice_cuando_aparece() {
+    show(results = ten.dropLast(1) + r(43, 28, 3) + others)
+    assertEquals("Tu ritmo en la última partida", textOf("contrarreloj_rhythm_title"))
+    assertEquals("Tu ritmo aparece desde tu próxima partida del Contrarreloj.", textOf("contrarreloj_rhythm_wait"))
+    val b = boxes()
+    assertEquals("sin gráfico, sin leyenda y sin frase", 0, b.keys.count { it.startsWith("contrarreloj_rhythm_bar_") || it.startsWith("contrarreloj_rhythm_fig_") || it.startsWith("contrarreloj_rhythm_axis_") })
+    assertNull(b["contrarreloj_rhythm_window"]); assertNull(b["contrarreloj_rhythm_legend"]); assertNull(b["contrarreloj_rhythm_sentence"])
+    assertNotNull("y la página sigue entera: la semana y los aciertos están", b["contrarreloj_weeks"]); assertNotNull(b["contrarreloj_split"])
+  }
+
+  @Test fun el_ritmo_es_el_del_juego_elegido_y_con_cuatro_medios_minutos_parejos_no_resalta_ninguno() {
+    val even = r(20, 27, 0, game = "disparate").copy(trials = paceTrials(listOf(5, 5, 5, 5), listOf(0, 0, 0, 0)))
+    show(selected = "disparate", results = ten + others + even)
+    assertEquals("Los cuatro medios minutos fueron parejos, con 5 aciertos cada uno. Sin errores en esta partida.", textOf("contrarreloj_rhythm_sentence").replace(NBSP, " "))
+    val b = boxes()
+    assertEquals("sin errores no hay barras coral", 0, b.keys.count { it.startsWith("contrarreloj_rhythm_bar_err_") })
+    assertEquals(4, b.keys.count { it.startsWith("contrarreloj_rhythm_bar_hit_") })
+    assertTrue("las cuatro barras miden igual", (0..3).all { Math.abs(b.getValue("contrarreloj_rhythm_bar_hit_$it").h - 96f) < 0.6f })
+  }
+
+  /** El peor caso de «Tu ritmo»: 18 errores en un medio minuto y 48 aciertos en otro (cifras de dos dígitos en las dos barras de una columna), con 4 dp o más entre cada par de piezas y todo dentro del relleno de la ventanilla. */
+  private fun assertRhythmNoClashes(widthDp: Int, scale: Float) {
+    val heavy = r(70, 28, 20).copy(trials = paceTrials(listOf(48, 12, 20, 10), listOf(18, 0, 1, 1), levels = listOf(1, 3, 4, 4)))
+    show(widthDp = widthDp, scale = scale, results = ten.dropLast(1) + heavy + others)
+    val b = boxes()
+    val pieces = groupOf(b, rhythm)
+    val keys = pieces.keys.toList()
+    val problems = mutableListOf<String>()
+    for (i in keys.indices) for (j in i + 1 until keys.size) { val s = gap(pieces.getValue(keys[i]), pieces.getValue(keys[j])); if (s < 3.5f) problems += "«${keys[i]}» y «${keys[j]}» a %.1f dp".format(s) }
+    val w = b.getValue("contrarreloj_rhythm_window")
+    for ((tag, p) in pieces) if (tag.startsWith("contrarreloj_rhythm_fig") || tag.startsWith("contrarreloj_rhythm_bar") || tag.startsWith("contrarreloj_rhythm_axis")) if (p.x < w.x + 11.5f || p.r > w.r - 11.5f) problems += "«$tag» se sale del relleno de la ventanilla"
+    assertTrue("a $widthDp dp con letra $scale:\n" + problems.joinToString("\n"), problems.isEmpty())
+  }
+
+  @Test fun tu_ritmo_en_el_peor_caso_cero_choques_a_393_con_letra_1_0() = assertRhythmNoClashes(393, 1f)
+  @Test fun tu_ritmo_en_el_peor_caso_cero_choques_a_393_con_letra_1_3() = assertRhythmNoClashes(393, 1.3f)
+  @Test fun tu_ritmo_en_el_peor_caso_cero_choques_a_393_con_letra_2_0() = assertRhythmNoClashes(393, 2f)
+  @Test fun tu_ritmo_en_el_peor_caso_cero_choques_a_360_con_letra_1_0() = assertRhythmNoClashes(360, 1f)
+  @Test fun tu_ritmo_en_el_peor_caso_cero_choques_a_360_con_letra_2_0() = assertRhythmNoClashes(360, 2f)
+
+  @Test fun los_textos_sobre_la_ventanilla_noche_pasan_4_5_a_1() {
+    fun contrast(a: Color, c: Color): Double { val la = a.luminance().toDouble(); val lc = c.luminance().toDouble(); return (maxOf(la, lc) + 0.05) / (minOf(la, lc) + 0.05) }
+    val w = NubiTokens.NightWindow
+    for ((name, c) in listOf("las cifras (OnNight)" to NubiTokens.OnNight, "el eje (OnNightDim)" to NubiTokens.OnNightDim, "la cifra resaltada (SunOnNight)" to NubiTokens.SunOnNight, "las cifras de los errores (coral)" to Clay.Coral)) {
+      assertTrue("$name sobre la ventanilla: %.1f a 1".format(contrast(c, w)), contrast(c, w) >= 4.5)
+    }
+    for ((name, c) in listOf("las barras lila" to Clay.Grape, "las barras coral" to Clay.Coral, "la barra del récord (sol)" to Clay.Sun)) {
+      assertTrue("$name se separan de la ventanilla (3 a 1 o más): %.1f".format(contrast(c, w)), contrast(c, w) >= 3.0)
+    }
+    println("T201 contraste sobre la ventanilla: OnNight %.1f · OnNightDim %.1f · SunOnNight %.1f · coral %.1f · lila %.1f".format(contrast(NubiTokens.OnNight, w), contrast(NubiTokens.OnNightDim, w), contrast(NubiTokens.SunOnNight, w), contrast(Clay.Coral, w), contrast(Clay.Grape, w)))
   }
 
   // ---------------------------------------------------------------- lector de pantalla y toques
@@ -322,7 +511,9 @@ class ContrarrelojPageTest {
     // letra: solo los dos rótulos del eje bajan de 16 sp
     val small = Regex("""fontSize = (\d+(?:\.\d+)?)\.sp""").findAll(page).filter { it.groupValues[1].toFloat() < 16f }.map { it.groupValues[1] }.toList()
     assertTrue("solo el rótulo del eje (los dos textos y su medida), a 14 sp", small.isNotEmpty() && small.all { it == "14" })
-    assertEquals("y están todos en la función del eje", small.size, Regex("""AxisLabels\(labels[\s\S]*?
-\}""").find(page)!!.value.let { fn -> Regex("""fontSize = 14\.sp""").findAll(fn).count() })
+    val axisFns = listOf("""private fun AxisLabels\(labels[\s\S]*?\n\}""", """private fun RhythmChart\([\s\S]*?\n\}""")
+    assertEquals("y están todos en las funciones de los dos ejes (las marcas y el ritmo)", small.size, axisFns.sumOf { fn -> Regex(fn).find(page)!!.value.let { Regex("""fontSize = 14\.sp""").findAll(it).count() } })
+    assertTrue("la ventanilla noche sale del token (`NubiTokens.NightWindow`), sin copiar el literal", page.contains("NubiTokens.NightWindow") && !Regex("0x[Ff][Ff]100[Ff]3[Aa]").containsMatchIn(page))
+    assertEquals("la ventanilla es #100F3A", 0x100F3A, NubiTokens.NightWindow.toArgb() and 0xFFFFFF)
   }
 }

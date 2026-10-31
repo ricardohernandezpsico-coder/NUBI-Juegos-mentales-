@@ -38,6 +38,12 @@ object NubiTokens {
    */
   val NightFlat = Color(0xFF050823)
 
+  /**
+   * La «ventanilla noche» de los gráficos de la página «Contrarreloj» (Tarea 201, opción B de Fable, `auditoria-fable/nubi-plus-comparacion.md` §11.4): `#100F3A`, el tono del MEDIO del cielo único de la app (el mismo de `NeuroStyle.NightMid`, la carga de Unity y `GameCover`).
+   * Lo calibrado sobre oscuro va en su ventanilla, dentro de la losa crema (regla del kit). Sobre ella: `OnNight` 15,6:1, `OnNightDim` ≥ 4,5:1, `SunOnNight` 14,9:1 y el coral de los errores ≈ 5,8:1; `ContrarrelojPageTest` los mide.
+   */
+  val NightWindow = Color(0xFF100F3A)
+
   // Superficies de Material (mismos valores que tenía el esquema)
   val Surface = Color(0xE6172058)
   val SurfaceVariant = Color(0xFF243078)

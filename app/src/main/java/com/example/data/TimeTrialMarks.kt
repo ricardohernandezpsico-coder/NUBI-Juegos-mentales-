@@ -253,4 +253,29 @@ object TimeTrialMarks {
     }
     return "$subject$steps."
   }
+
+  // ------------------------------------------------------------------ la losa «Tu ritmo en la última partida» (Tarea 201; `auditoria-fable/nubi-plus-comparacion.md` §2.3 y §11)
+
+  const val PACE_TITLE = "Tu ritmo en la última partida"
+
+  /** Hay marcas en el juego pero ninguna partida con el ritmo guardado (las de antes de la versión 17): la losa solo dice cuándo aparece. */
+  const val PACE_WAIT = "Tu ritmo aparece desde tu próxima partida del Contrarreloj."
+
+  /** La leyenda del gráfico, en palabras: el color nunca dice solo lo que es cada barra. */
+  const val PACE_LEGEND = "Barras lila: aciertos. Barras coral: errores."
+
+  /**
+   * Lo que dice el eje bajo cada medio minuto (14 sp) y, debajo de los cuatro, la unidad ESCRITA ([PACE_AXIS_UNIT]): la lámina de Fable decía «0 a 30 s», pero «s» por «segundos» no se escribe en ninguna parte de la app (regla «sin palabras sueltas» de Ricardo, `VisibleTextsGuardTest`)
+   * y «0 a 30 segundos» no cabe en un cuarto de la ventanilla a 393 dp sin partirse cuatro veces.
+   */
+  val PACE_AXIS = listOf("0 a 30", "30 a 60", "60 a 90", "90 a 120")
+  const val PACE_AXIS_UNIT = "segundos"
+
+  /** Lo que lee el lector de pantalla del gráfico, medio minuto por medio minuto: «De 0 a 30 segundos: 11 aciertos y 0 errores. De 30 a 60 segundos: 14 aciertos y 1 error. …» (las cifras sueltas no se leen aparte). */
+  fun paceSpoken(pace: Pace): String = pace.halves.mapIndexed { i, h ->
+    "De ${i * HALF_MINUTE_MS / 1000} a ${(i + 1) * HALF_MINUTE_MS / 1000} segundos: ${TimeTrialDay.hitsText(h.hits)} y ${errorsText(h.errors)}."
+  }.joinToString(" ")
+
+  /** Los medios minutos cuya cifra de aciertos se resalta: el mejor (o los empatados en lo más alto); ninguno si no hubo aciertos o si los cuatro fueron parejos (no hay «mejor» que destacar). */
+  fun paceHighlight(pace: Pace): List<Int> = if (pace.bestHalves.isEmpty() || pace.bestHalves.size == HALF_MINUTES) emptyList() else pace.bestHalves
 }
