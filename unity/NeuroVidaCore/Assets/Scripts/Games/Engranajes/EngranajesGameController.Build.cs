@@ -655,7 +655,7 @@ namespace NeuroVida.Games.Engranajes
 
         private void BuildIntro()
         {
-            _dim = MakeImage(_introLayer, "Dim", DiscSprite.Get());
+            _dim = MakeImage(_introLayer, "Dim", null);                                       // sin sprite: un velo LISO sobre toda la pantalla (Tarea 197; un disco estirado era una elipse, y se veía el tablero por las esquinas)
             Stretch(_dim.rectTransform);
             _dim.color = new Color(2f / 255f, 3f / 255f, 15f / 255f, 0.74f);
             _dim.raycastTarget = false;

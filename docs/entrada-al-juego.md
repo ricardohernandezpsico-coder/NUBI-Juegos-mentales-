@@ -29,7 +29,7 @@ Ricardo eligió la opción A de `auditoria-fable/cuenta-y-tutoriales.md`: **sin 
 
 ## 3. La marca de versión y la sonda de entrada (solo depuración)
 
-- **`PauseMenu.StyleStamp`** (hoy «primera partida 30-oct») se dibuja **solo en la pausa**, abajo del panel, **solo si la config trae `debug_build`** (las builds de depuración de la app). En release no existe. **Cambiarla con cada cambio visible de Unity** (el export de Unity está fuera de git y, si no se reexporta, Gradle empaqueta el viejo sin avisar).
+- **`PauseMenu.StyleStamp`** (hoy «velo Nuevo 30-oct», Tarea 197) se dibuja **solo en la pausa**, abajo del panel, **solo si la config trae `debug_build`** (las builds de depuración de la app). En release no existe. **Cambiarla con cada cambio visible de Unity** (el export de Unity está fuera de git y, si no se reexporta, Gradle empaqueta el viejo sin avisar).
 - **`EntryProbe`** (`Games/Shared`): detrás de la misma bandera (o `NUBI_PROBE=1` en el Editor). Escribe UNA línea por partida, `[sonda-entrada]`, con el tiempo hasta «listo» desde la configuración, los cuadros de la carga (los tapa la pantalla de carga), los cuadros VISIBLES de «listo» a +5 s (cuántos, mediana, p95, máximo, cuántos pasan de 34 ms) y lo que gastó el hilo principal creando clips y texturas (y cuánto de eso fue DESPUÉS de «listo»: debe ser 0). Si un cuadro visible pasa de 34 ms, una línea `[sonda-entrada-cuadro]` dice a qué hora. En Android va al registro de Unity (`adb logcat -s Unity`). La sonda de la T189 (más detallada, con parche) sigue en `tools/medicion-cuenta/`.
 
 ## 4. Pruebas y guardias

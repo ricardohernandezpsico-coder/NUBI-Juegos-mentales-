@@ -100,6 +100,7 @@ namespace NeuroVida.Bridge.EditorTools
         /// Con NUBI_SHOTS_TT=1 corre como Contrarreloj y saca el primer error del piloto (la nota en coral con su equis). Las tomas quedan con el prefijo del paso: <c>reposo</c>, <c>tono-…</c>, <c>dos-tiempos-1/2</c>, <c>vuelta</c>, <c>tt-error</c>.
         /// </summary>
         private static bool _avisos;
+        private static bool _nuevo;
 
         public static void Run()
         {
@@ -110,6 +111,7 @@ namespace NeuroVida.Bridge.EditorTools
             _frames = Environment.GetEnvironmentVariable("NUBI_SHOTS_FRAMES") == "1";
             _watch = Environment.GetEnvironmentVariable("NUBI_SHOTS_WATCH") == "1";
             _avisos = Environment.GetEnvironmentVariable("NUBI_SHOTS_AVISOS") == "1";
+            _nuevo = Environment.GetEnvironmentVariable("NUBI_SHOTS_NUEVO") == "1";
             var raw = (Environment.GetEnvironmentVariable("NUBI_SHOTS_GAMES") ?? "Correo").Trim();
             _root = Environment.GetEnvironmentVariable("NUBI_SHOTS_DIR");
             if (string.IsNullOrEmpty(_root)) _root = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", "test-results", "capturas"));
@@ -261,7 +263,8 @@ namespace NeuroVida.Bridge.EditorTools
                 double t0 = Now;
                 Debug.Log("[Capturas] ---- " + id);
 
-                if (_avisos) yield return AvisosShots(id);
+                if (_nuevo) yield return NuevoShots(id);
+                else if (_avisos) yield return AvisosShots(id);
                 else if (_watch) yield return WatchShots(id);
                 else if (_frames) yield return FrameShots(id);
                 else if (_timeTrial) yield return TimeTrialShots(id);
@@ -274,9 +277,9 @@ namespace NeuroVida.Bridge.EditorTools
                 else if (id == "acoplamiento") { yield return AcoplamientoScript(); yield return AcoplamientoScript16(); }
                 else if (id == "aterrizaje") { yield return AterrizajeScript(); yield return AterrizajeScript16(); }
                 else yield return PlayShots(id);
-                if (!_juice && !_timeTrial && !_frames && !_watch && !_avisos && id != "correo" && id != "satelites" && id != "piloto" && id != "radar" && id != "acoplamiento" && id != "aterrizaje") yield return ReduceMotionShot(id);          // los guiones de Correo, Satélites, Piloto, Rescate y Acoplamiento ya traen su toma con «quitar animaciones»
-                if (!_juice && !_timeTrial && !_frames && !_watch && !_avisos && TutorialGames.Contains(id)) yield return TutorialShots(id);
-                if (!_juice && !_timeTrial && !_frames && !_watch && !_avisos && (id == "acoplamiento" || id == "radar")) yield return TutorialShots(id, 1920, "-16x9");          // la práctica en la pantalla más baja: ahí la fila fija de arriba aprieta más (Tarea 128)
+                if (!_juice && !_timeTrial && !_frames && !_watch && !_avisos && !_nuevo && id != "correo" && id != "satelites" && id != "piloto" && id != "radar" && id != "acoplamiento" && id != "aterrizaje") yield return ReduceMotionShot(id);          // los guiones de Correo, Satélites, Piloto, Rescate y Acoplamiento ya traen su toma con «quitar animaciones»
+                if (!_juice && !_timeTrial && !_frames && !_watch && !_avisos && !_nuevo && TutorialGames.Contains(id)) yield return TutorialShots(id);
+                if (!_juice && !_timeTrial && !_frames && !_watch && !_avisos && !_nuevo && (id == "acoplamiento" || id == "radar")) yield return TutorialShots(id, 1920, "-16x9");          // la práctica en la pantalla más baja: ahí la fila fija de arriba aprieta más (Tarea 128)
                 yield return Stopped();
 
                 int shots = _count;
@@ -725,6 +728,54 @@ namespace NeuroVida.Bridge.EditorTools
             (NeuroVida.Games.Shared.AnnounceTone.Error, "error", "Era su espejo", null),
             (NeuroVida.Games.Shared.AnnounceTone.Info, "info", "Gracias, la revisaremos", null),
         };
+
+        /// <summary>
+        /// Tarjetas «Nuevo» (Tarea 197, NUBI_SHOTS_NUEVO=1; con NUBI_SHOTS_GAMES=bodega,engranajes,parejas): lleva el juego REAL al nivel (Bodega y Engranajes, el 5) o a la etapa (Constelaciones, la 18) donde salen sus tarjetas, con las marcas de «ya visto» borradas, y fotografía CADA tarjeta
+        /// que sale (<c>nuevo-1</c>, <c>nuevo-2</c>…): la pantalla entera con el velo, la tarjeta, el tablero y el cielo. El piloto automático juega la partida y toca cada tarjeta a los 1,5 s de esperar; la toma se hace a los 0,9 s de que sale (la tarjeta ya terminó de entrar y todavía no la tocaron).
+        /// Es la lámina «hoy | propuesta» de la Tarea 197: el velo de esas tarjetas era un disco estirado a la pantalla (una elipse oscura).
+        /// </summary>
+        private static IEnumerator NuevoShots(string id)
+        {
+            Configure(id, tutorial: false, reduceMotion: false);
+            // dónde arranca cada juego: una etapa que TRAE tarjeta (las tarjetas salen en etapas concretas y la primera vez solo cuenta la de la etapa de partida). Bodega, nivel 5: la de «el robot cambia una caja de lugar» es la 2.ª; Engranajes, nivel
+            // NUBI_SHOTS_NUEVO_LEVEL (por omisión 1); Constelaciones, etapa NUBI_SHOTS_NUEVO_STAGE (por omisión 7: «¡Llegan gemelos parecidos!»).
+            int.TryParse(Environment.GetEnvironmentVariable("NUBI_SHOTS_NUEVO_LEVEL"), out int nuevoLevel);
+            int.TryParse(Environment.GetEnvironmentVariable("NUBI_SHOTS_NUEVO_STAGE"), out int nuevoStage);
+            EditorPlaytestBootstrap.LevelOverride = id == "bodega" ? 5 : id == "engranajes" ? (nuevoLevel > 0 ? nuevoLevel : 1) : 0;
+            EditorPlaytestBootstrap.ConStageOverride = id == "parejas" ? (nuevoStage > 0 ? nuevoStage : 7) : 0;
+            UnityEngine.PlayerPrefs.DeleteAll();                                                       // las tarjetas «Nuevo» salen otra vez aunque ya se hayan visto
+            NeuroVida.Games.Shared.GuidedTutorial.EditorAutoPlayGame = true;                           // la partida se juega sola y cada tarjeta se toca a los 1,5 s
+            yield return EnterPlay();
+            const System.Reflection.BindingFlags priv = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+            Func<bool> cardUp = () =>
+            {
+                foreach (var mb in UnityEngine.Object.FindObjectsOfType<MonoBehaviour>())
+                {
+                    var layer = mb.GetType().GetField("_introLayer", priv)?.GetValue(mb) as RectTransform;
+                    var tapped = mb.GetType().GetField("_introTapped", priv);
+                    if (layer != null && tapped != null && layer.gameObject.activeInHierarchy && !(bool)tapped.GetValue(mb)) return true;
+                }
+                return false;
+            };
+            double deadline = Now + 70, lastCard = Now;
+            bool wasUp = false;
+            int cards = 0;
+            while (Now < deadline && cards < 6 && !(cards > 0 && Now - lastCard > 15))           // se corta cuando ya no salen más tarjetas
+            {
+                bool up = cardUp();
+                if (up && !wasUp)
+                {
+                    yield return Wait.For(0.9);
+                    if (cardUp()) { cards++; lastCard = Now; Shot("nuevo-" + cards); }
+                }
+                wasUp = up;
+                yield return null;
+            }
+            if (_count == 0) GameNotes.Add("no salió ninguna tarjeta «Nuevo»");
+            EditorPlaytestBootstrap.LevelOverride = 0;
+            EditorPlaytestBootstrap.ConStageOverride = 0;
+            yield return ExitPlay();
+        }
 
         /// <summary>
         /// Avisos (Tarea 179): la fila de consigna en reposo, un aviso de cada tono, un aviso en dos tiempos (sus dos partes) y la fila de vuelta a su consigna. En Contrarreloj, el primer error del piloto. El piloto automático se apaga en la partida de siempre para que ningún aviso propio se cruce con los de prueba.
