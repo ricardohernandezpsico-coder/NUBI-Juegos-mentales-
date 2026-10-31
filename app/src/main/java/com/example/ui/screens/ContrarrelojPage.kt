@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -38,6 +40,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -56,11 +59,14 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.Comparison
+import com.example.data.SampleComparison
 import com.example.data.TimeTrialDay
 import com.example.data.TimeTrialMarks
 import com.example.data.TimeTrialResult
 import com.example.data.TimeTrialStats
 import com.example.data.glueNumbers
+import com.example.model.AgeRange
 import com.example.model.AppLanguage
 import com.example.model.GameRegistry
 import com.example.ui.components.ClaySlab
@@ -102,6 +108,9 @@ private const val BIG_TEXT_SCALE_CAP = 1.3f
  * a 5 barras si las cifras no caben a 16 sp), «Tu ritmo en la última partida» (Tarea 201: los aciertos y los errores de cada medio minuto), «Esta semana y la pasada», «Aciertos y errores» y, al final, «Pistas anteriores» (solo si hay) con la nota de siempre.
  * Desde la Tarea 201 (opción B de Fable, `auditoria-fable/nubi-plus-comparacion.md` §11): una línea fina separa lo que una losa junta (la cifra del récord y sus marcas, las dos semanas, los dos pares de barras y la nota) y los gráficos de barras van en una ventanilla noche ([NightWindow]); las barras horizontales de «Aciertos y errores» siguen en crema.
  *
+ * **La comparación con personas de tu edad (Tarea 202, opción B de Fable; solo con [compare], que es null en la build de la tienda):** con ella la página tiene DOS secciones con su rótulo, «Tus marcas» (todo lo anterior) y «Comparado con personas de tu edad», con la frase «Estos son datos de muestra: solo se ven en la versión de prueba.»
+ * y las losas «Tu lugar esta semana» (la frase en el recuadro plano, el percentil con su división, la campana real y sus dos frases; o «Todavía somos pocos»), «Tu percentil en las últimas 7 semanas» y «Comparado con otras edades». La persona de 13 a 17 años no ve la sección.
+ *
  * Todo a 16 sp o más (14 sp solo los rótulos del eje de las barras); cada número con su unidad y en frase completa; nada solo por color (el récord lleva moneda con visto y la palabra; los errores, su palabra). [results] = TODAS las partidas del Contrarreloj; [selected] = el juego elegido; [now] = el momento de mirar.
  */
 @Composable
@@ -112,11 +121,19 @@ internal fun ContrarrelojPage(
   onBack: () -> Unit,
   now: Long,
   modifier: Modifier = Modifier,
-  lang: AppLanguage = com.example.ui.i18n.LocalAppLanguage.current
+  lang: AppLanguage = com.example.ui.i18n.LocalAppLanguage.current,
+  compare: Comparison.Source? = null,
+  ageRange: AgeRange? = null
 ) {
   val page = remember(results, selected, now) { TimeTrialMarks.page(results, selected, now) }
   val records = remember(results) { TimeTrialDay.GAMES.map { it to TimeTrialStats.record(results, it) } }
   val pace = remember(results, selected) { TimeTrialMarks.pace(results, selected) }
+  // La comparación con personas de tu edad (Tarea 202): solo si hay de dónde sacarla (`compare`: nunca en la build de la tienda) y una franja con la que comparar (la de 13 a 17 años no ve la sección). Sin ella, la página queda como en la Tarea 201.
+  val section = remember(compare, ageRange, results, selected, now, lang) {
+    val range = compare?.let { Comparison.rangeFor(ageRange, sample = it is SampleComparison) }
+    if (compare == null || range == null) null
+    else Comparison.section(compare, selected, GameRegistry.getById(selected)?.let { getGameTitle(it.id, lang, it.title) } ?: selected, range, results, now)
+  }
   val scroll = rememberScrollState()
   var headerPx by remember { mutableIntStateOf(0) }
   val fadePx = with(LocalDensity.current) { FadeHeight.toPx() }
@@ -139,6 +156,7 @@ internal fun ContrarrelojPage(
       Spacer(Modifier.height(FadeHeight))
       Column(Modifier.padding(horizontal = PageMargin).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(CardGap)) {
         GameSelector(records, selected, lang, onSelect)
+        if (section != null) SectionLabel(Comparison.SECTION_MARKS, "contrarreloj_section_marks")           // los rótulos solo con DOS secciones; sin la comparación, la página queda como en la Tarea 201
         RecordCard(page, now)
         if (page.hasMarks) {
           RhythmCard(pace)
@@ -146,6 +164,12 @@ internal fun ContrarrelojPage(
           SplitCard(page)
         }
         NoteCard(page)
+        if (section != null) {
+          CompareHeader()
+          PlaceCard(section)
+          if (section.weeks.isNotEmpty()) PercentileWeeksCard(section.weeks)
+          section.others?.let { OthersCard(section, it) }
+        }
       }
     }
   }
@@ -232,7 +256,7 @@ private fun GameTile(gameId: String, title: String, record: Int?, selected: Bool
 private fun InfoCard(tag: String, title: String?, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
   ClayCard(modifier.fillMaxWidth().testTag(tag), size = SlabSize.LARGE, contentPadding = 16.dp) {
     if (title != null) {
-      Text(title, color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 24.sp, modifier = Modifier.semantics { heading() }.testTag("${tag}_title"))
+      Text(title.glueNumbers(), color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 24.sp, modifier = Modifier.semantics { heading() }.testTag("${tag}_title"))
       Spacer(Modifier.height(16.dp))
     }
     content()
@@ -329,8 +353,8 @@ private fun MarksChart(page: TimeTrialMarks.Page, now: Long) {
 
 /** La moneda lima con el visto del récord (forma y color: nunca solo color): 20 dp con el borde de tinta del kit. */
 @Composable
-private fun Coin() {
-  Box(Modifier.size(20.dp).clip(CircleShape).background(Clay.Lime).border(2.dp, Clay.Ink, CircleShape).hiddenTag("contrarreloj_coin"), contentAlignment = Alignment.Center) { KitGlyph(Glyph.CHECK, size = 12.dp) }
+private fun Coin(tag: String = "contrarreloj_coin", size: Dp = 20.dp) {
+  Box(Modifier.size(size).clip(CircleShape).background(Clay.Lime).border(2.dp, Clay.Ink, CircleShape).hiddenTag(tag), contentAlignment = Alignment.Center) { KitGlyph(Glyph.CHECK, size = size * 0.6f) }
 }
 
 /** Los dos rótulos del eje (14 sp, los únicos de la página bajo 16): la fecha de la primera barra que se ve a la izquierda y «hoy» a la derecha; si no queda 8 dp entre los dos con la letra de la persona, se omite el de la derecha. */
@@ -497,25 +521,26 @@ private fun WeekBlock(title: String, week: TimeTrialMarks.WeekSummary, key: Stri
  * Cada texto tiene 20 sp de interlínea y la fila suma 4 dp: entre dos filas siempre quedan 4 dp (24 dp de paso con letra 1,0).
  */
 @Composable
-private fun FactRow(label: String, value: String, tag: String) {
+private fun FactRow(label: String, value: String, tag: String, bold: Boolean = false, muted: Boolean = false) {
   val measurer = rememberTextMeasurer()
   val base = androidx.compose.material3.LocalTextStyle.current
-  val valueStyle = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, fontFeatureSettings = "tnum", lineHeight = 20.sp)
+  val valueStyle = TextStyle(fontSize = 16.sp, fontWeight = if (muted) FontWeight.Normal else FontWeight.Bold, fontFamily = AppFamily, fontFeatureSettings = "tnum", lineHeight = 20.sp)
+  val valueColor = if (muted) Clay.InkMuted else Clay.Ink
   BoxWithConstraints(Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = TimeTrialMarks.rowSpoken(label, value) }.testTag(tag)) {
     val shown = value.glueNumbers()
-    val need = measurer.measure(label, base.merge(TextStyle(fontSize = 16.sp)), softWrap = false, maxLines = 1).size.width + with(LocalDensity.current) { 12.dp.roundToPx() } +
+    val need = measurer.measure(label, base.merge(TextStyle(fontSize = 16.sp, fontWeight = if (bold) FontWeight.Bold else null)), softWrap = false, maxLines = 1).size.width + with(LocalDensity.current) { 12.dp.roundToPx() } +
       measurer.measure(shown, base.merge(valueStyle), softWrap = false, maxLines = 1).size.width
     if (need <= constraints.maxWidth) {
       Row(Modifier.fillMaxWidth().padding(bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, color = Clay.Ink, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.weight(1f).testTag("${tag}_label"))
+        Text(label, color = Clay.Ink, fontSize = 16.sp, fontWeight = if (bold) FontWeight.Bold else null, lineHeight = 20.sp, modifier = Modifier.weight(1f).testTag("${tag}_label"))
         Spacer(Modifier.width(12.dp))
-        Text(shown, color = Clay.Ink, style = valueStyle, softWrap = false, textAlign = TextAlign.End, modifier = Modifier.testTag("${tag}_value"))
+        Text(shown, color = valueColor, style = valueStyle, softWrap = false, textAlign = TextAlign.End, modifier = Modifier.testTag("${tag}_value"))
       }
     } else {
       Column(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
-        Text(label, color = Clay.Ink, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.testTag("${tag}_label"))
+        Text(label, color = Clay.Ink, fontSize = 16.sp, fontWeight = if (bold) FontWeight.Bold else null, lineHeight = 20.sp, modifier = Modifier.testTag("${tag}_label"))
         Spacer(Modifier.height(4.dp))
-        Text(shown, color = Clay.Ink, style = valueStyle, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth().testTag("${tag}_value"))
+        Text(shown, color = valueColor, style = valueStyle, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth().testTag("${tag}_value"))
       }
     }
   }
@@ -573,7 +598,7 @@ private fun BarRow(fraction: Float, color: Color, value: String, tag: String) {
     } else {
       Column(Modifier.fillMaxWidth()) {
         Bar(boxWidth)
-        Text(shown, color = Clay.Ink, style = valueStyle, modifier = Modifier.padding(top = 2.dp).testTag("${tag}_value"))
+        Text(shown, color = Clay.Ink, style = valueStyle, modifier = Modifier.padding(top = 4.dp).testTag("${tag}_value"))
       }
     }
   }
@@ -589,6 +614,258 @@ private fun NoteCard(page: TimeTrialMarks.Page) {
       Spacer(Modifier.height(16.dp))
     }
     Text(TimeTrialStats.NOTE, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("contrarreloj_note"))
+  }
+}
+
+// ------------------------------------------------------------------ la sección «Comparado con personas de tu edad» (Tarea 202; `auditoria-fable/nubi-plus-comparacion.md` §1 y §11, opción B)
+
+/**
+ * El rótulo de una sección (Fable §11.2): Rubik 17 (18 partía «Comparado con personas de tu edad» en dos renglones a 393 dp) en crema (`OnNight`, sobre el noche plano: sin luceros no necesita orilla) y, desde el final del texto hasta el margen derecho, una línea de 1 dp (crema al 35 %). 8 dp de aire propios arriba (con los 16 de entre losas, 24) y los 16 de siempre abajo.
+ * Con letra grande el rótulo parte la línea por palabras y la línea queda a la altura del último renglón; el texto nunca le quita a la línea menos de 16 dp.
+ */
+@Composable
+private fun SectionLabel(text: String, tag: String) {
+  BoxWithConstraints(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+    val total = maxWidth
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+      Text(text, color = NubiTokens.OnNight, fontSize = 17.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 24.sp, modifier = Modifier.widthIn(max = total - 28.dp).semantics { heading() }.testTag(tag))
+      Spacer(Modifier.width(12.dp))
+      Box(Modifier.weight(1f).padding(bottom = 11.dp).height(1.dp).background(NubiTokens.OnNight.copy(alpha = 0.35f)).hiddenTag("${tag}_line"))
+    }
+  }
+}
+
+/** El rótulo de la sección de comparación y, bajo él, la frase que dice que lo que sigue son datos de muestra (solo en depuración; nunca personas inventadas presentadas como reales): crema, 16 sp. */
+@Composable
+private fun CompareHeader() {
+  Column {
+    SectionLabel(Comparison.SECTION_COMPARE, "contrarreloj_section_compare")
+    Spacer(Modifier.height(8.dp))
+    Text(Comparison.SAMPLE_NOTICE, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_sample_notice"))
+  }
+}
+
+/**
+ * El recuadro plano de la frase principal: el MISMO lila claro de «Marca nueva» en Hoy (`TimeTrialDoneFill`, `#D9CEFF`, Tarea 169), esquina y relleno de 12 dp, sin borde ni sombra, no tocable; la letra, seminegrita de 16 sp en tinta (11,9:1 sobre el lila). La etiqueta de prueba cubre el recuadro entero.
+ */
+@Composable
+private fun FlatNote(text: String, tag: String) {
+  Text(text.glueNumbers(), color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag(tag).clip(RoundedCornerShape(12.dp)).background(TimeTrialDoneFill).padding(12.dp))
+}
+
+/**
+ * «Tu lugar esta semana»: según [Comparison.Place], la frase en «de cada 100» en el recuadro plano, el percentil con su división, la campana real en la ventanilla noche y sus dos frases; «Todavía somos pocos» con su cuenta, su barra y «Mientras tanto…»; o, sin marca esta semana, qué hacer para verlo.
+ * Todo lo que se dice sale de [Comparison] (probado ahí); aquí solo se dibuja.
+ */
+@Composable
+private fun PlaceCard(s: Comparison.Section) {
+  InfoCard("contrarreloj_place", Comparison.PLACE_TITLE) {
+    when (val p = s.place) {
+      is Comparison.Place.NoMark -> Text(Comparison.noMarkSentence(s.gameTitle), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("contrarreloj_place_nomark"))
+      is Comparison.Place.Found -> RankedBlock(p.ranked, s)
+      is Comparison.Place.Few -> FewBlock(p, s)
+    }
+  }
+}
+
+@Composable
+private fun RankedBlock(r: Comparison.Ranked, s: Comparison.Section) {
+  FlatNote(Comparison.mainSentence(r, s.range, s.gameTitle), "contrarreloj_place_main")
+  Text(Comparison.percentileLine(r), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 12.dp).testTag("contrarreloj_place_percentile"))
+  Comparison.scopeLine(r)?.let { Text(it, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 4.dp).testTag("contrarreloj_place_scope")) }
+  ClayDivider("contrarreloj_divider_place")
+  BellChart(r)
+  Spacer(Modifier.height(12.dp))
+  Text(Comparison.quartilesSentence(r.distribution), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("contrarreloj_place_quartiles"))
+  Spacer(Modifier.height(8.dp))
+  Text(Comparison.madeOfSentence(r.distribution), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("contrarreloj_place_madeof"))
+}
+
+/** «Todavía somos pocos»: la frase enmarcada con la cuenta real, la barra «23 de 50 personas», una línea y, si con todas las edades de 4 semanas alcanzan 50, «Mientras tanto, …». */
+@Composable
+private fun FewBlock(few: Comparison.Place.Few, s: Comparison.Section) {
+  FlatNote(Comparison.fewSentence(few, s.range, s.gameTitle), "contrarreloj_few_note")
+  Spacer(Modifier.height(12.dp))
+  BarRow(few.own.toFloat() / Comparison.FEW_BAR_GOAL, Clay.Lime, Comparison.fewBarText(few.own), "contrarreloj_few_bar")
+  few.meanwhile?.let {
+    ClayDivider("contrarreloj_divider_few")
+    Text(Comparison.meanwhileSentence(it), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("contrarreloj_few_meanwhile"))
+  }
+}
+
+/** Lo que la campana mide: el tope de su curva y lo que se reserva arriba para «Tú» y su moneda (palabra de hasta 26 dp, moneda de 18 y 4 dp de aire entre cada pieza). */
+private val BellCurveMax = 84.dp
+private val BellTopReserve = 60.dp
+private const val BELL_SAMPLES = 160
+
+/**
+ * La campana REAL (Fable §1.2 y §11.4 B): el histograma suavizado 1-2-1 (solo para dibujar; el percentil sale de los tramos sin suavizar) relleno de lila `Clay.Grape` sobre la ventanilla noche, sin curva ajustada ni colas que no existen; la línea fina de la mitad (la mediana), «Tú» como barra sol de 6 dp
+ * hasta la curva con la moneda del visto y la palabra encima, y el eje «0 aciertos · 25 · 50 · 75 o más». La barra, la línea y la curva salen de la MISMA función ([Comparison.bellHeight]), así que la barra llega justo a la curva. El lector de pantalla dice «Campana con las marcas de las 128 personas…» (el dibujo no habla; las dos frases de abajo son el contenido).
+ */
+@Composable
+private fun BellChart(r: Comparison.Ranked) {
+  val d = r.distribution
+  val smooth = remember(d) { Comparison.smoothed(d.bins) }
+  val peak = remember(smooth) { smooth.max().coerceAtLeast(1.0) }
+  NightWindow("contrarreloj_bell_window", Modifier.semantics { contentDescription = Comparison.bellSpoken(r) }) {
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+      val width = maxWidth
+      val canvasHeight = BellTopReserve + BellCurveMax
+      fun xDp(x: Double): Dp = width * (x / Comparison.TOP_MARK).toFloat()
+      fun heightAt(x: Double): Dp = BellCurveMax * (Comparison.bellHeight(smooth, x) / peak).toFloat()
+      val youX = Comparison.markX(r.mark)
+      val barH = heightAt(youX).coerceAtLeast(6.dp)
+      val medianH = heightAt(Comparison.markX(d.p50))
+      Column {
+        Box(Modifier.fillMaxWidth().height(canvasHeight)) {
+          Canvas(Modifier.fillMaxSize().hiddenTag("contrarreloj_bell_area")) {
+            val base = size.height
+            val path = Path().apply {
+              moveTo(0f, base)
+              for (i in 0..BELL_SAMPLES) {
+                val x = Comparison.TOP_MARK * i / BELL_SAMPLES.toDouble()
+                lineTo(size.width * i / BELL_SAMPLES, base - (Comparison.bellHeight(smooth, x) / peak).toFloat() * BellCurveMax.toPx())
+              }
+              lineTo(size.width, base)
+              close()
+            }
+            drawPath(path, Clay.Grape)
+            drawRect(NubiTokens.OnNightDim.copy(alpha = 0.4f), topLeft = Offset(0f, base - 2.dp.toPx()), size = Size(size.width, 2.dp.toPx()))
+          }
+          // la mitad: una línea fina, del color de la ventanilla, que corta el lila hasta la curva
+          Box(Modifier.offset(x = xDp(Comparison.markX(d.p50)) - 0.75.dp, y = canvasHeight - medianH).width(1.5.dp).height(medianH).background(NubiTokens.NightWindow).hiddenTag("contrarreloj_bell_median"))
+          // «Tú»: la barra sol hasta la curva, y encima la moneda del visto y la palabra (sobre la barra, sin salirse de la ventanilla)
+          Box(
+            Modifier.offset(x = xDp(youX) - 3.dp, y = canvasHeight - barH).width(6.dp).height(barH).clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)).background(Clay.Sun).hiddenTag("contrarreloj_bell_you_bar")
+          )
+          val labelX = xDp(youX).coerceIn(20.dp, width - 20.dp)
+          Box(Modifier.offset(x = labelX - 20.dp, y = 0.dp).width(40.dp).height(canvasHeight - barH - 4.dp), contentAlignment = Alignment.BottomCenter) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+              CapScale(RHYTHM_TEXT_CAP) {
+                Text("Tú", color = NubiTokens.OnNight, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 20.sp, textAlign = TextAlign.Center, softWrap = false, modifier = Modifier.hiddenTag("contrarreloj_bell_you"))
+              }
+              Spacer(Modifier.height(4.dp))
+              Coin("contrarreloj_bell_coin", size = 18.dp)
+            }
+          }
+        }
+        Spacer(Modifier.height(4.dp))
+        BellAxis(width)
+      }
+    }
+  }
+}
+
+/**
+ * El eje de la campana (14 sp, rótulo de gráfico): «0 aciertos» al borde izquierdo, «75 o más» al derecho y «25» y «50» sobre su lugar; un rótulo que no deja 8 dp al anterior se omite (primero se guardan los dos extremos, luego el «50» y por último el «25»). Con tope de escala 1,3 como el resto de los gráficos.
+ */
+@Composable
+private fun BellAxis(width: Dp) {
+  CapScale(RHYTHM_TEXT_CAP) {
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val style = androidx.compose.material3.LocalTextStyle.current.merge(TextStyle(fontSize = 14.sp))
+    val widthPx = with(density) { width.toPx() }
+    val gapPx = with(density) { Comparison.AXIS_GAP_DP.dp.toPx() }
+    val labels = listOf(Comparison.BELL_AXIS_LEFT, Comparison.BELL_AXIS_MIDDLE[0].toString(), Comparison.BELL_AXIS_MIDDLE[1].toString(), Comparison.BELL_AXIS_RIGHT)
+    val w = labels.map { measurer.measure(it, style, softWrap = false, maxLines = 1).size.width.toFloat() }
+    val start = listOf(0f, widthPx * Comparison.BELL_AXIS_MIDDLE[0] / Comparison.TOP_MARK - w[1] / 2, widthPx * Comparison.BELL_AXIS_MIDDLE[1] / Comparison.TOP_MARK - w[2] / 2, widthPx - w[3])
+    val shown = mutableListOf<Int>()
+    for (i in listOf(0, 3, 2, 1)) if (shown.all { j -> start[i] >= start[j] + w[j] + gapPx || start[j] >= start[i] + w[i] + gapPx }) shown += i
+    Box(Modifier.fillMaxWidth().height(with(density) { 18.sp.toDp() })) {
+      for (i in shown.sorted()) {
+        Text(labels[i], color = NubiTokens.OnNightDim, fontSize = 14.sp, lineHeight = 18.sp, softWrap = false, modifier = Modifier.offset(x = with(density) { start[i].toDp() }).hiddenTag("contrarreloj_bell_axis_$i"))
+      }
+    }
+  }
+}
+
+/** «Tu percentil en las últimas 7 semanas»: las semanas con marca propia y con 50 personas o más en la franja, en barras de 0 a 100 en la ventanilla noche, y la frase («En 6 de las 7 semanas estuviste por encima de la mitad de tu franja.»). */
+@Composable
+private fun PercentileWeeksCard(points: List<Comparison.WeekPoint>) {
+  InfoCard("contrarreloj_percweeks", Comparison.WEEKS_TITLE) {
+    PercentileWeeksChart(points)
+    Comparison.weeksSentence(points)?.let { Text(it, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp, modifier = Modifier.padding(top = 12.dp).testTag("contrarreloj_percweeks_sentence")) }
+  }
+}
+
+/**
+ * Siete lugares (de hace 7 semanas a esta): cada semana con punto lleva su cifra encima (todas en UNA fila; la de esta semana en `SunOnNight` y negrita) y una barra de 0 a 100 (la de esta semana en sol, el resto lila); una semana sin punto queda sin barra ni cifra. Cifras con tope de escala 1,3; el eje dice «hace 7 semanas»
+ * a la izquierda y «esta semana» a la derecha, y con letra grande el de la derecha baja de fila. El lector de pantalla dice cada semana ([Comparison.weeksSpoken]).
+ */
+@Composable
+private fun PercentileWeeksChart(points: List<Comparison.WeekPoint>) {
+  val byAgo = points.associateBy { it.weeksAgo }
+  NightWindow("contrarreloj_percweeks_window", Modifier.semantics { contentDescription = Comparison.weeksSpoken(points) }) {
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+      val width = maxWidth
+      val slot = width / Comparison.WEEKS
+      val barWidth = minOf(28.dp, slot - 8.dp)
+      Column {
+        Row(Modifier.fillMaxWidth()) {
+          for (ago in Comparison.WEEKS - 1 downTo 0) {
+            val point = byAgo[ago]
+            Column(Modifier.width(slot), horizontalAlignment = Alignment.CenterHorizontally) {
+              CapScale(RHYTHM_TEXT_CAP) {
+                Box(Modifier.height(with(LocalDensity.current) { 20.sp.toDp() }), contentAlignment = Alignment.Center) {
+                  if (point != null) Text(point.percentile.toString(), color = if (ago == 0) NubiTokens.SunOnNight else NubiTokens.OnNight, fontSize = 16.sp, fontWeight = if (ago == 0) FontWeight.Bold else FontWeight.Medium, fontFamily = AppFamily, lineHeight = 20.sp, textAlign = TextAlign.Center, softWrap = false, modifier = Modifier.hiddenTag("contrarreloj_percweeks_fig_$ago"))
+                }
+              }
+              Spacer(Modifier.height(4.dp))
+              Box(Modifier.height(BarMax), contentAlignment = Alignment.BottomCenter) {
+                if (point != null) Box(Modifier.width(barWidth).height((BarMax * (point.percentile / 100f)).coerceAtLeast(BarMin)).clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)).background(if (ago == 0) Clay.Sun else Clay.Grape).hiddenTag("contrarreloj_percweeks_bar_$ago"))
+              }
+            }
+          }
+        }
+        Box(Modifier.fillMaxWidth().height(2.dp).background(NubiTokens.OnNightDim.copy(alpha = 0.4f)).hiddenTag("contrarreloj_percweeks_baseline"))
+        Spacer(Modifier.height(4.dp))
+        WeeksAxis(width)
+      }
+    }
+  }
+}
+
+/** Los dos rótulos del eje de las semanas (14 sp con tope de escala 1,3): a la izquierda «hace 7 semanas» y a la derecha «esta semana»; si no caben en una fila con 8 dp entre los dos, el de la derecha baja a su propia fila, a la derecha. */
+@Composable
+private fun WeeksAxis(width: Dp) {
+  CapScale(RHYTHM_TEXT_CAP) {
+    val measurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    val style = androidx.compose.material3.LocalTextStyle.current.merge(TextStyle(fontSize = 14.sp))
+    val fits = with(density) {
+      measurer.measure(Comparison.WEEKS_AXIS_LEFT, style, softWrap = false, maxLines = 1).size.width + Comparison.AXIS_GAP_DP.dp.roundToPx() +
+        measurer.measure(Comparison.WEEKS_AXIS_RIGHT, style, softWrap = false, maxLines = 1).size.width <= width.roundToPx()
+    }
+    Column(Modifier.fillMaxWidth()) {
+      Row(Modifier.fillMaxWidth()) {
+        Text(Comparison.WEEKS_AXIS_LEFT, color = NubiTokens.OnNightDim, fontSize = 14.sp, lineHeight = 18.sp, softWrap = false, modifier = Modifier.hiddenTag("contrarreloj_percweeks_axis_left"))
+        if (fits) {
+          Spacer(Modifier.weight(1f))
+          Text(Comparison.WEEKS_AXIS_RIGHT, color = NubiTokens.OnNightDim, fontSize = 14.sp, lineHeight = 18.sp, softWrap = false, modifier = Modifier.hiddenTag("contrarreloj_percweeks_axis_right"))
+        }
+      }
+      if (!fits) Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+        Spacer(Modifier.weight(1f))
+        Text(Comparison.WEEKS_AXIS_RIGHT, color = NubiTokens.OnNightDim, fontSize = 14.sp, lineHeight = 18.sp, softWrap = false, modifier = Modifier.hiddenTag("contrarreloj_percweeks_axis_right"))
+      }
+    }
+  }
+}
+
+/**
+ * «Comparado con otras edades»: la frase de entrada, una fila por franja con «N de cada 100» a la derecha (la propia, en negrita y con «(tu franja)»; una franja con menos de 50 personas dice «todavía somos pocos», apagado, y su fila no va en negrita para que quepa en una línea), una línea y «Todas las edades». Sin la fila de «13 a 17 años» mientras esa franja no
+ * pueda activar la comparación: la losa lo dice en una línea. Sin botón ni hoja aparte: una sola puerta, nada que tocar.
+ */
+@Composable
+private fun OthersCard(s: Comparison.Section, o: Comparison.Others) {
+  InfoCard("contrarreloj_others", Comparison.OTHERS_TITLE) {
+    Text(Comparison.othersLead(s.mark ?: 0, s.gameTitle), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("contrarreloj_others_lead"))
+    Spacer(Modifier.height(12.dp))
+    o.rows.forEachIndexed { i, row -> FactRow(row.label, row.value, "contrarreloj_others_$i", bold = row.own && row.percentile != null, muted = row.percentile == null) }
+    ClayDivider("contrarreloj_divider_others", top = 12.dp)
+    FactRow(o.all.label, o.all.value, "contrarreloj_others_all", muted = o.all.percentile == null)
+    if (!com.example.Features.COMPARE_MINORS) Text(Comparison.NO_MINORS, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 8.dp).testTag("contrarreloj_others_minors"))
   }
 }
 

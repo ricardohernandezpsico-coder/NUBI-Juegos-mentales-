@@ -114,6 +114,9 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
     // Nubi Plus (Tarea 199, `PlusAccess`): la compra llega con Google Play Billing (Etapa 4); mientras, este botón enciende o apaga la página «Contrarreloj» de Avance y el atajo del final. Las builds de depuración empiezan con Plus encendido.
     val plus by viewModel.plus.collectAsState()
     DebugButton(if (plus) "[Debug] Nubi Plus: SÍ (tocar para quitar)" else "[Debug] Nubi Plus: NO (tocar para poner)", "btn_debug_plus") { viewModel.setPlus(!plus) }
+    // La comparación con personas de tu edad (Tarea 202) usa datos de muestra en depuración: este botón cambia entre «muchos» (lo normal) y «pocos» (el mundo de «Todavía somos pocos»).
+    val compareFew by viewModel.compareFew.collectAsState()
+    DebugButton(if (compareFew) "[Debug] Comparación: pocos (tocar para muchos)" else "[Debug] Comparación: muchos (tocar para pocos)", "btn_debug_compare") { viewModel.setCompareFew(!compareFew) }
     DebugButton("[Debug] Repetir el inicio (sin borrar datos)", "btn_debug_onboarding") { viewModel.debugRestartOnboarding() }
     // «Jugar como la primera vez» (Tarea 191): tutorial, subida rápida de etapa y tarjetas «NUEVO» como las ve alguien nuevo, sin tocar tu progreso: las marcas de «ya visto» no se leen ni se guardan y el resultado no se guarda.
     com.example.model.GameRegistry.allGames.forEach { g ->

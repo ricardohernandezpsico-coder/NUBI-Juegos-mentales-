@@ -12,6 +12,9 @@ object PlusAccess {
   const val PREFS = "plus_access"
   const val KEY = "plus"
 
+  /** El interruptor de depuración de los datos de muestra de la comparación (Tarea 202): «muchos» (lo normal) o «pocos» (el mundo de «Todavía somos pocos»). Vive en el mismo archivo pasajero que Plus: NO va en el respaldo y solo lo cambia el botón «[Debug]». */
+  const val COMPARE_FEW_KEY = "compare_few"
+
   /** Lo guardado ([stored]; null = nunca se tocó) o, sin nada guardado, lo que pide la build: encendido en depuración, apagado en la de la tienda. */
   fun resolve(stored: Boolean?, debugBuild: Boolean): Boolean = stored ?: debugBuild
 
@@ -25,7 +28,8 @@ object PlusAccess {
     "Tus últimas 10 marcas, en barras.",
     "Esta semana y la pasada, lado a lado.",
     "Tus aciertos y tus errores.",
-    "Tu récord de las pistas anteriores."
+    "Tu récord de las pistas anteriores.",
+    "Tu ritmo en los 2 minutos."
   )
   const val SHEET_OK = "Entendido"
 }

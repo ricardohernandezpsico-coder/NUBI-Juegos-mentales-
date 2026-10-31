@@ -16,4 +16,10 @@ object Features {
    * Necesita servidor, cuentas, consentimiento y la revisión del abogado (regla permanente 3): mientras tanto queda APAGADA y no se ve nada. Lo único que existe hoy es que cada medida guardada ([MeasurePoint.mode]) anota el modo en que se jugó, para que el día que haya servidor no falten datos.
    */
   const val COMPARE = false
+
+  /**
+   * Que la franja de 13 a 17 años pueda compararse (Tarea 202; `auditoria-fable/nubi-plus-comparacion.md` §1.4 y §3.6): APAGADA hasta que el abogado diga qué consentimiento vale para menores. Apagada, quien tiene de 13 a 17 años NO ve la sección de comparación
+   * y la fila «13 a 17 años» no aparece en «Comparado con otras edades» (la losa dice «De 13 a 17 años no hay comparación por ahora.»).
+   */
+  const val COMPARE_MINORS = false
 }

@@ -179,7 +179,7 @@ class ContrarrelojFlowTest {
     assertNull("sin Plus no se abre la página", vm.contrarreloj.value)
     rule.onNodeWithTag("plus_sheet").assertIsDisplayed()
     assertEquals(PlusAccess.SHEET_TITLE, textOf("plus_sheet_title"))
-    assertEquals("una lista breve de lo que trae", PlusAccess.SHEET_ITEMS.size, rule.onAllNodes(hasTestTag("plus_sheet_item_0").or(hasTestTag("plus_sheet_item_1")).or(hasTestTag("plus_sheet_item_2")).or(hasTestTag("plus_sheet_item_3")).or(hasTestTag("plus_sheet_item_4")), useUnmergedTree = true).fetchSemanticsNodes().size)
+    assertEquals("una lista breve de lo que trae", PlusAccess.SHEET_ITEMS.size, (0 until 12).count { rule.onAllNodes(hasTestTag("plus_sheet_item_$it"), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() })
     assertEquals("Entendido", rule.onNodeWithTag("btn_plus_sheet_ok").fetchSemanticsNode().config.getOrNull(SemanticsProperties.Text)?.joinToString("") { it.text })
     rule.onNodeWithTag("btn_plus_sheet_ok").performClick(); rule.waitForIdle()
     assertEquals("la hoja se cierra", 0, count("plus_sheet"))

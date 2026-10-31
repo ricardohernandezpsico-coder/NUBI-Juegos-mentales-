@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -73,7 +74,8 @@ internal fun ContrarrelojDoor(record: Int?, plus: Boolean, onClick: () -> Unit, 
 internal fun PlusLockSheet(onDismiss: () -> Unit) {
   Dialog(onDismissRequest = onDismiss) {
     ClayCard(Modifier.fillMaxWidth().padding(8.dp).testTag("plus_sheet"), color = Clay.Cream, size = SlabSize.LARGE, contentPadding = 20.dp) {
-      Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+      // se desliza: con seis líneas (Tarea 202 sumó «Tu ritmo») y letra 2,0 la hoja no cabe entera en el alto de una pantalla
+      Column(Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(PlusAccess.SHEET_TITLE, color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 24.sp, modifier = Modifier.semantics { heading() }.testTag("plus_sheet_title"))
         Text(PlusAccess.SHEET_LEAD, color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("plus_sheet_lead"))
         Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("plus_sheet_items")) {

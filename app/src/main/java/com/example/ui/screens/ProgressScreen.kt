@@ -69,6 +69,8 @@ fun ProgressScreen(
   val currentLang = LocalAppLanguage.current
   val contrarreloj by viewModel.contrarreloj.collectAsState()      // la página «Contrarreloj» abierta (el juego elegido; Tarea 199): vive en el ViewModel como la de un área
   val plus by viewModel.plus.collectAsState()
+  val compareFew by viewModel.compareFew.collectAsState()
+  val ageRange by viewModel.ageRange.collectAsState()
   val ttResults by viewModel.timeTrialResults.collectAsState()
   var plusSheet by remember { mutableStateOf(false) }
   val avanceArea by viewModel.avanceArea.collectAsState()        // la página abierta: la recuerda el ViewModel (rotar la pantalla no la cierra; cambiar de pestaña, sí)
@@ -93,7 +95,9 @@ fun ProgressScreen(
   Column(modifier.fillMaxSize().padding(bottom = com.example.ui.components.LocalBarInset.current)) {      // la franja de la barra de pestañas queda libre
     val ttOpen = contrarreloj
     if (ttOpen != null && contrarrelojOpen) {
-      ContrarrelojPage(results = ttResults, selected = ttOpen, onSelect = viewModel::selectContrarrelojGame, onBack = viewModel::closeContrarreloj, now = ttNow, lang = currentLang)
+      // La comparación con personas de tu edad (Tarea 202): `Comparison.sourceFor` es null en la build de la tienda y mientras no haya servidor; en depuración, datos de muestra (la página lo dice con una frase visible).
+      val compare = remember(compareFew) { com.example.data.Comparison.sourceFor(com.example.BuildConfig.DEBUG, compareFew) }
+      ContrarrelojPage(results = ttResults, selected = ttOpen, onSelect = viewModel::selectContrarrelojGame, onBack = viewModel::closeContrarreloj, now = ttNow, lang = currentLang, compare = compare, ageRange = ageRange)
       return@Column
     }
     val openKey = avanceArea

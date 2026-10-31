@@ -10,7 +10,7 @@ import org.junit.Test
 
 /**
  * El ritmo de la última partida (`TimeTrialMarks.pace`, Tarea 200; `auditoria-fable/nubi-plus-comparacion.md` §2.3): los aciertos y los errores en cada medio minuto (0 a 30, 30 a 60, 60 a 90 y 90 a 120 s) y la frase que lee el gráfico.
- * «Tu mejor medio minuto fue el segundo, con 14 aciertos. Tus 3 errores llegaron en el último minuto, en el paso 4 de la pista.» Lógica pura. Decide y prueba los casos borde: empates, sin errores, errores repartidos, un error, sin aciertos y sin ensayos.
+ * «Tu mejor medio minuto fue el de 30 a 60 segundos, con 14 aciertos. Tus 3 errores llegaron en el último minuto, en el paso 4 de la pista.» Lógica pura. Decide y prueba los casos borde: empates, sin errores, errores repartidos, un error, sin aciertos y sin ensayos.
  */
 class TimeTrialPaceTest {
   /** Un ensayo: a qué hora (ms), si fue acierto y en qué paso de la pista. */
@@ -38,10 +38,10 @@ class TimeTrialPaceTest {
   fun `la frase de la lamina de Fable sale tal cual`() {
     val p = paceOf(half(0, 10), half(1, 14), half(2, 12, listOf(4)), half(3, 11, listOf(4, 4), hitLevel = 4))
     assertEquals(
-      "Tu mejor medio minuto fue el segundo, con 14 aciertos. Tus 3 errores llegaron en el último minuto, en el paso 4 de la pista.",
+      "Tu mejor medio minuto fue el de 30 a 60 segundos, con 14 aciertos. Tus 3 errores llegaron en el último minuto, en el paso 4 de la pista.",
       p.sentence
     )
-    assertEquals("Tu mejor medio minuto fue el segundo, con 14 aciertos.", p.bestLine)
+    assertEquals("Tu mejor medio minuto fue el de 30 a 60 segundos, con 14 aciertos.", p.bestLine)
     assertEquals("Tus 3 errores llegaron en el último minuto, en el paso 4 de la pista.", p.errorsLine)
   }
 
@@ -68,18 +68,18 @@ class TimeTrialPaceTest {
 
   @Test
   fun `cada medio minuto puede ser el mejor y se nombra`() {
-    val names = listOf("el primero", "el segundo", "el tercero", "el último")
+    val names = listOf("el de 0 a 30", "el de 30 a 60", "el de 60 a 90", "el de 90 a 120")      // los mismos números del eje: «el segundo» se leería como «un segundo»
     for (best in 0..3) {
       val p = paceOf(*Array(4) { half(it, if (it == best) 9 else 5) })
-      assertEquals("Tu mejor medio minuto fue ${names[best]}, con 9 aciertos.", p.bestLine)
+      assertEquals("Tu mejor medio minuto fue ${names[best]} segundos, con 9 aciertos.", p.bestLine)
     }
   }
 
   @Test
   fun `con empate en lo mas alto los nombra a todos y dice cada uno`() {
-    assertEquals("Tus mejores medios minutos fueron el primero y el segundo, con 10 aciertos cada uno.", paceOf(half(0, 10), half(1, 10), half(2, 7), half(3, 4)).bestLine)
-    assertEquals("Tus mejores medios minutos fueron el tercero y el último, con 8 aciertos cada uno.", paceOf(half(0, 3), half(1, 5), half(2, 8), half(3, 8)).bestLine)
-    assertEquals("Tus mejores medios minutos fueron el primero, el tercero y el último, con 9 aciertos cada uno.", paceOf(half(0, 9), half(1, 2), half(2, 9), half(3, 9)).bestLine)
+    assertEquals("Tus mejores medios minutos fueron el de 0 a 30 y el de 30 a 60 segundos, con 10 aciertos cada uno.", paceOf(half(0, 10), half(1, 10), half(2, 7), half(3, 4)).bestLine)
+    assertEquals("Tus mejores medios minutos fueron el de 60 a 90 y el de 90 a 120 segundos, con 8 aciertos cada uno.", paceOf(half(0, 3), half(1, 5), half(2, 8), half(3, 8)).bestLine)
+    assertEquals("Tus mejores medios minutos fueron el de 0 a 30, el de 60 a 90 y el de 90 a 120 segundos, con 9 aciertos cada uno.", paceOf(half(0, 9), half(1, 2), half(2, 9), half(3, 9)).bestLine)
     assertEquals(listOf(0, 2, 3), paceOf(half(0, 9), half(1, 2), half(2, 9), half(3, 9)).bestHalves)
   }
 
@@ -92,9 +92,9 @@ class TimeTrialPaceTest {
 
   @Test
   fun `un solo acierto va en singular, tambien con empate`() {
-    assertEquals("Tu mejor medio minuto fue el segundo, con 1 acierto.", paceOf(half(0, 0), half(1, 1)).bestLine)
+    assertEquals("Tu mejor medio minuto fue el de 30 a 60 segundos, con 1 acierto.", paceOf(half(0, 0), half(1, 1)).bestLine)
     assertEquals("Los cuatro medios minutos fueron parejos, con 1 acierto cada uno.", paceOf(half(0, 1), half(1, 1), half(2, 1), half(3, 1)).bestLine)
-    assertEquals("Tus mejores medios minutos fueron el primero y el último, con 1 acierto cada uno.", paceOf(half(0, 1), half(3, 1)).bestLine)
+    assertEquals("Tus mejores medios minutos fueron el de 0 a 30 y el de 90 a 120 segundos, con 1 acierto cada uno.", paceOf(half(0, 1), half(3, 1)).bestLine)
   }
 
   @Test
@@ -111,7 +111,7 @@ class TimeTrialPaceTest {
   fun `sin errores lo dice y nada mas`() {
     val p = paceOf(half(0, 10), half(1, 14), half(2, 12), half(3, 11))
     assertEquals("Sin errores en esta partida.", p.errorsLine)
-    assertEquals("Tu mejor medio minuto fue el segundo, con 14 aciertos. Sin errores en esta partida.", p.sentence)
+    assertEquals("Tu mejor medio minuto fue el de 30 a 60 segundos, con 14 aciertos. Sin errores en esta partida.", p.sentence)
     assertTrue(p.errorHalves.isEmpty())
     assertTrue(p.errorSteps.isEmpty())
   }
@@ -220,8 +220,8 @@ class TimeTrialPaceTest {
         val low = line.lowercase()
         for (bad in listOf("velocidad", "capacidad", "rendimiento", "rápido", "rapidez", "nivel", "puntaje", "edad mental", "ranking", "percentil", "cerebro", "cognitiv", "entren"))
           assertFalse("«$line» dice «$bad»", bad in low)
-        // quitadas las cifras con su unidad («14 aciertos», «3 errores», «paso 4», «pasos 3 y 4», «entre el paso 2 y el 4 de la pista»), no queda ningún número suelto
-        val rest = line.replace(Regex("""\d+ (aciertos?|errores)"""), "").replace(Regex("""pasos? \d+"""), "").replace(Regex("""y (el )?\d+ de la pista"""), "")
+        // quitadas las cifras con su unidad («14 aciertos», «3 errores», «paso 4», «pasos 3 y 4», «entre el paso 2 y el 4 de la pista», «el de 30 a 60 segundos»), no queda ningún número suelto
+        val rest = line.replace(Regex("""\d+ (aciertos?|errores)"""), "").replace(Regex("""pasos? \d+"""), "").replace(Regex("""y (el )?\d+ de la pista"""), "").replace(Regex("""el de \d+ a \d+"""), "")
         assertFalse("«$line» trae un número sin su unidad: «$rest»", Regex("""\d""").containsMatchIn(rest))
       }
     }

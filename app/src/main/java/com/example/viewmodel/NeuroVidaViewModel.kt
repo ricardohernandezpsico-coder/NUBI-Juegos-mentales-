@@ -868,6 +868,11 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   fun setPlus(on: Boolean) = repository.setPlus(on)
 
+  /** Los datos de muestra de la comparación en su mundo de «pocos» (solo depuración, `Comparison.sourceFor`). */
+  val compareFew: StateFlow<Boolean> = repository.compareFew
+
+  fun setCompareFew(on: Boolean) = repository.setCompareFew(on)
+
   /** Abre la página con [gameId] elegido (por defecto, el juego de hoy). */
   fun openContrarreloj(gameId: String? = null) { _contrarreloj.value = gameId ?: com.example.data.TimeTrialDay.gameFor(repository.dateKeyOf(System.currentTimeMillis())) }
 

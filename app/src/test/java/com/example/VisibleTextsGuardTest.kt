@@ -20,6 +20,15 @@ class VisibleTextsGuardTest {
   /** Cadenas técnicas que no se ven (nombres internos): se dejan tal cual. */
   private val internalLiterals = setOf("neurovida_daily_cognitive_reminder")
 
+  /**
+   * «Percentil» no se dice en la app (regla del 8-oct: ni percentiles ni comparaciones con otras personas) SALVO en la comparación con personas de tu edad del Contrarreloj, que Ricardo pidió con la palabra a la vista (31-oct; `auditoria-fable/nubi-plus-comparacion.md` §1.1; Tarea 202): estos DOS textos exactos,
+   * por texto completo y no por archivo. Cualquier otro texto con «percentil» sigue fallando, y si uno de estos cambia o desaparece, la prueba de más abajo pide quitarlo de la lista.
+   */
+  private val percentileTexts = setOf(
+    "Tu percentil en las últimas 7 semanas",
+    "Es el percentil \$p: la división \${r.division.label}."
+  )
+
   private val literal = Regex("\"((?:[^\"\\\\\\n]|\\\\.)*)\"")
 
   @Test
@@ -33,6 +42,7 @@ class VisibleTextsGuardTest {
           val text = m.groupValues[1]
           if (text in internalLiterals || Regex("[a-z0-9_]+").matches(text)) continue      // nombres internos y etiquetas de prueba (snake_case): no se ven
           if (text == HealthNotice.TEXT) continue          // la ÚNICA excepción: el aviso de salud (dice que Nubi NO «previene» nada); ver `el aviso de salud ...` más abajo
+          if (text in percentileTexts) continue            // los dos textos exactos de la comparación con personas de tu edad (Tarea 202): ver `percentil solo se dice ...` más abajo
           val low = text.lowercase()
           val hit = banned.firstOrNull { it in low } ?: continue
           found += "${f.name}:${i + 1} «$text» (por «$hit»)"
@@ -512,7 +522,7 @@ class VisibleTextsGuardTest {
       assertTrue("la guardia no atrapa «$bad» dentro de un Text(...)", visibleLiteralsOf("""Text("$bad", fontSize = 20.sp)""").any { measureHit(it) != null })
     }
     for (name in listOf("VELOCIDAD", "VELOCIDAD_DE_PROCESAMIENTO", "RANKING")) assertTrue("«$name» es un nombre interno, no un texto", measureHit(name) == null)
-    for (good in listOf("Tu mejor marca", "Aciertos y errores", "Tu ritmo en la última partida", "Tu mejor medio minuto fue el segundo, con 14 aciertos.")) assertTrue("la guardia atrapa «$good» sin motivo", measureHit(good) == null)
+    for (good in listOf("Tu mejor marca", "Aciertos y errores", "Tu ritmo en la última partida", "Tu mejor medio minuto fue el de 30 a 60 segundos, con 14 aciertos.")) assertTrue("la guardia atrapa «$good» sin motivo", measureHit(good) == null)
     // una excepción lo es por texto COMPLETO: la misma frase con algo de más o de menos ya no pasa
     for (exact in measureExceptions) {
       assertTrue(measureHit(exact) != null)
@@ -520,5 +530,22 @@ class VisibleTextsGuardTest {
       assertFalse("«$exact» + algo más NO debe estar exceptuada", "$exact Tu velocidad." in measureExceptions)
       assertFalse("un recorte de «$exact» NO debe estar exceptuado", exact.dropLast(8) in measureExceptions)
     }
+  }
+
+  // ------------------------------------------------------------------ «percentil» (Tarea 202)
+
+  @Test
+  fun `percentil solo se dice en los dos textos exactos de la comparacion con personas de tu edad`() {
+    val found = mutableSetOf<String>()
+    File("src/main/java").walkTopDown().filter { it.extension == "kt" }.forEach { f ->
+      f.readLines().forEach { raw -> for (text in visibleLiteralsOf(raw)) if ("percentil" in text.lowercase() && !Regex("[a-z0-9_]+").matches(text)) found += text }     // las etiquetas de prueba (snake_case) no se ven
+    }
+    assertEquals("los textos con «percentil» deben ser EXACTAMENTE los exceptuados (si uno cambió, ajustar la lista; si hay otro, quitarlo)", percentileTexts, found)
+    for (exact in percentileTexts) {
+      assertFalse("«$exact» + algo más NO debe estar exceptuado", "$exact Tu percentil sube." in percentileTexts)
+      assertFalse("un recorte de «$exact» NO debe estar exceptuado", exact.dropLast(6) in percentileTexts)
+    }
+    assertFalse("otro texto con la palabra no pasa", "Tu percentil mejoró" in percentileTexts)
+    assertTrue("y «percentil» sigue en la lista de lo que no se dice", "percentil" in banned)
   }
 }

@@ -179,7 +179,7 @@ object TimeTrialMarks {
     val bestLine: String,
     val errorsLine: String
   ) {
-    /** «Tu mejor medio minuto fue el segundo, con 14 aciertos. Tus 3 errores llegaron en el último minuto, en el paso 4 de la pista.» */
+    /** «Tu mejor medio minuto fue el de 30 a 60 segundos, con 14 aciertos. Tus 3 errores llegaron en el último minuto, en el paso 4 de la pista.» */
     val sentence: String get() = "$bestLine $errorsLine"
   }
 
@@ -205,21 +205,22 @@ object TimeTrialMarks {
     return Pace(result, halves, best, errorHalves, errorSteps.toList(), bestLine(halves, best), errorsLine(errorHalves, errorSteps.toList(), errors.sum()))
   }
 
-  private val HALF_NAMES = listOf("el primero", "el segundo", "el tercero", "el último")
+  /** El medio minuto, dicho con los mismos números del eje del gráfico («el de 30 a 60»; la unidad, «segundos», va una vez al final de la frase): así «el segundo» no se lee como «un segundo» (Opus, 31-oct). */
+  private fun halfName(i: Int) = "el de ${PACE_AXIS[i]}"
   private val HALF_ORDINALS = listOf("el primer medio minuto", "el segundo medio minuto", "el tercer medio minuto", "el último medio minuto")
 
   /**
-   * La frase de los aciertos: «Tu mejor medio minuto fue el segundo, con 14 aciertos.» Con EMPATE en lo más alto lo dice con todos los empatados («Tus mejores medios minutos fueron el primero y el segundo, con 14 aciertos cada uno.»; los tres: «el primero, el segundo y el último»; los cuatro: «Los cuatro medios
+   * La frase de los aciertos: «Tu mejor medio minuto fue el de 30 a 60 segundos, con 14 aciertos.» Con EMPATE en lo más alto lo dice con todos los empatados («Tus mejores medios minutos fueron el de 0 a 30 y el de 30 a 60 segundos, con 14 aciertos cada uno.»; los tres: «el de 0 a 30, el de 60 a 90 y el de 90 a 120 segundos»; los cuatro: «Los cuatro medios
    * minutos fueron parejos, con 12 aciertos cada uno.»), y sin ningún acierto: «Esta partida no tuvo aciertos.» (sin culpa, sin «el mejor» de la nada). [best] = los medios minutos con más aciertos (vacío si no hubo).
    */
   fun bestLine(halves: List<HalfMinute>, best: List<Int>): String {
     if (best.isEmpty()) return "Esta partida no tuvo aciertos."
     val hits = TimeTrialDay.hitsText(halves[best.first()].hits)
     return when (best.size) {
-      1 -> "Tu mejor medio minuto fue ${HALF_NAMES[best[0]]}, con $hits."
+      1 -> "Tu mejor medio minuto fue ${halfName(best[0])} segundos, con $hits."
       HALF_MINUTES -> "Los cuatro medios minutos fueron parejos, con $hits cada uno."
-      2 -> "Tus mejores medios minutos fueron ${HALF_NAMES[best[0]]} y ${HALF_NAMES[best[1]]}, con $hits cada uno."
-      else -> "Tus mejores medios minutos fueron ${best.dropLast(1).joinToString(", ") { HALF_NAMES[it] }} y ${HALF_NAMES[best.last()]}, con $hits cada uno."
+      2 -> "Tus mejores medios minutos fueron ${halfName(best[0])} y ${halfName(best[1])} segundos, con $hits cada uno."
+      else -> "Tus mejores medios minutos fueron ${best.dropLast(1).joinToString(", ") { halfName(it) }} y ${halfName(best.last())} segundos, con $hits cada uno."
     }
   }
 

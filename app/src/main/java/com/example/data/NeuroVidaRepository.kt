@@ -471,6 +471,15 @@ class NeuroVidaRepository(
     plusPrefs.edit().putBoolean(PlusAccess.KEY, on).apply()
   }
 
+  // Datos de muestra de la comparación (Tarea 202, `Comparison.sourceFor`): ¿el mundo de «pocos»? Solo lo mueve el botón «[Debug]» y solo se mira en depuración; pasajero, en el mismo archivo que `plus_access` (fuera del respaldo).
+  private val _compareFew = MutableStateFlow(plusPrefs.getBoolean(PlusAccess.COMPARE_FEW_KEY, false))
+  val compareFew: StateFlow<Boolean> = _compareFew.asStateFlow()
+
+  fun setCompareFew(on: Boolean) {
+    _compareFew.value = on
+    plusPrefs.edit().putBoolean(PlusAccess.COMPARE_FEW_KEY, on).apply()
+  }
+
   // La guía de Nubi en la primera entrada a Hoy (Tarea 193, `HoyGuide`): la marca «ya la vio» (`hoy_guide_seen` en `profile_extra`: va en el respaldo, así un teléfono restaurado no la repite, y «Borrar datos» la limpia). Se escribe al TERMINAR la guía («Listo» o «Saltar la guía»), no al empezar.
   private val _hoyGuideSeen = MutableStateFlow(profilePrefs.getBoolean("hoy_guide_seen", false))
   val hoyGuideSeen: StateFlow<Boolean> = _hoyGuideSeen.asStateFlow()
