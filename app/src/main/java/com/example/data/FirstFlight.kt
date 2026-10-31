@@ -2,6 +2,7 @@ package com.example.data
 
 import android.content.Context
 import com.example.model.AgeBand
+import com.example.model.AgeRange
 import com.example.model.DomainType
 import org.json.JSONArray
 import org.json.JSONObject
@@ -61,6 +62,8 @@ data class FlightState(
   val step: FlightStep = FirstFlight.firstStep(mode),
   val name: String = "",
   val age: AgeBand? = null,
+  /** La franja fina que se eligió (Tarea 195); [age] es la banda del DDA que sale de ella. Un recorrido guardado antes de esta tarea solo trae [age]. */
+  val ageRange: AgeRange? = null,
   val goals: Set<DomainType> = emptySet(),
   val days: Int? = null,
   /** Hora del aviso diario; [NO_REMINDER] = sin aviso; null = todavía no respondió. */
@@ -374,6 +377,7 @@ object FlightStore {
     put("step", s.step.name)
     put("name", s.name)
     s.age?.let { put("age", it.name) }
+    s.ageRange?.let { put("age_range", it.name) }
     put("goals", encodeGoals(s.goals))
     s.days?.let { put("days", it) }
     s.hour?.let { put("hour", it) }
@@ -399,11 +403,13 @@ object FlightStore {
       val measured = o.optJSONObject("measured")?.let { m -> m.keys().asSequence().associateWith { m.getDouble(it).toFloat() } }.orEmpty()
       val phrases = o.optJSONObject("phrases")?.let { m -> m.keys().asSequence().associateWith { m.getString(it) } }.orEmpty()
       val skipped = o.optJSONArray("skipped")?.let { a -> (0 until a.length()).map { a.getString(it) }.toSet() }.orEmpty()
+      val ageRange = AgeRange.fromStored(o.optString("age_range"))
       val decoded = FlightState(
         mode = mode,
         step = step,
         name = o.optString("name"),
-        age = AgeBand.entries.firstOrNull { it.name == o.optString("age") },
+        age = ageRange?.toBand() ?: AgeBand.entries.firstOrNull { it.name == o.optString("age") },      // un JSON viejo no trae «age_range»: queda solo la banda
+        ageRange = ageRange,
         goals = decodeGoals(o.optString("goals")),
         days = if (o.has("days")) o.getInt("days") else null,
         hour = if (o.has("hour")) o.getInt("hour") else null,

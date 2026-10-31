@@ -28,7 +28,7 @@ Ricardo probó Tinta o Palabra («funciona bien») y la espera tras cada error (
 6. **Contra el azar:** «pausa que crece al fallar» (QUITADA en la Tarea 178: ver §0) y un mínimo antes de poder responder en los juegos de dos opciones; prueba obligatoria con bots (§6).
 7. En Hoy, el «Contrarreloj de hoy» **reemplaza** al «Desafío de hoy». El modo Desafío de la ficha NO se toca.
 8. «¿Con reloj?» de la ficha **convive** en la fase 1 (es otra cosa); se irá en la fase 1b, cuando el Contrarreloj entre a la ficha.
-9. Nada de comparar con otras personas ni de franjas nuevas en esta fase (§8).
+9. Nada de comparar con otras personas en esta fase (§8). *(Las franjas de edad finas SÍ se preguntan desde la Tarea 195, 30-oct, decisión de Ricardo: se guardan solo en el teléfono para no volver a preguntarlas cuando llegue la fase 2; ver §8.)*
 
 ## 2. La pista de cada juego (`Games/Shared/TimeTrial.cs`)
 
@@ -101,9 +101,11 @@ Con la marca neta adivinar PIERDE: en los juegos de cuatro opciones (y en Rescat
 - (Tarea 176; QUITADA en la 178) La pausa de 6 y 9 s al segundo y tercer error seguido era tiempo muerto. Ahora el error resta uno a la marca y da un aviso de 0,8 s; «sin culpa»: no hay vidas ni fin anticipado.
 - La prueba del azar usa tiempos de respuesta supuestos; la pista real se verá con personas.
 
-## 8. Fase 2 (NO se construye ahora): las siete franjas de edad
+## 8. Las siete franjas de edad: ya se preguntan (Tarea 195); comparar es fase 2 (NO se construye ahora)
 
-Anotadas para cuando haya servidor, cuentas, consentimiento y abogado (Fable, §6 y §7 de su diseño). **No se cambia Ajustes, `AgeBand` ni la dificultad adaptativa** (sigue con sus tres franjas: Menos de 18 · 18 a 64 · 65 o más):
+> **Tarea 195 (30-oct, decisión de Ricardo): las siete franjas ya se preguntan, en el Primer vuelo y en Ajustes** (fase 1, sin servidor), para no tener que volver a preguntarlas cuando llegue la comparación. La pregunta es la de siempre («¿En qué rango de edad estás?», con su línea de ayuda) con siete opciones, cada número con su unidad: «13 a 17 años», «18 a 29 años», «30 a 44 años», «45 a 54 años», «55 a 64 años», «65 a 74 años» y «75 años o más»; no hay opción para menores de 13 (política de Play para familias). El enum es `AgeRange` (`model/Models.kt`) con `toBand()`: 13 a 17 → `UNDER_18`; 18 a 29, 30 a 44, 45 a 54 y 55 a 64 → `ADULT`; 65 a 74 y 75 o más → `SENIOR`. **`AgeBand` NO cambia** (el DDA, `Skill` y `BaselinePlan.startLevel` siguen con sus tres). La franja fina vive en `profile_extra` (`age_range`: va en el respaldo y «Borrar datos» la limpia; nada en Room, sigue la versión 16) y SOLO en el teléfono; al elegirla se guardan las DOS cosas, `age_range` y el `ageBand` que sale de ella. `FlightState` la guarda (`age_range` en `FlightStore`; un recorrido guardado antes no la trae y se lee igual) y Ajustes muestra la misma lista; a quien solo tiene la banda de tres de antes no se le marca ninguna hasta que elija. `Features.COMPARE` sigue apagado y la app no tiene ningún texto sobre comparar. **Lo que sigue siendo fase 2 es la comparación misma** (lo de abajo).
+
+Para cuando haya servidor, cuentas, consentimiento y abogado (Fable, §6 y §7 de su diseño). **La dificultad adaptativa sigue con las tres bandas de `AgeBand`** (Menos de 18 · 18 a 64 · 65 o más); la comparación usa las siete:
 
 - **Para comparar, siete franjas:** 13 a 17 · 18 a 29 · 30 a 44 · 45 a 54 · 55 a 64 · 65 a 74 · 75 o más. Se pregunta la franja, no la fecha de nacimiento; una franja se muestra solo con 50 personas o más en ese juego esa semana. Menos de 13, fuera.
 - El servidor volvería a jugar la pista de cada partida (semilla, versión y cada ensayo con su respuesta y su tiempo) para recalcular los aciertos: por eso `TrackRandom` es propio. Descartaría respuestas imposibles (menos de 150 ms seguidas) y limitaría las partidas que cuentan por día.

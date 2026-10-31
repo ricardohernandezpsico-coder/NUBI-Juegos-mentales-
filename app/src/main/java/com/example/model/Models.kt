@@ -450,6 +450,28 @@ enum class AgeBand(val label: String) {
 }
 
 /**
+ * La franja de edad FINA (Tarea 195, decisión de Ricardo del 30-oct): las siete que eligió el 26-oct para comparar el Contrarreloj con otras personas en la fase 2 (`docs/contrarreloj.md` §8). Se pregunta ya en el Primer vuelo y en Ajustes para no tener que
+ * volver a preguntarla después. Vive SOLO en el teléfono (`age_range` en `profile_extra`); de ella sale la banda de tres que usa el DDA ([toBand]), que NO cambia. No hay opción para menores de 13 (política de Play para familias).
+ */
+enum class AgeRange(val label: String, private val band: AgeBand) {
+  R13_17("13 a 17 años", AgeBand.UNDER_18),
+  R18_29("18 a 29 años", AgeBand.ADULT),
+  R30_44("30 a 44 años", AgeBand.ADULT),
+  R45_54("45 a 54 años", AgeBand.ADULT),
+  R55_64("55 a 64 años", AgeBand.ADULT),
+  R65_74("65 a 74 años", AgeBand.SENIOR),
+  R75_PLUS("75 años o más", AgeBand.SENIOR);
+
+  /** La banda de tres del DDA, `Skill` y `BaselinePlan` (13-17 = menos de 18; 18-64 = adulto; 65 en adelante = mayor). */
+  fun toBand(): AgeBand = band
+
+  companion object {
+    /** La franja guardada por nombre; `null` si no hay o ya no existe. */
+    fun fromStored(name: String?): AgeRange? = entries.firstOrNull { it.name == name }
+  }
+}
+
+/**
  * Desafíos semanales (etapa 4): fijos y deterministas — no aleatorios — para dar
  * "variedad forzada con motivo". El progreso se calcula en vivo desde el
  * historial de la semana (no se persiste), solo se guarda si ya se reclamó el

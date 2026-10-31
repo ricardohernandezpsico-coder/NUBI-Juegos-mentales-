@@ -117,7 +117,7 @@ idea de Peak/Lumosity, `docs/analisis-competencia.md` §9), la pregunta puede vo
 **Cómo se retoma**: cada cambio de `FlightState` se guarda con `commit()`. Un ViewModel nuevo lee `FlightStore` al crearse; si Android mató la app durante un juego,
 el resultado vuelve por la vía de siempre (`GameSessionStore` + `processPendingResult` → `onUnityResult` → `onFlightResult`) y lleva a la tarjeta de ese juego.
 Salir de Unity sin terminar deja el paso del juego para volver a tocar «Jugar». El rango de edad se guarda en el perfil al elegirlo (los juegos y el avance lo leen de
-ahí); el resto (nombre, días, metas…) en el perfil al pasar «Tu punto de partida». El recorrido termina (y se borra del disco) con «Empezar mi camino».
+ahí; desde la Tarea 195 son siete franjas —13 a 17 · 18 a 29 · 30 a 44 · 45 a 54 · 55 a 64 · 65 a 74 · 75 o más— y se guardan las DOS cosas: la franja fina en `profile_extra` (`age_range`) y la banda de tres del DDA que sale de ella; las opciones miden 52 dp en esa pregunta, `AGE_OPTION_MIN_HEIGHT`); el resto (nombre, días, metas…) en el perfil al pasar «Tu punto de partida». El recorrido termina (y se borra del disco) con «Empezar mi camino».
 
 **Reglas de navegación**: «Atrás» vuelve un paso y nunca cae en un paso de juego (para repetirlo se toca «Jugar»); un juego ya medido no se repite;
 «Terminar después» deja ESE juego y los que quedan para estimar (lo medido se conserva), el recorrido sigue por las preguntas que faltan y, si no se midieron

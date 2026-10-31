@@ -480,6 +480,22 @@ class NeuroVidaRepository(
     profilePrefs.edit().putBoolean("first_flight_done", true).apply()
   }
 
+  // La franja de edad FINA (Tarea 195, `age_range` en `profile_extra`: va en el respaldo y «Borrar datos» la limpia; NADA en Room). `null` = no la eligió (quien ya tenía solo la banda de tres de antes no ve ninguna marcada hasta que elija).
+  private val _ageRange = MutableStateFlow(AgeRange.fromStored(profilePrefs.getString("age_range", null)))
+  val ageRange: StateFlow<AgeRange?> = _ageRange.asStateFlow()
+
+  /** Guarda solo la franja fina (el Primer vuelo ya guardó la banda de tres al elegirla; esto lo deja firme al aplicar el vuelo). */
+  fun saveAgeRange(range: AgeRange) {
+    _ageRange.value = range
+    profilePrefs.edit().putString("age_range", range.name).apply()
+  }
+
+  /** Elegir una franja guarda LAS DOS cosas: la fina (`age_range`) y la banda de tres que sale de ella (`ageBand`, la del DDA). */
+  suspend fun setAgeRange(range: AgeRange) {
+    saveAgeRange(range)
+    updateSettings(userSettings.value.copy(ageBand = range.toBand()))
+  }
+
   private val _education = MutableStateFlow(
     profilePrefs.getString("education", null)?.let { n -> Education.values().firstOrNull { it.name == n } }
   )
@@ -1198,6 +1214,7 @@ class NeuroVidaRepository(
     profilePrefs.edit().clear().apply()
     _hoyGuideSeen.value = false                                        // «Borrar datos» limpia la marca de la guía (Tarea 193): tras un nuevo Primer vuelo, vuelve a salir
     _firstFlightDone.value = false                                     // y la de «terminó el Primer vuelo» (Tarea 193b)
+    _ageRange.value = null                                             // y la franja de edad fina (Tarea 195)
     _retoChoices.value = emptyMap()
     _education.value = null
     _goals.value = emptySet()

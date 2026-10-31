@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.AgeBand
+import com.example.model.AgeRange
 import com.example.model.AppLanguage
 import com.example.ui.components.ClayChoice
 import com.example.ui.components.ClayChoiceRow
@@ -49,7 +50,8 @@ fun SettingsScreen(
   var reminderHour by remember(userSettings.reminderHour) { mutableStateOf(userSettings.reminderHour) }
   var reminderMinute by remember(userSettings.reminderMinute) { mutableStateOf(userSettings.reminderMinute) }
   var appLanguage by remember(userSettings.language) { mutableStateOf(userSettings.language) }
-  var ageBand by remember(userSettings.ageBand) { mutableStateOf(userSettings.ageBand ?: AgeBand.ADULT) }
+  val ageBand = userSettings.ageBand ?: AgeBand.ADULT                                       // la banda de tres del DDA (solo la usan las herramientas de depuración)
+  val ageRange by viewModel.ageRange.collectAsState()                                       // la franja fina (Tarea 195); null = no la eligió: no se marca ninguna
 
   var showResetDialog by remember { mutableStateOf(false) }
 
@@ -112,12 +114,12 @@ fun SettingsScreen(
           Text(text = "Rango de edad", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
         }
         ClayChoiceRow {
-          AgeBand.entries.forEach { band ->
+          AgeRange.entries.forEach { range ->
             ClayChoice(
-              selected = ageBand == band,
-              onClick = { ageBand = band; viewModel.setAgeBand(band) },
-              modifier = Modifier.testTag("chip_age_band_${band.name.lowercase()}")
-            ) { Text(text = band.label, fontSize = 16.sp, fontWeight = if (ageBand == band) FontWeight.Bold else FontWeight.Medium) }
+              selected = ageRange == range,
+              onClick = { viewModel.setAgeRange(range) },
+              modifier = Modifier.testTag("chip_age_range_${range.name.lowercase()}")
+            ) { Text(text = range.label, fontSize = 16.sp, fontWeight = if (ageRange == range) FontWeight.Bold else FontWeight.Medium) }
           }
         }
         Text(text = "Cambia el ritmo y el tamaño de los juegos, no lo difícil: eso lo decide cómo juegas.", fontSize = 16.sp, lineHeight = 21.sp, color = Clay.InkMuted)

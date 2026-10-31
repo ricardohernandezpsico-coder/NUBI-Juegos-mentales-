@@ -136,6 +136,8 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   /** Punto de partida: educación (opcional, se edita en Perfil), metas, visión de color y el mapa guardado (null = no hizo la evaluación). */
   val education = repository.education
+  /** La franja de edad fina (Tarea 195); `null` = todavía no la eligió. */
+  val ageRange = repository.ageRange
   val goals = repository.goals
   val baseline = repository.baseline
   val colorVision = repository.colorVision
@@ -188,10 +190,10 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   fun flightSetName(name: String) = updateFlight { it.copy(name = name.trim().take(24)) }
 
-  /** El rango de edad se guarda enseguida en el perfil (los juegos, el avance y el lanzador lo leen de ahí); lo demás, al final. */
-  fun flightSetAge(band: AgeBand) {
-    updateFlight { it.copy(age = band) }
-    viewModelScope.launch { repository.updateSettings(userSettings.value.copy(ageBand = band)) }
+  /** El rango de edad se guarda enseguida (los juegos, el avance y el lanzador lo leen de ahí); lo demás, al final. Se guardan las DOS cosas: la franja fina y la banda de tres del DDA que sale de ella (Tarea 195). */
+  fun flightSetAge(range: AgeRange) {
+    updateFlight { it.copy(ageRange = range, age = range.toBand()) }
+    viewModelScope.launch { repository.setAgeRange(range) }
   }
 
   fun flightToggleGoal(domain: DomainType) {
@@ -286,6 +288,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
         if (!s.applied) {
           val age = s.age ?: userSettings.value.ageBand
           if (s.mode == com.example.data.FlightMode.FULL) {
+            s.ageRange?.let { repository.saveAgeRange(it) }                  // la franja fina queda firme junto con la banda de tres (Tarea 195)
             val current = userSettings.value
             repository.updateSettings(
               current.copy(
@@ -988,15 +991,11 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   }
 
   /**
-   * Onboarding de edad (piloto de perfiles por edad, 20-sep) -- función propia en vez de
-   * sumarse a `updateSettings` porque es una acción de una sola vez que además decide si
-   * se muestra la pantalla de onboarding (`userSettings.ageBand == null`), no una edición
-   * más de Ajustes.
+   * El rango de edad de Ajustes (Tarea 195: las siete franjas). Guarda las DOS cosas, como el Primer vuelo: la franja fina (`age_range`) y la banda de tres del DDA que sale de ella;
+   * función propia en vez de sumarse a `updateSettings` porque además decide si se muestra la pantalla de onboarding (`userSettings.ageBand == null`).
    */
-  fun setAgeBand(band: AgeBand) {
-    viewModelScope.launch {
-      repository.updateSettings(userSettings.value.copy(ageBand = band))
-    }
+  fun setAgeRange(range: AgeRange) {
+    viewModelScope.launch { repository.setAgeRange(range) }
   }
 
   /**

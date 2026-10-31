@@ -71,6 +71,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.BaselinePlan
@@ -79,7 +80,7 @@ import com.example.data.FlightCopy
 import com.example.data.FlightMode
 import com.example.data.FlightState
 import com.example.data.FlightStep
-import com.example.model.AgeBand
+import com.example.model.AgeRange
 import com.example.model.DomainType
 import com.example.model.GameRegistry
 import com.example.ui.components.NubiClay
@@ -96,7 +97,7 @@ class FlightActions(
   val onContinue: () -> Unit,
   val onBack: () -> Unit,
   val onName: (String) -> Unit,
-  val onAge: (AgeBand) -> Unit,
+  val onAge: (AgeRange) -> Unit,
   val onGoal: (DomainType) -> Unit,
   val onDays: (Int) -> Unit,
   val onHour: (Int) -> Unit,
@@ -210,12 +211,13 @@ private fun FlightPage(step: FlightStep, s: FlightState, todayGames: List<String
     FlightStep.EDAD -> QuestionPage(
       eyebrow = "Para ajustar el ritmo",
       title = "¿En qué rango de edad estás?",
-      options = AgeBand.entries.map { Opt(it.name, it.label) },
-      selected = setOf(s.age?.name),
-      onPick = { v -> AgeBand.entries.firstOrNull { it.name == v }?.let(a.onAge) },
+      options = AgeRange.entries.map { Opt(it.name, it.label) },           // siete franjas (Tarea 195); de ellas sale la banda de tres del DDA
+      selected = setOf(s.ageRange?.name),
+      onPick = { v -> AgeRange.fromStored(v)?.let(a.onAge) },
       hint = "Cambia el ritmo y el tamaño de los juegos, no lo difícil: eso lo decide cómo juegas.",
-      canContinue = s.age != null,
-      onContinue = a.onContinue
+      canContinue = s.ageRange != null,
+      onContinue = a.onContinue,
+      optionMinHeight = AGE_OPTION_MIN_HEIGHT
     )
     FlightStep.METAS -> QuestionPage(
       eyebrow = "Para armar tu ruta",
@@ -255,6 +257,15 @@ private fun FlightPage(step: FlightStep, s: FlightState, todayGames: List<String
 // ------------------------------------------------------------------ piezas comunes
 
 private data class Opt(val value: String, val label: String, val sub: String? = null)
+
+/**
+ * Lo menos que mide cada opción de la pregunta de la edad (Tarea 195): las otras preguntas usan 58 dp ([OPTION_MIN_HEIGHT]), pero con siete franjas + la ayuda hace falta 52 dp para que todo quepa sin deslizar con letra 1,0 en 393 × 873
+ * (con 58 dp la última línea de la ayuda quedaba 26 dp fuera del área que se desliza). El piso de toque es 48 dp. La letra y la separación entre opciones (10 dp) no cambian.
+ */
+internal val AGE_OPTION_MIN_HEIGHT = 52.dp
+
+/** Lo menos que mide cada opción de una pregunta del vuelo (la edad usa [AGE_OPTION_MIN_HEIGHT]). */
+private val OPTION_MIN_HEIGHT = 58.dp
 
 /**
  * El marco de una pantalla: el contenido arriba (se desplaza si no cabe: letra grande o pantalla chica) y los botones fijos abajo, siempre
@@ -318,9 +329,9 @@ private fun Sub(text: String, center: Boolean = false) =
 
 /** Una opción: casilla de plasticina tocable (no un recuadro que informa). La elegida va en lima, con su ✓ de churro tinta y su texto en negrita (no solo color), y queda quieta. */
 @Composable
-private fun OptionRow(opt: Opt, selected: Boolean, multi: Boolean, onClick: () -> Unit) {
+private fun OptionRow(opt: Opt, selected: Boolean, multi: Boolean, minHeight: Dp = OPTION_MIN_HEIGHT, onClick: () -> Unit) {
   com.example.ui.components.ClayChoice(
-    selected = selected, onClick = onClick, minHeight = 58.dp,
+    selected = selected, onClick = onClick, minHeight = minHeight,
     role = if (multi) Role.Checkbox else Role.RadioButton,
     modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp).testTag("flight_opt_${opt.value}")
   ) {
@@ -394,13 +405,14 @@ private fun QuestionPage(
   hint: String,
   canContinue: Boolean,
   onContinue: () -> Unit,
-  multi: Boolean = false
+  multi: Boolean = false,
+  optionMinHeight: Dp = OPTION_MIN_HEIGHT
 ) {
   PageFrame(footer = { MainButton("Continuar", enabled = canContinue, onClick = onContinue) }) {
     Eyebrow(eyebrow)
     Title(title)
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-      options.forEach { o -> OptionRow(o, selected = o.value in selected, multi = multi, onClick = { onPick(o.value) }) }
+      options.forEach { o -> OptionRow(o, selected = o.value in selected, multi = multi, minHeight = optionMinHeight, onClick = { onPick(o.value) }) }
     }
     Sub(hint)
   }

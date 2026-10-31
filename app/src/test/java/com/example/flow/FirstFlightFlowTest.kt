@@ -13,6 +13,7 @@ import com.example.data.FlightStep
 import com.example.data.FlightStore
 import com.example.data.local.NeuroVidaDatabase
 import com.example.model.AgeBand
+import com.example.model.AgeRange
 import com.example.model.DomainType
 import com.example.model.GamePlayResult
 import com.example.viewmodel.AppTab
@@ -92,8 +93,8 @@ class FirstFlightFlowTest {
   private fun answerAgeAfterFirstCard(vm: NeuroVidaViewModel) {
     vm.flightContinue() // TARJETA_1 -> EDAD
     assertEquals(FlightStep.EDAD, vm.flight.value!!.step)
-    vm.flightSetAge(AgeBand.SENIOR)
-    TestSupport.awaitUntil(message = "La edad no quedó en el perfil") { vm.userSettings.value.ageBand == AgeBand.SENIOR }
+    vm.flightSetAge(AgeRange.R65_74)
+    TestSupport.awaitUntil(message = "La edad no quedó en el perfil") { vm.userSettings.value.ageBand == AgeBand.SENIOR && vm.ageRange.value == AgeRange.R65_74 }
     vm.flightContinue() // EDAD -> METAS
     assertEquals(FlightStep.METAS, vm.flight.value!!.step)
   }
@@ -118,6 +119,7 @@ class FirstFlightFlowTest {
 
     answerAgeAfterFirstCard(vm) // TARJETA_1 -> EDAD -> METAS
     assertEquals("la edad respondida después del juego 1 queda en el recorrido", AgeBand.SENIOR, vm.flight.value!!.age)
+    assertEquals("y la franja fina también (Tarea 195)", AgeRange.R65_74, vm.flight.value!!.ageRange)
     vm.flightToggleGoal(DomainType.LENGUAJE)
     vm.flightToggleGoal(DomainType.MEMORIA)
     vm.flightContinue() // METAS -> DATO
@@ -158,6 +160,8 @@ class FirstFlightFlowTest {
     assertTrue("terminó el Primer vuelo completo: queda la marca que dispara la guía de Hoy (Tarea 193b)", vm.firstFlightDone.value)
     assertNull("no queda nada del recorrido en disco", FlightStore.load(app))
     assertEquals(AgeBand.SENIOR, vm.userSettings.value.ageBand)
+    assertEquals("al terminar el vuelo quedan las DOS cosas: la banda del DDA y la franja fina (Tarea 195)", AgeRange.R65_74, vm.ageRange.value)
+    assertEquals("y la franja fina está en profile_extra, que va en el respaldo", "R65_74", app.getSharedPreferences("profile_extra", android.content.Context.MODE_PRIVATE).getString("age_range", null))
     TestSupport.awaitUntil { savedResults() == 4 }
     // El día del Primer vuelo no son 7 juegos: el camino de hoy queda CUMPLIDO con el vuelo, sin puntajes ni partidas duplicadas.
     TestSupport.awaitUntil(message = "El camino de hoy no quedó cumplido con el Primer vuelo") { vm.dailySession.value.completedCount == vm.dailySession.value.gameIds.size }
@@ -277,7 +281,7 @@ class FirstFlightFlowTest {
     assertEquals(setOf("secuencia"), second.flight.value!!.measured.keys)
     second.flightContinue()
     assertEquals("después de la tarjeta se pide la edad", FlightStep.EDAD, second.flight.value!!.step)
-    second.flightSetAge(AgeBand.ADULT)
+    second.flightSetAge(AgeRange.R30_44)
     second.flightContinue()
     assertEquals(FlightStep.METAS, second.flight.value!!.step)
   }
@@ -296,7 +300,7 @@ class FirstFlightFlowTest {
     assertEquals(setOf("secuencia"), s.measured.keys)
     assertNull(s.age)
     // sigue sin pedir otra vez el juego 1 ni el nombre
-    second.flightSetAge(AgeBand.UNDER_18)
+    second.flightSetAge(AgeRange.R13_17)
     second.flightContinue()
     assertEquals(FlightStep.METAS, second.flight.value!!.step)
   }
@@ -474,6 +478,67 @@ class FirstFlightFlowTest {
     assertEquals("la edad ya respondida no se vuelve a preguntar", FlightStep.TARJETA_1, vm.flight.value!!.step)
     vm.flightContinue()
     assertEquals(FlightStep.METAS, vm.flight.value!!.step)
+  }
+
+  // ------------------------------------------------------------------ Tarea 195: las siete franjas de edad
+
+  private fun prefs() = app.getSharedPreferences("profile_extra", android.content.Context.MODE_PRIVATE)
+
+  @Test
+  fun `elegir una franja en el vuelo guarda las dos cosas, la franja fina y la banda del DDA que sale de ella`() {
+    val expected = mapOf(
+      AgeRange.R13_17 to AgeBand.UNDER_18, AgeRange.R18_29 to AgeBand.ADULT, AgeRange.R30_44 to AgeBand.ADULT, AgeRange.R45_54 to AgeBand.ADULT,
+      AgeRange.R55_64 to AgeBand.ADULT, AgeRange.R65_74 to AgeBand.SENIOR, AgeRange.R75_PLUS to AgeBand.SENIOR
+    )
+    val vm = newViewModel()
+    assertNull("antes de elegir no hay franja", vm.ageRange.value)
+    for ((range, band) in expected) {
+      vm.flightSetAge(range)
+      TestSupport.awaitUntil(message = "$range no quedó en el perfil") { vm.userSettings.value.ageBand == band && vm.ageRange.value == range }
+      assertEquals("$range: la banda de tres del DDA", band, vm.userSettings.value.ageBand)
+      assertEquals("$range: la franja fina en profile_extra", range.name, prefs().getString("age_range", null))
+      assertEquals("$range: en el recorrido, las dos", range to band, vm.flight.value!!.ageRange to vm.flight.value!!.age)
+    }
+  }
+
+  @Test
+  fun `la franja fina del vuelo sobrevive a que Android cierre la app y al volver sigue marcada`() {
+    val first = newViewModel()
+    answerUntilFirstGame(first)
+    play(first, 0)
+    first.flightContinue() // -> EDAD
+    first.flightSetAge(AgeRange.R55_64)
+    val second = newViewModel() // el proceso murió y volvió
+    val s = second.flight.value!!
+    assertEquals(FlightStep.EDAD, s.step)
+    assertEquals(AgeRange.R55_64, s.ageRange)
+    assertEquals(AgeBand.ADULT, s.age)
+    assertEquals("y el repositorio la lee de profile_extra", AgeRange.R55_64, second.ageRange.value)
+  }
+
+  @Test
+  fun `un recorrido guardado sin la franja fina se lee sin error y solo trae la banda`() {
+    // Lo guardado antes de la Tarea 195 no tiene «age_range»: se lee igual, con la banda de tres y sin franja (nadie queda con una franja inventada).
+    val old = FlightState(mode = FlightMode.FULL, step = FlightStep.METAS, name = "Ana", age = AgeBand.SENIOR, measured = mapOf("secuencia" to 0.5f))
+    val json = FlightStore.encode(old)
+    assertFalse("lo de antes no lleva la clave nueva", json.contains("age_range"))
+    val read = FlightStore.decode(json)!!
+    assertEquals(AgeBand.SENIOR, read.age)
+    assertNull(read.ageRange)
+    assertEquals(old, read)
+    // con la franja: ida y vuelta exacta, y la clave se llama age_range
+    val withRange = old.copy(age = AgeRange.R75_PLUS.toBand(), ageRange = AgeRange.R75_PLUS)
+    assertTrue(FlightStore.encode(withRange).contains("\"age_range\":\"R75_PLUS\""))
+    assertEquals(withRange, FlightStore.decode(FlightStore.encode(withRange)))
+    // una franja que ya no existe se ignora sin romper
+    val unknown = json.replaceFirst("{", "{\"age_range\":\"R5_9\",")
+    assertNull(FlightStore.decode(unknown)!!.ageRange)
+    assertEquals(AgeBand.SENIOR, FlightStore.decode(unknown)!!.age)
+    // con el recorrido viejo guardado en el teléfono, la app abre en su paso sin preguntar la edad otra vez
+    FlightStore.save(app, old)
+    val vm = newViewModel()
+    assertEquals(FlightStep.METAS, vm.flight.value!!.step)
+    assertNull("quien solo tiene la banda no ve ninguna franja marcada", vm.ageRange.value)
   }
 
   @Test
