@@ -10,7 +10,7 @@ enum class DomainType(
   val color: Color
 ) {
   MEMORIA("Memoria", "recordar y ubicar", "Retención visual, espacial y secuencial", NubiTokens.Memoria),
-  ATENCION("Atención", "foco y velocidad", "Foco, control y velocidad de procesamiento", NubiTokens.Atencion),
+  ATENCION("Atención", "foco y reacción", "Foco y control", NubiTokens.Atencion),
   RAZONAMIENTO("Razonamiento", "lógica y números", "Lógica, espacio y números", NubiTokens.Razonamiento),
   LENGUAJE("Lenguaje", "palabras y letras", "Fluidez verbal, léxico y ortografía", NubiTokens.Lenguaje);
 
@@ -410,7 +410,9 @@ data class GamePlayResult(
   val ttErrors: Int? = null,
   val ttPeakLevel: Int? = null,
   val ttSeconds: Int? = null,
-  val ttTrackVersion: Int? = null
+  val ttTrackVersion: Int? = null,
+  // El ritmo del Contrarreloj, ensayo por ensayo (Tarea 200; `data/TimeTrialTrials.kt`): cuándo se resolvió cada uno, si fue acierto y en qué paso de la pista. null = Unity no lo mandó (una versión vieja, una partida de siempre o un registro que no cuadra).
+  val ttTrials: com.example.data.TimeTrialTrials? = null
 ) {
   /** ¿Es un Contrarreloj? (Unity manda `tt_hits` en las partidas de ese modo y -1 en las demás.) */
   val isTimeTrial: Boolean get() = ttHits != null

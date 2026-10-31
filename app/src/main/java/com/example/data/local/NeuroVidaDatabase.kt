@@ -16,7 +16,7 @@ import com.example.BuildConfig
     ClaimedWeeklyChallengeEntity::class,
     TimeTrialResultEntity::class
   ],
-  version = 16,
+  version = 17,
   exportSchema = true
 )
 abstract class NeuroVidaDatabase : RoomDatabase() {
@@ -105,6 +105,12 @@ abstract class NeuroVidaDatabase : RoomDatabase() {
             "CREATE TABLE IF NOT EXISTS `time_trial_results` (`id` TEXT NOT NULL, `gameId` TEXT NOT NULL, `day` TEXT NOT NULL, `trackVersion` INTEGER NOT NULL, `hits` INTEGER NOT NULL, " +
               "`errors` INTEGER NOT NULL, `level` INTEGER NOT NULL, `seconds` INTEGER NOT NULL, `timestamp` INTEGER NOT NULL, PRIMARY KEY(`id`))"
           )
+        }
+      },
+      // 16 -> 17 (31-oct): el ritmo del Contrarreloj (Tarea 200): cada partida guarda sus ensayos (cuándo, si fue acierto y en qué paso) como texto JSON en `trials`. Una columna que admite NULL y sin valor por defecto: las partidas que ya había quedan con NULL (sin ritmo) y nada de lo que ya había cambia.
+      object : androidx.room.migration.Migration(16, 17) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+          db.execSQL("ALTER TABLE time_trial_results ADD COLUMN trials TEXT")
         }
       }
     )

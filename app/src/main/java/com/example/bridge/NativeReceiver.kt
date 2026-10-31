@@ -124,6 +124,10 @@ object NativeReceiver {
     val tt_peak_level: Int = -1,
     val tt_seconds: Int = -1,
     val tt_track_version: Int = -1,
+    // El ritmo (Tarea 200): tres listas paralelas, un elemento por ensayo resuelto: ms desde el «¡Ya!», 1 acierto / 0 error y el paso de la pista en que se jugó. Vacías o ausentes = sin ritmo (una partida de siempre las manda vacías).
+    val tt_t_ms: List<Int>? = null,
+    val tt_ok: List<Int>? = null,
+    val tt_level: List<Int>? = null,
     // Solo Piloto Estelar («la ruta de las balizas», 9-oct; TODO medido con las dos tareas a la vez): % en la ruta, señales de la misión atrapadas / resueltas, toques equivocados, «tus señales a los mandos» (%; -1 con menos de 8 señales
     // de la misión), nivel de señales y de pilotaje, racha mayor, puntos e hiperimpulsos (-1 = no aplica / sin datos).
     val pil_lane_pct: Int = -1,
@@ -523,6 +527,7 @@ object NativeReceiver {
       ttPeakLevel = metrics.tt_peak_level.takeIf { metrics.tt_hits >= 0 && it >= 1 },
       ttSeconds = metrics.tt_seconds.takeIf { metrics.tt_hits >= 0 && it > 0 },
       ttTrackVersion = metrics.tt_track_version.takeIf { metrics.tt_hits >= 0 && it >= 1 },
+      ttTrials = if (metrics.tt_hits >= 0) com.example.data.TimeTrialTrials.of(metrics.tt_t_ms, metrics.tt_ok, metrics.tt_level) else null,
       pilLanePct = metrics.pil_lane_pct.takeIf { it >= 0 },
       pilHits = metrics.pil_hits.takeIf { it >= 0 },
       pilTargets = metrics.pil_targets.takeIf { it >= 0 },

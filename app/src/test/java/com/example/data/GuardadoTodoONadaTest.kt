@@ -6,6 +6,8 @@ import com.example.TestSupport
 import com.example.bridge.UnityGameLauncher
 import com.example.bridge.UnityResultInbox
 import com.example.data.local.NeuroVidaDatabase
+import com.example.data.local.toDomain
+import com.example.data.local.toEntity
 import com.example.model.AgeBand
 import com.example.model.DomainType
 import com.example.model.GamePlayResult
@@ -19,6 +21,8 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
@@ -261,5 +265,55 @@ class GuardadoTodoONadaTest {
     assertFalse("el otro camino ya no entra", UnityResultInbox.claim(id))
     assertEquals(id, rows().single().id)
     assertNotEquals(0, rows().size)
+  }
+  // ---------------------------------------------------------------- el ritmo del Contrarreloj (Tarea 200): una columna más, en la MISMA transacción
+
+  private fun withPace(id: String, game: String = "stroop") = trial(id, game).copy(
+    hits = 2, errors = 1, trials = TimeTrialTrials.of(listOf(1200, 3400, 5000), listOf(1, 0, 1), listOf(1, 1, 2))
+  )
+
+  @Test
+  fun `el ritmo se guarda en la misma fila de la partida y se lee igual`() {
+    val r = repo()
+    val id = UUID.randomUUID().toString()
+    val played = withPace(id)
+    runBlocking { r.recordTimeTrial(played) }
+    val row = trialRows().single()
+    assertEquals("""{"t_ms":[1200,3400,5000],"ok":[1,0,1],"level":[1,1,2]}""", row.trials)
+    assertEquals("lo que se lee es lo que se guardó", played.trials, row.toDomain().trials)
+    runBlocking { r.recordTimeTrial(played) }
+    assertEquals("la doble entrega no guarda dos veces", 1, trialRows().size)
+  }
+
+  @Test
+  fun `una partida sin ritmo se guarda con NULL y una de siempre no se toca`() {
+    val r = repo()
+    runBlocking { r.recordTimeTrial(trial(UUID.randomUUID().toString())) }
+    assertNull(trialRows().single().trials)
+    assertNull(trialRows().single().toDomain().trials)
+    assertFalse(trialRows().single().toDomain().hasPace)
+  }
+
+  @Test
+  fun `un fallo dentro de la transaccion no deja ni la partida ni su ritmo`() {
+    val r = repo()
+    runBlocking { r.recordTimeTrial(withPace(UUID.randomUUID().toString())) }
+    r.beforeCommitForTest = { throw IllegalStateException("fallo forzado") }
+    try { runBlocking { r.recordTimeTrial(withPace(UUID.randomUUID().toString(), "radar")) }; fail("debía fallar") } catch (e: IllegalStateException) { }
+    r.beforeCommitForTest = null
+    assertEquals("todo o nada: la fila y su ritmo van juntos", 1, trialRows().size)
+    assertEquals("stroop", trialRows().single().gameId)
+  }
+
+  @Test
+  fun `un texto de ritmo danado en el disco deja esa partida sin ritmo y no rompe la lista`() {
+    val good = withPace(UUID.randomUUID().toString()).toEntity()
+    val broken = trial(UUID.randomUUID().toString(), "radar").toEntity().copy(trials = "{no es json")
+    runBlocking { db().timeTrialResultDao().insert(good); db().timeTrialResultDao().insert(broken) }
+    val all = trialRows().map { it.toDomain() }
+    assertEquals(2, all.size)
+    assertNotNull("la buena conserva su ritmo", all.first { it.gameId == "stroop" }.trials)
+    assertNull("la dañada queda sin ritmo, pero la partida sigue ahí", all.first { it.gameId == "radar" }.trials)
+    assertEquals(30, all.first { it.gameId == "radar" }.hits)
   }
 }

@@ -312,7 +312,7 @@ namespace NeuroVida.Games.Radar
             if (!_guided)
             {
                 var outcome = _run.Add(_round, answer.Hits, answer.Extras, _actualMs);
-                if (_tt != null) _tt.Register(outcome.Success);                  // Contrarreloj: la pista sube por rondas logradas y el DDA no corre
+                if (_tt != null) _tt.Register(outcome.Success, _clock != null ? _clock.Remaining(GameClock.Time) : TimeTrial.TotalSeconds);                  // Contrarreloj: la pista sube por rondas logradas y el DDA no corre; + cuándo (el reloj de la partida, sin el viaje de la nave), para el ritmo
                 else if (!_round.Rain) _dda.Register(outcome.Success);          // las lluvias quedan fuera del motor
 #if UNITY_EDITOR
                 Debug.Log("[SmokeTest] Radar: ronda " + _run.RoundsPlayed + (_round.Rain ? " (lluvia)" : " nivel " + _round.Level) + ": " + answer.Hits + " de " + _round.Count + ", " + answer.Extras + " de más, destello real " + _actualMs.ToString("0") + " ms de " + _round.ExposureMs + ", racha " + _run.Streak);

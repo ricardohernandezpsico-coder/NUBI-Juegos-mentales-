@@ -620,8 +620,8 @@ namespace NeuroVida.Games.Disparate
         {
             if (_tt != null)
             {
-                // Contrarreloj: la pista sube por aciertos y el DDA no corre
-                if (_tt.Register(correct)) _hud.Announce("¡Un paso más!", AnnounceTone.Step, subtitle: DisparateContract.LevelNews(_tt.Level));
+                // Contrarreloj: la pista sube por aciertos y el DDA no corre; el ensayo se anota con los segundos que quedan en el reloj de la partida (el ritmo)
+                if (_tt.Register(correct, _endsAt > 0f ? _endsAt - GameClock.Time : TimeTrial.TotalSeconds)) _hud.Announce("¡Un paso más!", AnnounceTone.Step, subtitle: DisparateContract.LevelNews(_tt.Level));
                 return;
             }
             var change = _dda.Register(correct);

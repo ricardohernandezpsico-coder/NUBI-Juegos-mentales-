@@ -40,6 +40,12 @@ namespace NeuroVida.Contracts
         public int tt_peak_level = -1;
         public int tt_seconds = -1;
         public int tt_track_version = -1;
+        /// <summary>CONTRARRELOJ, el ritmo (Tarea 200; <c>auditoria-fable/nubi-plus-comparacion.md</c> §2.2): tres listas PARALELAS con un elemento por ensayo resuelto, en orden (una posición = un ensayo; las tres miden lo mismo; hasta <c>TimeTrial.Run.MaxLoggedTrials</c>).
+        /// <c>tt_t_ms</c> = milisegundos desde el «¡Ya!» hasta que se resolvió el ensayo (cuenta el reloj de la partida: una pausa, o «Cómo se juega», no los corre; nunca decrece ni pasa de <c>tt_seconds</c>); <c>tt_ok</c> = 1 acierto y 0 error; <c>tt_level</c> = el paso de la pista en que se jugó ese ensayo.
+        /// Fuera del Contrarreloj no se llenan (llegan como listas vacías, igual que el resto de los arreglos de este contrato).</summary>
+        public int[] tt_t_ms;
+        public int[] tt_ok;
+        public int[] tt_level;
         /// <summary>Solo Tinta o Palabra («Dos orillas»): «Cuánto te frenó la palabra», en ms: promedio de tiempo de los aciertos con palabra que CHOCA menos el de los que COINCIDEN
         /// (interferencia de Stroop). -1 con menos de 3 aciertos de cada tipo o en otro juego.</summary>
         public int interference_ms = -1;

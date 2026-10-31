@@ -16,10 +16,17 @@ data class TimeTrialResult(
   val errors: Int,
   val level: Int,
   val seconds: Int = TimeTrialDay.SECONDS,
-  val timestamp: Long = System.currentTimeMillis()
+  val timestamp: Long = System.currentTimeMillis(),
+  /** El ritmo de la partida, ensayo por ensayo (Tarea 200, [TimeTrialTrials]); null en una partida vieja o de una versión de Unity sin el registro. */
+  val trials: TimeTrialTrials? = null
 ) {
   /** La MARCA de la partida («34 aciertos»): lo que se compara con el récord, las últimas 5 y la semana. */
   val mark: Int get() = TimeTrialDay.markOf(trackVersion, hits, errors)
+
+  /**
+   * ¿Tiene el ritmo COMPLETO? Con registro de todos los ensayos (tantos como aciertos más errores): solo así los números del ritmo son los mismos que dice el final de la partida. Un registro más corto (Unity anota hasta [TimeTrialTrials.MAX] ensayos) no se usa para contar el ritmo.
+   */
+  val hasPace: Boolean get() = trials != null && trials.size == hits + errors
 }
 
 /**
@@ -80,7 +87,8 @@ object TimeTrialDay {
   fun resultOf(raw: com.example.model.GamePlayResult, day: String): TimeTrialResult = TimeTrialResult(
     id = raw.id,                                  // el del lanzamiento cuando lo hay (Tarea 192: la doble entrega no guarda dos veces)
     gameId = raw.gameId, day = day, trackVersion = raw.ttTrackVersion ?: trackVersion(raw.gameId), hits = raw.ttHits ?: 0,
-    errors = raw.ttErrors ?: (raw.totalTrials - raw.correctAnswers).coerceAtLeast(0), level = raw.ttPeakLevel ?: 1, seconds = raw.ttSeconds ?: SECONDS, timestamp = raw.timestamp
+    errors = raw.ttErrors ?: (raw.totalTrials - raw.correctAnswers).coerceAtLeast(0), level = raw.ttPeakLevel ?: 1, seconds = raw.ttSeconds ?: SECONDS, timestamp = raw.timestamp,
+    trials = raw.ttTrials                         // el ritmo, ensayo por ensayo (Tarea 200); null si Unity no lo mandó
   )
 
   /** Los días desde 1970 de un «yyyy-MM-dd». */

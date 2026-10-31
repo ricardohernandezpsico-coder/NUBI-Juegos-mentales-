@@ -240,11 +240,11 @@ namespace NeuroVida.Games.Tests
             Assert.AreEqual(1, TimeTrial.Mark(1, 0));
             var run = new TimeTrial.Run("stroop", Day);
             Assert.AreEqual(0, run.Score);
-            run.Register(true); run.Register(true); run.Register(true);
+            run.Register(true, 60f); run.Register(true, 60f); run.Register(true, 60f);
             Assert.AreEqual(3, run.Score);
-            run.Register(false);
+            run.Register(false, 60f);
             Assert.AreEqual((3, 1, 2), (run.Hits, run.Errors, run.Score), "el error resta uno a la marca");
-            run.Register(false); run.Register(false); run.Register(false);
+            run.Register(false, 60f); run.Register(false, 60f); run.Register(false, 60f);
             Assert.AreEqual(0, run.Score, "piso en 0: nunca negativa");
         }
 
@@ -254,7 +254,7 @@ namespace NeuroVida.Games.Tests
             Assert.LessOrEqual(TimeTrial.ErrorFeedbackSeconds, 1f, "el error solo da un aviso breve (Tarea 178): ya no hay pausa de 3, 6 o 9 s");
             var run = new TimeTrial.Run("disparate", Day);
             int before = run.Level;
-            for (int i = 0; i < 6; i++) run.Register(false);
+            for (int i = 0; i < 6; i++) run.Register(false, 60f);
             Assert.AreEqual(before, run.Level, "los errores no bajan ni suben el paso: la pista sube solo por aciertos");
             Assert.AreEqual(0, run.Hits);
         }
@@ -283,16 +283,16 @@ namespace NeuroVida.Games.Tests
         {
             var run = new TimeTrial.Run("acoplamiento", Day);               // un paso cada 2 aciertos
             Assert.AreEqual(1, run.Level);
-            Assert.IsFalse(run.Register(true));
-            Assert.IsTrue(run.Register(true), "el 2.º acierto sube al paso 2");
+            Assert.IsFalse(run.Register(true, 60f));
+            Assert.IsTrue(run.Register(true, 60f), "el 2.º acierto sube al paso 2");
             Assert.AreEqual(2, run.Level);
-            Assert.IsFalse(run.Register(false), "un error no sube");
+            Assert.IsFalse(run.Register(false, 60f), "un error no sube");
             Assert.AreEqual(2, run.Level, "y no baja de paso");
-            Assert.IsFalse(run.Register(true));
-            Assert.IsTrue(run.Register(true));
+            Assert.IsFalse(run.Register(true, 60f));
+            Assert.IsTrue(run.Register(true, 60f));
             Assert.AreEqual((4, 1, 5, 3), (run.Hits, run.Errors, run.Trials, run.Level));
             Assert.AreEqual(3, run.PeakLevel);
-            for (int i = 0; i < 60; i++) run.Register(true);
+            for (int i = 0; i < 60; i++) run.Register(true, 60f);
             Assert.AreEqual(12, run.Level);
             Assert.AreEqual(12, run.PeakLevel);
         }
@@ -303,7 +303,7 @@ namespace NeuroVida.Games.Tests
             var run = new TimeTrial.Run("radar", Day);
             int first = run.Rng().Next(1000000);
             Assert.AreEqual(first, TimeTrial.TrialRng(run.Seed, 0).Next(1000000));
-            run.Register(false);
+            run.Register(false, 60f);
             Assert.AreEqual(TimeTrial.TrialRng(run.Seed, 1).Next(1000000), run.Rng().Next(1000000));
             Assert.AreEqual(TimeTrial.TrialRng(run.Seed, 1, 1).NextDouble(), run.Rng(1).NextDouble());
         }
@@ -341,8 +341,8 @@ namespace NeuroVida.Games.Tests
         public void TheTelemetryCarriesTheMarkTheStepAndTheTrackVersion_AndLeavesTheAdaptiveEngineAlone()
         {
             var run = new TimeTrial.Run("stroop", Day);
-            for (int i = 0; i < 20; i++) run.Register(true);
-            run.Register(false); run.Register(false);
+            for (int i = 0; i < 20; i++) run.Register(true, 60f);
+            run.Register(false, 60f); run.Register(false, 60f);
             var m = new StroopSessionMetrics { mode_trials = 14, mode_hits = 9, end_rating = 0.37f };
             run.Fill(m);
             Assert.AreEqual((20, 2, 3, TimeTrial.Seconds, TimeTrial.TrackVersion("stroop")), (m.tt_hits, m.tt_errors, m.tt_peak_level, m.tt_seconds, m.tt_track_version));
@@ -350,6 +350,159 @@ namespace NeuroVida.Games.Tests
             Assert.AreEqual(0.37f, m.end_rating, "el nivel de la persona no se toca");
             Assert.AreEqual(-1, new StroopSessionMetrics().tt_hits, "una partida de siempre dice -1");
             Assert.AreEqual(-1, new StroopSessionMetrics().tt_track_version);
+        }
+
+        // ------------------------------------------------------------------ el ritmo por ensayo (Tarea 200): tt_t_ms, tt_ok y tt_level
+
+        [Test]
+        public void TheRhythmLogsOneEntryPerTrial_InThreeParallelLists()
+        {
+            var run = new TimeTrial.Run("stroop", Day);                      // un paso cada 8 aciertos
+            float[] left = { 118.4f, 112f, 105.5f, 100f, 96f, 90f, 84f, 80f, 74f, 61f, 59.9f, 30f, 29f, 2f };
+            bool[] ok = { true, true, true, false, true, true, true, true, true, true, false, true, true, true };
+            for (int i = 0; i < left.Length; i++) run.Register(ok[i], left[i]);
+            var m = new StroopSessionMetrics();
+            run.Fill(m);
+            Assert.AreEqual(left.Length, m.tt_t_ms.Length);
+            Assert.AreEqual(m.tt_t_ms.Length, m.tt_ok.Length, "tres listas paralelas: una posición, un ensayo");
+            Assert.AreEqual(m.tt_t_ms.Length, m.tt_level.Length);
+            Assert.AreEqual(m.tt_hits + m.tt_errors, m.tt_t_ms.Length, "un elemento por ensayo resuelto: aciertos + errores");
+            CollectionAssert.AreEqual(new[] { 1600, 8000, 14500, 20000, 24000, 30000, 36000, 40000, 46000, 59000, 60100, 90000, 91000, 118000 }, m.tt_t_ms, "los ms desde el «¡Ya!»: 120 s menos lo que quedaba");
+            CollectionAssert.AreEqual(new[] { 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1 }, m.tt_ok, "1 acierto, 0 error");
+            Assert.AreEqual(run.Hits, System.Linq.Enumerable.Sum(m.tt_ok), "los aciertos de la lista son los de la partida");
+        }
+
+        [Test]
+        public void ElapsedMs_IsTheGameClockSinceTheGoCue_ClampedToTheGame()
+        {
+            Assert.AreEqual(0, TimeTrial.Run.ElapsedMs(120f), "recién el «¡Ya!»");
+            Assert.AreEqual(500, TimeTrial.Run.ElapsedMs(119.5f));
+            Assert.AreEqual(30000, TimeTrial.Run.ElapsedMs(90f));
+            Assert.AreEqual(47600, TimeTrial.Run.ElapsedMs(72.4f), "redondeado al milisegundo");
+            Assert.AreEqual(120000, TimeTrial.Run.ElapsedMs(0f), "el último instante");
+            Assert.AreEqual(120000, TimeTrial.Run.ElapsedMs(-3f), "al filo del final no pasa de la duración de la partida");
+            Assert.AreEqual(0, TimeTrial.Run.ElapsedMs(130f), "antes del «¡Ya!» nunca es negativo");
+            Assert.AreEqual(0, TimeTrial.Run.ElapsedMs(float.NaN), "lo que no es un número da 0");
+            Assert.AreEqual(120000, TimeTrial.Run.ElapsedMs(float.NegativeInfinity));
+        }
+
+        [Test]
+        public void TheLoggedTimesNeverGoBack()
+        {
+            var run = new TimeTrial.Run("radar", Day);
+            run.Register(true, 100f);
+            run.Register(true, 105f);                                        // el reloj de juego no retrocede: si un cuadro lo dijera, el ensayo queda donde estaba el anterior
+            run.Register(false, 80f);
+            var m = new StroopSessionMetrics();
+            run.Fill(m);
+            CollectionAssert.AreEqual(new[] { 20000, 20000, 40000 }, m.tt_t_ms);
+        }
+
+        [Test]
+        public void EachTrialIsLoggedAtTheStepWhereItWasPlayed_InTheFourGames()
+        {
+            foreach (var g in Games)
+            {
+                var run = new TimeTrial.Run(g, Day);
+                int n = 2 * TimeTrial.StepEvery(g) + 1;
+                for (int i = 0; i < n; i++) run.Register(true, 100f - i * 0.5f);
+                var m = new StroopSessionMetrics();
+                run.Fill(m);
+                for (int i = 0; i < n; i++)
+                    Assert.AreEqual(TimeTrial.LevelFor(g, i), m.tt_level[i], g + ": el acierto " + (i + 1) + " se jugó en el paso en que estaba la pista ANTES de registrarlo (el que sube de paso se anota en el paso donde se jugó)");
+                Assert.AreEqual(1, m.tt_level[0], g);
+                Assert.AreEqual(2, m.tt_level[TimeTrial.StepEvery(g)], g + ": el primero del paso 2");
+            }
+        }
+
+        [Test]
+        public void AnErrorIsLoggedAtTheCurrentStep()
+        {
+            var run = new TimeTrial.Run("acoplamiento", Day);                // un paso cada 2 aciertos
+            run.Register(true, 110f); run.Register(true, 100f);              // ya está en el paso 2
+            run.Register(false, 90f);
+            run.Register(true, 80f); run.Register(true, 70f);                // el 4.º acierto lleva al paso 3
+            run.Register(false, 60f);
+            var m = new StroopSessionMetrics();
+            run.Fill(m);
+            CollectionAssert.AreEqual(new[] { 1, 1, 2, 2, 2, 3 }, m.tt_level);
+            CollectionAssert.AreEqual(new[] { 1, 1, 0, 1, 1, 0 }, m.tt_ok);
+        }
+
+        [Test]
+        public void PastTheCap_EverythingIsStillCounted_ButTheTrialIsNoLongerLogged()
+        {
+            var run = new TimeTrial.Run("disparate", Day);
+            Assert.AreEqual(200, TimeTrial.Run.MaxLoggedTrials);
+            for (int i = 0; i < 250; i++) run.Register(i % 4 != 3, 120f - i * 0.4f);
+            Assert.AreEqual(250, run.Trials);
+            Assert.AreEqual(250, run.Hits + run.Errors, "la marca y el paso cuentan todo");
+            Assert.AreEqual(200, run.LoggedTrials);
+            var m = new StroopSessionMetrics();
+            run.Fill(m);
+            Assert.AreEqual((200, 200, 200), (m.tt_t_ms.Length, m.tt_ok.Length, m.tt_level.Length), "tope de 200 en las tres");
+            Assert.AreEqual((run.Hits, run.Errors), (m.tt_hits, m.tt_errors), "tt_hits y tt_errors siguen siendo los de toda la partida");
+            Assert.Less(m.tt_t_ms.Length, m.tt_hits + m.tt_errors, "una lista más corta que aciertos + errores avisa a la app: el registro quedó incompleto");
+            Assert.AreEqual(0, m.tt_ok[3], "se anotan los PRIMEROS 200, en orden (el ensayo 4 fue un error)");
+            Assert.AreEqual(0, m.tt_ok[199], "el ensayo 200 (posición 199) fue un error: 199 % 4 = 3");
+            Assert.AreEqual(TimeTrial.Run.ElapsedMs(120f - 199 * 0.4f), m.tt_t_ms[199], "y su hora es la del ensayo 200, no la del último");
+        }
+
+        [Test]
+        public void FillHandsOverACopy_ALaterTrialDoesNotChangeWhatWasSent()
+        {
+            var run = new TimeTrial.Run("stroop", Day);
+            run.Register(true, 100f);
+            var m = new StroopSessionMetrics();
+            run.Fill(m);
+            run.Register(false, 90f);
+            Assert.AreEqual(1, m.tt_t_ms.Length);
+            Assert.AreEqual(1, m.tt_ok.Length);
+            Assert.AreEqual(1, m.tt_level.Length);
+        }
+
+        [Test]
+        public void ARunWithNoTrialsFillsEmptyLists_NotNull()
+        {
+            var m = new StroopSessionMetrics();
+            new TimeTrial.Run("radar", Day).Fill(m);
+            Assert.AreEqual(0, m.tt_hits);
+            Assert.IsNotNull(m.tt_t_ms);
+            Assert.AreEqual((0, 0, 0), (m.tt_t_ms.Length, m.tt_ok.Length, m.tt_level.Length));
+        }
+
+        [Test]
+        public void TheRhythmTravelsAsJson_AndAGameOutsideTheTimeTrialSendsNothing()
+        {
+            var run = new TimeTrial.Run("stroop", Day);
+            run.Register(true, 112.5f); run.Register(false, 97.25f); run.Register(true, 40f);
+            var m = new StroopSessionMetrics();
+            run.Fill(m);
+            string json = JsonUtility.ToJson(m);
+            StringAssert.Contains("\"tt_t_ms\":[7500,22750,80000]", json);
+            StringAssert.Contains("\"tt_ok\":[1,0,1]", json);
+            StringAssert.Contains("\"tt_level\":[1,1,1]", json);
+            var back = JsonUtility.FromJson<StroopSessionMetrics>(json);
+            CollectionAssert.AreEqual(m.tt_t_ms, back.tt_t_ms);
+            CollectionAssert.AreEqual(m.tt_ok, back.tt_ok);
+            CollectionAssert.AreEqual(m.tt_level, back.tt_level);
+
+            // una partida de siempre no llena nada: las listas llegan vacías (la app las lee como «sin ritmo»)
+            var plain = JsonUtility.FromJson<StroopSessionMetrics>(JsonUtility.ToJson(new StroopSessionMetrics()));
+            Assert.AreEqual(-1, plain.tt_hits);
+            Assert.IsTrue(plain.tt_t_ms == null || plain.tt_t_ms.Length == 0);
+            Assert.IsTrue(plain.tt_ok == null || plain.tt_ok.Length == 0);
+            Assert.IsTrue(plain.tt_level == null || plain.tt_level.Length == 0);
+        }
+
+        [Test]
+        public void TheRhythmListsAreOnlyFilledByTheTimeTrial()
+        {
+            // los juegos solo llaman a `Fill` desde su `_tt`: una partida de siempre no pasa por ahí y las listas quedan sin llenar
+            var plain = new StroopSessionMetrics();
+            Assert.IsNull(plain.tt_t_ms);
+            Assert.IsNull(plain.tt_ok);
+            Assert.IsNull(plain.tt_level);
         }
 
         [Test]

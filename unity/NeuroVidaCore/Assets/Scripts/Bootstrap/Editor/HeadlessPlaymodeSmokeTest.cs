@@ -1439,8 +1439,42 @@ namespace NeuroVida.Bridge.EditorTools
                 bool bad = m.tt_hits < 0 || m.tt_errors < 0 || m.tt_peak_level < 1 || m.tt_seconds != TimeTrialSmokeSeconds || m.tt_track_version != NeuroVida.Games.Shared.TimeTrial.TrackVersion(_current.Id) || m.mode_trials != 0 || m.mode_hits != 0;
                 if (bad) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: la telemetría del Contrarreloj de {_current.Id} no trae la marca bien: tt_hits {m.tt_hits}, tt_errors {m.tt_errors}, tt_peak_level {m.tt_peak_level}, tt_seconds {m.tt_seconds}, tt_track_version {m.tt_track_version}, mode_trials {m.mode_trials}, mode_hits {m.mode_hits}"); }
                 else Debug.Log($"[SmokeTest] telemetría del Contrarreloj de {_current.Id}: {m.tt_hits} aciertos, {m.tt_errors} errores, paso {m.tt_peak_level}, pista v{m.tt_track_version}");
+                string rhythm = RhythmProblem(m);
+                if (rhythm != null) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: el ritmo del Contrarreloj de {_current.Id} no viene bien: {rhythm}"); }
+                else Debug.Log($"[SmokeTest] ritmo del Contrarreloj de {_current.Id}: {m.tt_t_ms.Length} ensayos anotados, el último a {(m.tt_t_ms.Length > 0 ? m.tt_t_ms[m.tt_t_ms.Length - 1] : 0)} ms");
             }
-            else if (m.tt_hits != -1) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: una partida de siempre ({_current.Name}) mandó tt_hits {m.tt_hits}: debía decir -1"); }
+            else
+            {
+                if (m.tt_hits != -1) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: una partida de siempre ({_current.Name}) mandó tt_hits {m.tt_hits}: debía decir -1"); }
+                if ((m.tt_t_ms != null && m.tt_t_ms.Length > 0) || (m.tt_ok != null && m.tt_ok.Length > 0) || (m.tt_level != null && m.tt_level.Length > 0)) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: una partida de siempre ({_current.Name}) mandó el ritmo del Contrarreloj (tt_t_ms/tt_ok/tt_level): debían ir vacíos"); }
+            }
+        }
+
+        /// <summary>
+        /// El ritmo de un Contrarreloj (Tarea 200; <c>tt_t_ms</c>, <c>tt_ok</c> y <c>tt_level</c>) tal como llegó por el puente: tres listas del MISMO largo y de un elemento por ensayo (aciertos + errores, mientras no se pase del tope), con 1 o 0 por acierto y por error (los 1 son los aciertos),
+        /// los tiempos sin decrecer entre 0 y la duración de la partida, y los pasos entre 1 y el paso más alto, sin bajar. Null = viene bien; si no, qué falla.
+        /// </summary>
+        private static string RhythmProblem(NeuroVida.Contracts.StroopSessionMetrics m)
+        {
+            if (m.tt_t_ms == null || m.tt_ok == null || m.tt_level == null) return "falta alguna de las tres listas";
+            int n = m.tt_t_ms.Length;
+            if (m.tt_ok.Length != n || m.tt_level.Length != n) return $"las listas no miden lo mismo ({n}, {m.tt_ok.Length} y {m.tt_level.Length})";
+            int expected = Math.Min(NeuroVida.Games.Shared.TimeTrial.Run.MaxLoggedTrials, m.tt_hits + m.tt_errors);
+            if (n != expected) return $"hay {n} ensayos anotados y la partida tuvo {m.tt_hits} aciertos y {m.tt_errors} errores";
+            int hits = 0, lastMs = 0, lastLevel = 1;
+            for (int i = 0; i < n; i++)
+            {
+                if (m.tt_ok[i] != 0 && m.tt_ok[i] != 1) return $"tt_ok[{i}] vale {m.tt_ok[i]} y debía ser 0 o 1";
+                hits += m.tt_ok[i];
+                if (m.tt_t_ms[i] < lastMs) return $"tt_t_ms[{i}] = {m.tt_t_ms[i]} retrocede desde {lastMs}";
+                if (m.tt_t_ms[i] > TimeTrialSmokeSeconds * 1000) return $"tt_t_ms[{i}] = {m.tt_t_ms[i]} pasa de la duración de la partida ({TimeTrialSmokeSeconds * 1000} ms)";
+                if (m.tt_level[i] < lastLevel) return $"tt_level[{i}] = {m.tt_level[i]} baja desde {lastLevel}";
+                if (m.tt_level[i] > m.tt_peak_level) return $"tt_level[{i}] = {m.tt_level[i]} pasa del paso más alto ({m.tt_peak_level})";
+                lastMs = m.tt_t_ms[i];
+                lastLevel = m.tt_level[i];
+            }
+            if (n == m.tt_hits + m.tt_errors && hits != m.tt_hits) return $"los 1 de tt_ok son {hits} y tt_hits dice {m.tt_hits}";
+            return null;
         }
 
         private static void PauseFail(string what)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using NeuroVida.Contracts;
 using NeuroVida.Games.Acoplamiento;
 using NeuroVida.Games.Disparate;
@@ -217,6 +218,19 @@ namespace NeuroVida.Games.Shared
             public int PeakLevel { get; private set; } = 1;
             private int _shownScore = -1, _shownSecond = -1;
 
+            /// <summary>
+            /// Tope de ensayos que se anotan por partida (Tarea 200): un humano resuelve unos 120 en los 2 minutos del juego más rápido (Tinta o Palabra, ~1 s por palabra) y 200 deja holgura de sobra (≈ 1,6 KB en el puente). Pasado el tope se sigue contando todo (aciertos, errores, marca y paso) pero ya no se anota
+            /// el ensayo: una lista más corta que aciertos + errores le dice a la app que el registro quedó incompleto, y no lo usa para el ritmo.
+            /// </summary>
+            public const int MaxLoggedTrials = 200;
+
+            // El ritmo (Tarea 200): tres listas paralelas, un elemento por ensayo resuelto, en el orden en que se resolvieron. Ver <see cref="Register"/>.
+            private readonly List<int> _tMs = new List<int>();
+            private readonly List<int> _ok = new List<int>();
+            private readonly List<int> _level = new List<int>();
+            /// <summary>Cuántos ensayos se anotaron para el ritmo (nunca más que <see cref="MaxLoggedTrials"/>).</summary>
+            public int LoggedTrials => _tMs.Count;
+
             public Run(string gameId, int dayKey)
             {
                 GameId = gameId;
@@ -227,16 +241,38 @@ namespace NeuroVida.Games.Shared
             /// <summary>El paso de la pista en que está la persona ahora.</summary>
             public int Level => LevelFor(GameId, Hits);
 
-            /// <summary>Registra un ensayo resuelto; true si con él SUBIÓ de paso.</summary>
-            public bool Register(bool correct)
+            /// <summary>
+            /// Registra un ensayo resuelto; true si con él SUBIÓ de paso. <paramref name="secondsLeft"/> = los segundos que quedan en el reloj de la PARTIDA al resolverlo (el mismo número que cada juego le da a <see cref="UpdateHud"/>: sale de su <c>GameClock.Time</c>, que una pausa detiene, y de
+            /// su fin de partida, que «Cómo se juega» desplaza). Anota el ensayo para el ritmo (Tarea 200): cuándo (<see cref="ElapsedMs"/>, desde el «¡Ya!»), si fue acierto y EL PASO EN QUE SE JUGÓ (el de antes de registrarlo: un acierto que sube de paso se anota en el paso donde se jugó, no en el que abre).
+            /// </summary>
+            public bool Register(bool correct, float secondsLeft)
             {
                 int before = Level;
+                if (_tMs.Count < MaxLoggedTrials)
+                {
+                    int ms = ElapsedMs(secondsLeft);
+                    if (_tMs.Count > 0) ms = Math.Max(ms, _tMs[_tMs.Count - 1]);      // el reloj de juego no retrocede: nunca decrece, aunque un cuadro lo dijera
+                    _tMs.Add(ms);
+                    _ok.Add(correct ? 1 : 0);
+                    _level.Add(before);
+                }
                 Trials++;
                 if (correct) Hits++;
                 else Errors++;
                 int after = Level;
                 PeakLevel = Math.Max(PeakLevel, after);
                 return after > before;
+            }
+
+            /// <summary>
+            /// Los milisegundos transcurridos desde el «¡Ya!» (el reloj de la partida arranca ahí) con <paramref name="secondsLeft"/> segundos por delante: <see cref="TotalSeconds"/> menos lo que queda, redondeado, y siempre entre 0 y la duración de la partida (un ensayo que se resuelve al filo del final no pasa de ahí; un valor
+            /// que no es un número da 0). Es lo que mide <c>tt_t_ms</c>.
+            /// </summary>
+            public static int ElapsedMs(float secondsLeft)
+            {
+                if (float.IsNaN(secondsLeft)) return 0;
+                double ms = Math.Round((TotalSeconds - (double)secondsLeft) * 1000.0);
+                return (int)Math.Max(0.0, Math.Min(TotalSeconds * 1000.0, ms));
             }
 
             /// <summary>El azar del ensayo que viene (el siguiente al último resuelto); ver <see cref="TimeTrial.TrialRng"/>.</summary>
@@ -259,7 +295,10 @@ namespace NeuroVida.Games.Shared
                 }
             }
 
-            /// <summary>Anota la partida en la telemetría: los <c>tt_*</c> (los aciertos y los errores SIN restar: la marca la calcula la app con <see cref="Mark"/>) y, como la dificultad adaptativa no corrió, <c>mode_trials</c> y <c>mode_hits</c> en 0 (el resto —<c>end_rating</c>— queda como lo dejó la persona).</summary>
+            /// <summary>
+            /// Anota la partida en la telemetría: los <c>tt_*</c> (los aciertos y los errores SIN restar: la marca la calcula la app con <see cref="Mark"/>), el ritmo (<c>tt_t_ms</c>, <c>tt_ok</c> y <c>tt_level</c>: tres listas del mismo largo, un elemento por ensayo, hasta <see cref="MaxLoggedTrials"/>; Tarea 200)
+            /// y, como la dificultad adaptativa no corrió, <c>mode_trials</c> y <c>mode_hits</c> en 0 (el resto —<c>end_rating</c>— queda como lo dejó la persona).
+            /// </summary>
             public void Fill(StroopSessionMetrics m)
             {
                 m.tt_hits = Hits;
@@ -267,6 +306,9 @@ namespace NeuroVida.Games.Shared
                 m.tt_peak_level = PeakLevel;
                 m.tt_seconds = TotalSeconds;
                 m.tt_track_version = TrackVersion(GameId);
+                m.tt_t_ms = _tMs.ToArray();
+                m.tt_ok = _ok.ToArray();
+                m.tt_level = _level.ToArray();
                 m.mode_trials = 0;
                 m.mode_hits = 0;
             }

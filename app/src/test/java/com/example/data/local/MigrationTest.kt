@@ -175,4 +175,34 @@ class MigrationTest {
     db.close()
     assertEquals("la última versión exportada debe ser la de la base de datos", versions.last(), current)
   }
+  @Test
+  fun `de la version 16 a la 17 el Contrarreloj gana la columna del ritmo, las partidas de antes quedan sin ritmo y todo lo demas se conserva`() {
+    helper.createDatabase("migracion17", 16).apply {
+      execSQL("INSERT INTO game_progress (gameId, currentLevel, highestScore, totalGamesPlayed, lastPlayedTimestamp, masteryStreak, eloRating, ddaRating) VALUES ('stroop', 3, 80, 9, 1700000000000, 1, 1100, 0.6)")
+      execSQL("INSERT INTO game_results (id, gameId, score, correctAnswers, totalTrials, timed, level, timestamp) VALUES ('a', 'stroop', 80, 10, 12, 1, 3, 1700000000000)")
+      execSQL("INSERT INTO time_trial_results (id, gameId, day, trackVersion, hits, errors, level, seconds, timestamp) VALUES ('viejo', 'stroop', '2026-10-30', 2, 38, 4, 4, 120, 1700000000000)")
+      close()
+    }
+    val db = helper.runMigrationsAndValidate("migracion17", 17, true, *NeuroVidaDatabase.MIGRATIONS)
+    db.query("SELECT hits, errors, level, seconds, trials FROM time_trial_results WHERE id = 'viejo'").use { c ->
+      assertTrue("la partida de antes desapareció con la migración", c.moveToFirst())
+      assertEquals(38, c.getInt(0)); assertEquals(4, c.getInt(1)); assertEquals(4, c.getInt(2)); assertEquals(120, c.getInt(3))
+      assertTrue("sin ritmo: la columna queda en NULL", c.isNull(4))
+    }
+    db.query("SELECT ddaRating, totalGamesPlayed FROM game_progress WHERE gameId = 'stroop'").use { c ->
+      assertTrue("la fila del juego desapareció con la migración", c.moveToFirst())
+      assertEquals(0.6, c.getDouble(0), 1e-6)
+      assertEquals(9, c.getInt(1))
+    }
+    db.query("SELECT COUNT(*) FROM game_results").use { c -> assertTrue(c.moveToFirst()); assertEquals(1, c.getInt(0)) }
+    // una partida nueva guarda su ritmo como texto; y una sin ritmo sigue valiendo (columna que admite NULL, sin valor por defecto)
+    db.execSQL("INSERT INTO time_trial_results (id, gameId, day, trackVersion, hits, errors, level, seconds, timestamp, trials) VALUES ('nuevo', 'stroop', '2026-10-31', 2, 2, 1, 2, 120, 1700000100000, '{\"t_ms\":[1200,3400,5000],\"ok\":[1,0,1],\"level\":[1,1,2]}')")
+    db.execSQL("INSERT INTO time_trial_results (id, gameId, day, trackVersion, hits, errors, level, seconds, timestamp) VALUES ('sin-ritmo', 'radar', '2026-10-31', 2, 20, 3, 3, 120, 1700000200000)")
+    db.query("SELECT trials FROM time_trial_results WHERE id = 'nuevo'").use { c ->
+      assertTrue(c.moveToFirst())
+      assertEquals(com.example.data.TimeTrialTrials.of(listOf(1200, 3400, 5000), listOf(1, 0, 1), listOf(1, 1, 2)), com.example.data.TimeTrialTrials.fromJson(c.getString(0)))
+    }
+    db.query("SELECT COUNT(*) FROM time_trial_results WHERE trials IS NULL").use { c -> assertTrue(c.moveToFirst()); assertEquals("la de antes y la sin ritmo", 2, c.getInt(0)) }
+    db.close()
+  }
 }

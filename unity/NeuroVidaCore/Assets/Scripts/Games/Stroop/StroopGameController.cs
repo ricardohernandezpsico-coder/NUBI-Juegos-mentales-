@@ -225,7 +225,7 @@ namespace NeuroVida.Games.Stroop
                 _responseCount++;
                 _responses.Add(new StroopResponse(correct, ms, _trial.Clash, _trial.Switched));
                 // Contrarreloj: la pista sube por aciertos y el DDA no corre (la pausa del error se calcula con este registro, ANTES de resolver)
-                bool stepUp = _tt != null && _tt.Register(correct);
+                bool stepUp = _tt != null && _tt.Register(correct, _roundEndsAt > 0f ? _roundEndsAt - GameClock.Time : TimeTrial.TotalSeconds);       // + cuándo (para el ritmo: segundos que quedan en el reloj de la partida)
                 var change = _tt != null ? DdaChange.None : _dda.Register(correct, ms);
                 yield return StartCoroutine(ResolveTrial(correct));
                 if (_tt != null)

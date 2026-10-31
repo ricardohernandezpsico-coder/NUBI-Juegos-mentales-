@@ -187,6 +187,7 @@ fun UserSettings.toEntity(): UserProfileEntity = UserProfileEntity(
 /**
  * Una partida de Contrarreloj (Tarea 177; `data/TimeTrialDay.kt`): su propia tabla, no `game_results`: el Contrarreloj no mueve el nivel, los puntos ni lo «medido» de la persona (sí cuenta como día jugado para la racha y las farolas). La base va entera en el respaldo.
  * Un día, un juego, la versión de la pista con que se jugó, los aciertos (la marca), los errores, el paso más alto que alcanzó la pista y los segundos.
+ * [trials] (Room v17, Tarea 200): el ritmo ensayo por ensayo como texto JSON (`TimeTrialTrials.toJson`: `{"t_ms":[…],"ok":[…],"level":[…]}`); null en las partidas anteriores a la 17 y en las de una versión de Unity sin el registro.
  */
 @Entity(tableName = "time_trial_results")
 data class TimeTrialResultEntity(
@@ -198,11 +199,13 @@ data class TimeTrialResultEntity(
   val errors: Int,
   val level: Int,
   val seconds: Int,
-  val timestamp: Long
+  val timestamp: Long,
+  val trials: String? = null
 )
 
+/** Un texto de `trials` que no se puede leer deja esa partida sin ritmo (null): nunca rompe la lista de partidas. */
 fun TimeTrialResultEntity.toDomain(): com.example.data.TimeTrialResult =
-  com.example.data.TimeTrialResult(id = id, gameId = gameId, day = day, trackVersion = trackVersion, hits = hits, errors = errors, level = level, seconds = seconds, timestamp = timestamp)
+  com.example.data.TimeTrialResult(id = id, gameId = gameId, day = day, trackVersion = trackVersion, hits = hits, errors = errors, level = level, seconds = seconds, timestamp = timestamp, trials = com.example.data.TimeTrialTrials.fromJson(trials))
 
 fun com.example.data.TimeTrialResult.toEntity(): TimeTrialResultEntity =
-  TimeTrialResultEntity(id = id, gameId = gameId, day = day, trackVersion = trackVersion, hits = hits, errors = errors, level = level, seconds = seconds, timestamp = timestamp)
+  TimeTrialResultEntity(id = id, gameId = gameId, day = day, trackVersion = trackVersion, hits = hits, errors = errors, level = level, seconds = seconds, timestamp = timestamp, trials = trials?.toJson())

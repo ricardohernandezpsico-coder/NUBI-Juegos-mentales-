@@ -272,7 +272,7 @@ namespace NeuroVida.Games.Acoplamiento
             if (correct) _correct++;
             _streak = correct ? _streak + 1 : 0;
             _bestStreak = Mathf.Max(_bestStreak, _streak);
-            if (_tt != null) _tt.Register(correct);                      // Contrarreloj: la pista sube por aciertos y el DDA no corre (ANTES de elegir el módulo que sigue)
+            if (_tt != null) _tt.Register(correct, _endsAt > 0f ? _endsAt - Now : TimeTrial.TotalSeconds);                      // Contrarreloj: la pista sube por aciertos y el DDA no corre (ANTES de elegir el módulo que sigue); + cuándo, para el ritmo
             else _dda.Register(correct);
             UpdateHud();
 #if UNITY_EDITOR

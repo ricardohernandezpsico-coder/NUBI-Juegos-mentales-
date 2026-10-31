@@ -437,4 +437,88 @@ class VisibleTextsGuardTest {
     assertEquals("a tu medida", com.example.data.RetoChoice.playDetail(com.example.data.PlayMode.A_TU_MEDIDA, true, false))
     assertEquals("Un paso más difícil", com.example.data.PlayMode.DESAFIO.short)
   }
+
+  // ---------------------------------------------------------------------------- Tarea 200: lo que nunca mide a la persona («capacidad», «edad mental», «ranking», «velocidad»)
+
+  /**
+   * Las palabras que no se dicen de la persona (Nubi Plus, `auditoria-fable/nubi-plus-comparacion.md` §2.4 y §1.5): nada de «edad mental», «capacidad», «ranking» ni «velocidad» (de procesamiento, ni «tu velocidad»): una marca es el resultado de un juego, no una medida de quien juega.
+   * Va como prueba aparte y NO toca la lista `banned` de arriba (la usan otras pruebas).
+   */
+  private val measureWords = listOf("capacidad", "edad mental", "ranking", "velocidad")
+
+  /**
+   * Los ÚNICOS textos de la app que pueden decir una de esas palabras, por TEXTO COMPLETO (no por archivo ni por línea): cualquier uso nuevo falla, y cambiar una de estas frases obliga a revisar esta lista. Cada una habla de otra cosa que la persona:
+   *  - «capacidad» (3): la aclaración del final del Contrarreloj («No es una medida de capacidad»: lo niega); «una capacidad limitada para todos» (habla de todas las personas, con su cita); y el resumen de Owsley 2011 (la visión con la edad).
+   *  - «velocidad» (6): la velocidad con que se MUEVEN los objetos o los satélites del juego, o de los objetos de un estudio: las cuatro de Satélites (la medida «Velocidad más alta superada», con su plantilla `$n`, y las tres explicaciones de «tu seguimiento») y Sekuler 2008.
+   */
+  private val measureExceptions = setOf(
+    "Es el resultado de un juego, comparado solo contigo. No es una medida de capacidad.",
+    "Seguir varias cosas en movimiento es una capacidad limitada para todos: solo podemos seguir unas pocas a la vez.",
+    "Con la edad baja la capacidad de distinguir contrastes y de ver con poca luz.",
+    "Velocidad más alta superada: la inicial",
+    "Velocidad más alta superada: \$n veces la inicial",
+    "Cuántos seguiste de verdad al mismo tiempo, sin contar los que aciertas por suerte. Cambia con la velocidad y con cuántos satélites hay que seguir: el juego los va sumando a medida que aciertas.",
+    "Cuántos seguiste de verdad de los que había que seguir, sin contar los que aciertas por suerte. El juego suma satélites y velocidad a medida que aciertas: así se ve hasta dónde llegas.",
+    "Cuántos seguiste de verdad al mismo tiempo, sin contar los que aciertas por suerte. A velocidad moderada, los adultos suelen seguir entre 3 y 4; más rápido, menos (Alvarez y Franconeri, 2007).",
+    "Seguir varios objetos en movimiento costó más a mayores, sobre todo con más velocidad o más tiempo."
+  )
+
+  /** Un literal que es UNA sola palabra en mayúsculas y guiones bajos es un nombre de enum o de constante («VELOCIDAD», el área de antes de las 4), no un texto. Una frase en mayúsculas, con espacios, no entra aquí. */
+  private val enumLikeName = Regex("[A-Z_]+")
+
+  private fun measureHit(text: String): String? {
+    if (enumLikeName.matches(text)) return null
+    val low = text.lowercase()
+    return measureWords.firstOrNull { it in low }
+  }
+
+  /** Recorre lo visible (los literales de una línea, los de varias líneas entre comillas triples y los `strings*.xml`): devuelve lo que dice una palabra de [measureWords] sin ser una excepción, y las excepciones que SÍ aparecen. */
+  private fun scanMeasureWords(): Pair<List<String>, Set<String>> {
+    val found = mutableListOf<String>()
+    val excepted = mutableSetOf<String>()
+    fun check(where: String, text: String) {
+      val hit = measureHit(text) ?: return
+      if (text in measureExceptions) excepted += text else found += "$where «$text» (por «$hit»)"
+    }
+    File("src/main/java").walkTopDown().filter { it.extension == "kt" }.forEach { f ->
+      f.readLines().forEachIndexed { i, raw -> for (text in visibleLiteralsOf(raw)) check("${f.path.removePrefix("src/main/java/")}:${i + 1}", text) }
+      Regex("\"\"\"(.*?)\"\"\"", RegexOption.DOT_MATCHES_ALL).findAll(f.readText()).forEach { m -> check("${f.name}: texto de varias líneas", m.groupValues[1]) }
+    }
+    File("src/main/res").walkTopDown().filter { it.isFile && it.name.startsWith("strings") && it.extension == "xml" }.forEach { f ->
+      Regex(">([^<]+)<").findAll(f.readText()).forEach { m -> check(f.name, m.groupValues[1].trim()) }
+    }
+    return found to excepted
+  }
+
+  @Test
+  fun `ningun texto visible dice capacidad, edad mental, ranking ni velocidad salvo los textos exactos exceptuados`() {
+    val (found, _) = scanMeasureWords()
+    assertTrue(
+      "Textos visibles con «capacidad», «edad mental», «ranking» o «velocidad» (una marca es el resultado de un juego, no una medida de la persona; si de verdad habla de otra cosa, avisar antes de exceptuarla):\n" + found.joinToString("\n"),
+      found.isEmpty()
+    )
+  }
+
+  @Test
+  fun `cada excepcion de la guardia de medidas sigue existiendo en el codigo y si el texto cambia se quita de la lista`() {
+    val (_, excepted) = scanMeasureWords()
+    assertEquals("excepciones que ya no están en el código (borrarlas de la lista): ${measureExceptions - excepted}", measureExceptions, excepted)
+  }
+
+  @Test
+  fun `la guardia de medidas atrapa lo que debe y deja pasar solo lo exacto`() {
+    for (bad in listOf("Tu velocidad", "Tu velocidad de procesamiento", "Tu edad mental", "Ranking de la semana", "Tu capacidad", "VELOCIDAD DE PROCESAMIENTO", "Mejor RANKING")) {
+      assertTrue("la guardia no atrapa «$bad»", measureHit(bad) != null && bad !in measureExceptions)
+      assertTrue("la guardia no atrapa «$bad» dentro de un Text(...)", visibleLiteralsOf("""Text("$bad", fontSize = 20.sp)""").any { measureHit(it) != null })
+    }
+    for (name in listOf("VELOCIDAD", "VELOCIDAD_DE_PROCESAMIENTO", "RANKING")) assertTrue("«$name» es un nombre interno, no un texto", measureHit(name) == null)
+    for (good in listOf("Tu mejor marca", "Aciertos y errores", "Tu ritmo en la última partida", "Tu mejor medio minuto fue el segundo, con 14 aciertos.")) assertTrue("la guardia atrapa «$good» sin motivo", measureHit(good) == null)
+    // una excepción lo es por texto COMPLETO: la misma frase con algo de más o de menos ya no pasa
+    for (exact in measureExceptions) {
+      assertTrue(measureHit(exact) != null)
+      assertTrue("«$exact» debe estar exceptuada tal cual", exact in measureExceptions)
+      assertFalse("«$exact» + algo más NO debe estar exceptuada", "$exact Tu velocidad." in measureExceptions)
+      assertFalse("un recorte de «$exact» NO debe estar exceptuado", exact.dropLast(8) in measureExceptions)
+    }
+  }
 }

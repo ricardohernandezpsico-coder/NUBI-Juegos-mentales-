@@ -108,4 +108,62 @@ class TimeTrialBridgeTest {
     assertTrue("Carga exacta no está en la primera tanda", cfg.contains("\"time_trial\":false"))
     assertTrue(cfg.contains("\"track_seed\":0"))
   }
+  // ------------------------------------------------------------------ el ritmo por ensayo (Tarea 200): tt_t_ms, tt_ok y tt_level
+
+  private val rhythm = ""","tt_hits":2,"tt_errors":1,"tt_peak_level":2,"tt_seconds":120,"tt_track_version":2,"tt_t_ms":[1200,3400,5000],"tt_ok":[1,0,1],"tt_level":[1,1,2]"""
+
+  @Test
+  fun `lee el ritmo, un ensayo por posicion, en los cuatro juegos`() {
+    for (game in listOf("stroop", "disparate", "radar", "acoplamiento")) {
+      val r = NativeReceiver.parse(json(game, rhythm))!!
+      val trials = r.ttTrials
+      assertNotNull("$game: trae el ritmo", trials)
+      trials!!
+      assertEquals(listOf(1200, 3400, 5000), trials.tMs)
+      assertEquals("1 es acierto y 0 error", listOf(true, false, true), trials.ok)
+      assertEquals("el paso en que se jugó cada ensayo", listOf(1, 1, 2), trials.level)
+      assertEquals("la marca sigue saliendo de tt_hits y tt_errors", 2, r.ttHits)
+    }
+  }
+
+  @Test
+  fun `el ritmo llega hasta la partida que se guarda`() {
+    val raw = NativeReceiver.parse(json("stroop", rhythm))!!
+    val saved = com.example.data.TimeTrialDay.resultOf(raw, "2026-10-31")
+    assertEquals(raw.ttTrials, saved.trials)
+    assertTrue("y es un ritmo completo: tantos ensayos como aciertos más errores", saved.hasPace)
+  }
+
+  @Test
+  fun `sin ritmo (una Unity vieja, listas vacias o una partida de siempre) la partida se lee igual`() {
+    val base = ""","tt_hits":38,"tt_errors":4,"tt_peak_level":3,"tt_seconds":120,"tt_track_version":2"""
+    val old = NativeReceiver.parse(json("stroop", base))!!
+    assertNull("una Unity de antes no manda las listas", old.ttTrials)
+    assertEquals(38, old.ttHits)
+    val empty = NativeReceiver.parse(json("stroop", base + ""","tt_t_ms":[],"tt_ok":[],"tt_level":[]"""))!!
+    assertNull("vacías = sin ritmo", empty.ttTrials)
+    assertEquals(38, empty.ttHits)
+    val plain = NativeReceiver.parse(json("stroop", ""","tt_hits":-1,"tt_t_ms":[],"tt_ok":[],"tt_level":[]"""))!!
+    assertNull("una partida de siempre no es un Contrarreloj", plain.ttTrials)
+    assertFalse(plain.isTimeTrial)
+    val notTimeTrial = NativeReceiver.parse(json("stroop", ""","tt_hits":-1,"tt_t_ms":[1200],"tt_ok":[1],"tt_level":[1]"""))!!
+    assertNull("sin marca no hay ritmo suelto", notTimeTrial.ttTrials)
+  }
+
+  @Test
+  fun `un ritmo que no cuadra no se guarda pero la partida si`() {
+    val cases = listOf(
+      ""","tt_t_ms":[1200,3400],"tt_ok":[1,0,1],"tt_level":[1,1,2]""" to "miden distinto",
+      ""","tt_t_ms":[5000,3400,1200],"tt_ok":[1,0,1],"tt_level":[1,1,2]""" to "los tiempos retroceden",
+      ""","tt_t_ms":[1200,3400,5000],"tt_ok":[1,7,1],"tt_level":[1,1,2]""" to "un ok que no es 0 ni 1",
+      ""","tt_t_ms":[1200,3400,999999],"tt_ok":[1,0,1],"tt_level":[1,1,2]""" to "un tiempo más allá de los 120 s",
+      ""","tt_t_ms":[1200,3400,5000],"tt_ok":[1,0,1],"tt_level":[2,1,1]""" to "la pista baja de paso"
+    )
+    for ((lists, why) in cases) {
+      val r = NativeReceiver.parse(json("stroop", ""","tt_hits":2,"tt_errors":1,"tt_peak_level":2,"tt_seconds":120,"tt_track_version":2$lists"""))!!
+      assertNull("$why: sin ritmo", r.ttTrials)
+      assertEquals("$why: la partida se guarda igual", 2, r.ttHits)
+      assertEquals(1, r.ttErrors)
+    }
+  }
 }

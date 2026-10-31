@@ -251,10 +251,10 @@ class GameFlowTest {
   // ---- El Contrarreloj de hoy (Tarea 177; antes, el Desafío de hoy de la Tarea 167)
 
   /** Lo que Unity devuelve de un Contrarreloj: la marca (`tt_hits`), los errores, el paso, los segundos y la versión de la pista; el nivel de la persona sale sin tocar (`endRating` 0,5) y `modeTrials` en 0. */
-  private fun timeTrialResult(gameId: String, hits: Int, errors: Int = 4, peak: Int = 2) =
+  private fun timeTrialResult(gameId: String, hits: Int, errors: Int = 4, peak: Int = 2, trials: com.example.data.TimeTrialTrials? = null) =
     GamePlayResult(
       gameId = gameId, score = 50, correctAnswers = hits, totalTrials = hits + errors, timed = true, level = 2, endRating = 0.5f, modeTrials = 0, modeHits = 0,
-      ttHits = hits, ttErrors = errors, ttPeakLevel = peak, ttSeconds = 120, ttTrackVersion = 2
+      ttHits = hits, ttErrors = errors, ttPeakLevel = peak, ttSeconds = 120, ttTrackVersion = 2, ttTrials = trials
     )
 
   private fun savedTimeTrials(): List<com.example.data.TimeTrialResult> =
@@ -547,5 +547,35 @@ class GameFlowTest {
     vm.launchGame("freno")
     vm.closeGameOrResult()
     assertNull(vm.avanceArea.value)
+  }
+  @Test
+  fun `el ritmo que manda Unity llega a la partida guardada, junto a su marca, y el final no cambia`() {
+    val vm = newViewModel()
+    TestSupport.awaitUntil(message = "El camino de hoy no se cargó") { vm.dailySession.value.gameIds.isNotEmpty() }
+    vm.startTimeTrial()
+    val id = vm.activeGame.value!!.gameDef.id
+    vm.onUnityLaunched("LT-RITMO")
+    val trials = com.example.data.TimeTrialTrials.of(listOf(1500, 4200, 9000, 31_000), listOf(1, 1, 0, 1), listOf(1, 1, 1, 2))!!
+    vm.onUnityResult(timeTrialResult(id, hits = 3, errors = 1, trials = trials), "LT-RITMO")
+    TestSupport.awaitUntil(message = "El Contrarreloj no se guardó") { savedTimeTrials().size == 1 }
+    val saved = savedTimeTrials().single()
+    assertEquals("el ritmo se guarda con la partida", trials, saved.trials)
+    assertTrue("y es completo: tantos ensayos como aciertos más errores", saved.hasPace)
+    assertEquals("la marca no cambia: aciertos menos errores", 2, saved.mark)
+    TestSupport.awaitUntil(message = "No se abrió el final del Contrarreloj") { vm.lastTimeTrial.value != null }
+    assertEquals("el final dice lo mismo que antes", 2, vm.lastTimeTrial.value!!.result.mark)
+    assertNotNull("y su ritmo sale de lo guardado", com.example.data.TimeTrialMarks.pace(vm.timeTrialResults.value, id))
+  }
+
+  @Test
+  fun `una partida de Contrarreloj de una Unity sin el ritmo se guarda igual, con el ritmo en null`() {
+    val vm = newViewModel()
+    vm.startTimeTrial()
+    val id = vm.activeGame.value!!.gameDef.id
+    vm.onUnityLaunched("LT-SIN-RITMO")
+    vm.onUnityResult(timeTrialResult(id, hits = 38), "LT-SIN-RITMO")
+    TestSupport.awaitUntil(message = "El Contrarreloj no se guardó") { savedTimeTrials().size == 1 }
+    assertNull(savedTimeTrials().single().trials)
+    assertEquals(34, savedTimeTrials().single().mark)
   }
 }

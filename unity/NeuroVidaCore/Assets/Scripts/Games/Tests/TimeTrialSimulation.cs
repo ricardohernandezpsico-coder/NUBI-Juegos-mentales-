@@ -92,7 +92,7 @@ namespace NeuroVida.Games.Tests
                 double answerAt = t + StroopContract.ArrivalSeconds(level, false) + (careful ? CareTime("stroop", bot) : ChanceTime(bot));
                 if (answerAt > TimeTrial.Seconds) break;
                 bool correct = careful ? bot.NextDouble() < Careful : bot.Next(StroopContract.Names.Length) == trial.CorrectIndex;
-                run.Register(correct);
+                run.Register(correct, (float)(TimeTrial.Seconds - answerAt));
                 t = answerAt + (correct ? StroopContract.RetoSlideOutSeconds : TimeTrial.ErrorFeedbackSeconds + StroopContract.FadeOutSeconds);
                 if (t >= TimeTrial.Seconds) break;
             }
@@ -113,7 +113,7 @@ namespace NeuroVida.Games.Tests
                 double answerAt = t + DisparateArrive + Math.Max(minThink, careful ? CareTime("disparate", bot) : minThink + ChanceTime(bot));
                 if (answerAt > TimeTrial.Seconds) break;
                 bool correct = bot.NextDouble() < (careful ? Careful : 0.5);
-                run.Register(correct);
+                run.Register(correct, (float)(TimeTrial.Seconds - answerAt));
                 t = answerAt + (correct ? DisparateFarewell : TimeTrial.ErrorFeedbackSeconds + DisparateFarewell);
                 if (t >= TimeTrial.Seconds) break;
             }
@@ -151,7 +151,7 @@ namespace NeuroVida.Games.Tests
                     }
                     success = RadarContract.Success(round.Count, hits, need - hits);
                 }
-                run.Register(success);
+                run.Register(success, (float)(TimeTrial.Seconds - answerAt));
                 t = answerAt + RadarContract.RevealSeconds;
                 if (t >= TimeTrial.Seconds) break;
             }
@@ -176,7 +176,7 @@ namespace NeuroVida.Games.Tests
                 double answerAt = decideAt + (timedOut ? deadline : resp);
                 if (answerAt > TimeTrial.Seconds) break;
                 bool correct = !timedOut && bot.NextDouble() < (careful ? Careful : 0.5);
-                run.Register(correct);
+                run.Register(correct, (float)(TimeTrial.Seconds - answerAt));
                 double after = correct ? DockingContract.OkRevealSeconds(trial.Mirrored) : DockingContract.MissRevealSeconds(trial.Mirrored);
                 t = answerAt + after;
                 if (t >= TimeTrial.Seconds) break;

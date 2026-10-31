@@ -156,4 +156,101 @@ object TimeTrialMarks {
 
   /** Lo que lee el lector de pantalla de la puerta: el título y la línea de abajo (y el candado, sin Plus). */
   fun doorSpoken(record: Int?, plus: Boolean): String = "Tus marcas del Contrarreloj. ${doorLine(record)}" + if (plus) "." else ". Con Nubi Plus."
+
+  // ------------------------------------------------------------------ el ritmo de la última partida (Tarea 200; `auditoria-fable/nubi-plus-comparacion.md` §2.3)
+
+  /** Una partida tiene cuatro medios minutos (0 a 30, 30 a 60, 60 a 90 y 90 a 120 s); cada uno dura [HALF_MINUTE_MS]. */
+  const val HALF_MINUTES = 4
+  const val HALF_MINUTE_MS = 30_000
+
+  /** Los aciertos y los errores de UN medio minuto. */
+  data class HalfMinute(val hits: Int, val errors: Int)
+
+  /**
+   * El ritmo de UNA partida, contado por medios minutos. [halves] siempre tiene [HALF_MINUTES] elementos (de 0 a 30 s, …, de 90 a 120 s). [bestHalves] = los medios minutos (0 a 3) con MÁS aciertos (más de uno si empatan; vacío si no hubo aciertos); [errorHalves] = los que tuvieron algún error;
+   * [errorSteps] = los pasos DISTINTOS de la pista en que se jugaron los ensayos con error, de menor a mayor. [bestLine] y [errorsLine] son las dos frases que lee el gráfico y [sentence] las dos juntas. Es la misma partida que dice [result]: sus aciertos y errores son los del final.
+   */
+  data class Pace(
+    val result: TimeTrialResult,
+    val halves: List<HalfMinute>,
+    val bestHalves: List<Int>,
+    val errorHalves: List<Int>,
+    val errorSteps: List<Int>,
+    val bestLine: String,
+    val errorsLine: String
+  ) {
+    /** «Tu mejor medio minuto fue el segundo, con 14 aciertos. Tus 3 errores llegaron en el último minuto, en el paso 4 de la pista.» */
+    val sentence: String get() = "$bestLine $errorsLine"
+  }
+
+  /**
+   * El ritmo de la ÚLTIMA partida de [gameId] (con la pista de hoy) que tenga ritmo completo ([TimeTrialResult.hasPace]); null si ninguna lo tiene (partidas de antes de la versión 17 o de una Unity sin el registro, o ningún juego aún). Solo se cuenta el ritmo: nunca se compara con otras personas.
+   */
+  fun pace(all: List<TimeTrialResult>, gameId: String): Pace? = TimeTrialDay.ofGame(all, gameId).lastOrNull { it.hasPace }?.let { paceOf(it) }
+
+  /** El ritmo de [result]; null si no tiene ritmo completo. Cada ensayo cae en el medio minuto de su hora (la del final, 120 s, cuenta en el último). */
+  fun paceOf(result: TimeTrialResult): Pace? {
+    val trials = result.trials?.takeIf { result.hasPace } ?: return null
+    val hits = IntArray(HALF_MINUTES)
+    val errors = IntArray(HALF_MINUTES)
+    val errorSteps = sortedSetOf<Int>()
+    for (i in 0 until trials.size) {
+      val half = (trials.tMs[i] / HALF_MINUTE_MS).coerceIn(0, HALF_MINUTES - 1)
+      if (trials.ok[i]) hits[half]++ else { errors[half]++; errorSteps.add(trials.level[i]) }
+    }
+    val halves = List(HALF_MINUTES) { HalfMinute(hits[it], errors[it]) }
+    val top = hits.maxOrNull() ?: 0
+    val best = if (top > 0) halves.indices.filter { hits[it] == top } else emptyList()
+    val errorHalves = halves.indices.filter { errors[it] > 0 }
+    return Pace(result, halves, best, errorHalves, errorSteps.toList(), bestLine(halves, best), errorsLine(errorHalves, errorSteps.toList(), errors.sum()))
+  }
+
+  private val HALF_NAMES = listOf("el primero", "el segundo", "el tercero", "el último")
+  private val HALF_ORDINALS = listOf("el primer medio minuto", "el segundo medio minuto", "el tercer medio minuto", "el último medio minuto")
+
+  /**
+   * La frase de los aciertos: «Tu mejor medio minuto fue el segundo, con 14 aciertos.» Con EMPATE en lo más alto lo dice con todos los empatados («Tus mejores medios minutos fueron el primero y el segundo, con 14 aciertos cada uno.»; los tres: «el primero, el segundo y el último»; los cuatro: «Los cuatro medios
+   * minutos fueron parejos, con 12 aciertos cada uno.»), y sin ningún acierto: «Esta partida no tuvo aciertos.» (sin culpa, sin «el mejor» de la nada). [best] = los medios minutos con más aciertos (vacío si no hubo).
+   */
+  fun bestLine(halves: List<HalfMinute>, best: List<Int>): String {
+    if (best.isEmpty()) return "Esta partida no tuvo aciertos."
+    val hits = TimeTrialDay.hitsText(halves[best.first()].hits)
+    return when (best.size) {
+      1 -> "Tu mejor medio minuto fue ${HALF_NAMES[best[0]]}, con $hits."
+      HALF_MINUTES -> "Los cuatro medios minutos fueron parejos, con $hits cada uno."
+      2 -> "Tus mejores medios minutos fueron ${HALF_NAMES[best[0]]} y ${HALF_NAMES[best[1]]}, con $hits cada uno."
+      else -> "Tus mejores medios minutos fueron ${best.dropLast(1).joinToString(", ") { HALF_NAMES[it] }} y ${HALF_NAMES[best.last()]}, con $hits cada uno."
+    }
+  }
+
+  /**
+   * La frase de los errores: dónde llegaron (en qué medio minuto) y en qué paso de la pista. «Tus 3 errores llegaron en el último minuto, en el paso 4 de la pista.»
+   *  - Sin errores: «Sin errores en esta partida.»
+   *  - UN error, en singular: «Tu único error llegó en el segundo medio minuto, en el paso 2 de la pista.»
+   *  - Cuándo, según los medios minutos con error [errorHalves] (0 a 3): uno solo, «en el primer / segundo / tercer / último medio minuto»; el primero y el segundo, «en el primer minuto»; el tercero y el cuarto, «en el último minuto»; el segundo y el tercero, «en el medio de la partida»;
+   *    cualquier otro reparto, «se repartieron durante la partida» (con otro verbo: «Tus 5 errores se repartieron durante la partida, …»).
+   *  - En qué paso, según los pasos [errorSteps] (de menor a mayor, sin repetir): uno, «en el paso 4 de la pista»; dos, «en los pasos 3 y 4 de la pista»; tres o más, «entre el paso 2 y el 4 de la pista».
+   * [errors] = cuántos errores hubo en total.
+   */
+  fun errorsLine(errorHalves: List<Int>, errorSteps: List<Int>, errors: Int): String {
+    if (errors == 0 || errorHalves.isEmpty()) return "Sin errores en esta partida."
+    val whenText = when (errorHalves) {
+      listOf(0, 1) -> "en el primer minuto"
+      listOf(2, 3) -> "en el último minuto"
+      listOf(1, 2) -> "en el medio de la partida"
+      else -> if (errorHalves.size == 1) "en ${HALF_ORDINALS[errorHalves[0]]}" else null
+    }
+    val steps = when (errorSteps.size) {
+      0 -> ""
+      1 -> ", en el paso ${errorSteps[0]} de la pista"
+      2 -> ", en los pasos ${errorSteps[0]} y ${errorSteps[1]} de la pista"
+      else -> ", entre el paso ${errorSteps.first()} y el ${errorSteps.last()} de la pista"
+    }
+    val subject = when {
+      whenText == null -> "Tus $errors errores se repartieron durante la partida"
+      errors == 1 -> "Tu único error llegó $whenText"
+      else -> "Tus $errors errores llegaron $whenText"
+    }
+    return "$subject$steps."
+  }
 }
