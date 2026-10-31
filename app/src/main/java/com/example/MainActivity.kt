@@ -127,6 +127,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   val dailySession by viewModel.dailySession.collectAsState()
   val promotion by viewModel.promotion.collectAsState()
   val streak by viewModel.currentStreak.collectAsState()
+  val activity by viewModel.activityTimestamps.collectAsState()                       // cuándo se jugó: de ahí salen las farolas de la semana del resumen de la ruta (Tarea 198)
   val achievementQueue by viewModel.achievementQueue.collectAsState()
   val achievementUnlocks by viewModel.achievementUnlocks.collectAsState()
   val sessionSummary by viewModel.sessionSummary.collectAsState()
@@ -209,6 +210,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
           com.example.ui.screens.SessionSummaryScreen(
             summary = summary,
             streak = streak,
+            lamps = androidx.compose.runtime.remember(activity) { com.example.data.Week.lampsFor(activity, System.currentTimeMillis()) },
             lang = lang,
             onClose = { viewModel.dismissSessionSummary() }
           )

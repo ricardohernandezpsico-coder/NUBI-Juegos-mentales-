@@ -104,6 +104,10 @@ class AreaPointsTest {
     val quiet = AreaPoints.compute("MEMORIA", memoria, log.take(2), now)
     assertEquals(0, quiet.weekDelta)
     assertEquals("Esta semana te mantuviste.", AreaPoints.weekLine(quiet, "Memoria"))
+    // el resumen de la ruta (Tarea 198): lo que sumó cada juego, o «te mantuviste» diciendo el área (nunca la palabra suelta «Hecho»)
+    assertEquals("12 puntos en Atención", AreaPoints.gameLine(12, "Atención"))
+    assertEquals("1 punto en Memoria", AreaPoints.gameLine(1, "Memoria"))
+    assertEquals("Te mantuviste en Razonamiento", AreaPoints.gameLine(0, "Razonamiento"))
     // el lunes a la mañana, sin partidas todavía: sin cambio
     assertEquals(0, AreaPoints.compute("MEMORIA", memoria, log.take(2), at(2026, java.util.Calendar.OCTOBER, 19, 8)).weekDelta)
     // «desde cuándo»: el resumen de la ruta de hoy mide desde su comienzo

@@ -81,7 +81,7 @@ class SunOnNightTest {
     assertTrue("«Tu colección», «Más seguidos» y la línea con el visto", uses("games/GameResultScreen.kt") >= 3)
     assertTrue("el detalle del final: líneas con «¡» y sus títulos", uses("ui/components/MeaningfulResult.kt") >= 2)
     assertTrue("el final del Contrarreloj: los números y «hoy»", uses("games/TimeTrialResultScreen.kt") >= 2)
-    assertTrue("el resumen del día", uses("ui/screens/SessionSummaryScreen.kt") >= 3)
+    assertEquals("el resumen del día ya no lleva letras amarillas (Tarea 198: el título va en blanco, los textos de la losa en tinta y la racha en la semana de Hoy; el único sol es el botón)", 0, uses("ui/screens/SessionSummaryScreen.kt"))
     assertTrue("la carga del juego", uses("ui/components/GameLoadingScreen.kt") >= 1)
     assertTrue("el ascenso de liga", uses("ui/components/LeaguePromotionOverlay.kt") >= 1)
   }

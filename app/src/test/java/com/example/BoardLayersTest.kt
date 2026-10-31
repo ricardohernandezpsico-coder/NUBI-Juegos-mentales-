@@ -31,6 +31,19 @@ class BoardLayersTest {
   }
 
   @Test
+  fun el_resumen_de_la_ruta_escribe_sobre_el_cielo_con_OnBoardText_y_solo_la_losa_usa_Text() {
+    // Tarea 198: «¡Ruta de hoy completa!» (el título, la frase y el pie van directo sobre el cielo: con OnBoardText, la orilla del tono de la lámina; ningún `Text` a secas, que dejaba ver los luceros entre las letras) y UNA losa crema donde la letra va en tinta con `Text`
+    val summary = src("ui/screens/SessionSummaryScreen.kt")
+    for (sky in listOf("OnBoardText(\"¡Ruta de hoy completa!\"", "OnBoardText(\n        \"Trabajaste \"", "OnBoardText(\n        \"Nubi te espera mañana para seguir\"")) assertTrue("el texto sobre el cielo usa OnBoardText: $sky", summary.contains(sky))
+    val start = summary.indexOf("ClayCard(Modifier.fillMaxWidth().padding(top = 16.dp).testTag(\"summary_card\")")
+    val end = summary.indexOf("HoyWeek(lamps")
+    assertTrue("la losa está en el código", start > 0 && end > start)
+    val outside = summary.substring(0, start) + summary.substring(end, summary.indexOf("private fun SectionTitle"))          // lo de sobre el cielo: antes de la losa y después de ella (sin el título de sección, que vive dentro de la losa)
+    assertFalse("fuera de la losa no hay ningún Text a secas sobre el cielo", Regex("""(^|[^A-Za-z.])Text\(""", RegexOption.MULTILINE).containsMatchIn(outside.replace("OnBoardText(", "OnBoard(")))
+    assertTrue("dentro de la losa sí: la letra va en tinta sobre crema", summary.substring(start, end).contains("Text(") && summary.substring(start, end).contains("Clay.Ink"))
+  }
+
+  @Test
   fun los_textos_sueltos_sobre_el_fondo_usan_OnBoardText() {
     val plainText = Regex("""(^|[^A-Za-z.])Text\(""", RegexOption.MULTILINE)
     // Tarea 145 (ítem 10): Licencias y créditos va sobre UNA losa crema (ClayPanel) con la letra en tinta, no directo sobre el cielo: sus textos son `Text` normales dentro de la losa y ninguno es OnBoardText

@@ -168,6 +168,11 @@ data class AreaPoints(
     fun pointsText(n: Int): String = if (n == 1) "1 punto" else "$n puntos"
 
     /**
+     * Lo que dice el resumen de la ruta de cada juego (Tarea 198): «12 puntos en Atención» si sumó, y si no sumó, «Te mantuviste en Razonamiento» (la misma palabra que usa la app para un área que no cambió: «Hoy te mantuviste.»). En paralelo, y diciendo siempre en qué área fue.
+     */
+    fun gameLine(gained: Int, areaName: String): String = if (gained > 0) "${pointsText(gained)} en $areaName" else "Te mantuviste en $areaName"
+
+    /**
      * La frase de la semana de un área, para su fila de Avance: «Esta semana sumaste 12 puntos» / «Esta semana te mantuviste» / «Esta semana bajaste 8 puntos. Tu mejor marca sigue en 520 puntos.» Sin ninguna partida: invita («Todavía sin puntos: juega un juego de Memoria»).
      * Nunca «perdiste», nunca flechas ni signos de más o menos.
      */

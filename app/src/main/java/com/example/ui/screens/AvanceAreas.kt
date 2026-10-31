@@ -137,17 +137,22 @@ private fun AreaCell(p: AreaPoints, name: String, nameSp: Int, onClick: () -> Un
 
 /**
  * La barra de un área: un riel crema con contorno de tinta y, encima, el relleno del color del área hasta [fill] (0 a 1) con un canto de tinta en su punta; una barra vacía es solo el riel. Mide 16 dp de alto. Con puntos, el relleno mide al menos 12 dp (una rayita se vería como un defecto).
- * Decorativa para el lector de pantalla: el cuadro ya dice los puntos.
+ * [change] (0 a 1, en la misma escala; Tarea 198, el resumen de la ruta) = lo que se sumó HOY: ese tramo del final del relleno va a media tinta («lo que se sumó») y lo de antes a todo color; con 0 (Avance) la barra es la de siempre. Decorativa para el lector de pantalla: el cuadro ya dice los puntos.
  */
 @Composable
-private fun AreaBar(fill: Float, color: androidx.compose.ui.graphics.Color, key: String) {
+internal fun AreaBar(fill: Float, color: androidx.compose.ui.graphics.Color, key: String, change: Float = 0f) {
   val shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
   androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().height(16.dp).clip(shape).background(AreaTrack).border(2.dp, Clay.Ink, shape).testTag("area_bar_$key")) {
     if (fill > 0f) {
       val w = (maxWidth * fill.coerceIn(0f, 1f)).coerceAtLeast(12.dp)
+      val before = (fill - change).coerceIn(0f, fill)
       Box(
         Modifier.width(w).fillMaxHeight().drawBehind {
-          drawRect(color)
+          if (change > 0f && before < fill) {
+            val beforePx = (maxWidth * before).toPx().coerceIn(0f, size.width)
+            drawRect(color, size = androidx.compose.ui.geometry.Size(beforePx, size.height))
+            drawRect(color.copy(alpha = 0.5f), topLeft = androidx.compose.ui.geometry.Offset(beforePx, 0f), size = androidx.compose.ui.geometry.Size(size.width - beforePx, size.height))
+          } else drawRect(color)
           if (w < maxWidth) drawRect(Clay.Ink, topLeft = androidx.compose.ui.geometry.Offset(size.width - 2.dp.toPx(), 0f), size = androidx.compose.ui.geometry.Size(2.dp.toPx(), size.height))
         }.testTag("area_bar_fill_$key")
       )

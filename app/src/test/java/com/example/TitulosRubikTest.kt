@@ -158,6 +158,7 @@ class TitulosRubikTest {
     // el final de la partida, el resumen de la ruta, el Primer vuelo, los diálogos y la medalla
     assertLine("ui/components/MeaningfulResult.kt", "model.whyTitle", true)
     assertLine("ui/screens/SessionSummaryScreen.kt", "¡Ruta de hoy completa!", true)
+    assertLine("ui/screens/SessionSummaryScreen.kt", "Text(text, color = Clay.Ink, fontSize = 20.sp", true)       // «Tus juegos» y «Tu avance», los títulos de las dos secciones de la losa
     assertLine("ui/screens/FirstFlightScreen.kt", "fontSize = size.sp, lineHeight = (size + 5).sp", true)
     assertLine("ui/components/ClayPanels.kt", "Text(title, color = Clay.Ink, fontSize = 22.sp", true)
     assertLine("ui/components/AchievementOverlay.kt", "OnBoardText(def.title", true)
