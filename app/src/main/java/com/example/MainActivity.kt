@@ -148,6 +148,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   // La guía de Nubi en la primera entrada a Hoy (Tarea 193, `HoyGuide`): dónde están los elementos que ilumina (los publican Hoy y la barra) y en qué paso va (vive en el ViewModel).
   val guideTargets = remember { com.example.ui.components.GuideTargets() }
   val guideStep by viewModel.guideStep.collectAsState()
+  val plus by viewModel.plus.collectAsState()                 // Nubi Plus (Tarea 199): el atajo «Todas tus marcas ›» del final del Contrarreloj
 
   androidx.compose.runtime.CompositionLocalProvider(com.example.ui.components.LocalGuideTargets provides guideTargets) {
   Box(modifier = Modifier.fillMaxSize()) {
@@ -244,7 +245,9 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
               outcome = timeTrial,
               onAgain = { viewModel.startTimeTrial(timeTrial.result.gameId, timeTrial.result.day) },
               onDone = { viewModel.closeGameOrResult() },
-              soundEnabled = userSettings.soundEnabled
+              soundEnabled = userSettings.soundEnabled,
+              plus = plus,
+              onAllMarks = { viewModel.openContrarrelojFromFinal(timeTrial.result.gameId) }
             )
             return@let
           }

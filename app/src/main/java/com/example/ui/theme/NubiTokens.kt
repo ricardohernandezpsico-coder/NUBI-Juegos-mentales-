@@ -32,6 +32,12 @@ object NubiTokens {
   /** El amarillo claro y suave (mantequilla) del TEXTO amarillo sobre el cielo: 16,2:1 sobre `#07071F`, 14,9:1 sobre `#100F3A` y 12,9:1 sobre `#1C1B52` (los tres tonos del cielo; 15,2:1 sobre `#0E0D33`, el fondo de la app); `SunOnNightTest` lo mide. El sol de antes daba 12,9, 11,9, 10,3 y 12,2: el número ya era alto, lo que cansaba era la saturación. */
   val SunOnNight = Color(0xFFFFE6A6)
 
+  /**
+   * El noche PLANO de las páginas de información (Tarea 199, `#050823`): el fondo de la página «Contrarreloj» bajo su cabecera, donde el cielo (lámina + luceros + la luna difusa) se DESVANECE en 24 dp y no vuelve a asomar entre las losas.
+   * Es el mismo tono con que se miden y se graban los finales de partida (las pruebas de captura los apoyan sobre este color) y queda a un paso del primer tono del cielo (`#07071F`), así que el desvanecido de la cabecera no se nota. En la app los finales en sí van sobre el cielo, no sobre este plano.
+   */
+  val NightFlat = Color(0xFF050823)
+
   // Superficies de Material (mismos valores que tenía el esquema)
   val Surface = Color(0xE6172058)
   val SurfaceVariant = Color(0xFF243078)

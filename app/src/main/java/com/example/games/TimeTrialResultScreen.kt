@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -37,14 +38,18 @@ import androidx.compose.ui.unit.sp
 import com.example.data.TimeTrialDay
 import com.example.data.TimeTrialStats
 import com.example.model.GameRegistry
+import com.example.ui.components.ClaySlab
 import com.example.ui.components.DetailSection
 import com.example.ui.components.DetailText
 import com.example.ui.components.Glyph
+import com.example.ui.components.KitGlyph
 import com.example.ui.components.MeaningfulResultModel
 import com.example.ui.components.OnBoardText
 import com.example.ui.components.ResultHeadline
 import com.example.ui.components.ResultNote
 import com.example.ui.components.ResultPhrase
+import com.example.ui.components.SlabColor
+import com.example.ui.components.SlabSize
 import com.example.ui.components.rememberReduceMotion
 import com.example.ui.i18n.getGameTitle
 import com.example.ui.theme.AppFamily
@@ -101,7 +106,10 @@ fun TimeTrialResultScreen(
   onDone: () -> Unit,
   modifier: Modifier = Modifier,
   /** «Efectos de sonido» de Ajustes: con false, la marca nueva no suena (sí vibra, si la vibración está encendida). */
-  soundEnabled: Boolean = true
+  soundEnabled: Boolean = true,
+  /** Nubi Plus (Tarea 199, `PlusAccess`): con Plus y [onAllMarks], bajo «La mejor de esta semana» va la losa chica «Todas tus marcas ›», que abre la página «Contrarreloj» de Avance con este juego elegido. Sin Plus el final queda como siempre. */
+  plus: Boolean = false,
+  onAllMarks: (() -> Unit)? = null
 ) {
   val gameDef = GameRegistry.getById(outcome.result.gameId)
   val lang = com.example.ui.i18n.LocalAppLanguage.current
@@ -140,6 +148,10 @@ fun TimeTrialResultScreen(
     }
     if (ui.last.isNotEmpty()) {
       LastGames(ui.last, ui.weekLine)
+    }
+    if (plus && onAllMarks != null) {
+      Spacer(Modifier.height(12.dp))
+      AllMarksShortcut(onAllMarks, Modifier.align(Alignment.End))
     }
     Spacer(Modifier.height(24.dp))
     ClayButton(text = TimeTrialStats.AGAIN, onClick = onAgain, glyph = Glyph.CLOCK, modifier = Modifier.testTag("btn_timetrial_again"))
@@ -186,6 +198,21 @@ private fun LastGames(marks: List<Int>, weekLine: String?) {
     }
     weekLine?.let {
       OnBoardText(text = it, color = NubiTokens.OnNightDim, fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().padding(top = 10.dp).testTag("timetrial_week"))
+    }
+  }
+}
+
+/** «Todas tus marcas ›» (Tarea 199, solo con Nubi Plus): una losa chica crema, a la derecha bajo «La mejor de esta semana», que abre la MISMA página «Contrarreloj» de Avance (no es otra puerta: es esa vista desde donde acaba de nacer la marca). Toca 48 dp de alto como mínimo (la losa suma 6 dp de sombra abajo, que no se tocan: `heightIn(54)`). */
+@Composable
+private fun AllMarksShortcut(onClick: () -> Unit, modifier: Modifier = Modifier) {
+  ClaySlab(
+    color = SlabColor.CREAM, size = SlabSize.SMALL, onClick = onClick, contentAlignment = Alignment.Center,
+    modifier = modifier.heightIn(min = 54.dp).semantics { contentDescription = "Todas tus marcas" }.testTag("btn_timetrial_all_marks")
+  ) {
+    Row(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+      Text("Todas tus marcas", color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 20.sp)
+      Spacer(Modifier.width(8.dp))
+      KitGlyph(Glyph.RIGHT, size = 20.dp)
     }
   }
 }

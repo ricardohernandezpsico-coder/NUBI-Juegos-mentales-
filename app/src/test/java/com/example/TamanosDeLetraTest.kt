@@ -10,8 +10,8 @@ import java.io.File
  * Se mira el código: ningún `fontSize` de la app baja de 16 sp fuera de esos archivos, y los estilos de Material que usa la app tampoco.
  */
 class TamanosDeLetraTest {
-  /** Los únicos archivos con 14 sp: rótulos de gráfico (la escala de las etapas y el gráfico de las 4 semanas, en `StageScale.kt`, y los de los finales). */
-  private val chartLabelFiles = setOf("ui/components/StageScale.kt", "games/GameResultScreen.kt")
+  /** Los únicos archivos con 14 sp: rótulos de gráfico (la escala de las etapas y el gráfico de las 4 semanas, en `StageScale.kt`, los de los finales y, desde la Tarea 199, los dos rótulos del eje de «Tus últimas 10 marcas» en `ContrarrelojPage.kt`). */
+  private val chartLabelFiles = setOf("ui/components/StageScale.kt", "games/GameResultScreen.kt", "ui/screens/ContrarrelojPage.kt")
   private val size = Regex("fontSize = (\\d+(?:\\.\\d+)?)\\.sp")
 
   @Test

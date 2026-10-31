@@ -859,10 +859,42 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   /** «‹ Avance» o Atrás en la página de un área: vuelve a la lista de áreas, donde estaba. */
   fun closeAvanceArea() { _avanceArea.value = null }
 
+  // La página «Contrarreloj» abierta en Avance (Tarea 199; el id del juego elegido en su selector, null = cerrada). Como la de un área: vive solo en memoria, Atrás vuelve a la lista de Avance y cambiar de pestaña la cierra.
+  private val _contrarreloj = MutableStateFlow<String?>(null)
+  val contrarreloj: StateFlow<String?> = _contrarreloj.asStateFlow()
+
+  /** Nubi Plus (una sola fuente local: `PlusAccess`). */
+  val plus: StateFlow<Boolean> = repository.plus
+
+  fun setPlus(on: Boolean) = repository.setPlus(on)
+
+  /** Abre la página con [gameId] elegido (por defecto, el juego de hoy). */
+  fun openContrarreloj(gameId: String? = null) { _contrarreloj.value = gameId ?: com.example.data.TimeTrialDay.gameFor(repository.dateKeyOf(System.currentTimeMillis())) }
+
+  /** Elige otro juego en el selector de la página. */
+  fun selectContrarrelojGame(gameId: String) { if (_contrarreloj.value != null) _contrarreloj.value = gameId }
+
+  /** «‹ Avance» o Atrás en la página: vuelve a la lista de Avance, donde estaba. */
+  fun closeContrarreloj() { _contrarreloj.value = null }
+
+  /**
+   * «Todas tus marcas ›» del final del Contrarreloj (solo con Plus): deja el final, va a Avance y abre la misma página con el juego que se acaba de jugar elegido. No es otra puerta: es la misma vista desde donde nació la marca. Atrás vuelve a la lista de Avance.
+   */
+  fun openContrarrelojFromFinal(gameId: String) {
+    focusPrefs.edit().remove("origin").remove("origin_game").apply()
+    _allGames.value = null
+    _avanceArea.value = null
+    _activeGame.value = null
+    _lastResult.value = null
+    _currentTab.value = AppTab.PROGRESO
+    _contrarreloj.value = gameId
+  }
+
   /** Nada abierto sobre las pestañas (y sin origen que recordar). */
   private fun clearOpenSheets() {
     _allGames.value = null
     _avanceArea.value = null
+    _contrarreloj.value = null
     focusPrefs.edit().remove("origin").remove("origin_game").apply()
   }
 

@@ -338,7 +338,7 @@ class VisibleTextsGuardTest {
   fun `lo que Avance dice de las medidas va en segundos y en palabras, sin milisegundos ni abreviaturas`() {
     val found = mutableListOf<String>()
     val bad = listOf(" ms", "°", " dp", "pts", "sem.", "→", "▲", "▼", " seg.")
-    for (name in listOf("ui/screens/AvanceAreas.kt", "ui/screens/AvanceAreaPage.kt", "data/MeasurePhrases.kt", "data/LevelLines.kt", "data/AreaPoints.kt")) {
+    for (name in listOf("ui/screens/AvanceAreas.kt", "ui/screens/AvanceAreaPage.kt", "ui/screens/ContrarrelojPage.kt", "ui/screens/ContrarrelojDoor.kt", "data/TimeTrialMarks.kt", "data/PlusAccess.kt", "data/MeasurePhrases.kt", "data/LevelLines.kt", "data/AreaPoints.kt")) {
       File("src/main/java/com/example/$name").readLines().forEachIndexed { i, raw ->
         for (text in visibleLiteralsOf(raw)) bad.firstOrNull { it in text }?.let { found += "$name:${i + 1} «$text» (por «$it»)" }
       }

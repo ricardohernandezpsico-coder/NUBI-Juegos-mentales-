@@ -461,6 +461,16 @@ class NeuroVidaRepository(
     _retoChoices.value = _retoChoices.value + (gameId to timed)
     profilePrefs.edit().putBoolean(RetoChoice.key(gameId), timed).apply()
   }
+  // Nubi Plus (Tarea 199, `PlusAccess`): UNA sola fuente local de verdad, en `plus_access` (PASAJERA: no va en el respaldo; quién tiene Plus lo dirá Google Play, Etapa 4). Las builds de depuración empiezan encendidas; el botón «[Debug]» de Ajustes la cambia.
+  private val plusPrefs = context.getSharedPreferences(PlusAccess.PREFS, Context.MODE_PRIVATE)
+  private val _plus = MutableStateFlow(PlusAccess.resolve(if (plusPrefs.contains(PlusAccess.KEY)) plusPrefs.getBoolean(PlusAccess.KEY, false) else null, com.example.BuildConfig.DEBUG))
+  val plus: StateFlow<Boolean> = _plus.asStateFlow()
+
+  fun setPlus(on: Boolean) {
+    _plus.value = on
+    plusPrefs.edit().putBoolean(PlusAccess.KEY, on).apply()
+  }
+
   // La guía de Nubi en la primera entrada a Hoy (Tarea 193, `HoyGuide`): la marca «ya la vio» (`hoy_guide_seen` en `profile_extra`: va en el respaldo, así un teléfono restaurado no la repite, y «Borrar datos» la limpia). Se escribe al TERMINAR la guía («Listo» o «Saltar la guía»), no al empezar.
   private val _hoyGuideSeen = MutableStateFlow(profilePrefs.getBoolean("hoy_guide_seen", false))
   val hoyGuideSeen: StateFlow<Boolean> = _hoyGuideSeen.asStateFlow()

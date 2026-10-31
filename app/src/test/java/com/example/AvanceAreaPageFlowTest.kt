@@ -160,7 +160,7 @@ class AvanceAreaPageFlowTest {
   @Test
   fun al_volver_de_la_pagina_la_lista_esta_donde_estaba() {
     val vm = withData()
-    show(vm, heightDp = 520)                                          // con los cuatro cuadros de 2 × 2 (Tarea 174) toda la lista cabe en 873 dp: una ventana baja para que haya algo que deslizar
+    show(vm, heightDp = 640)                                          // con los cuatro cuadros de 2 × 2 (Tarea 174) toda la lista cabe en 873 dp: una ventana baja para que haya algo que deslizar (520 hasta la Tarea 199; la puerta del Contrarreloj suma unos 114 dp a la lista)
     rule.onNode(hasScrollAction()).performScrollToNode(hasTestTag("btn_profile_baseline")); rule.waitForIdle()
     assertOffscreen("avance_week")                                    // la línea de la semana quedó arriba, fuera de la vista
     rule.onNodeWithTag("progress_area_lenguaje").performClick(); rule.waitForIdle()

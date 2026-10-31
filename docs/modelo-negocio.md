@@ -60,6 +60,7 @@
   - decoraciones extra;
   - el plan familiar.
 - **Nunca se bloquea la ruta del día.**
+- **Nubi Plus, hoy (Tarea 199, 31-oct):** existe el INTERRUPTOR local (`data/PlusAccess.kt`, preferencia pasajera `plus_access`; las builds de depuración empiezan encendidas y un botón «[Debug]» lo cambia) y lo único que cuelga de él es la **página «Contrarreloj» de Avance entera** (todas tus marcas, comparadas solo contigo) con su atajo «Todas tus marcas ›» en el final del Contrarreloj. Sin Plus, la puerta de Avance dice el récord de hoy, lleva el candado «Con Nubi Plus» y abre una hoja que cuenta qué trae; jugar el Contrarreloj, el récord de Hoy y el final de siempre siguen gratis. **Falta el botón de compra** (Google Play Billing, Etapa 4, con el abogado): la hoja del candado todavía no vende nada ni dice precios.
 - Cómo se activa: lo pagado se activa dentro de la app con Google Play, **nunca desde un servidor**, por la regla permanente 3. Lo revisa el abogado.
 
 ## Planes y embudo
