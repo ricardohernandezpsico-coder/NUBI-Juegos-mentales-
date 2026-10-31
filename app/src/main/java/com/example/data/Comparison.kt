@@ -63,12 +63,12 @@ object Comparison {
   }
 
   /**
-   * De dónde sale la comparación en ESTA build: con [Features.COMPARE] encendida sería el servidor, que todavía no existe (devuelve null: no hay sección); con ella apagada, SOLO las builds de depuración usan los datos de muestra ([few] = el mundo de «pocos»), y la de la tienda no tiene nada.
+   * De dónde sale la comparación en ESTA build: con [Features.COMPARE] encendida sería el servidor, que todavía no existe (devuelve null: no hay sección); con ella apagada, SOLO las builds de depuración usan los datos de muestra ([world]: «muchos», «pocos» o «muy pocos»), y la de la tienda no tiene nada.
    * `ContrarrelojPageTest` y `ComparisonTest` aseguran que en release no hay sección.
    */
-  fun sourceFor(debugBuild: Boolean, few: Boolean): Source? = when {
+  fun sourceFor(debugBuild: Boolean, world: SampleComparison.World): Source? = when {
     Features.COMPARE -> null
-    debugBuild -> SampleComparison(few)
+    debugBuild -> SampleComparison(world)
     else -> null
   }
 
@@ -132,8 +132,8 @@ object Comparison {
 
   // ------------------------------------------------------------------ tu lugar esta semana
 
-  /** Con quiénes se compara una marca: la franja esta semana (lo normal), la franja las últimas 4 semanas, las franjas vecinas las últimas 4 semanas o todas las edades las últimas 4 semanas. */
-  enum class Scope { OWN_WEEK, OWN_4_WEEKS, NEIGHBORS_4_WEEKS, ALL_4_WEEKS }
+  /** Con quiénes se compara una marca: la franja esta semana (lo normal), la franja las últimas 4 semanas, las franjas vecinas las últimas 4 semanas, todas las edades ESTA semana o todas las edades las últimas 4 semanas (estas dos, solo en «Mientras tanto»). */
+  enum class Scope { OWN_WEEK, OWN_4_WEEKS, NEIGHBORS_4_WEEKS, ALL_WEEK, ALL_4_WEEKS }
 
   /** Un lugar dicho: la [mark] de esta semana contra [distribution] (de [ranges], null = todas las edades), con su [percentile] y su [division]. */
   data class Ranked(val mark: Int, val percentile: Int, val division: Division, val scope: Scope, val ranges: List<AgeRange>?, val distribution: Distribution)
@@ -142,7 +142,7 @@ object Comparison {
     /** Alcanzan 50 personas en la clase de referencia (la franja esta semana, o la primera de las más amplias de las reglas 2 y 3 de §4). */
     data class Found(val ranked: Ranked) : Place
 
-    /** «Todavía somos pocos»: [own] personas de la franja jugaron este juego esta semana y ninguna clase de la franja o sus vecinas llegó a 50; [meanwhile] es lo que sí se puede decir con todas las edades de las últimas 4 semanas, si ahí llegan a 50 (paso 4). */
+    /** «Todavía somos pocos»: [own] personas de la franja jugaron este juego esta semana y ninguna clase de la franja o sus vecinas llegó a 50; [meanwhile] es lo que sí se puede decir con todas las edades (esta semana si llegan a 50; si no, las últimas 4 semanas), si ahí llegan a 50 (paso 4). */
     data class Few(val own: Int, val meanwhile: Ranked?) : Place
 
     /** Sin marca esta semana en este juego: no hay con qué compararse. */
@@ -151,7 +151,8 @@ object Comparison {
 
   /**
    * El lugar de [mark] (la mejor marca de esta semana en [game]; null = ninguna) para una persona de [range], con las reglas de §4 EN ORDEN: franja + esta semana con 50 personas o más; si no, la franja las últimas 4 semanas; si no, las franjas vecinas las últimas 4 semanas;
-   * si aun así faltan, «Todavía somos pocos» con la cuenta real de la franja y, de «mientras tanto», todas las edades las últimas 4 semanas si ahí hay 50 o más. Siempre se dice cuál se usó (`Ranked.scope`).
+   * si aun así faltan, «Todavía somos pocos» con la cuenta real de la franja y, de «mientras tanto», todas las edades ESTA semana si llegan a 50 (el MISMO número que la fila «Todas las edades» de «Comparado con otras edades»: un grupo nunca muestra dos números en una pantalla) y, solo si esta semana no llegan, todas las edades de las últimas 4 semanas, dicho.
+   * Siempre se dice cuál se usó (`Ranked.scope`).
    */
   fun place(source: Source, game: String, range: AgeRange, mark: Int?): Place {
     if (mark == null) return Place.NoMark
@@ -160,8 +161,9 @@ object Comparison {
     if (own.enough) return Place.Found(ranked(Scope.OWN_WEEK, listOf(range), own))
     source.distribution(game, listOf(range), 0, RECENT_WEEKS).takeIf { it.enough }?.let { return Place.Found(ranked(Scope.OWN_4_WEEKS, listOf(range), it)) }
     neighborGroup(range)?.let { group -> source.distribution(game, group, 0, RECENT_WEEKS).takeIf { it.enough }?.let { return Place.Found(ranked(Scope.NEIGHBORS_4_WEEKS, group, it)) } }
-    val all = source.distribution(game, null, 0, RECENT_WEEKS).takeIf { it.enough }?.let { ranked(Scope.ALL_4_WEEKS, null, it) }
-    return Place.Few(own.people, all)
+    val allWeek = source.distribution(game, null, 0).takeIf { it.enough }?.let { ranked(Scope.ALL_WEEK, null, it) }
+    val meanwhile = allWeek ?: source.distribution(game, null, 0, RECENT_WEEKS).takeIf { it.enough }?.let { ranked(Scope.ALL_4_WEEKS, null, it) }
+    return Place.Few(own.people, meanwhile)
   }
 
   /** «Tu mejor marca de esta semana, 43 aciertos, supera a 63 de cada 100 personas de 45 a 54 años que jugaron Tinta o Palabra esta semana.» (con las otras clases: «… en las últimas 4 semanas», «de 30 a 54 años», «de todas las edades»). */
@@ -169,9 +171,9 @@ object Comparison {
     val who = when (r.scope) {
       Scope.OWN_WEEK, Scope.OWN_4_WEEKS -> "de ${range.label}"
       Scope.NEIGHBORS_4_WEEKS -> "de ${groupLabel(r.ranges ?: listOf(range))}"
-      Scope.ALL_4_WEEKS -> "de todas las edades"
+      Scope.ALL_WEEK, Scope.ALL_4_WEEKS -> "de todas las edades"
     }
-    val whenText = if (r.scope == Scope.OWN_WEEK) "esta semana" else "en las últimas $RECENT_WEEKS semanas"
+    val whenText = if (r.scope == Scope.OWN_WEEK || r.scope == Scope.ALL_WEEK) "esta semana" else "en las últimas $RECENT_WEEKS semanas"
     val n = r.percentile
     return "Tu mejor marca de esta semana, ${TimeTrialDay.hitsText(r.mark)}, supera a $n de cada 100 personas $who que jugaron $gameTitle $whenText."
   }
@@ -205,9 +207,12 @@ object Comparison {
   /** La barra de «Todavía somos pocos»: «23 de 50 personas». */
   fun fewBarText(own: Int): String = "$own de $FEW_BAR_GOAL personas"
 
-  /** «Mientras tanto, comparada con todas las edades de las últimas 4 semanas, tu mejor marca de esta semana, 43 aciertos, supera a 58 de cada 100 personas.» */
+  /**
+   * «Mientras tanto, comparada con todas las edades de esta semana, tu mejor marca, 43 aciertos, supera a 51 de cada 100 personas.» (el MISMO número que la fila «Todas las edades» de «Comparado con otras edades»); solo si esta semana no llegan a 50: «Mientras tanto, comparada con todas las edades de las últimas 4 semanas, tu mejor marca de esta semana, 43 aciertos, supera a 53 de cada 100 personas.» y entonces esa fila dice «todavía somos pocos».
+   */
   fun meanwhileSentence(r: Ranked): String {
     val n = r.percentile
+    if (r.scope == Scope.ALL_WEEK) return "Mientras tanto, comparada con todas las edades de esta semana, tu mejor marca, ${TimeTrialDay.hitsText(r.mark)}, supera a $n de cada 100 personas."
     return "Mientras tanto, comparada con todas las edades de las últimas $RECENT_WEEKS semanas, tu mejor marca de esta semana, ${TimeTrialDay.hitsText(r.mark)}, supera a $n de cada 100 personas."
   }
 

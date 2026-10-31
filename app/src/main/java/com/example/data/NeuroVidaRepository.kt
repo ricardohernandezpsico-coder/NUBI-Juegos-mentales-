@@ -471,13 +471,13 @@ class NeuroVidaRepository(
     plusPrefs.edit().putBoolean(PlusAccess.KEY, on).apply()
   }
 
-  // Datos de muestra de la comparación (Tarea 202, `Comparison.sourceFor`): ¿el mundo de «pocos»? Solo lo mueve el botón «[Debug]» y solo se mira en depuración; pasajero, en el mismo archivo que `plus_access` (fuera del respaldo).
-  private val _compareFew = MutableStateFlow(plusPrefs.getBoolean(PlusAccess.COMPARE_FEW_KEY, false))
-  val compareFew: StateFlow<Boolean> = _compareFew.asStateFlow()
+  // Datos de muestra de la comparación (Tareas 202 y 202b, `Comparison.sourceFor`): ¿«muchos», «pocos» o «muy pocos»? Solo lo mueve el botón «[Debug]» y solo se mira en depuración; pasajero, en el mismo archivo que `plus_access` (fuera del respaldo).
+  private val _compareWorld = MutableStateFlow(SampleComparison.World.entries.firstOrNull { it.name == plusPrefs.getString(PlusAccess.COMPARE_WORLD_KEY, null) } ?: SampleComparison.World.MANY)
+  val compareWorld: StateFlow<SampleComparison.World> = _compareWorld.asStateFlow()
 
-  fun setCompareFew(on: Boolean) {
-    _compareFew.value = on
-    plusPrefs.edit().putBoolean(PlusAccess.COMPARE_FEW_KEY, on).apply()
+  fun setCompareWorld(world: SampleComparison.World) {
+    _compareWorld.value = world
+    plusPrefs.edit().putString(PlusAccess.COMPARE_WORLD_KEY, world.name).apply()
   }
 
   // La guía de Nubi en la primera entrada a Hoy (Tarea 193, `HoyGuide`): la marca «ya la vio» (`hoy_guide_seen` en `profile_extra`: va en el respaldo, así un teléfono restaurado no la repite, y «Borrar datos» la limpia). Se escribe al TERMINAR la guía («Listo» o «Saltar la guía»), no al empezar.

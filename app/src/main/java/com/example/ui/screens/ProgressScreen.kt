@@ -69,7 +69,7 @@ fun ProgressScreen(
   val currentLang = LocalAppLanguage.current
   val contrarreloj by viewModel.contrarreloj.collectAsState()      // la página «Contrarreloj» abierta (el juego elegido; Tarea 199): vive en el ViewModel como la de un área
   val plus by viewModel.plus.collectAsState()
-  val compareFew by viewModel.compareFew.collectAsState()
+  val compareWorld by viewModel.compareWorld.collectAsState()
   val ageRange by viewModel.ageRange.collectAsState()
   val ttResults by viewModel.timeTrialResults.collectAsState()
   var plusSheet by remember { mutableStateOf(false) }
@@ -96,7 +96,7 @@ fun ProgressScreen(
     val ttOpen = contrarreloj
     if (ttOpen != null && contrarrelojOpen) {
       // La comparación con personas de tu edad (Tarea 202): `Comparison.sourceFor` es null en la build de la tienda y mientras no haya servidor; en depuración, datos de muestra (la página lo dice con una frase visible).
-      val compare = remember(compareFew) { com.example.data.Comparison.sourceFor(com.example.BuildConfig.DEBUG, compareFew) }
+      val compare = remember(compareWorld) { com.example.data.Comparison.sourceFor(com.example.BuildConfig.DEBUG, compareWorld) }
       ContrarrelojPage(results = ttResults, selected = ttOpen, onSelect = viewModel::selectContrarrelojGame, onBack = viewModel::closeContrarreloj, now = ttNow, lang = currentLang, compare = compare, ageRange = ageRange)
       return@Column
     }

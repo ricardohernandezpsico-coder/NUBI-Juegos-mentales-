@@ -458,11 +458,12 @@ class VisibleTextsGuardTest {
 
   /**
    * Los ÚNICOS textos de la app que pueden decir una de esas palabras, por TEXTO COMPLETO (no por archivo ni por línea): cualquier uso nuevo falla, y cambiar una de estas frases obliga a revisar esta lista. Cada una habla de otra cosa que la persona:
-   *  - «capacidad» (3): la aclaración del final del Contrarreloj («No es una medida de capacidad»: lo niega); «una capacidad limitada para todos» (habla de todas las personas, con su cita); y el resumen de Owsley 2011 (la visión con la edad).
+   *  - «capacidad» (4): la aclaración del final del Contrarreloj y de su página, en sus DOS versiones —sin comparación («…, comparado solo contigo. No es una medida de capacidad.») y con ella (Tarea 202b)— («No es una medida de capacidad»: lo niega); «una capacidad limitada para todos» (habla de todas las personas, con su cita); y el resumen de Owsley 2011 (la visión con la edad).
    *  - «velocidad» (6): la velocidad con que se MUEVEN los objetos o los satélites del juego, o de los objetos de un estudio: las cuatro de Satélites (la medida «Velocidad más alta superada», con su plantilla `$n`, y las tres explicaciones de «tu seguimiento») y Sekuler 2008.
    */
   private val measureExceptions = setOf(
     "Es el resultado de un juego, comparado solo contigo. No es una medida de capacidad.",
+    "Es el resultado de un juego. No es una medida de capacidad.",                      // la misma nota con la comparación en la página (Tarea 202b): ya no dice «solo contigo»
     "Seguir varias cosas en movimiento es una capacidad limitada para todos: solo podemos seguir unas pocas a la vez.",
     "Con la edad baja la capacidad de distinguir contrastes y de ver con poca luz.",
     "Velocidad más alta superada: la inicial",

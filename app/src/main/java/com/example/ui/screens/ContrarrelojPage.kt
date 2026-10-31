@@ -103,7 +103,7 @@ private const val BIG_TEXT_SCALE_CAP = 1.3f
  * La PÁGINA «Contrarreloj» de Avance (Tarea 199; `auditoria-fable/estadisticas-contrarreloj.md` §2.1, §3 y §11; solo con Nubi Plus): TODAS tus marcas del Contrarreloj, comparadas solo contigo y sin servidor (`TimeTrialMarks`: lo guardado en `time_trial_results`). Se abre como la página de un
  * área (reemplaza la lista de Avance; Atrás vuelve; la barra de pestañas sigue en «Avance») y se desliza entera.
  *
- * De arriba abajo: la cabecera sobre el cielo («Contrarreloj» y «Tus marcas, comparadas solo contigo.», con [OnBoardText]); el cielo se DESVANECE en 24 dp hasta el noche plano ([NubiTokens.NightFlat]) y de ahí para abajo todo va en losas crema sobre ese fondo plano, sin luceros ni luna entre ellas;
+ * De arriba abajo: la cabecera sobre el cielo («Contrarreloj» y «Tus marcas, comparadas solo contigo.» —con la comparación, «Tus marcas, comparadas contigo y con personas de tu edad.»—, con [OnBoardText]); el cielo se DESVANECE en 24 dp hasta el noche plano ([NubiTokens.NightFlat]) y de ahí para abajo todo va en losas crema sobre ese fondo plano, sin luceros ni luna entre ellas;
  * el selector de los cuatro juegos (dos filas parejas; una columna si «Acoplamiento» no cabe entero en media fila; el elegido en lima con el visto; abre con el juego de hoy), «Tu récord» (la cifra grande con su fecha y su paso, y adentro «Tus últimas 10 marcas»: barras de plasticina con el récord en sol y la moneda del visto,
  * a 5 barras si las cifras no caben a 16 sp), «Tu ritmo en la última partida» (Tarea 201: los aciertos y los errores de cada medio minuto), «Esta semana y la pasada», «Aciertos y errores» y, al final, «Pistas anteriores» (solo si hay) con la nota de siempre.
  * Desde la Tarea 201 (opción B de Fable, `auditoria-fable/nubi-plus-comparacion.md` §11): una línea fina separa lo que una losa junta (la cifra del récord y sus marcas, las dos semanas, los dos pares de barras y la nota) y los gráficos de barras van en una ventanilla noche ([NightWindow]); las barras horizontales de «Aciertos y errores» siguen en crema.
@@ -152,7 +152,7 @@ internal fun ContrarrelojPage(
     }
   ) {
     Column(Modifier.fillMaxSize().verticalScroll(scroll).testTag("contrarreloj_scroll")) {
-      PageHeader(onBack, Modifier.onSizeChanged { headerPx = it.height })
+      PageHeader(onBack, compared = section != null, Modifier.onSizeChanged { headerPx = it.height })
       Spacer(Modifier.height(FadeHeight))
       Column(Modifier.padding(horizontal = PageMargin).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(CardGap)) {
         GameSelector(records, selected, lang, onSelect)
@@ -163,7 +163,7 @@ internal fun ContrarrelojPage(
           WeeksCard(page)
           SplitCard(page)
         }
-        NoteCard(page)
+        NoteCard(page, compared = section != null)
         if (section != null) {
           CompareHeader()
           PlaceCard(section)
@@ -179,7 +179,7 @@ internal fun ContrarrelojPage(
 
 /** El disco de volver, «Contrarreloj» (Rubik, con tope de letra 1,3) y su subtítulo, que parte la línea por palabras bajo el título (del disco al margen). Todo con [OnBoardText]: el cielo tiene luceros. */
 @Composable
-private fun PageHeader(onBack: () -> Unit, modifier: Modifier = Modifier) {
+private fun PageHeader(onBack: () -> Unit, compared: Boolean, modifier: Modifier = Modifier) {
   Column(modifier.fillMaxWidth().padding(start = PageMargin, end = PageMargin, top = 8.dp).testTag("contrarreloj_header")) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
       KitBackButton(onBack, Modifier.testTag("contrarreloj_back"), label = "Volver a Avance")
@@ -190,7 +190,7 @@ private fun PageHeader(onBack: () -> Unit, modifier: Modifier = Modifier) {
     }
     Row(Modifier.fillMaxWidth()) {
       Spacer(Modifier.width(64.dp))
-      OnBoardText(TimeTrialMarks.SUBTITLE, color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.weight(1f).testTag("contrarreloj_subtitle"))
+      OnBoardText(TimeTrialMarks.subtitle(compared), color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.weight(1f).testTag("contrarreloj_subtitle"))
     }
   }
 }
@@ -606,14 +606,14 @@ private fun BarRow(fraction: Float, color: Color, value: String, tag: String) {
 
 /** «Pistas anteriores» (solo si hay un récord de una pista anterior: «Tu récord de la pista 1: 38 aciertos. Las marcas de otra pista no se comparan.») y, en la misma losa, la nota de siempre: «Es el resultado de un juego, comparado solo contigo…». Sin pista anterior, la losa es solo la nota. */
 @Composable
-private fun NoteCard(page: TimeTrialMarks.Page) {
+private fun NoteCard(page: TimeTrialMarks.Page, compared: Boolean) {
   val older = page.olderTrack
   InfoCard("contrarreloj_older", if (older != null) TimeTrialMarks.OLDER_TITLE else null) {
     if (older != null) {
       Text(TimeTrialMarks.olderSentence(older).glueNumbers(), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("contrarreloj_older_text"))
       Spacer(Modifier.height(16.dp))
     }
-    Text(TimeTrialStats.NOTE, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("contrarreloj_note"))
+    Text(TimeTrialStats.note(compared), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("contrarreloj_note"))
   }
 }
 

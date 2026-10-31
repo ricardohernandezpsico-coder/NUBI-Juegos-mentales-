@@ -12,8 +12,8 @@ object PlusAccess {
   const val PREFS = "plus_access"
   const val KEY = "plus"
 
-  /** El interruptor de depuración de los datos de muestra de la comparación (Tarea 202): «muchos» (lo normal) o «pocos» (el mundo de «Todavía somos pocos»). Vive en el mismo archivo pasajero que Plus: NO va en el respaldo y solo lo cambia el botón «[Debug]». */
-  const val COMPARE_FEW_KEY = "compare_few"
+  /** El interruptor de depuración de los datos de muestra de la comparación (Tareas 202 y 202b): «muchos» (lo normal), «pocos» o «muy pocos» (los dos mundos de «Todavía somos pocos»); guarda el nombre de `SampleComparison.World`. Vive en el mismo archivo pasajero que Plus: NO va en el respaldo y solo lo cambia el botón «[Debug]». */
+  const val COMPARE_WORLD_KEY = "compare_world"
 
   /** Lo guardado ([stored]; null = nunca se tocó) o, sin nada guardado, lo que pide la build: encendido en depuración, apagado en la de la tienda. */
   fun resolve(stored: Boolean?, debugBuild: Boolean): Boolean = stored ?: debugBuild

@@ -85,9 +85,22 @@ class SampleComparisonTest {
     assertTrue("todas las edades de las últimas 4 semanas sí llegan", few.distribution("stroop", null, 0, 4).enough)
     val place = Comparison.place(few, "stroop", AgeRange.R45_54, 43) as Comparison.Place.Few
     assertEquals(23, place.own)
-    assertEquals(Comparison.Scope.ALL_4_WEEKS, place.meanwhile?.scope)
+    assertEquals("todas las edades llegan a 50 ESTA semana: «Mientras tanto» usa esa semana", Comparison.Scope.ALL_WEEK, place.meanwhile?.scope)
     // y en el mundo de muchos, lo normal
     assertEquals(Comparison.Scope.OWN_WEEK, ((Comparison.place(many, "stroop", AgeRange.R45_54, 43)) as Comparison.Place.Found).ranked.scope)
+  }
+
+  @Test
+  fun `el mundo de muy pocos tiene 23 personas de 45 a 54 anos y ni todas las edades de esta semana llegan a 50 pero si las ultimas 4 semanas`() {
+    val veryFew = SampleComparison(SampleComparison.World.VERY_FEW)
+    assertEquals(23, veryFew.distribution("stroop", listOf(AgeRange.R45_54), 0).people)
+    assertTrue("la franja las últimas 4 semanas sigue por debajo de 50", veryFew.distribution("stroop", listOf(AgeRange.R45_54), 0, 4).people < 50)
+    assertTrue("y la franja vecina (30 a 54) también", veryFew.distribution("stroop", listOf(AgeRange.R30_44, AgeRange.R45_54), 0, 4).people < 50)
+    assertTrue("todas las edades ESTA semana no llegan a 50", veryFew.distribution("stroop", null, 0).people < 50)
+    assertTrue("las últimas 4 semanas sí", veryFew.distribution("stroop", null, 0, 4).enough)
+    val place = Comparison.place(veryFew, "stroop", AgeRange.R45_54, 43) as Comparison.Place.Few
+    assertEquals(23, place.own)
+    assertEquals(Comparison.Scope.ALL_4_WEEKS, place.meanwhile?.scope)
   }
 
   @Test
@@ -117,16 +130,20 @@ class SampleComparisonTest {
   // ------------------------------------------------------------------ SOLO depuración
 
   @Test
-  fun `ninguna parte de la app salvo la fuente de la comparacion nombra los datos de muestra`() {
-    val users = mutableListOf<String>()
-    File("src/main/java").walkTopDown().filter { it.extension == "kt" }.forEach { f ->
+  fun `ninguna parte de la app salvo la fuente de la comparacion arma ni usa los datos de muestra`() {
+    val builders = mutableListOf<String>()
+    val others = mutableListOf<String>()
+    File("src/main/java").walkTopDown().filter { it.extension == "kt" && it.name != "SampleComparison.kt" }.forEach { f ->
       val text = f.readText()
-      if ("SampleComparison" in text && f.name != "SampleComparison.kt") users += f.name
+      if (Regex("""SampleComparison\(""").containsMatchIn(text)) builders += f.name
+      // fuera de esos dos, solo se nombra su enum de mundos (el botón «[Debug]» y su preferencia): nunca la fuente
+      if (Regex("""SampleComparison(?!\.World)""").containsMatchIn(text) && f.name !in listOf("Comparison.kt", "ContrarrelojPage.kt")) others += f.name
     }
     // `Comparison.kt` la arma solo si la build es de depuración; la página la reconoce para elegir la franja de la muestra
-    assertEquals(listOf("Comparison.kt", "ContrarrelojPage.kt").sorted(), users.sorted())
+    assertEquals(listOf("Comparison.kt"), builders.sorted())
+    assertEquals("solo el enum de mundos se nombra fuera: $others", emptyList<String>(), others)
     val source = File("src/main/java/com/example/data/Comparison.kt").readText()
-    assertTrue("sourceFor solo arma la muestra con debugBuild", Regex("""debugBuild -> SampleComparison\(few\)""").containsMatchIn(source))
+    assertTrue("sourceFor solo arma la muestra con debugBuild", Regex("""debugBuild -> SampleComparison\(world\)""").containsMatchIn(source))
     val screen = File("src/main/java/com/example/ui/screens/ProgressScreen.kt").readText()
     assertTrue("la pantalla pide la fuente con BuildConfig.DEBUG", screen.contains("Comparison.sourceFor(com.example.BuildConfig.DEBUG"))
   }

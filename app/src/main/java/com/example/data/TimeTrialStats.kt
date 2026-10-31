@@ -70,6 +70,12 @@ object TimeTrialStats {
   const val FIRST_PHRASE = "Es tu primera marca en el Contrarreloj. La próxima te comparas contigo."
   const val NOTE = "Es el resultado de un juego, comparado solo contigo. No es una medida de capacidad."
 
+  /** La nota de la página «Contrarreloj» cuando trae la comparación con personas de tu edad (Tarea 202b): ya no es «solo contigo». El final de la partida no compara con nadie y sigue con [NOTE]. */
+  const val NOTE_COMPARED = "Es el resultado de un juego. No es una medida de capacidad."
+
+  /** La nota de la página: [NOTE] sin comparación y [NOTE_COMPARED] con ella. */
+  fun note(compared: Boolean): String = if (compared) NOTE_COMPARED else NOTE
+
   /**
    * Cómo se llegó a la marca, en una frase (va bajo la cifra grande): «38 aciertos menos 4 errores, en 2 minutos de Contrarreloj». Sin errores: «38 aciertos sin errores, en 2 minutos de Contrarreloj». Los aciertos y los errores van SIN restar: la cifra grande ya es la resta.
    */

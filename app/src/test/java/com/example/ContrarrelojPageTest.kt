@@ -460,6 +460,7 @@ class ContrarrelojPageTest {
 
   private val manyWorld = SampleComparison(few = false)
   private val fewWorld = SampleComparison(few = true)
+  private val veryFewWorld = SampleComparison(SampleComparison.World.VERY_FEW)
 
   @Test fun sin_comparacion_la_pagina_queda_como_en_la_t201_sin_rotulos_de_seccion() {
     show(compare = null, ageRange = AgeRange.R45_54)          // la build de la tienda: ninguna fuente aunque la persona tenga franja
@@ -588,7 +589,7 @@ class ContrarrelojPageTest {
     val b = boxes()
     assertEquals("Todavía somos pocos: 23 personas de 45 a 54 años jugaron Tinta o Palabra esta semana. Cuando sean 50, verás aquí tu lugar entre ellas.", textOf("contrarreloj_few_note").replace(NBSP, " "))
     assertEquals("23 de 50 personas", textOf("contrarreloj_few_bar_value").replace(NBSP, " "))
-    assertTrue("«Mientras tanto…» con todas las edades de las últimas 4 semanas", textOf("contrarreloj_few_meanwhile").replace(NBSP, " ").startsWith("Mientras tanto, comparada con todas las edades de las últimas 4 semanas, tu mejor marca de esta semana, 43 aciertos, supera a "))
+    assertTrue("«Mientras tanto…» con todas las edades de ESTA semana (llegan a 50)", textOf("contrarreloj_few_meanwhile").replace(NBSP, " ").startsWith("Mientras tanto, comparada con todas las edades de esta semana, tu mejor marca, 43 aciertos, supera a "))
     assertNull("sin campana ni percentil: no hay clase de 50", b["contrarreloj_bell_window"]); assertNull(b["contrarreloj_place_percentile"])
     assertNull("ninguna semana de la franja llega a 50: no hay percentil semana a semana", b["contrarreloj_percweeks"])
     assertTrue("la barra llena menos de la mitad (23 de 50)", b.getValue("contrarreloj_few_bar_bar").w < 0.6f * b.getValue("contrarreloj_few_bar").w)
@@ -622,6 +623,66 @@ class ContrarrelojPageTest {
     val main = textOf("contrarreloj_place_main").replace(NBSP, " ")
     assertTrue("75 o más: sus últimas 4 semanas — «$main»", main.contains("personas de 75 años o más que jugaron Tinta o Palabra en las últimas 4 semanas."))
     assertNull("la clase de 4 semanas de la propia franja no necesita decir que se juntaron franjas", boxes()["contrarreloj_place_scope"])
+  }
+
+  // ---- Tarea 202b: el mismo grupo nunca muestra dos números en una pantalla, y la cabecera y la nota no dicen «solo contigo» con la comparación
+
+  /** Todo lo que la página dice o lee, de UN solo árbol sin fusionar: los textos y las descripciones del lector de pantalla (sin los espacios duros). */
+  private fun allTexts(): List<String> {
+    val out = mutableListOf<String>()
+    fun walk(n: SemanticsNode) {
+      n.config.getOrNull(SemanticsProperties.Text)?.let { out += it.joinToString("") { s -> s.text }.replace(NBSP, " ") }
+      n.config.getOrNull(SemanticsProperties.ContentDescription)?.let { out += it.joinToString(". ").replace(NBSP, " ") }
+      n.children.forEach(::walk)
+    }
+    walk(rule.onRoot(useUnmergedTree = true).fetchSemanticsNode())
+    return out
+  }
+
+  @Test fun en_pocos_el_numero_de_mientras_tanto_es_el_mismo_de_la_fila_todas_las_edades() {
+    show(compare = fewWorld, ageRange = AgeRange.R45_54)
+    val meanwhile = textOf("contrarreloj_few_meanwhile").replace(NBSP, " ")
+    assertTrue(meanwhile.startsWith("Mientras tanto, comparada con todas las edades de esta semana, tu mejor marca, 43 aciertos, supera a "))
+    val n = Regex("supera a (\\d+) de cada 100 personas\\.").find(meanwhile)!!.groupValues[1]
+    assertEquals("la fila «Todas las edades» dice el MISMO número", "$n de cada 100", textOf("contrarreloj_others_all_value").replace(NBSP, " "))
+    // y en toda la pantalla, lo que habla de «todas las edades» con un número dice siempre ese
+    val numbers = allTexts().filter { "todas las edades" in it.lowercase() }.flatMap { s -> Regex("(\\d+) de cada 100").findAll(s).map { it.groupValues[1] }.toList() }
+    assertTrue("todos los números de «todas las edades» son $n: $numbers", numbers.size >= 2 && numbers.all { it == n })
+  }
+
+  @Test fun en_muy_pocos_mientras_tanto_usa_las_4_semanas_lo_dice_y_la_fila_todas_las_edades_dice_todavia_somos_pocos() {
+    show(compare = veryFewWorld, ageRange = AgeRange.R45_54)
+    val meanwhile = textOf("contrarreloj_few_meanwhile").replace(NBSP, " ")
+    assertTrue("«$meanwhile»", meanwhile.startsWith("Mientras tanto, comparada con todas las edades de las últimas 4 semanas, tu mejor marca de esta semana, 43 aciertos, supera a "))
+    assertEquals("la fila de todas las edades de ESTA semana no llega a 50", "todavía somos pocos", textOf("contrarreloj_others_all_value"))
+    assertTrue("ninguna fila de todas las edades da otro número", allTexts().none { it.startsWith("Todas las edades,") && "de cada 100" in it })
+    assertEquals("la frase enmarcada sigue con la cuenta real de la franja", true, textOf("contrarreloj_few_note").replace(NBSP, " ").startsWith("Todavía somos pocos: 23 personas de 45 a 54 años"))
+  }
+
+  @Test fun con_la_comparacion_el_subtitulo_y_la_nota_ya_no_dicen_solo_contigo() {
+    show(compare = manyWorld, ageRange = AgeRange.R45_54)
+    assertEquals("Tus marcas, comparadas contigo y con personas de tu edad.", textOf("contrarreloj_subtitle"))
+    assertEquals("Es el resultado de un juego. No es una medida de capacidad.", textOf("contrarreloj_note"))
+    val saysOnlyYou = allTexts().filter { "solo contigo" in it.lowercase() }
+    assertTrue("con la comparación ningún texto visible ni leído dice «solo contigo»: $saysOnlyYou", saysOnlyYou.isEmpty())
+  }
+
+  @Test fun con_la_comparacion_en_pocos_tampoco_dice_solo_contigo() {
+    show(compare = fewWorld, ageRange = AgeRange.R45_54)
+    assertEquals("Tus marcas, comparadas contigo y con personas de tu edad.", textOf("contrarreloj_subtitle"))
+    assertTrue(allTexts().none { "solo contigo" in it.lowercase() })
+  }
+
+  @Test fun sin_la_comparacion_la_cabecera_y_la_nota_quedan_como_hoy() {
+    show(compare = null, ageRange = AgeRange.R45_54)          // la build de la tienda
+    assertEquals("Tus marcas, comparadas solo contigo.", textOf("contrarreloj_subtitle"))
+    assertEquals("Es el resultado de un juego, comparado solo contigo. No es una medida de capacidad.", textOf("contrarreloj_note"))
+  }
+
+  @Test fun de_13_a_17_anos_la_cabecera_y_la_nota_quedan_como_hoy() {
+    show(compare = manyWorld, ageRange = AgeRange.R13_17)
+    assertEquals("Tus marcas, comparadas solo contigo.", textOf("contrarreloj_subtitle"))
+    assertEquals("Es el resultado de un juego, comparado solo contigo. No es una medida de capacidad.", textOf("contrarreloj_note"))
   }
 
   // ---- la prueba de cajas con la comparación: 4 dp entre cada par de piezas, nada fuera del margen y 8 dp entre losas
@@ -748,7 +809,7 @@ class ContrarrelojPageTest {
     assertFalse("y no hay un literal de color copiado (el token es la fuente)", Regex("0x[Ff][Ff]0[5-6]08\\d\\d").containsMatchIn(page))
     assertEquals("el noche plano es #050823", 0x050823, com.example.ui.theme.NubiTokens.NightFlat.toArgb() and 0xFFFFFF)
     // la cabecera va sobre el cielo con OnBoardText; el resto, en losas con Text
-    assertTrue(page.contains("OnBoardText(TimeTrialMarks.TITLE") && page.contains("OnBoardText(TimeTrialMarks.SUBTITLE"))
+    assertTrue(page.contains("OnBoardText(TimeTrialMarks.TITLE") && page.contains("OnBoardText(TimeTrialMarks.subtitle("))
     // los títulos de las losas, en Rubik
     val titles = Regex("""Text\(title(?:\.glueNumbers\(\))?, color = Clay\.Ink, fontSize = 20\.sp[^\n]*""").findAll(page).toList()
     assertTrue("el título de cada losa va en Rubik", titles.isNotEmpty() && titles.all { "TitleFamily" in it.value })

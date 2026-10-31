@@ -147,6 +147,46 @@ class ComparisonTest {
   }
 
   @Test
+  fun `Mientras tanto usa todas las edades de ESTA semana si llegan a 50 y solo si no, las ultimas 4 semanas`() {
+    val thisWeek = Comparison.place(Fake { rs, _, _ -> if (rs == null) 212 else 23 }, "stroop", AgeRange.R45_54, 43) as Comparison.Place.Few
+    assertEquals(Comparison.Scope.ALL_WEEK, thisWeek.meanwhile?.scope)
+    val fourWeeks = Comparison.place(Fake { rs, _, w -> if (rs == null && w == 4) 212 else 23 }, "stroop", AgeRange.R45_54, 43) as Comparison.Place.Few
+    assertEquals("esta semana no llegan a 50: las últimas 4 semanas", Comparison.Scope.ALL_4_WEEKS, fourWeeks.meanwhile?.scope)
+    val none = Comparison.place(Fake { _, _, _ -> 23 }, "stroop", AgeRange.R45_54, 43) as Comparison.Place.Few
+    assertNull(none.meanwhile)
+  }
+
+  @Test
+  fun `el numero de Mientras tanto y el de la fila Todas las edades coinciden cuando hablan de la misma semana y nunca se muestran dos numeros del mismo grupo`() {
+    // «pocos»: todas las edades de esta semana llegan a 50 → el mismo número en «Mientras tanto» y en la fila
+    val few = SampleComparison(SampleComparison.World.FEW)
+    val place = Comparison.place(few, "stroop", AgeRange.R45_54, 43) as Comparison.Place.Few
+    val others = Comparison.others(few, "stroop", AgeRange.R45_54, 43)
+    assertEquals(Comparison.Scope.ALL_WEEK, place.meanwhile?.scope)
+    assertNotNull(others.all.percentile)
+    assertEquals("el mismo número en las dos frases", place.meanwhile?.percentile, others.all.percentile)
+    assertTrue("y en las palabras: «supera a N de cada 100» y «N de cada 100»", Comparison.meanwhileSentence(place.meanwhile!!).contains("supera a ${others.all.percentile} de cada 100 personas.") && others.all.value == "${others.all.percentile} de cada 100")
+    // «muy pocos»: esta semana no llegan a 50 → «Mientras tanto» usa 4 semanas, lo dice, y la fila dice «todavía somos pocos»: ningún número repetido ni distinto
+    val veryFew = SampleComparison(SampleComparison.World.VERY_FEW)
+    val place2 = Comparison.place(veryFew, "stroop", AgeRange.R45_54, 43) as Comparison.Place.Few
+    val others2 = Comparison.others(veryFew, "stroop", AgeRange.R45_54, 43)
+    assertEquals(Comparison.Scope.ALL_4_WEEKS, place2.meanwhile?.scope)
+    assertTrue(Comparison.meanwhileSentence(place2.meanwhile!!).contains("de las últimas 4 semanas"))
+    assertNull("y la fila de todas las edades de esta semana no da número", others2.all.percentile)
+    assertEquals("todavía somos pocos", others2.all.value)
+  }
+
+  @Test
+  fun `las dos versiones de Mientras tanto dicen de que semanas son`() {
+    val d = shaped(212)
+    val week = Comparison.Ranked(43, 53, Comparison.division(53), Comparison.Scope.ALL_WEEK, null, d)
+    val four = Comparison.Ranked(43, 53, Comparison.division(53), Comparison.Scope.ALL_4_WEEKS, null, d)
+    assertEquals("Mientras tanto, comparada con todas las edades de esta semana, tu mejor marca, 43 aciertos, supera a 53 de cada 100 personas.", Comparison.meanwhileSentence(week))
+    assertEquals("Mientras tanto, comparada con todas las edades de las últimas 4 semanas, tu mejor marca de esta semana, 43 aciertos, supera a 53 de cada 100 personas.", Comparison.meanwhileSentence(four))
+    assertEquals("Tu mejor marca de esta semana, 43 aciertos, supera a 53 de cada 100 personas de todas las edades que jugaron Tinta o Palabra esta semana.", Comparison.mainSentence(week, AgeRange.R45_54, "Tinta o Palabra"))
+  }
+
+  @Test
   fun `la franja de 18 a 29 no tiene vecina y pasa directo a todas las edades`() {
     val src = Fake { rs, _, w -> if (rs == null && w == 4) 300 else 20 }
     val few = Comparison.place(src, "stroop", AgeRange.R18_29, 43) as Comparison.Place.Few
@@ -266,10 +306,10 @@ class ComparisonTest {
   @Test
   fun `la build de la tienda no tiene comparacion y la de depuracion usa solo datos de muestra`() {
     assertFalse("Features.COMPARE sigue apagada: no hay servidor", Features.COMPARE)
-    assertNull("release: ninguna fuente, la sección no existe", Comparison.sourceFor(debugBuild = false, few = false))
-    assertNull(Comparison.sourceFor(debugBuild = false, few = true))
-    assertTrue("depuración: los datos de muestra", Comparison.sourceFor(debugBuild = true, few = false) is SampleComparison)
-    assertTrue(Comparison.sourceFor(debugBuild = true, few = true) is SampleComparison)
+    for (world in SampleComparison.World.entries) {
+      assertNull("release: ninguna fuente, la sección no existe ($world)", Comparison.sourceFor(debugBuild = false, world = world))
+      assertTrue("depuración: los datos de muestra ($world)", Comparison.sourceFor(debugBuild = true, world = world) is SampleComparison)
+    }
   }
 
   // ------------------------------------------------------------------ la sección entera, con las partidas de la persona

@@ -12,9 +12,14 @@ import kotlin.math.roundToInt
  *
  * Coherente con la Tarea 199 y la lámina de Fable (§7): para una persona de 45 a 54 años que jugó Tinta o Palabra, la semana de hoy tiene **128 personas**, su marca de 43 aciertos supera a **63 de cada 100**, la mitad hizo **39 aciertos o menos** y la cuarta parte más alta **47 o más**.
  * Las otras franjas, semanas y juegos salen de esa misma silueta corrida y escalada con reglas fijas (sin azar): las franjas más jóvenes marcan más; las mayores, menos; cada juego tiene su propio rango. [few] arma el mundo de «pocos»: 23 personas de 45 a 54 años esta semana, y todavía menos
- * en las últimas 4 semanas y en las franjas vecinas, pero sí más de 50 con todas las edades.
+ * en las últimas 4 semanas y en las franjas vecinas, pero sí más de 50 con todas las edades de esta semana; [World.VERY_FEW] baja también a todas las edades de esta semana (45 personas) y solo las últimas 4 semanas llegan a 50.
  */
-class SampleComparison(private val few: Boolean) : Comparison.Source {
+class SampleComparison(private val world: World) : Comparison.Source {
+  /** Los tres mundos de los datos de muestra: «muchos» (lo normal), «pocos» (la franja no llega a 50 pero todas las edades de ESTA semana sí) y «muy pocos» (ni siquiera todas las edades esta semana: solo con las últimas 4 semanas). */
+  enum class World { MANY, FEW, VERY_FEW }
+
+  constructor(few: Boolean) : this(if (few) World.FEW else World.MANY)
+
   companion object {
     /** Las 128 personas de 45 a 54 años que jugaron Tinta o Palabra esta semana, por tramo de 5 aciertos (0 a 4, …, 75 o más). */
     val BASE: List<Int> = listOf(1, 2, 3, 5, 8, 12, 18, 23, 15, 11, 10, 8, 6, 3, 2, 1)
@@ -40,6 +45,11 @@ class SampleComparison(private val few: Boolean) : Comparison.Source {
     /** El mundo de «pocos» (esta semana): 23 personas de 45 a 54 años; solo la franja de 18 a 29 llega a 50. */
     private val FEW_PEOPLE = mapOf(
       AgeRange.R13_17 to 8, AgeRange.R18_29 to 70, AgeRange.R30_44 to 4, AgeRange.R45_54 to 23, AgeRange.R55_64 to 14, AgeRange.R65_74 to 9, AgeRange.R75_PLUS to 4
+    )
+
+    /** El mundo de «muy pocos» (esta semana): 23 personas de 45 a 54 años y solo 45 en todas las edades, así que «Mientras tanto» tiene que usar las últimas 4 semanas (84 personas). */
+    private val VERY_FEW_PEOPLE = mapOf(
+      AgeRange.R13_17 to 2, AgeRange.R18_29 to 12, AgeRange.R30_44 to 3, AgeRange.R45_54 to 23, AgeRange.R55_64 to 4, AgeRange.R65_74 to 2, AgeRange.R75_PLUS to 1
     )
 
     /** Corre los tramos [k] lugares a la derecha (a la izquierda con k negativo); lo que se sale por un borde se junta en el último tramo de ese lado. */
@@ -74,9 +84,9 @@ class SampleComparison(private val few: Boolean) : Comparison.Source {
 
   /** Cuántas personas de [range] jugaron esa semana: las de la tabla en la semana de hoy y, antes, un vaivén fijo (más o menos 6 %) o, en el mundo de «pocos», poco más de la cuarta parte. */
   private fun peopleOf(range: AgeRange, weeksAgo: Int): Int {
-    val base = (if (few) FEW_PEOPLE else MANY_PEOPLE).getValue(range)
+    val base = when (world) { World.MANY -> MANY_PEOPLE; World.FEW -> FEW_PEOPLE; World.VERY_FEW -> VERY_FEW_PEOPLE }.getValue(range)
     if (weeksAgo == 0) return base
-    if (few) return max(1, (base * 0.27).roundToInt())
+    if (world != World.MANY) return max(1, (base * 0.27).roundToInt())
     val factor = 1.0 + 0.03 * ((weeksAgo * 3) % 5 - 2)
     return (base * factor).roundToInt()
   }

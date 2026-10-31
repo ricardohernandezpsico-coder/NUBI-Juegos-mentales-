@@ -11,6 +11,12 @@ object TimeTrialMarks {
 
   const val TITLE = "Contrarreloj"
   const val SUBTITLE = "Tus marcas, comparadas solo contigo."
+
+  /** El subtítulo cuando la página trae la comparación con personas de tu edad (Tarea 202b): «solo contigo» sería falso. */
+  const val SUBTITLE_COMPARED = "Tus marcas, comparadas contigo y con personas de tu edad."
+
+  /** El subtítulo de la página: «solo contigo» sin comparación (la tienda, o de 13 a 17 años) y [SUBTITLE_COMPARED] con ella. */
+  fun subtitle(compared: Boolean): String = if (compared) SUBTITLE_COMPARED else SUBTITLE
   const val RECORD_TITLE = "Tu récord"
   const val WEEKS_TITLE = "Esta semana y la pasada"
   const val SPLIT_TITLE = "Aciertos y errores"
