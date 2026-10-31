@@ -6,8 +6,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -33,17 +31,22 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.GameSearch
@@ -53,7 +56,10 @@ import com.example.data.PlayMode
 import com.example.data.Suggestion
 import com.example.model.GameRegistry
 import com.example.ui.components.AREA_ORDER
+import com.example.ui.components.AreaSquares
 import com.example.ui.components.ClaySlab
+import com.example.ui.components.Glyph
+import com.example.ui.components.KitGlyph
 import com.example.ui.components.ClayTextField
 import com.example.ui.components.KitCloseButton
 import com.example.ui.components.OnBoardText
@@ -69,7 +75,6 @@ import com.example.viewmodel.NeuroVidaViewModel
  * De arriba abajo: el título con la X, un buscador grande («Busca un juego por su nombre»: ignora tildes y mayúsculas, `GameSearch`), los chips de área (Todas · Memoria · Atención · Razonamiento · Lenguaje) y los 17 juegos agrupados por área, cada uno con la MISMA fila de la lámina de un lugar ([PlaceGameRowItem]: emblema, nombre y
  * «cuándo»); tocar una fila abre la ficha del juego y de ahí se juega. Lo escrito, el chip y la fila marcada (el último juego que se jugó desde aquí, en sol) viven en el ViewModel ([com.example.viewmodel.AllGamesState]): al volver de una partida la ventana queda como se dejó.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AllGamesScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) {
   val state by viewModel.allGames.collectAsState()
@@ -110,7 +115,6 @@ fun AllGamesScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier)
 /**
  * Lo que dibuja «Todos los juegos» sin ViewModel (así se prueba y se captura con datos fijos): [places] = la lámina de cada área (de donde salen las filas), [area] = el chip elegido (la clave del área; null = Todas), [query] = lo escrito en el buscador y [mark] = el juego marcado.
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun AllGamesContent(
   places: Map<String, PlaceSheetUi>,
@@ -143,14 +147,7 @@ internal fun AllGamesContent(
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() })
       )
-      // Los chips de área: «Todas» y las cuatro. El elegido va en sol, en negrita y con `selected`: nunca solo color.
-      FlowRow(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(0.dp)) {
-        AreaChip("Todas", area == null, "all_chip_todas") { onArea(null) }
-        AREA_ORDER.forEach { key ->
-          val name = places[key]?.areaName ?: key
-          AreaChip(name, area == key, "all_chip_${key.lowercase()}") { onArea(key) }
-        }
-      }
+      AreaChips(places, area, onArea)
     }
     }
     if (!scrollControls) controls()
@@ -203,7 +200,7 @@ internal fun allGamesSections(places: Map<String, PlaceSheetUi>, area: String?, 
 @Composable
 private fun AreaHeader(place: PlaceSheetUi, count: Int) {
   Row(Modifier.fillMaxWidth().padding(top = 10.dp).semantics(mergeDescendants = true) { heading() }.testTag("all_area_${place.area.lowercase()}"), verticalAlignment = Alignment.CenterVertically) {
-    Box(Modifier.size(12.dp).clip(CircleShape).background(placeColor(place.area)).border(2.dp, Clay.Ink, CircleShape))
+    AreaDot(place.area)
     Spacer(Modifier.width(8.dp))
     OnBoardText(place.areaName, color = NubiTokens.OnNight, fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily)
     Spacer(Modifier.width(8.dp))
@@ -211,13 +208,94 @@ private fun AreaHeader(place: PlaceSheetUi, count: Int) {
   }
 }
 
-/** Un chip de área: una losa chica del kit; el elegido en sol y en negrita. Toca 52 dp de alto como mínimo. */
+/** El punto de color de un área (12 dp, con el borde de tinta): el del encabezado de la lista y el de su chip. Decorativo: el nombre ya dice el área. */
 @Composable
-private fun AreaChip(label: String, selected: Boolean, tag: String, onClick: () -> Unit) {
+private fun AreaDot(area: String, modifier: Modifier = Modifier) {
+  Box(modifier.size(12.dp).clip(CircleShape).background(placeColor(area)).border(2.dp, Clay.Ink, CircleShape))
+}
+
+/**
+ * Los cinco chips de área: «Todas» y las cuatro (Tarea 196, 30-oct: Ricardo los veía «desordenados», con anchos distintos, un borde dentado, sin el color del área y dos soles en pantalla; eligió la variante «B ajustada, con color»).
+ * Van en filas parejas ([AreaChipGrid]); cada uno lleva el color de su área en un hueco antes del nombre (el punto de 12 dp; «Todas», las cuatro casillas) y el ELEGIDO cambia ese hueco por el visto: lima, visto y negrita.
+ */
+@Composable
+private fun AreaChips(places: Map<String, PlaceSheetUi>, area: String?, onArea: (String?) -> Unit) {
+  val items = listOf<Pair<String?, String>>(null to "Todas") + AREA_ORDER.map { it to (places[it]?.areaName ?: it) }
+  AreaChipGrid(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+    items.forEach { (key, name) -> AreaChip(name, area == key, "all_chip_${key?.lowercase() ?: "todas"}", key) { onArea(key) } }
+  }
+}
+
+/** Cuántos chips caben, como máximo, en una fila de los de área (arriba tres, abajo dos). */
+private const val AREA_CHIPS_PER_ROW = 3
+
+/**
+ * Los chips en filas parejas: cada fila reparte el ancho entero en partes iguales (borde derecho recto) y una fila con un solo chip lo toma a todo el ancho. Cuántos entran en una fila lo decide el chip MÁS ANCHO de esa fila: se ponen tantos
+ * como quepan, hasta [AREA_CHIPS_PER_ROW], con la parte igual ≥ lo que pide el más ancho. Las filas se pegan (la losa ya deja 6 dp de sombra abajo); entre chips hay 8 dp. Pide un ancho acotado.
+ *
+ * ¿Por qué no un `FlowRow` con `Modifier.weight(1f)`? Sus pesos reparten el ancho de la fila SIN mirar lo que mide cada chip, y el `FlowRow` decide cuántos entran SUMANDO anchos, no por el más ancho: con una fila de tres, «Atención» elegida (con su visto) pedía unos 117 dp a letra 1,0
+ * y unos 137 a 1,3 y recibía una parte de 115 dp, y se veía «Atenció✓»: una palabra cortada. Aquí la parte igual siempre alcanza para el más ancho; si no cabe, la fila tiene menos chips (a 360 dp o con letra grande salen 2 + 2 + 1, y con 1,3, filas sueltas). Se probó con cajas de ancho fijo y con los chips reales (`AreaChipsTest`).
+ */
+@Composable
+private fun AreaChipGrid(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+  Layout(content, modifier) { measurables, constraints ->
+    val gap = 8.dp.roundToPx()
+    val width = constraints.maxWidth
+    val natural = measurables.map { it.maxIntrinsicWidth(Int.MAX_VALUE) }
+    val rows = ArrayList<List<Int>>()
+    var i = 0
+    while (i < measurables.size) {
+      var k = minOf(AREA_CHIPS_PER_ROW, measurables.size - i)
+      while (k > 1) {
+        val share = (width - (k - 1) * gap) / k
+        if ((i until i + k).all { natural[it] <= share }) break
+        k--
+      }
+      rows += (i until i + k).toList()
+      i += k
+    }
+    var y = 0
+    val placed = ArrayList<Triple<Placeable, Int, Int>>()
+    for (row in rows) {
+      val k = row.size
+      val room = width - (k - 1) * gap
+      var x = 0
+      val rowPlaceables = row.mapIndexed { n, idx ->
+        val w = room / k + if (n < room % k) 1 else 0                       // los píxeles que sobran de la división se reparten de a uno: la fila termina justo en el borde
+        measurables[idx].measure(Constraints(minWidth = w, maxWidth = w)).also { p -> placed += Triple(p, x, y); x += w + gap }
+      }
+      y += rowPlaceables.maxOf { it.height }
+    }
+    layout(width, y) { placed.forEach { (p, px, py) -> p.placeRelative(px, py) } }
+  }
+}
+
+/**
+ * Un chip de área: una losa chica del kit, crema; el ELEGIDO va en LIMA, con el visto del kit y en negrita (la misma forma de «elegida» que el Primer vuelo: color, forma y texto, nunca solo color) y no en sol, para que el único sol de la pantalla sea «Nubi sugiere».
+ * [areaKey] = el área (null = «Todas»). Antes del nombre va un hueco con el color del área: el punto de 12 dp centrado en 16 dp (en «Todas», las cuatro casillas, en 20 dp), con 4 dp hasta el nombre; el visto de la elegida ocupa ese MISMO hueco, así que elegir no cambia el ancho
+ * del chip. El relleno lateral es de 12 dp. El punto y las casillas son decorativos: el lector de pantalla dice solo el nombre y, si es la elegida, «…, elegida». Toca 52 dp de alto como mínimo.
+ */
+@Composable
+private fun AreaChip(label: String, selected: Boolean, tag: String, areaKey: String?, onClick: () -> Unit) {
   ClaySlab(
-    color = if (selected) SlabColor.SUN else SlabColor.CREAM, size = SlabSize.SMALL, onClick = onClick, role = Role.RadioButton, contentAlignment = Alignment.Center,
+    color = if (selected) SlabColor.LIME else SlabColor.CREAM, size = SlabSize.SMALL, onClick = onClick, role = Role.RadioButton, contentAlignment = Alignment.Center,
     modifier = Modifier.heightIn(min = 52.dp).semantics(mergeDescendants = true) { this.selected = selected; contentDescription = if (selected) "$label, elegida" else label }.testTag(tag)
   ) {
-    Text(label, color = Clay.Ink, fontSize = 16.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium, lineHeight = 20.sp, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp))
+    Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+      val hole = if (areaKey == null) 20.dp else 16.dp
+      Box(Modifier.size(hole), contentAlignment = Alignment.Center) {
+        if (selected) Box(Modifier.size(hole).testTag("all_chip_check")) { KitGlyph(Glyph.CHECK, size = hole) }
+        else if (areaKey == null) AreaSquares(size = 20.dp)
+        else AreaDot(areaKey, Modifier.testTag("all_chip_dot_${areaKey.lowercase()}"))
+      }
+      Spacer(Modifier.width(4.dp))
+      // El nombre se MIDE siempre con sus dos pesos: dos copias invisibles (negrita y normal) reservan el ancho y el alto del peor caso de cada uno, y el nombre que se ve va encima, pegado al hueco. Así elegir un chip nunca lo ensancha ni lo agranda:
+      // ni cambia cuántos chips entran en cada fila ni mueve la lista de abajo. La negrita (Fredoka) es más ancha que la normal (Nunito) y la normal, con letra grande, un poco más alta que la negrita (3 dp con la letra al 200 %).
+      Box(contentAlignment = Alignment.CenterStart) {
+        Text(label, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 20.sp, modifier = Modifier.alpha(0f).clearAndSetSemantics { })
+        Text(label, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Medium, lineHeight = 20.sp, modifier = Modifier.alpha(0f).clearAndSetSemantics { })
+        Text(label, color = Clay.Ink, fontSize = 16.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium, lineHeight = 20.sp, modifier = Modifier.testTag("${tag}_text"))
+      }
+    }
   }
 }
