@@ -61,8 +61,9 @@ data class ActiveGameSession(
   val tutorial: Boolean = false,
   // CONTRARRELOJ (Tarea 177): el día («yyyy-MM-dd») de la pista con que se juega; null = una partida de siempre. Con él la partida es «La escalera de 2 minutos» (la pista del día es la misma para todos) y su resultado va a `time_trial_results`.
   val timeTrialDay: String? = null,
-  // «[Debug] Contrarreloj de invitado» (Tarea 205): la partida muestra su marca al final y NO se guarda (ni partida, ni récord, ni racha, ni farolas, ni lo «ya visto»); solo con [timeTrialDay].
-  val guest: Boolean = false,
+  // «[Debug] Contrarreloj de invitado» (Tarea 205): la partida muestra su marca al final y NO se guarda (ni partida, ni récord, ni racha, ni farolas, ni lo «ya visto»); solo con [timeTrialDay]. Desde la Tarea 205c el invitado ELIGE su edad (una de las seis franjas de 18 en adelante) y
+  // la partida se juega con la banda de esa edad (`toBand()`: la llegada de las tarjetas de Tinta es ×1,3 de 65 años en adelante), no con la del dueño del teléfono; null = una partida que no es de invitado.
+  val guestRange: com.example.model.AgeRange? = null,
   // Identidad de esta sesión (no de la partida): la usa la UI para que el estado guardado de una sesión anterior
   // (p. ej. "ya lancé Unity", que Android restaura al recrear la pantalla) no lo herede la siguiente.
   val sessionToken: String = java.util.UUID.randomUUID().toString()
@@ -503,8 +504,8 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
    * «[Debug] Contrarreloj de invitado» (Tarea 205): juega la pista de HOY de [gameId] como el Contrarreloj de siempre, pero al final solo muestra la marca (`GuestTrialScreen`) y NO guarda nada: ni la partida, ni el récord, ni la racha, ni las farolas, ni lo «ya visto» de Unity (igual que «Jugar como la primera vez»).
    * Es para que Ricardo anote las marcas de sus 5 personas en su teléfono sin mezclarlas con las suyas.
    */
-  fun startGuestTimeTrial(gameId: String) {
-    launchGame(gameId, timeTrialDay = repository.todayKey(), guest = true)
+  fun startGuestTimeTrial(gameId: String, range: com.example.model.AgeRange) {
+    launchGame(gameId, timeTrialDay = repository.todayKey(), guestRange = range)
   }
 
   fun startDailySession() {
@@ -535,16 +536,18 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     tutorial: Boolean = false,
     // El Contrarreloj de hoy (Tarea 177): el día («yyyy-MM-dd») de la pista; null = una partida de siempre.
     timeTrialDay: String? = null,
-    // «Contrarreloj de invitado» (Tarea 205, solo [Debug]): no se guarda nada; solo con [timeTrialDay].
-    guest: Boolean = false
+    // «Contrarreloj de invitado» (Tarea 205, solo [Debug]): no se guarda nada y se juega con la edad de esta franja; solo con [timeTrialDay].
+    guestRange: com.example.model.AgeRange? = null
   ) {
+    // lo que quedó de un final de invitado no sobrevive a ninguna partida nueva (Tarea 205c: invitado → «Otra vez» → «Salir» de la pausa → una partida de siempre mostraba el final de invitado viejo)
+    _guestTrial.value = null
     // Si ese juego quedó en pausa ("Salir" del menú de pausa), se retoma en vez de empezar de cero. "Jugar de
     // nuevo" (customLevel) siempre es una partida nueva. Abrir otro juego descarta la pausa (Unity recarga).
     // un juego de la ruta de hoy no vuelve a una lámina abierta, aunque quedara «volver» de una partida anterior lanzada desde una
     if (isDailyFlow) clearOpenSheets()
     val paused = pausedGame
     pausedGame = null
-    if (!tutorial && paused != null && paused.first.gameDef.id == gameId && customLevel == null && paused.first.mode == mode && paused.first.timeTrialDay == timeTrialDay && paused.first.guest == guest && (customTimed == null || paused.first.timed == customTimed)) {
+    if (!tutorial && paused != null && paused.first.gameDef.id == gameId && customLevel == null && paused.first.mode == mode && paused.first.timeTrialDay == timeTrialDay && paused.first.guestRange == guestRange && (customTimed == null || paused.first.timed == customTimed)) {
       _activeGame.value = paused.first.copy(
         isDailyFlow = isDailyFlow || paused.first.isDailyFlow,
         resumeLaunchId = paused.second
@@ -557,7 +560,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     // El camino diario de Hoy va siempre sin reloj; en Juegos vale la elección de la ficha de cada juego (data/RetoChoice.kt).
     val timed = if (timeTrialDay != null) true else if (isDailyFlow) false else customTimed ?: repository.retoFor(gameId)
     val intensity = if (lvl >= 5) getEffectiveIntensityForGame(gameId) else 0
-    _activeGame.value = ActiveGameSession(def, lvl, timed, isDailyFlow, intensity, mode = if (isDailyFlow || timeTrialDay != null) com.example.data.PlayMode.A_TU_MEDIDA else mode, tutorial = tutorial, timeTrialDay = timeTrialDay, guest = guest && timeTrialDay != null)
+    _activeGame.value = ActiveGameSession(def, lvl, timed, isDailyFlow, intensity, mode = if (isDailyFlow || timeTrialDay != null) com.example.data.PlayMode.A_TU_MEDIDA else mode, tutorial = tutorial, timeTrialDay = timeTrialDay, guestRange = guestRange.takeIf { timeTrialDay != null })
     _lastResult.value = null
   }
 
@@ -660,13 +663,25 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     com.example.bridge.UnityResultInbox.markHandled(launchId)
     if (live == null && stored == null) return
     val result = com.example.data.TimeTrialDay.resultOf(raw, repository.dateKeyOf(raw.timestamp))
-    _guestTrial.value = com.example.games.GuestTrial(raw.gameId, result.hits, result.errors)
+    _guestTrial.value = com.example.games.GuestTrial(raw.gameId, result.hits, result.errors, live?.guestRange)
     _lastTimeTrial.value = null
     _modeNote.value = null
     _lastResultDaily.value = false
     _lastResult.value = Pair(raw, false)                 // «hay un final abierto»: la barra y las pestañas se esconden como con cualquier final
     _activeGame.value = null
     triggerHapticFeedback(HapticType.LIGHT)
+  }
+
+  private val _estimatedReference = MutableStateFlow(com.example.data.EstimatedReference.peek()?.takeIf { it.loaded.isNotEmpty() })
+  /**
+   * La referencia estimada del Contrarreloj que trae el APK (Tarea 205): se lee de assets UNA vez y FUERA del hilo principal (Tarea 205c; antes un `remember` de `ProgressScreen` la leía al componer). Null un instante al arrancar y siempre null si el APK no trae tablas: sin ella no hay comparación.
+   */
+  val estimatedReference: StateFlow<com.example.data.EstimatedReference?> = _estimatedReference.asStateFlow()
+
+  init {
+    if (_estimatedReference.value == null) viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+      _estimatedReference.value = com.example.data.EstimatedReference.get(getApplication()).takeIf { it.loaded.isNotEmpty() }
+    }
   }
 
   private val _guestTrial = MutableStateFlow<com.example.games.GuestTrial?>(null)

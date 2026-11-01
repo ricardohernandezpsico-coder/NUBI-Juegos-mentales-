@@ -483,7 +483,7 @@ class ContrarrelojPageTest {
     val page = src("ui/screens/ContrarrelojPage.kt")
     assertTrue("el rótulo va en Fredoka negrita 18 sp con OnNight", Regex("""Text\(text, color = NubiTokens\.OnNight, fontSize = 18\.sp, fontWeight = FontWeight\.Bold, fontFamily = AppFamily""").containsMatchIn(page))
     assertTrue("la línea del rótulo es OnNight al 35 %", page.contains("NubiTokens.OnNight.copy(alpha = 0.35f)"))
-    assertTrue("el aviso (la frase de la referencia estimada o la nota de muestra), en OnNight de 16 sp", Regex("""Text\(notice\.first\.glueNumbers\(\)\.glueNames\(\), color = NubiTokens\.OnNight, fontSize = 16\.sp""").containsMatchIn(page))
+    assertTrue("el aviso (la frase de la referencia estimada o la nota de muestra), en OnNight de 16 sp", Regex("""Text\(notice\.first\.glueNumbers\(\)\.glueNamesForLetter\(\), color = NubiTokens\.OnNight, fontSize = 16\.sp""").containsMatchIn(page))
     assertTrue("y los dos textos salen de Comparison", page.contains("Comparison.estimatedNotice(s.range)") && page.contains("Comparison.SAMPLE_NOTICE"))
     assertTrue("el recuadro de «Todavía somos pocos» usa el lila de «Marca nueva» (TimeTrialDoneFill), sin copiar el literal", page.contains("background(TimeTrialDoneFill)") && !Regex("0x[Ff][Ff][Dd]9[Cc][Ee][Ff][Ff]").containsMatchIn(page))
   }
@@ -692,14 +692,31 @@ class ContrarrelojPageTest {
     assertTrue("el lector de pantalla dice lo mismo: la línea que cierra es texto de la página", allTexts().contains("Las demás edades aparecen cuando lleguen a 50 personas."))
   }
 
-  @Test fun las_franjas_y_las_divisiones_no_se_parten_con_espacios_duros() {
-    show(compare = manyWorld, ageRange = AgeRange.R45_54, scale = 2f)
+  /** Con letra de 1,3 o menos (Tarea 203b) las franjas, los nombres de división y «Te faltan N aciertos» van pegados con espacios duros. */
+  private fun assertGluedNames(scale: Float) {
+    show(compare = manyWorld, ageRange = AgeRange.R45_54, scale = scale)
     assertTrue("la franja entera en la frase de la cifra", textOf("contrarreloj_hero_caption").contains("45${NBSP}a${NBSP}54${NBSP}años"))
     assertTrue("y «Te faltan 7 aciertos» con «En la Luna» enteros", textOf("contrarreloj_ladder_need").let { it.contains("Te${NBSP}faltan${NBSP}7${NBSP}aciertos") && it.contains("En${NBSP}la${NBSP}Luna") })
     assertTrue("los nombres de las filas de la escalera", textOf("contrarreloj_ladder_row_1_label").contains("En${NBSP}la${NBSP}Luna") && textOf("contrarreloj_ladder_you_name").contains("En${NBSP}órbita"))
     assertTrue("y las franjas de otras edades", textOf("contrarreloj_others_0_label").contains("18${NBSP}a${NBSP}29${NBSP}años"))
     assertEquals("pero lo que lee el lector de pantalla queda con espacios normales", "En órbita, Tú · 43 aciertos", descriptionOf("contrarreloj_ladder_you"))
     assertTrue("la descripción de la cifra no lleva espacios duros", !descriptionOf("contrarreloj_hero").contains(NBSP))
+  }
+
+  @Test fun las_franjas_y_las_divisiones_no_se_parten_con_espacios_duros_con_letra_1_0() = assertGluedNames(1f)
+  @Test fun las_franjas_y_las_divisiones_no_se_parten_con_espacios_duros_con_letra_1_3() = assertGluedNames(1.3f)
+
+  /** Con letra mayor a 1,3 (Tarea 205c) los nombres de división y «Te faltan» NO se pegan (pegados no caben en el renglón y Android los corta por letras); «7 aciertos» y la franja de edad sí quedan juntos. */
+  @Test fun con_letra_2_0_los_nombres_de_division_y_Te_faltan_parten_entre_palabras_pero_la_cifra_con_su_unidad_y_la_franja_siguen_juntas() {
+    show(compare = manyWorld, ageRange = AgeRange.R45_54, scale = 2f)
+    assertTrue("la franja entera sigue pegada en la frase de la cifra", textOf("contrarreloj_hero_caption").contains("45${NBSP}a${NBSP}54${NBSP}años"))
+    val need = textOf("contrarreloj_ladder_need")
+    assertTrue("«7 aciertos» no se separa: $need", need.contains("7${NBSP}aciertos"))
+    assertFalse("«Te faltan» parte entre palabras: $need", need.contains("Te${NBSP}faltan") || need.contains("faltan${NBSP}7"))
+    assertFalse("y «En la Luna» también: $need", need.contains("En${NBSP}la") || need.contains("la${NBSP}Luna"))
+    assertFalse("los nombres de las filas de la escalera tampoco", textOf("contrarreloj_ladder_row_1_label").contains(NBSP) || textOf("contrarreloj_ladder_you_name").contains("En${NBSP}órbita"))
+    assertTrue("las franjas de otras edades siguen pegadas", textOf("contrarreloj_others_0_label").contains("18${NBSP}a${NBSP}29${NBSP}años"))
+    assertEquals("lo que lee el lector de pantalla queda igual", "En órbita, Tú · 43 aciertos", descriptionOf("contrarreloj_ladder_you"))
   }
 
   @Test fun en_el_mundo_de_pocos_no_hay_cifra_ni_escalera_ni_te_faltan_y_dice_la_cuenta_real() {

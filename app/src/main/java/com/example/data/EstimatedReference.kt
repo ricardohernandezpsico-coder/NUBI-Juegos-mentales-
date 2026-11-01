@@ -89,7 +89,10 @@ class EstimatedReference private constructor(private val tables: Map<Pair<String
 
     @Volatile private var cached: EstimatedReference? = null
 
-    /** La referencia que viene en el APK, leída una sola vez (son 4 archivos de ~1,4 KB). Sin la carpeta de assets queda vacía: ningún juego tiene comparación. */
+    /** La referencia ya cargada, o null si todavía no se leyó (no lee nada: se puede llamar desde el hilo principal). */
+    fun peek(): EstimatedReference? = cached
+
+    /** La referencia que viene en el APK, leída una sola vez (son 4 archivos de ~1,4 KB). Lee de disco: NO llamarla desde el hilo principal (el ViewModel la carga en `Dispatchers.IO`). Sin la carpeta de assets queda vacía: ningún juego tiene comparación. */
     fun get(context: Context): EstimatedReference = cached ?: synchronized(this) {
       cached ?: load(context).also { cached = it }
     }

@@ -45,7 +45,7 @@ fun UnityGameHost(
   var launched by rememberSaveable { mutableStateOf(false) }
   // Id de esta partida: el de la partida en pausa que se retoma, o uno nuevo. La app lo anota (ver
   // GameSessionStore) para reconocer el resultado aunque Android la cierre mientras se juega.
-  val launchId = rememberSaveable { session.resumeLaunchId ?: ((if (session.guest) UnityGameLauncher.GUEST_LAUNCH_PREFIX else "") + java.util.UUID.randomUUID().toString()) }
+  val launchId = rememberSaveable { session.resumeLaunchId ?: ((if (session.guestRange != null) UnityGameLauncher.GUEST_LAUNCH_PREFIX else "") + java.util.UUID.randomUUID().toString()) }
 
   val lifecycleOwner = LocalLifecycleOwner.current
   DisposableEffect(lifecycleOwner) {
@@ -76,7 +76,7 @@ fun UnityGameHost(
         forceTutorial = session.tutorial,
         timeTrial = session.timeTrialDay != null,
         trackSeed = session.timeTrialDay?.let { com.example.data.TimeTrialDay.trackSeed(it) } ?: 0,
-        guest = session.guest
+        guest = session.guestRange != null
       )
     )
     onLaunched(launchId)

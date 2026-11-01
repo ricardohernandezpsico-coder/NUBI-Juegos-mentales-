@@ -225,7 +225,7 @@ object UnityGameLauncher {
         reduce_motion = android.provider.Settings.Global.getFloat(
           context.contentResolver, android.provider.Settings.Global.ANIMATOR_DURATION_SCALE, 1f
         ) == 0f,
-        show_tutorial = forceTutorial || freshStart || shouldShowTutorial(gameId, repo.gameHistory.value, repo.timeTrialResults.value),
+        show_tutorial = forceTutorial || freshStart || guest || shouldShowTutorial(gameId, repo.gameHistory.value, repo.timeTrialResults.value),
         first_game = firstGame,
         fresh_start = freshStart || guest,
         reset_unity_prefs = UnityPrefs.resetPending(context),

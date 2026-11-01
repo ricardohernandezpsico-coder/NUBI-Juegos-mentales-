@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -53,7 +54,7 @@ internal fun ContrarrelojDoor(record: Int?, plus: Boolean, onClick: () -> Unit, 
         Text("Tus marcas del Contrarreloj", color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 22.sp, modifier = Modifier.testTag("avance_contrarreloj_title"))
         Text(TimeTrialMarks.doorLine(record).glueNumbers(), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.testTag("avance_contrarreloj_line"))
         // LO GRATIS (Tarea 203, Ricardo): sin Plus, la división y la meta de esta semana («Esta semana estás En órbita. Te faltan 7 aciertos para En la Luna.»); solo hay con una comparación disponible (hoy, datos de muestra en depuración)
-        if (!plus && freeLine != null) Text(freeLine.glueNumbers().glueNames(), color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp, modifier = Modifier.padding(top = 4.dp).testTag("avance_contrarreloj_free"))
+        if (!plus && freeLine != null) Text(freeLine.glueNumbers().glueNamesForLetter(), color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp, modifier = Modifier.padding(top = 4.dp).testTag("avance_contrarreloj_free"))
         if (!plus) {
           Row(Modifier.padding(top = 4.dp).testTag("avance_contrarreloj_lock"), verticalAlignment = Alignment.CenterVertically) {
             KitGlyph(Glyph.LOCK, size = 20.dp)
@@ -71,27 +72,41 @@ internal fun ContrarrelojDoor(record: Int?, plus: Boolean, onClick: () -> Unit, 
 }
 
 /**
- * La hoja corta que abre la puerta de Avance SIN Nubi Plus (Tarea 199): qué trae la página, en una lista breve, y UN solo botón, «Entendido». El botón de compra llega con Google Play Billing (Etapa 4, `docs/modelo-negocio.md`); hasta entonces la hoja solo cuenta qué hay detrás. Sin precios ni promesas.
+ * [glueNames] con la letra de ESTE punto de la composición (Tarea 205c): con más de 1,3 los nombres de división y «Te faltan N aciertos» no se pegan, porque pegados no caben en el renglón y Android los corta por letras. Dentro de un `CapScale` lee la letra ya topada.
+ */
+@Composable
+internal fun String.glueNamesForLetter(): String = glueNames(LocalDensity.current.fontScale)
+
+/**
+ * La hoja corta que abre la puerta de Avance SIN Nubi Plus (Tarea 199): qué trae la página, en una lista breve, y UN solo botón, «Cerrar» (antes «Entendido»: en un panel de prueba se leyó como «acepto»). El botón de compra llega con Google Play Billing (Etapa 4, `docs/modelo-negocio.md`); hasta entonces la hoja solo cuenta qué hay detrás. Sin precios ni promesas.
+ * [kind] dice con qué se compara la persona (`Comparison.Kind`): con una referencia estimada, la hoja la nombra; sin comparación (sin franja de edad, de 13 a 17 años o sin tabla), solo habla de «contigo».
  */
 @Composable
 internal fun PlusLockSheet(onDismiss: () -> Unit, kind: com.example.data.Comparison.Kind = com.example.data.Comparison.Kind.NONE) {
-  Dialog(onDismissRequest = onDismiss) {
-    ClayCard(Modifier.fillMaxWidth().padding(8.dp).testTag("plus_sheet"), color = Clay.Cream, size = SlabSize.LARGE, contentPadding = 20.dp) {
-      // se desliza: con tres líneas (Tarea 203) y letra 2,0 la hoja puede no caber entera en el alto de una pantalla
-      Column(Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(PlusAccess.SHEET_TITLE, color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 24.sp, modifier = Modifier.semantics { heading() }.testTag("plus_sheet_title"))
-        Text(PlusAccess.sheetLead(kind), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("plus_sheet_lead"))
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("plus_sheet_items")) {
-          PlusAccess.sheetItems(kind).forEachIndexed { i, item ->
-            Row(verticalAlignment = Alignment.Top) {
-              KitGlyph(Glyph.CHECK, size = 20.dp, modifier = Modifier.padding(top = 1.dp))
-              Spacer(Modifier.width(8.dp))
-              Text(item, color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.weight(1f).testTag("plus_sheet_item_$i"))
-            }
+  Dialog(onDismissRequest = onDismiss) { PlusLockSheetContent(onDismiss, kind) }
+}
+
+/**
+ * El CONTENIDO de la hoja, sin su `Dialog` (Tarea 205c): un `Dialog` compone con la densidad de su propia ventana y una prueba que cambia `LocalDensity` no le cambia la letra (la captura «ahora_sheet_393_20» de la Tarea 205 era idéntica a la de 1,0). Con el contenido suelto se mide a 1,0, 1,3 y 2,0.
+ * Se desliza: con tres líneas y letra 2,0 puede no caber entera en el alto de una pantalla, y «Cerrar» queda al final del deslizable.
+ */
+@Composable
+internal fun PlusLockSheetContent(onClose: () -> Unit, kind: com.example.data.Comparison.Kind = com.example.data.Comparison.Kind.NONE) {
+  ClayCard(Modifier.fillMaxWidth().padding(8.dp).testTag("plus_sheet"), color = Clay.Cream, size = SlabSize.LARGE, contentPadding = 20.dp) {
+    // se desliza: con tres líneas (Tarea 203) y letra 2,0 la hoja puede no caber entera en el alto de una pantalla
+    Column(Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+      Text(PlusAccess.SHEET_TITLE, color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 24.sp, modifier = Modifier.semantics { heading() }.testTag("plus_sheet_title"))
+      Text(PlusAccess.sheetLead(kind), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("plus_sheet_lead"))
+      Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("plus_sheet_items")) {
+        PlusAccess.sheetItems(kind).forEachIndexed { i, item ->
+          Row(verticalAlignment = Alignment.Top) {
+            KitGlyph(Glyph.CHECK, size = 20.dp, modifier = Modifier.padding(top = 1.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(item, color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.weight(1f).testTag("plus_sheet_item_$i"))
           }
         }
-        ClayButton(text = PlusAccess.SHEET_OK, onClick = onDismiss, modifier = Modifier.padding(top = 4.dp).testTag("btn_plus_sheet_ok"))
       }
+      ClayButton(text = PlusAccess.SHEET_OK, onClick = onClose, modifier = Modifier.padding(top = 4.dp).testTag("btn_plus_sheet_ok"))
     }
   }
 }

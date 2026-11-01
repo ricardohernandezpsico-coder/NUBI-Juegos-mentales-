@@ -3,6 +3,9 @@ package com.example.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -16,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.bridge.UnityGameLauncher
 import com.example.model.AgeBand
 import com.example.viewmodel.NeuroVidaViewModel
@@ -107,6 +111,7 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
   val context = LocalContext.current
   // Dibuja encima del tutorial los rectángulos del foco y el último toque (se pide a Unity con `debug_overlay`): para mandar una captura si un tutorial se traba.
   var tutorialOverlay by remember { mutableStateOf(false) }
+  var guestGame by remember { mutableStateOf<String?>(null) }       // el juego del «Contrarreloj de invitado» que espera la edad del invitado
   Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
     DebugButton(if (tutorialOverlay) "[Debug] Rectángulos del tutorial: SÍ (tocar para quitar)" else "[Debug] Rectángulos del tutorial: NO (tocar para ver)", "btn_debug_tutorial_overlay") { tutorialOverlay = !tutorialOverlay }
     if (com.example.Features.LEAGUES) DebugButton("[Debug] Ver celebración de ascenso de liga", "btn_debug_promotion") { viewModel.debugShowPromotion() }
@@ -120,10 +125,18 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
     val nextWorld = worlds[(compareWorld.ordinal + 1) % worlds.size]
     fun worldName(w: com.example.data.SampleComparison.World) = when (w) { com.example.data.SampleComparison.World.REFERENCE -> "referencia"; com.example.data.SampleComparison.World.MANY -> "muchos"; com.example.data.SampleComparison.World.FEW -> "pocos"; com.example.data.SampleComparison.World.VERY_FEW -> "muy pocos" }
     DebugButton("[Debug] Comparación: ${worldName(compareWorld)} (tocar para ${worldName(nextWorld)})", "btn_debug_compare") { viewModel.setCompareWorld(nextWorld) }
-    // «Contrarreloj de invitado» (Tarea 205): la pista de hoy del juego elegido; al final muestra la marca y NO guarda nada (ni partida, ni récord, ni racha, ni farolas, ni lo «ya visto»): para anotar las marcas de otras personas en este teléfono sin mezclar las tuyas.
+    // «Contrarreloj de invitado» (Tarea 205; la edad se pregunta desde la 205c): la pista de hoy del juego elegido; al final muestra la marca y NO guarda nada (ni partida, ni récord, ni racha, ni farolas, ni lo «ya visto»): para anotar las marcas de otras personas en este teléfono sin mezclar las tuyas.
     com.example.data.TimeTrialDay.GAMES.forEach { id ->
       val title = com.example.model.GameRegistry.getById(id)?.title ?: id
-      DebugButton("[Debug] Contrarreloj de invitado: $title", "btn_debug_guest_$id") { viewModel.startGuestTimeTrial(id) }
+      DebugButton("[Debug] Contrarreloj de invitado: $title", "btn_debug_guest_$id") { guestGame = id }
+    }
+    // el invitado elige su EDAD antes de jugar (Tarea 205c): juega con la banda de esa edad (los de 65 en adelante reciben las tarjetas de Tinta ×1,3 más tarde, como los robots de la referencia), así su marca es comparable con la tabla
+    guestGame?.let { id ->
+      GuestAgeDialog(
+        gameTitle = com.example.model.GameRegistry.getById(id)?.title ?: id,
+        onPick = { range -> guestGame = null; viewModel.startGuestTimeTrial(id, range) },
+        onCancel = { guestGame = null }
+      )
     }
     DebugButton("[Debug] Repetir el inicio (sin borrar datos)", "btn_debug_onboarding") { viewModel.debugRestartOnboarding() }
     // «Jugar como la primera vez» (Tarea 191): tutorial, subida rápida de etapa y tarjetas «NUEVO» como las ve alguien nuevo, sin tocar tu progreso: las marcas de «ya visto» no se leen ni se guardan y el resultado no se guarda.
@@ -171,6 +184,24 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
       }
     }
   }
+}
+
+@Composable
+private fun GuestAgeDialog(gameTitle: String, onPick: (com.example.model.AgeRange) -> Unit, onCancel: () -> Unit) {
+  androidx.compose.material3.AlertDialog(
+    onDismissRequest = onCancel,
+    title = { Text("Contrarreloj de invitado: $gameTitle", fontSize = 20.sp) },
+    text = {
+      Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.verticalScroll(rememberScrollState()).testTag("guest_age_dialog")) {
+        Text("¿Qué edad tiene la persona? Con ella se juega la partida y se anota junto a su marca; no se guarda nada.", fontSize = 16.sp)
+        com.example.model.AgeRange.entries.filter { it != com.example.model.AgeRange.R13_17 }.forEach { range ->
+          OutlinedButton(onClick = { onPick(range) }, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("btn_guest_age_${range.name.lowercase()}")) { Text(range.label, fontSize = 16.sp) }
+        }
+      }
+    },
+    confirmButton = {},
+    dismissButton = { androidx.compose.material3.TextButton(onClick = onCancel, modifier = Modifier.testTag("btn_guest_age_cancel")) { Text("Cancelar", fontSize = 16.sp) } }
+  )
 }
 
 @Composable

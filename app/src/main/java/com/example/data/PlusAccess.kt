@@ -23,8 +23,8 @@ object PlusAccess {
   const val LOCK_LABEL = "Con Nubi Plus"
   const val SHEET_TITLE = "Tus marcas del Contrarreloj, con Nubi Plus"
   /**
-   * La hoja, en TRES líneas (Tarea 203; `auditoria-fable/contrarreloj-rediseno.md` §4). Lo que dice depende de si en esta build hay comparación con personas de tu edad (`Comparison.sourceFor`: hoy solo la de depuración, con datos de muestra; el día que haya servidor, también la de la tienda):
-   * con ella habla del lugar, la escalera y tus marcas; sin ella (la tienda), solo de lo que de verdad hay detrás. Así la hoja nunca promete de más.
+   * La hoja, en TRES líneas (Tarea 203; `auditoria-fable/contrarreloj-rediseno.md` §4). Lo que dice depende de con qué se compara ESTA persona (`Comparison.Kind`, Tarea 205c: NONE si no hay fuente o no tiene franja de edad con que compararse): con la referencia estimada (la de la tienda) la nombra, con personas (datos de muestra de depuración;
+   * mañana, personas reales) habla de «personas de tu edad», y sin comparación solo de lo que de verdad hay detrás. Así la hoja nunca promete de más. Las dos primeras constantes son la forma «sin comparación» y la de «personas»; la de la referencia estimada, más abajo, nunca dice «personas».
    */
   const val SHEET_LEAD = "Una página con todas tus marcas, comparadas solo contigo:"
   const val SHEET_LEAD_COMPARED = "Una página con todas tus marcas, comparadas contigo y con personas de tu edad:"

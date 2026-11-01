@@ -188,6 +188,7 @@ class Tarea205CapturasTest {
     TestSupport.awaitUntil(30_000) { model.timeTrialResults.value.size >= 10 }
     model.setAgeRange(AgeRange.R45_54)              // sin franja elegida no hay con quién compararse (la tienda tampoco)
     TestSupport.awaitUntil(30_000) { model.ageRange.value == AgeRange.R45_54 }
+    TestSupport.awaitUntil(30_000) { model.estimatedReference.value != null }
     model.setTab(AppTab.PROGRESO)
     return model
   }

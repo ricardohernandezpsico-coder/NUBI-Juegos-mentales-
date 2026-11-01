@@ -71,4 +71,20 @@ class NoBreakTest {
     assertEquals(s, s.glueNames())
     for (x in listOf("Tu récord es del 17 de octubre", "una frase sin nombres", "de 2 a 3 veces")) assertEquals(x, x.glueNames())
   }
+
+  @Test
+  fun con_letra_mayor_a_1_3_no_se_pegan_los_nombres_de_division_ni_Te_faltan_pero_la_cifra_con_su_unidad_si() {
+    val s = "Te faltan 12 aciertos para En la Luna."
+    val glued = s.glueNumbers()
+    assertEquals("a 1,0 y a 1,3: todo pegado", "Te${NBSP}faltan${NBSP}12${NBSP}aciertos para En${NBSP}la${NBSP}Luna.", glued.glueNames(1f))
+    assertEquals(glued.glueNames(1f), glued.glueNames(1.3f))
+    val big = glued.glueNames(2f)
+    assertEquals("con 2,0 solo la cifra con su unidad: «12 aciertos» no se separa, lo demás parte entre palabras", "Te faltan 12${NBSP}aciertos para En la Luna.", big)
+    assertEquals("también justo por encima de 1,3", "Te faltan 12${NBSP}aciertos para En la Luna.", glued.glueNames(1.31f))
+    assertEquals("las franjas de edad siguen pegadas con cualquier letra", "de 45${NBSP}a${NBSP}54${NBSP}años", "de 45 a 54 años".glueNames(2f))
+    assertEquals("y «75 años o más»", "75${NBSP}años${NBSP}o${NBSP}más", "75 años o más".glueNames(2f))
+    assertEquals("Entre estrellas", "Entre estrellas".glueNames(2f))
+    assertEquals("la letra de fábrica es 1,0", "Entre${NBSP}estrellas", "Entre estrellas".glueNames())
+    assertEquals(1.3f, com.example.data.GLUE_NAMES_MAX_FONT_SCALE, 0f)
+  }
 }

@@ -19,11 +19,19 @@ private val AGE_OR_MORE = Regex("""\b(\d{2})[ \u00A0]años[ \u00A0]o[ \u00A0]má
 private val WE_NEED = Regex("""\b(Te) (falta(?:n)?) (\d+)[ \u00A0](aciertos?)\b""")
 
 /**
- * Pega con espacios duros lo que se lee de un golpe en la página «Contrarreloj» (Tarea 203b; con letra 2,0 se leía «45 a / 54 años» y, a 360 dp, «para En la / Luna.»): el nombre de una división («En la Luna»), la franja de edad entera con su unidad («45 a 54 años», «75 años o más») y «Te faltan 7 aciertos».
+ * Pega con espacios duros lo que se lee de un golpe en la página «Contrarreloj» (Tarea 203b; Tarea 205c: solo con [fontScale] de 1,3 o menos, ver abajo; con letra 2,0 se leía «45 a / 54 años» y, a 360 dp, «para En la / Luna.»): el nombre de una división («En la Luna»), la franja de edad entera con su unidad («45 a 54 años», «75 años o más») y «Te faltan 7 aciertos».
  * Como [glueNumbers], solo para lo que SE VE: lo que lee el lector de pantalla y los textos de lógica quedan con espacios normales. Se usa DESPUÉS de [glueNumbers] o en lugar de él cuando el texto ya trae las cifras pegadas.
  */
-fun String.glueNames(): String {
+fun String.glueNames(fontScale: Float = 1f): String {
   var s = this
-  for (name in DIVISION_NAMES) s = s.replace(name, name.replace(" ", NBSP))
-  return s.replace(AGE_RANGE, "$1${NBSP}a$NBSP$2${NBSP}años").replace(AGE_OR_MORE, "$1${NBSP}años${NBSP}o${NBSP}más").replace(WE_NEED, "$1$NBSP$2$NBSP$3$NBSP$4")
+  // Tarea 205c: con letra mayor a 1,3 los nombres de división y «Te faltan N aciertos» NO se pegan: pegados miden más que el ancho de su renglón (a 360 dp, 16 sp negrita y letra 2,0, «Te faltan 12 aciertos» mide ~300 dp en ~246) y Android los corta por letras
+  // («acier / tos»). Mejor partir entre palabras que por dentro de una. La cifra con su unidad («12 aciertos») sí queda pegada siempre ([glueNumbers]).
+  if (fontScale <= GLUE_NAMES_MAX_FONT_SCALE) {
+    for (name in DIVISION_NAMES) s = s.replace(name, name.replace(" ", NBSP))
+    s = s.replace(WE_NEED, "$1$NBSP$2$NBSP$3$NBSP$4")
+  }
+  return s.replace(AGE_RANGE, "$1${NBSP}a$NBSP$2${NBSP}años").replace(AGE_OR_MORE, "$1${NBSP}años${NBSP}o${NBSP}más")
 }
+
+/** La letra más grande con la que se pegan los nombres de división y «Te faltan N aciertos» (Tarea 205c): arriba de esto un tramo pegado puede no caber en el renglón. */
+const val GLUE_NAMES_MAX_FONT_SCALE = 1.3f

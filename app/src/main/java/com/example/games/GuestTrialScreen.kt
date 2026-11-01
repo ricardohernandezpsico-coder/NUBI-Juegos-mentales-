@@ -32,7 +32,11 @@ import com.example.ui.theme.TitleFamily
 /**
  * Lo que dejó una partida del «[Debug] Contrarreloj de invitado» (Tarea 205): solo la marca, para ANOTARLA. Nada de esto se guarda en el teléfono (ni la partida, ni el récord, ni la racha, ni las farolas de la semana, ni lo «ya visto» de Unity).
  */
-data class GuestTrial(val gameId: String, val hits: Int, val errors: Int) {
+data class GuestTrial(
+  val gameId: String, val hits: Int, val errors: Int,
+  /** La edad que eligió el invitado (Tarea 205c): con ella se jugó (la banda de tres) y se anota junto a la marca; null si la sesión se perdió a mitad de camino. */
+  val range: com.example.model.AgeRange? = null
+) {
   /** La marca de siempre: aciertos menos errores, con piso en 0 (`TimeTrial.Mark` de Unity). */
   val mark: Int get() = (hits - errors).coerceAtLeast(0)
 }
@@ -44,6 +48,9 @@ object GuestTrialText {
   const val AGAIN = "Otra vez"
   const val DONE = "Listo"
   fun line(t: GuestTrial): String = "${TimeTrialDay.hitsText(t.hits)} menos ${TimeTrialMarks.errorsText(t.errors)}, en 2 minutos de Contrarreloj."
+
+  /** La edad del invitado, para anotarla junto a su marca (Tarea 205c): «Edad elegida: 45 a 54 años.» */
+  fun rangeLine(range: com.example.model.AgeRange): String = "Edad elegida: ${range.label}."
 }
 
 /**
@@ -63,6 +70,9 @@ fun GuestTrialScreen(trial: GuestTrial, onAgain: () -> Unit, onDone: () -> Unit,
     Spacer(Modifier.height(20.dp))
     OnBoardText(TimeTrialDay.hitsText(trial.mark).glueNumbers(), color = NubiTokens.SunOnNight, fontFamily = TitleFamily, fontWeight = FontWeight.Bold, fontSize = 40.sp, lineHeight = 46.sp, modifier = Modifier.fillMaxWidth().testTag("guest_trial_mark"))
     OnBoardText(GuestTrialText.line(trial).glueNumbers(), color = NubiTokens.OnNight, fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().padding(top = 6.dp).testTag("guest_trial_line"))
+    trial.range?.let { range ->
+      OnBoardText(GuestTrialText.rangeLine(range).glueNumbers(), color = NubiTokens.OnNight, fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().padding(top = 6.dp).testTag("guest_trial_range"))
+    }
     OnBoardText(GuestTrialText.NOTE, color = NubiTokens.OnNightDim, fontFamily = AppFamily, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().padding(top = 16.dp).testTag("guest_trial_note"))
     Spacer(Modifier.height(28.dp))
     ClayButton(text = GuestTrialText.AGAIN, onClick = onAgain, glyph = Glyph.CLOCK, modifier = Modifier.testTag("btn_guest_trial_again"))

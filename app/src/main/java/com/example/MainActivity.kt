@@ -228,7 +228,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
               com.example.ui.UnityGameHost(
                 session = session,
                 userId = userSettings.id.toString(),
-                ageBand = userSettings.ageBand ?: com.example.model.AgeBand.ADULT,
+                ageBand = session.guestRange?.toBand() ?: userSettings.ageBand ?: com.example.model.AgeBand.ADULT,      // el invitado juega con la banda de la edad que eligió
                 soundEnabled = userSettings.soundEnabled,
                 onLaunched = { id -> viewModel.onUnityLaunched(id) },
                 onHostResumed = { viewModel.onHostResumed() }
@@ -244,7 +244,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
           if (guest != null) {
             com.example.games.GuestTrialScreen(
               trial = guest,
-              onAgain = { viewModel.startGuestTimeTrial(guest.gameId) },
+              onAgain = { viewModel.startGuestTimeTrial(guest.gameId, guest.range ?: com.example.model.AgeRange.R45_54) },      // con la MISMA edad (sin ella, por un proceso que murió a mitad, la de 45 a 54)
               onDone = { viewModel.closeGameOrResult() }
             )
             return@let

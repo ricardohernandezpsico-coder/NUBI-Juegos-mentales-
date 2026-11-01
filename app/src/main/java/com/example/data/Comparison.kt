@@ -6,15 +6,15 @@ import kotlin.math.min
 
 /**
  * Tu lugar entre personas de tu edad (Tarea 202; `auditoria-fable/nubi-plus-comparacion.md` §1, §4 y §11, opción B), LÓGICA PURA: el percentil desde el histograma SIN suavizar, la frase en «de cada 100», la división con nombre, las reglas de «pocos», el percentil semana a semana,
- * «otras edades» y la forma de la campana; desde la Tarea 203, la cifra protagonista, la escalera de divisiones con su primer acierto, «te faltan», la racha de semanas y la frase gratis. No sabe de pantallas ni de dónde salen las marcas de las otras personas: las pide a una [Source] (hoy los datos de muestra de `SampleComparison`, solo en depuración; el día que haya servidor, sus documentos semanales).
+ * «otras edades» y la forma de la campana; desde la Tarea 203, la cifra protagonista, la escalera de divisiones con su primer acierto, «te faltan», la racha de semanas y la frase gratis. No sabe de pantallas ni de dónde salen las marcas de las otras personas: las pide a una [Source] (desde la Tarea 205, la REFERENCIA ESTIMADA que lee `EstimatedReference` de los JSON del APK, también en la tienda, y en depuración, con un mundo de muestra, los datos de `SampleComparison`; el día que haya servidor, sus documentos semanales con personas reales, que mandan sobre la referencia en cada franja que llegue a [MIN_PEOPLE]).
  *
- * Lo que NO hace, a propósito: nunca habla de «capacidad», «edad mental», «ranking» ni «velocidad»; no hay lista de nombres ni «los 10 mejores»; la franja de 13 a 17 años queda fuera mientras [Features.COMPARE_MINORS] sea false; nunca inventa personas (una clase de referencia con menos de [MIN_PEOPLE] se dice «todavía somos pocos»).
+ * Lo que NO hace, a propósito: nunca habla de «capacidad», «edad mental», «ranking» ni «velocidad»; no hay lista de nombres ni «los 10 mejores»; la franja de 13 a 17 años queda fuera mientras [Features.COMPARE_MINORS] sea false; nunca presenta una referencia estimada como personas (con ella dice siempre «referencia estimada», jamás «personas» ni cuenta robots) ni inventa lugar con personas reales que son pocas (una clase con menos de [MIN_PEOPLE] se dice «todavía somos pocos»).
  */
 object Comparison {
   /** Personas que hacen falta en una clase de referencia (franja, juego y semana) para decir un lugar (§4). */
   const val MIN_PEOPLE = 50
 
-  /** El histograma es de 16 tramos de 5 aciertos: 0 a 4, 5 a 9, …, 70 a 74 y «75 o más». */
+  /** La forma de la distribución de los DATOS DE MUESTRA y de las clases vacías por omisión: 16 tramos de 5 aciertos (0 a 4, 5 a 9, …, 70 a 74 y «75 o más»). Cada juego de la referencia estimada trae la suya en su JSON (1·2·5·5 y 24·16·16·16): ver [Distribution.binWidth] y [Distribution.bins]. */
   const val BIN_WIDTH = 5
   const val BINS = 16
 
@@ -92,8 +92,8 @@ object Comparison {
   // ------------------------------------------------------------------ la distribución
 
   /**
-   * Las mejores marcas semanales de UNA clase de referencia (juego, pista, semana o semanas, franja o franjas): cuántas [people] y, en [bins], cuántas cayeron en cada tramo de 5 aciertos (16 tramos, sin suavizar); [p25], [p50] y [p75] son los cuartiles en aciertos, dichos tal cual por quien arma la distribución
-   * (el servidor los calcula con las marcas crudas; en los datos de muestra salen de su tabla). Con menos de [MIN_PEOPLE] personas no alcanza para decir un lugar ([enough]).
+   * Las mejores marcas semanales de UNA clase de referencia (juego, pista, semana o semanas, franja o franjas): cuántas [people] y, en [bins], cuántas cayeron en cada tramo de [binWidth] aciertos (sin suavizar; son 16 tramos de 5 en los datos de muestra y los de cada juego en la referencia estimada); [p25], [p50] y [p75] son los cuartiles en aciertos (la referencia estimada los calcula la app desde los tramos con
+   * [markAtPercentile]; el servidor, con las marcas crudas; en los datos de muestra salen de su tabla). Con menos de [MIN_PEOPLE] personas reales no alcanza para decir un lugar; la referencia estimada siempre alcanza ([enough]).
    */
   data class Distribution(
     val people: Int, val bins: List<Int>, val p25: Int, val p50: Int, val p75: Int,

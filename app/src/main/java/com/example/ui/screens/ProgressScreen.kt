@@ -92,13 +92,16 @@ fun ProgressScreen(
   if (contrarrelojOpen) BackHandler(onBack = viewModel::closeContrarreloj)
   val ttNow = remember(ttResults) { System.currentTimeMillis() }
   // La comparación disponible en ESTA build: la REFERENCIA ESTIMADA del APK (Tarea 205; también en la tienda) o, en depuración, los datos de muestra que elija «[Debug] Comparación»; null si no hay con qué comparar. La puerta y su hoja dicen solo lo que hay.
-  val estimatedReference = remember { com.example.data.EstimatedReference.get(context).takeIf { it.loaded.isNotEmpty() } }      // sin tablas en el APK no hay comparación (nunca una fuente vacía que diga «referencia estimada» sin nada)
-  val doorCompare = remember(compareWorld) { com.example.data.Comparison.sourceFor(com.example.BuildConfig.DEBUG, compareWorld, estimatedReference) }
+  // (la referencia la carga el ViewModel fuera del hilo principal: null un instante al arrancar y sin tablas en el APK; sin ella no hay comparación, nunca una fuente vacía que diga «referencia estimada» sin nada)
+  val estimatedReference by viewModel.estimatedReference.collectAsState()
+  val doorCompare = remember(compareWorld, estimatedReference) { com.example.data.Comparison.sourceFor(com.example.BuildConfig.DEBUG, compareWorld, estimatedReference) }
+  // Con qué se compara ESTA persona, para la hoja del candado (Tarea 205c): sin franja de edad (o de 13 a 17 años) no hay comparación, así que la hoja no le promete una referencia que nunca verá
+  val sheetKind = if (doorCompare != null && com.example.data.Comparison.rangeFor(ageRange, doorCompare) != null) com.example.data.Comparison.kindOf(doorCompare) else com.example.data.Comparison.Kind.NONE
 
   Column(modifier.fillMaxSize().padding(bottom = com.example.ui.components.LocalBarInset.current)) {      // la franja de la barra de pestañas queda libre
     val ttOpen = contrarreloj
     if (ttOpen != null && contrarrelojOpen) {
-      // La comparación con personas de tu edad (Tarea 202): `Comparison.sourceFor` es null en la build de la tienda y mientras no haya servidor; en depuración, datos de muestra (la página lo dice con una frase visible).
+      // La comparación (Tareas 202 y 205): `Comparison.sourceFor` da la referencia estimada del APK (también en la tienda; la página lo dice con su frase larga) y, en depuración con un mundo de muestra, esos datos; null si no hay con qué comparar.
       val compare = doorCompare
       ContrarrelojPage(results = ttResults, selected = ttOpen, onSelect = viewModel::selectContrarrelojGame, onBack = viewModel::closeContrarreloj, now = ttNow, lang = currentLang, compare = compare, ageRange = ageRange)
       return@Column
@@ -179,7 +182,7 @@ fun ProgressScreen(
     }
   }
 
-  if (plusSheet) PlusLockSheet(onDismiss = { plusSheet = false }, kind = com.example.data.Comparison.kindOf(doorCompare))       // sin Plus: qué trae la página, con «Entendido» (la compra llega con Google Play Billing, Etapa 4)
+  if (plusSheet) PlusLockSheet(onDismiss = { plusSheet = false }, kind = sheetKind)       // sin Plus: qué trae la página, con «Cerrar» (la compra llega con Google Play Billing, Etapa 4)
 }
 
 /** La puerta del Contrarreloj con el récord del juego de HOY (el mismo de Hoy); 2 dp de aire propio arriba y abajo sobre los 22 dp entre secciones (24 dp hasta cada vecina). Con Plus abre la página con el juego de hoy elegido; sin Plus, [onLocked]. */
@@ -189,7 +192,7 @@ private fun DoorRow(
 ) {
   val todayKey = viewModel.todayKey()
   val record = remember(results, todayKey) { TimeTrialStats.record(results, TimeTrialDay.gameFor(todayKey)) }
-  // LO GRATIS (Tarea 203): sin Plus y con una comparación disponible (hoy, datos de muestra en depuración), la división y la meta de esta semana en el juego de hoy
+  // LO GRATIS (Tarea 203): sin Plus y con una comparación disponible (hoy, la referencia estimada, también en la tienda; en depuración con un mundo de muestra, esos datos), la división y la meta de esta semana en el juego de hoy
   val freeLine = remember(results, todayKey, compare, ageRange, plus) {
     if (plus || compare == null) null
     else com.example.data.Comparison.rangeFor(ageRange, compare)?.let { com.example.data.Comparison.freeSentenceFor(compare, TimeTrialDay.gameFor(todayKey), it, results, System.currentTimeMillis()) }

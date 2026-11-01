@@ -101,6 +101,7 @@ class ContrarrelojFlowTest {
       repo.recordTimeTrial(TimeTrialResult(id = "flow-other", gameId = other, day = vm.todayKey(), trackVersion = TimeTrialDay.trackVersion(other), hits = 29, errors = 2, level = 3, seconds = 120, timestamp = real - day))
     }
     TestSupport.awaitUntil(30_000) { vm.timeTrialResults.value.size >= 11 }
+    TestSupport.awaitUntil(30_000, "La referencia estimada no se cargó") { vm.estimatedReference.value != null }          // la lee el ViewModel fuera del hilo principal (Tarea 205c)
     vm.setTab(AppTab.PROGRESO)
     return vm
   }
@@ -171,7 +172,8 @@ class ContrarrelojFlowTest {
 
   @Test
   fun sin_Plus_la_puerta_lleva_el_candado_y_abre_una_hoja_con_un_solo_boton() {
-    val vm = withData(); vm.setPlus(false)
+    val vm = withData(); vm.setPlus(false); vm.setAgeRange(com.example.model.AgeRange.R45_54)
+    TestSupport.awaitUntil(30_000) { vm.ageRange.value == com.example.model.AgeRange.R45_54 }
     show(vm)
     assertEquals("sigue diciendo el récord de hoy", "Tu récord de hoy: 44 aciertos", textOf("avance_contrarreloj_line").replace(NBSP, " "))
     assertEquals("y lleva el candado «Con Nubi Plus»", 1, rule.onAllNodes(hasTestTag("avance_contrarreloj_lock"), useUnmergedTree = true).fetchSemanticsNodes().size)
@@ -188,6 +190,49 @@ class ContrarrelojFlowTest {
     rule.onNodeWithTag("btn_plus_sheet_ok").performClick(); rule.waitForIdle()
     assertEquals("la hoja se cierra", 0, count("plus_sheet"))
     assertNull(vm.contrarreloj.value)
+  }
+
+  /** Abre la hoja del candado (sin Plus) con la franja [range] guardada (null = ninguna) y devuelve lo que dice. */
+  private fun sheetTexts(range: com.example.model.AgeRange?): Pair<String, List<String>> {
+    val vm = withData(); vm.setPlus(false)
+    if (range != null) { vm.setAgeRange(range); TestSupport.awaitUntil(30_000) { vm.ageRange.value == range } }
+    show(vm)
+    rule.onNodeWithTag("avance_contrarreloj_door").performClick(); rule.waitForIdle()
+    rule.onNodeWithTag("plus_sheet").assertIsDisplayed()
+    return textOf("plus_sheet_lead") to (0 until 3).map { textOf("plus_sheet_item_$it") }
+  }
+
+  @Test
+  fun la_hoja_del_candado_nombra_la_referencia_solo_si_la_persona_tiene_una_franja_con_que_compararse() {
+    val (lead, items) = sheetTexts(com.example.model.AgeRange.R45_54)
+    assertEquals(PlusAccess.sheetLead(com.example.data.Comparison.Kind.ESTIMATED), lead)
+    assertEquals(PlusAccess.sheetItems(com.example.data.Comparison.Kind.ESTIMATED), items)
+  }
+
+  @Test
+  fun la_hoja_del_candado_de_13_a_17_anos_no_le_promete_una_referencia_que_nunca_vera() {
+    val (lead, items) = sheetTexts(com.example.model.AgeRange.R13_17)
+    assertEquals("solo contigo: sin comparación", PlusAccess.sheetLead(com.example.data.Comparison.Kind.NONE), lead)
+    assertEquals(PlusAccess.sheetItems(com.example.data.Comparison.Kind.NONE), items)
+    assertFalse("ni una palabra de la referencia", (listOf(lead) + items).any { "referencia" in it })
+  }
+
+  @Test
+  fun la_hoja_del_candado_sin_franja_tampoco_promete_una_referencia() {
+    val (lead, items) = sheetTexts(null)
+    assertEquals(PlusAccess.sheetLead(com.example.data.Comparison.Kind.NONE), lead)
+    assertEquals(PlusAccess.sheetItems(com.example.data.Comparison.Kind.NONE), items)
+  }
+
+  @Test
+  fun la_referencia_estimada_la_carga_el_ViewModel_y_ProgressScreen_ya_no_lee_assets() {
+    val vm = withData()
+    assertEquals("las cuatro tablas del APK", 4, vm.estimatedReference.value!!.loaded.size)
+    val screen = java.io.File("src/main/java/com/example/ui/screens/ProgressScreen.kt").readText()
+    assertFalse("la pantalla no lee assets al componer (hilo principal)", screen.contains("EstimatedReference.get("))
+    assertTrue("la toma del ViewModel", screen.contains("viewModel.estimatedReference"))
+    val vmSource = java.io.File("src/main/java/com/example/viewmodel/NeuroVidaViewModel.kt").readText()
+    assertTrue("y el ViewModel la lee en IO", vmSource.contains("launch(kotlinx.coroutines.Dispatchers.IO)") && vmSource.contains("EstimatedReference.get(getApplication())"))
   }
 
   @Test
