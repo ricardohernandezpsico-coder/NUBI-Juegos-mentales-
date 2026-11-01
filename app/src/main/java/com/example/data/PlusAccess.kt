@@ -22,14 +22,24 @@ object PlusAccess {
 
   const val LOCK_LABEL = "Con Nubi Plus"
   const val SHEET_TITLE = "Tus marcas del Contrarreloj, con Nubi Plus"
+  /**
+   * La hoja, en TRES líneas (Tarea 203; `auditoria-fable/contrarreloj-rediseno.md` §4). Lo que dice depende de si en esta build hay comparación con personas de tu edad (`Comparison.sourceFor`: hoy solo la de depuración, con datos de muestra; el día que haya servidor, también la de la tienda):
+   * con ella habla del lugar, la escalera y tus marcas; sin ella (la tienda), solo de lo que de verdad hay detrás. Así la hoja nunca promete de más.
+   */
   const val SHEET_LEAD = "Una página con todas tus marcas, comparadas solo contigo:"
+  const val SHEET_LEAD_COMPARED = "Una página con todas tus marcas, comparadas contigo y con personas de tu edad:"
   val SHEET_ITEMS: List<String> = listOf(
-    "Tu récord de cada juego, con su fecha.",
-    "Tus últimas 10 marcas, en barras.",
-    "Esta semana y la pasada, lado a lado.",
-    "Tus aciertos y tus errores.",
-    "Tu récord de las pistas anteriores.",
-    "Tu ritmo en los 2 minutos."
+    "Tu récord, tu mejor marca de esta semana y tus últimas 10 marcas, en barras.",
+    "Tu ritmo en los 2 minutos, medio minuto por medio minuto.",
+    "Tu récord de las pistas anteriores."
   )
+  val SHEET_ITEMS_COMPARED: List<String> = listOf(
+    "Tu lugar entre personas de tu edad: cuántas de cada 100 superas y en qué división estás.",
+    "La escalera de divisiones con su primer acierto, y tus semanas seguidas arriba de la mitad.",
+    "Tus marcas: el récord, las últimas 10 y tu ritmo en los 2 minutos."
+  )
+
+  fun sheetLead(compared: Boolean): String = if (compared) SHEET_LEAD_COMPARED else SHEET_LEAD
+  fun sheetItems(compared: Boolean): List<String> = if (compared) SHEET_ITEMS_COMPARED else SHEET_ITEMS
   const val SHEET_OK = "Entendido"
 }

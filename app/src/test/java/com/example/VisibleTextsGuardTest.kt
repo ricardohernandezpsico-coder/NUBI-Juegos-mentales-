@@ -25,8 +25,8 @@ class VisibleTextsGuardTest {
    * por texto completo y no por archivo. Cualquier otro texto con «percentil» sigue fallando, y si uno de estos cambia o desaparece, la prueba de más abajo pide quitarlo de la lista.
    */
   private val percentileTexts = setOf(
-    "Tu percentil en las últimas 7 semanas",
-    "Es el percentil \$p: la división \${r.division.label}."
+    "Tu percentil, semana a semana",
+    "Percentil \$p"
   )
 
   private val literal = Regex("\"((?:[^\"\\\\\\n]|\\\\.)*)\"")

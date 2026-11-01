@@ -24,10 +24,10 @@ class SampleComparisonTest {
     assertEquals(listOf(31, 39, 47), listOf(d.p25, d.p50, d.p75))
     assertEquals(63, Comparison.percentile(43, d))
     assertEquals("En órbita", Comparison.division(63).label)
-    assertEquals(
-      "Tu mejor marca de esta semana, 43 aciertos, supera a 63 de cada 100 personas de 45 a 54 años que jugaron Tinta o Palabra esta semana.",
-      Comparison.mainSentence(Comparison.Ranked(43, 63, Comparison.division(63), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), d), AgeRange.R45_54, "Tinta o Palabra")
-    )
+    val r = Comparison.Ranked(43, 63, Comparison.division(63), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), d)
+    assertEquals("63 de cada 100", Comparison.heroFigure(r))
+    assertEquals("personas de 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra.", Comparison.heroCaption(r, AgeRange.R45_54, "Tinta o Palabra"))
+    assertEquals("la escalera de esta semana: la división de 43 es En órbita y le faltan 7 aciertos para En la Luna", "Esta semana estás En órbita. Te faltan 7 aciertos para En la Luna.", Comparison.freeSentence(Comparison.Place.Found(r)))
   }
 
   @Test
@@ -137,9 +137,9 @@ class SampleComparisonTest {
       val text = f.readText()
       if (Regex("""SampleComparison\(""").containsMatchIn(text)) builders += f.name
       // fuera de esos dos, solo se nombra su enum de mundos (el botón «[Debug]» y su preferencia): nunca la fuente
-      if (Regex("""SampleComparison(?!\.World)""").containsMatchIn(text) && f.name !in listOf("Comparison.kt", "ContrarrelojPage.kt")) others += f.name
+      if (Regex("""SampleComparison(?!\.World)""").containsMatchIn(text) && f.name != "Comparison.kt") others += f.name
     }
-    // `Comparison.kt` la arma solo si la build es de depuración; la página la reconoce para elegir la franja de la muestra
+    // `Comparison.kt` la arma solo si la build es de depuración y es también quien reconoce la muestra para elegir la franja (`rangeFor(stored, source)`)
     assertEquals(listOf("Comparison.kt"), builders.sorted())
     assertEquals("solo el enum de mundos se nombra fuera: $others", emptyList<String>(), others)
     val source = File("src/main/java/com/example/data/Comparison.kt").readText()

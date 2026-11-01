@@ -91,6 +91,7 @@ fun ProgressScreen(
   val contrarrelojOpen = contrarreloj != null && plus                              // sin Plus no hay página: si quedó abierta (el interruptor cambió), se ve la lista
   if (contrarrelojOpen) BackHandler(onBack = viewModel::closeContrarreloj)
   val ttNow = remember(ttResults) { System.currentTimeMillis() }
+  val doorCompare = remember(compareWorld) { com.example.data.Comparison.sourceFor(com.example.BuildConfig.DEBUG, compareWorld) }       // la comparación disponible en ESTA build (null en la tienda): la puerta y su hoja dicen solo lo que hay
 
   Column(modifier.fillMaxSize().padding(bottom = com.example.ui.components.LocalBarInset.current)) {      // la franja de la barra de pestañas queda libre
     val ttOpen = contrarreloj
@@ -125,10 +126,10 @@ fun ProgressScreen(
         // Sin ninguna partida (Tarea 147, P8): en vez de cuatro filas vacías, Nubi con UNA línea
         item { com.example.ui.components.NubiEmptyLine(com.example.ui.components.EMPTY_AVANCE_LINE) }
         // el Contrarreloj no entra en `game_results`: quien solo jugó eso sigue teniendo su puerta
-        if (ttResults.isNotEmpty()) item { DoorRow(ttResults, plus, viewModel) { plusSheet = true } }
+        if (ttResults.isNotEmpty()) item { DoorRow(ttResults, plus, viewModel, doorCompare, ageRange) { plusSheet = true } }
       } else {
         item { AvanceAreaGrid(areaPoints, names) { viewModel.openAvanceArea(it) } }
-        item { DoorRow(ttResults, plus, viewModel) { plusSheet = true } }
+        item { DoorRow(ttResults, plus, viewModel, doorCompare, ageRange) { plusSheet = true } }
         item { AvanceBestMarks(bestMarks, now) }
       }
 
@@ -176,13 +177,20 @@ fun ProgressScreen(
     }
   }
 
-  if (plusSheet) PlusLockSheet(onDismiss = { plusSheet = false })       // sin Plus: qué trae la página, con «Entendido» (la compra llega con Google Play Billing, Etapa 4)
+  if (plusSheet) PlusLockSheet(onDismiss = { plusSheet = false }, compared = doorCompare != null)       // sin Plus: qué trae la página, con «Entendido» (la compra llega con Google Play Billing, Etapa 4)
 }
 
 /** La puerta del Contrarreloj con el récord del juego de HOY (el mismo de Hoy); 2 dp de aire propio arriba y abajo sobre los 22 dp entre secciones (24 dp hasta cada vecina). Con Plus abre la página con el juego de hoy elegido; sin Plus, [onLocked]. */
 @Composable
-private fun DoorRow(results: List<com.example.data.TimeTrialResult>, plus: Boolean, viewModel: NeuroVidaViewModel, onLocked: () -> Unit) {
+private fun DoorRow(
+  results: List<com.example.data.TimeTrialResult>, plus: Boolean, viewModel: NeuroVidaViewModel, compare: com.example.data.Comparison.Source?, ageRange: com.example.model.AgeRange?, onLocked: () -> Unit
+) {
   val todayKey = viewModel.todayKey()
   val record = remember(results, todayKey) { TimeTrialStats.record(results, TimeTrialDay.gameFor(todayKey)) }
-  ContrarrelojDoor(record, plus, onClick = { if (plus) viewModel.openContrarreloj() else onLocked() }, modifier = Modifier.padding(vertical = 2.dp))
+  // LO GRATIS (Tarea 203): sin Plus y con una comparación disponible (hoy, datos de muestra en depuración), la división y la meta de esta semana en el juego de hoy
+  val freeLine = remember(results, todayKey, compare, ageRange, plus) {
+    if (plus || compare == null) null
+    else com.example.data.Comparison.rangeFor(ageRange, compare)?.let { com.example.data.Comparison.freeSentenceFor(compare, TimeTrialDay.gameFor(todayKey), it, results, System.currentTimeMillis()) }
+  }
+  ContrarrelojDoor(record, plus, onClick = { if (plus) viewModel.openContrarreloj() else onLocked() }, modifier = Modifier.padding(vertical = 2.dp), freeLine = freeLine)
 }

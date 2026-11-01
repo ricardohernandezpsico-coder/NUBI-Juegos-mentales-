@@ -6,7 +6,7 @@ import kotlin.math.min
 
 /**
  * Tu lugar entre personas de tu edad (Tarea 202; `auditoria-fable/nubi-plus-comparacion.md` §1, §4 y §11, opción B), LÓGICA PURA: el percentil desde el histograma SIN suavizar, la frase en «de cada 100», la división con nombre, las reglas de «pocos», el percentil semana a semana,
- * «otras edades» y la forma de la campana. No sabe de pantallas ni de dónde salen las marcas de las otras personas: las pide a una [Source] (hoy los datos de muestra de `SampleComparison`, solo en depuración; el día que haya servidor, sus documentos semanales).
+ * «otras edades» y la forma de la campana; desde la Tarea 203, la cifra protagonista, la escalera de divisiones con su primer acierto, «te faltan», la racha de semanas y la frase gratis. No sabe de pantallas ni de dónde salen las marcas de las otras personas: las pide a una [Source] (hoy los datos de muestra de `SampleComparison`, solo en depuración; el día que haya servidor, sus documentos semanales).
  *
  * Lo que NO hace, a propósito: nunca habla de «capacidad», «edad mental», «ranking» ni «velocidad»; no hay lista de nombres ni «los 10 mejores»; la franja de 13 a 17 años queda fuera mientras [Features.COMPARE_MINORS] sea false; nunca inventa personas (una clase de referencia con menos de [MIN_PEOPLE] se dice «todavía somos pocos»).
  */
@@ -27,13 +27,12 @@ object Comparison {
   // ------------------------------------------------------------------ los textos de la sección
 
   const val SECTION_MARKS = "Tus marcas"
-  const val SECTION_COMPARE = "Comparado con personas de tu edad"
+  const val SECTION_COMPARE = "Esta semana, comparado con tu edad"
   const val SAMPLE_NOTICE = "Estos son datos de muestra: solo se ven en la versión de prueba."
   const val PLACE_TITLE = "Tu lugar esta semana"
-  const val WEEKS_TITLE = "Tu percentil en las últimas 7 semanas"
+  const val WEEKS_TITLE = "Tu percentil, semana a semana"
   const val OTHERS_TITLE = "Comparado con otras edades"
   const val NO_MINORS = "De 13 a 17 años no hay comparación por ahora."
-  const val WEEKS_AXIS_LEFT = "hace 7 semanas"
   const val WEEKS_AXIS_RIGHT = "esta semana"
   const val BELL_AXIS_LEFT = "0 aciertos"
   const val BELL_AXIS_RIGHT = "75 o más"
@@ -42,6 +41,11 @@ object Comparison {
   const val FEW_TITLE = "Todavía somos pocos"
   const val FEW_BAR_GOAL = MIN_PEOPLE
   const val NOT_ENOUGH_PEOPLE = "todavía somos pocos"
+  const val HERO_UNIT = "de cada 100"
+  const val CLOSES = "La semana cierra el domingo."
+  const val BELL_TITLE = "Cómo se reparten las marcas"
+  const val BELL_CAPTION = "La línea marca la mitad de las personas. Es la forma real de las marcas, no una curva teórica."
+  const val WEEKS_ABOVE_LABEL = "semanas arriba de la mitad"
 
   // ------------------------------------------------------------------ la distribución
 
@@ -80,6 +84,9 @@ object Comparison {
     val range = stored ?: if (sample) AgeRange.R45_54 else null
     return range?.takeIf { it != AgeRange.R13_17 || Features.COMPARE_MINORS }
   }
+
+  /** Lo mismo, para la fuente que hay en esta build: con datos de muestra ([SampleComparison]) sin franja elegida se usa la de 45 a 54 años (así ninguna pantalla nombra la muestra). */
+  fun rangeFor(stored: AgeRange?, source: Source): AgeRange? = rangeFor(stored, sample = source is SampleComparison)
 
   // ------------------------------------------------------------------ el percentil y la división
 
@@ -166,22 +173,140 @@ object Comparison {
     return Place.Few(own.people, meanwhile)
   }
 
-  /** «Tu mejor marca de esta semana, 43 aciertos, supera a 63 de cada 100 personas de 45 a 54 años que jugaron Tinta o Palabra esta semana.» (con las otras clases: «… en las últimas 4 semanas», «de 30 a 54 años», «de todas las edades»). */
-  fun mainSentence(r: Ranked, range: AgeRange, gameTitle: String): String {
-    val who = when (r.scope) {
-      Scope.OWN_WEEK, Scope.OWN_4_WEEKS -> "de ${range.label}"
-      Scope.NEIGHBORS_4_WEEKS -> "de ${groupLabel(r.ranges ?: listOf(range))}"
-      Scope.ALL_WEEK, Scope.ALL_4_WEEKS -> "de todas las edades"
-    }
-    val whenText = if (r.scope == Scope.OWN_WEEK || r.scope == Scope.ALL_WEEK) "esta semana" else "en las últimas $RECENT_WEEKS semanas"
-    val n = r.percentile
-    return "Tu mejor marca de esta semana, ${TimeTrialDay.hitsText(r.mark)}, supera a $n de cada 100 personas $who que jugaron $gameTitle $whenText."
+  // ------------------------------------------------------------------ la cifra protagonista y la escalera de divisiones (Tarea 203; `auditoria-fable/contrarreloj-rediseno.md` §3, D2)
+
+  /** «63 de cada 100»: la cifra protagonista, siempre con su unidad (nunca un número suelto). */
+  fun heroFigure(r: Ranked): String {
+    val p = r.percentile
+    return "$p $HERO_UNIT"
   }
 
-  /** «Es el percentil 63: la división En órbita.» */
-  fun percentileLine(r: Ranked): String {
+  /** Quiénes son «las personas» de la cifra: «de 45 a 54 años», «de 30 a 54 años» o «de todas las edades» (la clase de referencia siempre completa). */
+  private fun whoText(r: Ranked, range: AgeRange): String = when (r.scope) {
+    Scope.OWN_WEEK, Scope.OWN_4_WEEKS -> "de ${range.label}"
+    Scope.NEIGHBORS_4_WEEKS -> "de ${groupLabel(r.ranges ?: listOf(range))}"
+    Scope.ALL_WEEK, Scope.ALL_4_WEEKS -> "de todas las edades"
+  }
+
+  /**
+   * La frase que lee la cifra: «personas de 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra.» (con las 4 semanas o las franjas juntas lo dice: «personas de 30 a 54 años que jugaron Tinta o Palabra en las últimas 4 semanas quedan detrás de tu mejor marca de esta semana.»).
+   * Con letra muy grande la unidad pasa a la frase ([withUnit]: «de cada 100 personas de 45 a 54 años quedan detrás…») y la cifra queda sola.
+   */
+  fun heroCaption(r: Ranked, range: AgeRange, gameTitle: String, withUnit: Boolean = false): String {
+    val who = whoText(r, range)
+    val body = if (r.scope == Scope.OWN_WEEK || r.scope == Scope.ALL_WEEK) "personas $who quedan detrás de tu mejor marca de esta semana en $gameTitle."
+    else "personas $who que jugaron $gameTitle en las últimas $RECENT_WEEKS semanas quedan detrás de tu mejor marca de esta semana."
+    return if (withUnit) "$HERO_UNIT $body" else body
+  }
+
+  /** «Percentil 63», junto a la división (Ricardo eligió decirlo así el 31-oct: la frase, el percentil y la división). */
+  fun percentileLabel(r: Ranked): String {
     val p = r.percentile
-    return "Es el percentil $p: la división ${r.division.label}."
+    return "Percentil $p"
+  }
+
+  /** Lo que lee el lector de pantalla de la tarjeta de la cifra, de corrido: «63 de cada 100 personas de 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra. En órbita. Percentil 63.» */
+  fun heroSpoken(r: Ranked, range: AgeRange, gameTitle: String): String {
+    val figure = heroFigure(r)
+    val caption = heroCaption(r, range, gameTitle)
+    val division = r.division.label
+    val label = percentileLabel(r)
+    return "$figure $caption $division. $label."
+  }
+
+  /** Un peldaño de la escalera: la división y el PRIMER acierto con que se llega a ella. */
+  data class Rung(val division: Division, val from: Int)
+
+  /**
+   * Los peldaños de la escalera de [d], de abajo hacia arriba: el primer acierto con que el percentil de la marca llega a 25, 50, 75 y 90 (la misma regla de [percentile], contando sobre los tramos SIN suavizar; así la escalera y la división de la persona nunca se contradicen), y la plataforma desde 0.
+   * Una división a la que no se llega (el percentil no alcanza ni con 75 aciertos o más) o que queda vacía (su primer acierto es el de la siguiente) no tiene peldaño.
+   */
+  fun thresholds(d: Distribution): List<Rung> {
+    fun firstMarkReaching(p: Int): Int? = (0 until TOP_MARK).firstOrNull { percentile(it, d) >= p }
+    val all = Division.entries.mapNotNull { div -> (if (div == Division.PLATFORM) 0 else firstMarkReaching(div.from))?.let { Rung(div, it) } }
+    return all.filterIndexed { i, rung -> i == all.lastIndex || rung.from < all[i + 1].from }
+  }
+
+  /**
+   * La escalera de una marca: los [rungs] de ARRIBA hacia abajo, el peldaño de la persona ([current]), el siguiente ([next], null en la división más alta), cuántos aciertos le faltan ([missing], siempre 1 o más) y qué parte del tramo entre los dos lleva recorrida ([progress], de 0 a 1; null en la más alta).
+   */
+  data class Ladder(val rungs: List<Rung>, val current: Rung?, val next: Rung?, val missing: Int?, val progress: Float?)
+
+  fun ladder(r: Ranked): Ladder {
+    val up = thresholds(r.distribution)
+    val current = up.firstOrNull { it.division == r.division }
+    val next = current?.let { up.getOrNull(up.indexOf(it) + 1) }
+    val missing = next?.let { (it.from - r.mark).coerceAtLeast(1) }
+    val progress = if (current != null && next != null) ((r.mark - current.from).toFloat() / (next.from - current.from)).coerceIn(0f, 1f) else null
+    return Ladder(up.asReversed(), current, next, missing, progress)
+  }
+
+  /** «Las divisiones de tu franja esta semana» (con las 4 semanas o las franjas juntas: «Las divisiones de tu franja»). */
+  fun ladderTitle(r: Ranked): String = if (r.scope == Scope.OWN_WEEK) "Las divisiones de tu franja esta semana" else "Las divisiones de tu franja"
+
+  /** «desde 39 aciertos» (el primer acierto de la división). */
+  fun rungFrom(rung: Rung): String = "desde ${TimeTrialDay.hitsText(rung.from)}"
+
+  /** «Tú · 43 aciertos»: la fila de la persona, en lima. */
+  fun youRow(r: Ranked): String = "Tú · ${TimeTrialDay.hitsText(r.mark)}"
+
+  /** «Te faltan 7 aciertos para En la Luna.» («Te falta 1 acierto…»); en la división más alta, «Estás en la división más alta de tu franja esta semana.». */
+  fun needSentence(l: Ladder, r: Ranked): String {
+    val next = l.next
+    val missing = l.missing
+    if (next == null || missing == null) return if (r.scope == Scope.OWN_WEEK) "Estás en la división más alta de tu franja esta semana." else "Estás en la división más alta de tu franja."
+    return "${if (missing == 1) "Te falta" else "Te faltan"} ${TimeTrialDay.hitsText(missing)} para ${next.division.label}."
+  }
+
+  /** «Con las marcas de las 128 personas de 45 a 54 años que jugaron Tinta o Palabra esta semana.» (la clase de la escalera, dicha una sola vez). */
+  fun ladderNote(r: Ranked, range: AgeRange, gameTitle: String): String {
+    val whenText = if (r.scope == Scope.OWN_WEEK) "esta semana" else "en las últimas $RECENT_WEEKS semanas"
+    return "Con las marcas de las ${r.distribution.people} personas ${whoText(r, range)} que jugaron $gameTitle $whenText."
+  }
+
+  /**
+   * Las semanas seguidas, hasta esta, con percentil 50 o más («En órbita o más arriba», el umbral fijo de la división En órbita). Una semana sin marca propia o sin 50 personas en la franja no tiene punto y corta la cuenta: no se sabe cómo fue.
+   */
+  fun streak(points: List<WeekPoint>): Int {
+    val above = points.filter { it.percentile >= Division.ORBIT.from }.map { it.weeksAgo }.toSet()
+    var n = 0
+    while (n in above) n++
+    return n
+  }
+
+  /** «Llevas 3 semanas seguidas En órbita o más arriba.»; con una sola, «Esta semana empiezas una racha En órbita o más arriba.»; sin racha no dice nada (nunca «perdiste»: cuando se corta, la página calla). */
+  fun streakSentence(n: Int): String? = when {
+    n >= 2 -> "Llevas $n semanas seguidas ${Division.ORBIT.label} o más arriba."
+    n == 1 -> "Esta semana empiezas una racha ${Division.ORBIT.label} o más arriba."
+    else -> null
+  }
+
+  /**
+   * LO GRATIS (Ricardo, 31-oct): la división y la meta, sin cifra de percentil, sin escalera y sin otras edades: «Esta semana estás En órbita. Te faltan 7 aciertos para En la Luna.» (en la más alta: «Esta semana estás Entre estrellas, la división más alta de tu franja.»).
+   * Solo con un lugar dicho ([Place.Found]); con «pocos» o sin marca no hay nada que decir.
+   */
+  fun freeSentence(place: Place): String? {
+    val r = (place as? Place.Found)?.ranked ?: return null
+    val l = ladder(r)
+    if (l.next == null || l.missing == null) return "Esta semana estás ${r.division.label}, la división más alta de tu franja."
+    return "Esta semana estás ${r.division.label}. ${needSentence(l, r)}"
+  }
+
+  /** La frase gratis de la puerta de Avance: la de [freeSentence] con el lugar de esta semana de la persona en [game] (null sin lugar dicho). */
+  fun freeSentenceFor(source: Source, game: String, range: AgeRange, results: List<TimeTrialResult>, now: Long): String? =
+    freeSentence(place(source, game, range, bestOfWeek(TimeTrialDay.ofGame(results, game), now, 0)))
+
+  /** El rótulo izquierdo del eje de las semanas: «hace 3 semanas» (la más vieja con punto); null si la más vieja es esta (no hay de qué separar). */
+  fun weeksAxisLeft(points: List<WeekPoint>): String? {
+    val oldest = points.firstOrNull()?.weeksAgo ?: return null
+    return if (oldest == 0) null else weeksAgoText(oldest)
+  }
+
+  /** La tercera cifra de «Tus marcas» con comparación: «3 de 4» semanas arriba de la mitad (con dos semanas con dato o más); null con menos. */
+  fun weeksAboveFigure(points: List<WeekPoint>): String? {
+    if (points.size < 2) return null
+    val n = points.count { it.percentile >= Division.ORBIT.from }
+    return "$n de ${points.size}"
   }
 
   /** La línea que dice qué clase se usó cuando no es la normal: «Juntamos dos franjas porque todavía somos pocos.» (solo con las franjas vecinas; las otras ya lo dicen en la frase). */
@@ -189,13 +314,6 @@ object Comparison {
 
   /** Lo que lee el lector de pantalla de la campana (el dibujo no habla; las dos frases de abajo son el contenido): «Campana con las marcas de las 128 personas. Tu mejor marca de esta semana, 43 aciertos, está marcada.» */
   fun bellSpoken(r: Ranked): String = "Campana con las marcas de las ${r.distribution.people} personas. Tu mejor marca de esta semana, ${TimeTrialDay.hitsText(r.mark)}, está marcada."
-
-  /** «La mitad de las personas hizo 39 aciertos o menos; la cuarta parte más alta, 47 o más. La línea marca la mitad.» */
-  fun quartilesSentence(d: Distribution): String =
-    "La mitad de las personas hizo ${TimeTrialDay.hitsText(d.p50)} o menos; la cuarta parte más alta, ${d.p75} o más. La línea marca la mitad."
-
-  /** «Hecha con las marcas de las 128 personas tal como son, no con una curva teórica.» */
-  fun madeOfSentence(d: Distribution): String = "Hecha con las marcas de las ${d.people} personas tal como son, no con una curva teórica."
 
   /** «Todavía somos pocos: 23 personas de 45 a 54 años jugaron Tinta o Palabra esta semana. Cuando sean 50, verás aquí tu lugar entre ellas.» (con una sola: «1 persona … jugó …»). */
   fun fewSentence(few: Place.Few, range: AgeRange, gameTitle: String): String {
@@ -284,9 +402,8 @@ object Comparison {
     return Others(rows, row("Todas las edades", null, false))
   }
 
-  /** «Tu mejor marca de esta semana, 43 aciertos, supera a tantas de cada 100 personas que jugaron Tinta o Palabra esta semana:» */
-  fun othersLead(mark: Int, gameTitle: String): String =
-    "Tu mejor marca de esta semana, ${TimeTrialDay.hitsText(mark)}, supera a tantas de cada 100 personas que jugaron $gameTitle esta semana:"
+  /** «De cada 100 personas que jugaron Tinta o Palabra esta semana, tu mejor marca deja detrás a:» (la marca ya está en la cifra de arriba: no se repite). */
+  fun othersLead(gameTitle: String): String = "De cada 100 personas que jugaron $gameTitle esta semana, tu mejor marca deja detrás a:"
 
   /** Lo que lee el lector de pantalla de una fila: «45 a 54 años (tu franja), 63 de cada 100». */
   fun rowSpoken(row: OtherRow): String = "${row.label}, ${row.value}"

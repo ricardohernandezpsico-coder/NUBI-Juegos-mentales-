@@ -52,10 +52,9 @@ class TimeTrialMarksTest {
   }
 
   @Test
-  fun `esta semana y la pasada cuentan desde el lunes`() {
+  fun `esta semana cuenta desde el lunes`() {
     val p = TimeTrialMarks.page(ten, "stroop", now)
     assertEquals("lunes 26, martes 27 y miércoles 28", TimeTrialMarks.WeekSummary(3, 43), p.thisWeek)
-    assertEquals("del lunes 19 al domingo 25", TimeTrialMarks.WeekSummary(2, 41), p.lastWeek)
     val quiet = TimeTrialMarks.page(ten, "stroop", at(30, 9) + 3 * 86_400_000L)
     assertEquals("una semana más tarde no hubo partidas esta semana", TimeTrialMarks.WeekSummary(0, null), quiet.thisWeek)
   }
@@ -72,15 +71,39 @@ class TimeTrialMarksTest {
   }
 
   @Test
-  fun `los aciertos y errores de las ultimas cinco son el promedio por partida`() {
+  fun `las tres cifras de Tus marcas llevan cada una su unidad y la tercera no depende de otras personas`() {
     val p = TimeTrialMarks.page(ten, "stroop", now)
-    assertEquals("41, 44, 40, 45 y 46 aciertos", 43, p.recentHits)
-    assertEquals(3, p.recentErrors)
-    assertEquals(5, p.recentCount)
-    val two = TimeTrialMarks.page(listOf(r(30, 20), r(40, 21)), "stroop", now)
-    assertEquals(2, two.recentCount)
-    assertEquals("En tus últimas 2, por partida", TimeTrialMarks.recentTitle(two.recentCount))
-    assertNull("con una sola partida sería lo mismo que el récord", TimeTrialMarks.recentTitle(1))
+    assertEquals(
+      listOf(
+        TimeTrialMarks.Stat("44", "aciertos, tu récord"),
+        TimeTrialMarks.Stat("43", "aciertos esta semana"),
+        TimeTrialMarks.Stat("3", "partidas esta semana")
+      ),
+      TimeTrialMarks.stats(p, weeksAbove = null)
+    )
+    assertEquals("con comparación, la tercera son las semanas arriba de la mitad", TimeTrialMarks.Stat("3 de 4", "semanas arriba de la mitad"), TimeTrialMarks.stats(p, weeksAbove = "3 de 4")[2])
+    assertEquals("44 aciertos, tu récord", TimeTrialMarks.statSpoken(TimeTrialMarks.stats(p, null)[0]))
+    assertEquals("3 de 4 semanas arriba de la mitad", TimeTrialMarks.statSpoken(TimeTrialMarks.stats(p, "3 de 4")[2]))
+  }
+
+  @Test
+  fun `sin partida esta semana la segunda cifra es cero partidas y la tercera cuenta las de siempre`() {
+    val quiet = TimeTrialMarks.page(ten, "stroop", at(30, 9) + 3 * 86_400_000L)
+    val s = TimeTrialMarks.stats(quiet, weeksAbove = null)
+    assertEquals(TimeTrialMarks.Stat("0", "partidas esta semana"), s[1])
+    assertEquals(TimeTrialMarks.Stat("10", "partidas en total"), s[2])
+    val one = TimeTrialMarks.page(listOf(r(30, 28, h = 9)), "stroop", now)
+    assertEquals(TimeTrialMarks.Stat("30", "aciertos, tu récord"), TimeTrialMarks.stats(one, null)[0])
+    assertEquals(TimeTrialMarks.Stat("1", "partida esta semana"), TimeTrialMarks.stats(one, null)[2])
+    assertEquals("1 acierto, en singular", "acierto esta semana", TimeTrialMarks.stats(TimeTrialMarks.page(listOf(r(1, 28, h = 9)), "stroop", now), null)[1].label)
+    for (st in TimeTrialMarks.stats(one, null) + s) assertFalse("«${st.label}» no es solo un número", st.label.isBlank())
+  }
+
+  @Test
+  fun `la linea del record dice la fecha y el paso, y no repite lo que dice la cifra`() {
+    val p = TimeTrialMarks.page(ten, "stroop", now)
+    assertEquals("Tu récord es del 17 de octubre; llegaste al paso 4 de 5 de la pista.", TimeTrialMarks.recordLine(p.record!!, now, p.maxLevel))
+    assertEquals("el paso nunca pasa del máximo de la pista", "Tu récord es del 17 de octubre; llegaste al paso 5 de 5 de la pista.", TimeTrialMarks.recordLine(p.record!!.copy(level = 9), now, p.maxLevel))
   }
 
   @Test
@@ -123,11 +146,7 @@ class TimeTrialMarksTest {
   @Test
   fun `las frases dicen cada numero con su unidad`() {
     val p = TimeTrialMarks.page(ten, "stroop", now)
-    assertEquals("el 17 de octubre, en 2 minutos de Contrarreloj", TimeTrialMarks.recordWhen(p.record!!, now))
     assertEquals("Llegaste al paso 4 de 5 de la pista.", TimeTrialStats.stepLine(p.record!!.level, p.maxLevel))
-    assertEquals(listOf("Jugaste" to "3 partidas", "La mejor marca" to "43 aciertos"), TimeTrialMarks.weekRows(p.thisWeek))
-    assertEquals(listOf("Jugaste" to "ninguna partida"), TimeTrialMarks.weekRows(TimeTrialMarks.WeekSummary(0, null)))
-    assertEquals("1 partida", TimeTrialMarks.gamesText(1))
     assertEquals("1 error", TimeTrialMarks.errorsText(1)); assertEquals("2 errores", TimeTrialMarks.errorsText(2)); assertEquals("0 errores", TimeTrialMarks.errorsText(0))
     assertEquals("Tus últimas 10 marcas", TimeTrialMarks.barsTitle(10)); assertEquals("Tus últimas 5 marcas", TimeTrialMarks.barsTitle(5)); assertEquals("Tus últimas marcas", TimeTrialMarks.barsTitle(1))
   }
@@ -141,5 +160,8 @@ class TimeTrialMarksTest {
     assertEquals("Tu récord de hoy: 1 acierto", TimeTrialMarks.doorLine(1))
     assertTrue(TimeTrialMarks.doorSpoken(44, plus = false).endsWith("Con Nubi Plus."))
     assertFalse(TimeTrialMarks.doorSpoken(44, plus = true).contains("Plus"))
+    val free = "Esta semana estás En órbita. Te faltan 7 aciertos para En la Luna."
+    assertEquals("Tus marcas del Contrarreloj. Tu récord de hoy: 44 aciertos. $free Con Nubi Plus.", TimeTrialMarks.doorSpoken(44, plus = false, freeLine = free))
+    assertEquals("con Plus la frase gratis no va: la página la trae completa", TimeTrialMarks.doorSpoken(44, plus = true), TimeTrialMarks.doorSpoken(44, plus = true, freeLine = free))
   }
 }

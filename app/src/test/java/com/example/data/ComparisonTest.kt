@@ -183,7 +183,7 @@ class ComparisonTest {
     val four = Comparison.Ranked(43, 53, Comparison.division(53), Comparison.Scope.ALL_4_WEEKS, null, d)
     assertEquals("Mientras tanto, comparada con todas las edades de esta semana, tu mejor marca, 43 aciertos, supera a 53 de cada 100 personas.", Comparison.meanwhileSentence(week))
     assertEquals("Mientras tanto, comparada con todas las edades de las últimas 4 semanas, tu mejor marca de esta semana, 43 aciertos, supera a 53 de cada 100 personas.", Comparison.meanwhileSentence(four))
-    assertEquals("Tu mejor marca de esta semana, 43 aciertos, supera a 53 de cada 100 personas de todas las edades que jugaron Tinta o Palabra esta semana.", Comparison.mainSentence(week, AgeRange.R45_54, "Tinta o Palabra"))
+    assertEquals("personas de todas las edades quedan detrás de tu mejor marca de esta semana en Tinta o Palabra.", Comparison.heroCaption(week, AgeRange.R45_54, "Tinta o Palabra"))
   }
 
   @Test
@@ -209,24 +209,28 @@ class ComparisonTest {
   }
 
   @Test
-  fun `la frase principal es la de la lamina y dice franja, juego y semana`() {
+  fun `la cifra protagonista lleva su unidad y su frase dice franja, juego y semana`() {
     val r = ranked(Comparison.Scope.OWN_WEEK)
-    assertEquals("Tu mejor marca de esta semana, 43 aciertos, supera a 63 de cada 100 personas de 45 a 54 años que jugaron Tinta o Palabra esta semana.", Comparison.mainSentence(r, AgeRange.R45_54, "Tinta o Palabra"))
-    assertEquals("Es el percentil 63: la división En órbita.", Comparison.percentileLine(r))
-    assertEquals("La mitad de las personas hizo 39 aciertos o menos; la cuarta parte más alta, 47 o más. La línea marca la mitad.", Comparison.quartilesSentence(r.distribution))
-    assertEquals("Hecha con las marcas de las 128 personas tal como son, no con una curva teórica.", Comparison.madeOfSentence(r.distribution))
+    assertEquals("63 de cada 100", Comparison.heroFigure(r))
+    assertEquals("personas de 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra.", Comparison.heroCaption(r, AgeRange.R45_54, "Tinta o Palabra"))
+    assertEquals("con letra muy grande la unidad pasa a la frase", "de cada 100 personas de 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra.", Comparison.heroCaption(r, AgeRange.R45_54, "Tinta o Palabra", withUnit = true))
+    assertEquals("Percentil 63", Comparison.percentileLabel(r))
+    assertEquals(
+      "63 de cada 100 personas de 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra. En órbita. Percentil 63.",
+      Comparison.heroSpoken(r, AgeRange.R45_54, "Tinta o Palabra")
+    )
     assertNull("la clase normal no necesita aclarar nada más", Comparison.scopeLine(r))
   }
 
   @Test
   fun `cada clase de referencia se dice con sus palabras, las 4 semanas, las dos franjas juntas y todas las edades`() {
     val four = ranked(Comparison.Scope.OWN_4_WEEKS)
-    assertEquals("Tu mejor marca de esta semana, 43 aciertos, supera a ${four.percentile} de cada 100 personas de 45 a 54 años que jugaron Tinta o Palabra en las últimas 4 semanas.", Comparison.mainSentence(four, AgeRange.R45_54, "Tinta o Palabra"))
+    assertEquals("personas de 45 a 54 años que jugaron Tinta o Palabra en las últimas 4 semanas quedan detrás de tu mejor marca de esta semana.", Comparison.heroCaption(four, AgeRange.R45_54, "Tinta o Palabra"))
     val merged = ranked(Comparison.Scope.NEIGHBORS_4_WEEKS, ranges = listOf(AgeRange.R30_44, AgeRange.R45_54))
-    assertEquals("Tu mejor marca de esta semana, 43 aciertos, supera a ${merged.percentile} de cada 100 personas de 30 a 54 años que jugaron Tinta o Palabra en las últimas 4 semanas.", Comparison.mainSentence(merged, AgeRange.R45_54, "Tinta o Palabra"))
+    assertEquals("personas de 30 a 54 años que jugaron Tinta o Palabra en las últimas 4 semanas quedan detrás de tu mejor marca de esta semana.", Comparison.heroCaption(merged, AgeRange.R45_54, "Tinta o Palabra"))
     assertEquals("Juntamos dos franjas porque todavía somos pocos.", Comparison.scopeLine(merged))
     val all = ranked(Comparison.Scope.ALL_4_WEEKS, ranges = null)
-    assertEquals("Tu mejor marca de esta semana, 43 aciertos, supera a ${all.percentile} de cada 100 personas de todas las edades que jugaron Tinta o Palabra en las últimas 4 semanas.", Comparison.mainSentence(all, AgeRange.R45_54, "Tinta o Palabra"))
+    assertEquals("personas de todas las edades que jugaron Tinta o Palabra en las últimas 4 semanas quedan detrás de tu mejor marca de esta semana.", Comparison.heroCaption(all, AgeRange.R45_54, "Tinta o Palabra"))
     assertEquals("Mientras tanto, comparada con todas las edades de las últimas 4 semanas, tu mejor marca de esta semana, 43 aciertos, supera a ${all.percentile} de cada 100 personas.", Comparison.meanwhileSentence(all))
   }
 
@@ -241,8 +245,9 @@ class ComparisonTest {
   @Test
   fun `una franja de 75 o mas se dice con sus palabras, y el 0 y el 99 se dicen igual sin culpa`() {
     val r = ranked(Comparison.Scope.OWN_WEEK, mark = 0)
-    assertEquals("Tu mejor marca de esta semana, 0 aciertos, supera a 0 de cada 100 personas de 75 años o más que jugaron Tinta o Palabra esta semana.", Comparison.mainSentence(r, AgeRange.R75_PLUS, "Tinta o Palabra"))
-    assertTrue(Comparison.mainSentence(ranked(Comparison.Scope.OWN_WEEK, mark = 90), AgeRange.R45_54, "Tinta o Palabra").contains("supera a 99 de cada 100"))
+    assertEquals("0 de cada 100", Comparison.heroFigure(r))
+    assertEquals("personas de 75 años o más quedan detrás de tu mejor marca de esta semana en Tinta o Palabra.", Comparison.heroCaption(r, AgeRange.R75_PLUS, "Tinta o Palabra"))
+    assertEquals("99 de cada 100", Comparison.heroFigure(ranked(Comparison.Scope.OWN_WEEK, mark = 90)))
     assertEquals("En la plataforma", r.division.label)
   }
 
@@ -268,7 +273,7 @@ class ComparisonTest {
     assertEquals("Tu única semana con marca estuvo en la mitad de abajo de tu franja.", Comparison.weeksSentence(pts(12)))
     assertNull("sin semanas con dato no hay frase ni losa", Comparison.weeksSentence(emptyList()))
     assertEquals(
-      "Tu percentil en las últimas 7 semanas: hace 6 semanas, supera a 52 de cada 100; hace 1 semana, supera a 58 de cada 100; esta semana, supera a 63 de cada 100.",
+      "Tu percentil, semana a semana: hace 6 semanas, supera a 52 de cada 100; hace 1 semana, supera a 58 de cada 100; esta semana, supera a 63 de cada 100.",
       Comparison.weeksSpoken(listOf(Comparison.WeekPoint(6, 30, 52), Comparison.WeekPoint(1, 30, 58), Comparison.WeekPoint(0, 43, 63)))
     )
   }
@@ -287,7 +292,7 @@ class ComparisonTest {
     assertEquals("la de la lámina: 63 de cada 100", "63 de cada 100", o.rows[2].value)
     assertEquals("Todas las edades", o.all.label)
     assertNotNull(o.all.percentile)
-    assertEquals("Tu mejor marca de esta semana, 43 aciertos, supera a tantas de cada 100 personas que jugaron Tinta o Palabra esta semana:", Comparison.othersLead(43, "Tinta o Palabra"))
+    assertEquals("De cada 100 personas que jugaron Tinta o Palabra esta semana, tu mejor marca deja detrás a:", Comparison.othersLead("Tinta o Palabra"))
     assertEquals("45 a 54 años (tu franja), 63 de cada 100", Comparison.rowSpoken(Comparison.OtherRow("45 a 54 años (tu franja)", 63, true, 128)))
     assertEquals("De 13 a 17 años no hay comparación por ahora.", Comparison.NO_MINORS)
   }
@@ -369,8 +374,14 @@ class ComparisonTest {
     val lines = mutableListOf<String>()
     for (people in listOf(50, 128, 300)) for (mark in listOf(0, 7, 43, 90)) for (scope in Comparison.Scope.entries) for (range in AgeRange.entries) {
       val r = ranked(scope, people = people, mark = mark, ranges = if (scope == Comparison.Scope.ALL_4_WEEKS) null else listOf(range))
-      lines += listOf(Comparison.mainSentence(r, range, "Tinta o Palabra"), Comparison.percentileLine(r), Comparison.quartilesSentence(r.distribution), Comparison.madeOfSentence(r.distribution), Comparison.meanwhileSentence(r), Comparison.bellSpoken(r))
+      val l = Comparison.ladder(r)
+      lines += listOf(
+        Comparison.heroCaption(r, range, "Tinta o Palabra"), Comparison.heroCaption(r, range, "Tinta o Palabra", withUnit = true), Comparison.heroSpoken(r, range, "Tinta o Palabra"),
+        Comparison.needSentence(l, r), Comparison.ladderNote(r, range, "Tinta o Palabra"), Comparison.meanwhileSentence(r), Comparison.bellSpoken(r)
+      )
+      Comparison.freeSentence(Comparison.Place.Found(r))?.let { lines += it }
     }
+    for (n in 0..9) Comparison.streakSentence(n)?.let { lines += it }
     for (n in listOf(0, 1, 23, 49)) lines += Comparison.fewSentence(Comparison.Place.Few(n, null), AgeRange.R45_54, "Tinta o Palabra")
     for (k in 1..7) for (p in 0..100 step 25) lines += Comparison.weeksSentence(List(k) { Comparison.WeekPoint(it, 20, p) })!!
     for (line in lines) {
@@ -379,5 +390,169 @@ class ComparisonTest {
       for (bad in listOf("capacidad", "edad mental", "ranking", "velocidad", "rendimiento", "cerebro", "cognitiv", "entren", "puntaje", "nivel"))
         assertFalse("«$line» dice «$bad»", bad in low)
     }
+  }
+
+  // ------------------------------------------------------------------ la escalera de divisiones (Tarea 203)
+
+  @Test
+  fun `los peldanos salen de los tramos sin suavizar con el primer acierto de cada division`() {
+    val up = Comparison.thresholds(shaped(128))
+    assertEquals(
+      listOf(
+        Comparison.Division.PLATFORM to 0, Comparison.Division.TAKEOFF to 31, Comparison.Division.ORBIT to 39,
+        Comparison.Division.MOON to 50, Comparison.Division.STARS to 60
+      ),
+      up.map { it.division to it.from }
+    )
+    // cada peldaño es el PRIMER acierto que llega al percentil de su división, y el anterior no llega
+    for (rung in up.drop(1)) {
+      assertTrue("${rung.division} desde ${rung.from} llega", Comparison.percentile(rung.from, shaped(128)) >= rung.division.from)
+      assertTrue("${rung.division} un acierto antes no llega", Comparison.percentile(rung.from - 1, shaped(128)) < rung.division.from)
+    }
+  }
+
+  @Test
+  fun `la division de cada marca coincide con el peldaño donde la escalera la pone`() {
+    val d = shaped(128)
+    for (mark in 0..79) {
+      val r = Comparison.Ranked(mark, Comparison.percentile(mark, d), Comparison.division(Comparison.percentile(mark, d)), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), d)
+      val l = Comparison.ladder(r)
+      val current = l.current
+      assertNotNull("la marca $mark está en un peldaño", current)
+      assertTrue("la marca $mark está en su peldaño o arriba de él", mark >= current!!.from)
+      assertTrue("y por debajo del siguiente", l.next == null || mark < l.next.from)
+    }
+  }
+
+  @Test
+  fun `te faltan cuenta los aciertos hasta el primer acierto de la division siguiente`() {
+    val r = ranked(Comparison.Scope.OWN_WEEK)
+    val l = Comparison.ladder(r)
+    assertEquals(Comparison.Division.ORBIT, l.current!!.division)
+    assertEquals(Comparison.Division.MOON, l.next!!.division)
+    assertEquals(7, l.missing)
+    assertEquals("4 de los 11 aciertos del tramo", 4f / 11f, l.progress!!, 1e-6f)
+    assertEquals("Te faltan 7 aciertos para En la Luna.", Comparison.needSentence(l, r))
+    assertEquals(listOf("Entre estrellas", "En la Luna", "En órbita", "Despegando", "En la plataforma"), l.rungs.map { it.division.label })
+    assertEquals("desde 39 aciertos", Comparison.rungFrom(l.current!!))
+    assertEquals("Tú · 43 aciertos", Comparison.youRow(r))
+  }
+
+  @Test
+  fun `te falta uno se dice en singular y el primer acierto de la division no deja decir cero`() {
+    val d = shaped(128)
+    val r = Comparison.Ranked(49, Comparison.percentile(49, d), Comparison.division(Comparison.percentile(49, d)), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), d)
+    val l = Comparison.ladder(r)
+    assertEquals(1, l.missing)
+    assertEquals("Te falta 1 acierto para En la Luna.", Comparison.needSentence(l, r))
+    // justo en el primer acierto de una division, falta lo que hay hasta la siguiente (nunca 0)
+    val atEdge = Comparison.Ranked(50, Comparison.percentile(50, d), Comparison.division(Comparison.percentile(50, d)), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), d)
+    assertEquals(Comparison.Division.MOON, atEdge.division)
+    assertEquals(10, Comparison.ladder(atEdge).missing)
+  }
+
+  @Test
+  fun `en la division mas alta no falta nada y la escalera lo dice sin cifra de te faltan`() {
+    val d = shaped(128)
+    val r = Comparison.Ranked(70, Comparison.percentile(70, d), Comparison.division(Comparison.percentile(70, d)), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), d)
+    assertEquals(Comparison.Division.STARS, r.division)
+    val l = Comparison.ladder(r)
+    assertNull(l.next)
+    assertNull(l.missing)
+    assertNull(l.progress)
+    assertEquals("Estás en la división más alta de tu franja esta semana.", Comparison.needSentence(l, r))
+    assertEquals("Estás en la división más alta de tu franja.", Comparison.needSentence(l, r.copy(scope = Comparison.Scope.OWN_4_WEEKS)))
+    assertEquals("Esta semana estás Entre estrellas, la división más alta de tu franja.", Comparison.freeSentence(Comparison.Place.Found(r)))
+  }
+
+  @Test
+  fun `una franja donde casi todos hicieron lo mismo deja menos peldaños y nunca uno vacio`() {
+    val top = dist(List(15) { 0 } + listOf(10))              // todas las personas hicieron 75 o más: nadie queda debajo de ninguna marca
+    assertEquals("solo la plataforma: a ninguna otra se llega", listOf(Comparison.Division.PLATFORM), Comparison.thresholds(top).map { it.division })
+    val low = dist(listOf(100) + List(15) { 0 })             // todas hicieron de 0 a 4
+    val rungs = Comparison.thresholds(low)
+    assertEquals(listOf(0, 2, 3, 4, 5), rungs.map { it.from })
+    assertTrue("los primeros aciertos suben de a uno como mínimo", rungs.zipWithNext().all { (a, b) -> a.from < b.from })
+    val lone = Comparison.ladder(Comparison.Ranked(90, 0, Comparison.Division.PLATFORM, Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), top))
+    assertNull("con una sola división no hay siguiente", lone.next)
+  }
+
+  @Test
+  fun `la nota de la escalera cuenta las personas una sola vez con su clase`() {
+    assertEquals("Con las marcas de las 128 personas de 45 a 54 años que jugaron Tinta o Palabra esta semana.", Comparison.ladderNote(ranked(Comparison.Scope.OWN_WEEK), AgeRange.R45_54, "Tinta o Palabra"))
+    assertEquals("Con las marcas de las 128 personas de todas las edades que jugaron Tinta o Palabra en las últimas 4 semanas.", Comparison.ladderNote(ranked(Comparison.Scope.ALL_4_WEEKS, ranges = null), AgeRange.R45_54, "Tinta o Palabra"))
+    assertEquals("Las divisiones de tu franja esta semana", Comparison.ladderTitle(ranked(Comparison.Scope.OWN_WEEK)))
+    assertEquals("Las divisiones de tu franja", Comparison.ladderTitle(ranked(Comparison.Scope.OWN_4_WEEKS)))
+  }
+
+  // ------------------------------------------------------------------ las semanas seguidas arriba de la mitad (Tarea 203)
+
+  private fun week(ago: Int, p: Int) = Comparison.WeekPoint(ago, 30, p)
+
+  @Test
+  fun `las semanas seguidas cuentan desde esta hacia atras con percentil 50 o mas`() {
+    assertEquals(0, Comparison.streak(emptyList()))
+    assertEquals(3, Comparison.streak(listOf(week(2, 50), week(1, 60), week(0, 63))))
+    assertEquals("50 justo es En órbita: cuenta", 1, Comparison.streak(listOf(week(0, 50))))
+    assertEquals("49 no cuenta", 0, Comparison.streak(listOf(week(1, 80), week(0, 49))))
+  }
+
+  @Test
+  fun `una semana por debajo, o sin dato, corta la cuenta y lo anterior ya no suma`() {
+    assertEquals("la de hace 1 semana quedó abajo: solo esta", 1, Comparison.streak(listOf(week(3, 70), week(2, 70), week(1, 30), week(0, 55))))
+    assertEquals("sin marca hace 1 semana no se sabe cómo fue: corta", 1, Comparison.streak(listOf(week(2, 70), week(0, 55))))
+    assertEquals("esta semana sin dato: no hay racha que contar", 0, Comparison.streak(listOf(week(2, 70), week(1, 70))))
+    assertEquals("las 7 semanas", 7, Comparison.streak(List(7) { week(6 - it, 51) }))
+  }
+
+  @Test
+  fun `la frase de las semanas seguidas calla cuando no hay y nunca habla de perder`() {
+    assertEquals("Llevas 3 semanas seguidas En órbita o más arriba.", Comparison.streakSentence(3))
+    assertEquals("Llevas 7 semanas seguidas En órbita o más arriba.", Comparison.streakSentence(7))
+    assertEquals("Esta semana empiezas una racha En órbita o más arriba.", Comparison.streakSentence(1))
+    assertNull("cuando se corta, la página calla", Comparison.streakSentence(0))
+    for (n in 0..7) Comparison.streakSentence(n)?.let { s -> for (bad in listOf("perdiste", "perdió", "cortó", "rompiste", "volver a")) assertFalse("«$s» dice «$bad»", bad in s.lowercase()) }
+  }
+
+  @Test
+  fun `la tercera cifra de Tus marcas cuenta las semanas arriba de la mitad y exige dos semanas con dato`() {
+    assertEquals("3 de 4", Comparison.weeksAboveFigure(listOf(week(3, 40), week(2, 52), week(1, 58), week(0, 63))))
+    assertEquals("0 de 2", Comparison.weeksAboveFigure(listOf(week(1, 10), week(0, 49))))
+    assertNull("con una sola semana no hay de qué sacar una cifra", Comparison.weeksAboveFigure(listOf(week(0, 63))))
+    assertNull(Comparison.weeksAboveFigure(emptyList()))
+    assertEquals("hace 3 semanas", Comparison.weeksAxisLeft(listOf(week(3, 40), week(0, 63))))
+    assertNull("si la más vieja es esta no hay de qué separar", Comparison.weeksAxisLeft(listOf(week(0, 63))))
+  }
+
+  // ------------------------------------------------------------------ lo gratis (Tarea 203)
+
+  @Test
+  fun `la frase gratis dice la division y lo que falta, sin cifra de percentil ni escalera`() {
+    val free = Comparison.freeSentence(Comparison.Place.Found(ranked(Comparison.Scope.OWN_WEEK)))
+    assertEquals("Esta semana estás En órbita. Te faltan 7 aciertos para En la Luna.", free)
+    assertFalse("el percentil es de Plus", "percentil" in free!!.lowercase())
+    assertFalse("y la cifra de cada 100 también", "100" in free)
+  }
+
+  @Test
+  fun `con pocos o sin marca no hay frase gratis ni te faltan inventado`() {
+    assertNull(Comparison.freeSentence(Comparison.Place.Few(23, null)))
+    assertNull(Comparison.freeSentence(Comparison.Place.Few(23, ranked(Comparison.Scope.ALL_4_WEEKS, ranges = null))))
+    assertNull(Comparison.freeSentence(Comparison.Place.NoMark))
+  }
+
+  @Test
+  fun `la frase gratis de la puerta usa la mejor marca de esta semana del juego de hoy`() {
+    val now = java.util.Calendar.getInstance().apply { set(2026, java.util.Calendar.OCTOBER, 28, 18, 0, 0); set(java.util.Calendar.MILLISECOND, 0) }.timeInMillis
+    fun at(day: Int) = java.util.Calendar.getInstance().apply { set(2026, java.util.Calendar.OCTOBER, day, 12, 0, 0); set(java.util.Calendar.MILLISECOND, 0) }.timeInMillis
+    fun r(mark: Int, day: Int, game: String = "stroop") = TimeTrialResult(id = "r$game$day$mark", gameId = game, day = "2026-10-%02d".format(day), trackVersion = 2, hits = mark + 2, errors = 2, level = 4, timestamp = at(day))
+    val src = SampleComparison(few = false)
+    assertEquals(
+      "Esta semana estás En órbita. Te faltan 7 aciertos para En la Luna.",
+      Comparison.freeSentenceFor(src, "stroop", AgeRange.R45_54, listOf(r(30, 13), r(43, 27), r(40, 28)), now)
+    )
+    assertNull("sin partida esta semana no hay nada que decir", Comparison.freeSentenceFor(src, "stroop", AgeRange.R45_54, listOf(r(43, 20)), now))
+    assertNull("ni con otro juego", Comparison.freeSentenceFor(src, "stroop", AgeRange.R45_54, listOf(r(43, 27, game = "disparate")), now))
+    assertNull("con pocos tampoco: nada de te faltan sin datos", Comparison.freeSentenceFor(SampleComparison(SampleComparison.World.VERY_FEW), "stroop", AgeRange.R45_54, listOf(r(43, 27)), now))
   }
 }

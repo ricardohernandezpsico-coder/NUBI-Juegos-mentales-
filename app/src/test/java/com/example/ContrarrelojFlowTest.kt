@@ -146,7 +146,8 @@ class ContrarrelojFlowTest {
     assertEquals("la barra sigue en Avance", AppTab.PROGRESO, vm.currentTab.value)
     rule.onNodeWithTag("contrarreloj_page").assertIsDisplayed()
     assertEquals("la lista de áreas no se ve mientras la página está abierta", 0, count("progress_area_memoria"))
-    assertEquals("44 aciertos", textOf("contrarreloj_record_figure").replace(NBSP, " "))
+    assertEquals("44", textOf("contrarreloj_stat_0_figure").replace(NBSP, " "))
+    assertEquals("aciertos, tu récord", textOf("contrarreloj_stat_0_label"))
     pressBack()
     assertNull("Atrás cierra la página", vm.contrarreloj.value)
     rule.onNodeWithTag("avance_contrarreloj_door").assertExists()
@@ -162,7 +163,7 @@ class ContrarrelojFlowTest {
     val other = TimeTrialDay.GAMES.first { it != today }
     rule.onNodeWithTag("contrarreloj_game_$other").performClick(); rule.waitForIdle()
     assertEquals(other, vm.contrarreloj.value)
-    assertEquals("la página muestra el récord de ese juego", "27 aciertos", textOf("contrarreloj_record_figure").replace(NBSP, " "))
+    assertEquals("la página muestra el récord de ese juego", "27", textOf("contrarreloj_stat_0_figure").replace(NBSP, " "))
     rule.onNodeWithTag("contrarreloj_back", useUnmergedTree = true).performClick(); rule.waitForIdle()
     assertNull(vm.contrarreloj.value)
     rule.onNodeWithTag("avance_contrarreloj_door").assertExists()
@@ -179,11 +180,51 @@ class ContrarrelojFlowTest {
     assertNull("sin Plus no se abre la página", vm.contrarreloj.value)
     rule.onNodeWithTag("plus_sheet").assertIsDisplayed()
     assertEquals(PlusAccess.SHEET_TITLE, textOf("plus_sheet_title"))
-    assertEquals("una lista breve de lo que trae", PlusAccess.SHEET_ITEMS.size, (0 until 12).count { rule.onAllNodes(hasTestTag("plus_sheet_item_$it"), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() })
+    // en depuración hay comparación de muestra: la hoja habla del lugar entre personas de tu edad y trae TRES líneas (Tarea 203); en la tienda diría solo lo que hay detrás
+    assertEquals(PlusAccess.sheetLead(compared = true), textOf("plus_sheet_lead"))
+    assertEquals("tres líneas de lo que trae", 3, (0 until 12).count { rule.onAllNodes(hasTestTag("plus_sheet_item_$it"), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() })
+    assertEquals(PlusAccess.sheetItems(compared = true), (0 until 3).map { textOf("plus_sheet_item_$it") })
     assertEquals("Entendido", rule.onNodeWithTag("btn_plus_sheet_ok").fetchSemanticsNode().config.getOrNull(SemanticsProperties.Text)?.joinToString("") { it.text })
     rule.onNodeWithTag("btn_plus_sheet_ok").performClick(); rule.waitForIdle()
     assertEquals("la hoja se cierra", 0, count("plus_sheet"))
     assertNull(vm.contrarreloj.value)
+  }
+
+  @Test
+  fun sin_Plus_la_puerta_dice_gratis_la_division_y_lo_que_falta_cuando_hay_una_marca_esta_semana() {
+    val vm = withData(); vm.setPlus(false)
+    val repo = (app as NeuroVidaApplication).repository
+    val today = TimeTrialDay.gameFor(vm.todayKey())
+    // una marca de ESTE momento (de la semana en curso, sea cual sea el día): 99 aciertos está en el último tramo de cualquier franja de muestra
+    runBlocking { repo.recordTimeTrial(TimeTrialResult(id = "flow-now", gameId = today, day = vm.todayKey(), trackVersion = TimeTrialDay.trackVersion(today), hits = 101, errors = 2, level = 5, seconds = 120, timestamp = System.currentTimeMillis())) }
+    TestSupport.awaitUntil(30_000) { vm.timeTrialResults.value.size >= 12 }
+    show(vm)
+    assertEquals("Esta semana estás Entre estrellas, la división más alta de tu franja.", textOf("avance_contrarreloj_free").replace(NBSP, " "))
+    assertEquals("la puerta se lee de corrido con la frase gratis y el candado", "Tus marcas del Contrarreloj. Tu récord de hoy: 99 aciertos. Esta semana estás Entre estrellas, la división más alta de tu franja. Con Nubi Plus.",
+      rule.onNodeWithTag("avance_contrarreloj_door").fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString(". ")?.replace(NBSP, " "))
+    assertEquals("el candado sigue (la página entera es Plus)", 1, rule.onAllNodes(hasTestTag("avance_contrarreloj_lock"), useUnmergedTree = true).fetchSemanticsNodes().size)
+    assertTrue("la frase va entre el récord y el candado", top("avance_contrarreloj_line") < top("avance_contrarreloj_free") && top("avance_contrarreloj_free") < top("avance_contrarreloj_lock"))
+  }
+
+  @Test
+  fun con_Plus_la_puerta_no_repite_la_frase_gratis_porque_la_pagina_la_trae_completa() {
+    val vm = withData(); vm.setPlus(true)
+    val repo = (app as NeuroVidaApplication).repository
+    val today = TimeTrialDay.gameFor(vm.todayKey())
+    runBlocking { repo.recordTimeTrial(TimeTrialResult(id = "flow-now", gameId = today, day = vm.todayKey(), trackVersion = TimeTrialDay.trackVersion(today), hits = 101, errors = 2, level = 5, seconds = 120, timestamp = System.currentTimeMillis())) }
+    TestSupport.awaitUntil(30_000) { vm.timeTrialResults.value.size >= 12 }
+    show(vm)
+    assertEquals(0, rule.onAllNodes(hasTestTag("avance_contrarreloj_free"), useUnmergedTree = true).fetchSemanticsNodes().size)
+  }
+
+  @Test
+  fun sin_una_marca_esta_semana_la_puerta_sin_Plus_no_inventa_la_frase_gratis() {
+    val vm = withData(history = false); vm.setPlus(false)
+    // withData(): las marcas están en los 10 días anteriores; la de hace un día cae en la semana anterior los lunes, así que el texto solo se mira si no hay frase
+    show(vm)
+    val free = rule.onAllNodes(hasTestTag("avance_contrarreloj_free"), useUnmergedTree = true).fetchSemanticsNodes()
+    assertTrue("la frase gratis es una sola, o no hay", free.size <= 1)
+    free.firstOrNull()?.config?.getOrNull(SemanticsProperties.Text)?.joinToString("")?.let { assertTrue("«$it»", it.replace(NBSP, " ").startsWith("Esta semana estás ")) }
   }
 
   @Test

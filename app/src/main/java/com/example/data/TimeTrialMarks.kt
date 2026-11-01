@@ -17,10 +17,6 @@ object TimeTrialMarks {
 
   /** El subtítulo de la página: «solo contigo» sin comparación (la tienda, o de 13 a 17 años) y [SUBTITLE_COMPARED] con ella. */
   fun subtitle(compared: Boolean): String = if (compared) SUBTITLE_COMPARED else SUBTITLE
-  const val RECORD_TITLE = "Tu récord"
-  const val WEEKS_TITLE = "Esta semana y la pasada"
-  const val SPLIT_TITLE = "Aciertos y errores"
-  const val OLDER_TITLE = "Pistas anteriores"
   const val FIRST_MARK = "Tu primera marca. Desde la segunda, se dibujan aquí."
   const val NO_MARKS_DOOR = "Todavía sin marcas"
   const val NO_MARK_TILE = "sin marca aún"
@@ -40,12 +36,8 @@ object TimeTrialMarks {
     val record: TimeTrialResult?,
     val recordIndex: Int?,
     val thisWeek: WeekSummary,
-    val lastWeek: WeekSummary,
     val lastFiveAverage: Int?,
     val previousFiveAverage: Int?,
-    val recentHits: Int?,
-    val recentErrors: Int?,
-    val recentCount: Int,
     /** El récord de una pista ANTERIOR del mismo juego: (versión de la pista, marca con la regla de ESA pista). */
     val olderTrack: Pair<Int, Int>?,
     val maxLevel: Int
@@ -61,23 +53,16 @@ object TimeTrialMarks {
     val best = mine.maxOfOrNull { it.mark }
     val record = best?.let { b -> mine.filter { it.mark == b }.minByOrNull { it.timestamp } }
     val recordIndex = record?.let { r -> shown.indexOfFirst { it.id == r.id }.takeIf { it >= 0 } }
-    val thisStart = Week.weekStart(now)
-    val lastStart = Week.weekStart(now, 1)
-    fun summary(from: Long, to: Long): WeekSummary {
-      val inWeek = mine.filter { it.timestamp in from until to }
-      return WeekSummary(inWeek.size, inWeek.maxOfOrNull { it.mark })
-    }
+    val inWeek = mine.filter { it.timestamp >= Week.weekStart(now) }
     val last5 = mine.takeLast(HALF)
     val averages = if (mine.size >= 2 * HALF) average(last5.map { it.mark }) to average(mine.dropLast(HALF).takeLast(HALF).map { it.mark }) else null to null
     val older = all.filter { it.gameId == gameId && it.trackVersion < TimeTrialDay.trackVersion(gameId) }
       .groupBy { it.trackVersion }.mapValues { (_, rs) -> rs.maxOf { it.mark } }.maxByOrNull { it.key }?.let { it.key to it.value }
     return Page(
       gameId = gameId, marks = shown, total = mine.size, record = record, recordIndex = recordIndex,
-      thisWeek = summary(thisStart, Long.MAX_VALUE), lastWeek = summary(lastStart, thisStart),
+      thisWeek = WeekSummary(inWeek.size, inWeek.maxOfOrNull { it.mark }),
       lastFiveAverage = averages.first, previousFiveAverage = averages.second,
-      recentHits = last5.takeIf { it.isNotEmpty() }?.let { average(it.map { r -> r.hits }) },
-      recentErrors = last5.takeIf { it.isNotEmpty() }?.let { average(it.map { r -> r.errors }) },
-      recentCount = last5.size, olderTrack = older, maxLevel = TimeTrialDay.maxLevel(gameId)
+      olderTrack = older, maxLevel = TimeTrialDay.maxLevel(gameId)
     )
   }
 
@@ -85,9 +70,6 @@ object TimeTrialMarks {
   private fun average(values: List<Int>): Int = Math.round(values.sum().toDouble() / values.size).toInt()
 
   // ------------------------------------------------------------------ los textos
-
-  /** «el 17 de octubre, en 2 minutos de Contrarreloj» (con el año si no es el de [now]). */
-  fun recordWhen(record: TimeTrialResult, now: Long): String = "el ${TuStats.since(record.timestamp, now)}, ${TimeTrialStats.UNIT}"
 
   /** «Tus últimas 5 marcas promedian 40 aciertos; las 5 anteriores, 37.» Null si no hay 10 partidas. */
   fun averagesSentence(page: Page): String? {
@@ -98,12 +80,6 @@ object TimeTrialMarks {
 
   /** «Tus últimas 10 marcas» / «Tus últimas 5 marcas» (según las que se dibujan); con una sola, «Tus últimas marcas» (debajo dice que la primera ya está y cuándo se dibujan). */
   fun barsTitle(shown: Int): String = if (shown <= 1) "Tus últimas marcas" else "Tus últimas $shown marcas"
-
-  /** «3 partidas» / «1 partida» / «ninguna partida». */
-  fun gamesText(n: Int): String = when (n) { 0 -> "ninguna partida"; 1 -> "1 partida"; else -> "$n partidas" }
-
-  /** «En tus últimas 5, por partida» (con menos de 5: «En tus últimas 3, por partida»). Null con una sola partida: sería lo mismo que el récord. */
-  fun recentTitle(count: Int): String? = if (count < 2) null else "En tus últimas $count, por partida"
 
   /** «1 error» / «3 errores» / «0 errores». */
   fun errorsText(n: Int): String = if (n == 1) "1 error" else "$n errores"
@@ -138,14 +114,34 @@ object TimeTrialMarks {
     return "${barsTitle(shown.size)}: ${parts.dropLast(1).joinToString(", ")} y ${parts.last()}."
   }
 
-  /** Una fila «rótulo … cifra» de «Esta semana y la pasada», dicha de corrido: «Jugaste, 3 partidas». */
+  /** Una fila «rótulo … cifra» dicha de corrido: «Desde 39 aciertos, En órbita». */
   fun rowSpoken(label: String, value: String): String = "$label, $value"
 
-  /** Las filas de una semana: «Jugaste» y, si hubo partidas, «La mejor marca». */
-  fun weekRows(w: WeekSummary): List<Pair<String, String>> = buildList {
-    add("Jugaste" to gamesText(w.games))
-    w.best?.let { add("La mejor marca" to TimeTrialDay.hitsText(it)) }
+  /** Una de las tres cifras de «Tus marcas»: la [figure] y su [label] con la unidad («44» · «aciertos, tu récord»). */
+  data class Stat(val figure: String, val label: String)
+
+  /**
+   * Las tres cifras de «Tus marcas» (Tarea 203; `auditoria-fable/contrarreloj-rediseno.md` §3.3): el récord («44 · aciertos, tu récord»), la mejor marca de esta semana («43 · aciertos esta semana»; sin partida esta semana, «0 · partidas esta semana») y la tercera: con comparación ([weeksAbove] = «3 de 4»),
+   * «semanas arriba de la mitad»; sin ella, las partidas de esta semana (o, si ya las dice la segunda cifra, las de siempre). Cada cifra con su unidad; nunca un número suelto. Sin récord (sin marcas) la página no usa esta lista.
+   */
+  fun stats(page: Page, weeksAbove: String?): List<Stat> {
+    val week = page.thisWeek
+    val record = Stat((page.record?.mark ?: 0).toString(), "aciertos, tu récord")
+    val second = week.best?.let { Stat(it.toString(), if (it == 1) "acierto esta semana" else "aciertos esta semana") } ?: Stat("0", "partidas esta semana")
+    val third = when {
+      weeksAbove != null -> Stat(weeksAbove, Comparison.WEEKS_ABOVE_LABEL)
+      week.best != null -> Stat(week.games.toString(), if (week.games == 1) "partida esta semana" else "partidas esta semana")
+      else -> Stat(page.total.toString(), if (page.total == 1) "partida en total" else "partidas en total")
+    }
+    return listOf(record, second, third)
   }
+
+  /** Para el lector de pantalla: «44 aciertos, tu récord», «3 de 4 semanas arriba de la mitad». */
+  fun statSpoken(stat: Stat): String = "${stat.figure} ${stat.label}"
+
+  /** «Tu récord es del 17 de octubre; llegaste al paso 4 de 5 de la pista.» (bajo las 10 marcas: la fecha y el paso del récord). */
+  fun recordLine(record: TimeTrialResult, now: Long, maxLevel: Int): String =
+    "Tu récord es del ${TuStats.since(record.timestamp, now)}; llegaste al paso ${record.level.coerceIn(1, maxLevel)} de $maxLevel de la pista."
 
   /** «Tu récord de la pista 1: 38 aciertos. Las marcas de otra pista no se comparan.» */
   fun olderSentence(older: Pair<Int, Int>): String = "Tu récord de la pista ${older.first}: ${TimeTrialDay.hitsText(older.second)}. $OLDER_NOTE"
@@ -161,7 +157,8 @@ object TimeTrialMarks {
   fun doorLine(record: Int?): String = record?.let { "Tu récord de hoy: ${TimeTrialDay.hitsText(it)}" } ?: NO_MARKS_DOOR
 
   /** Lo que lee el lector de pantalla de la puerta: el título y la línea de abajo (y el candado, sin Plus). */
-  fun doorSpoken(record: Int?, plus: Boolean): String = "Tus marcas del Contrarreloj. ${doorLine(record)}" + if (plus) "." else ". Con Nubi Plus."
+  fun doorSpoken(record: Int?, plus: Boolean, freeLine: String? = null): String =
+    "Tus marcas del Contrarreloj. ${doorLine(record)}" + if (plus) "." else (freeLine?.let { ". $it Con Nubi Plus." } ?: ". Con Nubi Plus.")
 
   // ------------------------------------------------------------------ el ritmo de la última partida (Tarea 200; `auditoria-fable/nubi-plus-comparacion.md` §2.3)
 

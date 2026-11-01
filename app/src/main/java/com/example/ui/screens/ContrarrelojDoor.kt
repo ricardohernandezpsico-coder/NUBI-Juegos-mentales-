@@ -37,12 +37,12 @@ import com.example.ui.theme.TitleFamily
  * La PUERTA de la página «Contrarreloj» en Avance (Tarea 199; Fable §1.2 y §11): UNA losa crema entre «Tus áreas» y «Tus mejores marcas», sin título de sección ni línea de ayuda sobre el cielo (los textos sueltos sobre los luceros se leían mal): el reloj de plasticina de Hoy, «Tus marcas del Contrarreloj» y,
  * debajo, «Tu récord de hoy: 44 aciertos» (el juego del día; sin marcas, «Todavía sin marcas»). Es la única puerta (el final del Contrarreloj lleva un atajo a la misma página, solo con Plus). 64 dp o más de alto, tocable entera.
  *
- * Con Nubi Plus lleva a la página; el chevron del kit lo dice. Sin Plus, la losa sigue diciendo el récord de hoy (es tuyo y ya se ve en Hoy) y suma una tercera línea con el candado, «Con Nubi Plus»; al tocarla se abre [PlusLockSheet]. [record] = la marca del juego de hoy.
+ * Con Nubi Plus lleva a la página; el chevron del kit lo dice. Sin Plus, la losa sigue diciendo el récord de hoy (es tuyo y ya se ve en Hoy) y suma el candado, «Con Nubi Plus»; al tocarla se abre [PlusLockSheet]. LO GRATIS (Tarea 203, Ricardo): sin Plus y con [freeLine] (la división y «te faltan N», de `Comparison.freeSentenceFor`; solo con una comparación disponible y una marca esta semana), esa frase va entre el récord y el candado. [record] = la marca del juego de hoy.
  */
 @Composable
-internal fun ContrarrelojDoor(record: Int?, plus: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+internal fun ContrarrelojDoor(record: Int?, plus: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, freeLine: String? = null) {
   ClayCard(
-    modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = TimeTrialMarks.doorSpoken(record, plus) }.testTag("avance_contrarreloj_door"),
+    modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = TimeTrialMarks.doorSpoken(record, plus, freeLine.takeIf { !plus }) }.testTag("avance_contrarreloj_door"),
     onClick = onClick, contentPadding = 0.dp
   ) {
     Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 12.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -51,6 +51,8 @@ internal fun ContrarrelojDoor(record: Int?, plus: Boolean, onClick: () -> Unit, 
       Column(Modifier.weight(1f)) {
         Text("Tus marcas del Contrarreloj", color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 22.sp, modifier = Modifier.testTag("avance_contrarreloj_title"))
         Text(TimeTrialMarks.doorLine(record).glueNumbers(), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.testTag("avance_contrarreloj_line"))
+        // LO GRATIS (Tarea 203, Ricardo): sin Plus, la división y la meta de esta semana («Esta semana estás En órbita. Te faltan 7 aciertos para En la Luna.»); solo hay con una comparación disponible (hoy, datos de muestra en depuración)
+        if (!plus && freeLine != null) Text(freeLine.glueNumbers(), color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp, modifier = Modifier.padding(top = 4.dp).testTag("avance_contrarreloj_free"))
         if (!plus) {
           Row(Modifier.padding(top = 4.dp).testTag("avance_contrarreloj_lock"), verticalAlignment = Alignment.CenterVertically) {
             KitGlyph(Glyph.LOCK, size = 20.dp)
@@ -71,15 +73,15 @@ internal fun ContrarrelojDoor(record: Int?, plus: Boolean, onClick: () -> Unit, 
  * La hoja corta que abre la puerta de Avance SIN Nubi Plus (Tarea 199): qué trae la página, en una lista breve, y UN solo botón, «Entendido». El botón de compra llega con Google Play Billing (Etapa 4, `docs/modelo-negocio.md`); hasta entonces la hoja solo cuenta qué hay detrás. Sin precios ni promesas.
  */
 @Composable
-internal fun PlusLockSheet(onDismiss: () -> Unit) {
+internal fun PlusLockSheet(onDismiss: () -> Unit, compared: Boolean = false) {
   Dialog(onDismissRequest = onDismiss) {
     ClayCard(Modifier.fillMaxWidth().padding(8.dp).testTag("plus_sheet"), color = Clay.Cream, size = SlabSize.LARGE, contentPadding = 20.dp) {
-      // se desliza: con seis líneas (Tarea 202 sumó «Tu ritmo») y letra 2,0 la hoja no cabe entera en el alto de una pantalla
+      // se desliza: con tres líneas (Tarea 203) y letra 2,0 la hoja puede no caber entera en el alto de una pantalla
       Column(Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(PlusAccess.SHEET_TITLE, color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 24.sp, modifier = Modifier.semantics { heading() }.testTag("plus_sheet_title"))
-        Text(PlusAccess.SHEET_LEAD, color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("plus_sheet_lead"))
+        Text(PlusAccess.sheetLead(compared), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("plus_sheet_lead"))
         Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("plus_sheet_items")) {
-          PlusAccess.SHEET_ITEMS.forEachIndexed { i, item ->
+          PlusAccess.sheetItems(compared).forEachIndexed { i, item ->
             Row(verticalAlignment = Alignment.Top) {
               KitGlyph(Glyph.CHECK, size = 20.dp, modifier = Modifier.padding(top = 1.dp))
               Spacer(Modifier.width(8.dp))
