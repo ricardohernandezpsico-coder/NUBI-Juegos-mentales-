@@ -662,4 +662,50 @@ class ComparisonTest {
     assertNull("ni con otro juego", Comparison.freeSentenceFor(src, "stroop", AgeRange.R45_54, listOf(r(43, 27, game = "disparate")), now))
     assertNull("con pocos tampoco: nada de te faltan sin datos", Comparison.freeSentenceFor(SampleComparison(SampleComparison.World.VERY_FEW), "stroop", AgeRange.R45_54, listOf(r(43, 27)), now))
   }
+
+  // ------------------------------------------------------------------ la barra «Tú» sobre la raya de la mitad (Tarea 205b)
+
+  @Test
+  fun `la barra Tu tapa la raya de la mitad cuando sus centros quedan a menos de 4,75 dp`() {
+    // Tinta o Palabra: 16 tramos de 5 (80 aciertos de ancho); la mitad en 39 → 3,75 dp por acierto con 300 dp
+    val stroop = Comparison.Distribution(2000, List(16) { if (it == 7) 2000 else 0 }, 35, 39, 44, binWidth = 5, estimated = true)
+    assertTrue("en la mitad", Comparison.barCoversHalf(39, stroop, 300.0))
+    assertTrue("a un acierto (3,75 dp)", Comparison.barCoversHalf(40, stroop, 300.0) && Comparison.barCoversHalf(38, stroop, 300.0))
+    assertFalse("a dos aciertos (7,5 dp) la raya se ve", Comparison.barCoversHalf(41, stroop, 300.0) || Comparison.barCoversHalf(37, stroop, 300.0))
+    assertTrue("con menos ancho (272 dp, ~3,4 dp por acierto) un acierto sigue tapando", Comparison.barCoversHalf(40, stroop, 272.0))
+    assertFalse("con 272 dp dos aciertos (6,8 dp) ya no", Comparison.barCoversHalf(41, stroop, 272.0))
+    // Rescate relámpago: 24 tramos de a 1 → 12,5 dp por acierto con 300 dp: solo la misma marca
+    val radar = Comparison.Distribution(2000, List(24) { if (it == 14) 2000 else 0 }, 13, 14, 14, binWidth = 1, estimated = true)
+    assertTrue(Comparison.barCoversHalf(14, radar, 300.0))
+    assertFalse("a un acierto (12,5 dp) se ve", Comparison.barCoversHalf(15, radar, 300.0) || Comparison.barCoversHalf(13, radar, 300.0))
+    // el umbral: 6/2 + 1,5/2 + 1 = 4,75 dp; justo 4,75 ya no tapa
+    assertEquals(4.75, Comparison.BELL_BAR_DP / 2 + Comparison.BELL_LINE_DP / 2 + Comparison.BELL_CLEARANCE_DP, 1e-9)
+    assertFalse("4,75 dp justos: separadas", Comparison.barCoversHalf(13, Comparison.Distribution(2000, List(16) { if (it == 7) 2000 else 0 }, 0, 12, 0, binWidth = 5, estimated = true), 80.0 * 4.75))
+    // el último tramo («o más») se topa en su centro: la marca y la mitad ahí tapan igual
+    assertTrue(Comparison.barCoversHalf(500, radar.copy(p50 = 23), 300.0))
+  }
+
+  @Test
+  fun `la frase de la campana y lo que lee el lector de pantalla dicen cuando la marca esta en la mitad`() {
+    assertEquals("La línea marca la mitad de la referencia estimada.", Comparison.bellCaption(estimated = true))
+    assertEquals("La línea marca la mitad de las personas.", Comparison.bellCaption(estimated = false))
+    assertEquals("Tu marca está en la mitad de la referencia estimada.", Comparison.bellCaption(estimated = true, onHalf = true))
+    assertEquals("Tu marca está en la mitad de las personas.", Comparison.bellCaption(estimated = false, onHalf = true))
+    val est = Comparison.Distribution(2000, SampleComparison.fit(base, 2000), 31, 39, 47, estimated = true)
+    val r = Comparison.Ranked(39, Comparison.percentile(39, est), Comparison.division(Comparison.percentile(39, est)), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), est)
+    assertEquals("Campana de la referencia estimada para 45 a 54 años. Tu mejor marca de esta semana, 39 aciertos, está marcada.", Comparison.bellSpoken(r, AgeRange.R45_54))
+    assertEquals("Campana de la referencia estimada para 45 a 54 años. Tu mejor marca de esta semana, 39 aciertos, está en la mitad.", Comparison.bellSpoken(r, AgeRange.R45_54, onHalf = true))
+    val real = Comparison.Ranked(43, 63, Comparison.Division.ORBIT, Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), shaped(128))
+    assertTrue(Comparison.bellSpoken(real, onHalf = true).endsWith("43 aciertos, está en la mitad."))
+    for (text in listOf(Comparison.BELL_ON_HALF_ESTIMATED, Comparison.BELL_ON_HALF_PEOPLE)) { assertTrue(text.endsWith(".")); assertFalse("la frase de la mitad no habla de una raya", "línea" in text.lowercase() || "raya" in text.lowercase()) }
+    assertFalse("con la referencia no se dice «personas»", "personas" in Comparison.BELL_ON_HALF_ESTIMATED)
+  }
+
+  @Test
+  fun `la frase que dice donde elegir la edad es la ruta real, una sola frase sin palabras prohibidas`() {
+    assertEquals("Para compararte con una referencia estimada para tu edad, elige tu edad en Tú › Más ajustes › Juego › Rango de edad.", Comparison.AGE_HINT)
+    val low = Comparison.AGE_HINT.lowercase()
+    for (bad in listOf("personas", "robot", "capacidad", "cognitiv", "cerebro", "percentil", "ranking")) assertFalse("la frase dice «$bad»", bad in low)
+    assertTrue(Comparison.AGE_HINT.endsWith("."))
+  }
 }

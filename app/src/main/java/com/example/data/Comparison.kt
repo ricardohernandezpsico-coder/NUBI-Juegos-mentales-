@@ -47,6 +47,8 @@ object Comparison {
   const val HERO_UNIT = "de cada 100"
   const val CLOSES = "La semana cierra el domingo."
   const val BELL_TITLE = "La campana de tu edad"
+  /** Sin franja de edad guardada (Tarea 205b): la página dice dónde elegirla. Es la ruta real: Tú › «Más ajustes» › «Juego» › «Rango de edad». */
+  const val AGE_HINT = "Para compararte con una referencia estimada para tu edad, elige tu edad en Tú › Más ajustes › Juego › Rango de edad."
   const val BELL_CAPTION = "La línea marca la mitad de las personas."
 
   // ---- la REFERENCIA ESTIMADA (Tarea 205; `auditoria-fable/referencia-estimada.md` §4 y las decisiones de Opus del 1-nov): siempre dicha; en cada losa solo «referencia estimada»; nunca se llama «personas»
@@ -62,7 +64,30 @@ object Comparison {
    * La frase de la campana, según sea la referencia estimada o no. El TÍTULO es el mismo («La campana de tu edad»): «La campana estimada de tu edad» partía en dos líneas hasta con letra 1,0 a 393 dp (56,3 dp de alto, `ContrarrelojPageTest`), así que
    * «referencia estimada» va en la frase de abajo (Opus, 1-nov: «si no cabe en UNA línea…»).
    */
-  fun bellCaption(estimated: Boolean): String = if (estimated) ESTIMATED_BELL_CAPTION else BELL_CAPTION
+  fun bellCaption(estimated: Boolean, onHalf: Boolean = false): String = when {
+    onHalf && estimated -> BELL_ON_HALF_ESTIMATED
+    onHalf -> BELL_ON_HALF_PEOPLE
+    estimated -> ESTIMATED_BELL_CAPTION
+    else -> BELL_CAPTION
+  }
+
+  // ---- la barra «Tú» sobre la raya de la mitad (Tarea 205b; Opus, 1-nov): la frase nunca habla de una raya que no se ve
+  /** Cuando la barra «Tú» tapa la raya de la mitad, la frase de la campana dice esto en vez de «La línea marca la mitad…» (y la raya no se dibuja). */
+  const val BELL_ON_HALF_ESTIMATED = "Tu marca está en la mitad de la referencia estimada."
+  const val BELL_ON_HALF_PEOPLE = "Tu marca está en la mitad de las personas."
+  /** Lo que miden, en dp, la barra «Tú» y la raya de la mitad de la campana, y el aire que debe quedar entre las dos para que se vean separadas. */
+  const val BELL_BAR_DP = 6.0
+  const val BELL_LINE_DP = 1.5
+  const val BELL_CLEARANCE_DP = 1.0
+
+  /**
+   * true si, en una campana de [widthDp] dp de ancho interior, la barra «Tú» de [mark] taparía la raya de la mitad de [d] (o la dejaría pegada): la distancia entre sus centros, en dp, es menor que medio ancho de la barra + medio ancho de la raya + 1 dp.
+   * Depende del ancho porque cada acierto mide `widthDp / topMark` dp: en Rescate relámpago (24 tramos de a 1) un acierto de diferencia ya las separa; en Tinta o Palabra, a 360 dp, hacen falta dos o más (~3,4 dp por acierto).
+   */
+  fun barCoversHalf(mark: Int, d: Distribution, widthDp: Double): Boolean {
+    val gapDp = Math.abs(markX(mark, d.topMark) - markX(d.p50, d.topMark)) * widthDp / d.topMark
+    return gapDp < BELL_BAR_DP / 2 + BELL_LINE_DP / 2 + BELL_CLEARANCE_DP
+  }
 
   // ------------------------------------------------------------------ la distribución
 
@@ -412,9 +437,11 @@ object Comparison {
   fun scopeLine(r: Ranked): String? = if (r.scope == Scope.NEIGHBORS_4_WEEKS) MERGED_LINE else null
 
   /** Lo que lee el lector de pantalla de la campana (el dibujo no habla; las dos frases de abajo son el contenido): «Campana con las marcas de las 128 personas. Tu mejor marca de esta semana, 43 aciertos, está marcada.» */
-  fun bellSpoken(r: Ranked, range: AgeRange? = null): String =
-    if (r.estimated) "Campana de la referencia estimada para ${range?.label ?: "tu edad"}. Tu mejor marca de esta semana, ${TimeTrialDay.hitsText(r.mark)}, está marcada."
-    else "Campana con las marcas de las ${r.distribution.people} personas. Tu mejor marca de esta semana, ${TimeTrialDay.hitsText(r.mark)}, está marcada."
+  fun bellSpoken(r: Ranked, range: AgeRange? = null, onHalf: Boolean = false): String {
+    val end = if (onHalf) "está en la mitad." else "está marcada."
+    return if (r.estimated) "Campana de la referencia estimada para ${range?.label ?: "tu edad"}. Tu mejor marca de esta semana, ${TimeTrialDay.hitsText(r.mark)}, $end"
+    else "Campana con las marcas de las ${r.distribution.people} personas. Tu mejor marca de esta semana, ${TimeTrialDay.hitsText(r.mark)}, $end"
+  }
 
   /** «Todavía somos pocos: 23 personas de 45 a 54 años jugaron Tinta o Palabra esta semana. Cuando sean 50, verás aquí tu lugar entre ellas.» (con una sola: «1 persona … jugó …»). */
   fun fewSentence(few: Place.Few, range: AgeRange, gameTitle: String): String {

@@ -1162,4 +1162,98 @@ class ContrarrelojPageTest {
     val sub = textOf("contrarreloj_subtitle").lowercase()
     assertTrue("referencia estimada" in sub && "personas" !in sub)
   }
+
+  // ---------------------------------------------------------------- Tarea 205b: la raya de la mitad bajo la barra «Tú» y la edad que falta
+
+  private fun halfOf(game: String) = estWorld.distribution(game, listOf(AgeRange.R45_54), 0, 1).p50
+
+  /**
+   * La campana de [game] con la marca en [mark]: la frase nunca habla de una raya que no se ve. Si dice «La línea…», la raya existe y sus límites no tocan los de la barra «Tú» (al menos ~1 dp de aire); si dice «Tu marca está en la mitad…», la raya no se dibuja,
+   * el lector de pantalla termina con «está en la mitad.» y la distancia entre los centros es la que la regla de `Comparison.barCoversHalf` da con el ancho REAL del dibujo.
+   */
+  private fun assertBellCaption(game: String, mark: Int, widthDp: Int, expectOnHalf: Boolean) {
+    show(widthDp = widthDp, compare = estWorld, ageRange = AgeRange.R45_54, selected = game, results = listOf(r(mark, 27, game = game)))
+    val b = boxes()
+    val d = estWorld.distribution(game, listOf(AgeRange.R45_54), 0, 1)
+    val caption = textOf("contrarreloj_bell_caption")
+    val spoken = rule.onNode(hasTestTag("contrarreloj_bell_window"), useUnmergedTree = true).fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString(". ").orEmpty()
+    val area = b.getValue("contrarreloj_bell_area")
+    val you = b.getValue("contrarreloj_bell_you_bar")
+    val covers = Comparison.barCoversHalf(mark, d, area.w.toDouble())
+    assertEquals("$game marca $mark a $widthDp dp: la regla con el ancho real del dibujo (%.1f dp) dice lo mismo que la frase".format(area.w), expectOnHalf, covers)
+    if (expectOnHalf) {
+      assertEquals("$game marca $mark a $widthDp dp", Comparison.BELL_ON_HALF_ESTIMATED, caption)
+      assertNull("$game marca $mark a $widthDp dp: la raya no se dibuja debajo de la barra", b["contrarreloj_bell_median"])
+      assertTrue("y el lector de pantalla termina con «está en la mitad.»: $spoken", spoken.endsWith("está en la mitad."))
+    } else {
+      assertEquals("$game marca $mark a $widthDp dp", Comparison.ESTIMATED_BELL_CAPTION, caption)
+      val line = b.getValue("contrarreloj_bell_median")
+      assertTrue("$game marca $mark a $widthDp dp: los límites de la raya (%.1f a %.1f) no tocan los de la barra (%.1f a %.1f)".format(line.x, line.r, you.x, you.r), line.x >= you.r + 0.9f || line.r <= you.x - 0.9f)
+      assertTrue("y el lector de pantalla termina con «está marcada.»: $spoken", spoken.endsWith("está marcada."))
+    }
+    assertFalse("la frase de la mitad nunca promete una raya que no está", caption.startsWith("La línea") && b["contrarreloj_bell_median"] == null)
+  }
+
+  @Test fun Rescate_con_la_marca_en_la_mitad_dice_que_la_marca_esta_en_la_mitad_a_393() = assertBellCaption("radar", halfOf("radar"), 393, expectOnHalf = true)
+  @Test fun Rescate_con_la_marca_en_la_mitad_dice_que_la_marca_esta_en_la_mitad_a_360() = assertBellCaption("radar", halfOf("radar"), 360, expectOnHalf = true)
+  @Test fun Rescate_con_un_acierto_mas_ya_ve_la_raya_a_393() = assertBellCaption("radar", halfOf("radar") + 1, 393, expectOnHalf = false)
+  @Test fun Rescate_con_un_acierto_menos_ya_ve_la_raya_a_360() = assertBellCaption("radar", halfOf("radar") - 1, 360, expectOnHalf = false)
+  @Test fun Tinta_con_la_mitad_mas_1_a_360_dice_que_esta_en_la_mitad() = assertBellCaption("stroop", halfOf("stroop") + 1, 360, expectOnHalf = true)
+  @Test fun Tinta_con_la_mitad_menos_1_a_360_dice_que_esta_en_la_mitad() = assertBellCaption("stroop", halfOf("stroop") - 1, 360, expectOnHalf = true)
+  @Test fun Tinta_con_la_mitad_mas_2_a_360_ve_la_raya() = assertBellCaption("stroop", halfOf("stroop") + 2, 360, expectOnHalf = false)
+  @Test fun Tinta_con_la_mitad_a_393_dice_que_esta_en_la_mitad() = assertBellCaption("stroop", halfOf("stroop"), 393, expectOnHalf = true)
+  @Test fun Acoplamiento_con_la_mitad_a_360_dice_que_esta_en_la_mitad() = assertBellCaption("acoplamiento", halfOf("acoplamiento"), 360, expectOnHalf = true)
+  @Test fun Acoplamiento_con_la_mitad_mas_2_a_393_ve_la_raya() = assertBellCaption("acoplamiento", halfOf("acoplamiento") + 2, 393, expectOnHalf = false)
+
+  @Test fun con_datos_de_muestra_la_frase_de_siempre_sigue_con_la_raya_a_la_vista() {
+    show(compare = manyWorld, ageRange = AgeRange.R45_54)
+    val b = boxes()
+    assertEquals("La línea marca la mitad de las personas.", textOf("contrarreloj_bell_caption"))
+    val line = b.getValue("contrarreloj_bell_median"); val you = b.getValue("contrarreloj_bell_you_bar")
+    assertTrue("sin tocarse: la raya (%.1f a %.1f) y la barra (%.1f a %.1f)".format(line.x, line.r, you.x, you.r), line.x >= you.r + 0.9f || line.r <= you.x - 0.9f)
+  }
+
+  // ---- sin franja guardada: la página dice dónde elegirla
+
+  @Test fun sin_franja_guardada_la_pagina_dice_donde_elegir_la_edad_en_una_linea_corrida_sin_negrita() {
+    show(compare = estWorld, ageRange = null)
+    val b = boxes()
+    assertEquals("Para compararte con una referencia estimada para tu edad, elige tu edad en Tú › Más ajustes › Juego › Rango de edad.", n("contrarreloj_age_hint"))
+    assertEquals(Comparison.AGE_HINT, n("contrarreloj_age_hint"))
+    assertNull("sin franja no hay sección de comparación", b["contrarreloj_section_compare"]); assertNull(b["contrarreloj_hero"]); assertNull(b["contrarreloj_estimated_notice"])
+    assertEquals("una sola vez en toda la pantalla", 1, everythingSaid().count { it.startsWith("Para compararte con una referencia estimada") })
+    val selectorBottom = games.maxOf { b.getValue("contrarreloj_game_$it").b }
+    assertTrue("va bajo el selector (%.1f bajo %.1f)".format(b.getValue("contrarreloj_age_hint").y, selectorBottom), b.getValue("contrarreloj_age_hint").y >= selectorBottom + 7.5f)
+    val page = src("ui/screens/ContrarrelojPage.kt")
+    val line = Regex("""Text\(Comparison\.AGE_HINT[^\n]*""").find(page)!!.value
+    assertFalse("es una frase corrida: sin negrita", "fontWeight" in line)
+    assertTrue("la ruta es la real: Tú › Más ajustes › Juego › Rango de edad", src("ui/screens/ProfileScreen.kt").contains("\"Más ajustes\"") && src("ui/screens/SettingsScreen.kt").let { it.contains("Text(text = \"Juego\"") && it.contains("Text(text = \"Rango de edad\"") })
+  }
+
+  private fun assertNoAgeHint(name: String, source: Comparison.Source?, range: AgeRange?) {
+    show(compare = source, ageRange = range)
+    assertNull("$name: sin aviso", boxes()["contrarreloj_age_hint"])
+  }
+
+  @Test fun el_aviso_de_la_edad_no_sale_de_13_a_17_anos() = assertNoAgeHint("de 13 a 17 años", estWorld, AgeRange.R13_17)
+  @Test fun el_aviso_de_la_edad_no_sale_con_franja_guardada() = assertNoAgeHint("con franja", estWorld, AgeRange.R45_54)
+  @Test fun el_aviso_de_la_edad_no_sale_sin_comparacion() = assertNoAgeHint("sin comparación", null, null)
+  @Test fun el_aviso_de_la_edad_no_sale_con_la_muestra_de_depuracion_que_asume_45_a_54() = assertNoAgeHint("con la muestra de depuración", manyWorld, null)
+  @Test fun el_aviso_de_la_edad_no_sale_si_el_juego_no_tiene_tabla() = assertNoAgeHint("sin tabla de este juego", Comparison.ComposedSource(null, com.example.data.EstimatedReference.of(emptyList())), null)
+
+  private fun assertAgeHintFits(widthDp: Int, scale: Float) {
+    show(widthDp = widthDp, scale = scale, compare = estWorld, ageRange = null)
+    val b = boxes()
+    val hint = b.getValue("contrarreloj_age_hint")
+    val selectorBottom = games.maxOf { b.getValue("contrarreloj_game_$it").b }
+    val next = listOf("contrarreloj_stats").firstNotNullOfOrNull { b[it] }
+    assertTrue("a $widthDp dp con letra $scale: bajo el selector a 8 dp o más (%.1f)".format(hint.y - selectorBottom), hint.y - selectorBottom >= 7.5f)
+    assertTrue("y dentro de los márgenes de 16 dp (x %.1f a %.1f)".format(hint.x, hint.r), hint.x >= 15.5f && hint.r <= widthDp - 15.5f)
+    if (next != null) assertTrue("y a 8 dp o más de lo que sigue (%.1f)".format(next.y - hint.b), next.y - hint.b >= 7.5f)
+  }
+
+  @Test fun el_aviso_de_la_edad_cabe_a_393_con_letra_1_0() = assertAgeHintFits(393, 1f)
+  @Test fun el_aviso_de_la_edad_cabe_a_393_con_letra_2_0() = assertAgeHintFits(393, 2f)
+  @Test fun el_aviso_de_la_edad_cabe_a_360_con_letra_1_0() = assertAgeHintFits(360, 1f)
+  @Test fun el_aviso_de_la_edad_cabe_a_360_con_letra_2_0() = assertAgeHintFits(360, 2f)
 }

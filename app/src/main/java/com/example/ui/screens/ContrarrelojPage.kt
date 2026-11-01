@@ -136,6 +136,8 @@ internal fun ContrarrelojPage(
     if (compare == null || range == null || !compare.covers(selected)) null
     else Comparison.section(compare, selected, GameRegistry.getById(selected)?.let { getGameTitle(it.id, lang, it.title) } ?: selected, range, results, now)
   }
+  // hay con qué comparar este juego pero falta la franja: sin ella no hay comparación (la de 13 a 17 años no la ve y no recibe este aviso; con los datos de muestra de depuración se asume 45 a 54)
+  val needsAge = compare != null && ageRange == null && compare.covers(selected) && Comparison.rangeFor(null, compare) == null
   val scroll = rememberScrollState()
   var headerPx by remember { mutableIntStateOf(0) }
   val fadePx = with(LocalDensity.current) { FadeHeight.toPx() }
@@ -158,6 +160,8 @@ internal fun ContrarrelojPage(
       Spacer(Modifier.height(FadeHeight))
       Column(Modifier.padding(horizontal = PageMargin).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(CardGap)) {
         GameSelector(records, selected, lang, onSelect)
+        // Tarea 205b: hay referencia para este juego pero la persona no tiene franja de edad guardada (instaló antes de la Tarea 195): la página no se queda callada, dice dónde elegirla
+        if (needsAge) Text(Comparison.AGE_HINT, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_age_hint"))
         if (section != null) {
           // primero la comparación (D2): la cifra, la escalera, la campana, otras edades y semana a semana; los rótulos solo con DOS secciones
           CompareHeader(section)
@@ -398,8 +402,14 @@ private fun ProgressBar(fraction: Float, tag: String) {
 @Composable
 private fun BellCard(r: Comparison.Ranked, range: AgeRange) {
   InfoCard("contrarreloj_bell", Comparison.BELL_TITLE) {
-    BellChart(r, range)
-    Text(Comparison.bellCaption(r.estimated), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 12.dp).testTag("contrarreloj_bell_caption"))
+    // Tarea 205b: si la barra «Tú» tapa la raya de la mitad (la marca cae en la mitad o a uno o dos aciertos, según el ancho), la raya no se dibuja y la frase lo dice: nunca habla de una raya que no se ve
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+      val onHalf = Comparison.barCoversHalf(r.mark, r.distribution, (maxWidth - NightPad * 2).value.toDouble())
+      Column {
+        BellChart(r, range, onHalf)
+        Text(Comparison.bellCaption(r.estimated, onHalf), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 12.dp).testTag("contrarreloj_bell_caption"))
+      }
+    }
   }
 }
 
@@ -835,11 +845,11 @@ private const val BELL_SAMPLES = 160
  * hasta la curva con la moneda del visto y la palabra encima, y el eje «0 aciertos · 25 · 50 · 75 o más». La barra, la línea y la curva salen de la MISMA función ([Comparison.bellHeight]), así que la barra llega justo a la curva. El lector de pantalla dice «Campana con las marcas de las 128 personas…» (el dibujo no habla; las dos frases de abajo son el contenido).
  */
 @Composable
-private fun BellChart(r: Comparison.Ranked, range: AgeRange) {
+private fun BellChart(r: Comparison.Ranked, range: AgeRange, onHalf: Boolean) {
   val d = r.distribution
   val smooth = remember(d) { Comparison.smoothed(d.bins) }
   val peak = remember(smooth) { smooth.max().coerceAtLeast(1.0) }
-  NightWindow("contrarreloj_bell_window", Modifier.semantics { contentDescription = Comparison.bellSpoken(r, range) }) {
+  NightWindow("contrarreloj_bell_window", Modifier.semantics { contentDescription = Comparison.bellSpoken(r, range, onHalf) }) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
       val width = maxWidth
       val canvasHeight = BellTopReserve + BellCurveMax
@@ -865,7 +875,8 @@ private fun BellChart(r: Comparison.Ranked, range: AgeRange) {
             drawRect(NubiTokens.OnNightDim.copy(alpha = 0.4f), topLeft = Offset(0f, base - 2.dp.toPx()), size = Size(size.width, 2.dp.toPx()))
           }
           // la mitad: una línea fina, del color de la ventanilla, que corta el lila hasta la curva
-          Box(Modifier.offset(x = xDp(Comparison.markX(d.p50, d.topMark)) - 0.75.dp, y = canvasHeight - medianH).width(1.5.dp).height(medianH).background(NubiTokens.NightWindow).hiddenTag("contrarreloj_bell_median"))
+          // (si la barra «Tú» la taparía, no se dibuja: nada se superpone y la frase de abajo dice que la marca está en la mitad)
+          if (!onHalf) Box(Modifier.offset(x = xDp(Comparison.markX(d.p50, d.topMark)) - 0.75.dp, y = canvasHeight - medianH).width(Comparison.BELL_LINE_DP.dp).height(medianH).background(NubiTokens.NightWindow).hiddenTag("contrarreloj_bell_median"))
           // «Tú»: la barra sol hasta la curva, y encima la moneda del visto y la palabra (sobre la barra, sin salirse de la ventanilla)
           Box(
             Modifier.offset(x = xDp(youX) - 3.dp, y = canvasHeight - barH).width(6.dp).height(barH).clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)).background(Clay.Sun).hiddenTag("contrarreloj_bell_you_bar")
