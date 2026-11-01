@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -16,6 +17,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.NBSP
@@ -469,5 +471,56 @@ class ContrarrelojFlowTest {
     show(vm)
     assertEquals(1, rule.onAllNodes(hasTestTag("contrarreloj_age_hint"), useUnmergedTree = true).fetchSemanticsNodes().size)
     assertEquals("y no la frase de la tercera partida", 0, rule.onAllNodes(hasTestTag("contrarreloj_early_notice"), useUnmergedTree = true).fetchSemanticsNodes().size)
+  }
+
+  // ------------------------------------------------------------------ al volver de «De dónde sale la referencia», la página sigue donde estaba (Tarea 209b)
+
+  /** El mismo cableado que `MainActivity`: las pestañas (aquí Avance) se componen solo sin panel de arriba y guardan su estado con `KeepTabsState`; «De dónde sale la referencia» va encima, como `TopPanel.REFERENCIA`. */
+  private fun showWithReferenciaPanel(vm: NeuroVidaViewModel, heightDp: Int) {
+    rule.setContent {
+      NeuroVidaTheme {
+        CompositionLocalProvider(LocalReduceMotion provides true, com.example.ui.components.LocalTabSwipeLock provides remember { mutableIntStateOf(0) }) {
+          val panel = vm.topPanel.collectAsState().value
+          Box(Modifier.width(393.dp).height(heightDp.dp)) {
+            com.example.ui.components.KeepTabsState(show = panel == null) { ProgressScreen(viewModel = vm) }
+            if (panel == com.example.viewmodel.TopPanel.REFERENCIA) com.example.ui.screens.ReferenciaPanel(onClose = { vm.openTopPanel(null) })
+          }
+        }
+      }
+    }
+    rule.waitForIdle()
+  }
+
+  @Test
+  fun al_volver_de_donde_sale_la_referencia_la_pagina_Contrarreloj_sigue_donde_estaba_y_no_arriba() {
+    val vm = withData(); vm.setPlus(true); vm.setAgeRange(com.example.model.AgeRange.R45_54)
+    TestSupport.awaitUntil(30_000) { vm.ageRange.value == com.example.model.AgeRange.R45_54 }
+    showWithReferenciaPanel(vm, heightDp = 700)                       // una ventana corta: la página se desliza
+    rule.onNodeWithTag("avance_contrarreloj_door").performClick(); rule.waitForIdle()
+    rule.onNodeWithTag("contrarreloj_page").assertIsDisplayed()
+    rule.onNodeWithTag("contrarreloj_scroll").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.ScrollBy) { it(0f, 250f) }; rule.waitForIdle()
+    val scrolled = rule.onNodeWithTag("contrarreloj_scroll").fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
+    assertTrue("la página bajó ($scrolled px)", scrolled > 100f)
+    val linkY = top("contrarreloj_source_link")
+    rule.onNodeWithTag("contrarreloj_source_link").performClick(); rule.waitForIdle()
+    assertEquals("se abre el panel de los estudios", com.example.viewmodel.TopPanel.REFERENCIA, vm.topPanel.value)
+    rule.onNodeWithTag("referencia_screen").assertIsDisplayed()
+    assertEquals("y la página queda fuera de la composición", 0, count("contrarreloj_page"))
+    pressBack()
+    assertNull("Atrás cierra el panel", vm.topPanel.value)
+    rule.onNodeWithTag("contrarreloj_page").assertIsDisplayed()
+    assertEquals("la misma página, con el mismo juego elegido", TimeTrialDay.gameFor(vm.todayKey()), vm.contrarreloj.value)
+    assertEquals("el deslizado sigue donde estaba", scrolled, rule.onNodeWithTag("contrarreloj_scroll").fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value(), 0.5f)
+    assertEquals("y la fila que abrió el panel, en el mismo lugar de la pantalla", linkY, top("contrarreloj_source_link"), 1f)
+  }
+
+  @Test
+  fun MainActivity_compone_las_pestanas_dentro_de_KeepTabsState() {
+    val main = java.io.File("src/main/java/com/example/MainActivity.kt").readText()
+    val keep = main.indexOf("KeepTabsState(show = ")
+    val pager = main.indexOf("HorizontalPager(")
+    assertTrue("el pager de las tres pestañas está dentro de KeepTabsState", keep in 0 until pager)
+    assertTrue("y se esconde con las mismas condiciones de siempre (juego, resultado, resumen, panel, Todos los juegos)",
+      main.substring(keep, pager).contains("activeGame == null && lastResult == null && sessionSummary == null && topPanel == null && allGames == null"))
   }
 }

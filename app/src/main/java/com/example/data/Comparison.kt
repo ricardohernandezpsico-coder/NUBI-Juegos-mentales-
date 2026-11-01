@@ -30,13 +30,13 @@ object Comparison {
   const val SECTION_COMPARE = "Esta semana, comparado con tu edad"
   const val SAMPLE_NOTICE = "Estos son datos de muestra: solo se ven en la versión de prueba."
   const val PLACE_TITLE = "Tu lugar esta semana"
-  /** Antes «Tu percentil semanal» (Tarea 209, decisión de Ricardo, 1-nov): «percentil» salió de todo texto visible; los mismos números («27 de cada 100») y la raya «la mitad». */
-  const val WEEKS_TITLE = "Tu lugar cada semana"
+  /** Antes «Tu percentil semanal» (Tarea 209, decisión de Ricardo, 1-nov): «percentil» salió de todo texto visible; los mismos números («27 de cada 100») y la raya «la mitad». Primero se llamó «Tu lugar cada semana», pero quedaba casi igual a [PLACE_TITLE] en la misma página (la losa de «sin marca esta semana» y las semanas pasadas); Ricardo eligió «Semana a semana» (Tarea 209b, 1-nov; una línea a 393 y 360 dp con letra 1,0, regla de la Tarea 203b). */
+  const val WEEKS_TITLE = "Semana a semana"
   const val OTHERS_TITLE = "Otras edades"
   const val LADDER_TITLE = "La escalera de tu franja"
   /** Cierra «Otras edades» cuando alguna franja (o todas las edades) todavía no llega a 50 personas: no se muestran filas vacías. */
   const val OTHERS_HIDDEN = "Las demás edades aparecen cuando lleguen a 50 personas."
-  /** El rótulo de la raya de 50 en «Tu lugar cada semana» (14 sp, como los ejes). */
+  /** El rótulo de la raya de 50 en «Semana a semana» (14 sp, como los ejes). */
   const val WEEKS_HALF_LABEL = "la mitad"
   const val WEEKS_AXIS_RIGHT = "esta semana"
   const val BELL_AXIS_LEFT = "0 aciertos"

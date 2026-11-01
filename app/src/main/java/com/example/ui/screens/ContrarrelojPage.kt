@@ -95,7 +95,7 @@ private val CardGap = 16.dp
 private val BarMax = 96.dp
 private val BarMin = 8.dp
 private val BarWidthMax = 36.dp
-/** El aire entre las barras de «Tu lugar cada semana» y el rótulo «la mitad» de su raya. */
+/** El aire entre las barras de «Semana a semana» y el rótulo «la mitad» de su raya. */
 private val HalfLabelGap = 8.dp
 
 /** La letra de los números y títulos grandes de la página no pasa de 1,3 (con 2,0, un título de 52 sp se salía del margen: Fable §11.6). */
@@ -109,7 +109,7 @@ private const val BIG_TEXT_SCALE_CAP = 1.3f
  * sobre ese fondo plano; el selector de los cuatro juegos (dos filas parejas; una columna si «Acoplamiento» no cabe entero en media fila; el elegido en lima con el visto; abre con el juego de hoy).
  *
  * **Con comparación (solo [compare] no nulo, con una franja de edad y desde la tercera partida guardada de ESTE juego, Tarea 207: antes, la página dice «Tu lugar aparece desde tu tercera partida…» una vez; la persona de 13 a 17 años no la ve, y sin franja guardada la página dice dónde elegirla; la precedencia es `Comparison.gate`):** primero la comparación, bajo «Esta semana, comparado con tu edad» y la frase larga de la referencia estimada («Referencia estimada para 45 a 54 años: …No son personas.»; con los datos de muestra de depuración, su frase): la cifra ([HeroCard]: «63 de cada 100», su frase, la división y su lugar entre las cinco, «La tercera de cinco divisiones.»), la escalera de divisiones con «Te faltan N aciertos»
- * y las semanas seguidas ([LadderCard]), la campana en su losa ([BellCard]), «Otras edades» y «Tu lugar cada semana»; con «Todavía somos pocos» o sin marca esta semana, en vez de la cifra y la escalera, su losa ([PlaceCard]: nada de umbrales inventados). Después, bajo el rótulo «Tus marcas»: las tres cifras ([StatsCard]), «Tus últimas 10 marcas» ([MarksCard]),
+ * y las semanas seguidas ([LadderCard]), la campana en su losa ([BellCard]), «Otras edades» y «Semana a semana»; con «Todavía somos pocos» o sin marca esta semana, en vez de la cifra y la escalera, su losa ([PlaceCard]: nada de umbrales inventados). Después, bajo el rótulo «Tus marcas»: las tres cifras ([StatsCard]), «Tus últimas 10 marcas» ([MarksCard]),
  * «Tu ritmo en la última partida» ([RhythmCard]) y las notas ([NotesCard]). **Sin comparación**, la página es solo eso último, sin rótulos de sección y con la tercera cifra sin depender de otras personas. Una línea fina separa lo que una losa junta, y los gráficos van en una ventanilla noche ([NightWindow]).
  *
  * Todo a 16 sp o más (14 sp solo los rótulos de los ejes); cada número con su unidad y en frase completa; nada solo por color (el récord lleva moneda con visto y la palabra; tu fila de la escalera, la división en palabras). [results] = TODAS las partidas del Contrarreloj; [selected] = el juego elegido; [now] = el momento de mirar.
@@ -916,7 +916,7 @@ private fun BellAxis(width: Dp, d: Comparison.Distribution, mark: Int, onHalf: B
   }
 }
 
-/** «Tu lugar cada semana»: las semanas con marca propia y con 50 personas o más en la franja, en barras de 0 a 100 en la ventanilla noche, y la frase («En 3 de las 4 semanas estuviste por encima de la mitad de tu franja.»). */
+/** «Semana a semana»: las semanas con marca propia y con 50 personas o más en la franja, en barras de 0 a 100 en la ventanilla noche, y la frase («En 3 de las 4 semanas estuviste por encima de la mitad de tu franja.»). */
 @Composable
 private fun PercentileWeeksCard(points: List<Comparison.WeekPoint>, estimated: Boolean) {
   InfoCard("contrarreloj_percweeks", Comparison.WEEKS_TITLE) {

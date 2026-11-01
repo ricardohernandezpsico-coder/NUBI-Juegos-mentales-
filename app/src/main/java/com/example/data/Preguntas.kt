@@ -83,5 +83,5 @@ object Preguntas {
   /**
    * El mismo texto, corrido y sin los botones, para la descripción larga de la ficha de Play (Fable §1.3: cabe en 2.000 caracteres con las ocho; con el cobro, las del cobro primero). Cada pregunta y su respuesta, separadas por una línea en blanco.
    */
-  fun playListing(billingOn: Boolean = true): String = visible(billingOn).joinToString("\n\n") { "${it.question} ${it.answer}" }
+  fun playListing(billingOn: Boolean = Features.BILLING): String = visible(billingOn).joinToString("\n\n") { "${it.question} ${it.answer}" }
 }

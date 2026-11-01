@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -21,6 +22,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.example.ui.components.BoardBackground
@@ -88,6 +90,52 @@ class TuYAjustesTest {
 
   private fun yOf(tag: String) = rule.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot.top
   private fun exists(tag: String) = rule.onAllNodes(hasTestTag(tag)).fetchSemanticsNodes().isNotEmpty()
+
+  // ------------------------------------------------------------------ al volver de un panel, Tú sigue donde estaba (Tarea 209b)
+
+  /** El mismo cableado que `MainActivity`: Tú se compone solo sin panel de arriba y guarda su estado con `KeepTabsState`; el panel va encima. Una ventana corta, para que Tú se deslice. */
+  private fun showTuWithPanels(v: NeuroVidaViewModel) {
+    rule.mainClock.autoAdvance = true
+    rule.setContent {
+      CompositionLocalProvider(LocalReduceMotion provides true, LocalBarInset provides 88.dp) {
+        NeuroVidaTheme {
+          val panel = v.topPanel.collectAsState().value
+          Box(Modifier.width(393.dp).height(700.dp)) {
+            BoardBackground()
+            com.example.ui.components.KeepTabsState(show = panel == null) { TuScreen(viewModel = v) }
+            when (panel) {
+              com.example.viewmodel.TopPanel.FUENTES -> com.example.ui.screens.FuentesPanel(onClose = { v.openTopPanel(null) })
+              com.example.viewmodel.TopPanel.PREGUNTAS -> com.example.ui.screens.PreguntasPanel(onClose = { v.openTopPanel(null) })
+              else -> {}
+            }
+          }
+        }
+      }
+    }
+    rule.waitForIdle()
+  }
+
+  @Test
+  fun al_volver_de_En_que_se_basa_Nubi_y_de_Preguntas_frecuentes_Tu_sigue_donde_estaba_y_no_arriba() {
+    val v = vm()
+    showTuWithPanels(v)
+    for ((button, panel, panelTag) in listOf(
+      Triple("btn_open_fuentes", com.example.viewmodel.TopPanel.FUENTES, "fuentes_screen"),
+      Triple("btn_open_preguntas", com.example.viewmodel.TopPanel.PREGUNTAS, "preguntas_screen")
+    )) {
+      rule.onNodeWithTag("tu_lista").performScrollToNode(hasTestTag(button)); rule.waitForIdle()          // una ventana corta: el botón no está compuesto hasta que la lista llega a él
+      val y = yOf(button)
+      assertTrue("$button quedó a la vista, bajando la lista (y = $y)", y > 0f)
+      assertTrue("Tú se deslizó (no está arriba)", rule.onNodeWithTag("tu_lista").fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value() > 0f)
+      rule.onNodeWithTag(button).performClick(); rule.waitForIdle()
+      assertEquals(panel, v.topPanel.value)
+      assertTrue("se ve el panel", exists(panelTag))
+      assertFalse("y Tú no", exists("tu_lista"))
+      rule.runOnUiThread { v.openTopPanel(null) }; rule.waitForIdle()
+      assertTrue("Tú vuelve", exists("tu_lista"))
+      assertEquals("$button sigue en el mismo lugar de la pantalla", y, yOf(button), 1f)
+    }
+  }
 
   // ------------------------------------------------------------------ Tú
 

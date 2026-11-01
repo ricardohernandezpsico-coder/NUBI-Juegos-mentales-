@@ -174,7 +174,8 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
       Box(modifier = Modifier.fillMaxSize()) {
         // Content based on tab. Mientras hay un juego o un resultado encima no se compone: esas pantallas van
         // sobre el cielo transparente (se vería la pestaña detrás) y no deben dejar pasar toques a ella.
-        if (activeGame == null && lastResult == null && sessionSummary == null && topPanel == null && allGames == null) {
+        // `KeepTabsState` (Tarea 209b): al esconder el pager guarda el deslizado de cada página y lo devuelve al volver (de «De dónde sale la referencia», de «En qué se basa Nubi», de un juego...); sin él, la página volvía arriba.
+        com.example.ui.components.KeepTabsState(show = activeGame == null && lastResult == null && sessionSummary == null && topPanel == null && allGames == null) {
           // Si la pestaña cambió mientras había un juego o el resumen encima, el pager vuelve a ella sin animar.
           LaunchedEffect(Unit) {
             if (pagerState.currentPage != currentTab.ordinal) pagerState.scrollToPage(currentTab.ordinal)

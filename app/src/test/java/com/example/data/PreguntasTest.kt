@@ -114,4 +114,10 @@ class PreguntasTest {
     assertNotEquals(with, without)
     assertFalse("sin botones", "Abrir Suscripciones" in with)
   }
+
+  @Test
+  fun la_ficha_de_Play_sin_valor_explicito_sigue_la_bandera_del_cobro_y_no_trae_sus_preguntas_mientras_este_apagado() {
+    assertEquals("por defecto, lo mismo que con la bandera", Preguntas.playListing(billingOn = Features.BILLING), Preguntas.playListing())
+    if (!Features.BILLING) assertFalse("con el cobro apagado, la ficha no habla de renovar ni de cancelar", "se renueva solo" in Preguntas.playListing() || "cancelo" in Preguntas.playListing())
+  }
 }

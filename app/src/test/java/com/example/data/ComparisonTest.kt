@@ -273,7 +273,7 @@ class ComparisonTest {
     assertEquals("Tu única semana con marca estuvo en la mitad de abajo de tu franja.", Comparison.weeksSentence(pts(12)))
     assertNull("sin semanas con dato no hay frase ni losa", Comparison.weeksSentence(emptyList()))
     assertEquals(
-      "Tu lugar cada semana: hace 6 semanas, deja detrás a 52 de cada 100; hace 1 semana, deja detrás a 58 de cada 100; esta semana, deja detrás a 63 de cada 100.",
+      "Semana a semana: hace 6 semanas, deja detrás a 52 de cada 100; hace 1 semana, deja detrás a 58 de cada 100; esta semana, deja detrás a 63 de cada 100.",
       Comparison.weeksSpoken(listOf(Comparison.WeekPoint(6, 30, 52), Comparison.WeekPoint(1, 30, 58), Comparison.WeekPoint(0, 43, 63)))
     )
   }
@@ -651,8 +651,11 @@ class ComparisonTest {
     assertEquals("hace 3 semanas", Comparison.weeksAxisLeft(listOf(week(3, 40), week(0, 63))))
     assertNull("si la más vieja es esta no hay de qué separar", Comparison.weeksAxisLeft(listOf(week(0, 63))))
     assertEquals("la raya de la mitad se rotula con una palabra corta", "la mitad", Comparison.WEEKS_HALF_LABEL)
-    assertEquals("Tu lugar cada semana", Comparison.WEEKS_TITLE)
+    assertEquals("Semana a semana", Comparison.WEEKS_TITLE)
     assertFalse("«percentil» salió de todo texto visible (Tarea 209)", Comparison.WEEKS_TITLE.lowercase().contains("percentil"))
+    // Tarea 209b: dos losas de la misma página («Tu lugar esta semana» cuando no hay marca esta semana y las semanas pasadas) no se parecen en el título
+    assertNotEquals(Comparison.PLACE_TITLE, Comparison.WEEKS_TITLE)
+    assertNotEquals("no empiezan igual", Comparison.PLACE_TITLE.split(' ').take(2), Comparison.WEEKS_TITLE.split(' ').take(2))
   }
 
   // ------------------------------------------------------------------ lo gratis (Tarea 203)

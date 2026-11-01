@@ -648,7 +648,7 @@ class ContrarrelojPageTest {
 
   @Test fun tu_lugar_semana_a_semana_dibuja_las_semanas_con_marca_de_la_mas_vieja_a_esta() {
     show(compare = manyWorld, ageRange = AgeRange.R45_54)
-    assertEquals("Tu lugar cada semana", textOf("contrarreloj_percweeks_title").replace(NBSP, " "))
+    assertEquals("Semana a semana", textOf("contrarreloj_percweeks_title").replace(NBSP, " "))
     val b = boxes()
     val mine = com.example.data.TimeTrialDay.ofGame(ten + others, "stroop")
     val bests = List(7) { Comparison.bestOfWeek(mine, now, it) }

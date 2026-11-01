@@ -22,7 +22,7 @@ class VisibleTextsGuardTest {
 
   /**
    * «Percentil» no se dice en NINGÚN texto de la app (regla del 8-oct: ni percentiles ni comparaciones con otras personas). Entre el 31-oct y el 1-nov hubo dos textos exactos exceptuados en la comparación del Contrarreloj («Tu percentil semanal» y «Percentil N»); la Tarea 209
-   * (1-nov, decisión de Ricardo) los quitó: la cifra queda con «N de cada 100», la división y su lugar entre las cinco, y el gráfico se llama «Tu lugar cada semana». Esta lista quedó VACÍA a propósito y la prueba de más abajo exige que siga así.
+   * (1-nov, decisión de Ricardo) los quitó: la cifra queda con «N de cada 100», la división y su lugar entre las cinco, y el gráfico se llama «Semana a semana». Esta lista quedó VACÍA a propósito y la prueba de más abajo exige que siga así.
    */
   private val percentileTexts: Set<String> = emptySet()
 
