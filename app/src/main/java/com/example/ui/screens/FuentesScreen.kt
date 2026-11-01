@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -44,6 +45,7 @@ import com.example.data.Fuente
 import com.example.data.Fuentes
 import com.example.data.FuentesMas
 import com.example.data.HealthNotice
+import com.example.data.ReferenciaFuentes
 import com.example.data.Mecanismo
 import com.example.model.DomainType
 import com.example.model.GameRegistry
@@ -65,13 +67,21 @@ internal fun openInBrowser(context: Context, url: String): Boolean = try {
   false
 }
 
-/** «En qué se basa Nubi», como panel con flecha encima de Tú (como Ajustes). */
+/**
+ * «En qué se basa Nubi», como panel con flecha encima de Tú (como Ajustes). Desde la Tarea 209 trae una fila, «De dónde sale la referencia del Contrarreloj ›», que abre esa hoja dentro del mismo panel (Atrás vuelve aquí, como «Licencias y créditos» vuelve a Ajustes) y deja el deslizado donde estaba.
+ */
 @Composable
 fun FuentesPanel(onClose: () -> Unit, modifier: Modifier = Modifier) {
+  var showReferencia by rememberSaveable { mutableStateOf(false) }
+  val scroll = rememberScrollState()
+  if (showReferencia) {
+    ReferenciaPanel(onClose = { showReferencia = false }, modifier = modifier)
+    return
+  }
   BackHandler(onBack = onClose)
   Column(modifier = modifier.fillMaxSize()) {
     PanelHeader("En qué se basa Nubi", onClose)
-    FuentesScreen(modifier = Modifier.weight(1f))
+    FuentesScreen(modifier = Modifier.weight(1f), scroll = scroll, onOpenReferencia = { showReferencia = true })
   }
 }
 
@@ -84,12 +94,12 @@ fun FuentesPanel(onClose: () -> Unit, modifier: Modifier = Modifier) {
  * «Cómo está hecha Nubi» (un grupo por decisión de diseño: a la vista, su título y su frase de lo que hace Nubi; las fuentes van plegadas en «Estudios (N)», igual que «Más estudios»: «lo simple primero», Opus, 28-oct; «La dificultad se acomoda a ti» absorbe lo que era «Cómo se ajusta la dificultad»); y «Lo que no decimos» con cuatro revisiones. Los datos están en `FuentesMas`.
  */
 @Composable
-fun FuentesScreen(modifier: Modifier = Modifier, openLink: ((String) -> Boolean)? = null) {
+fun FuentesScreen(modifier: Modifier = Modifier, openLink: ((String) -> Boolean)? = null, scroll: ScrollState = rememberScrollState(), onOpenReferencia: (() -> Unit)? = null) {
   val context = LocalContext.current
   var noBrowser by remember { mutableStateOf(false) }
   val open: (String) -> Unit = { url -> noBrowser = !(openLink?.invoke(url) ?: openInBrowser(context, url)) }
   Column(
-    modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).testTag("fuentes_screen"),
+    modifier = modifier.fillMaxSize().verticalScroll(scroll).padding(horizontal = 20.dp).testTag("fuentes_screen"),
     verticalArrangement = Arrangement.spacedBy(14.dp)
   ) {
     Spacer(Modifier.height(4.dp))
@@ -113,6 +123,9 @@ fun FuentesScreen(modifier: Modifier = Modifier, openLink: ((String) -> Boolean)
     SectionTitle(FuentesMas.MECHANISMS_TITLE, "fuentes_mecanismos")
     OnBoardText(FuentesMas.MECHANISMS_TEXT, color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("fuentes_mecanismos_texto"))
     FuentesMas.mechanisms.forEach { MechanismGroup(it, open) }
+
+    // De dónde sale la referencia del Contrarreloj (Tarea 209): una fila que abre la hoja con los estudios de la referencia estimada
+    if (onOpenReferencia != null) ReferenciaRow(onOpenReferencia)
 
     // Las palabras
     SectionTitle(Fuentes.WORDS_TITLE, "fuentes_palabras")
@@ -165,11 +178,22 @@ private fun SourceTile(gameId: String, title: String, source: Fuente, open: (Str
   }
 }
 
+/** La fila «De dónde sale la referencia del Contrarreloj ›» (Tarea 209): una losa crema tocable que abre la hoja de la referencia; el lector dice el título sin el «›», con el rol de botón. */
+@Composable
+private fun ReferenciaRow(onClick: () -> Unit) {
+  ClayCard(
+    modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("fuentes_referencia_row").semantics { contentDescription = ReferenciaFuentes.FUENTES_ROW.removeSuffix(" ›") },
+    color = Clay.Cream, onClick = onClick, contentPadding = 14.dp
+  ) {
+    Text(ReferenciaFuentes.FUENTES_ROW, color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp)
+  }
+}
+
 /**
  * La fila de un estudio (Tarea 186): «Autor, año», su línea «qué sustenta» y «Ver el estudio ›»; tocarla abre el DOI en el navegador. Se usa en «Más estudios», en «Cómo está hecha Nubi» y en «Lo que no decimos». TalkBack la lee como una frase y dice qué hace al tocar.
  */
 @Composable
-private fun StudyRow(study: Estudio, open: (String) -> Unit, modifier: Modifier = Modifier) {
+internal fun StudyRow(study: Estudio, open: (String) -> Unit, modifier: Modifier = Modifier) {
   ClayCard(
     modifier = modifier.fillMaxWidth().testTag("estudio_${study.doi}").semantics { contentDescription = "${study.cite}. ${study.line} Abre el estudio en el navegador." },
     color = Clay.Cream, onClick = { open(study.url) }, contentPadding = 14.dp

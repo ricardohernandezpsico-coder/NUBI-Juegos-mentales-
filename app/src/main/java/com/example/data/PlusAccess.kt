@@ -21,13 +21,24 @@ object PlusAccess {
   // ------------------------------------------------------------------ lo que dice la hoja del candado (sin Plus)
 
   const val LOCK_LABEL = "Con Nubi Plus"
+
+  /**
+   * El candado de la puerta de Avance CON comparación (Tarea 209; `auditoria-fable/claridad-plus-y-ayuda.md` §1.2 a): dice qué agrega Plus sobre lo gratis. «Además» porque la frase gratis de arriba ya dio la división. Sin comparación (sin franja de edad, de 13 a 17 años o sin tabla) el candado queda corto, [LOCK_LABEL]:
+   * no hay un «además» que ofrecer.
+   */
+  const val LOCK_LABEL_COMPARED = "Con Nubi Plus: además, dónde queda tu marca frente a tu edad y a otras edades."
+
+  fun lockLabel(kind: Comparison.Kind): String = if (kind == Comparison.Kind.NONE) LOCK_LABEL else LOCK_LABEL_COMPARED
   const val SHEET_TITLE = "Tus marcas del Contrarreloj, con Nubi Plus"
   /**
    * La hoja, en TRES líneas (Tarea 203; `auditoria-fable/contrarreloj-rediseno.md` §4). Lo que dice depende de con qué se compara ESTA persona (`Comparison.Kind`, Tarea 205c: NONE si no hay fuente o no tiene franja de edad con que compararse): con la referencia estimada (la de la tienda) la nombra, con personas (datos de muestra de depuración;
    * mañana, personas reales) habla de «personas de tu edad», y sin comparación solo de lo que de verdad hay detrás. Así la hoja nunca promete de más. Las dos primeras constantes son la forma «sin comparación» y la de «personas»; la de la referencia estimada, más abajo, nunca dice «personas».
    */
   const val SHEET_LEAD = "Una página con todas tus marcas, comparadas solo contigo:"
-  const val SHEET_LEAD_COMPARED = "Una página con todas tus marcas, comparadas contigo y con personas de tu edad:"
+  /** Lo gratis primero, y después lo que agrega Plus (Tarea 209): con personas reales (futuro) y con la referencia estimada empiezan igual. */
+  const val SHEET_LEAD_COMPARED = "Gratis: tu división de la semana. Con Nubi Plus, además:"
+  /** De 13 a 17 años (Tarea 209): la hoja lo dice en vez de callar; esa franja no se compara ([Features.COMPARE_MINORS]). */
+  const val SHEET_LEAD_MINOR = "Una página con todas tus marcas. De 13 a 17 años se comparan solo contigo:"
   val SHEET_ITEMS: List<String> = listOf(
     "Tu récord, tu mejor marca de esta semana y tus últimas 10 marcas, en barras.",
     "Tu ritmo en los 2 minutos, medio minuto por medio minuto.",
@@ -42,17 +53,24 @@ object PlusAccess {
   /**
    * Con la REFERENCIA ESTIMADA (Tarea 205; §4 de Fable y decisión de Opus del 1-nov): la hoja la nombra («referencia estimada», nunca «personas») y NO promete nada más: ningún texto dice que luego se compare con personas reales.
    */
-  const val SHEET_LEAD_ESTIMATED = "Una página con todas tus marcas, comparadas contigo y con una referencia estimada para tu edad:"
+  const val SHEET_LEAD_ESTIMATED = SHEET_LEAD_COMPARED
   val SHEET_ITEMS_ESTIMATED: List<String> = listOf(
-    "Tu lugar en una referencia estimada para tu edad: cuántas de cada 100 marcas superas y en qué división estás.",
-    "La escalera de divisiones con su primer acierto, y tus semanas seguidas arriba de la mitad.",
-    "Tus marcas: el récord, las últimas 10 y tu ritmo en los 2 minutos."
+    "Dónde queda tu marca frente a la referencia estimada para tu edad y frente a otras edades: cuántas de cada 100 marcas superas.",
+    "La escalera de las cinco divisiones, con su primer acierto, y tus semanas seguidas arriba de la mitad.",
+    "Todas tus marcas: el récord, las últimas 10 y tu ritmo en los 2 minutos."
   )
 
-  fun sheetLead(kind: Comparison.Kind): String = when (kind) {
-    Comparison.Kind.NONE -> SHEET_LEAD
-    Comparison.Kind.ESTIMATED -> SHEET_LEAD_ESTIMATED
-    Comparison.Kind.PEOPLE -> SHEET_LEAD_COMPARED
+  /**
+   * Bajo las líneas, con la referencia estimada (Tarea 209): la razón primero, en 16 sp `InkMuted`, y debajo la fila [Comparison.SOURCE_LINK] que abre «De dónde sale la referencia». La palabra «personas» solo va en este «no son personas».
+   */
+  const val SHEET_NOTE_ESTIMATED = "La referencia no son personas: Nubi no junta datos de nadie."
+
+  /** La entrada de la hoja: según con qué se compara la persona; [minor] = guardó la franja de 13 a 17 años (sin comparación, pero la hoja lo dice). */
+  fun sheetLead(kind: Comparison.Kind, minor: Boolean = false): String = when {
+    minor && kind == Comparison.Kind.NONE -> SHEET_LEAD_MINOR
+    kind == Comparison.Kind.NONE -> SHEET_LEAD
+    kind == Comparison.Kind.ESTIMATED -> SHEET_LEAD_ESTIMATED
+    else -> SHEET_LEAD_COMPARED
   }
 
   fun sheetItems(kind: Comparison.Kind): List<String> = when (kind) {

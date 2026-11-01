@@ -96,14 +96,15 @@ fun ProgressScreen(
   val estimatedReference by viewModel.estimatedReference.collectAsState()
   val doorCompare = remember(compareWorld, estimatedReference) { com.example.data.Comparison.sourceFor(com.example.BuildConfig.DEBUG, compareWorld, estimatedReference) }
   // Con qué se compara ESTA persona, para la hoja del candado (Tarea 205c): sin franja de edad (o de 13 a 17 años) no hay comparación, así que la hoja no le promete una referencia que nunca verá
-  val sheetKind = if (doorCompare != null && com.example.data.Comparison.rangeFor(ageRange, doorCompare) != null) com.example.data.Comparison.kindOf(doorCompare) else com.example.data.Comparison.Kind.NONE
+  val sheetKind = com.example.data.Comparison.kindFor(doorCompare, ageRange)
+  val sheetMinor = com.example.data.Comparison.isMinorLocked(ageRange)          // de 13 a 17 años la hoja dice que solo se comparan contigo (Tarea 209)
 
   Column(modifier.fillMaxSize().padding(bottom = com.example.ui.components.LocalBarInset.current)) {      // la franja de la barra de pestañas queda libre
     val ttOpen = contrarreloj
     if (ttOpen != null && contrarrelojOpen) {
       // La comparación (Tareas 202 y 205): `Comparison.sourceFor` da la referencia estimada del APK (también en la tienda; la página lo dice con su frase larga) y, en depuración con un mundo de muestra, esos datos; null si no hay con qué comparar.
       val compare = doorCompare
-      ContrarrelojPage(results = ttResults, selected = ttOpen, onSelect = viewModel::selectContrarrelojGame, onBack = viewModel::closeContrarreloj, now = ttNow, lang = currentLang, compare = compare, ageRange = ageRange)
+      ContrarrelojPage(results = ttResults, selected = ttOpen, onSelect = viewModel::selectContrarrelojGame, onBack = viewModel::closeContrarreloj, now = ttNow, lang = currentLang, compare = compare, ageRange = ageRange, onOpenSource = { viewModel.openTopPanel(com.example.viewmodel.TopPanel.REFERENCIA) })
       return@Column
     }
     val openKey = avanceArea
@@ -182,7 +183,7 @@ fun ProgressScreen(
     }
   }
 
-  if (plusSheet) PlusLockSheet(onDismiss = { plusSheet = false }, kind = sheetKind)       // sin Plus: qué trae la página, con «Cerrar» (la compra llega con Google Play Billing, Etapa 4)
+  if (plusSheet) PlusLockSheet(onDismiss = { plusSheet = false }, kind = sheetKind, minor = sheetMinor, onSource = { plusSheet = false; viewModel.openTopPanel(com.example.viewmodel.TopPanel.REFERENCIA) })       // sin Plus: qué trae la página, con «Cerrar» (la compra llega con Google Play Billing, Etapa 4)
 }
 
 /** La puerta del Contrarreloj con el récord del juego de HOY (el mismo de Hoy); 2 dp de aire propio arriba y abajo sobre los 22 dp entre secciones (24 dp hasta cada vecina). Con Plus abre la página con el juego de hoy elegido; sin Plus, [onLocked]. */
@@ -197,5 +198,7 @@ private fun DoorRow(
     if (plus || compare == null) null
     else com.example.data.Comparison.rangeFor(ageRange, compare)?.let { com.example.data.Comparison.freeSentenceFor(compare, TimeTrialDay.gameFor(todayKey), it, results, System.currentTimeMillis()) }
   }
-  ContrarrelojDoor(record, plus, onClick = { if (plus) viewModel.openContrarreloj() else onLocked() }, modifier = Modifier.padding(vertical = 2.dp), freeLine = freeLine)
+  // el candado dice qué agrega Plus solo si hay una comparación para ESTA persona (Tarea 209)
+  val lockLabel = com.example.data.PlusAccess.lockLabel(com.example.data.Comparison.kindFor(compare, ageRange))
+  ContrarrelojDoor(record, plus, onClick = { if (plus) viewModel.openContrarreloj() else onLocked() }, modifier = Modifier.padding(vertical = 2.dp), freeLine = freeLine, lockLabel = lockLabel)
 }

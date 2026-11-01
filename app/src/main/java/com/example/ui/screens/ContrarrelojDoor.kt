@@ -39,12 +39,12 @@ import com.example.ui.theme.TitleFamily
  * La PUERTA de la página «Contrarreloj» en Avance (Tarea 199; Fable §1.2 y §11): UNA losa crema entre «Tus áreas» y «Tus mejores marcas», sin título de sección ni línea de ayuda sobre el cielo (los textos sueltos sobre los luceros se leían mal): el reloj de plasticina de Hoy, «Tus marcas del Contrarreloj» y,
  * debajo, «Tu récord de hoy: 44 aciertos» (el juego del día; sin marcas, «Todavía sin marcas»). Es la única puerta (el final del Contrarreloj lleva un atajo a la misma página, solo con Plus). 64 dp o más de alto, tocable entera.
  *
- * Con Nubi Plus lleva a la página; el chevron del kit lo dice. Sin Plus, la losa sigue diciendo el récord de hoy (es tuyo y ya se ve en Hoy) y suma el candado, «Con Nubi Plus»; al tocarla se abre [PlusLockSheet]. LO GRATIS (Tarea 203, Ricardo): sin Plus y con [freeLine] (la división y «te faltan N», de `Comparison.freeSentenceFor`; solo con una comparación disponible y una marca esta semana), esa frase va entre el récord y el candado. [record] = la marca del juego de hoy.
+ * Con Nubi Plus lleva a la página; el chevron del kit lo dice. Sin Plus, la losa sigue diciendo el récord de hoy (es tuyo y ya se ve en Hoy) y suma el candado ([lockLabel]: «Con Nubi Plus: además, dónde queda tu marca frente a tu edad y a otras edades.» con comparación, desde la Tarea 209; «Con Nubi Plus» sin ella); al tocarla se abre [PlusLockSheet]. LO GRATIS (Tarea 203, Ricardo): sin Plus y con [freeLine] (la división y «te faltan N», de `Comparison.freeSentenceFor`; solo con una comparación disponible y una marca esta semana), esa frase va entre el récord y el candado. [record] = la marca del juego de hoy.
  */
 @Composable
-internal fun ContrarrelojDoor(record: Int?, plus: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, freeLine: String? = null) {
+internal fun ContrarrelojDoor(record: Int?, plus: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, freeLine: String? = null, lockLabel: String = PlusAccess.LOCK_LABEL) {
   ClayCard(
-    modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = TimeTrialMarks.doorSpoken(record, plus, freeLine.takeIf { !plus }) }.testTag("avance_contrarreloj_door"),
+    modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = TimeTrialMarks.doorSpoken(record, plus, freeLine.takeIf { !plus }, lockLabel) }.testTag("avance_contrarreloj_door"),
     onClick = onClick, contentPadding = 0.dp
   ) {
     Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 12.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -59,7 +59,7 @@ internal fun ContrarrelojDoor(record: Int?, plus: Boolean, onClick: () -> Unit, 
           Row(Modifier.padding(top = 4.dp).testTag("avance_contrarreloj_lock"), verticalAlignment = Alignment.CenterVertically) {
             KitGlyph(Glyph.LOCK, size = 20.dp)
             Spacer(Modifier.width(6.dp))
-            Text(PlusAccess.LOCK_LABEL, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp)
+            Text(lockLabel, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp, modifier = Modifier.testTag("avance_contrarreloj_lock_label"))
           }
         }
       }
@@ -79,11 +79,12 @@ internal fun String.glueNamesForLetter(): String = glueNames(LocalDensity.curren
 
 /**
  * La hoja corta que abre la puerta de Avance SIN Nubi Plus (Tarea 199): qué trae la página, en una lista breve, y UN solo botón, «Cerrar» (antes «Entendido»: en un panel de prueba se leyó como «acepto»). El botón de compra llega con Google Play Billing (Etapa 4, `docs/modelo-negocio.md`); hasta entonces la hoja solo cuenta qué hay detrás. Sin precios ni promesas.
- * [kind] dice con qué se compara la persona (`Comparison.Kind`): con una referencia estimada, la hoja la nombra; sin comparación (sin franja de edad, de 13 a 17 años o sin tabla), solo habla de «contigo».
+ * [kind] dice con qué se compara la persona (`Comparison.Kind`): con una referencia estimada, la hoja dice lo gratis («Gratis: tu división de la semana. Con Nubi Plus, además:»), las tres líneas de lo que agrega Plus, que la referencia no son personas y la fila «De dónde sale la referencia ›» ([onSource]);
+ * sin comparación (sin franja de edad o sin tabla), solo habla de «contigo»; [minor] (franja de 13 a 17 años guardada) lo dice: «De 13 a 17 años se comparan solo contigo» (Tarea 209).
  */
 @Composable
-internal fun PlusLockSheet(onDismiss: () -> Unit, kind: com.example.data.Comparison.Kind = com.example.data.Comparison.Kind.NONE) {
-  Dialog(onDismissRequest = onDismiss) { PlusLockSheetContent(onDismiss, kind) }
+internal fun PlusLockSheet(onDismiss: () -> Unit, kind: com.example.data.Comparison.Kind = com.example.data.Comparison.Kind.NONE, minor: Boolean = false, onSource: (() -> Unit)? = null) {
+  Dialog(onDismissRequest = onDismiss) { PlusLockSheetContent(onDismiss, kind, minor, onSource) }
 }
 
 /**
@@ -91,12 +92,12 @@ internal fun PlusLockSheet(onDismiss: () -> Unit, kind: com.example.data.Compari
  * Se desliza: con tres líneas y letra 2,0 puede no caber entera en el alto de una pantalla, y «Cerrar» queda al final del deslizable.
  */
 @Composable
-internal fun PlusLockSheetContent(onClose: () -> Unit, kind: com.example.data.Comparison.Kind = com.example.data.Comparison.Kind.NONE) {
+internal fun PlusLockSheetContent(onClose: () -> Unit, kind: com.example.data.Comparison.Kind = com.example.data.Comparison.Kind.NONE, minor: Boolean = false, onSource: (() -> Unit)? = null) {
   ClayCard(Modifier.fillMaxWidth().padding(8.dp).testTag("plus_sheet"), color = Clay.Cream, size = SlabSize.LARGE, contentPadding = 20.dp) {
     // se desliza: con tres líneas (Tarea 203) y letra 2,0 la hoja puede no caber entera en el alto de una pantalla
     Column(Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
       Text(PlusAccess.SHEET_TITLE, color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 24.sp, modifier = Modifier.semantics { heading() }.testTag("plus_sheet_title"))
-      Text(PlusAccess.sheetLead(kind), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("plus_sheet_lead"))
+      Text(PlusAccess.sheetLead(kind, minor), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("plus_sheet_lead"))
       Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("plus_sheet_items")) {
         PlusAccess.sheetItems(kind).forEachIndexed { i, item ->
           Row(verticalAlignment = Alignment.Top) {
@@ -105,6 +106,11 @@ internal fun PlusLockSheetContent(onClose: () -> Unit, kind: com.example.data.Co
             Text(item, color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.weight(1f).testTag("plus_sheet_item_$i"))
           }
         }
+      }
+      // Con la referencia estimada (Tarea 209): la razón primero y, debajo, la fila que abre «De dónde sale la referencia» (la hoja se cierra y se abre ese panel)
+      if (kind == com.example.data.Comparison.Kind.ESTIMATED) {
+        Text(PlusAccess.SHEET_NOTE_ESTIMATED, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("plus_sheet_note"))
+        if (onSource != null) SourceLinkRow(onSource, com.example.ui.components.PanelAccent, "plus_sheet_source")
       }
       ClayButton(text = PlusAccess.SHEET_OK, onClick = onClose, modifier = Modifier.padding(top = 4.dp).testTag("btn_plus_sheet_ok"))
     }

@@ -95,7 +95,7 @@ private val CardGap = 16.dp
 private val BarMax = 96.dp
 private val BarMin = 8.dp
 private val BarWidthMax = 36.dp
-/** El aire entre las barras de «Tu percentil semanal» y el rótulo «la mitad» de su raya. */
+/** El aire entre las barras de «Tu lugar cada semana» y el rótulo «la mitad» de su raya. */
 private val HalfLabelGap = 8.dp
 
 /** La letra de los números y títulos grandes de la página no pasa de 1,3 (con 2,0, un título de 52 sp se salía del margen: Fable §11.6). */
@@ -108,8 +108,8 @@ private const val BIG_TEXT_SCALE_CAP = 1.3f
  * De arriba abajo: la cabecera sobre el cielo («Contrarreloj» y «Tus marcas, comparadas solo contigo.» —con la referencia estimada, «Tus marcas, comparadas contigo y con una referencia estimada para tu edad.»; con datos de muestra o personas reales, «…con personas de tu edad.»—, con [OnBoardText]); el cielo se DESVANECE en 24 dp hasta el noche plano ([NubiTokens.NightFlat]) y de ahí para abajo todo va en losas crema
  * sobre ese fondo plano; el selector de los cuatro juegos (dos filas parejas; una columna si «Acoplamiento» no cabe entero en media fila; el elegido en lima con el visto; abre con el juego de hoy).
  *
- * **Con comparación (solo [compare] no nulo, con una franja de edad y desde la tercera partida guardada de ESTE juego, Tarea 207: antes, la página dice «Tu lugar aparece desde tu tercera partida…» una vez; la persona de 13 a 17 años no la ve, y sin franja guardada la página dice dónde elegirla; la precedencia es `Comparison.gate`):** primero la comparación, bajo «Esta semana, comparado con tu edad» y la frase larga de la referencia estimada («Referencia estimada para 45 a 54 años: …No son personas.»; con los datos de muestra de depuración, su frase): la cifra ([HeroCard]: «63 de cada 100», su frase, la división y «Percentil 63»), la escalera de divisiones con «Te faltan N aciertos»
- * y las semanas seguidas ([LadderCard]), la campana en su losa ([BellCard]), «Otras edades» y «Tu percentil semanal»; con «Todavía somos pocos» o sin marca esta semana, en vez de la cifra y la escalera, su losa ([PlaceCard]: nada de umbrales inventados). Después, bajo el rótulo «Tus marcas»: las tres cifras ([StatsCard]), «Tus últimas 10 marcas» ([MarksCard]),
+ * **Con comparación (solo [compare] no nulo, con una franja de edad y desde la tercera partida guardada de ESTE juego, Tarea 207: antes, la página dice «Tu lugar aparece desde tu tercera partida…» una vez; la persona de 13 a 17 años no la ve, y sin franja guardada la página dice dónde elegirla; la precedencia es `Comparison.gate`):** primero la comparación, bajo «Esta semana, comparado con tu edad» y la frase larga de la referencia estimada («Referencia estimada para 45 a 54 años: …No son personas.»; con los datos de muestra de depuración, su frase): la cifra ([HeroCard]: «63 de cada 100», su frase, la división y su lugar entre las cinco, «La tercera de cinco divisiones.»), la escalera de divisiones con «Te faltan N aciertos»
+ * y las semanas seguidas ([LadderCard]), la campana en su losa ([BellCard]), «Otras edades» y «Tu lugar cada semana»; con «Todavía somos pocos» o sin marca esta semana, en vez de la cifra y la escalera, su losa ([PlaceCard]: nada de umbrales inventados). Después, bajo el rótulo «Tus marcas»: las tres cifras ([StatsCard]), «Tus últimas 10 marcas» ([MarksCard]),
  * «Tu ritmo en la última partida» ([RhythmCard]) y las notas ([NotesCard]). **Sin comparación**, la página es solo eso último, sin rótulos de sección y con la tercera cifra sin depender de otras personas. Una línea fina separa lo que una losa junta, y los gráficos van en una ventanilla noche ([NightWindow]).
  *
  * Todo a 16 sp o más (14 sp solo los rótulos de los ejes); cada número con su unidad y en frase completa; nada solo por color (el récord lleva moneda con visto y la palabra; tu fila de la escalera, la división en palabras). [results] = TODAS las partidas del Contrarreloj; [selected] = el juego elegido; [now] = el momento de mirar.
@@ -124,7 +124,9 @@ internal fun ContrarrelojPage(
   modifier: Modifier = Modifier,
   lang: AppLanguage = com.example.ui.i18n.LocalAppLanguage.current,
   compare: Comparison.Source? = null,
-  ageRange: AgeRange? = null
+  ageRange: AgeRange? = null,
+  /** Abre «De dónde sale la referencia» (Tarea 209): la fila bajo la frase de la comparación. */
+  onOpenSource: () -> Unit = {}
 ) {
   val page = remember(results, selected, now) { TimeTrialMarks.page(results, selected, now) }
   val records = remember(results) { TimeTrialDay.GAMES.map { it to TimeTrialStats.record(results, it) } }
@@ -162,11 +164,13 @@ internal fun ContrarrelojPage(
         GameSelector(records, selected, lang, onSelect)
         // Tarea 205b: hay referencia para este juego pero la persona no tiene franja de edad guardada (instaló antes de la Tarea 195): la página no se queda callada, dice dónde elegirla
         if (gate == Comparison.Gate.NEEDS_AGE) Text(Comparison.AGE_HINT, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_age_hint"))
+        // Tarea 209: de 13 a 17 años la página lo DICE en vez de callar (esa franja no se compara, `Features.COMPARE_MINORS`): una línea corrida y sin negrita, donde van los demás avisos
+        if (gate == Comparison.Gate.MINOR) Text(Comparison.MINORS_NOTICE, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_minors_notice"))
         // Tarea 207: con franja y tabla pero menos de tres partidas de este juego, UNA línea corrida y sin negrita donde iría el rótulo de la comparación: las primeras partidas sirven para conocer el juego y no se comparan
         if (gate == Comparison.Gate.EARLY) Text(Comparison.EARLY_NOTICE, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_early_notice"))
         if (section != null) {
           // primero la comparación (D2): la cifra, la escalera, la campana, otras edades y semana a semana; los rótulos solo con DOS secciones
-          CompareHeader(section)
+          CompareHeader(section, onOpenSource)
           when (val place = section.place) {
             is Comparison.Place.Found -> { HeroCard(place.ranked, section); LadderCard(place.ranked, section); BellCard(place.ranked, section.range) }
             else -> PlaceCard(section)
@@ -284,8 +288,8 @@ private fun ThinLine() {
 }
 
 /**
- * La tarjeta de la cifra (D2): «63 de cada 100» en Rubik 40 con tope de escala 1,3 y, debajo, la frase que la lee («personas de 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra.»), la división con nombre a la izquierda (Fredoka negrita 18) y «Percentil 63» a la derecha.
- * La cifra manda y la frase la lee: nunca un número sin unidad. Con letra tan grande que «63 de cada 100» no cabe en una línea, la cifra queda sola («63») y «de cada 100» pasa a la frase; la división y el percentil se apilan. Si la comparación usó otra clase (las 4 semanas o las franjas juntas) la frase lo dice y,
+ * La tarjeta de la cifra (D2): «63 de cada 100» en Rubik 40 con tope de escala 1,3 y, debajo, la frase que la lee («personas de 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra.»), la división con nombre (Fredoka negrita 18) y debajo su lugar entre las cinco (Tarea 209: antes «Percentil 63» a la derecha).
+ * La cifra manda y la frase la lee: nunca un número sin unidad. Con letra tan grande que «63 de cada 100» no cabe en una línea, la cifra queda sola («63») y «de cada 100» pasa a la frase; el lugar de la división va siempre bajo su nombre. Si la comparación usó otra clase (las 4 semanas o las franjas juntas) la frase lo dice y,
  * con las franjas juntas, una línea más. El lector de pantalla lo dice de corrido. Deja lista la tarjeta para sumarle un emblema de la división (D3) sin rehacerla: es una columna con la cifra arriba y la división abajo.
  */
 @Composable
@@ -310,29 +314,14 @@ private fun HeroCard(r: Comparison.Ranked, s: Comparison.Section) {
   }
 }
 
-/** La división («En órbita», Fredoka negrita 18) a la izquierda y «Percentil 63» a la derecha; si no caben juntos con la letra de la persona, uno bajo el otro. */
+/**
+ * La división («En órbita», Fredoka negrita 18) y, debajo, su lugar entre las cinco en 16 sp `InkMuted` («La tercera de cinco divisiones.»; Tarea 209: reemplaza a «Percentil 63», que Ricardo quitó de todo texto el 1-nov). Siempre una columna: así con letra grande nunca se encima nada.
+ */
 @Composable
 private fun DivisionLine(r: Comparison.Ranked) {
-  val measurer = rememberTextMeasurer()
-  val density = LocalDensity.current
-  val base = androidx.compose.material3.LocalTextStyle.current
-  val name = r.division.label
-  val label = Comparison.percentileLabel(r)
-  BoxWithConstraints(Modifier.fillMaxWidth()) {
-    val need = measurer.measure(name, base.merge(TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily)), softWrap = false, maxLines = 1).size.width + with(density) { 12.dp.roundToPx() } +
-      measurer.measure(label, base.merge(TextStyle(fontSize = 16.sp)), softWrap = false, maxLines = 1).size.width
-    if (need <= constraints.maxWidth) {
-      Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(name, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.weight(1f).testTag("contrarreloj_hero_division"))
-        Spacer(Modifier.width(12.dp))
-        Text(label, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, softWrap = false, modifier = Modifier.testTag("contrarreloj_hero_percentile"))
-      }
-    } else {
-      Column(Modifier.fillMaxWidth()) {
-        Text(name, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.testTag("contrarreloj_hero_division"))
-        Text(label, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 4.dp).testTag("contrarreloj_hero_percentile"))
-      }
-    }
+  Column(Modifier.fillMaxWidth()) {
+    Text(r.division.label, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.testTag("contrarreloj_hero_division"))
+    Text(Comparison.divisionPlaceLine(r.division), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 4.dp).testTag("contrarreloj_hero_place"))
   }
 }
 
@@ -783,11 +772,11 @@ private fun SectionLabel(text: String, tag: String) {
 }
 
 /**
- * El rótulo de la sección de comparación y, bajo él, UNA frase que dice con qué se compara (crema, 16 sp): con la REFERENCIA ESTIMADA (Tarea 205), «Referencia estimada para 45 a 54 años: sale de estudios por edad y de un programa que jugó esta misma pista en un computador, no en tu teléfono. No son personas.» —va una sola vez por página;
- * las losas repiten solo «referencia estimada»—; con los datos de muestra de depuración, «Estos son datos de muestra: solo se ven en la versión de prueba.»; con personas reales, ninguna.
+ * El rótulo de la sección de comparación y, bajo él, UNA frase que dice con qué se compara (crema, 16 sp): con la REFERENCIA ESTIMADA (Tarea 205; la redacción de la Tarea 209), «No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para 45 a 54 años es estimada: sale de estudios por edad y de un programa que jugó esta misma pista en un computador, no en tu teléfono.» —va una sola vez por página;
+ * las losas repiten solo «referencia estimada»— y, debajo, la fila «De dónde sale la referencia ›» (48 dp) que abre la hoja de los estudios; con los datos de muestra de depuración, «Estos son datos de muestra: solo se ven en la versión de prueba.»; con personas reales, ninguna.
  */
 @Composable
-private fun CompareHeader(s: Comparison.Section) {
+private fun CompareHeader(s: Comparison.Section, onOpenSource: () -> Unit) {
   Column {
     SectionLabel(Comparison.SECTION_COMPARE, "contrarreloj_section_compare")
     val notice = when {
@@ -799,6 +788,8 @@ private fun CompareHeader(s: Comparison.Section) {
       Spacer(Modifier.height(8.dp))
       Text(notice.first.glueNumbers().glueNamesForLetter(), color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag(notice.second))
     }
+    // Tarea 209: con la referencia estimada, debajo de la frase, la fila que abre de dónde sale (48 dp, tocable entera); los datos de muestra de depuración no tienen fuente que mostrar
+    if (s.estimated) SourceLinkRow(onOpenSource, NubiTokens.SunOnNight, "contrarreloj_source_link", Modifier.padding(top = 4.dp))
   }
 }
 
@@ -925,7 +916,7 @@ private fun BellAxis(width: Dp, d: Comparison.Distribution, mark: Int, onHalf: B
   }
 }
 
-/** «Tu percentil semanal»: las semanas con marca propia y con 50 personas o más en la franja, en barras de 0 a 100 en la ventanilla noche, y la frase («En 3 de las 4 semanas estuviste por encima de la mitad de tu franja.»). */
+/** «Tu lugar cada semana»: las semanas con marca propia y con 50 personas o más en la franja, en barras de 0 a 100 en la ventanilla noche, y la frase («En 3 de las 4 semanas estuviste por encima de la mitad de tu franja.»). */
 @Composable
 private fun PercentileWeeksCard(points: List<Comparison.WeekPoint>, estimated: Boolean) {
   InfoCard("contrarreloj_percweeks", Comparison.WEEKS_TITLE) {

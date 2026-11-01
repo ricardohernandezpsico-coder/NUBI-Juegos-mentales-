@@ -213,11 +213,12 @@ class ComparisonTest {
     assertEquals("63 de cada 100", Comparison.heroFigure(r))
     assertEquals("personas de 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra.", Comparison.heroCaption(r, AgeRange.R45_54, "Tinta o Palabra"))
     assertEquals("con letra muy grande la unidad pasa a la frase", "de cada 100 personas de 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra.", Comparison.heroCaption(r, AgeRange.R45_54, "Tinta o Palabra", withUnit = true))
-    assertEquals("Percentil 63", Comparison.percentileLabel(r))
+    assertEquals("La tercera de cinco divisiones.", Comparison.divisionPlaceLine(r.division))
     assertEquals(
-      "63 de cada 100 personas de 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra. En órbita. Percentil 63.",
+      "63 de cada 100 personas de 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra. En órbita. La tercera de cinco divisiones.",
       Comparison.heroSpoken(r, AgeRange.R45_54, "Tinta o Palabra")
     )
+    assertFalse("Tarea 209: «percentil» ya no se dice, tampoco al lector de pantalla", Comparison.heroSpoken(r, AgeRange.R45_54, "Tinta o Palabra").lowercase().contains("percentil"))
     assertNull("la clase normal no necesita aclarar nada más", Comparison.scopeLine(r))
   }
 
@@ -272,7 +273,7 @@ class ComparisonTest {
     assertEquals("Tu única semana con marca estuvo en la mitad de abajo de tu franja.", Comparison.weeksSentence(pts(12)))
     assertNull("sin semanas con dato no hay frase ni losa", Comparison.weeksSentence(emptyList()))
     assertEquals(
-      "Tu percentil semanal: hace 6 semanas, deja detrás a 52 de cada 100; hace 1 semana, deja detrás a 58 de cada 100; esta semana, deja detrás a 63 de cada 100.",
+      "Tu lugar cada semana: hace 6 semanas, deja detrás a 52 de cada 100; hace 1 semana, deja detrás a 58 de cada 100; esta semana, deja detrás a 63 de cada 100.",
       Comparison.weeksSpoken(listOf(Comparison.WeekPoint(6, 30, 52), Comparison.WeekPoint(1, 30, 58), Comparison.WeekPoint(0, 43, 63)))
     )
   }
@@ -500,10 +501,11 @@ class ComparisonTest {
   fun `la frase larga de la referencia dice de donde sale y que no son personas, una sola vez y sin prometer el cambio`() {
     for (range in AgeRange.entries) {
       val s = Comparison.estimatedNotice(range)
-      assertEquals("Referencia estimada para ${range.label}: sale de estudios por edad y de un programa que jugó esta misma pista en un computador, no en tu teléfono. No son personas.", s)
+      assertEquals("No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para ${range.label} es estimada: sale de estudios por edad y de un programa que jugó esta misma pista en un computador, no en tu teléfono.", s)
       val low = s.lowercase()
       for (promise in listOf("luego", "pronto", "cuando haya", "cuando lleguen", "reales", "después", "más adelante", "mientras", "todavía")) assertFalse("la frase larga promete «$promise»", promise in low)
-      assertEquals("«No son personas.» es la única vez que se nombra a las personas", 1, Regex("personas").findAll(low).count())
+      assertEquals("«No son otras personas:» es la única vez que se nombra a las personas", 1, Regex("personas").findAll(low).count())
+      assertTrue("la razón va primero (Tarea 209)", s.startsWith("No son otras personas: Nubi no junta datos de nadie."))
     }
     assertEquals("el título de la campana es el de siempre (el largo partía en dos líneas)", "La campana de tu edad", Comparison.BELL_TITLE)
   }
@@ -578,7 +580,7 @@ class ComparisonTest {
     assertNull(l.progress)
     assertEquals("Estás en la división más alta de tu franja esta semana.", Comparison.needSentence(l, r))
     assertEquals("Estás en la división más alta de tu franja.", Comparison.needSentence(l, r.copy(scope = Comparison.Scope.OWN_4_WEEKS)))
-    assertEquals("Esta semana estás Entre estrellas, la división más alta de tu franja.", Comparison.freeSentence(Comparison.Place.Found(r)))
+    assertEquals("con personas, la más alta dice su lugar entre las cinco", "Esta semana estás Entre estrellas, la quinta y más alta de las cinco divisiones.", Comparison.freeSentence(Comparison.Place.Found(r)))
   }
 
   @Test
@@ -649,7 +651,8 @@ class ComparisonTest {
     assertEquals("hace 3 semanas", Comparison.weeksAxisLeft(listOf(week(3, 40), week(0, 63))))
     assertNull("si la más vieja es esta no hay de qué separar", Comparison.weeksAxisLeft(listOf(week(0, 63))))
     assertEquals("la raya de la mitad se rotula con una palabra corta", "la mitad", Comparison.WEEKS_HALF_LABEL)
-    assertEquals("Tu percentil semanal", Comparison.WEEKS_TITLE)
+    assertEquals("Tu lugar cada semana", Comparison.WEEKS_TITLE)
+    assertFalse("«percentil» salió de todo texto visible (Tarea 209)", Comparison.WEEKS_TITLE.lowercase().contains("percentil"))
   }
 
   // ------------------------------------------------------------------ lo gratis (Tarea 203)
@@ -657,7 +660,7 @@ class ComparisonTest {
   @Test
   fun `la frase gratis dice la division y lo que falta, sin cifra de percentil ni escalera`() {
     val free = Comparison.freeSentence(Comparison.Place.Found(ranked(Comparison.Scope.OWN_WEEK)))
-    assertEquals("Esta semana estás En órbita. Te faltan 7 aciertos para En la Luna.", free)
+    assertEquals("Esta semana estás En órbita, la tercera de cinco divisiones. Te faltan 7 aciertos para En la Luna.", free)
     assertFalse("el percentil es de Plus", "percentil" in free!!.lowercase())
     assertFalse("y la cifra de cada 100 también", "100" in free)
   }
@@ -676,7 +679,7 @@ class ComparisonTest {
     fun r(mark: Int, day: Int, game: String = "stroop") = TimeTrialResult(id = "r$game$day$mark", gameId = game, day = "2026-10-%02d".format(day), trackVersion = TimeTrialDay.trackVersion(game), hits = mark + 2, errors = 2, level = 4, timestamp = at(day))
     val src = SampleComparison(few = false)
     assertEquals(
-      "Esta semana estás En órbita. Te faltan 7 aciertos para En la Luna.",
+      "Esta semana estás En órbita, la tercera de cinco divisiones. Te faltan 7 aciertos para En la Luna.",
       Comparison.freeSentenceFor(src, "stroop", AgeRange.R45_54, listOf(r(30, 13), r(43, 27), r(40, 28)), now)
     )
     assertNull("sin partida esta semana no hay nada que decir", Comparison.freeSentenceFor(src, "stroop", AgeRange.R45_54, listOf(r(43, 20)), now))
@@ -716,10 +719,10 @@ class ComparisonTest {
   }
 
   @Test
-  fun `la precedencia, sin franja el aviso de edad, de 13 a 17 nada, sin tabla nada y la muestra como la referencia`() {
+  fun `la precedencia, sin franja el aviso de edad, de 13 a 17 su aviso, sin fuente o sin tabla nada y la muestra como la referencia`() {
     for (n in 0..3) {
       assertEquals("sin franja guardada, con $n: el aviso de edad", Comparison.Gate.NEEDS_AGE, Comparison.gate(referenceLike, null, "stroop", saved("stroop", n)))
-      assertEquals("de 13 a 17 años, con $n: nada", Comparison.Gate.NONE, Comparison.gate(referenceLike, AgeRange.R13_17, "stroop", saved("stroop", n)))
+      assertEquals("de 13 a 17 años, con $n: lo dice (Tarea 209: antes callaba)", Comparison.Gate.MINOR, Comparison.gate(referenceLike, AgeRange.R13_17, "stroop", saved("stroop", n)))
       assertEquals("sin ninguna fuente, con $n: nada", Comparison.Gate.NONE, Comparison.gate(null, AgeRange.R45_54, "stroop", saved("stroop", n)))
       assertEquals("sin ninguna fuente y sin franja, con $n: nada", Comparison.Gate.NONE, Comparison.gate(null, null, "stroop", saved("stroop", n)))
     }
@@ -732,7 +735,53 @@ class ComparisonTest {
     val sample = SampleComparison(few = false)
     for (n in 0..2) assertEquals("muestra, sin franja, con $n", Comparison.Gate.EARLY, Comparison.gate(sample, null, "stroop", saved("stroop", n)))
     assertEquals("muestra, sin franja, con 3", Comparison.Gate.SHOW, Comparison.gate(sample, null, "stroop", saved("stroop", 3)))
-    assertEquals("muestra, de 13 a 17 años: nada", Comparison.Gate.NONE, Comparison.gate(sample, AgeRange.R13_17, "stroop", saved("stroop", 3)))
+    assertEquals("muestra, de 13 a 17 años: lo dice", Comparison.Gate.MINOR, Comparison.gate(sample, AgeRange.R13_17, "stroop", saved("stroop", 3)))
+  }
+
+  @Test
+  fun `el lugar de cada division entre las cinco se dice con palabras, en minuscula y en la cifra con mayuscula`() {
+    assertEquals(
+      listOf("la primera de cinco divisiones", "la segunda de cinco divisiones", "la tercera de cinco divisiones", "la cuarta de cinco divisiones", "la quinta y más alta de las cinco divisiones"),
+      Comparison.Division.entries.map { Comparison.divisionPlace(it) }
+    )
+    assertEquals(
+      listOf("La primera de cinco divisiones.", "La segunda de cinco divisiones.", "La tercera de cinco divisiones.", "La cuarta de cinco divisiones.", "La quinta y más alta de las cinco divisiones."),
+      Comparison.Division.entries.map { Comparison.divisionPlaceLine(it) }
+    )
+    for (d in Comparison.Division.entries) assertFalse("«percentil» no se dice", Comparison.divisionPlace(d).contains("percentil"))
+  }
+
+  @Test
+  fun `la frase gratis con la referencia dice el lugar de la division, la referencia estimada y lo que falta`() {
+    val dist = Comparison.Distribution(2000, SampleComparison.fit(base, 2000), 31, 39, 47, estimated = true)
+    fun free(mark: Int): String {
+      val r = Comparison.Ranked(mark, Comparison.percentile(mark, dist), Comparison.division(Comparison.percentile(mark, dist)), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), dist)
+      return Comparison.freeSentence(Comparison.Place.Found(r))!!
+    }
+    // una marca en cada división: el nombre, su lugar entre las cinco y la referencia estimada, y el «te faltan» salvo en la más alta
+    val seen = (0..100).map { free(it) }.distinct()
+    for (division in Comparison.Division.entries) {
+      val line = seen.firstOrNull { it.startsWith("Esta semana estás ${division.label}, ${Comparison.divisionPlace(division)} de la referencia estimada para tu edad.") }
+      assertNotNull("hay una marca que cae en ${division.label}", line)
+      if (division != Comparison.Division.STARS) assertTrue("«$line» dice cuánto falta", Regex("Te falt(a|an) \\d+ aciertos? para ").containsMatchIn(line!!))
+    }
+    assertTrue("la más alta, con la referencia, no pide nada más", seen.any { it == "Esta semana estás Entre estrellas, la quinta y más alta de las cinco divisiones de la referencia estimada para tu edad." })
+    for (line in seen) assertFalse("«$line» llama personas a la referencia", "personas" in line.lowercase())
+  }
+
+  @Test
+  fun `de 13 a 17 anos la pagina lo dice con una linea y la hoja y la puerta tambien saben que es esa franja`() {
+    assertEquals("De 13 a 17 años, el Contrarreloj muestra solo tus propias marcas.", Comparison.MINORS_NOTICE)
+    assertTrue("la guarda COMPARE_MINORS apagada: esa franja no se compara", !com.example.Features.COMPARE_MINORS)
+    assertTrue(Comparison.isMinorLocked(AgeRange.R13_17))
+    for (range in AgeRange.entries.filter { it != AgeRange.R13_17 }) assertFalse("$range sí se compara", Comparison.isMinorLocked(range))
+    assertFalse("sin franja guardada no es de 13 a 17", Comparison.isMinorLocked(null))
+    // con qué se compara ESTA persona, para el candado de la puerta y la hoja
+    assertEquals(Comparison.Kind.ESTIMATED, Comparison.kindFor(referenceLike, AgeRange.R45_54))
+    assertEquals("de 13 a 17 años, nada", Comparison.Kind.NONE, Comparison.kindFor(referenceLike, AgeRange.R13_17))
+    assertEquals("sin franja guardada, nada (con la referencia no se asume una)", Comparison.Kind.NONE, Comparison.kindFor(referenceLike, null))
+    assertEquals("sin fuente, nada", Comparison.Kind.NONE, Comparison.kindFor(null, AgeRange.R45_54))
+    assertEquals("la fila que abre la hoja de los estudios", "De dónde sale la referencia ›", Comparison.SOURCE_LINK)
   }
 
   @Test
@@ -744,7 +793,7 @@ class ComparisonTest {
     assertNull("con una partida esta semana, la puerta calla", Comparison.freeSentenceFor(src, "stroop", AgeRange.R45_54, listOf(r(43, 27)), now))
     assertNull("con dos, también", Comparison.freeSentenceFor(src, "stroop", AgeRange.R45_54, listOf(r(30, 13), r(43, 27)), now))
     assertNull("y las de otro juego no suman", Comparison.freeSentenceFor(src, "stroop", AgeRange.R45_54, listOf(r(43, 27), r(30, 13, "disparate"), r(31, 14, "disparate"), r(32, 15, "disparate")), now))
-    assertEquals("con la tercera, la frase de siempre", "Esta semana estás En órbita. Te faltan 7 aciertos para En la Luna.", Comparison.freeSentenceFor(src, "stroop", AgeRange.R45_54, listOf(r(30, 13), r(43, 27), r(40, 28)), now))
+    assertEquals("con la tercera, la frase de siempre con su lugar", "Esta semana estás En órbita, la tercera de cinco divisiones. Te faltan 7 aciertos para En la Luna.", Comparison.freeSentenceFor(src, "stroop", AgeRange.R45_54, listOf(r(30, 13), r(43, 27), r(40, 28)), now))
   }
 
   @Test

@@ -17,6 +17,7 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
@@ -93,6 +94,7 @@ class ContrarrelojPageTest {
   private var density = 1f
   private var selectedCalls = mutableListOf<String>()
   private var backCalls = 0
+  private var sourceCalls = 0
 
   private fun show(widthDp: Int = 393, scale: Float = 1f, results: List<TimeTrialResult> = ten + others, selected: String = "stroop", compare: Comparison.Source? = null, ageRange: AgeRange? = null) {
     rule.setContent {
@@ -102,7 +104,7 @@ class ContrarrelojPageTest {
         NeuroVidaTheme {
           Box(Modifier.width(widthDp.dp).height(873.dp)) {
             BoardBackground()
-            ContrarrelojPage(results = results, selected = selected, onSelect = { selectedCalls += it }, onBack = { backCalls += 1 }, now = now, lang = com.example.model.AppLanguage.SPANISH, compare = compare, ageRange = ageRange)
+            ContrarrelojPage(results = results, selected = selected, onSelect = { selectedCalls += it }, onBack = { backCalls += 1 }, now = now, lang = com.example.model.AppLanguage.SPANISH, compare = compare, ageRange = ageRange, onOpenSource = { sourceCalls += 1 })
           }
         }
       }
@@ -506,21 +508,24 @@ class ContrarrelojPageTest {
     assertTrue("la cifra sola nunca es un número suelto: lleva «de cada 100» en ella o en la frase de abajo", "de cada 100" in n("contrarreloj_hero_figure") || n("contrarreloj_hero_caption").startsWith("de cada 100 "))
   }
 
-  @Test fun la_cifra_dice_63_de_cada_100_con_su_frase_su_division_y_su_percentil() {
+  @Test fun la_cifra_dice_63_de_cada_100_con_su_frase_su_division_y_su_lugar_entre_las_cinco() {
     show(compare = manyWorld, ageRange = AgeRange.R45_54)
     assertEquals("63 de cada 100", n("contrarreloj_hero_figure"))
     assertEquals("personas de 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra.", n("contrarreloj_hero_caption"))
     assertEquals("En órbita", n("contrarreloj_hero_division"))
-    assertEquals("Percentil 63", n("contrarreloj_hero_percentile"))
+    assertEquals("La tercera de cinco divisiones.", n("contrarreloj_hero_place"))
     assertEquals(
-      "63 de cada 100 personas de 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra. En órbita. Percentil 63.",
+      "63 de cada 100 personas de 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra. En órbita. La tercera de cinco divisiones.",
       descriptionOf("contrarreloj_hero")
     )
+    assertFalse("Tarea 209: «percentil» ya no se dice ni se ve", descriptionOf("contrarreloj_hero").lowercase().contains("percentil"))
     val b = boxes()
     assertNull("la clase normal no dice «Juntamos dos franjas»", b["contrarreloj_hero_scope"])
-    val fig = b.getValue("contrarreloj_hero_figure"); val cap = b.getValue("contrarreloj_hero_caption"); val div = b.getValue("contrarreloj_hero_division"); val pct = b.getValue("contrarreloj_hero_percentile")
-    assertTrue("de arriba abajo: la cifra, su frase y la división", fig.b <= cap.y && cap.b <= div.y)
-    assertTrue("la división a la izquierda y el percentil a la derecha, en la misma fila", pct.x >= div.x + 11.5f && Math.abs((pct.y + pct.b) / 2 - (div.y + div.b) / 2) < 6f)
+    val fig = b.getValue("contrarreloj_hero_figure"); val cap = b.getValue("contrarreloj_hero_caption"); val div = b.getValue("contrarreloj_hero_division"); val place = b.getValue("contrarreloj_hero_place")
+    assertNull("ya no hay «Percentil 63» a la derecha", b["contrarreloj_hero_percentile"])
+    assertTrue("de arriba abajo: la cifra, su frase, la división y su lugar", fig.b <= cap.y && cap.b <= div.y && div.b <= place.y)
+    assertEquals("el lugar va justo bajo la división, a 4 dp, alineado a la izquierda", 4f, place.y - div.b, 1.5f)
+    assertEquals(div.x, place.x, 0.5f)
     assertTrue("la cifra mide 40 sp: más alta que cualquier otro texto de la tarjeta (%.1f dp)".format(fig.h), fig.h >= 40f && fig.h > div.h + 10f)
     assertEquals("la tarjeta llena el ancho de la losa y no tiene título", 393f - 32f, b.getValue("contrarreloj_hero").w, 1f)
     assertNull(b["contrarreloj_hero_title"])
@@ -641,9 +646,9 @@ class ContrarrelojPageTest {
 
   // ---- semana a semana, otras edades, pocos y sin marca
 
-  @Test fun tu_percentil_semana_a_semana_dibuja_las_semanas_con_marca_de_la_mas_vieja_a_esta() {
+  @Test fun tu_lugar_semana_a_semana_dibuja_las_semanas_con_marca_de_la_mas_vieja_a_esta() {
     show(compare = manyWorld, ageRange = AgeRange.R45_54)
-    assertEquals("Tu percentil semanal", textOf("contrarreloj_percweeks_title").replace(NBSP, " "))
+    assertEquals("Tu lugar cada semana", textOf("contrarreloj_percweeks_title").replace(NBSP, " "))
     val b = boxes()
     val mine = com.example.data.TimeTrialDay.ofGame(ten + others, "stroop")
     val bests = List(7) { Comparison.bestOfWeek(mine, now, it) }
@@ -885,20 +890,20 @@ class ContrarrelojPageTest {
 
   // ---- la prueba de cajas con la comparación: 4 dp entre cada par de piezas, nada fuera del margen y 8 dp entre losas
 
-  private val hero = listOf("contrarreloj_hero_(figure|caption|scope|division|percentile)")
+  private val hero = listOf("contrarreloj_hero_(figure|caption|scope|division|place)")
   private val ladder = listOf("contrarreloj_ladder_(title|need|closes|streak|note)", "contrarreloj_ladder_row_\\d_(label|value)", "contrarreloj_ladder_you_(name|value)", "contrarreloj_ladder_bar")
   private val bell = listOf("contrarreloj_bell_(title|caption|you|coin|you_bar|median)", "contrarreloj_bell_axis_\\d")
   private val place = listOf("contrarreloj_place_(title|nomark)", "contrarreloj_few_(note|meanwhile)", "contrarreloj_few_bar_(bar|value)")
   private val weeksPercentile = listOf("contrarreloj_percweeks_(title|sentence|half)", "contrarreloj_percweeks_fig_\\d", "contrarreloj_percweeks_bar_\\d", "contrarreloj_percweeks_axis_(left|right)")
   private val othersGroup = listOf("contrarreloj_others_(title|lead|hidden)", "contrarreloj_others_(\\d|all)_(label|value)")
-  private val sections = listOf("contrarreloj_section_(marks|compare)", "contrarreloj_section_(marks|compare)_line", "contrarreloj_(sample|estimated)_notice")
+  private val sections = listOf("contrarreloj_section_(marks|compare)", "contrarreloj_section_(marks|compare)_line", "contrarreloj_(sample|estimated)_notice", "contrarreloj_source_link")
 
   private fun assertCompareNoClashes(widthDp: Int, scale: Float, world: Comparison.Source, label: String) {
     show(widthDp, scale, compare = world, ageRange = AgeRange.R45_54)
     val all = boxes()
     val problems = mutableListOf<String>()
     val groups = mapOf(
-      "La cifra" to groupOf(all, hero), "La escalera" to groupOf(all, ladder), "La campana" to groupOf(all, bell), "Tu lugar" to groupOf(all, place), "Tu percentil, semana a semana" to groupOf(all, weeksPercentile),
+      "La cifra" to groupOf(all, hero), "La escalera" to groupOf(all, ladder), "La campana" to groupOf(all, bell), "Tu lugar" to groupOf(all, place), "Tu lugar, semana a semana" to groupOf(all, weeksPercentile),
       "Comparado con otras edades" to groupOf(all, othersGroup), "los rótulos de sección" to groupOf(all, sections), "las tres cifras" to groupOf(all, stats), "Tus últimas 10 marcas" to groupOf(all, chart), "Tu ritmo" to groupOf(all, rhythm), "las notas" to groupOf(all, notes)
     )
     for ((name, g) in groups) {
@@ -1069,18 +1074,54 @@ class ContrarrelojPageTest {
     show(compare = estWorld, ageRange = AgeRange.R45_54)
     val b = boxes()
     assertEquals("Esta semana, comparado con tu edad", n("contrarreloj_section_compare"))
-    assertEquals("Referencia estimada para 45 a 54 años: sale de estudios por edad y de un programa que jugó esta misma pista en un computador, no en tu teléfono. No son personas.", n("contrarreloj_estimated_notice"))
+    assertEquals("No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para 45 a 54 años es estimada: sale de estudios por edad y de un programa que jugó esta misma pista en un computador, no en tu teléfono.", n("contrarreloj_estimated_notice"))
     assertNull("ya no es un dato de muestra", b["contrarreloj_sample_notice"])
     assertEquals("la frase larga va bajo el rótulo, a 8 dp", 8f, b.getValue("contrarreloj_estimated_notice").y - b.getValue("contrarreloj_section_compare").b, 1.5f)
-    assertEquals("y UNA sola vez en toda la pantalla", 1, everythingSaid().count { it.startsWith("Referencia estimada para") })
-    assertEquals("las demás se dicen igual con otra franja", "Referencia estimada para 75 años o más: sale de estudios por edad y de un programa que jugó esta misma pista en un computador, no en tu teléfono. No son personas.", Comparison.estimatedNotice(AgeRange.R75_PLUS))
+    assertEquals("y UNA sola vez en toda la pantalla", 1, everythingSaid().count { it.startsWith("No son otras personas:") })
+    assertEquals("las demás se dicen igual con otra franja", "No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para 75 años o más es estimada: sale de estudios por edad y de un programa que jugó esta misma pista en un computador, no en tu teléfono.", Comparison.estimatedNotice(AgeRange.R75_PLUS))
   }
+
+  // ---------------------------------------------------------------- Tarea 209: «De dónde sale la referencia ›»
+
+  @Test fun con_la_referencia_estimada_hay_una_fila_de_donde_sale_de_48_dp_que_se_toca_entera_y_abre_el_panel() {
+    show(compare = estWorld, ageRange = AgeRange.R45_54)
+    val b = boxes()
+    val link = b.getValue("contrarreloj_source_link"); val notice = b.getValue("contrarreloj_estimated_notice")
+    assertTrue("la fila mide 48 dp o más (%.1f)".format(link.h), link.h >= 47.5f)
+    assertEquals("y ocupa todo el ancho entre los márgenes, para tocarla entera", 393f - 32f, link.w, 1f)
+    assertTrue("va DEBAJO de la frase (%.1f dp de aire)".format(link.y - notice.b), link.y - notice.b >= 3.5f)
+    rule.onNode(hasText("De dónde sale la referencia ›"), useUnmergedTree = true).assertExists()
+    assertEquals("el lector dice «De dónde sale la referencia, botón»: la descripción sin el «›» y el rol de botón", "De dónde sale la referencia", descriptionOf("contrarreloj_source_link"))
+    assertEquals(androidx.compose.ui.semantics.Role.Button, rule.onNode(hasTestTag("contrarreloj_source_link")).fetchSemanticsNode().config.getOrNull(SemanticsProperties.Role))
+    rule.onNodeWithTag("contrarreloj_source_link").performClick(); rule.waitForIdle()
+    assertEquals("tocar la fila abre el panel", 1, sourceCalls)
+  }
+
+  @Test fun con_los_datos_de_muestra_de_depuracion_no_hay_fila_de_donde_sale_porque_no_hay_estudios_que_mostrar() {
+    show(compare = manyWorld, ageRange = AgeRange.R45_54)
+    assertNull(boxes()["contrarreloj_source_link"])
+  }
+
+  private fun assertSourceLinkFits(widthDp: Int, scale: Float) {
+    show(widthDp = widthDp, scale = scale, compare = estWorld, ageRange = AgeRange.R45_54)
+    val b = boxes()
+    val link = b.getValue("contrarreloj_source_link")
+    assertTrue("a $widthDp dp con letra $scale: la fila mide 48 dp o más (%.1f)".format(link.h), link.h >= 47.5f)
+    assertTrue("y entre los márgenes de 16 dp (x %.1f a %.1f)".format(link.x, link.r), link.x >= 15.5f && link.r <= widthDp - 15.5f)
+    assertTrue("y a 8 dp o más de la cifra (%.1f)".format(b.getValue("contrarreloj_hero").y - link.b), b.getValue("contrarreloj_hero").y - link.b >= 7.5f)
+  }
+
+  @Test fun la_fila_de_donde_sale_cabe_a_393_con_letra_1_0() = assertSourceLinkFits(393, 1f)
+  @Test fun la_fila_de_donde_sale_cabe_a_393_con_letra_2_0() = assertSourceLinkFits(393, 2f)
+  @Test fun la_fila_de_donde_sale_cabe_a_360_con_letra_1_0() = assertSourceLinkFits(360, 1f)
+  @Test fun la_fila_de_donde_sale_cabe_a_360_con_letra_2_0() = assertSourceLinkFits(360, 2f)
 
   private fun assertNeverPeople(scale: Float) {
     show(scale = scale, compare = estWorld, ageRange = AgeRange.R45_54)
     val said = everythingSaid()
     val notice = Comparison.estimatedNotice(AgeRange.R45_54)
-    val rest = said.filter { it != notice && !it.contains("Referencia estimada para") }
+    val rest = said.filter { it != notice }
+    for (text in said) assertFalse("con letra $scale, «$text» dice «percentil» (Tarea 209: salió de todo texto, también del lector)", "percentil" in text.lowercase())
     for (text in rest) {
       val low = text.lowercase()
       assertFalse("con letra $scale, «$text» llama personas a la referencia", "personas" in low || "persona " in low || " gente" in low)
@@ -1102,7 +1143,7 @@ class ContrarrelojPageTest {
     assertTrue("la campana, en su frase", said.any { it == Comparison.ESTIMATED_BELL_CAPTION })
     assertTrue("«Otras edades», en su encabezado", said.any { it == "De cada 100 marcas de la referencia estimada de cada edad, tu mejor marca deja detrás a:" })
     assertTrue("las semanas, en su nota", said.any { it == Comparison.WEEKS_ESTIMATED_NOTE })
-    assertEquals("y el percentil se dice como siempre", "Percentil ${Regex("""\d+""").find(n("contrarreloj_hero_percentile"))!!.value}", n("contrarreloj_hero_percentile"))
+    assertTrue("y el lugar de la división, no un percentil: «${n("contrarreloj_hero_place")}»", n("contrarreloj_hero_place") in Comparison.Division.entries.map { Comparison.divisionPlaceLine(it) })
   }
 
   @Test fun con_la_referencia_estimada_no_hay_todas_las_edades_ni_la_linea_de_las_demas_edades() {
@@ -1382,7 +1423,7 @@ class ContrarrelojPageTest {
     assertEquals("dice la frase una sola vez", 1, everythingSaid().count { it == Comparison.EARLY_NOTICE })
   }
 
-  // ---- la precedencia: sin franja el aviso de edad, de 13 a 17 nada, sin tabla nada, la muestra como la referencia
+  // ---- la precedencia: sin franja el aviso de edad, de 13 a 17 su línea (Tarea 209), sin tabla nada, la muestra como la referencia
 
   @Test fun sin_franja_guardada_manda_el_aviso_de_la_edad_aunque_tenga_menos_de_tres_partidas() {
     val s = live(estWorld, null)
@@ -1393,14 +1434,35 @@ class ContrarrelojPageTest {
     }
   }
 
-  @Test fun de_13_a_17_anos_no_sale_ni_la_frase_ni_el_aviso_con_cualquier_numero_de_partidas() {
+  @Test fun de_13_a_17_anos_la_pagina_lo_dice_en_una_linea_y_no_sale_ni_la_frase_ni_el_aviso_con_cualquier_numero_de_partidas() {
     val s = live(estWorld, AgeRange.R13_17)
     for (count in 0..3) {
       s.results = gamesOf("stroop", count); rule.waitForIdle()
       val b = boxes()
-      assertNull("con $count: sin frase", b["contrarreloj_early_notice"]); assertNull("sin aviso de edad", b["contrarreloj_age_hint"]); assertNull("sin comparación", b["contrarreloj_hero"])
+      assertEquals("con $count: la línea exacta (Tarea 209)", "De 13 a 17 años, el Contrarreloj muestra solo tus propias marcas.", n("contrarreloj_minors_notice"))
+      assertEquals(Comparison.MINORS_NOTICE, n("contrarreloj_minors_notice"))
+      assertNull("con $count: sin frase de la tercera partida", b["contrarreloj_early_notice"]); assertNull("sin aviso de edad", b["contrarreloj_age_hint"]); assertNull("sin comparación", b["contrarreloj_hero"])
+      assertNull("ni frase de la referencia ni su fila", b["contrarreloj_estimated_notice"]); assertNull(b["contrarreloj_source_link"])
+      assertEquals("y UNA sola vez en toda la pantalla", 1, everythingSaid().count { it == Comparison.MINORS_NOTICE })
     }
   }
+
+  private fun assertMinorsNoticeFits(widthDp: Int, scale: Float) {
+    show(widthDp = widthDp, scale = scale, compare = estWorld, ageRange = AgeRange.R13_17, results = gamesOf("stroop", 2))
+    val b = boxes()
+    val notice = b.getValue("contrarreloj_minors_notice")
+    val selectorBottom = games.maxOf { b.getValue("contrarreloj_game_$it").b }
+    val next = b.getValue("contrarreloj_stats")
+    assertTrue("a $widthDp dp con letra $scale: bajo el selector a 8 dp o más (%.1f)".format(notice.y - selectorBottom), notice.y - selectorBottom >= 7.5f)
+    assertTrue("y dentro de los márgenes de 16 dp (x %.1f a %.1f)".format(notice.x, notice.r), notice.x >= 15.5f && notice.r <= widthDp - 15.5f)
+    assertTrue("y a 8 dp o más de lo que sigue (%.1f)".format(next.y - notice.b), next.y - notice.b >= 7.5f)
+    assertEquals("el subtítulo sigue diciendo que se compara solo contigo", "Tus marcas, comparadas solo contigo.", n("contrarreloj_subtitle"))
+  }
+
+  @Test fun la_linea_de_13_a_17_cabe_a_393_con_letra_1_0() = assertMinorsNoticeFits(393, 1f)
+  @Test fun la_linea_de_13_a_17_cabe_a_393_con_letra_2_0() = assertMinorsNoticeFits(393, 2f)
+  @Test fun la_linea_de_13_a_17_cabe_a_360_con_letra_1_0() = assertMinorsNoticeFits(360, 1f)
+  @Test fun la_linea_de_13_a_17_cabe_a_360_con_letra_2_0() = assertMinorsNoticeFits(360, 2f)
 
   @Test fun en_un_juego_sin_tabla_no_sale_ni_la_frase_ni_el_aviso() {
     val sinTabla = object : Comparison.Source {

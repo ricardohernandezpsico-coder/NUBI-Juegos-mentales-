@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -81,6 +82,10 @@ class TuYAjustesTest {
     rule.waitForIdle()
   }
 
+  /** Todo el texto que cuelga de un nodo (unido), del árbol sin fusionar. */
+  private fun allTextOf(n: androidx.compose.ui.semantics.SemanticsNode): String =
+    ((n.config.getOrNull(SemanticsProperties.Text)?.map { it.text } ?: emptyList()) + n.children.map { allTextOf(it) }).joinToString("")
+
   private fun yOf(tag: String) = rule.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot.top
   private fun exists(tag: String) = rule.onAllNodes(hasTestTag(tag)).fetchSemanticsNodes().isNotEmpty()
 
@@ -93,7 +98,7 @@ class TuYAjustesTest {
     rule.onNodeWithTag("tu_nubi").assertIsDisplayed()
     assertFalse("sin isla (decisión de Ricardo)", exists("profile_island"))
     assertEquals("UNA sola Nubi, con los ojos abiertos", 1, rule.onAllNodes(hasTestTag("nubi_ojos_abiertos"), useUnmergedTree = true).fetchSemanticsNodes().size)
-    val order = listOf("tu_title", "tu_nubi", "profile_name", "btn_change_name", "tu_cuadros", "card_como_juegas", "btn_open_settings", "btn_open_fuentes", "tu_contacto")
+    val order = listOf("tu_title", "tu_nubi", "profile_name", "btn_change_name", "tu_cuadros", "card_como_juegas", "btn_open_settings", "btn_open_fuentes", "btn_open_preguntas", "tu_quien_hace", "tu_contacto")
     val ys = order.map { yOf(it) }
     assertEquals("el orden de arriba abajo: ${order.zip(ys)}", ys.sorted(), ys)
     for (k in listOf("racha", "partidas", "medallas", "juegos")) assertTrue("falta el cuadro $k", exists("tu_cuadro_$k"))
@@ -106,7 +111,7 @@ class TuYAjustesTest {
   }
 
   @Test
-  fun mas_ajustes_y_en_que_se_basa_nubi_abren_sus_paneles() {
+  fun mas_ajustes_en_que_se_basa_nubi_y_preguntas_frecuentes_abren_sus_paneles() {
     val v = vm()
     show { TuScreen(viewModel = v) }
     rule.onNodeWithTag("btn_open_settings").performScrollTo().performClick()
@@ -114,6 +119,25 @@ class TuYAjustesTest {
     v.openTopPanel(null)
     rule.onNodeWithTag("btn_open_fuentes").performScrollTo().performClick()
     assertEquals(com.example.viewmodel.TopPanel.FUENTES, v.topPanel.value)
+    v.openTopPanel(null)
+    rule.onNodeWithTag("btn_open_preguntas").performScrollTo().performClick()
+    assertEquals("Tarea 209: «Preguntas frecuentes» abre su panel", com.example.viewmodel.TopPanel.PREGUNTAS, v.topPanel.value)
+  }
+
+  @Test
+  fun tu_trae_el_boton_de_preguntas_frecuentes_y_la_seccion_quien_hace_nubi_entre_los_botones_y_contacto() {
+    val v = vm()
+    show { TuScreen(viewModel = v) }
+    val button = rule.onNodeWithTag("btn_open_preguntas").performScrollTo()
+    button.assertIsDisplayed()
+    assertEquals("el texto del botón", "Preguntas frecuentes", allTextOf(rule.onNodeWithTag("btn_open_preguntas", useUnmergedTree = true).fetchSemanticsNode()))
+    assertTrue("el botón mide 48 dp o más", rule.onNodeWithTag("btn_open_preguntas").fetchSemanticsNode().size.height / 440f * 160f >= 48f)
+    rule.onNodeWithTag("tu_quien_hace").performScrollTo().assertIsDisplayed()
+    rule.onNodeWithText("Quién hace Nubi").assertExists()
+    assertEquals("solo el psicólogo, sin nombre y sin la IA", "Un psicólogo chileno decide cada juego y cada texto.", rule.onNodeWithTag("tu_quien_hace_texto").fetchSemanticsNode().config[SemanticsProperties.Text].joinToString("") { it.text })
+    val all = File("src/main/java/com/example/ui/screens/ProfileScreen.kt").readText()
+    assertFalse("la sección no nombra la IA (va solo en la pregunta frecuente)", com.example.data.Preguntas.WHO_LINE.lowercase().let { "inteligencia" in it || " ia " in it || "herramienta" in it })
+    assertTrue("y la sección vive en Tú", all.contains("Preguntas.WHO_TITLE") && all.contains("Preguntas.WHO_LINE"))
   }
 
   // ------------------------------------------------------------------ Cómo juegas: una sola puerta

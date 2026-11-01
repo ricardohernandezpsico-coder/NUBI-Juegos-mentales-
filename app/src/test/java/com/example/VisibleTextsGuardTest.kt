@@ -21,13 +21,10 @@ class VisibleTextsGuardTest {
   private val internalLiterals = setOf("neurovida_daily_cognitive_reminder")
 
   /**
-   * «Percentil» no se dice en la app (regla del 8-oct: ni percentiles ni comparaciones con otras personas) SALVO en la comparación con personas de tu edad del Contrarreloj, que Ricardo pidió con la palabra a la vista (31-oct; `auditoria-fable/nubi-plus-comparacion.md` §1.1; Tarea 202): estos DOS textos exactos,
-   * por texto completo y no por archivo. Cualquier otro texto con «percentil» sigue fallando, y si uno de estos cambia o desaparece, la prueba de más abajo pide quitarlo de la lista.
+   * «Percentil» no se dice en NINGÚN texto de la app (regla del 8-oct: ni percentiles ni comparaciones con otras personas). Entre el 31-oct y el 1-nov hubo dos textos exactos exceptuados en la comparación del Contrarreloj («Tu percentil semanal» y «Percentil N»); la Tarea 209
+   * (1-nov, decisión de Ricardo) los quitó: la cifra queda con «N de cada 100», la división y su lugar entre las cinco, y el gráfico se llama «Tu lugar cada semana». Esta lista quedó VACÍA a propósito y la prueba de más abajo exige que siga así.
    */
-  private val percentileTexts = setOf(
-    "Tu percentil semanal",
-    "Percentil \$p"
-  )
+  private val percentileTexts: Set<String> = emptySet()
 
   private val literal = Regex("\"((?:[^\"\\\\\\n]|\\\\.)*)\"")
 
@@ -42,7 +39,6 @@ class VisibleTextsGuardTest {
           val text = m.groupValues[1]
           if (text in internalLiterals || Regex("[a-z0-9_]+").matches(text)) continue      // nombres internos y etiquetas de prueba (snake_case): no se ven
           if (text == HealthNotice.TEXT) continue          // la ÚNICA excepción: el aviso de salud (dice que Nubi NO «previene» nada); ver `el aviso de salud ...` más abajo
-          if (text in percentileTexts) continue            // los dos textos exactos de la comparación con personas de tu edad (Tarea 202): ver `percentil solo se dice ...` más abajo
           val low = text.lowercase()
           val hit = banned.firstOrNull { it in low } ?: continue
           found += "${f.name}:${i + 1} «$text» (por «$hit»)"
@@ -533,20 +529,16 @@ class VisibleTextsGuardTest {
     }
   }
 
-  // ------------------------------------------------------------------ «percentil» (Tarea 202)
+  // ------------------------------------------------------------------ «percentil» (Tarea 202; sin excepciones desde la Tarea 209)
 
   @Test
-  fun `percentil solo se dice en los dos textos exactos de la comparacion con personas de tu edad`() {
+  fun `percentil no aparece en ningun texto visible de la app`() {
     val found = mutableSetOf<String>()
     File("src/main/java").walkTopDown().filter { it.extension == "kt" }.forEach { f ->
       f.readLines().forEach { raw -> for (text in visibleLiteralsOf(raw)) if ("percentil" in text.lowercase() && !Regex("[a-z0-9_]+").matches(text)) found += text }     // las etiquetas de prueba (snake_case) no se ven
     }
-    assertEquals("los textos con «percentil» deben ser EXACTAMENTE los exceptuados (si uno cambió, ajustar la lista; si hay otro, quitarlo)", percentileTexts, found)
-    for (exact in percentileTexts) {
-      assertFalse("«$exact» + algo más NO debe estar exceptuado", "$exact Tu percentil sube." in percentileTexts)
-      assertFalse("un recorte de «$exact» NO debe estar exceptuado", exact.dropLast(6) in percentileTexts)
-    }
-    assertFalse("otro texto con la palabra no pasa", "Tu percentil mejoró" in percentileTexts)
+    assertEquals("ningún texto con «percentil», ni «Tu percentil semanal» ni «Percentil N» (Tarea 209: Ricardo los quitó el 1-nov)", emptySet<String>(), found)
+    assertEquals("la lista de excepciones quedó vacía", emptySet<String>(), percentileTexts)
     assertTrue("y «percentil» sigue en la lista de lo que no se dice", "percentil" in banned)
   }
 }

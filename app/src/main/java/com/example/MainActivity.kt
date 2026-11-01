@@ -194,12 +194,16 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
           }
         }
 
-        // Los Ajustes y «En qué se basa Nubi», abiertos desde «Tú» (Tarea 158: el perfil es la pestaña «Tú» y los dos botones de arriba a la derecha se fueron; Tarea 185: «En qué se basa Nubi»).
+        // Los Ajustes, «En qué se basa Nubi» y «Preguntas frecuentes», abiertos desde «Tú» (Tarea 158: el perfil es la pestaña «Tú» y los dos botones de arriba a la derecha se fueron; Tarea 185: «En qué se basa Nubi»; Tarea 209: «Preguntas frecuentes»), y «De dónde sale la referencia», desde la página Contrarreloj de Avance y su hoja.
         if (activeGame == null && lastResult == null && sessionSummary == null) when (topPanel) {
           com.example.viewmodel.TopPanel.AJUSTES ->
             com.example.ui.screens.SettingsPanel(viewModel = viewModel, onClose = { viewModel.openTopPanel(null) })
           com.example.viewmodel.TopPanel.FUENTES ->
             com.example.ui.screens.FuentesPanel(onClose = { viewModel.openTopPanel(null) })
+          com.example.viewmodel.TopPanel.PREGUNTAS ->
+            com.example.ui.screens.PreguntasPanel(onClose = { viewModel.openTopPanel(null) })
+          com.example.viewmodel.TopPanel.REFERENCIA ->
+            com.example.ui.screens.ReferenciaPanel(onClose = { viewModel.openTopPanel(null) })
           null -> {}
         }
 

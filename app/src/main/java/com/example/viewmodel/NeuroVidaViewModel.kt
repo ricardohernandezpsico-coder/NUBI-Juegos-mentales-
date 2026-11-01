@@ -36,7 +36,8 @@ enum class AppTab(val title: String) {
 }
 
 /** Lo que se abre encima de una pestaña como panel: los Ajustes (desde «Tú»). El Perfil ya no es un panel: es la pestaña «Tú» (Tarea 158). */
-enum class TopPanel { AJUSTES, FUENTES }
+/** Los paneles con flecha que se abren encima de una pestaña: Ajustes y «En qué se basa Nubi» (Tarea 185), «Preguntas frecuentes» (desde Tú) y «De dónde sale la referencia» (desde la página Contrarreloj de Avance y su hoja del candado; Tarea 209). */
+enum class TopPanel { AJUSTES, FUENTES, PREGUNTAS, REFERENCIA }
 
 /**
  * «Todos los juegos» (la ventana de Hoy con los 17): el filtro de área (la clave, `MEMORIA`…; null = Todas), lo escrito en el buscador y el juego marcado (el último que se abrió o se jugó desde ahí). Vive en el ViewModel porque el pager se retira mientras hay un juego encima:

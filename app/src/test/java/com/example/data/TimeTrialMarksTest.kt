@@ -162,6 +162,17 @@ class TimeTrialMarksTest {
     assertFalse(TimeTrialMarks.doorSpoken(44, plus = true).contains("Plus"))
     val free = "Esta semana estás En órbita. Te faltan 7 aciertos para En la Luna."
     assertEquals("Tus marcas del Contrarreloj. Tu récord de hoy: 44 aciertos. $free Con Nubi Plus.", TimeTrialMarks.doorSpoken(44, plus = false, freeLine = free))
+    // Tarea 209: con comparación, el lector dice el candado largo, sin sumarle otro punto
+    assertEquals(
+      "Tus marcas del Contrarreloj. Tu récord de hoy: 44 aciertos. $free Con Nubi Plus: además, dónde queda tu marca frente a tu edad y a otras edades.",
+      TimeTrialMarks.doorSpoken(44, plus = false, freeLine = free, lockLabel = PlusAccess.LOCK_LABEL_COMPARED)
+    )
+    assertEquals(
+      "sin frase gratis, solo el candado largo",
+      "Tus marcas del Contrarreloj. Tu récord de hoy: 44 aciertos. Con Nubi Plus: además, dónde queda tu marca frente a tu edad y a otras edades.",
+      TimeTrialMarks.doorSpoken(44, plus = false, lockLabel = PlusAccess.LOCK_LABEL_COMPARED)
+    )
+    assertEquals("con Plus no se dice el candado", "Tus marcas del Contrarreloj. Tu récord de hoy: 44 aciertos.", TimeTrialMarks.doorSpoken(44, plus = true, lockLabel = PlusAccess.LOCK_LABEL_COMPARED))
     assertEquals("con Plus la frase gratis no va: la página la trae completa", TimeTrialMarks.doorSpoken(44, plus = true), TimeTrialMarks.doorSpoken(44, plus = true, freeLine = free))
   }
 

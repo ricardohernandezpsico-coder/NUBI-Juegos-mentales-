@@ -238,6 +238,23 @@ fun TuScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) {
         glyph = com.example.ui.components.Glyph.INFO, fontSize = 18.sp, modifier = Modifier.testTag("btn_open_fuentes")
       )
     }
+    // «Preguntas frecuentes» (Tarea 209): respuestas cortas a lo que más se preguntó; el glifo de información del kit, hasta que haya un «?» de plasticina
+    item {
+      com.example.ui.components.KitButton(
+        text = com.example.data.Preguntas.TITLE, onClick = { viewModel.openTopPanel(com.example.viewmodel.TopPanel.PREGUNTAS) }, color = com.example.ui.components.SlabColor.CREAM,
+        glyph = com.example.ui.components.Glyph.INFO, fontSize = 18.sp, modifier = Modifier.testTag("btn_open_preguntas")
+      )
+    }
+    // «Quién hace Nubi» (Tarea 209): solo el psicólogo, sin nombre y sin la IA (que va en la pregunta frecuente)
+    item {
+      Column(Modifier.testTag("tu_quien_hace")) {
+        SpaceSectionTitle(com.example.data.Preguntas.WHO_TITLE)
+        com.example.ui.components.OnBoardText(
+          com.example.data.Preguntas.WHO_LINE, color = com.example.ui.theme.NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp,
+          modifier = Modifier.padding(top = 6.dp).testTag("tu_quien_hace_texto")
+        )
+      }
+    }
     // «Contacto», al final (Tarea 185)
     item {
       val context = androidx.compose.ui.platform.LocalContext.current

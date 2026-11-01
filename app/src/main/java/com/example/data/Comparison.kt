@@ -30,12 +30,13 @@ object Comparison {
   const val SECTION_COMPARE = "Esta semana, comparado con tu edad"
   const val SAMPLE_NOTICE = "Estos son datos de muestra: solo se ven en la versión de prueba."
   const val PLACE_TITLE = "Tu lugar esta semana"
-  const val WEEKS_TITLE = "Tu percentil semanal"
+  /** Antes «Tu percentil semanal» (Tarea 209, decisión de Ricardo, 1-nov): «percentil» salió de todo texto visible; los mismos números («27 de cada 100») y la raya «la mitad». */
+  const val WEEKS_TITLE = "Tu lugar cada semana"
   const val OTHERS_TITLE = "Otras edades"
   const val LADDER_TITLE = "La escalera de tu franja"
   /** Cierra «Otras edades» cuando alguna franja (o todas las edades) todavía no llega a 50 personas: no se muestran filas vacías. */
   const val OTHERS_HIDDEN = "Las demás edades aparecen cuando lleguen a 50 personas."
-  /** El rótulo de la raya de 50 en «Tu percentil semanal» (14 sp, como los ejes). */
+  /** El rótulo de la raya de 50 en «Tu lugar cada semana» (14 sp, como los ejes). */
   const val WEEKS_HALF_LABEL = "la mitad"
   const val WEEKS_AXIS_RIGHT = "esta semana"
   const val BELL_AXIS_LEFT = "0 aciertos"
@@ -70,25 +71,43 @@ object Comparison {
 
   /**
    * Qué hace la comparación de un juego con una persona, la PRECEDENCIA en un solo lugar (la página y la puerta de Avance la leen):
-   * [NONE] no hay nada que decir (sin fuente, sin tabla para ese juego, o de 13 a 17 años); [NEEDS_AGE] hay con qué comparar pero falta la franja de edad (la página dice dónde elegirla, [AGE_HINT]);
+   * [NONE] no hay nada que decir (sin fuente o sin tabla para ese juego); [NEEDS_AGE] hay con qué comparar pero falta la franja de edad (la página dice dónde elegirla, [AGE_HINT]);
+   * [MINOR] la franja guardada es la de 13 a 17 años y [Features.COMPARE_MINORS] está apagada (Tarea 209: antes era [NONE] y la página callaba; ahora dice [MINORS_NOTICE]);
    * [EARLY] hay franja y tabla pero el juego tiene menos de [PLACE_FROM_GAME] partidas guardadas (la página dice [EARLY_NOTICE] y no muestra ningún lugar); [SHOW] todo como siempre.
    */
-  enum class Gate { NONE, NEEDS_AGE, EARLY, SHOW }
+  enum class Gate { NONE, NEEDS_AGE, MINOR, EARLY, SHOW }
 
   fun gate(source: Source?, stored: AgeRange?, game: String, results: List<TimeTrialResult>): Gate {
     if (source == null || !source.covers(game)) return Gate.NONE
-    if (rangeFor(stored, source) == null) return if (stored == null) Gate.NEEDS_AGE else Gate.NONE        // sin franja guardada, el aviso de edad; de 13 a 17 años, nada
+    if (rangeFor(stored, source) == null) return if (stored == null) Gate.NEEDS_AGE else Gate.MINOR        // sin franja guardada, el aviso de edad; de 13 a 17 años (la única franja que rangeFor deja fuera), el aviso de que solo ve lo suyo
     return if (placeUnlocked(results, game)) Gate.SHOW else Gate.EARLY
   }
+
+  /** Lo que dice la página de quien tiene de 13 a 17 años ([Gate.MINOR]): UNA línea de 16 sp, sin negrita, donde van el aviso de edad y el de la tercera partida. */
+  const val MINORS_NOTICE = "De 13 a 17 años, el Contrarreloj muestra solo tus propias marcas."
+
+  /**
+   * Con qué se compara ESTA persona en la puerta de Avance y en su hoja (Tarea 209: antes lo calculaba `ProgressScreen` por su cuenta): la comparación de la fuente si la hay y la persona tiene una franja con la que compararse; si no (sin fuente, sin franja o de 13 a 17 años), [Kind.NONE].
+   */
+  fun kindFor(source: Source?, stored: AgeRange?): Kind = if (source != null && rangeFor(stored, source) != null) kindOf(source) else Kind.NONE
+
+  /** true si la persona guardó la franja de 13 a 17 años y esa franja no se compara ([Features.COMPARE_MINORS] apagada): la hoja del candado y la página lo dicen en vez de callar. */
+  fun isMinorLocked(stored: AgeRange?): Boolean = stored == AgeRange.R13_17 && !Features.COMPARE_MINORS
 
   // ---- la REFERENCIA ESTIMADA (Tarea 205; `auditoria-fable/referencia-estimada.md` §4 y las decisiones de Opus del 1-nov): siempre dicha; en cada losa solo «referencia estimada»; nunca se llama «personas»
   const val ESTIMATED_BELL_CAPTION = "La línea marca la mitad de la referencia estimada."
   /** Bajo el gráfico de las semanas (con la referencia estimada). */
   const val WEEKS_ESTIMATED_NOTE = "Semanas comparadas con la referencia estimada."
 
-  /** La frase larga, UNA vez por página, bajo el rótulo de la comparación (reemplaza al aviso de muestra): qué es y que no son personas. */
+  /**
+   * La frase larga, UNA vez por página, bajo el rótulo de la comparación (reemplaza al aviso de muestra): primero la razón («No son otras personas: Nubi no junta datos de nadie», la duda que aparecía en las cuatro corridas de MiroFish) y después qué es la referencia
+   * (Tarea 209; `auditoria-fable/claridad-plus-y-ayuda.md` §1.1). La palabra «personas» solo va en ese «No son otras personas:».
+   */
   fun estimatedNotice(range: AgeRange): String =
-    "Referencia estimada para ${range.label}: sale de estudios por edad y de un programa que jugó esta misma pista en un computador, no en tu teléfono. No son personas."
+    "No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para ${range.label} es estimada: sale de estudios por edad y de un programa que jugó esta misma pista en un computador, no en tu teléfono."
+
+  /** La fila de 48 dp bajo esa frase, en la hoja del candado y en la pregunta «¿Con qué me compara el Contrarreloj?»: abre la hoja «De dónde sale la referencia» (el lector dice «…, botón»). */
+  const val SOURCE_LINK = "De dónde sale la referencia ›"
 
   /**
    * La frase de la campana, según sea la referencia estimada o no. El TÍTULO es el mismo («La campana de tu edad»): «La campana estimada de tu edad» partía en dos líneas hasta con letra 1,0 a 393 dp (56,3 dp de alto, `ContrarrelojPageTest`), así que
@@ -259,6 +278,21 @@ object Comparison {
 
   fun division(percentile: Int): Division = Division.entries.last { percentile >= it.from }
 
+  /**
+   * El lugar de una división entre las cinco, dicho en palabras (Tarea 209; `auditoria-fable/claridad-plus-y-ayuda.md` §1.1 y §1.2): «la primera de cinco divisiones», «la segunda…», «la tercera…», «la cuarta…» y, la más alta, «la quinta y más alta de las cinco divisiones».
+   * Va en minúscula, para seguir al nombre en una frase («Esta semana estás En órbita, la tercera de cinco divisiones…»); la cifra de la página lo dice solo y con mayúscula ([divisionPlaceLine]).
+   */
+  fun divisionPlace(d: Division): String = when (d) {
+    Division.PLATFORM -> "la primera de cinco divisiones"
+    Division.TAKEOFF -> "la segunda de cinco divisiones"
+    Division.ORBIT -> "la tercera de cinco divisiones"
+    Division.MOON -> "la cuarta de cinco divisiones"
+    Division.STARS -> "la quinta y más alta de las cinco divisiones"
+  }
+
+  /** El lugar de la división bajo su nombre en la tarjeta de la cifra, en 16 sp: «La tercera de cinco divisiones.» (reemplaza a «Percentil 63»; también lo lee el lector de pantalla). */
+  fun divisionPlaceLine(d: Division): String = divisionPlace(d).replaceFirstChar { it.uppercase() } + "."
+
   // ------------------------------------------------------------------ las franjas vecinas
 
   private val GROUPS: List<List<AgeRange>> = listOf(
@@ -351,19 +385,14 @@ object Comparison {
     return if (withUnit) "$HERO_UNIT $body" else body
   }
 
-  /** «Percentil 63», junto a la división (Ricardo eligió decirlo así el 31-oct: la frase, el percentil y la división). */
-  fun percentileLabel(r: Ranked): String {
-    val p = r.percentile
-    return "Percentil $p"
-  }
-
-  /** Lo que lee el lector de pantalla de la tarjeta de la cifra, de corrido: «63 de cada 100 personas de 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra. En órbita. Percentil 63.» */
+  /**
+   * Lo que lee el lector de pantalla de la tarjeta de la cifra, de corrido: «63 de cada 100 marcas de la referencia estimada para 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra. En órbita. La tercera de cinco divisiones.»
+   * (Tarea 209: ya no dice «percentil», que Ricardo quitó de todo texto el 1-nov; el lugar de la división ocupa su sitio.)
+   */
   fun heroSpoken(r: Ranked, range: AgeRange, gameTitle: String): String {
     val figure = heroFigure(r)
     val caption = heroCaption(r, range, gameTitle)
-    val division = r.division.label
-    val label = percentileLabel(r)
-    return "$figure $caption $division. $label."
+    return "$figure $caption ${r.division.label}. ${divisionPlaceLine(r.division)}"
   }
 
   /** Un peldaño de la escalera: la división y el PRIMER acierto con que se llega a ella. */
@@ -439,18 +468,15 @@ object Comparison {
   }
 
   /**
-   * LO GRATIS (Ricardo, 31-oct): la división y la meta, sin cifra de percentil, sin escalera y sin otras edades: «Esta semana estás En órbita. Te faltan 7 aciertos para En la Luna.» (en la más alta: «Esta semana estás Entre estrellas, la división más alta de tu franja.»).
-   * Solo con un lugar dicho ([Place.Found]); con «pocos» o sin marca no hay nada que decir.
+   * LO GRATIS (Ricardo, 31-oct): la división, su lugar entre las cinco (Tarea 209) y la meta, sin la cifra de «de cada 100», sin escalera y sin otras edades: «Esta semana estás En órbita, la tercera de cinco divisiones de la referencia estimada para tu edad. Te faltan 7 aciertos para En la Luna.»
+   * (en la más alta: «Esta semana estás Entre estrellas, la quinta y más alta de las cinco divisiones de la referencia estimada para tu edad.»; con personas, lo mismo sin «de la referencia estimada para tu edad»). Solo con un lugar dicho ([Place.Found]); con «pocos» o sin marca no hay nada que decir.
    */
   fun freeSentence(place: Place): String? {
     val r = (place as? Place.Found)?.ranked ?: return null
     val l = ladder(r)
-    if (r.estimated) {
-      if (l.next == null || l.missing == null) return "Esta semana estás ${r.division.label} en la referencia estimada para tu edad, la división más alta."
-      return "Esta semana estás ${r.division.label} en la referencia estimada para tu edad. ${needSentence(l, r)}"
-    }
-    if (l.next == null || l.missing == null) return "Esta semana estás ${r.division.label}, la división más alta de tu franja."
-    return "Esta semana estás ${r.division.label}. ${needSentence(l, r)}"
+    val where = divisionPlace(r.division) + if (r.estimated) " de la referencia estimada para tu edad" else ""
+    if (l.next == null || l.missing == null) return "Esta semana estás ${r.division.label}, $where."
+    return "Esta semana estás ${r.division.label}, $where. ${needSentence(l, r)}"
   }
 
   /**

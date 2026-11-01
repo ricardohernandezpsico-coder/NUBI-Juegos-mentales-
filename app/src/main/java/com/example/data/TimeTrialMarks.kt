@@ -161,9 +161,12 @@ object TimeTrialMarks {
   /** La segunda línea de la puerta de Avance: «Tu récord de hoy: 44 aciertos» (el juego del día) o «Todavía sin marcas». */
   fun doorLine(record: Int?): String = record?.let { "Tu récord de hoy: ${TimeTrialDay.hitsText(it)}" } ?: NO_MARKS_DOOR
 
-  /** Lo que lee el lector de pantalla de la puerta: el título y la línea de abajo (y el candado, sin Plus). */
-  fun doorSpoken(record: Int?, plus: Boolean, freeLine: String? = null): String =
-    "Tus marcas del Contrarreloj. ${doorLine(record)}" + if (plus) "." else (freeLine?.let { ". $it Con Nubi Plus." } ?: ". Con Nubi Plus.")
+  /**
+   * Lo que lee el lector de pantalla de la puerta: el título y la línea de abajo (y el candado, sin Plus). [lockLabel] es el del candado de la puerta ([PlusAccess.lockLabel]: el largo con comparación, «Con Nubi Plus» sin ella; Tarea 209);
+   * si ya termina en punto, no se le suma otro.
+   */
+  fun doorSpoken(record: Int?, plus: Boolean, freeLine: String? = null, lockLabel: String = PlusAccess.LOCK_LABEL): String =
+    "Tus marcas del Contrarreloj. ${doorLine(record)}" + if (plus) "." else ". " + (freeLine?.let { "$it " } ?: "") + lockLabel + (if (lockLabel.endsWith(".")) "" else ".")
 
   // ------------------------------------------------------------------ el ritmo de la última partida (Tarea 200; `auditoria-fable/nubi-plus-comparacion.md` §2.3)
 

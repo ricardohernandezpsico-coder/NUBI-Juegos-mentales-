@@ -176,7 +176,8 @@ class ContrarrelojFlowTest {
     TestSupport.awaitUntil(30_000) { vm.ageRange.value == com.example.model.AgeRange.R45_54 }
     show(vm)
     assertEquals("sigue diciendo el récord de hoy", "Tu récord de hoy: 44 aciertos", textOf("avance_contrarreloj_line").replace(NBSP, " "))
-    assertEquals("y lleva el candado «Con Nubi Plus»", 1, rule.onAllNodes(hasTestTag("avance_contrarreloj_lock"), useUnmergedTree = true).fetchSemanticsNodes().size)
+    assertEquals("y lleva el candado", 1, rule.onAllNodes(hasTestTag("avance_contrarreloj_lock"), useUnmergedTree = true).fetchSemanticsNodes().size)
+    assertEquals("con comparación, el candado dice qué agrega Plus (Tarea 209)", "Con Nubi Plus: además, dónde queda tu marca frente a tu edad y a otras edades.", textOf("avance_contrarreloj_lock_label"))
     assertEquals("sin chevron", 0, rule.onAllNodes(hasTestTag("avance_contrarreloj_chevron"), useUnmergedTree = true).fetchSemanticsNodes().size)
     rule.onNodeWithTag("avance_contrarreloj_door").performClick(); rule.waitForIdle()
     assertNull("sin Plus no se abre la página", vm.contrarreloj.value)
@@ -212,9 +213,27 @@ class ContrarrelojFlowTest {
   @Test
   fun la_hoja_del_candado_de_13_a_17_anos_no_le_promete_una_referencia_que_nunca_vera() {
     val (lead, items) = sheetTexts(com.example.model.AgeRange.R13_17)
-    assertEquals("solo contigo: sin comparación", PlusAccess.sheetLead(com.example.data.Comparison.Kind.NONE), lead)
+    assertEquals("solo contigo y lo dice (Tarea 209)", PlusAccess.sheetLead(com.example.data.Comparison.Kind.NONE, minor = true), lead)
+    assertEquals("Una página con todas tus marcas. De 13 a 17 años se comparan solo contigo:", lead)
     assertEquals(PlusAccess.sheetItems(com.example.data.Comparison.Kind.NONE), items)
     assertFalse("ni una palabra de la referencia", (listOf(lead) + items).any { "referencia" in it })
+    assertEquals("y sin la nota ni la fila de la referencia", 0, count("plus_sheet_note") + count("plus_sheet_source"))
+    assertEquals("la puerta, con el candado corto: no hay un «además» que ofrecer", PlusAccess.LOCK_LABEL, textOf("avance_contrarreloj_lock_label"))
+  }
+
+  @Test
+  fun la_hoja_del_candado_dice_la_razon_y_su_fila_abre_de_donde_sale_la_referencia() {
+    val vm = withData(); vm.setPlus(false); vm.setAgeRange(com.example.model.AgeRange.R45_54)
+    TestSupport.awaitUntil(30_000) { vm.ageRange.value == com.example.model.AgeRange.R45_54 }
+    show(vm)
+    rule.onNodeWithTag("avance_contrarreloj_door").performClick(); rule.waitForIdle()
+    assertEquals("Gratis: tu división de la semana. Con Nubi Plus, además:", textOf("plus_sheet_lead"))
+    assertEquals(PlusAccess.SHEET_NOTE_ESTIMATED, textOf("plus_sheet_note"))
+    assertEquals("la razón va antes de la fila y la fila antes de «Cerrar»", true, top("plus_sheet_note") < top("plus_sheet_source") && top("plus_sheet_source") < top("btn_plus_sheet_ok"))
+    rule.onNode(androidx.compose.ui.test.hasText("De dónde sale la referencia ›"), useUnmergedTree = true).assertExists()
+    rule.onNodeWithTag("plus_sheet_source").performClick(); rule.waitForIdle()
+    assertEquals("la hoja se cierra y se abre el panel de los estudios", com.example.viewmodel.TopPanel.REFERENCIA, vm.topPanel.value)
+    assertEquals(0, count("plus_sheet"))
   }
 
   @Test
@@ -245,8 +264,8 @@ class ContrarrelojFlowTest {
     runBlocking { repo.recordTimeTrial(TimeTrialResult(id = "flow-now", gameId = today, day = vm.todayKey(), trackVersion = TimeTrialDay.trackVersion(today), hits = 101, errors = 2, level = 5, seconds = 120, timestamp = System.currentTimeMillis())) }
     TestSupport.awaitUntil(30_000) { vm.timeTrialResults.value.size >= 12 }
     show(vm)
-    assertEquals("Esta semana estás Entre estrellas en la referencia estimada para tu edad, la división más alta.", textOf("avance_contrarreloj_free").replace(NBSP, " "))
-    assertEquals("la puerta se lee de corrido con la frase gratis y el candado", "Tus marcas del Contrarreloj. Tu récord de hoy: 99 aciertos. Esta semana estás Entre estrellas en la referencia estimada para tu edad, la división más alta. Con Nubi Plus.",
+    assertEquals("Esta semana estás Entre estrellas, la quinta y más alta de las cinco divisiones de la referencia estimada para tu edad.", textOf("avance_contrarreloj_free").replace(NBSP, " "))
+    assertEquals("la puerta se lee de corrido con la frase gratis y el candado largo", "Tus marcas del Contrarreloj. Tu récord de hoy: 99 aciertos. Esta semana estás Entre estrellas, la quinta y más alta de las cinco divisiones de la referencia estimada para tu edad. Con Nubi Plus: además, dónde queda tu marca frente a tu edad y a otras edades.",
       rule.onNodeWithTag("avance_contrarreloj_door").fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString(". ")?.replace(NBSP, " "))
     assertEquals("el candado sigue (la página entera es Plus)", 1, rule.onAllNodes(hasTestTag("avance_contrarreloj_lock"), useUnmergedTree = true).fetchSemanticsNodes().size)
     assertTrue("la frase va entre el récord y el candado", top("avance_contrarreloj_line") < top("avance_contrarreloj_free") && top("avance_contrarreloj_free") < top("avance_contrarreloj_lock"))
@@ -412,13 +431,13 @@ class ContrarrelojFlowTest {
     show(vm)
     assertEquals("con dos partidas la puerta calla, como sin franja de edad", 0, freeNodes())
     val spoken = rule.onNodeWithTag("avance_contrarreloj_door").fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString(". ")?.replace(NBSP, " ").orEmpty()
-    assertEquals("y se lee solo el récord y el candado", "Tus marcas del Contrarreloj. Tu récord de hoy: 99 aciertos. Con Nubi Plus.", spoken)
+    assertEquals("y se lee solo el récord y el candado (largo: hay comparación para esta persona)", "Tus marcas del Contrarreloj. Tu récord de hoy: 99 aciertos. Con Nubi Plus: además, dónde queda tu marca frente a tu edad y a otras edades.", spoken)
     assertEquals("el candado sigue", 1, rule.onAllNodes(hasTestTag("avance_contrarreloj_lock"), useUnmergedTree = true).fetchSemanticsNodes().size)
     recordToday(vm, repo, 2)
     TestSupport.awaitUntil(30_000) { vm.timeTrialResults.value.size >= 3 }
     rule.waitForIdle()
     assertEquals("con la tercera, la frase gratis de siempre", 1, freeNodes())
-    assertEquals("Esta semana estás Entre estrellas en la referencia estimada para tu edad, la división más alta.", textOf("avance_contrarreloj_free").replace(NBSP, " "))
+    assertEquals("Esta semana estás Entre estrellas, la quinta y más alta de las cinco divisiones de la referencia estimada para tu edad.", textOf("avance_contrarreloj_free").replace(NBSP, " "))
   }
 
   @Test
