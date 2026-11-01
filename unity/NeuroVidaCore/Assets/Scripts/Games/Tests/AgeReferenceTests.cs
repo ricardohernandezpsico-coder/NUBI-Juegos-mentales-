@@ -1,0 +1,246 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Text;
+using NeuroVida.Games.Disparate;
+using NeuroVida.Games.Shared;
+using NUnit.Framework;
+using UnityEditor;
+using UnityEngine;
+
+namespace NeuroVida.Games.Tests
+{
+    /// <summary>
+    /// Los robots por edad (<see cref="AgeReference"/>, Tarea 204): lo que se vigila es lo que no puede romperse sin que nadie lo note. (1) El ORDEN entre franjas: con la edad, la marca de la referencia no sube (la distancia entre franjas es lo único que los estudios fijan, y la página la promete). (2) Una semilla fija da SIEMPRE la misma tabla.
+    /// (3) El JSON que lee la app está bien armado: tramos del ancho de cada juego, la cuenta suma los robots, los cuartiles en orden, la escala y las semillas escritas. (4) Una persona más rápida y más exacta hace más marca que una lenta, en los cuatro juegos (el robot juega la pista real, no un número).
+    /// Corren con pocos robots (segundos); la tabla grande sale de <see cref="ReferenceTableRunner"/>.
+    /// </summary>
+    public class AgeReferenceTests
+    {
+        private static SentenceBank _bank;
+        private static SentenceBank Bank => _bank ?? (_bank = SentenceBank.Load());
+
+        private static readonly AgeReference.Options Small = new AgeReference.Options(250, 7, 20261101, 20261101UL);
+
+        private static readonly Dictionary<string, AgeReference.Table> Tables = new Dictionary<string, AgeReference.Table>();
+
+        private static AgeReference.Table TableOf(string game)
+        {
+            if (!Tables.TryGetValue(game, out var t)) Tables[game] = t = AgeReference.Build(game, Bank, Small);
+            return t;
+        }
+
+        // ------------------------------------------------------------------ el orden entre franjas
+
+        private static void AssertOrderedByAge(string game)
+        {
+            var t = TableOf(game);
+            double tol = Math.Max(0.75, 0.3 * t.BinWidth);          // el azar del muestreo: con 250 robots la media se mueve unas décimas
+            for (int f = 0; f + 1 < t.Ranges.Length; f++)
+                Assert.LessOrEqual(t.Ranges[f + 1].Mean, t.Ranges[f].Mean + tol, game + ": la media de " + t.Ranges[f + 1].Label + " (" + t.Ranges[f + 1].Mean.ToString("0.0", CultureInfo.InvariantCulture) + ") no debe pasar a la de " + t.Ranges[f].Label + " (" + t.Ranges[f].Mean.ToString("0.0", CultureInfo.InvariantCulture) + ")");
+            double drop = t.Ranges[0].Mean - t.Ranges[t.Ranges.Length - 1].Mean;
+            Assert.GreaterOrEqual(drop, t.BinWidth, game + ": de 18 a 29 a 75 o más la marca debe bajar al menos un tramo (bajó " + drop.ToString("0.0", CultureInfo.InvariantCulture) + ")");
+            Assert.LessOrEqual(t.Ranges[t.Ranges.Length - 1].P50, t.Ranges[0].P50, game + ": la mitad de 75 o más no puede estar sobre la de 18 a 29");
+            Assert.LessOrEqual(t.Ranges[t.Ranges.Length - 1].P75, t.Ranges[0].P75, game + ": el cuartil alto de 75 o más no puede estar sobre el de 18 a 29");
+        }
+
+        [Test] public void Stroop_OlderPeopleScoreLower() => AssertOrderedByAge("stroop");
+        [Test] public void Disparate_OlderPeopleScoreLower() => AssertOrderedByAge("disparate");
+        [Test] public void Radar_OlderPeopleScoreLower() => AssertOrderedByAge("radar");
+        [Test] public void Docking_OlderPeopleScoreLower() => AssertOrderedByAge("acoplamiento");
+
+        // ------------------------------------------------------------------ una semilla fija, la misma tabla
+
+        [Test]
+        public void TheSameSeedGivesTheSameTable()
+        {
+            var o = new AgeReference.Options(40, 7, 20261101, 7UL);
+            foreach (var g in TimeTrial.GameIds)
+            {
+                string a = AgeReference.ToJson(AgeReference.Build(g, Bank, o), "2026-11-01");
+                string b = AgeReference.ToJson(AgeReference.Build(g, Bank, o), "2026-11-01");
+                Assert.AreEqual(a, b, g + ": la misma semilla debe dar la misma tabla");
+                string c = AgeReference.ToJson(AgeReference.Build(g, Bank, new AgeReference.Options(40, 7, 20261101, 8UL)), "2026-11-01");
+                Assert.AreNotEqual(a, c, g + ": otra semilla debe dar otra tabla (si no, la semilla no hace nada)");
+            }
+        }
+
+        [Test]
+        public void TheScaleMovesTheTableAndIsWrittenInTheJson()
+        {
+            var o = new AgeReference.Options(120, 7, 20261101, 3UL);
+            var normal = AgeReference.Build("stroop", Bank, o);
+            var slow = AgeReference.Build("stroop", Bank, new AgeReference.Options(120, 7, 20261101, 3UL, 1.3));
+            Assert.Less(slow.Ranges[2].Mean, normal.Ranges[2].Mean - 3, "con la respuesta 30 % más lenta la media de 45 a 54 cae varios aciertos (Fable: de 55 a 45 la mitad)");
+            Assert.AreEqual(1.0, normal.Scale, "la escala por defecto es la de ReferenceScales");
+            StringAssert.Contains("\"escala\": 1.3", AgeReference.ToJson(slow, "2026-11-01"));
+            foreach (var g in TimeTrial.GameIds) Assert.Greater(ReferenceScales.For(g), 0.0, g);
+        }
+
+        // ------------------------------------------------------------------ el JSON
+
+        [Test]
+        public void TheJsonIsWellFormedForEachGame()
+        {
+            foreach (var g in TimeTrial.GameIds)
+            {
+                var t = TableOf(g);
+                string json = AgeReference.ToJson(t, "2026-11-01");
+                StringAssert.Contains("\"estimada\": true", json, g);
+                StringAssert.Contains("\"juego\": \"" + g + "\"", json);
+                StringAssert.Contains("\"version_pista\": " + TimeTrial.TrackVersion(g), json);
+                StringAssert.Contains("\"ancho_tramo\": " + AgeReference.BinWidth(g), json);
+                StringAssert.Contains("\"semilla\": 20261101", json);
+                StringAssert.Contains("\"robots_por_franja\": " + Small.People, json);
+                Assert.AreEqual(g + "_v" + TimeTrial.TrackVersion(g) + ".json", AgeReference.FileName(t));
+                Assert.AreEqual(6, t.Ranges.Length, "seis franjas, de 18 a 29 a 75 o más (sin 13 a 17)");
+                foreach (var r in t.Ranges)
+                {
+                    Assert.AreEqual(AgeReference.Bins, r.Bins.Length, g + " " + r.Key);
+                    int sum = 0;
+                    foreach (int b in r.Bins) sum += b;
+                    Assert.AreEqual(Small.People, sum, g + " " + r.Key + ": los tramos suman los robots");
+                    Assert.AreEqual(Small.People, r.People);
+                    Assert.LessOrEqual(r.P25, r.P50); Assert.LessOrEqual(r.P50, r.P75); Assert.LessOrEqual(r.P75, r.P90);
+                    StringAssert.Contains("\"" + r.Key + "\": { \"robots\": " + Small.People, json);
+                }
+            }
+        }
+
+        [Test]
+        public void BinWidthsAreTheOnesRicardoChose()
+        {
+            Assert.AreEqual(1, AgeReference.BinWidth("radar"));
+            Assert.AreEqual(2, AgeReference.BinWidth("acoplamiento"));
+            Assert.AreEqual(5, AgeReference.BinWidth("stroop"));
+            Assert.AreEqual(5, AgeReference.BinWidth("disparate"));
+            Assert.AreEqual(16, AgeReference.Bins);
+        }
+
+        [Test]
+        public void TheMarksOfEveryGameFitTheirBins()
+        {
+            // la marca más alta razonable (Fable §1): Tinta 70-80, Disparate 40-45, Rescate 15, Acoplamiento 25-30; el último tramo junta lo que pase del ancho × 16 (80 · 80 · 16 · 32)
+            foreach (var g in TimeTrial.GameIds)
+            {
+                var t = TableOf(g);
+                int top = AgeReference.BinWidth(g) * AgeReference.Bins;
+                var young = t.Ranges[0];
+                Assert.Less(young.P90, top, g + ": el p90 de los más jóvenes cabe dentro de los 16 tramos");
+                // Rescate relámpago (tramos de 1, de 0 a 15): una ronda dura ~8 s y en 2 minutos caben ~15, así que entre los más jóvenes un buen pedazo llega al último tramo («15 o más»); es el techo conocido de ese juego (se informa en la entrega), no un error del modelo
+                double allowed = g == "radar" ? 0.40 : 0.25;
+                Assert.Less(young.Bins[AgeReference.Bins - 1] / (double)young.People, allowed, g + ": el último tramo no es donde se amontona la gente (los tramos cubren la marca máxima razonable)");
+            }
+        }
+
+        // ------------------------------------------------------------------ el robot juega la pista real
+
+        [Test]
+        public void AFasterAndMoreAccuratePersonScoresMoreInEveryGame()
+        {
+            var fast = new AgeReference.Person(0.8, 0.97, 3.8, false);
+            var slow = new AgeReference.Person(1.9, 0.86, 2.2, true);
+            foreach (var g in TimeTrial.GameIds)
+            {
+                double f = 0, s = 0;
+                const int days = 20;
+                for (int d = 0; d < days; d++)
+                {
+                    int day = 20261101 + d;
+                    f += AgeReference.Play(g, fast, day, new TimeTrial.TrackRandom((ulong)(100 + d)), Bank);
+                    s += AgeReference.Play(g, slow, day, new TimeTrial.TrackRandom((ulong)(100 + d)), Bank);
+                }
+                Assert.Greater(f / days, s / days + 2, g + ": la persona rápida y exacta (" + (f / days).ToString("0.0", CultureInfo.InvariantCulture) + ") debe superar a la lenta (" + (s / days).ToString("0.0", CultureInfo.InvariantCulture) + ")");
+            }
+        }
+
+        [Test]
+        public void ThePlayIsDeterministicForTheSamePersonDayAndSeed()
+        {
+            var p = AgeReference.Draw(2, 1.0, new TimeTrial.TrackRandom(5UL));
+            foreach (var g in TimeTrial.GameIds)
+            {
+                double a = AgeReference.Play(g, p, 20261103, new TimeTrial.TrackRandom(9UL), Bank);
+                double b = AgeReference.Play(g, p, 20261103, new TimeTrial.TrackRandom(9UL), Bank);
+                Assert.AreEqual(a, b, g);
+                Assert.GreaterOrEqual(a, 0, g + ": la marca nunca es negativa (piso en 0)");
+            }
+        }
+
+        [Test]
+        public void TheDayKeysCrossTheMonth()
+        {
+            CollectionAssert.AreEqual(new[] { 20261101, 20261102, 20261103 }, AgeReference.DayKeys(20261101, 3));
+            CollectionAssert.AreEqual(new[] { 20261129, 20261130, 20261201 }, AgeReference.DayKeys(20261129, 3));
+        }
+
+        [Test]
+        public void TheParametersAreTheOnesOfTheDesignTable()
+        {
+            // la tabla de la §2.2 de Fable, tal cual: si alguien la cambia, que sea a propósito (y suba AgeReference.ModelVersion)
+            CollectionAssert.AreEqual(new[] { 1.00, 1.06, 1.14, 1.24, 1.40, 1.62 }, AgeReference.Slowness);
+            CollectionAssert.AreEqual(new[] { 0.18, 0.19, 0.20, 0.22, 0.25, 0.28 }, AgeReference.Dispersion);
+            CollectionAssert.AreEqual(new[] { 0.95, 0.95, 0.94, 0.93, 0.91, 0.89 }, AgeReference.Accuracy);
+            CollectionAssert.AreEqual(new[] { 3.6, 3.4, 3.2, 3.0, 2.7, 2.4 }, AgeReference.Objects);
+            CollectionAssert.AreEqual(new[] { false, false, false, false, true, true }, AgeReference.Senior);
+            CollectionAssert.AreEqual(new[] { "R18_29", "R30_44", "R45_54", "R55_64", "R65_74", "R75_PLUS" }, AgeReference.RangeKeys);
+            Assert.AreEqual(1.25, AgeReference.StroopResponse);
+            Assert.AreEqual(0.30, AgeReference.DisparatePerWord);
+            Assert.AreEqual(2.2, AgeReference.RadarResponse);
+            Assert.AreEqual(1.3, AgeReference.DockingBase);
+        }
+    }
+
+    /// <summary>
+    /// GENERA las tablas de la referencia estimada (Tarea 204): <c>bash tools/verificar-todo.sh --referencia</c> abre Unity en batch y llama a <see cref="Run"/>, que arma los cuatro JSON en <c>app/src/main/assets/referencia/</c> y un informe en <c>unity/test-results/referencia-estimada.txt</c>.
+    /// Se vuelve a correr cuando cambia una pista (versión), la escala (<see cref="ReferenceScales"/>) o el modelo (<see cref="AgeReference.ModelVersion"/>). Variables: <c>NUBI_REF_PEOPLE</c> (robots por franja, 2000), <c>NUBI_REF_DAYS</c> (días de pista por persona, 7),
+    /// <c>NUBI_REF_SEED</c> (semilla, 20261101), <c>NUBI_REF_OUT</c> (carpeta de salida) y <c>NUBI_REF_SCALE</c> (una escala para los cuatro juegos, para probar; sin ella manda <see cref="ReferenceScales"/>).
+    /// </summary>
+    public static class ReferenceTableRunner
+    {
+        public static void Run()
+        {
+            try
+            {
+                var inv = CultureInfo.InvariantCulture;
+                int people = EnvInt("NUBI_REF_PEOPLE", 2000);
+                int days = EnvInt("NUBI_REF_DAYS", 7);
+                ulong seed = (ulong)EnvInt("NUBI_REF_SEED", 20261101);
+                double scale = double.TryParse(Environment.GetEnvironmentVariable("NUBI_REF_SCALE"), NumberStyles.Float, inv, out var s) ? s : 0.0;
+                string repo = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", ".."));
+                string outDir = Environment.GetEnvironmentVariable("NUBI_REF_OUT");
+                if (string.IsNullOrEmpty(outDir)) outDir = Path.Combine(repo, "app", "src", "main", "assets", "referencia");
+                Directory.CreateDirectory(outDir);
+                var bank = SentenceBank.Load();
+                var options = new AgeReference.Options(people, days, 20261101, seed, scale);
+                string date = DateTime.Now.ToString("yyyy-MM-dd", inv);
+                var report = new StringBuilder();
+                report.AppendLine("Referencia estimada del Contrarreloj (Tarea 204): robots por edad sobre la pista real. Modelo " + AgeReference.ModelVersion + ", generada el " + date + ".");
+                report.AppendLine(people + " robots por franja × " + days + " días de pista (de cada uno, su mejor marca de la semana), semilla " + seed + ". NO son personas.");
+                report.AppendLine();
+                var clock = System.Diagnostics.Stopwatch.StartNew();
+                foreach (var g in TimeTrial.GameIds)
+                {
+                    var t = AgeReference.Build(g, bank, options);
+                    File.WriteAllText(Path.Combine(outDir, AgeReference.FileName(t)), AgeReference.ToJson(t, date), new UTF8Encoding(false));
+                    report.AppendLine(AgeReference.Describe(t));
+                    Debug.Log("[Referencia] " + g + " listo (" + (clock.ElapsedMilliseconds / 1000) + " s)");
+                }
+                report.AppendLine("Tiempo: " + (clock.ElapsedMilliseconds / 1000) + " s.");
+                string resultsDir = Path.Combine(repo, "unity", "test-results");
+                Directory.CreateDirectory(resultsDir);
+                File.WriteAllText(Path.Combine(resultsDir, "referencia-estimada.txt"), report.ToString(), new UTF8Encoding(false));
+                Debug.Log("[Referencia]\n" + report);
+                EditorApplication.Exit(0);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("[Referencia] falló: " + e);
+                EditorApplication.Exit(1);
+            }
+        }
+
+        private static int EnvInt(string name, int fallback) => int.TryParse(Environment.GetEnvironmentVariable(name), NumberStyles.Integer, CultureInfo.InvariantCulture, out var v) ? v : fallback;
+    }
+}

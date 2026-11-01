@@ -16,6 +16,9 @@
 #   --sin-animaciones  smoke de los juegos pedidos (o los 23) con "quitar animaciones" ACTIVO (NUBI_REDUCE_MOTION=1: la config del juego lleva
 #                      reduce_motion=true). Corre solo escena piloto + smoke; no reexporta ni toca Gradle ni instala (el APK es el mismo).
 #   --instalar         al final instala el APK en el telefono (DEVICE, por defecto el de Ricardo).
+#   --referencia       OPCIONAL, aparte del resto (Tarea 204): REGENERA la tabla de la referencia estimada del Contrarreloj —los robots por edad juegan la pista real: 2.000 por franja x 7 dias x 6 franjas x 4 juegos— y deja los cuatro
+#                      JSON en app/src/main/assets/referencia/ y el informe en unity/test-results/referencia-estimada.txt (unos minutos). Se vuelve a correr cuando cambia una pista (version), la escala (ReferenceScales) o el modelo
+#                      (AgeReference.ModelVersion). Variables opcionales: NUBI_REF_PEOPLE, NUBI_REF_DAYS, NUBI_REF_SEED, NUBI_REF_SCALE, NUBI_REF_OUT. No corre EditMode, smoke, export ni Gradle.
 #   --capturas <Juego|todos> OPCIONAL, aparte del resto (no corre EditMode, smoke, export ni Gradle): saca CAPTURAS DE PANTALLA REALES en forma de telefono
 #                      (1080x2400) y arma las hojas de contacto (tools/capturas/hoja.py). `todos` = los 17 juegos de la app (unos 20 min: la primera pantalla jugable, a los 8/20/40 s,
 #                      la pausa, la cortina «¡Listo!» y la pantalla final si la partida llega, una toma con «quitar animaciones» y, con tutorial, los pasos 1 y 3; Engranajes,
@@ -34,7 +37,7 @@
 # Solo funciona en el PC de Ricardo: una sesion en la nube no tiene Unity ni el SDK.
 set -u
 
-INSTALAR=0; JUEGOS=""; FILTRO=""; SOLO_APP=0; SIN_ANIM=0; CAPTURAS=""
+INSTALAR=0; JUEGOS=""; FILTRO=""; SOLO_APP=0; SIN_ANIM=0; CAPTURAS=""; REFERENCIA=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --instalar) INSTALAR=1 ;;
@@ -43,6 +46,7 @@ while [ $# -gt 0 ]; do
     --solo-app) SOLO_APP=1 ;;
     --sin-animaciones) SIN_ANIM=1 ;;
     --capturas) CAPTURAS="${2:-}"; shift ;;
+    --referencia) REFERENCIA=1 ;;
     *) echo "Opcion desconocida: $1"; sed -n 2,3p "$0"; exit 2 ;;
   esac
   shift
@@ -74,6 +78,17 @@ fallo() { # etapa, texto, log
   echo "--- ultimas lineas de $3 ---"; tail -n 15 "$3"
   echo "=== FALLO (total $((SECONDS - T0))s) ==="; exit 1
 }
+
+# --- la referencia estimada del Contrarreloj (opcional: solo esto, sin el resto de la verificacion; Tarea 204)
+if [ "$REFERENCIA" = 1 ]; then
+  T=$SECONDS
+  "$UNITY" -batchmode -nographics -quit -projectPath "$PROJ" \
+    -executeMethod NeuroVida.Games.Tests.ReferenceTableRunner.Run -logFile "$RESULTS/v-referencia.log"
+  [ $? -eq 0 ] || fallo "Referencia estimada" "no se pudo generar" "$RESULTS/v-referencia.log"
+  grep -aq '\[Referencia\]' "$RESULTS/v-referencia.log" || fallo "Referencia estimada" "no hay informe" "$RESULTS/v-referencia.log"
+  linea "Referencia estimada" "OK $(grep -a 'Tiempo:' "$RESULTS/referencia-estimada.txt" | tail -n 1) JSON en app/src/main/assets/referencia/" "$((SECONDS - T))"
+  echo "=== REFERENCIA OK (total $((SECONDS - T0))s); informe: unity/test-results/referencia-estimada.txt ==="; exit 0
+fi
 
 # --- capturas de pantalla reales (opcional: solo esto, sin el resto de la verificacion)
 if [ -n "$CAPTURAS" ]; then

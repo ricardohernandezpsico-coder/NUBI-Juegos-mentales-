@@ -25,7 +25,7 @@ namespace NeuroVida.Games.Tests
         private const double CareSigma = 0.25;
 
         // lo que dura lo demás de cada ensayo que no está en un contrato, de los controladores: ShowSentence (0,2 s) y CorrectFeedback / despedida (0,12 s) de ¿Verdad o disparate?
-        private const double DisparateArrive = 0.2, DisparateFarewell = 0.12;
+        public const double DisparateArrive = 0.2, DisparateFarewell = 0.12;
 
         public struct Result
         {
