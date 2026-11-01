@@ -200,7 +200,9 @@ namespace NeuroVida.Games.Tests
 
         // ------------------------------------------------------------------ la tabla
 
-        /// <summary>El ancho del tramo de cada juego (decisión de Ricardo, 1-nov): de a 1 acierto en Rescate relámpago, de a 2 en Acoplamiento y de a 5 en Tinta o Palabra y ¿Verdad o disparate?. Son 16 tramos: el último junta «lo de ahí en adelante».</summary>
+        /// <summary>
+        /// El ancho del tramo de cada juego (decisión de Ricardo, 1-nov): de a 1 acierto en Rescate relámpago, de a 2 en Acoplamiento y de a 5 en Tinta o Palabra y ¿Verdad o disparate?. Cuántos tramos hay lo dice <see cref="BinCount"/>; el último junta «lo de ahí en adelante».
+        /// </summary>
         public static int BinWidth(string game)
         {
             switch (game)
@@ -211,7 +213,10 @@ namespace NeuroVida.Games.Tests
             }
         }
 
-        public const int Bins = 16;
+        /// <summary>
+        /// Cuántos tramos tiene la tabla de un juego (Opus, 1-nov): 16 en Tinta o Palabra (0 a 79), ¿Verdad o disparate? (0 a 79) y Acoplamiento (0 a 31); **24 en Rescate relámpago** (de a 1: 0 a 23), porque con 16 (0 a 15) el 21 al 29 % de los jóvenes se juntaba en el último tramo («15 o más»). El JSON lo dice (<c>tramos</c>) y la app lo lee de ahí.
+        /// </summary>
+        public static int BinCount(string game) => game == "radar" ? 24 : 16;
 
         /// <summary>Los días de pista de una semana: cada día tiene su propia pista (otra semilla), así que una persona que juega 3 veces juega 3 pistas distintas.</summary>
         public const int WeekDays = 7;
@@ -272,7 +277,7 @@ namespace NeuroVida.Games.Tests
         public sealed class Table
         {
             public string Game;
-            public int TrackVersion, BinWidth, Played, FirstDay;
+            public int TrackVersion, BinWidth, BinCount, Played, FirstDay;
             public int PeoplePerRange;
             public ulong Seed;
             public double Scale;
@@ -300,7 +305,7 @@ namespace NeuroVida.Games.Tests
             var week = DayKeys(options.FirstDay, WeekDays);
             var table = new Table
             {
-                Game = game, TrackVersion = TimeTrial.TrackVersion(game), BinWidth = width, Played = options.Played, FirstDay = options.FirstDay,
+                Game = game, TrackVersion = TimeTrial.TrackVersion(game), BinWidth = width, BinCount = BinCount(game), Played = options.Played, FirstDay = options.FirstDay,
                 PeoplePerRange = options.People, Seed = options.Seed, Scale = scale, Ranges = new RangeResult[RangeKeys.Length],
             };
             for (int f = 0; f < RangeKeys.Length; f++)
@@ -318,18 +323,18 @@ namespace NeuroVida.Games.Tests
                     }
                     best[i] = (int)top;
                 }
-                table.Ranges[f] = Summarize(f, best, width);
+                table.Ranges[f] = Summarize(f, best, width, table.BinCount);
             }
             return table;
         }
 
-        private static RangeResult Summarize(int range, int[] marks, int width)
+        private static RangeResult Summarize(int range, int[] marks, int width, int binCount)
         {
-            var bins = new int[Bins];
+            var bins = new int[binCount];
             double sum = 0;
             foreach (int m in marks)
             {
-                bins[Math.Min(Bins - 1, Math.Max(0, m) / width)]++;
+                bins[Math.Min(binCount - 1, Math.Max(0, m) / width)]++;
                 sum += m;
             }
             var sorted = (int[])marks.Clone();
@@ -358,7 +363,7 @@ namespace NeuroVida.Games.Tests
             sb.Append("  \"juego\": \"").Append(t.Game).Append("\",\n");
             sb.Append("  \"version_pista\": ").Append(t.TrackVersion.ToString(inv)).Append(",\n");
             sb.Append("  \"ancho_tramo\": ").Append(t.BinWidth.ToString(inv)).Append(",\n");
-            sb.Append("  \"tramos\": ").Append(Bins.ToString(inv)).Append(",\n");
+            sb.Append("  \"tramos\": ").Append(t.BinCount.ToString(inv)).Append(",\n");
             sb.Append("  \"robots_por_franja\": ").Append(t.PeoplePerRange.ToString(inv)).Append(",\n");
             sb.Append("  \"partidas_por_semana\": ").Append(t.Played.ToString(inv)).Append(",\n");
             sb.Append("  \"dias_de_pista\": ").Append(WeekDays.ToString(inv)).Append(",\n");

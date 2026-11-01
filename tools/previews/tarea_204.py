@@ -74,7 +74,7 @@ def main():
             y += rows_h
         y += 24
     d.text((30, y), 'Con 3 partidas por semana y la pista real los robots caen a ±2 aciertos de la mitad de Fable en los cuatro juegos; con 7 la mitad sube 1 a 3 aciertos más en Tinta y en ¿Verdad o disparate?.', font=fs, fill=DIM)
-    d.text((30, y + 22), 'El orden entre franjas se conserva. Rescate relámpago: de a 1 acierto cubre de 0 a 15 y entre los más jóvenes el 21 % (3 partidas) o el 29 % (7) llega al último tramo («15 o más»): su techo.', font=fs, fill=DIM)
+    d.text((30, y + 22), 'El orden entre franjas se conserva. Rescate relámpago (24 tramos de a 1): los robots llegan como mucho a 16 —una ronda dura más de 7 s—, así que entre los más jóvenes el 47 % cae en 14 y el 20 % en 15: su techo real, no un efecto de los tramos.', font=fs, fill=DIM)
     im.crop((0, 0, W, y + 70)).save(OUT)
     print(OUT)
 

@@ -91,6 +91,7 @@ namespace NeuroVida.Games.Tests
                 StringAssert.Contains("\"juego\": \"" + g + "\"", json);
                 StringAssert.Contains("\"version_pista\": " + TimeTrial.TrackVersion(g), json);
                 StringAssert.Contains("\"ancho_tramo\": " + AgeReference.BinWidth(g), json);
+                StringAssert.Contains("\"tramos\": " + AgeReference.BinCount(g) + ",", json);
                 StringAssert.Contains("\"semilla\": 20261101", json);
                 StringAssert.Contains("\"robots_por_franja\": " + Small.People, json);
                 StringAssert.Contains("\"partidas_por_semana\": 3", json);
@@ -101,7 +102,7 @@ namespace NeuroVida.Games.Tests
                 Assert.AreEqual(6, t.Ranges.Length, "seis franjas, de 18 a 29 a 75 o más (sin 13 a 17)");
                 foreach (var r in t.Ranges)
                 {
-                    Assert.AreEqual(AgeReference.Bins, r.Bins.Length, g + " " + r.Key);
+                    Assert.AreEqual(AgeReference.BinCount(g), r.Bins.Length, g + " " + r.Key);
                     int sum = 0;
                     foreach (int b in r.Bins) sum += b;
                     Assert.AreEqual(Small.People, sum, g + " " + r.Key + ": los tramos suman los robots");
@@ -119,7 +120,8 @@ namespace NeuroVida.Games.Tests
             Assert.AreEqual(2, AgeReference.BinWidth("acoplamiento"));
             Assert.AreEqual(5, AgeReference.BinWidth("stroop"));
             Assert.AreEqual(5, AgeReference.BinWidth("disparate"));
-            Assert.AreEqual(16, AgeReference.Bins);
+            Assert.AreEqual(24, AgeReference.BinCount("radar"), "Rescate relámpago: 24 tramos de a 1 (0 a 23)");
+            foreach (var g in new[] { "stroop", "disparate", "acoplamiento" }) Assert.AreEqual(16, AgeReference.BinCount(g), g);
         }
 
         [Test]
@@ -129,12 +131,11 @@ namespace NeuroVida.Games.Tests
             foreach (var g in TimeTrial.GameIds)
             {
                 var t = TableOf(g);
-                int top = AgeReference.BinWidth(g) * AgeReference.Bins;
+                int top = AgeReference.BinWidth(g) * AgeReference.BinCount(g);
                 var young = t.Ranges[0];
                 Assert.Less(young.P90, top, g + ": el p90 de los más jóvenes cabe dentro de los 16 tramos");
-                // Rescate relámpago (tramos de 1, de 0 a 15): una ronda dura ~8 s y en 2 minutos caben ~15, así que entre los más jóvenes un buen pedazo llega al último tramo («15 o más»); es el techo conocido de ese juego (se informa en la entrega), no un error del modelo
-                double allowed = g == "radar" ? 0.40 : 0.25;
-                Assert.Less(young.Bins[AgeReference.Bins - 1] / (double)young.People, allowed, g + ": el último tramo no es donde se amontona la gente (los tramos cubren la marca máxima razonable)");
+                // con 24 tramos de a 1 Rescate relámpago (0 a 23) ya no junta a los jóvenes en el último tramo, como pasaba con 16 (0 a 15: del 21 al 29 %)
+                Assert.Less(young.Bins[AgeReference.BinCount(g) - 1] / (double)young.People, 0.25, g + ": el último tramo no es donde se amontona la gente (los tramos cubren la marca máxima razonable)");
             }
         }
 
