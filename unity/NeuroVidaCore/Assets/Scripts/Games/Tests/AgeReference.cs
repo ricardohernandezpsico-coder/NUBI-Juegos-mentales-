@@ -213,26 +213,50 @@ namespace NeuroVida.Games.Tests
 
         public const int Bins = 16;
 
-        /// <summary>Con qué se arma la tabla: cuántas personas por franja, cuántos días de pista juega cada una (de ellos sale su mejor marca de la semana), desde qué día (aaaammdd), con qué semilla y con qué escala.</summary>
+        /// <summary>Los días de pista de una semana: cada día tiene su propia pista (otra semilla), así que una persona que juega 3 veces juega 3 pistas distintas.</summary>
+        public const int WeekDays = 7;
+
+        /// <summary>
+        /// Con qué se arma la tabla: cuántas personas por franja, cuántas PARTIDAS juega cada una en la semana (<see cref="Played"/>: de ellas sale su mejor marca; son días DISTINTOS de los <see cref="WeekDays"/>, sorteados por persona con la semilla fija), desde qué día (aaaammdd empieza la semana), con qué semilla y con qué escala.
+        /// Cuántas partidas juega una persona por semana es una perilla que se mezcla con la escala: por defecto 3 (las personas de Ricardo juegan 3 Contrarrelojes por juego); 7 = todos los días.
+        /// </summary>
         public readonly struct Options
         {
-            public readonly int People, Days, FirstDay;
+            public readonly int People, Played, FirstDay;
             public readonly ulong Seed;
             /// <summary>Multiplica la lentitud de todas las personas del juego; 1,0 = las medianas de la §2.3 de Fable. Si es 0 o menos se usa <see cref="ReferenceScales.For"/>.</summary>
             public readonly double Scale;
 
-            public Options(int people, int days, int firstDay, ulong seed, double scale = 0.0)
+            public Options(int people, int played, int firstDay, ulong seed, double scale = 0.0)
             {
                 People = people;
-                Days = days;
+                Played = Math.Max(1, Math.Min(WeekDays, played));
                 FirstDay = firstDay;
                 Seed = seed;
                 Scale = scale;
             }
         }
 
-        /// <summary>Lo de siempre: 2.000 personas por franja, 7 días de pista (la semana del 1 de noviembre de 2026) y la semilla 20261101.</summary>
-        public static Options Default => new Options(2000, 7, 20261101, 20261101UL);
+        /// <summary>Lo de siempre: 2.000 personas por franja, 3 partidas por semana (3 días distintos de la semana del 1 de noviembre de 2026) y la semilla 20261101.</summary>
+        public static Options Default => new Options(2000, 3, 20261101, 20261101UL);
+
+        /// <summary>Los días (índices 0 a <see cref="WeekDays"/> − 1, de menor a mayor) en que juega una persona: <paramref name="played"/> DISTINTOS, sorteados con su semilla (Fisher-Yates parcial con SplitMix64: la misma persona juega siempre los mismos días).</summary>
+        public static int[] PickDays(ulong personSeed, int played)
+        {
+            played = Math.Max(1, Math.Min(WeekDays, played));
+            var idx = new int[WeekDays];
+            for (int i = 0; i < WeekDays; i++) idx[i] = i;
+            var rng = new TimeTrial.TrackRandom(Mix(personSeed ^ 0xA24BAED4963EE407UL));
+            for (int i = 0; i < played; i++)
+            {
+                int j = i + rng.Next(WeekDays - i);
+                int tmp = idx[i]; idx[i] = idx[j]; idx[j] = tmp;
+            }
+            var picked = new int[played];
+            Array.Copy(idx, picked, played);
+            Array.Sort(picked);
+            return picked;
+        }
 
         /// <summary>El resultado para UNA franja de UN juego.</summary>
         public sealed class RangeResult
@@ -248,7 +272,7 @@ namespace NeuroVida.Games.Tests
         public sealed class Table
         {
             public string Game;
-            public int TrackVersion, BinWidth, Days, FirstDay;
+            public int TrackVersion, BinWidth, Played, FirstDay;
             public int PeoplePerRange;
             public ulong Seed;
             public double Scale;
@@ -268,15 +292,15 @@ namespace NeuroVida.Games.Tests
             return keys;
         }
 
-        /// <summary>Arma la tabla de <paramref name="game"/>: por cada franja, <see cref="Options.People"/> personas; cada una juega <see cref="Options.Days"/> días de pista real y se queda con su mejor marca.</summary>
+        /// <summary>Arma la tabla de <paramref name="game"/>: por cada franja, <see cref="Options.People"/> personas; cada una juega <see cref="Options.Played"/> días DISTINTOS de la semana (la pista real de cada día) y se queda con su mejor marca.</summary>
         public static Table Build(string game, SentenceBank bank, Options options)
         {
             double scale = options.Scale > 0 ? options.Scale : ReferenceScales.For(game);
             int width = BinWidth(game);
-            var days = DayKeys(options.FirstDay, options.Days);
+            var week = DayKeys(options.FirstDay, WeekDays);
             var table = new Table
             {
-                Game = game, TrackVersion = TimeTrial.TrackVersion(game), BinWidth = width, Days = options.Days, FirstDay = options.FirstDay,
+                Game = game, TrackVersion = TimeTrial.TrackVersion(game), BinWidth = width, Played = options.Played, FirstDay = options.FirstDay,
                 PeoplePerRange = options.People, Seed = options.Seed, Scale = scale, Ranges = new RangeResult[RangeKeys.Length],
             };
             for (int f = 0; f < RangeKeys.Length; f++)
@@ -287,10 +311,10 @@ namespace NeuroVida.Games.Tests
                     ulong personSeed = Mix(options.Seed ^ Hash(game) ^ ((ulong)(f + 1) << 48) ^ ((ulong)(uint)i * 0xD1B54A32D192ED03UL));
                     var person = Draw(f, scale, new TimeTrial.TrackRandom(personSeed));
                     double top = 0;
-                    for (int d = 0; d < days.Length; d++)
+                    foreach (int d in PickDays(personSeed, options.Played))
                     {
-                        var rng = new TimeTrial.TrackRandom(Mix(personSeed ^ ((ulong)(uint)days[d] * 0x8CB92BA72F3D8DD7UL)));
-                        top = Math.Max(top, Play(game, person, days[d], rng, bank));
+                        var rng = new TimeTrial.TrackRandom(Mix(personSeed ^ ((ulong)(uint)week[d] * 0x8CB92BA72F3D8DD7UL)));
+                        top = Math.Max(top, Play(game, person, week[d], rng, bank));
                     }
                     best[i] = (int)top;
                 }
@@ -316,8 +340,11 @@ namespace NeuroVida.Games.Tests
 
         // ------------------------------------------------------------------ el JSON (lo que lee la app: `app/src/main/assets/referencia/<juego>_v<version>.json`)
 
+        /// <summary>De dónde salen los parámetros del modelo (lo escribe el JSON junto a la versión del modelo).</summary>
+        public const string Source = "auditoria-fable/referencia-estimada.md §2.2";
+
         /// <summary>
-        /// El JSON de una tabla, a mano y con cultura invariante. Lleva el ancho del tramo, la versión de la pista, la cuenta de robots, la escala, las semillas y el modelo; por franja, los 16 tramos, la media y p25/p50/p75/p90. <paramref name="date"/> es solo metadata (cuándo se generó): no entra en
+        /// El JSON de una tabla, a mano y con cultura invariante. Lleva el ancho del tramo, la versión de la pista, la cuenta de robots, las partidas por semana, la escala, las semillas, la versión del modelo y de dónde sale; por franja, los 16 tramos, la media y p25/p50/p75/p90. <paramref name="date"/> es solo metadata (cuándo se generó): no entra en
         /// ninguna comparación. Los robots NO son personas: el archivo se llama «referencia» y dice <c>"estimada": true</c>.
         /// </summary>
         public static string ToJson(Table t, string date)
@@ -327,12 +354,14 @@ namespace NeuroVida.Games.Tests
             sb.Append("{\n");
             sb.Append("  \"estimada\": true,\n");
             sb.Append("  \"modelo\": ").Append(ModelVersion.ToString(inv)).Append(",\n");
+            sb.Append("  \"fuente_modelo\": \"").Append(Source).Append("\",\n");
             sb.Append("  \"juego\": \"").Append(t.Game).Append("\",\n");
             sb.Append("  \"version_pista\": ").Append(t.TrackVersion.ToString(inv)).Append(",\n");
             sb.Append("  \"ancho_tramo\": ").Append(t.BinWidth.ToString(inv)).Append(",\n");
             sb.Append("  \"tramos\": ").Append(Bins.ToString(inv)).Append(",\n");
             sb.Append("  \"robots_por_franja\": ").Append(t.PeoplePerRange.ToString(inv)).Append(",\n");
-            sb.Append("  \"dias_por_semana\": ").Append(t.Days.ToString(inv)).Append(",\n");
+            sb.Append("  \"partidas_por_semana\": ").Append(t.Played.ToString(inv)).Append(",\n");
+            sb.Append("  \"dias_de_pista\": ").Append(WeekDays.ToString(inv)).Append(",\n");
             sb.Append("  \"primer_dia\": ").Append(t.FirstDay.ToString(inv)).Append(",\n");
             sb.Append("  \"semilla\": ").Append(t.Seed.ToString(inv)).Append(",\n");
             sb.Append("  \"escala\": ").Append(t.Scale.ToString("0.####", inv)).Append(",\n");
@@ -359,7 +388,7 @@ namespace NeuroVida.Games.Tests
         {
             var inv = CultureInfo.InvariantCulture;
             var sb = new StringBuilder();
-            sb.Append(t.Game).Append(" v").Append(t.TrackVersion.ToString(inv)).Append(" · tramos de ").Append(t.BinWidth.ToString(inv)).Append(" · escala ").Append(t.Scale.ToString("0.###", inv)).Append(" · ").Append(t.PeoplePerRange.ToString(inv)).Append(" robots por franja × ").Append(t.Days.ToString(inv)).Append(" días\n");
+            sb.Append(t.Game).Append(" v").Append(t.TrackVersion.ToString(inv)).Append(" · tramos de ").Append(t.BinWidth.ToString(inv)).Append(" · escala ").Append(t.Scale.ToString("0.###", inv)).Append(" · ").Append(t.PeoplePerRange.ToString(inv)).Append(" robots por franja × ").Append(t.Played.ToString(inv)).Append(" partidas por semana\n");
             foreach (var r in t.Ranges)
                 sb.Append("  ").Append(r.Label.PadRight(9)).Append(" p25 ").Append(r.P25.ToString(inv).PadLeft(3)).Append(" · mitad ").Append(r.P50.ToString(inv).PadLeft(3)).Append(" · p75 ").Append(r.P75.ToString(inv).PadLeft(3)).Append(" · p90 ").Append(r.P90.ToString(inv).PadLeft(3)).Append(" · media ").Append(r.Mean.ToString("0.0", inv)).Append("\n");
             return sb.ToString();

@@ -21,7 +21,7 @@ namespace NeuroVida.Games.Tests
         private static SentenceBank _bank;
         private static SentenceBank Bank => _bank ?? (_bank = SentenceBank.Load());
 
-        private static readonly AgeReference.Options Small = new AgeReference.Options(250, 7, 20261101, 20261101UL);
+        private static readonly AgeReference.Options Small = new AgeReference.Options(250, 3, 20261101, 20261101UL);
 
         private static readonly Dictionary<string, AgeReference.Table> Tables = new Dictionary<string, AgeReference.Table>();
 
@@ -55,13 +55,13 @@ namespace NeuroVida.Games.Tests
         [Test]
         public void TheSameSeedGivesTheSameTable()
         {
-            var o = new AgeReference.Options(40, 7, 20261101, 7UL);
+            var o = new AgeReference.Options(40, 3, 20261101, 7UL);
             foreach (var g in TimeTrial.GameIds)
             {
                 string a = AgeReference.ToJson(AgeReference.Build(g, Bank, o), "2026-11-01");
                 string b = AgeReference.ToJson(AgeReference.Build(g, Bank, o), "2026-11-01");
                 Assert.AreEqual(a, b, g + ": la misma semilla debe dar la misma tabla");
-                string c = AgeReference.ToJson(AgeReference.Build(g, Bank, new AgeReference.Options(40, 7, 20261101, 8UL)), "2026-11-01");
+                string c = AgeReference.ToJson(AgeReference.Build(g, Bank, new AgeReference.Options(40, 3, 20261101, 8UL)), "2026-11-01");
                 Assert.AreNotEqual(a, c, g + ": otra semilla debe dar otra tabla (si no, la semilla no hace nada)");
             }
         }
@@ -69,9 +69,9 @@ namespace NeuroVida.Games.Tests
         [Test]
         public void TheScaleMovesTheTableAndIsWrittenInTheJson()
         {
-            var o = new AgeReference.Options(120, 7, 20261101, 3UL);
+            var o = new AgeReference.Options(120, 3, 20261101, 3UL);
             var normal = AgeReference.Build("stroop", Bank, o);
-            var slow = AgeReference.Build("stroop", Bank, new AgeReference.Options(120, 7, 20261101, 3UL, 1.3));
+            var slow = AgeReference.Build("stroop", Bank, new AgeReference.Options(120, 3, 20261101, 3UL, 1.3));
             Assert.Less(slow.Ranges[2].Mean, normal.Ranges[2].Mean - 3, "con la respuesta 30 % más lenta la media de 45 a 54 cae varios aciertos (Fable: de 55 a 45 la mitad)");
             Assert.AreEqual(1.0, normal.Scale, "la escala por defecto es la de ReferenceScales");
             StringAssert.Contains("\"escala\": 1.3", AgeReference.ToJson(slow, "2026-11-01"));
@@ -93,6 +93,10 @@ namespace NeuroVida.Games.Tests
                 StringAssert.Contains("\"ancho_tramo\": " + AgeReference.BinWidth(g), json);
                 StringAssert.Contains("\"semilla\": 20261101", json);
                 StringAssert.Contains("\"robots_por_franja\": " + Small.People, json);
+                StringAssert.Contains("\"partidas_por_semana\": 3", json);
+                StringAssert.Contains("\"dias_de_pista\": 7", json);
+                StringAssert.Contains("\"modelo\": " + AgeReference.ModelVersion, json);
+                StringAssert.Contains("\"fuente_modelo\": \"auditoria-fable/referencia-estimada.md §2.2\"", json);
                 Assert.AreEqual(g + "_v" + TimeTrial.TrackVersion(g) + ".json", AgeReference.FileName(t));
                 Assert.AreEqual(6, t.Ranges.Length, "seis franjas, de 18 a 29 a 75 o más (sin 13 a 17)");
                 foreach (var r in t.Ranges)
@@ -169,6 +173,36 @@ namespace NeuroVida.Games.Tests
         }
 
         [Test]
+        public void ThreePlayedDaysAreDistinctSortedAndFixedPerPerson()
+        {
+            var seen = new HashSet<string>();
+            for (ulong s = 1; s <= 200; s++)
+            {
+                var days = AgeReference.PickDays(s, 3);
+                Assert.AreEqual(3, days.Length);
+                for (int i = 0; i < days.Length; i++)
+                {
+                    Assert.That(days[i], Is.InRange(0, AgeReference.WeekDays - 1));
+                    if (i > 0) Assert.Greater(days[i], days[i - 1], "tres días DISTINTOS y de menor a mayor");
+                }
+                CollectionAssert.AreEqual(days, AgeReference.PickDays(s, 3), "la misma persona juega siempre los mismos días");
+                seen.Add(string.Join(",", days));
+            }
+            Assert.Greater(seen.Count, 20, "personas distintas juegan días distintos (hay 35 combinaciones posibles)");
+            CollectionAssert.AreEqual(new[] { 0, 1, 2, 3, 4, 5, 6 }, AgeReference.PickDays(5UL, 7), "con 7 partidas se juegan todos los días");
+            Assert.AreEqual(1, AgeReference.PickDays(5UL, 0).Length, "como mínimo una partida");
+        }
+
+        [Test]
+        public void MorePlayedGamesRaiseTheBestMark()
+        {
+            var three = AgeReference.Build("stroop", Bank, new AgeReference.Options(150, 3, 20261101, 11UL));
+            var seven = AgeReference.Build("stroop", Bank, new AgeReference.Options(150, 7, 20261101, 11UL));
+            for (int f = 0; f < three.Ranges.Length; f++)
+                Assert.Greater(seven.Ranges[f].Mean, three.Ranges[f].Mean, "la mejor de 7 partidas supera a la mejor de 3 (" + three.Ranges[f].Label + ")");
+        }
+
+        [Test]
         public void TheDayKeysCrossTheMonth()
         {
             CollectionAssert.AreEqual(new[] { 20261101, 20261102, 20261103 }, AgeReference.DayKeys(20261101, 3));
@@ -194,7 +228,7 @@ namespace NeuroVida.Games.Tests
 
     /// <summary>
     /// GENERA las tablas de la referencia estimada (Tarea 204): <c>bash tools/verificar-todo.sh --referencia</c> abre Unity en batch y llama a <see cref="Run"/>, que arma los cuatro JSON en <c>app/src/main/assets/referencia/</c> y un informe en <c>unity/test-results/referencia-estimada.txt</c>.
-    /// Se vuelve a correr cuando cambia una pista (versión), la escala (<see cref="ReferenceScales"/>) o el modelo (<see cref="AgeReference.ModelVersion"/>). Variables: <c>NUBI_REF_PEOPLE</c> (robots por franja, 2000), <c>NUBI_REF_DAYS</c> (días de pista por persona, 7),
+    /// Se vuelve a correr cuando cambia una pista (versión), la escala (<see cref="ReferenceScales"/>) o el modelo (<see cref="AgeReference.ModelVersion"/>). Variables: <c>NUBI_REF_PEOPLE</c> (robots por franja, 2000), <c>NUBI_REF_PARTIDAS</c> (partidas por persona en la semana, 3: días DISTINTOS de los 7),
     /// <c>NUBI_REF_SEED</c> (semilla, 20261101), <c>NUBI_REF_OUT</c> (carpeta de salida) y <c>NUBI_REF_SCALE</c> (una escala para los cuatro juegos, para probar; sin ella manda <see cref="ReferenceScales"/>).
     /// </summary>
     public static class ReferenceTableRunner
@@ -205,7 +239,7 @@ namespace NeuroVida.Games.Tests
             {
                 var inv = CultureInfo.InvariantCulture;
                 int people = EnvInt("NUBI_REF_PEOPLE", 2000);
-                int days = EnvInt("NUBI_REF_DAYS", 7);
+                int played = EnvInt("NUBI_REF_PARTIDAS", 3);
                 ulong seed = (ulong)EnvInt("NUBI_REF_SEED", 20261101);
                 double scale = double.TryParse(Environment.GetEnvironmentVariable("NUBI_REF_SCALE"), NumberStyles.Float, inv, out var s) ? s : 0.0;
                 string repo = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "..", ".."));
@@ -213,11 +247,11 @@ namespace NeuroVida.Games.Tests
                 if (string.IsNullOrEmpty(outDir)) outDir = Path.Combine(repo, "app", "src", "main", "assets", "referencia");
                 Directory.CreateDirectory(outDir);
                 var bank = SentenceBank.Load();
-                var options = new AgeReference.Options(people, days, 20261101, seed, scale);
+                var options = new AgeReference.Options(people, played, 20261101, seed, scale);
                 string date = DateTime.Now.ToString("yyyy-MM-dd", inv);
                 var report = new StringBuilder();
                 report.AppendLine("Referencia estimada del Contrarreloj (Tarea 204): robots por edad sobre la pista real. Modelo " + AgeReference.ModelVersion + ", generada el " + date + ".");
-                report.AppendLine(people + " robots por franja × " + days + " días de pista (de cada uno, su mejor marca de la semana), semilla " + seed + ". NO son personas.");
+                report.AppendLine(people + " robots por franja × " + options.Played + " partidas por semana en días distintos de los " + AgeReference.WeekDays + " de la semana (de cada uno, su mejor marca), semilla " + seed + ". NO son personas.");
                 report.AppendLine();
                 var clock = System.Diagnostics.Stopwatch.StartNew();
                 foreach (var g in TimeTrial.GameIds)

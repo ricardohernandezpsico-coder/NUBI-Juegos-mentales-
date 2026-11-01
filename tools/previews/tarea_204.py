@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """Tabla de la Tarea 204 (1-nov-2026): la referencia estimada del Contrarreloj, producida por los robots por edad de Unity (`AgeReference`), contra la simulación ilustrativa de Fable (`auditoria-fable/referencia-estimada.md` §2.4, hecha en Python con una pista generada por paso).
-Por juego y franja: la MITAD que dio Fable con sus dos escalas (la del laboratorio, 1,0, y la de un teléfono 30 % más lento, 1,3), y la de los robots reales con la escala 1,0 jugando 3 días de pista (comparable con Fable, que tomó la mejor de 3 partidas) y 7 días (lo que se guarda en la app: cada robot, su mejor marca de una semana).
-Datos: `app/src/main/assets/referencia/*.json` (7 días, el que lee la app) y `unity/test-results/referencia-3dias/*.json` (3 días; se genera con  NUBI_REF_DAYS=3 NUBI_REF_OUT=unity/test-results/referencia-3dias bash tools/verificar-todo.sh --referencia  y no va a git).
+Por juego y franja: la MITAD que dio Fable con sus dos escalas (la del laboratorio, 1,0, y la de un teléfono 30 % más lento, 1,3; la mejor de 3 partidas), y la de los robots reales con la escala 1,0: con 3 partidas por semana en días distintos (lo que se guarda en la app: las personas de Ricardo
+juegan 3 Contrarrelojes por juego) y con 7 (todos los días de la semana). Cada robot juega la pista REAL del día; de cada uno se toma su mejor marca de la semana.
+Datos: `app/src/main/assets/referencia/*.json` (3 partidas, el que lee la app) y `unity/test-results/referencia-7dias/*.json` (7 partidas; se genera con  NUBI_REF_PARTIDAS=7 NUBI_REF_OUT=unity/test-results/referencia-7dias bash tools/verificar-todo.sh --referencia  y no va a git).
 Uso:  python -I tools/previews/tarea_204.py      → docs/previews/tarea-204.png
 """
 import json, os, sys
@@ -9,11 +10,11 @@ from PIL import Image, ImageDraw, ImageFont
 
 sys.stdout.reconfigure(encoding='utf-8')
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
-SEVEN = os.path.join(ROOT, 'app', 'src', 'main', 'assets', 'referencia')
-THREE = os.path.join(ROOT, 'unity', 'test-results', 'referencia-3dias')
+THREE = os.path.join(ROOT, 'app', 'src', 'main', 'assets', 'referencia')
+SEVEN = os.path.join(ROOT, 'unity', 'test-results', 'referencia-7dias')
 OUT = os.path.join(ROOT, 'docs', 'previews', 'tarea-204.png')
 FONTS = os.path.join(ROOT, 'app', 'src', 'main', 'res', 'font')
-NAVY, SUN, DIM, CREAM, LINE, LIME, CORAL = (20, 18, 63), (255, 203, 69), (200, 196, 235), (245, 235, 219), (90, 86, 160), (155, 229, 100), (255, 120, 100)
+NAVY, SUN, DIM, CREAM, LINE = (20, 18, 63), (255, 203, 69), (200, 196, 235), (245, 235, 219), (90, 86, 160)
 
 KEYS = ['R18_29', 'R30_44', 'R45_54', 'R55_64', 'R65_74', 'R75_PLUS']
 LABELS = ['18 a 29', '30 a 44', '45 a 54', '55 a 64', '65 a 74', '75 o más']
@@ -37,22 +38,19 @@ def load(folder, game):
 def main():
     W = 1500
     ft, fh, fb, fs = font(24), font(17), font(17, False), font(15, False)
-    cols = [('franja', 110), ('Fable 1,0', 100), ('Fable 1,3', 100), ('robots · mejor de 3', 330), ('robots · mejor de 7', 400), ('7 menos Fable 1,0', 160)]
-    rows_h, block_gap = 34, 36
-    blocks = []
-    for game in FABLE:
-        t7, t3 = load(SEVEN, game), load(THREE, game)
-        blocks.append((game, t7, t3))
-    H = 120 + sum(70 + 34 + 6 * rows_h + 60 for _ in blocks) + 80
+    cols = [('franja', 110), ('Fable 1,0', 100), ('Fable 1,3', 100), ('robots · 3 partidas (lo que se guarda)', 420), ('robots · 7 partidas', 330), ('3 partidas menos Fable 1,0', 240)]
+    rows_h = 34
+    blocks = [(game, load(THREE, game), load(SEVEN, game)) for game in FABLE]
+    H = 120 + len(blocks) * (70 + 34 + 6 * rows_h + 60) + 100
     im = Image.new('RGB', (W, H), NAVY)
     d = ImageDraw.Draw(im)
     d.text((30, 24), 'Referencia estimada del Contrarreloj · robots por edad (Tarea 204) contra la simulación de Fable', font=ft, fill=SUN)
     d.text((30, 62), 'Cada robot es una persona simulada que juega la pista REAL con sus números de franja; la marca es la mejor de su semana. Escala 1,0 en los cuatro juegos (medianas de laboratorio). NO son personas.', font=fs, fill=DIM)
-    d.text((30, 84), 'Mitad y cuartiles (p25 · mitad · p75, y p90 con 7 días); «Fable» = la mitad de su simulación ilustrativa con dos escalas.', font=fs, fill=DIM)
+    d.text((30, 84), 'Cuartiles (p25 · mitad · p75 · p90) de 2.000 robots por franja; «Fable» = la mitad de su simulación ilustrativa con dos escalas (400 personas, la mejor de 3 partidas).', font=fs, fill=DIM)
     y = 120
-    for game, t7, t3 in blocks:
+    for game, t3, t7 in blocks:
         name, scales, f10, f13 = FABLE[game]
-        width = (t7 or {}).get('ancho_tramo', '?')
+        width = (t3 or {}).get('ancho_tramo', '?')
         d.text((30, y), name, font=ft, fill=CREAM)
         d.text((330, y + 6), f'tramos de {width} · Fable: {scales}', font=fs, fill=DIM)
         y += 40
@@ -63,20 +61,20 @@ def main():
         d.line((30, y - 4, W - 30, y - 4), fill=LINE)
         for i, key in enumerate(KEYS):
             x = 30
-            r7 = t7['franjas'][key] if t7 else None
             r3 = t3['franjas'][key] if t3 else None
+            r7 = t7['franjas'][key] if t7 else None
             cells = [
                 LABELS[i], str(f10[i]), str(f13[i]),
-                f"{r3['p25']} · {r3['p50']} · {r3['p75']}" if r3 else '—',
+                f"{r3['p25']} · {r3['p50']} · {r3['p75']} · {r3['p90']}" if r3 else '—',
                 f"{r7['p25']} · {r7['p50']} · {r7['p75']} · {r7['p90']}" if r7 else '—',
-                (f"{r7['p50'] - f10[i]:+d}" if r7 else '—'),
+                (f"{r3['p50'] - f10[i]:+d}" if r3 else '—'),
             ]
             for (title, w), cell in zip(cols, cells):
                 d.text((x, y), cell, font=fb, fill=CREAM if title != 'franja' else DIM); x += w
             y += rows_h
         y += 24
-    d.text((30, y), 'Con 3 días y la pista real los robots caen a ±2 aciertos de la mitad de Fable en los cuatro juegos; con 7 días (lo que se guarda) la mitad sube 2 a 4 aciertos en Tinta y en ¿Verdad o disparate?.', font=fs, fill=DIM)
-    d.text((30, y + 22), 'El orden entre franjas se conserva. Rescate relámpago: de a 1 acierto cubre de 0 a 15 y entre los más jóvenes el 29 % llega al último tramo («15 o más»): su techo.', font=fs, fill=DIM)
+    d.text((30, y), 'Con 3 partidas por semana y la pista real los robots caen a ±2 aciertos de la mitad de Fable en los cuatro juegos; con 7 la mitad sube 1 a 3 aciertos más en Tinta y en ¿Verdad o disparate?.', font=fs, fill=DIM)
+    d.text((30, y + 22), 'El orden entre franjas se conserva. Rescate relámpago: de a 1 acierto cubre de 0 a 15 y entre los más jóvenes el 21 % (3 partidas) o el 29 % (7) llega al último tramo («15 o más»): su techo.', font=fs, fill=DIM)
     im.crop((0, 0, W, y + 70)).save(OUT)
     print(OUT)
 

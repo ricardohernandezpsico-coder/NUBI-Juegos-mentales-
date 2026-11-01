@@ -16,9 +16,9 @@
 #   --sin-animaciones  smoke de los juegos pedidos (o los 23) con "quitar animaciones" ACTIVO (NUBI_REDUCE_MOTION=1: la config del juego lleva
 #                      reduce_motion=true). Corre solo escena piloto + smoke; no reexporta ni toca Gradle ni instala (el APK es el mismo).
 #   --instalar         al final instala el APK en el telefono (DEVICE, por defecto el de Ricardo).
-#   --referencia       OPCIONAL, aparte del resto (Tarea 204): REGENERA la tabla de la referencia estimada del Contrarreloj —los robots por edad juegan la pista real: 2.000 por franja x 7 dias x 6 franjas x 4 juegos— y deja los cuatro
+#   --referencia       OPCIONAL, aparte del resto (Tarea 204): REGENERA la tabla de la referencia estimada del Contrarreloj —los robots por edad juegan la pista real: 2.000 por franja x 3 partidas por semana (dias distintos) x 6 franjas x 4 juegos— y deja los cuatro
 #                      JSON en app/src/main/assets/referencia/ y el informe en unity/test-results/referencia-estimada.txt (unos minutos). Se vuelve a correr cuando cambia una pista (version), la escala (ReferenceScales) o el modelo
-#                      (AgeReference.ModelVersion). Variables opcionales: NUBI_REF_PEOPLE, NUBI_REF_DAYS, NUBI_REF_SEED, NUBI_REF_SCALE, NUBI_REF_OUT. No corre EditMode, smoke, export ni Gradle.
+#                      (AgeReference.ModelVersion). Variables opcionales: NUBI_REF_PEOPLE, NUBI_REF_PARTIDAS, NUBI_REF_SEED, NUBI_REF_SCALE, NUBI_REF_OUT. No corre EditMode, smoke, export ni Gradle.
 #   --capturas <Juego|todos> OPCIONAL, aparte del resto (no corre EditMode, smoke, export ni Gradle): saca CAPTURAS DE PANTALLA REALES en forma de telefono
 #                      (1080x2400) y arma las hojas de contacto (tools/capturas/hoja.py). `todos` = los 17 juegos de la app (unos 20 min: la primera pantalla jugable, a los 8/20/40 s,
 #                      la pausa, la cortina «¡Listo!» y la pantalla final si la partida llega, una toma con «quitar animaciones» y, con tutorial, los pasos 1 y 3; Engranajes,
