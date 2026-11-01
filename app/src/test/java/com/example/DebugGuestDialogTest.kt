@@ -1,9 +1,19 @@
 package com.example
 
 import android.app.Application
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
@@ -13,8 +23,11 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.NBSP
+import com.example.data.TimeTrialStats
 import com.example.games.GuestTrial
 import com.example.games.GuestTrialScreen
 import com.example.model.AgeBand
@@ -127,6 +140,71 @@ class DebugGuestDialogTest {
     showFinal(GuestTrial("stroop", 36, 2, null))
     assertEquals(0, rule.onAllNodesWithTagStartingWith("guest_trial_range").size)
     assertEquals("34 aciertos", textOf("guest_trial_mark"))
+  }
+
+  // ---- Rescate relámpago cuenta por cápsula (Tarea 208): la regla también va en el final de invitado
+
+  private var widthState by mutableStateOf(393)
+  private var fontState by mutableStateOf(1f)
+  private var trialState by mutableStateOf<GuestTrial?>(null)
+
+  /** UNA sola pantalla por prueba (un solo `setContent`); el juego, el ancho y la letra se cambian después. */
+  private fun mountFinal(trial: GuestTrial, widthDp: Int = 393, fontScale: Float = 1f) {
+    trialState = trial; widthState = widthDp; fontState = fontScale
+    rule.setContent {
+      val d = LocalDensity.current
+      CompositionLocalProvider(LocalDensity provides Density(d.density, fontState)) {
+        NeuroVidaTheme { Box(androidx.compose.ui.Modifier.width(widthState.dp).height(873.dp)) { trialState?.let { GuestTrialScreen(trial = it, onAgain = {}, onDone = {}) } } }
+      }
+    }
+    rule.waitForIdle()
+  }
+
+  private fun tops(vararg tags: String): List<Float> = tags.map { rule.onNodeWithTag(it, useUnmergedTree = true).fetchSemanticsNode().layoutInfo.coordinates.positionInRoot().y }
+
+  /** NUNCA una palabra partida a la mitad: el renglón de cada texto termina en un espacio o al final. */
+  private fun assertNoWordSplit() {
+    for (node in rule.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult), useUnmergedTree = true).fetchSemanticsNodes()) {
+      val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+      node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+      val l = results.firstOrNull() ?: continue
+      val text = l.layoutInput.text.text
+      for (line in 0 until l.lineCount - 1) {
+        val end = l.getLineEnd(line, visibleEnd = false)
+        assertTrue("«$text» parte una palabra a la mitad en el renglón ${line + 1}", end >= text.length || text[end - 1] == ' ' || text[end] == ' ' || text[end - 1] == '\n')
+      }
+    }
+  }
+
+  @Test
+  fun el_final_de_invitado_de_rescate_trae_la_regla_justo_despues_de_como_se_cuenta() {
+    showFinal(GuestTrial("radar", 16, 2, AgeRange.R65_74))
+    assertEquals("la misma frase del detalle, de TimeTrialStats", TimeTrialStats.RADAR_RULE, textOf("guest_trial_radar_rule"))
+    val (line, rule_, range, note) = tops("guest_trial_line", "guest_trial_radar_rule", "guest_trial_range", "guest_trial_note")
+    assertTrue("después de «cómo se cuenta»", rule_ > line)
+    assertTrue("y antes de la edad y del aviso de que no se guardó", rule_ < range && range < note)
+  }
+
+  @Test
+  fun el_final_de_invitado_de_otros_juegos_no_trae_la_regla_de_rescate() {
+    mountFinal(GuestTrial("radar", 16, 2, AgeRange.R45_54))
+    assertEquals("Rescate sí la lleva", 1, rule.onAllNodesWithTagStartingWith("guest_trial_radar_rule").size)
+    for (game in listOf("stroop", "disparate", "acoplamiento")) {
+      trialState = GuestTrial(game, 36, 2, AgeRange.R45_54); rule.waitForIdle()
+      assertEquals("«$game» no lleva la regla de Rescate", 0, rule.onAllNodesWithTagStartingWith("guest_trial_radar_rule").size)
+      assertTrue("pero sí «cómo se cuenta»", textOf("guest_trial_line").isNotEmpty())
+    }
+  }
+
+  @Test
+  fun la_regla_de_rescate_del_invitado_no_parte_palabras_con_letra_2_0_ni_en_360_dp() {
+    mountFinal(GuestTrial("radar", 16, 2, AgeRange.R65_74))
+    assertNoWordSplit()
+    for ((w, f) in listOf(393 to 1.3f, 393 to 2.0f, 360 to 1.0f, 360 to 2.0f)) {
+      widthState = w; fontState = f; rule.waitForIdle()
+      assertEquals("la frase entera con ${w} dp y letra $f", TimeTrialStats.RADAR_RULE, textOf("guest_trial_radar_rule"))
+      assertNoWordSplit()
+    }
   }
 
   /** Las etiquetas de prueba de TODOS los nodos (también los de un diálogo) que empiezan con [prefix], en orden. */

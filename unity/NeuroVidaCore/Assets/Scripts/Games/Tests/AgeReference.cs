@@ -237,7 +237,7 @@ namespace NeuroVida.Games.Tests
         // ------------------------------------------------------------------ la tabla
 
         /// <summary>
-        /// El ancho del tramo de cada juego (decisión de Ricardo, 1-nov): de a 1 acierto en Rescate relámpago, de a 2 en Acoplamiento y de a 5 en Tinta o Palabra y ¿Verdad o disparate?. Cuántos tramos hay lo dice <see cref="BinCount"/>; el último junta «lo de ahí en adelante».
+        /// El ancho del tramo de cada juego (decisión de Ricardo, 1-nov): de a 3 aciertos en Rescate relámpago (Tarea 208: antes de a 1), de a 2 en Acoplamiento y de a 5 en Tinta o Palabra y ¿Verdad o disparate?. Cuántos tramos hay lo dice <see cref="BinCount"/>; el último junta «lo de ahí en adelante».
         /// </summary>
         public static int BinWidth(string game)
         {

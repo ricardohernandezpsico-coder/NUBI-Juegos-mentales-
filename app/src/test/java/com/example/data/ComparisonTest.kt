@@ -827,7 +827,7 @@ class ComparisonTest {
     assertFalse("a dos aciertos (7,5 dp) la raya se ve", Comparison.barCoversHalf(41, stroop, 300.0) || Comparison.barCoversHalf(37, stroop, 300.0))
     assertTrue("con menos ancho (272 dp, ~3,4 dp por acierto) un acierto sigue tapando", Comparison.barCoversHalf(40, stroop, 272.0))
     assertFalse("con 272 dp dos aciertos (6,8 dp) ya no", Comparison.barCoversHalf(41, stroop, 272.0))
-    // Rescate relámpago: 24 tramos de a 1 → 12,5 dp por acierto con 300 dp: solo la misma marca
+    // un juego de a 1 acierto y 24 tramos (así era Rescate relámpago hasta la Tarea 208; hoy va de a 3 con 16): 12,5 dp por acierto con 300 dp: solo la misma marca
     val radar = Comparison.Distribution(2000, List(24) { if (it == 14) 2000 else 0 }, 13, 14, 14, binWidth = 1, estimated = true)
     assertTrue(Comparison.barCoversHalf(14, radar, 300.0))
     assertFalse("a un acierto (12,5 dp) se ve", Comparison.barCoversHalf(15, radar, 300.0) || Comparison.barCoversHalf(13, radar, 300.0))

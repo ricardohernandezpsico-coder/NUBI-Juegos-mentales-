@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.TimeTrialDay
 import com.example.data.TimeTrialMarks
+import com.example.data.TimeTrialStats
 import com.example.data.glueNumbers
 import com.example.model.GameRegistry
 import com.example.ui.components.Glyph
@@ -70,6 +71,10 @@ fun GuestTrialScreen(trial: GuestTrial, onAgain: () -> Unit, onDone: () -> Unit,
     Spacer(Modifier.height(20.dp))
     OnBoardText(TimeTrialDay.hitsText(trial.mark).glueNumbers(), color = NubiTokens.SunOnNight, fontFamily = TitleFamily, fontWeight = FontWeight.Bold, fontSize = 40.sp, lineHeight = 46.sp, modifier = Modifier.fillMaxWidth().testTag("guest_trial_mark"))
     OnBoardText(GuestTrialText.line(trial).glueNumbers(), color = NubiTokens.OnNight, fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().padding(top = 6.dp).testTag("guest_trial_line"))
+    // Rescate relámpago cuenta por cápsula (Tarea 208): las 5 personas de Ricardo juegan de invitadas y no ven el detalle de la página, así que la regla va aquí (la misma frase del detalle).
+    if (trial.gameId == "radar") {
+      OnBoardText(TimeTrialStats.RADAR_RULE, color = NubiTokens.OnNight, fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("guest_trial_radar_rule"))
+    }
     trial.range?.let { range ->
       OnBoardText(GuestTrialText.rangeLine(range).glueNumbers(), color = NubiTokens.OnNight, fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().padding(top = 6.dp).testTag("guest_trial_range"))
     }

@@ -112,7 +112,7 @@ object Comparison {
 
   /**
    * true si, en una campana de [widthDp] dp de ancho interior, la barra «Tú» de [mark] taparía la raya de la mitad de [d] (o la dejaría pegada): la distancia entre sus centros, en dp, es menor que medio ancho de la barra + medio ancho de la raya + 1 dp.
-   * Depende del ancho porque cada acierto mide `widthDp / topMark` dp: en Rescate relámpago (24 tramos de a 1) un acierto de diferencia ya las separa; en Tinta o Palabra, a 360 dp, hacen falta dos o más (~3,4 dp por acierto).
+   * Depende del ancho porque cada acierto mide `widthDp / topMark` dp: en Rescate relámpago (16 tramos de a 3, 48 aciertos de ancho: ~6,4 dp por acierto en una campana de 305 dp) un acierto de diferencia ya las separa; en Tinta o Palabra, a 360 dp, hacen falta dos o más (~3,4 dp por acierto).
    */
   fun barCoversHalf(mark: Int, d: Distribution, widthDp: Double): Boolean {
     val gapDp = Math.abs(markX(mark, d.topMark) - markX(d.p50, d.topMark)) * widthDp / d.topMark
@@ -145,7 +145,7 @@ object Comparison {
     /** El borde derecho de la campana: el último tramo («75 o más») se dibuja de [lastStart] a [topMark]. */
     val topMark: Int get() = binWidth * bins.size
 
-    /** Donde EMPIEZA el último tramo, el de «o más» (75 en 16 tramos de 5; 95 en 20 de 5; 23 en 24 de 1; 38 en 20 de 2). */
+    /** Donde EMPIEZA el último tramo, el de «o más» (75 en 16 tramos de 5; 95 en 20 de 5; 45 en 16 de 3; 38 en 20 de 2). */
     val lastStart: Int get() = binWidth * (bins.size - 1)
 
     companion object {
@@ -643,7 +643,7 @@ object Comparison {
   fun markX(mark: Int, topMark: Int = TOP_MARK): Double = (mark.coerceIn(0, topMark - 1) + 0.5).coerceAtMost(topMark.toDouble())
 
   /**
-   * Los rótulos del eje de la campana (Tarea 205): «0 aciertos», dos intermedios y donde EMPIEZA el último tramo («75 o más»), a un tercio y dos tercios de él. Con 16 tramos de 5 (¿Verdad o disparate?) son 0 · 25 · 50 · 75; con 20 de 5 (Tinta o Palabra, desde la Tarea 206), 0 · 32 · 63 · 95; con 24 de 1 (Rescate), 0 · 8 · 15 · 23; con 20 de 2 (Acoplamiento), 0 · 13 · 25 · 38.
+   * Los rótulos del eje de la campana (Tarea 205): «0 aciertos», dos intermedios y donde EMPIEZA el último tramo («75 o más»), a un tercio y dos tercios de él. Con 16 tramos de 5 (¿Verdad o disparate?) son 0 · 25 · 50 · 75; con 20 de 5 (Tinta o Palabra, desde la Tarea 206), 0 · 32 · 63 · 95; con 16 de 3 (Rescate, desde la Tarea 208), 0 · 15 · 30 · 45; con 20 de 2 (Acoplamiento), 0 · 13 · 25 · 38.
    */
   fun axisTicks(d: Distribution): List<Int> {
     val end = d.lastStart
