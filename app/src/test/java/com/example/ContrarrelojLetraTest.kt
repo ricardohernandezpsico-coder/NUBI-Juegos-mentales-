@@ -111,7 +111,7 @@ class ContrarrelojLetraTest {
       }
     }
     fun free(game: String, mark: Int) = Comparison.freeSentence(Comparison.place(estimated, game, AgeRange.R45_54, mark))!!
-    val lines = listOf(free("radar", 1) to 12, free("radar", 9) to 4, free("stroop", 36) to 15, free("stroop", 46) to 5, free("stroop", 58) to 5, free("stroop", 53) to 4)
+    val lines = listOf(free("radar", 1) to 12, free("radar", 9) to 4, free("stroop", 40) to 15, free("stroop", 50) to 5, free("stroop", 63) to 5, free("stroop", 57) to 4)
     assertTrue("las frases traen su «Te faltan N»: ${lines.map { it.first }}", lines.all { (s, n) -> "Te faltan $n aciertos" in s || "Te falta $n aciertos" in s })
     val problems = mutableListOf<String>()
     var checked = 0

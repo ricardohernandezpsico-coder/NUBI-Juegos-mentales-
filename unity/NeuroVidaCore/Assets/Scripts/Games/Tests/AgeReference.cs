@@ -214,9 +214,20 @@ namespace NeuroVida.Games.Tests
         }
 
         /// <summary>
-        /// Cuántos tramos tiene la tabla de un juego (Opus, 1-nov): 16 en Tinta o Palabra (0 a 79), ¿Verdad o disparate? (0 a 79) y Acoplamiento (0 a 31); **24 en Rescate relámpago** (de a 1: 0 a 23), porque con 16 (0 a 15) el 21 al 29 % de los jóvenes se juntaba en el último tramo («15 o más»). El JSON lo dice (<c>tramos</c>) y la app lo lee de ahí.
+        /// Cuántos tramos tiene la tabla de un juego (Opus, 1-nov; Ricardo decidió el ANCHO y el número es su consecuencia técnica): **24 en Rescate relámpago** (de a 1: 0 a 23), porque con 16 (0 a 15) el 21 al 29 % de los jóvenes se juntaba en el último tramo («15 o más»);
+        /// **20 en Tinta o Palabra** (de a 5: 0 a 99, último «95 o más») **y en Acoplamiento** (de a 2: 0 a 39, último «38 o más»), desde la Tarea 206: con la escala calibrada (robots más rápidos) los jóvenes llegan a 80 en Tinta y a 31 en Acoplamiento, y con 16 el último tramo juntaba del 10 al 22 % de los de 18 a 44 años,
+        /// así que el percentil 90 no se alcanzaba nunca y «Entre estrellas» se quedaba sin peldaño; **16 en ¿Verdad o disparate?** (0 a 79: su último tramo no junta a nadie). El JSON lo dice (<c>tramos</c>) y la app lo lee de ahí.
         /// </summary>
-        public static int BinCount(string game) => game == "radar" ? 24 : 16;
+        public static int BinCount(string game)
+        {
+            switch (game)
+            {
+                case "radar": return 24;
+                case "stroop":
+                case "acoplamiento": return 20;
+                default: return 16;
+            }
+        }
 
         /// <summary>Los días de pista de una semana: cada día tiene su propia pista (otra semilla), así que una persona que juega 3 veces juega 3 pistas distintas.</summary>
         public const int WeekDays = 7;
@@ -436,12 +447,17 @@ namespace NeuroVida.Games.Tests
 
     /// <summary>
     /// LA ESCALA de cada juego: el único número que se calibra (Tarea 204; Fable §3.4). Multiplica la lentitud de TODAS las personas simuladas de ese juego: 1,0 = las medianas de laboratorio de <see cref="AgeReference"/> (Tinta o Palabra 1,25 s, ¿Verdad o disparate? 0,30 s por palabra,
-    /// Rescate relámpago 2,2 s, Acoplamiento 1,3 s) y 1,3 = lo mismo con la respuesta de un teléfono 30 % más lenta. Lo que los estudios fijan es la distancia entre franjas; cuánto tarda en tocar una persona joven en ESTE teléfono no lo fija nadie. Se ajusta antes de lanzar con la mejor marca de Ricardo
-    /// y de sus 5 personas (y, con servidor, con las primeras 50 personas reales); se cambia AQUÍ y se regenera la tabla (<c>bash tools/verificar-todo.sh --referencia</c>). El valor usado queda escrito en el JSON.
+    /// Rescate relámpago 2,2 s, Acoplamiento 1,3 s) y 1,3 = lo mismo con la respuesta de un teléfono 30 % más lenta; menos de 1,0, robots más rápidos. Lo que los estudios fijan es la distancia entre franjas; cuánto tarda en tocar una persona joven en ESTE teléfono no lo fija nadie. Se ajusta antes de lanzar con la mejor marca de las 5 personas de Ricardo
+    /// (y, con servidor, con las primeras 50 personas reales); se cambia AQUÍ y se regenera la tabla (<c>bash tools/verificar-todo.sh --referencia</c>). El valor usado queda escrito en el JSON.
+    /// <para>
+    /// <b>Tarea 206 (1-nov-2026):</b> con la mejor marca de 3 partidas de P1 a P5 en su primera semana (invitado con tutorial), la escala de cada juego es la que deja la MEDIANA de los 5 percentiles lo más cerca de 50 con la regla exacta de la app (barrido de 0,01 en 0,01 con <see cref="ReferenceTableRunner.Sweep"/>):
+    /// Tinta o Palabra 0,89 (de 67 a 51), ¿Verdad o disparate? 0,92 (de 64 a 51) y Acoplamiento 0,90 (de 68 a 50). <b>Rescate relámpago queda en 1,0</b> a propósito: sus marcas reales son muy bajas, pero la diferencia es de exactitud y no de rapidez (la ronda dura lo mismo), y está pendiente la decisión de Ricardo sobre cómo se cuenta; no se calibra con esta tarea.
+    /// Detalle del barrido y de los empates en <c>docs/contrarreloj.md</c> §16.
+    /// </para>
     /// </summary>
     public static class ReferenceScales
     {
-        public const double Stroop = 1.0, Disparate = 1.0, Radar = 1.0, Docking = 1.0;
+        public const double Stroop = 0.89, Disparate = 0.92, Radar = 1.0, Docking = 0.90;
 
         public static double For(string game)
         {

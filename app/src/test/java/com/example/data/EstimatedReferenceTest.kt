@@ -18,8 +18,14 @@ class EstimatedReferenceTest {
   private val files: List<File> get() = dir.listFiles { f -> f.extension == "json" }.orEmpty().sortedBy { it.name }
   private val reference: EstimatedReference by lazy { EstimatedReference.of(files.map { it.readText(Charsets.UTF_8) }) }
 
-  /** (ancho del tramo, número de tramos) de cada juego, decididos por Ricardo el 1-nov: 1 en Rescate relámpago, 2 en Acoplamiento y 5 en los otros dos. */
-  private val shapes = mapOf("stroop" to (5 to 16), "disparate" to (5 to 16), "radar" to (1 to 24), "acoplamiento" to (2 to 16))
+  /**
+   * (ancho del tramo, número de tramos) de cada juego. El ANCHO lo decidió Ricardo el 1-nov: 1 en Rescate relámpago, 2 en Acoplamiento y 5 en los otros dos. El NÚMERO es su consecuencia técnica: 24 en Rescate (Tarea 204b) y, desde la Tarea 206, 20 en Tinta o Palabra (0 a 99) y en Acoplamiento (0 a 39),
+   * para que con las escalas calibradas el último tramo no junte a los jóvenes y el percentil 90 se alcance; ¿Verdad o disparate? se queda en 16.
+   */
+  private val shapes = mapOf("stroop" to (5 to 20), "disparate" to (5 to 16), "radar" to (1 to 24), "acoplamiento" to (2 to 20))
+
+  /** La escala de cada juego tras la Tarea 206 (`ReferenceScales` en Unity): la que deja la mediana de los 5 percentiles de la primera semana lo más cerca de 50. Rescate relámpago no se calibró. */
+  private val calibratedScales = mapOf("stroop" to 0.89, "disparate" to 0.92, "radar" to 1.0, "acoplamiento" to 0.90)
 
   private val sixRanges = listOf(AgeRange.R18_29, AgeRange.R30_44, AgeRange.R45_54, AgeRange.R55_64, AgeRange.R65_74, AgeRange.R75_PLUS)
 
@@ -38,7 +44,7 @@ class EstimatedReferenceTest {
   }
 
   @Test
-  fun `cada juego trae su ancho de tramo y su numero de tramos, los de siempre en 1 2 5 y 5, 24 16 16 y 16`() {
+  fun `cada juego trae su ancho de tramo y su numero de tramos, anchos 1 2 5 y 5 y tramos 24 20 16 y 20`() {
     for ((game, shape) in shapes) {
       val table = reference.loaded.single { it.game == game }
       assertEquals("ancho del tramo de $game", shape.first, table.binWidth)
@@ -68,7 +74,7 @@ class EstimatedReferenceTest {
   fun `la tabla dice cuantas partidas por semana jugaron los robots y de que modelo salen`() {
     for (table in reference.loaded) {
       assertEquals("${table.game}: 3 partidas por semana (decisión de Ricardo del 1-nov)", 3, table.playedPerWeek)
-      assertEquals("${table.game}: la escala es la de fábrica hasta que se ajuste con las 5 personas", 1.0, table.scale, 0.0)
+      assertEquals("${table.game}: la escala calibrada con la primera semana de las 5 personas (Tarea 206; Rescate relámpago queda en 1,0)", calibratedScales.getValue(table.game), table.scale, 0.0)
       assertTrue("${table.game}: dice de qué estudio sale el modelo", table.source.contains("referencia-estimada"))
     }
   }
@@ -165,10 +171,10 @@ class EstimatedReferenceTest {
   @Test
   fun `el eje de la campana va hasta donde empieza el ultimo tramo de cada juego`() {
     val ticks = shapes.mapValues { (game, _) -> Comparison.axisTicks(reference.distribution(game, listOf(AgeRange.R45_54), 0, 1)) }
-    assertEquals("Tinta o Palabra: 0 · 25 · 50 · 75", listOf(0, 25, 50, 75), ticks["stroop"])
+    assertEquals("Tinta o Palabra: 20 tramos de 5, 0 · 32 · 63 · 95", listOf(0, 32, 63, 95), ticks["stroop"])
     assertEquals("¿Verdad o disparate?: 0 · 25 · 50 · 75", listOf(0, 25, 50, 75), ticks["disparate"])
     assertEquals("Rescate relámpago: 24 tramos de 1, 0 · 8 · 15 · 23", listOf(0, 8, 15, 23), ticks["radar"])
-    assertEquals("Acoplamiento: 16 tramos de 2, 0 · 10 · 20 · 30", listOf(0, 10, 20, 30), ticks["acoplamiento"])
+    assertEquals("Acoplamiento: 20 tramos de 2, 0 · 13 · 25 · 38", listOf(0, 13, 25, 38), ticks["acoplamiento"])
     val radar = reference.distribution("radar", listOf(AgeRange.R45_54), 0, 1)
     assertEquals("la marca dibujada se topa en el centro del último tramo de SU juego", 23.5, Comparison.markX(40, radar.topMark), 0.0)
     assertEquals(0.5, Comparison.markX(0, radar.topMark), 0.0)

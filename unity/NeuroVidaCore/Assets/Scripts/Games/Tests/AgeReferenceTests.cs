@@ -73,7 +73,7 @@ namespace NeuroVida.Games.Tests
             var normal = AgeReference.Build("stroop", Bank, o);
             var slow = AgeReference.Build("stroop", Bank, new AgeReference.Options(120, 3, 20261101, 3UL, 1.3));
             Assert.Less(slow.Ranges[2].Mean, normal.Ranges[2].Mean - 3, "con la respuesta 30 % más lenta la media de 45 a 54 cae varios aciertos (Fable: de 55 a 45 la mitad)");
-            Assert.AreEqual(1.0, normal.Scale, "la escala por defecto es la de ReferenceScales");
+            Assert.AreEqual(ReferenceScales.For("stroop"), normal.Scale, "la escala por defecto es la de ReferenceScales");
             StringAssert.Contains("\"escala\": 1.3", AgeReference.ToJson(slow, "2026-11-01"));
             foreach (var g in TimeTrial.GameIds) Assert.Greater(ReferenceScales.For(g), 0.0, g);
         }
@@ -121,22 +121,32 @@ namespace NeuroVida.Games.Tests
             Assert.AreEqual(5, AgeReference.BinWidth("stroop"));
             Assert.AreEqual(5, AgeReference.BinWidth("disparate"));
             Assert.AreEqual(24, AgeReference.BinCount("radar"), "Rescate relámpago: 24 tramos de a 1 (0 a 23)");
-            foreach (var g in new[] { "stroop", "disparate", "acoplamiento" }) Assert.AreEqual(16, AgeReference.BinCount(g), g);
+            Assert.AreEqual(20, AgeReference.BinCount("stroop"), "Tinta o Palabra: 20 tramos de a 5 (0 a 99; Tarea 206)");
+            Assert.AreEqual(20, AgeReference.BinCount("acoplamiento"), "Acoplamiento: 20 tramos de a 2 (0 a 39; Tarea 206)");
+            Assert.AreEqual(16, AgeReference.BinCount("disparate"), "¿Verdad o disparate?: 16 tramos de a 5 (0 a 79)");
         }
 
         [Test]
         public void TheMarksOfEveryGameFitTheirBins()
         {
-            // la marca más alta razonable (Fable §1): Tinta 70-80, Disparate 40-45, Rescate 15, Acoplamiento 25-30; el último tramo junta lo que pase del ancho × 16 (80 · 80 · 16 · 32)
+            // Lo que importa (Opus, Tarea 206): que el percentil 90 se alcance CON MARGEN en todas las franjas, es decir, que el último tramo («N o más») junte 5 % o menos de los robots; si junta más, los de arriba se amontonan ahí, el percentil 90 no se alcanza y «Entre estrellas» se queda sin peldaño.
+            // Rescate relámpago (decisión de Opus, 1-nov) conserva su regla: MENOS del 1 % en 18 a 29 años (con 16 tramos de a 1 juntaba del 21 al 29 %; con 24 no junta a nadie).
             foreach (var g in TimeTrial.GameIds)
             {
                 var t = TableOf(g);
                 int top = AgeReference.BinWidth(g) * AgeReference.BinCount(g);
-                var young = t.Ranges[0];
-                Assert.Less(young.P90, top, g + ": el p90 de los más jóvenes cabe dentro de los 16 tramos");
-                // Rescate relámpago (decisión de Opus, 1-nov): su último tramo («N o más») junta a MENOS del 1 % de los robots de 18 a 29 años; con 16 tramos de a 1 (0 a 15) juntaba del 21 al 29 %, con 24 (0 a 23) no junta a nadie. Los otros tres siguen con el 25 %
-                double lastShare = young.Bins[AgeReference.BinCount(g) - 1] / (double)young.People;
-                Assert.Less(lastShare, g == "radar" ? 0.01 : 0.25, g + ": el último tramo no es donde se amontona la gente (los tramos cubren la marca máxima razonable)");
+                Assert.Less(t.Ranges[0].P90, top, g + ": el p90 de los más jóvenes cabe dentro de la pista de la tabla");
+                if (g == "radar")
+                {
+                    double young = t.Ranges[0].Bins[AgeReference.BinCount(g) - 1] / (double)t.Ranges[0].People;
+                    Assert.Less(young, 0.01, g + ": el último tramo no es donde se amontona la gente (los tramos cubren la marca máxima razonable)");
+                    continue;
+                }
+                foreach (var r in t.Ranges)
+                {
+                    double share = r.Bins[AgeReference.BinCount(g) - 1] / (double)r.People;
+                    Assert.LessOrEqual(share, 0.05, g + " " + r.Key + ": el último tramo junta " + (100 * share).ToString("0.0") + " % de los robots; con más del 5 % el percentil 90 no se alcanza con margen");
+                }
             }
         }
 
@@ -273,6 +283,54 @@ namespace NeuroVida.Games.Tests
             catch (Exception e)
             {
                 Debug.LogError("[Referencia] falló: " + e);
+                EditorApplication.Exit(1);
+            }
+        }
+
+        /// <summary>
+        /// BARRIDO de escalas para calibrar <see cref="ReferenceScales"/> (Tarea 206): arma las tablas de los juegos pedidos con VARIAS escalas en una sola corrida de Unity y deja cada JSON en <c>&lt;NUBI_REF_OUT&gt;/e&lt;escala&gt;/</c> (NUNCA en los assets de la app). El resto es idéntico a <see cref="Run"/>: mismo modelo, misma semilla, mismos robots y partidas;
+        /// solo cambia la escala. Variables: <c>NUBI_REF_SWEEP</c> (<c>desde:hasta:paso</c>, por ejemplo <c>0.60:1.00:0.01</c>), <c>NUBI_REF_GAMES</c> (ids separados por coma; sin ella, los cuatro), <c>NUBI_REF_OUT</c> (obligatoria) y las de <see cref="Run"/>.
+        /// Llamar:  <c>Unity -batchmode -nographics -quit -projectPath … -executeMethod NeuroVida.Games.Tests.ReferenceTableRunner.Sweep</c>.
+        /// </summary>
+        public static void Sweep()
+        {
+            try
+            {
+                var inv = CultureInfo.InvariantCulture;
+                int people = EnvInt("NUBI_REF_PEOPLE", 2000);
+                int played = EnvInt("NUBI_REF_PARTIDAS", 3);
+                ulong seed = (ulong)EnvInt("NUBI_REF_SEED", 20261101);
+                string outRoot = Environment.GetEnvironmentVariable("NUBI_REF_OUT");
+                if (string.IsNullOrEmpty(outRoot)) throw new ArgumentException("NUBI_REF_OUT es obligatoria en el barrido: nunca se escribe en los assets de la app");
+                var parts = (Environment.GetEnvironmentVariable("NUBI_REF_SWEEP") ?? "0.60:1.00:0.01").Split(':');
+                if (parts.Length != 3) throw new ArgumentException("NUBI_REF_SWEEP = desde:hasta:paso");
+                // en centésimas enteras, para que 0,70 + 0,01 × 3 no dé 0,7300000001
+                long from = (long)Math.Round(double.Parse(parts[0], inv) * 100), to = (long)Math.Round(double.Parse(parts[1], inv) * 100), step = Math.Max(1, (long)Math.Round(double.Parse(parts[2], inv) * 100));
+                var wanted = (Environment.GetEnvironmentVariable("NUBI_REF_GAMES") ?? "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                var games = new List<string>();
+                foreach (var g in TimeTrial.GameIds) if (wanted.Length == 0 || Array.IndexOf(wanted, g) >= 0) games.Add(g);
+                if (games.Count == 0) throw new ArgumentException("NUBI_REF_GAMES no nombra ningún juego con Contrarreloj");
+                var bank = SentenceBank.Load();
+                var clock = System.Diagnostics.Stopwatch.StartNew();
+                for (long c = from; c <= to; c += step)
+                {
+                    double scale = c / 100.0;
+                    string dir = Path.Combine(outRoot, "e" + scale.ToString("0.00", inv));
+                    Directory.CreateDirectory(dir);
+                    var options = new AgeReference.Options(people, played, 20261101, seed, scale);
+                    foreach (var g in games)
+                    {
+                        var t = AgeReference.Build(g, bank, options);
+                        File.WriteAllText(Path.Combine(dir, AgeReference.FileName(t)), AgeReference.ToJson(t, DateTime.Now.ToString("yyyy-MM-dd", inv)), new UTF8Encoding(false));
+                    }
+                    Debug.Log("[Referencia] escala " + scale.ToString("0.00", inv) + " lista (" + (clock.ElapsedMilliseconds / 1000) + " s)");
+                }
+                Debug.Log("[Referencia] barrido listo: " + games.Count + " juegos × " + ((to - from) / step + 1) + " escalas en " + (clock.ElapsedMilliseconds / 1000) + " s.");
+                EditorApplication.Exit(0);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("[Referencia] el barrido falló: " + e);
                 EditorApplication.Exit(1);
             }
         }

@@ -115,7 +115,7 @@ object Comparison {
     /** El borde derecho de la campana: el último tramo («75 o más») se dibuja de [lastStart] a [topMark]. */
     val topMark: Int get() = binWidth * bins.size
 
-    /** Donde EMPIEZA el último tramo, el de «o más» (75 en 16 tramos de 5; 23 en 24 de 1). */
+    /** Donde EMPIEZA el último tramo, el de «o más» (75 en 16 tramos de 5; 95 en 20 de 5; 23 en 24 de 1; 38 en 20 de 2). */
     val lastStart: Int get() = binWidth * (bins.size - 1)
 
     companion object {
@@ -610,7 +610,7 @@ object Comparison {
   fun markX(mark: Int, topMark: Int = TOP_MARK): Double = (mark.coerceIn(0, topMark - 1) + 0.5).coerceAtMost(topMark.toDouble())
 
   /**
-   * Los rótulos del eje de la campana (Tarea 205): «0 aciertos», dos intermedios y donde EMPIEZA el último tramo («75 o más»), a un tercio y dos tercios de él. Con 16 tramos de 5 son 0 · 25 · 50 · 75 (los de siempre); con 24 de 1 (Rescate), 0 · 8 · 15 · 23; con 16 de 2 (Acoplamiento), 0 · 10 · 20 · 30.
+   * Los rótulos del eje de la campana (Tarea 205): «0 aciertos», dos intermedios y donde EMPIEZA el último tramo («75 o más»), a un tercio y dos tercios de él. Con 16 tramos de 5 (¿Verdad o disparate?) son 0 · 25 · 50 · 75; con 20 de 5 (Tinta o Palabra, desde la Tarea 206), 0 · 32 · 63 · 95; con 24 de 1 (Rescate), 0 · 8 · 15 · 23; con 20 de 2 (Acoplamiento), 0 · 13 · 25 · 38.
    */
   fun axisTicks(d: Distribution): List<Int> {
     val end = d.lastStart

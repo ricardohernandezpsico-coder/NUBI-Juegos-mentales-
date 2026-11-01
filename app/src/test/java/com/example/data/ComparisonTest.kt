@@ -358,6 +358,27 @@ class ComparisonTest {
     assertEquals("el primer mundo de la lista es la referencia: el de fábrica", SampleComparison.World.REFERENCE, SampleComparison.World.entries.first())
   }
 
+  /**
+   * Tarea 206: con la escala calibrada los robots son más rápidos y, si el último tramo («N o más») junta demasiado, el percentil 90 no se alcanza y «Entre estrellas» se queda sin peldaño (pasó con 16 tramos en Tinta y Acoplamiento).
+   * Las tablas REALES del APK tienen que dar los cinco peldaños en las seis franjas de los tres juegos de a 5 y de a 2; Rescate relámpago está fuera a propósito (sus cuatro peldaños en 18 a 54 años son una decisión de Opus). Si una escala futura vuelve a perderlo, falla AQUÍ y no en una lámina.
+   */
+  @Test
+  fun `las tablas del APK dan los cinco peldaños en las seis franjas de Tinta, Disparate y Acoplamiento`() {
+    val dir = java.io.File("src/main/assets/${EstimatedReference.ASSET_DIR}")
+    val reference = EstimatedReference.of(dir.listFiles { f -> f.extension == "json" }.orEmpty().map { it.readText(Charsets.UTF_8) })
+    val all = Comparison.Division.entries
+    for (game in listOf("stroop", "disparate", "acoplamiento")) {
+      val table = reference.loaded.single { it.game == game }
+      assertEquals("$game: las seis franjas de 18 en adelante", 6, table.ranges.size)
+      for ((range, d) in table.ranges) {
+        val rungs = Comparison.thresholds(d)
+        assertEquals("$game $range: los cinco peldaños, de abajo hacia arriba (hoy ${rungs.map { it.division.label }})", all, rungs.map { it.division })
+        assertTrue("$game $range: cada peldaño cae dentro de la pista", rungs.all { it.from < d.topMark })
+        assertTrue("$game $range: el último tramo junta el 5 % o menos (hoy ${100 * d.bins.last() / d.people} %), así que el percentil 90 se alcanza con margen", d.bins.last() * 20 <= d.people)
+      }
+    }
+  }
+
   @Test
   fun `la fuente compuesta usa la real con 50 personas o mas y la estimada si no`() {
     fun d(n: Int, estimated: Boolean) = Comparison.Distribution(n, List(16) { if (it == 3) n else 0 }, 15, 15, 15, estimated = estimated)
