@@ -51,6 +51,36 @@ object Comparison {
   const val AGE_HINT = "Para compararte con una referencia estimada para tu edad, elige tu edad en Tú › Más ajustes › Juego › Rango de edad."
   const val BELL_CAPTION = "La línea marca la mitad de las personas."
 
+  // ---- el lugar aparece desde la tercera partida de cada juego (Tarea 207; decisión de Ricardo, 1-nov)
+
+  /**
+   * Desde la tercera partida GUARDADA de un juego se dice el lugar. En la primera semana de las 5 personas de Ricardo, 15 de las 20 primeras partidas quedaron en 0 a 2 de cada 100 (se aprende mucho del día 1 al 3) y la referencia estimada
+   * juega 3 partidas: las primeras sirven para conocer el juego y no se comparan. Cuenta POR JUEGO ([gamesPlayed]), con cualquier semana y pista; las de invitado no se guardan, así que no cuentan.
+   */
+  const val PLACE_FROM_GAME = 3
+
+  /** Lo que dice la página (UNA vez, una línea corrida y sin negrita, donde iría el rótulo de la comparación) mientras el juego tiene menos de [PLACE_FROM_GAME] partidas guardadas. */
+  const val EARLY_NOTICE = "Tu lugar aparece desde tu tercera partida: las primeras sirven para conocer el juego."
+
+  /** Cuántas partidas del Contrarreloj tiene guardadas la persona en [game]: de cualquier semana y de cualquier pista (versión), no solo las de hoy. */
+  fun gamesPlayed(results: List<TimeTrialResult>, game: String): Int = results.count { it.gameId == game }
+
+  /** ¿Ya jugó las partidas que pide el lugar ([PLACE_FROM_GAME]) en [game]? */
+  fun placeUnlocked(results: List<TimeTrialResult>, game: String): Boolean = gamesPlayed(results, game) >= PLACE_FROM_GAME
+
+  /**
+   * Qué hace la comparación de un juego con una persona, la PRECEDENCIA en un solo lugar (la página y la puerta de Avance la leen):
+   * [NONE] no hay nada que decir (sin fuente, sin tabla para ese juego, o de 13 a 17 años); [NEEDS_AGE] hay con qué comparar pero falta la franja de edad (la página dice dónde elegirla, [AGE_HINT]);
+   * [EARLY] hay franja y tabla pero el juego tiene menos de [PLACE_FROM_GAME] partidas guardadas (la página dice [EARLY_NOTICE] y no muestra ningún lugar); [SHOW] todo como siempre.
+   */
+  enum class Gate { NONE, NEEDS_AGE, EARLY, SHOW }
+
+  fun gate(source: Source?, stored: AgeRange?, game: String, results: List<TimeTrialResult>): Gate {
+    if (source == null || !source.covers(game)) return Gate.NONE
+    if (rangeFor(stored, source) == null) return if (stored == null) Gate.NEEDS_AGE else Gate.NONE        // sin franja guardada, el aviso de edad; de 13 a 17 años, nada
+    return if (placeUnlocked(results, game)) Gate.SHOW else Gate.EARLY
+  }
+
   // ---- la REFERENCIA ESTIMADA (Tarea 205; `auditoria-fable/referencia-estimada.md` §4 y las decisiones de Opus del 1-nov): siempre dicha; en cada losa solo «referencia estimada»; nunca se llama «personas»
   const val ESTIMATED_BELL_CAPTION = "La línea marca la mitad de la referencia estimada."
   /** Bajo el gráfico de las semanas (con la referencia estimada). */
@@ -423,9 +453,12 @@ object Comparison {
     return "Esta semana estás ${r.division.label}. ${needSentence(l, r)}"
   }
 
-  /** La frase gratis de la puerta de Avance: la de [freeSentence] con el lugar de esta semana de la persona en [game] (null sin lugar dicho). */
+  /**
+   * La frase gratis de la puerta de Avance: la de [freeSentence] con el lugar de esta semana de la persona en [game] (null sin lugar dicho). Desde la Tarea 207 la puerta CALLA mientras [game] tenga menos de [PLACE_FROM_GAME] partidas guardadas (decisión de Opus, 1-nov: como sin franja de edad;
+   * para quien no tiene Plus, la frase de la página prometería un lugar que no ve): la explicación vive en la página, que es donde está el lugar.
+   */
   fun freeSentenceFor(source: Source, game: String, range: AgeRange, results: List<TimeTrialResult>, now: Long): String? =
-    if (!source.covers(game)) null else freeSentence(place(source, game, range, bestOfWeek(TimeTrialDay.ofGame(results, game), now, 0)))
+    if (!source.covers(game) || !placeUnlocked(results, game)) null else freeSentence(place(source, game, range, bestOfWeek(TimeTrialDay.ofGame(results, game), now, 0)))
 
   /** El rótulo izquierdo del eje de las semanas: «hace 3 semanas» (la más vieja con punto); null si la más vieja es esta (no hay de qué separar). */
   fun weeksAxisLeft(points: List<WeekPoint>): String? {
@@ -619,4 +652,40 @@ object Comparison {
 
   /** El hueco entre rótulos que pide el dibujo antes de omitir uno (14 sp): 8 dp. */
   const val AXIS_GAP_DP = 8
+
+  /** El aire a cada lado de la caja de un rótulo del eje en que no se deja caer la raya de la mitad ni la barra «Tú» (Tarea 207): 2 dp. */
+  const val AXIS_OBSTACLE_MARGIN_DP = 2.0
+
+  /**
+   * Qué rótulos del eje de la campana se dibujan (Tarea 207; Opus, 1-nov). Hay cuatro, en este orden: 0 = «0 aciertos» (izquierda), 1 y 2 = los dos intermedios (a un tercio y a dos tercios del último tramo) y 3 = «N o más» (derecha).
+   * Los dos de los EXTREMOS se dibujan siempre. Un INTERMEDIO se omite si no queda [gap] entre él y uno ya dibujado (la regla de siempre: con letra 2,0 o poco ancho el del medio no cabe) o si algún estorbo de [obstacles] —la raya de la mitad y la barra «Tú»,
+   * cada uno como `(centro, ancho)`— cae dentro de su caja de texto más [margin] a cada lado: un «63» bajo una raya que está en 65 se lee «la mitad es 63», y eso es falso. Prioridad: los extremos, después el intermedio de la derecha y al final el de la izquierda.
+   * Todo en las MISMAS unidades (dp o píxeles) y medido con el ancho real del dibujo, como [barCoversHalf]; si la raya no se dibuja porque la tapa la barra, quien llama solo pasa la barra. Devuelve los índices dibujados, de izquierda a derecha.
+   */
+  fun axisLabelsShown(starts: List<Double>, widths: List<Double>, gap: Double, obstacles: List<Pair<Double, Double>>, margin: Double): List<Int> {
+    val shown = mutableListOf(0, 3)
+    for (i in listOf(2, 1)) {
+      val left = starts[i]
+      val right = left + widths[i]
+      val fits = shown.all { j -> left >= starts[j] + widths[j] + gap || starts[j] >= right + gap }
+      val clear = obstacles.none { (center, width) -> center + width / 2 > left - margin && center - width / 2 < right + margin }
+      if (fits && clear) shown += i
+    }
+    return shown.sorted()
+  }
+
+  /**
+   * Lo mismo con lo que sabe la campana: los rótulos de [ticks] ([axisTicks]) y su ancho medido, en dp, el [widthDp] interior del dibujo, la marca [mark] y si la barra «Tú» tapa la raya ([onHalf], [barCoversHalf]; entonces cuenta solo la barra).
+   * [labelWidthsDp] = el ancho de «0 aciertos», de cada intermedio y de «N o más».
+   */
+  fun axisLabelsFor(d: Distribution, mark: Int, onHalf: Boolean, widthDp: Double, labelWidthsDp: List<Double>): List<Int> {
+    val ticks = axisTicks(d)
+    val top = d.topMark
+    val starts = listOf(0.0, widthDp * ticks[1] / top - labelWidthsDp[1] / 2, widthDp * ticks[2] / top - labelWidthsDp[2] / 2, widthDp - labelWidthsDp[3])
+    val obstacles = buildList {
+      add(widthDp * markX(mark, top) / top to BELL_BAR_DP)
+      if (!onHalf) add(widthDp * markX(d.p50, top) / top to BELL_LINE_DP)
+    }
+    return axisLabelsShown(starts, labelWidthsDp, AXIS_GAP_DP.toDouble(), obstacles, AXIS_OBSTACLE_MARGIN_DP)
+  }
 }

@@ -108,7 +108,7 @@ private const val BIG_TEXT_SCALE_CAP = 1.3f
  * De arriba abajo: la cabecera sobre el cielo («Contrarreloj» y «Tus marcas, comparadas solo contigo.» —con la referencia estimada, «Tus marcas, comparadas contigo y con una referencia estimada para tu edad.»; con datos de muestra o personas reales, «…con personas de tu edad.»—, con [OnBoardText]); el cielo se DESVANECE en 24 dp hasta el noche plano ([NubiTokens.NightFlat]) y de ahí para abajo todo va en losas crema
  * sobre ese fondo plano; el selector de los cuatro juegos (dos filas parejas; una columna si «Acoplamiento» no cabe entero en media fila; el elegido en lima con el visto; abre con el juego de hoy).
  *
- * **Con comparación (solo [compare] no nulo y con una franja de edad: la persona de 13 a 17 años no la ve, y sin franja guardada la página dice dónde elegirla):** primero la comparación, bajo «Esta semana, comparado con tu edad» y la frase larga de la referencia estimada («Referencia estimada para 45 a 54 años: …No son personas.»; con los datos de muestra de depuración, su frase): la cifra ([HeroCard]: «63 de cada 100», su frase, la división y «Percentil 63»), la escalera de divisiones con «Te faltan N aciertos»
+ * **Con comparación (solo [compare] no nulo, con una franja de edad y desde la tercera partida guardada de ESTE juego, Tarea 207: antes, la página dice «Tu lugar aparece desde tu tercera partida…» una vez; la persona de 13 a 17 años no la ve, y sin franja guardada la página dice dónde elegirla; la precedencia es `Comparison.gate`):** primero la comparación, bajo «Esta semana, comparado con tu edad» y la frase larga de la referencia estimada («Referencia estimada para 45 a 54 años: …No son personas.»; con los datos de muestra de depuración, su frase): la cifra ([HeroCard]: «63 de cada 100», su frase, la división y «Percentil 63»), la escalera de divisiones con «Te faltan N aciertos»
  * y las semanas seguidas ([LadderCard]), la campana en su losa ([BellCard]), «Otras edades» y «Tu percentil semanal»; con «Todavía somos pocos» o sin marca esta semana, en vez de la cifra y la escalera, su losa ([PlaceCard]: nada de umbrales inventados). Después, bajo el rótulo «Tus marcas»: las tres cifras ([StatsCard]), «Tus últimas 10 marcas» ([MarksCard]),
  * «Tu ritmo en la última partida» ([RhythmCard]) y las notas ([NotesCard]). **Sin comparación**, la página es solo eso último, sin rótulos de sección y con la tercera cifra sin depender de otras personas. Una línea fina separa lo que una losa junta, y los gráficos van en una ventanilla noche ([NightWindow]).
  *
@@ -130,13 +130,14 @@ internal fun ContrarrelojPage(
   val records = remember(results) { TimeTrialDay.GAMES.map { it to TimeTrialStats.record(results, it) } }
   val pace = remember(results, selected) { TimeTrialMarks.pace(results, selected) }
   // La comparación (Tareas 202 y 205): solo si hay de dónde sacarla (`compare`: la referencia estimada del APK, también en la tienda, que cubra este juego) y una franja con la que comparar (la de 13 a 17 años no ve la sección). Sin ella, la página queda como en la Tarea 201.
-  val section = remember(compare, ageRange, results, selected, now, lang) {
+  // Tarea 207 (decisión de Ricardo, 1-nov): el lugar aparece desde la tercera partida GUARDADA de cada juego; antes, la página queda como «sin comparación» y dice por qué UNA vez. La precedencia vive en `Comparison.gate`:
+  // sin franja de edad, el aviso de dónde elegirla; de 13 a 17 años o sin tabla para el juego, nada; con franja y tabla, [Comparison.Gate.EARLY] (menos de 3 partidas de ESTE juego, de cualquier semana y pista) o [Comparison.Gate.SHOW].
+  val gate = remember(compare, ageRange, results, selected) { Comparison.gate(compare, ageRange, selected, results) }
+  val section = remember(compare, gate, ageRange, results, selected, now, lang) {
     val range = compare?.let { Comparison.rangeFor(ageRange, it) }
-    if (compare == null || range == null || !compare.covers(selected)) null
+    if (compare == null || range == null || gate != Comparison.Gate.SHOW) null
     else Comparison.section(compare, selected, GameRegistry.getById(selected)?.let { getGameTitle(it.id, lang, it.title) } ?: selected, range, results, now)
   }
-  // hay con qué comparar este juego pero falta la franja: sin ella no hay comparación (la de 13 a 17 años no la ve y no recibe este aviso; con los datos de muestra de depuración se asume 45 a 54)
-  val needsAge = compare != null && ageRange == null && compare.covers(selected) && Comparison.rangeFor(null, compare) == null
   val scroll = rememberScrollState()
   var headerPx by remember { mutableIntStateOf(0) }
   val fadePx = with(LocalDensity.current) { FadeHeight.toPx() }
@@ -160,7 +161,9 @@ internal fun ContrarrelojPage(
       Column(Modifier.padding(horizontal = PageMargin).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(CardGap)) {
         GameSelector(records, selected, lang, onSelect)
         // Tarea 205b: hay referencia para este juego pero la persona no tiene franja de edad guardada (instaló antes de la Tarea 195): la página no se queda callada, dice dónde elegirla
-        if (needsAge) Text(Comparison.AGE_HINT, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_age_hint"))
+        if (gate == Comparison.Gate.NEEDS_AGE) Text(Comparison.AGE_HINT, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_age_hint"))
+        // Tarea 207: con franja y tabla pero menos de tres partidas de este juego, UNA línea corrida y sin negrita donde iría el rótulo de la comparación: las primeras partidas sirven para conocer el juego y no se comparan
+        if (gate == Comparison.Gate.EARLY) Text(Comparison.EARLY_NOTICE, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_early_notice"))
         if (section != null) {
           // primero la comparación (D2): la cifra, la escalera, la campana, otras edades y semana a semana; los rótulos solo con DOS secciones
           CompareHeader(section)
@@ -415,7 +418,7 @@ private fun BellCard(r: Comparison.Ranked, range: AgeRange) {
 // ------------------------------------------------------------------ «Tus marcas» (Tarea 203)
 
 /**
- * Las tres cifras de «Tus marcas» (D2): el récord, la mejor marca de esta semana y la tercera («3 de 4 · semanas arriba de la mitad» con comparación; «partidas esta semana» sin ella), cada una con su unidad debajo, en Rubik 24 con tope de escala 1,3.
+ * Las tres cifras de «Tus marcas» (D2): el récord, la mejor marca de esta semana y la tercera («partidas esta semana»; desde la Tarea 203b nunca depende de otras personas), cada una con su unidad debajo, en Rubik 24 con tope de escala 1,3.
  * Funde «Esta semana y la pasada», «Aciertos y errores» y «Pistas anteriores». Con letra de 1,3 o más, una columna: cada cifra con su rótulo al lado.
  */
 @Composable
@@ -892,7 +895,7 @@ private fun BellChart(r: Comparison.Ranked, range: AgeRange, onHalf: Boolean) {
           }
         }
         Spacer(Modifier.height(4.dp))
-        BellAxis(width, Comparison.axisTicks(d), d.topMark)
+        BellAxis(width, d, r.mark, onHalf)
       }
     }
   }
@@ -902,20 +905,20 @@ private fun BellChart(r: Comparison.Ranked, range: AgeRange, onHalf: Boolean) {
  * El eje de la campana (14 sp, rótulo de gráfico): «0 aciertos» al borde izquierdo, «75 o más» al derecho y «25» y «50» sobre su lugar; un rótulo que no deja 8 dp al anterior se omite (primero se guardan los dos extremos, luego el «50» y por último el «25»). Con tope de escala 1,3 como el resto de los gráficos.
  */
 @Composable
-private fun BellAxis(width: Dp, ticks: List<Int>, topMark: Int) {
+private fun BellAxis(width: Dp, d: Comparison.Distribution, mark: Int, onHalf: Boolean) {
   CapScale(RHYTHM_TEXT_CAP) {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val style = androidx.compose.material3.LocalTextStyle.current.merge(TextStyle(fontSize = 14.sp))
     val widthPx = with(density) { width.toPx() }
-    val gapPx = with(density) { Comparison.AXIS_GAP_DP.dp.toPx() }
+    val ticks = Comparison.axisTicks(d)
     val labels = listOf("0 aciertos", ticks[1].toString(), ticks[2].toString(), "${ticks[3]} o más")
     val w = labels.map { measurer.measure(it, style, softWrap = false, maxLines = 1).size.width.toFloat() }
-    val start = listOf(0f, widthPx * ticks[1] / topMark - w[1] / 2, widthPx * ticks[2] / topMark - w[2] / 2, widthPx - w[3])
-    val shown = mutableListOf<Int>()
-    for (i in listOf(0, 3, 2, 1)) if (shown.all { j -> start[i] >= start[j] + w[j] + gapPx || start[j] >= start[i] + w[i] + gapPx }) shown += i
+    val start = listOf(0f, widthPx * ticks[1] / d.topMark - w[1] / 2, widthPx * ticks[2] / d.topMark - w[2] / 2, widthPx - w[3])
+    // Tarea 207: los extremos siempre; un intermedio no se dibuja si no cabe (8 dp de hueco) ni si la raya de la mitad o la barra «Tú» caen dentro de su caja más 2 dp a cada lado (la lógica pura, con el ancho real del dibujo)
+    val shown = Comparison.axisLabelsFor(d, mark, onHalf, width.value.toDouble(), w.map { with(density) { it.toDp().value.toDouble() } })
     Box(Modifier.fillMaxWidth().height(with(density) { 18.sp.toDp() })) {
-      for (i in shown.sorted()) {
+      for (i in shown) {
         Text(labels[i], color = NubiTokens.OnNightDim, fontSize = 14.sp, lineHeight = 18.sp, softWrap = false, modifier = Modifier.offset(x = with(density) { start[i].toDp() }).hiddenTag("contrarreloj_bell_axis_$i"))
       }
     }

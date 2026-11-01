@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -66,6 +69,12 @@ class ContrarrelojPageTest {
     TimeTrialResult(id = "r-$game-$day-$mark", gameId = game, day = "2026-10-%02d".format(day), trackVersion = version, hits = mark + errors, errors = errors, level = 4, seconds = 120, timestamp = at(day))
 
   private val now = at(28, 18)
+
+  /**
+   * Desde la tercera partida GUARDADA de un juego se dice el lugar (Tarea 207): a las pruebas que miran la comparación con una o dos partidas se les suman dos anteriores y flojas (de la semana pasada, así no tocan la mejor marca de esta semana) hasta completar tres.
+   */
+  private fun withEarly(game: String, mine: List<TimeTrialResult>): List<TimeTrialResult> =
+    if (Comparison.gamesPlayed(mine, game) >= Comparison.PLACE_FROM_GAME) mine else List(Comparison.PLACE_FROM_GAME - Comparison.gamesPlayed(mine, game)) { r(1, 20 + it, game = game) } + mine
   /** El registro de una partida: por cada medio minuto, [hits] aciertos y luego [errors] errores, en el paso [levels] de la pista (el mismo de los dos). Las horas crecen dentro de cada medio minuto. */
   private fun paceTrials(hits: List<Int>, errors: List<Int>, levels: List<Int> = listOf(1, 2, 4, 4)): TimeTrialTrials {
     val t = mutableListOf<Int>(); val ok = mutableListOf<Int>(); val lv = mutableListOf<Int>()
@@ -569,7 +578,7 @@ class ContrarrelojPageTest {
   }
 
   @Test fun en_la_division_mas_alta_no_falta_nada_y_no_hay_barra() {
-    show(compare = manyWorld, ageRange = AgeRange.R45_54, results = listOf(r(70, 28)))
+    show(compare = manyWorld, ageRange = AgeRange.R45_54, results = withEarly("stroop", listOf(r(70, 28))))
     assertEquals("Estás en la división más alta de tu franja esta semana.", n("contrarreloj_ladder_need"))
     assertEquals("Entre estrellas", n("contrarreloj_ladder_you_name")); assertEquals("Tú · 70 aciertos", n("contrarreloj_ladder_you_value"))
     val b = boxes()
@@ -737,7 +746,7 @@ class ContrarrelojPageTest {
   }
 
   @Test fun sin_marca_esta_semana_la_losa_dice_que_hacer_y_no_hay_otras_edades_ni_escalera() {
-    show(compare = manyWorld, ageRange = AgeRange.R45_54, selected = "radar", results = listOf(r(27, 23, game = "radar")))
+    show(compare = manyWorld, ageRange = AgeRange.R45_54, selected = "radar", results = withEarly("radar", listOf(r(27, 23, game = "radar"))))
     assertEquals("Todavía no tienes una marca esta semana en Rescate relámpago. Juega su Contrarreloj para ver tu lugar entre personas de tu edad.", textOf("contrarreloj_place_nomark"))
     val b = boxes()
     for (tag in listOf("contrarreloj_others", "contrarreloj_hero", "contrarreloj_ladder", "contrarreloj_bell")) assertNull("sin marca esta semana no existe «$tag»", b[tag])
@@ -1132,7 +1141,7 @@ class ContrarrelojPageTest {
 
   /** El eje y la marca «Tú» de la campana de [game] con la referencia: los rótulos caen donde `axisTicks` los pone, en el ancho de SU pista, y la barra «Tú» en el centro de su tramo. */
   private fun assertBellOfGame(game: String, mine: List<TimeTrialResult>, mark: Int) {
-    show(compare = estWorld, ageRange = AgeRange.R45_54, selected = game, results = mine)
+    show(compare = estWorld, ageRange = AgeRange.R45_54, selected = game, results = withEarly(game, mine))
     val b = boxes()
     val d = estWorld.distribution(game, listOf(AgeRange.R45_54), 0, 1)
     val ticks = Comparison.axisTicks(d)
@@ -1189,7 +1198,7 @@ class ContrarrelojPageTest {
    * el lector de pantalla termina con «está en la mitad.» y la distancia entre los centros es la que la regla de `Comparison.barCoversHalf` da con el ancho REAL del dibujo.
    */
   private fun assertBellCaption(game: String, mark: Int, widthDp: Int, expectOnHalf: Boolean) {
-    show(widthDp = widthDp, compare = estWorld, ageRange = AgeRange.R45_54, selected = game, results = listOf(r(mark, 27, game = game)))
+    show(widthDp = widthDp, compare = estWorld, ageRange = AgeRange.R45_54, selected = game, results = withEarly(game, listOf(r(mark, 27, game = game))))
     val b = boxes()
     val d = estWorld.distribution(game, listOf(AgeRange.R45_54), 0, 1)
     val caption = textOf("contrarreloj_bell_caption")
@@ -1273,4 +1282,236 @@ class ContrarrelojPageTest {
   @Test fun el_aviso_de_la_edad_cabe_a_393_con_letra_2_0() = assertAgeHintFits(393, 2f)
   @Test fun el_aviso_de_la_edad_cabe_a_360_con_letra_1_0() = assertAgeHintFits(360, 1f)
   @Test fun el_aviso_de_la_edad_cabe_a_360_con_letra_2_0() = assertAgeHintFits(360, 2f)
+
+  // ---------------------------------------------------------------- Tarea 207: el lugar aparece desde la tercera partida de cada juego
+
+  /**
+   * La página con TODO lo que cambia como estado (un solo `setContent` por prueba): se cambian [results], [selected], [range], [compare], [width] y [scale] y se espera a que recomponga.
+   */
+  private class Live {
+    var results by mutableStateOf(listOf<TimeTrialResult>())
+    var selected by mutableStateOf("stroop")
+    var range by mutableStateOf<AgeRange?>(null)
+    var compare by mutableStateOf<Comparison.Source?>(null)
+    var width by mutableStateOf(393)
+    var scale by mutableStateOf(1f)
+  }
+
+  private fun live(compare: Comparison.Source?, range: AgeRange?): Live {
+    val s = Live().also { it.compare = compare; it.range = range }
+    rule.setContent {
+      val base = LocalDensity.current
+      density = base.density
+      CompositionLocalProvider(LocalDensity provides Density(base.density, s.scale), LocalReduceMotion provides true) {
+        NeuroVidaTheme {
+          Box(Modifier.width(s.width.dp).height(873.dp)) {
+            BoardBackground()
+            ContrarrelojPage(results = s.results, selected = s.selected, onSelect = {}, onBack = {}, now = now, lang = com.example.model.AppLanguage.SPANISH, compare = s.compare, ageRange = s.range)
+          }
+        }
+      }
+    }
+    rule.waitForIdle()
+    return s
+  }
+
+  /** [n] partidas de [game] con la marca de cada una (la última, de esta semana; las demás, de antes). */
+  private fun gamesOf(game: String, n: Int, last: Int = 40): List<TimeTrialResult> = List(n) { i -> if (i == n - 1) r(last, 27, game = game) else r(20 + i, 15 + i, game = game) }
+
+  /** Todo lo de la comparación que NO puede estar con menos de tres partidas. */
+  private val placePieces = listOf("contrarreloj_section_compare", "contrarreloj_section_marks", "contrarreloj_estimated_notice", "contrarreloj_hero", "contrarreloj_ladder", "contrarreloj_bell", "contrarreloj_others", "contrarreloj_percweeks", "contrarreloj_place")
+
+  @Test fun con_una_o_dos_partidas_no_hay_lugar_y_la_frase_va_una_vez_bajo_el_selector_en_una_linea_corrida_sin_negrita() {
+    val s = live(estWorld, AgeRange.R45_54)
+    for (count in 1..2) {
+      s.results = gamesOf("stroop", count); rule.waitForIdle()
+      val b = boxes()
+      assertEquals("con $count partida(s): la frase exacta", "Tu lugar aparece desde tu tercera partida: las primeras sirven para conocer el juego.", n("contrarreloj_early_notice"))
+      assertEquals(Comparison.EARLY_NOTICE, n("contrarreloj_early_notice"))
+      for (tag in placePieces) assertNull("con $count partida(s) no existe «$tag»", b.keys.firstOrNull { it == tag || it.startsWith(tag + "_") })
+      assertNull("sin franja no hay aviso de edad: aquí sí hay franja", b["contrarreloj_age_hint"])
+      assertEquals("la frase se dice UNA sola vez en toda la pantalla", 1, everythingSaid().count { it == Comparison.EARLY_NOTICE })
+      val selectorBottom = games.maxOf { b.getValue("contrarreloj_game_$it").b }
+      assertTrue("va bajo el selector, a 8 dp o más (%.1f)".format(b.getValue("contrarreloj_early_notice").y - selectorBottom), b.getValue("contrarreloj_early_notice").y - selectorBottom >= 7.5f)
+      assertTrue("y antes de las tres cifras de «Tus marcas»", b.getValue("contrarreloj_early_notice").b <= b.getValue("contrarreloj_stats").y - 7.5f)
+      assertEquals("la cabecera dice que se compara solo contigo", com.example.data.TimeTrialMarks.SUBTITLE, n("contrarreloj_subtitle"))
+      assertTrue("y la nota también", n("contrarreloj_note").contains("comparado solo contigo"))
+    }
+    val line = Regex("""Text\(Comparison\.EARLY_NOTICE[^\n]*""").find(src("ui/screens/ContrarrelojPage.kt"))!!.value
+    assertFalse("es una frase corrida: sin negrita", "fontWeight" in line)
+  }
+
+  @Test fun con_cero_partidas_tampoco_hay_lugar_y_la_pagina_dice_que_faltan_marcas() {
+    show(compare = estWorld, ageRange = AgeRange.R45_54, results = emptyList())
+    val b = boxes()
+    assertEquals(Comparison.EARLY_NOTICE, n("contrarreloj_early_notice"))
+    assertNotNull("y la página vacía de siempre", b["contrarreloj_empty"])
+    for (tag in placePieces) assertNull("«$tag»", b[tag])
+  }
+
+  @Test fun desde_la_tercera_partida_todo_se_ve_como_antes_y_la_frase_ya_no_esta() {
+    val s = live(estWorld, AgeRange.R45_54)
+    for (count in listOf(3, 4, 10)) {
+      s.results = gamesOf("stroop", count); rule.waitForIdle()
+      val b = boxes()
+      assertNull("con $count partidas ya no hay frase", b["contrarreloj_early_notice"])
+      assertEquals("y hay lugar: la cifra, la escalera y la campana", 3, listOf("contrarreloj_hero", "contrarreloj_ladder", "contrarreloj_bell").count { b.containsKey(it) })
+      assertNotNull(b["contrarreloj_section_compare"])
+      assertEquals(0, everythingSaid().count { it == Comparison.EARLY_NOTICE })
+    }
+  }
+
+  @Test fun la_cuenta_es_por_juego_y_de_cualquier_semana_y_pista_las_de_otro_juego_no_suman() {
+    val s = live(estWorld, AgeRange.R45_54)
+    // 2 de Tinta + 5 de Rescate: Tinta sigue sin lugar
+    s.results = gamesOf("stroop", 2) + gamesOf("radar", 5, 12); s.selected = "stroop"; rule.waitForIdle()
+    assertNotNull("Tinta con 2 partidas: la frase", boxes()["contrarreloj_early_notice"])
+    // Rescate, con 5, sí tiene lugar
+    s.selected = "radar"; rule.waitForIdle()
+    assertNull(boxes()["contrarreloj_early_notice"]); assertNotNull(boxes()["contrarreloj_hero"])
+    // una partida de la pista vieja y otra de hace semanas cuentan para llegar a tres, aunque no para la marca de esta semana
+    s.results = listOf(r(33, 5, version = 1), r(36, 12), r(40, 27)); s.selected = "stroop"; rule.waitForIdle()
+    assertNull("tres partidas de cualquier pista y semana", boxes()["contrarreloj_early_notice"]); assertNotNull(boxes()["contrarreloj_hero"])
+  }
+
+  @Test fun el_lector_de_pantalla_no_dice_ningun_lugar_con_menos_de_tres_partidas() {
+    show(compare = estWorld, ageRange = AgeRange.R45_54, results = gamesOf("stroop", 2))
+    val said = everythingSaid().joinToString(" | ")
+    for (word in listOf("de cada 100", "Percentil", "percentil", "En órbita", "En la plataforma", "Despegando", "En la Luna", "Entre estrellas", "Te faltan", "Campana", "referencia estimada", "personas", "robot", "Peldaños", "Otras edades"))
+      assertFalse("el lector no dice «$word» con 2 partidas: $said", word in said)
+    assertEquals("dice la frase una sola vez", 1, everythingSaid().count { it == Comparison.EARLY_NOTICE })
+  }
+
+  // ---- la precedencia: sin franja el aviso de edad, de 13 a 17 nada, sin tabla nada, la muestra como la referencia
+
+  @Test fun sin_franja_guardada_manda_el_aviso_de_la_edad_aunque_tenga_menos_de_tres_partidas() {
+    val s = live(estWorld, null)
+    for (count in 0..3) {
+      s.results = gamesOf("stroop", count); rule.waitForIdle()
+      assertEquals("con $count partida(s) y sin franja: el aviso de edad", Comparison.AGE_HINT, n("contrarreloj_age_hint"))
+      assertNull("y no la frase de la tercera partida", boxes()["contrarreloj_early_notice"])
+    }
+  }
+
+  @Test fun de_13_a_17_anos_no_sale_ni_la_frase_ni_el_aviso_con_cualquier_numero_de_partidas() {
+    val s = live(estWorld, AgeRange.R13_17)
+    for (count in 0..3) {
+      s.results = gamesOf("stroop", count); rule.waitForIdle()
+      val b = boxes()
+      assertNull("con $count: sin frase", b["contrarreloj_early_notice"]); assertNull("sin aviso de edad", b["contrarreloj_age_hint"]); assertNull("sin comparación", b["contrarreloj_hero"])
+    }
+  }
+
+  @Test fun en_un_juego_sin_tabla_no_sale_ni_la_frase_ni_el_aviso() {
+    val sinTabla = object : Comparison.Source {
+      override fun distribution(game: String, ranges: List<AgeRange>?, weeksAgo: Int, weeks: Int) = estWorld.distribution(game, ranges, weeksAgo, weeks)
+      override fun covers(game: String) = false
+    }
+    val s = live(sinTabla, AgeRange.R45_54)
+    for (range in listOf(AgeRange.R45_54, null)) for (count in 1..3) {
+      s.range = range; s.results = gamesOf("stroop", count); rule.waitForIdle()
+      val b = boxes()
+      assertNull("sin tabla ($range, $count): sin frase", b["contrarreloj_early_notice"]); assertNull(b["contrarreloj_age_hint"]); assertNull(b["contrarreloj_hero"])
+    }
+  }
+
+  @Test fun con_los_datos_de_muestra_de_depuracion_vale_lo_mismo_que_con_la_referencia() {
+    // sin franja guardada la muestra asume 45 a 54: no hay aviso de edad y sí la frase con menos de tres partidas
+    val s = live(manyWorld, null)
+    s.results = gamesOf("stroop", 2); rule.waitForIdle()
+    assertEquals(Comparison.EARLY_NOTICE, n("contrarreloj_early_notice")); assertNull(boxes()["contrarreloj_age_hint"]); assertNull(boxes()["contrarreloj_hero"])
+    s.results = gamesOf("stroop", 3); rule.waitForIdle()
+    assertNull(boxes()["contrarreloj_early_notice"]); assertNotNull(boxes()["contrarreloj_hero"])
+  }
+
+  private fun assertEarlyNoticeFits(widthDp: Int, scale: Float) {
+    show(widthDp = widthDp, scale = scale, compare = estWorld, ageRange = AgeRange.R45_54, results = gamesOf("stroop", 2))
+    val b = boxes()
+    val notice = b.getValue("contrarreloj_early_notice")
+    val selectorBottom = games.maxOf { b.getValue("contrarreloj_game_$it").b }
+    val next = b.getValue("contrarreloj_stats")
+    assertTrue("a $widthDp dp con letra $scale: bajo el selector a 8 dp o más (%.1f)".format(notice.y - selectorBottom), notice.y - selectorBottom >= 7.5f)
+    assertTrue("y dentro de los márgenes de 16 dp (x %.1f a %.1f)".format(notice.x, notice.r), notice.x >= 15.5f && notice.r <= widthDp - 15.5f)
+    assertTrue("y a 8 dp o más de lo que sigue (%.1f)".format(next.y - notice.b), next.y - notice.b >= 7.5f)
+  }
+
+  @Test fun la_frase_de_la_tercera_partida_cabe_a_393_con_letra_1_0() = assertEarlyNoticeFits(393, 1f)
+  @Test fun la_frase_de_la_tercera_partida_cabe_a_393_con_letra_2_0() = assertEarlyNoticeFits(393, 2f)
+  @Test fun la_frase_de_la_tercera_partida_cabe_a_360_con_letra_1_0() = assertEarlyNoticeFits(360, 1f)
+  @Test fun la_frase_de_la_tercera_partida_cabe_a_360_con_letra_2_0() = assertEarlyNoticeFits(360, 2f)
+
+  // ---------------------------------------------------------------- Tarea 207: el eje de la campana no pone un rótulo bajo la raya de la mitad ni bajo la barra «Tú»
+
+  /** Los rótulos del eje que se dibujan, la raya y la barra, de la campana de [game] en la franja [range] con la marca [mark]; con el ancho y la letra pedidos. */
+  private fun axisOf(s: Live, game: String, range: AgeRange, mark: Int, widthDp: Int, scale: Float = 1f): Triple<Map<Int, Rect>, Rect?, Rect> {
+    s.width = widthDp; s.scale = scale; s.selected = game; s.range = range; s.results = gamesOf(game, 3, mark); rule.waitForIdle()
+    val b = boxes()
+    return Triple((0..3).mapNotNull { i -> b["contrarreloj_bell_axis_$i"]?.let { i to it } }.toMap(), b["contrarreloj_bell_median"], b.getValue("contrarreloj_bell_you_bar"))
+  }
+
+  /** Ningún rótulo INTERMEDIO dibujado tiene la raya o la barra dentro de su caja más 2 dp a cada lado (los extremos se dibujan siempre). */
+  private fun assertAxisClear(label: String, axis: Triple<Map<Int, Rect>, Rect?, Rect>) {
+    val (labels, median, bar) = axis
+    assertTrue("$label: los dos extremos se dibujan siempre (${labels.keys})", 0 in labels && 3 in labels)
+    for ((i, box) in labels) if (i in 1..2) for ((name, other) in listOf("la raya de la mitad" to median, "la barra «Tú»" to bar)) {
+      if (other == null) continue
+      assertTrue("$label: el rótulo $i (x %.1f a %.1f) tiene a $name (x %.1f a %.1f) a menos de 2 dp".format(box.x, box.r, other.x, other.r), other.x >= box.r + 1.9f || other.r <= box.x - 1.9f)
+    }
+  }
+
+  @Test fun Tinta_de_30_a_44_con_la_mitad_en_65_no_dibuja_el_63_ni_a_393_ni_a_360() {
+    val s = live(estWorld, AgeRange.R30_44)
+    val d = estWorld.distribution("stroop", listOf(AgeRange.R30_44), 0, 1)
+    assertEquals("la mitad de Tinta de 30 a 44 años es 65", 65, d.p50); assertEquals(listOf(0, 32, 63, 95), Comparison.axisTicks(d))
+    for (w in listOf(393, 360)) {
+      val axis = axisOf(s, "stroop", AgeRange.R30_44, 58, w)
+      assertEquals("a $w dp el eje queda «0 aciertos · 32 · 95 o más»", setOf(0, 1, 3), axis.first.keys)
+      assertTrue("la raya sí se dibuja (la marca 58 no la tapa)", axis.second != null)
+      assertAxisClear("Tinta 30 a 44, marca 58, $w dp", axis)
+    }
+  }
+
+  @Test fun una_marca_justo_sobre_un_rotulo_lo_oculta_y_el_resto_del_eje_sigue() {
+    val s = live(estWorld, AgeRange.R30_44)
+    // la barra «Tú» de la marca 63 cae sobre el «63» (y a 2 aciertos de la raya, que se sigue viendo)
+    for (w in listOf(393, 360)) {
+      val axis = axisOf(s, "stroop", AgeRange.R30_44, 63, w)
+      assertFalse("a $w dp la barra en 63 oculta el «63»", 2 in axis.first.keys); assertTrue("y el «32» sigue", 1 in axis.first.keys)
+      assertAxisClear("Tinta 30 a 44, marca 63, $w dp", axis)
+    }
+    // la barra de la marca 32 cae sobre el «32»
+    for (w in listOf(393, 360)) {
+      val axis = axisOf(s, "stroop", AgeRange.R30_44, 32, w)
+      assertFalse("a $w dp la barra en 32 oculta el «32»", 1 in axis.first.keys)
+      assertAxisClear("Tinta 30 a 44, marca 32, $w dp", axis)
+    }
+  }
+
+  @Test fun los_extremos_se_dibujan_siempre_aunque_la_barra_caiga_sobre_ellos() {
+    val s = live(estWorld, AgeRange.R30_44)
+    for (mark in listOf(0, 94)) for (w in listOf(393, 360)) {
+      val axis = axisOf(s, "stroop", AgeRange.R30_44, mark, w)
+      assertTrue("marca $mark a $w dp: «0 aciertos» y «95 o más» siguen (${axis.first.keys})", 0 in axis.first.keys && 3 in axis.first.keys)
+    }
+  }
+
+  @Test fun en_todos_los_juegos_y_franjas_ningun_rotulo_intermedio_queda_bajo_la_raya_ni_la_barra_con_letra_1_0_y_2_0() {
+    val s = live(estWorld, AgeRange.R30_44)
+    val failures = mutableListOf<String>()
+    for ((game, marks) in listOf("stroop" to listOf(0, 20, 32, 45, 58, 62, 63, 64, 65, 66, 67, 72, 95), "disparate" to listOf(0, 12, 20, 25, 33, 38, 39, 40, 41, 50, 79), "acoplamiento" to listOf(0, 10, 13, 20, 24, 25, 26, 27, 30, 38), "radar" to listOf(0, 4, 8, 9, 14, 15, 16, 20)))
+      for (range in listOf(AgeRange.R30_44, AgeRange.R75_PLUS)) for (w in listOf(393, 360)) for (scale in listOf(1f, 2f)) for (mark in marks) {
+        val axis = axisOf(s, game, range, mark, w, scale)
+        runCatching { assertAxisClear("$game $range marca $mark a $w dp con letra $scale", axis) }.exceptionOrNull()?.let { failures += it.message.orEmpty() }
+      }
+    assertTrue("rótulos bajo la raya o la barra:\n" + failures.joinToString("\n"), failures.isEmpty())
+  }
+
+  @Test fun el_lector_de_pantalla_no_lee_los_numeros_del_eje_ni_los_de_los_rotulos_omitidos() {
+    show(compare = estWorld, ageRange = AgeRange.R30_44, results = gamesOf("stroop", 3, 58))
+    val bell = everythingSaid().single { it.startsWith("Campana de la referencia estimada") }
+    assertEquals("Campana de la referencia estimada para 30 a 44 años. Tu mejor marca de esta semana, 58 aciertos, está marcada.", bell)
+    val axisNodes = listOf("contrarreloj_bell_axis_0", "contrarreloj_bell_axis_1", "contrarreloj_bell_axis_3").flatMap { tag -> rule.onAllNodes(hasTestTag(tag), useUnmergedTree = true).fetchSemanticsNodes() }
+    assertTrue("los rótulos del eje se ven pero no se leen: no llevan texto en el árbol", axisNodes.size == 3 && axisNodes.all { it.config.getOrNull(SemanticsProperties.Text) == null })
+    for (word in listOf(" 32", " 63", "95 o más")) assertFalse("el lector no dice «$word»: $bell", word in bell)
+  }
 }

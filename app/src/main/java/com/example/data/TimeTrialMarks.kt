@@ -127,8 +127,8 @@ object TimeTrialMarks {
   data class Stat(val figure: String, val label: String)
 
   /**
-   * Las tres cifras de «Tus marcas» (Tarea 203; `auditoria-fable/contrarreloj-rediseno.md` §3.3): el récord («44 · aciertos, tu récord»), la mejor marca de esta semana («43 · aciertos esta semana»; sin partida esta semana, «0 · partidas esta semana») y la tercera: con comparación ([weeksAbove] = «3 de 4»),
-   * «semanas arriba de la mitad»; sin ella, las partidas de esta semana (o, si ya las dice la segunda cifra, las de siempre). Cada cifra con su unidad; nunca un número suelto. Sin récord (sin marcas) la página no usa esta lista.
+   * Las tres cifras de «Tus marcas» (Tarea 203; `auditoria-fable/contrarreloj-rediseno.md` §3.3): el récord («44 · aciertos, tu récord»), la mejor marca de esta semana («43 · aciertos esta semana»; sin partida esta semana, «0 · partidas esta semana») y la tercera: las partidas de esta semana
+   * (o, si ya las dice la segunda cifra, las de siempre); nunca depende de otras personas (la versión de la Tarea 203 con «3 de 4 semanas arriba de la mitad» se quitó en la 203b). Cada cifra con su unidad; nunca un número suelto. Sin récord (sin marcas) la página no usa esta lista.
    */
   fun stats(page: Page): List<Stat> {
     val week = page.thisWeek
@@ -141,7 +141,7 @@ object TimeTrialMarks {
     return listOf(record, second, third)
   }
 
-  /** Para el lector de pantalla: «44 aciertos, tu récord», «3 de 4 semanas arriba de la mitad». */
+  /** Para el lector de pantalla: «44 aciertos, tu récord», «3 partidas esta semana». */
   fun statSpoken(stat: Stat): String = "${stat.figure} ${stat.label}"
 
   /** «Tu récord es del 17 de octubre; llegaste al paso 4 de 5 de la pista.» (bajo las 10 marcas: la fecha y el paso del récord). */

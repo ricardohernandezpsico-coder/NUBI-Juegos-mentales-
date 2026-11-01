@@ -381,4 +381,74 @@ class ContrarrelojFlowTest {
     showFinal(plus = true, onAllMarks = null)
     assertEquals(0, count("btn_timetrial_all_marks"))
   }
+
+  // ---------------------------------------------------------------- Tarea 207: el lugar aparece desde la tercera partida de cada juego
+
+  /** Un ViewModel con el perfil, la franja de 45 a 54 años y [count] partidas del Contrarreloj del juego de HOY, todas de este momento (de esta semana). */
+  private fun withGames(count: Int, plus: Boolean): NeuroVidaViewModel {
+    val repo = (app as NeuroVidaApplication).repository
+    runBlocking { NeuroVidaDatabase.getDatabase(app).userProfileDao().insertOrUpdate(UserSettings(ageBand = AgeBand.ADULT, name = "Ricardo", weeklyGoal = 4).toEntity()) }
+    val vm = NeuroVidaViewModel(app).also { viewModels.add(it) }
+    vm.setPlus(plus); vm.setAgeRange(com.example.model.AgeRange.R45_54)
+    TestSupport.awaitUntil(30_000) { vm.ageRange.value == com.example.model.AgeRange.R45_54 }
+    repeat(count) { recordToday(vm, repo, it) }
+    if (count > 0) TestSupport.awaitUntil(30_000) { vm.timeTrialResults.value.size >= count }
+    TestSupport.awaitUntil(30_000, "La referencia estimada no se cargó") { vm.estimatedReference.value != null }
+    vm.setTab(AppTab.PROGRESO)
+    return vm
+  }
+
+  private fun recordToday(vm: NeuroVidaViewModel, repo: com.example.data.NeuroVidaRepository, i: Int) {
+    val today = TimeTrialDay.gameFor(vm.todayKey())
+    runBlocking { repo.recordTimeTrial(TimeTrialResult(id = "t207-$i", gameId = today, day = vm.todayKey(), trackVersion = TimeTrialDay.trackVersion(today), hits = 101, errors = 2, level = 5, seconds = 120, timestamp = System.currentTimeMillis() - (10 - i) * 1000L)) }
+  }
+
+  private fun freeNodes() = rule.onAllNodes(hasTestTag("avance_contrarreloj_free"), useUnmergedTree = true).fetchSemanticsNodes().size
+
+  @Test
+  fun sin_Plus_la_puerta_calla_con_menos_de_tres_partidas_del_juego_de_hoy_y_habla_desde_la_tercera() {
+    val vm = withGames(2, plus = false)
+    val repo = (app as NeuroVidaApplication).repository
+    show(vm)
+    assertEquals("con dos partidas la puerta calla, como sin franja de edad", 0, freeNodes())
+    val spoken = rule.onNodeWithTag("avance_contrarreloj_door").fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString(". ")?.replace(NBSP, " ").orEmpty()
+    assertEquals("y se lee solo el récord y el candado", "Tus marcas del Contrarreloj. Tu récord de hoy: 99 aciertos. Con Nubi Plus.", spoken)
+    assertEquals("el candado sigue", 1, rule.onAllNodes(hasTestTag("avance_contrarreloj_lock"), useUnmergedTree = true).fetchSemanticsNodes().size)
+    recordToday(vm, repo, 2)
+    TestSupport.awaitUntil(30_000) { vm.timeTrialResults.value.size >= 3 }
+    rule.waitForIdle()
+    assertEquals("con la tercera, la frase gratis de siempre", 1, freeNodes())
+    assertEquals("Esta semana estás Entre estrellas en la referencia estimada para tu edad, la división más alta.", textOf("avance_contrarreloj_free").replace(NBSP, " "))
+  }
+
+  @Test
+  fun con_Plus_la_pagina_dice_la_frase_con_dos_partidas_y_el_lugar_desde_la_tercera() {
+    val vm = withGames(2, plus = true)
+    val repo = (app as NeuroVidaApplication).repository
+    vm.openContrarreloj()
+    show(vm)
+    assertEquals("Tu lugar aparece desde tu tercera partida: las primeras sirven para conocer el juego.", textOf("contrarreloj_early_notice").replace(NBSP, " "))
+    assertEquals("sin lugar: ni cifra ni escalera ni campana", 0, count("contrarreloj_hero") + count("contrarreloj_ladder") + count("contrarreloj_bell"))
+    recordToday(vm, repo, 2)
+    TestSupport.awaitUntil(30_000) { vm.timeTrialResults.value.size >= 3 }
+    rule.waitForIdle()
+    assertEquals("con la tercera ya no está la frase", 0, rule.onAllNodes(hasTestTag("contrarreloj_early_notice"), useUnmergedTree = true).fetchSemanticsNodes().size)
+    assertEquals("y aparece el lugar", 1, rule.onAllNodes(hasTestTag("contrarreloj_hero"), useUnmergedTree = true).fetchSemanticsNodes().size)
+  }
+
+  @Test
+  fun sin_franja_la_pagina_dice_donde_elegirla_aunque_tenga_menos_de_tres_partidas() {
+    val repo = (app as NeuroVidaApplication).repository
+    runBlocking { NeuroVidaDatabase.getDatabase(app).userProfileDao().insertOrUpdate(UserSettings(ageBand = AgeBand.ADULT, name = "Ricardo", weeklyGoal = 4).toEntity()) }
+    val vm = NeuroVidaViewModel(app).also { viewModels.add(it) }
+    vm.setPlus(true)
+    recordToday(vm, repo, 0)
+    TestSupport.awaitUntil(30_000) { vm.timeTrialResults.value.size >= 1 }
+    TestSupport.awaitUntil(30_000, "La referencia estimada no se cargó") { vm.estimatedReference.value != null }
+    assertNull(vm.ageRange.value)
+    vm.setTab(AppTab.PROGRESO); vm.openContrarreloj()
+    show(vm)
+    assertEquals(1, rule.onAllNodes(hasTestTag("contrarreloj_age_hint"), useUnmergedTree = true).fetchSemanticsNodes().size)
+    assertEquals("y no la frase de la tercera partida", 0, rule.onAllNodes(hasTestTag("contrarreloj_early_notice"), useUnmergedTree = true).fetchSemanticsNodes().size)
+  }
 }

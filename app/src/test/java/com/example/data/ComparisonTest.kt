@@ -4,6 +4,7 @@ import com.example.Features
 import com.example.model.AgeRange
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -364,8 +365,7 @@ class ComparisonTest {
    */
   @Test
   fun `las tablas del APK dan los cinco peldaños en las seis franjas de Tinta, Disparate y Acoplamiento`() {
-    val dir = java.io.File("src/main/assets/${EstimatedReference.ASSET_DIR}")
-    val reference = EstimatedReference.of(dir.listFiles { f -> f.extension == "json" }.orEmpty().map { it.readText(Charsets.UTF_8) })
+    val reference = realReference
     val all = Comparison.Division.entries
     for (game in listOf("stroop", "disparate", "acoplamiento")) {
       val table = reference.loaded.single { it.game == game }
@@ -682,6 +682,138 @@ class ComparisonTest {
     assertNull("sin partida esta semana no hay nada que decir", Comparison.freeSentenceFor(src, "stroop", AgeRange.R45_54, listOf(r(43, 20)), now))
     assertNull("ni con otro juego", Comparison.freeSentenceFor(src, "stroop", AgeRange.R45_54, listOf(r(43, 27, game = "disparate")), now))
     assertNull("con pocos tampoco: nada de te faltan sin datos", Comparison.freeSentenceFor(SampleComparison(SampleComparison.World.VERY_FEW), "stroop", AgeRange.R45_54, listOf(r(43, 27)), now))
+  }
+
+  // ------------------------------------------------------------------ el lugar aparece desde la tercera partida de cada juego (Tarea 207)
+
+  /** Una fuente que SÍ tiene con qué comparar los cuatro juegos (la forma de una referencia estimada: 2.000 robots, todos en el tramo del medio). */
+  private val referenceLike = object : Comparison.Source {
+    override fun distribution(game: String, ranges: List<AgeRange>?, weeksAgo: Int, weeks: Int) = Comparison.Distribution(2000, List(16) { if (it == 8) 2000 else 0 }, 40, 40, 40, binWidth = 5, estimated = true)
+  }
+
+  /** [n] partidas guardadas de [game], de semanas y pistas cualesquiera. */
+  private fun saved(game: String, n: Int, version: Int = 2) =
+    List(n) { i -> TimeTrialResult(id = "g$game$version$i", gameId = game, day = "2026-09-%02d".format(1 + i), trackVersion = version, hits = 30 + i, errors = 2, level = 4, timestamp = 1_000L * (i + 1)) }
+
+  @Test
+  fun `la regla cuenta por juego, la tercera partida ya muestra y los cortes son 0, 1, 2 y 3`() {
+    assertEquals(3, Comparison.PLACE_FROM_GAME)
+    for ((n, unlocked) in listOf(0 to false, 1 to false, 2 to false, 3 to true, 4 to true, 20 to true)) {
+      assertEquals("con $n partida(s) guardada(s)", n, Comparison.gamesPlayed(saved("stroop", n), "stroop"))
+      assertEquals("con $n: ¿se dice el lugar?", unlocked, Comparison.placeUnlocked(saved("stroop", n), "stroop"))
+      assertEquals("con $n: la regla de la página", if (unlocked) Comparison.Gate.SHOW else Comparison.Gate.EARLY, Comparison.gate(referenceLike, AgeRange.R45_54, "stroop", saved("stroop", n)))
+    }
+  }
+
+  @Test
+  fun `cuentan las partidas de cualquier semana y pista, y las de otro juego no suman`() {
+    val mixed = saved("stroop", 1) + saved("stroop", 1, version = 1) + saved("disparate", 9) + saved("radar", 9)
+    assertEquals("dos de Tinta (una de la pista vieja) y nada de los otros juegos", 2, Comparison.gamesPlayed(mixed, "stroop"))
+    assertEquals(Comparison.Gate.EARLY, Comparison.gate(referenceLike, AgeRange.R45_54, "stroop", mixed))
+    assertEquals("con la tercera, de cualquier pista, ya se dice", Comparison.Gate.SHOW, Comparison.gate(referenceLike, AgeRange.R45_54, "stroop", mixed + saved("stroop", 1, version = 3).map { it.copy(id = "otra") }))
+    assertEquals("la cuenta de ¿Verdad o disparate? es suya", Comparison.Gate.SHOW, Comparison.gate(referenceLike, AgeRange.R45_54, "disparate", mixed))
+    assertEquals("y la de Acoplamiento, que no jugó, empieza en cero", Comparison.Gate.EARLY, Comparison.gate(referenceLike, AgeRange.R45_54, "acoplamiento", mixed))
+  }
+
+  @Test
+  fun `la precedencia, sin franja el aviso de edad, de 13 a 17 nada, sin tabla nada y la muestra como la referencia`() {
+    for (n in 0..3) {
+      assertEquals("sin franja guardada, con $n: el aviso de edad", Comparison.Gate.NEEDS_AGE, Comparison.gate(referenceLike, null, "stroop", saved("stroop", n)))
+      assertEquals("de 13 a 17 años, con $n: nada", Comparison.Gate.NONE, Comparison.gate(referenceLike, AgeRange.R13_17, "stroop", saved("stroop", n)))
+      assertEquals("sin ninguna fuente, con $n: nada", Comparison.Gate.NONE, Comparison.gate(null, AgeRange.R45_54, "stroop", saved("stroop", n)))
+      assertEquals("sin ninguna fuente y sin franja, con $n: nada", Comparison.Gate.NONE, Comparison.gate(null, null, "stroop", saved("stroop", n)))
+    }
+    val sinTabla = object : Comparison.Source {
+      override fun distribution(game: String, ranges: List<AgeRange>?, weeksAgo: Int, weeks: Int) = referenceLike.distribution(game, ranges, weeksAgo, weeks)
+      override fun covers(game: String) = false
+    }
+    for (n in 0..3) for (range in listOf(null, AgeRange.R45_54)) assertEquals("en un juego sin tabla ($range), con $n: nada", Comparison.Gate.NONE, Comparison.gate(sinTabla, range, "stroop", saved("stroop", n)))
+    // con la muestra de depuración sin franja guardada se asume 45 a 54: no hay aviso de edad, vale lo mismo que con la referencia
+    val sample = SampleComparison(few = false)
+    for (n in 0..2) assertEquals("muestra, sin franja, con $n", Comparison.Gate.EARLY, Comparison.gate(sample, null, "stroop", saved("stroop", n)))
+    assertEquals("muestra, sin franja, con 3", Comparison.Gate.SHOW, Comparison.gate(sample, null, "stroop", saved("stroop", 3)))
+    assertEquals("muestra, de 13 a 17 años: nada", Comparison.Gate.NONE, Comparison.gate(sample, AgeRange.R13_17, "stroop", saved("stroop", 3)))
+  }
+
+  @Test
+  fun `la puerta de Avance calla con menos de tres partidas del juego y habla desde la tercera`() {
+    val now = java.util.Calendar.getInstance().apply { set(2026, java.util.Calendar.OCTOBER, 28, 18, 0, 0); set(java.util.Calendar.MILLISECOND, 0) }.timeInMillis
+    fun at(day: Int) = java.util.Calendar.getInstance().apply { set(2026, java.util.Calendar.OCTOBER, day, 12, 0, 0); set(java.util.Calendar.MILLISECOND, 0) }.timeInMillis
+    fun r(mark: Int, day: Int, game: String = "stroop") = TimeTrialResult(id = "r$game$day$mark", gameId = game, day = "2026-10-%02d".format(day), trackVersion = 2, hits = mark + 2, errors = 2, level = 4, timestamp = at(day))
+    val src = SampleComparison(few = false)
+    assertNull("con una partida esta semana, la puerta calla", Comparison.freeSentenceFor(src, "stroop", AgeRange.R45_54, listOf(r(43, 27)), now))
+    assertNull("con dos, también", Comparison.freeSentenceFor(src, "stroop", AgeRange.R45_54, listOf(r(30, 13), r(43, 27)), now))
+    assertNull("y las de otro juego no suman", Comparison.freeSentenceFor(src, "stroop", AgeRange.R45_54, listOf(r(43, 27), r(30, 13, "disparate"), r(31, 14, "disparate"), r(32, 15, "disparate")), now))
+    assertEquals("con la tercera, la frase de siempre", "Esta semana estás En órbita. Te faltan 7 aciertos para En la Luna.", Comparison.freeSentenceFor(src, "stroop", AgeRange.R45_54, listOf(r(30, 13), r(43, 27), r(40, 28)), now))
+  }
+
+  @Test
+  fun `la frase de la tercera partida es la exacta y no usa las palabras que no se dicen`() {
+    assertEquals("Tu lugar aparece desde tu tercera partida: las primeras sirven para conocer el juego.", Comparison.EARLY_NOTICE)
+    val low = Comparison.EARLY_NOTICE.lowercase()
+    for (bad in listOf("personas", "robot", "capacidad", "cognitiv", "cerebro", "percentil", "ranking", "velocidad", "entrenamiento")) assertFalse("la frase dice «$bad»", bad in low)
+    assertTrue(Comparison.EARLY_NOTICE.endsWith("."))
+    assertNotEquals("y no es el aviso de la edad", Comparison.AGE_HINT, Comparison.EARLY_NOTICE)
+  }
+
+  // ------------------------------------------------------------------ los rótulos del eje de la campana (Tarea 207)
+
+  /** Las tablas REALES del APK, como las lee la app. */
+  private val realReference: EstimatedReference by lazy {
+    val dir = java.io.File("src/main/assets/${EstimatedReference.ASSET_DIR}")
+    EstimatedReference.of(dir.listFiles { f -> f.extension == "json" }.orEmpty().map { it.readText(Charsets.UTF_8) })
+  }
+
+  @Test
+  fun `Tinta de 30 a 44 con la mitad en 65 no dibuja el 63, ni a 393 ni a 360 dp`() {
+    val d = realReference.distribution("stroop", listOf(AgeRange.R30_44), 0, 1)
+    assertEquals(65, d.p50); assertEquals(listOf(0, 32, 63, 95), Comparison.axisTicks(d))
+    // anchos de «0 aciertos», «32», «63» y «95 o más» en 14 sp, en dp; el dibujo mide 305 dp a 393 y 272 a 360
+    val widths = listOf(66.0, 16.5, 16.5, 52.0)
+    for (width in listOf(305.0, 272.0)) {
+      assertEquals("a $width dp: «0 aciertos · 32 · 95 o más»", listOf(0, 1, 3), Comparison.axisLabelsFor(d, 58, onHalf = false, widthDp = width, labelWidthsDp = widths))
+    }
+  }
+
+  @Test
+  fun `una marca justo sobre un rotulo lo oculta, y los extremos se dibujan siempre`() {
+    val d = realReference.distribution("stroop", listOf(AgeRange.R30_44), 0, 1)
+    val widths = listOf(66.0, 16.5, 16.5, 52.0)
+    // la barra «Tú» de 63 cae sobre el «63» (la raya, en 65, también); la de 32 sobre el «32»
+    assertEquals(listOf(0, 1, 3), Comparison.axisLabelsFor(d, 63, onHalf = false, widthDp = 305.0, labelWidthsDp = widths))
+    assertEquals("con la barra en 32 no queda ningún intermedio: el 63 sigue bajo la raya", listOf(0, 3), Comparison.axisLabelsFor(d, 32, onHalf = false, widthDp = 305.0, labelWidthsDp = widths))
+    // un intermedio lejos de la barra y de la raya se dibuja
+    assertEquals("con la barra en 45 se ven los dos extremos y el 32", listOf(0, 1, 3), Comparison.axisLabelsFor(d, 45, onHalf = false, widthDp = 305.0, labelWidthsDp = widths))
+    // los extremos nunca se quitan, aunque la barra caiga sobre ellos
+    for (mark in listOf(0, 1, 94, 99)) { val shown = Comparison.axisLabelsFor(d, mark, onHalf = false, widthDp = 305.0, labelWidthsDp = widths); assertTrue("marca $mark: $shown", 0 in shown && 3 in shown) }
+  }
+
+  @Test
+  fun `si la barra tapa la raya y la raya no se dibuja, cuenta solo la barra`() {
+    // «N o más» queda lejos; los dos intermedios están en 40 y 100; la caja del segundo, con 2 dp de aire, va de 98 a 118
+    val starts = listOf(0.0, 40.0, 100.0, 240.0); val widths = listOf(30.0, 16.0, 16.0, 40.0)
+    val line = 98.5 to Comparison.BELL_LINE_DP          // el centro de la raya cae dentro de la caja del segundo rótulo más 2 dp
+    val bar = 93.5 to Comparison.BELL_BAR_DP            // y la barra «Tú», a 5 dp a su izquierda, no la toca (termina en 96,5)
+    assertEquals("con la raya dibujada, el segundo rótulo se oculta", listOf(0, 1, 3), Comparison.axisLabelsShown(starts, widths, 8.0, listOf(bar, line), 2.0))
+    assertEquals("sin la raya (la tapa la barra), solo cuenta la barra y el rótulo se dibuja", listOf(0, 1, 2, 3), Comparison.axisLabelsShown(starts, widths, 8.0, listOf(bar), 2.0))
+  }
+
+  @Test
+  fun `el aire de 2 dp se mide con la raya y la barra enteras, y un hueco menor de 8 dp sigue quitando el del medio`() {
+    val starts = listOf(0.0, 40.0, 100.0, 240.0); val widths = listOf(30.0, 16.0, 16.0, 40.0)
+    // una raya de 1,5 dp a 2 dp justos de la caja del segundo rótulo (que empieza en 100): la toca con el aire; a más de 2,75 dp ya no
+    assertTrue("raya a 97,2 (termina en 97,95, a 2,05 dp de la caja): no toca y el rótulo se dibuja", 2 in Comparison.axisLabelsShown(starts, widths, 8.0, listOf(97.2 to 1.5), 2.0))
+    assertFalse("raya a 98,0 (termina en 98,75, a 1,25 dp de la caja): toca y el rótulo se oculta", 2 in Comparison.axisLabelsShown(starts, widths, 8.0, listOf(98.0 to 1.5), 2.0))
+    // la regla de siempre: los rótulos que se pisan (con 8 dp de hueco) se omiten, el de la derecha antes que el de la izquierda
+    assertEquals(listOf(0, 3), Comparison.axisLabelsShown(listOf(0.0, 50.0, 100.0, 150.0), listOf(70.0, 70.0, 70.0, 70.0), 8.0, emptyList(), 2.0))
+    assertEquals("con espacio caben los cuatro", listOf(0, 1, 2, 3), Comparison.axisLabelsShown(starts, widths, 8.0, emptyList(), 2.0))
+  }
+
+  @Test
+  fun `los cinco peldaños y el eje salen de la misma tabla, el rotulo omitido nunca cambia la escalera`() {
+    // omitir un rótulo del eje es solo dibujo: la escalera y la mitad no dependen de él
+    val d = realReference.distribution("stroop", listOf(AgeRange.R30_44), 0, 1)
+    assertEquals(listOf(0, 58, 65, 72, 78), Comparison.thresholds(d).map { it.from })
   }
 
   // ------------------------------------------------------------------ la barra «Tú» sobre la raya de la mitad (Tarea 205b)

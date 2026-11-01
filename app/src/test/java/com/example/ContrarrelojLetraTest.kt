@@ -146,7 +146,7 @@ class ContrarrelojLetraTest {
     val problems = mutableListOf<String>()
     var checked = 0
     for (mark in listOf(36, 46, 58, 70)) for (w in listOf(393, 360)) for (s in listOf(1f, 1.3f, 2f)) {
-      results = listOf(r(mark)); width = w; scale = s
+      results = listOf(r(1, 20), r(1, 21), r(mark)); width = w; scale = s       // desde la tercera partida guardada del juego se dice el lugar (Tarea 207): dos anteriores flojas y la de la prueba
       rule.waitForIdle()
       if (mark < 63) assertTrue("con la marca $mark la escalera dice «Te faltan N aciertos»: ${textOf("contrarreloj_ladder_need")}", "Te falta" in textOf("contrarreloj_ladder_need"))
       cutsOnScreen().forEach { problems += "marca $mark a $w dp con letra $s: $it" }
