@@ -39,7 +39,28 @@ object PlusAccess {
     "Tus marcas: el récord, las últimas 10 y tu ritmo en los 2 minutos."
   )
 
-  fun sheetLead(compared: Boolean): String = if (compared) SHEET_LEAD_COMPARED else SHEET_LEAD
-  fun sheetItems(compared: Boolean): List<String> = if (compared) SHEET_ITEMS_COMPARED else SHEET_ITEMS
-  const val SHEET_OK = "Entendido"
+  /**
+   * Con la REFERENCIA ESTIMADA (Tarea 205; §4 de Fable y decisión de Opus del 1-nov): la hoja la nombra («referencia estimada», nunca «personas») y NO promete nada más: ningún texto dice que luego se compare con personas reales.
+   */
+  const val SHEET_LEAD_ESTIMATED = "Una página con todas tus marcas, comparadas contigo y con una referencia estimada para tu edad:"
+  val SHEET_ITEMS_ESTIMATED: List<String> = listOf(
+    "Tu lugar en una referencia estimada para tu edad: cuántas de cada 100 marcas superas y en qué división estás.",
+    "La escalera de divisiones con su primer acierto, y tus semanas seguidas arriba de la mitad.",
+    "Tus marcas: el récord, las últimas 10 y tu ritmo en los 2 minutos."
+  )
+
+  fun sheetLead(kind: Comparison.Kind): String = when (kind) {
+    Comparison.Kind.NONE -> SHEET_LEAD
+    Comparison.Kind.ESTIMATED -> SHEET_LEAD_ESTIMATED
+    Comparison.Kind.PEOPLE -> SHEET_LEAD_COMPARED
+  }
+
+  fun sheetItems(kind: Comparison.Kind): List<String> = when (kind) {
+    Comparison.Kind.NONE -> SHEET_ITEMS
+    Comparison.Kind.ESTIMATED -> SHEET_ITEMS_ESTIMATED
+    Comparison.Kind.PEOPLE -> SHEET_ITEMS_COMPARED
+  }
+
+  /** El botón de la hoja (Tarea 205): «Cerrar», no «Entendido»: en un panel de prueba «Entendido» se leyó como «acepto» y alguien creyó que ya había pagado. El precio y la compra llegan con Google Play Billing (Etapa 4). */
+  const val SHEET_OK = "Cerrar"
 }

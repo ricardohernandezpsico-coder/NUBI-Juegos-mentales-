@@ -332,12 +332,43 @@ class ComparisonTest {
   }
 
   @Test
-  fun `la build de la tienda no tiene comparacion y la de depuracion usa solo datos de muestra`() {
+  fun `sin la referencia estimada la tienda no tiene comparacion y la depuracion usa solo datos de muestra`() {
     assertFalse("Features.COMPARE sigue apagada: no hay servidor", Features.COMPARE)
     for (world in SampleComparison.World.entries) {
-      assertNull("release: ninguna fuente, la sección no existe ($world)", Comparison.sourceFor(debugBuild = false, world = world))
-      assertTrue("depuración: los datos de muestra ($world)", Comparison.sourceFor(debugBuild = true, world = world) is SampleComparison)
+      assertNull("release sin tablas: ninguna fuente, la sección no existe ($world)", Comparison.sourceFor(debugBuild = false, world = world))
+      if (world == SampleComparison.World.REFERENCE) assertNull("depuración con «referencia» y sin tablas: tampoco", Comparison.sourceFor(debugBuild = true, world = world))
+      else assertTrue("depuración: los datos de muestra ($world)", Comparison.sourceFor(debugBuild = true, world = world) is SampleComparison)
     }
+  }
+
+  @Test
+  fun `con la referencia estimada la tienda SI compara y la depuracion de fabrica ve lo mismo que la tienda`() {
+    val est = Comparison.Distribution(2000, List(16) { if (it == 8) 2000 else 0 }, 40, 40, 40, binWidth = 5, estimated = true)
+    val fake = object : Comparison.Source {
+      override fun distribution(game: String, ranges: List<AgeRange>?, weeksAgo: Int, weeks: Int) = est
+    }
+    for (world in SampleComparison.World.entries) {
+      val store = Comparison.sourceFor(debugBuild = false, world = world, estimated = fake)
+      assertNotNull("la tienda compara con la referencia, sea cual sea el mundo de depuración ($world)", store)
+      assertEquals(Comparison.Kind.ESTIMATED, Comparison.kindOf(store))
+    }
+    assertEquals("de fábrica la depuración es la tienda", Comparison.Kind.ESTIMATED, Comparison.kindOf(Comparison.sourceFor(true, SampleComparison.World.REFERENCE, fake)))
+    assertEquals("los otros mundos siguen siendo la muestra, con su línea", Comparison.Kind.PEOPLE, Comparison.kindOf(Comparison.sourceFor(true, SampleComparison.World.MANY, fake)))
+    assertEquals(Comparison.Kind.NONE, Comparison.kindOf(null as Comparison.Source?))
+    assertEquals("el primer mundo de la lista es la referencia: el de fábrica", SampleComparison.World.REFERENCE, SampleComparison.World.entries.first())
+  }
+
+  @Test
+  fun `la fuente compuesta usa la real con 50 personas o mas y la estimada si no`() {
+    fun d(n: Int, estimated: Boolean) = Comparison.Distribution(n, List(16) { if (it == 3) n else 0 }, 15, 15, 15, estimated = estimated)
+    val est = object : Comparison.Source { override fun distribution(game: String, ranges: List<AgeRange>?, weeksAgo: Int, weeks: Int) = d(2000, true) }
+    fun real(n: Int) = object : Comparison.Source { override fun distribution(game: String, ranges: List<AgeRange>?, weeksAgo: Int, weeks: Int) = d(n, false) }
+    assertFalse("con 50 personas reales manda la real", Comparison.ComposedSource(real(50), est).distribution("stroop", listOf(AgeRange.R45_54), 0, 1).estimated)
+    assertTrue("con 49 sigue la referencia", Comparison.ComposedSource(real(49), est).distribution("stroop", listOf(AgeRange.R45_54), 0, 1).estimated)
+    assertTrue("sin servidor (hoy) manda la estimada", Comparison.ComposedSource(null, est).distribution("stroop", listOf(AgeRange.R45_54), 0, 1).estimated)
+    assertEquals("sin ninguna fuente queda vacía", 0, Comparison.ComposedSource(null, null).distribution("stroop", null, 0, 1).people)
+    assertTrue("cubre un juego si lo cubre alguna", Comparison.ComposedSource(null, est).covers("stroop"))
+    assertFalse("y no lo cubre si ninguna lo cubre", Comparison.ComposedSource(null, null).covers("stroop"))
   }
 
   // ------------------------------------------------------------------ la sección entera, con las partidas de la persona
@@ -413,6 +444,47 @@ class ComparisonTest {
       for (bad in listOf("capacidad", "edad mental", "ranking", "velocidad", "rendimiento", "cerebro", "cognitiv", "entren", "puntaje", "nivel"))
         assertFalse("«$line» dice «$bad»", bad in low)
     }
+  }
+
+  @Test
+  fun `con la referencia estimada ninguna frase dice personas, termina en punto y no usa las palabras que no se dicen`() {
+    val lines = mutableListOf<String>()
+    val d = Comparison.Distribution(2000, SampleComparison.fit(base, 2000), 31, 39, 47, estimated = true)
+    for (mark in listOf(0, 7, 43, 90)) for (range in AgeRange.entries) {
+      val r = Comparison.Ranked(mark, Comparison.percentile(mark, d), Comparison.division(Comparison.percentile(mark, d)), Comparison.Scope.OWN_WEEK, listOf(range), d)
+      val l = Comparison.ladder(r)
+      lines += listOf(
+        Comparison.heroCaption(r, range, "Tinta o Palabra"), Comparison.heroCaption(r, range, "Tinta o Palabra", withUnit = true), Comparison.heroSpoken(r, range, "Tinta o Palabra"),
+        Comparison.needSentence(l, r), Comparison.ladderNote(r, range), Comparison.bellSpoken(r), Comparison.bellSpoken(r, range)
+      )
+      Comparison.freeSentence(Comparison.Place.Found(r))?.let { lines += it }
+    }
+    lines += listOf(Comparison.ESTIMATED_BELL_CAPTION, Comparison.WEEKS_ESTIMATED_NOTE, Comparison.noMarkSentence("Tinta o Palabra", estimated = true))
+    for (k in 1..7) lines += Comparison.weeksSpoken(List(k) { Comparison.WeekPoint(it, 20, 50) }, estimated = true)
+    val lead = Comparison.othersLead("Tinta o Palabra", estimated = true)       // el encabezado de «Otras edades» cierra con dos puntos
+    assertTrue(lead.endsWith(":"))
+    lines += lead
+    for (line in lines) {
+      assertTrue("«$line» termina en punto o dos puntos", line.endsWith(".") || line == lead)
+      val low = line.lowercase()
+      assertFalse("«$line» llama personas a la referencia", "personas" in low || "persona " in low)
+      assertFalse("«$line» dice un número de robots", "robot" in low || "2000" in low || "2.000" in low)
+      for (bad in listOf("capacidad", "edad mental", "ranking", "velocidad", "rendimiento", "cerebro", "cognitiv", "entren", "puntaje", "nivel", "todavía somos pocos", "mientras tanto", "todas las edades", "cuando lleguen"))
+        assertFalse("«$line» dice «$bad»", bad in low)
+    }
+    assertTrue("la hoja y la frase larga sí la nombran", lines.any { "referencia estimada" in it })
+  }
+
+  @Test
+  fun `la frase larga de la referencia dice de donde sale y que no son personas, una sola vez y sin prometer el cambio`() {
+    for (range in AgeRange.entries) {
+      val s = Comparison.estimatedNotice(range)
+      assertEquals("Referencia estimada para ${range.label}: sale de estudios por edad y de un programa que jugó esta misma pista en un computador, no en tu teléfono. No son personas.", s)
+      val low = s.lowercase()
+      for (promise in listOf("luego", "pronto", "cuando haya", "cuando lleguen", "reales", "después", "más adelante", "mientras", "todavía")) assertFalse("la frase larga promete «$promise»", promise in low)
+      assertEquals("«No son personas.» es la única vez que se nombra a las personas", 1, Regex("personas").findAll(low).count())
+    }
+    assertEquals("el título de la campana es el de siempre (el largo partía en dos líneas)", "La campana de tu edad", Comparison.BELL_TITLE)
   }
 
   // ------------------------------------------------------------------ la escalera de divisiones (Tarea 203)

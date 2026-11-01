@@ -134,8 +134,9 @@ namespace NeuroVida.Games.Tests
                 int top = AgeReference.BinWidth(g) * AgeReference.BinCount(g);
                 var young = t.Ranges[0];
                 Assert.Less(young.P90, top, g + ": el p90 de los más jóvenes cabe dentro de los 16 tramos");
-                // con 24 tramos de a 1 Rescate relámpago (0 a 23) ya no junta a los jóvenes en el último tramo, como pasaba con 16 (0 a 15: del 21 al 29 %)
-                Assert.Less(young.Bins[AgeReference.BinCount(g) - 1] / (double)young.People, 0.25, g + ": el último tramo no es donde se amontona la gente (los tramos cubren la marca máxima razonable)");
+                // Rescate relámpago (decisión de Opus, 1-nov): su último tramo («N o más») junta a MENOS del 1 % de los robots de 18 a 29 años; con 16 tramos de a 1 (0 a 15) juntaba del 21 al 29 %, con 24 (0 a 23) no junta a nadie. Los otros tres siguen con el 25 %
+                double lastShare = young.Bins[AgeReference.BinCount(g) - 1] / (double)young.People;
+                Assert.Less(lastShare, g == "radar" ? 0.01 : 0.25, g + ": el último tramo no es donde se amontona la gente (los tramos cubren la marca máxima razonable)");
             }
         }
 

@@ -91,13 +91,15 @@ fun ProgressScreen(
   val contrarrelojOpen = contrarreloj != null && plus                              // sin Plus no hay página: si quedó abierta (el interruptor cambió), se ve la lista
   if (contrarrelojOpen) BackHandler(onBack = viewModel::closeContrarreloj)
   val ttNow = remember(ttResults) { System.currentTimeMillis() }
-  val doorCompare = remember(compareWorld) { com.example.data.Comparison.sourceFor(com.example.BuildConfig.DEBUG, compareWorld) }       // la comparación disponible en ESTA build (null en la tienda): la puerta y su hoja dicen solo lo que hay
+  // La comparación disponible en ESTA build: la REFERENCIA ESTIMADA del APK (Tarea 205; también en la tienda) o, en depuración, los datos de muestra que elija «[Debug] Comparación»; null si no hay con qué comparar. La puerta y su hoja dicen solo lo que hay.
+  val estimatedReference = remember { com.example.data.EstimatedReference.get(context).takeIf { it.loaded.isNotEmpty() } }      // sin tablas en el APK no hay comparación (nunca una fuente vacía que diga «referencia estimada» sin nada)
+  val doorCompare = remember(compareWorld) { com.example.data.Comparison.sourceFor(com.example.BuildConfig.DEBUG, compareWorld, estimatedReference) }
 
   Column(modifier.fillMaxSize().padding(bottom = com.example.ui.components.LocalBarInset.current)) {      // la franja de la barra de pestañas queda libre
     val ttOpen = contrarreloj
     if (ttOpen != null && contrarrelojOpen) {
       // La comparación con personas de tu edad (Tarea 202): `Comparison.sourceFor` es null en la build de la tienda y mientras no haya servidor; en depuración, datos de muestra (la página lo dice con una frase visible).
-      val compare = remember(compareWorld) { com.example.data.Comparison.sourceFor(com.example.BuildConfig.DEBUG, compareWorld) }
+      val compare = doorCompare
       ContrarrelojPage(results = ttResults, selected = ttOpen, onSelect = viewModel::selectContrarrelojGame, onBack = viewModel::closeContrarreloj, now = ttNow, lang = currentLang, compare = compare, ageRange = ageRange)
       return@Column
     }
@@ -177,7 +179,7 @@ fun ProgressScreen(
     }
   }
 
-  if (plusSheet) PlusLockSheet(onDismiss = { plusSheet = false }, compared = doorCompare != null)       // sin Plus: qué trae la página, con «Entendido» (la compra llega con Google Play Billing, Etapa 4)
+  if (plusSheet) PlusLockSheet(onDismiss = { plusSheet = false }, kind = com.example.data.Comparison.kindOf(doorCompare))       // sin Plus: qué trae la página, con «Entendido» (la compra llega con Google Play Billing, Etapa 4)
 }
 
 /** La puerta del Contrarreloj con el récord del juego de HOY (el mismo de Hoy); 2 dp de aire propio arriba y abajo sobre los 22 dp entre secciones (24 dp hasta cada vecina). Con Plus abre la página con el juego de hoy elegido; sin Plus, [onLocked]. */

@@ -472,7 +472,7 @@ class NeuroVidaRepository(
   }
 
   // Datos de muestra de la comparación (Tareas 202 y 202b, `Comparison.sourceFor`): ¿«muchos», «pocos» o «muy pocos»? Solo lo mueve el botón «[Debug]» y solo se mira en depuración; pasajero, en el mismo archivo que `plus_access` (fuera del respaldo).
-  private val _compareWorld = MutableStateFlow(SampleComparison.World.entries.firstOrNull { it.name == plusPrefs.getString(PlusAccess.COMPARE_WORLD_KEY, null) } ?: SampleComparison.World.MANY)
+  private val _compareWorld = MutableStateFlow(SampleComparison.World.entries.firstOrNull { it.name == plusPrefs.getString(PlusAccess.COMPARE_WORLD_KEY, null) } ?: SampleComparison.World.REFERENCE)
   val compareWorld: StateFlow<SampleComparison.World> = _compareWorld.asStateFlow()
 
   fun setCompareWorld(world: SampleComparison.World) {

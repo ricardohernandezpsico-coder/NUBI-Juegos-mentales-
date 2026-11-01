@@ -74,15 +74,15 @@ internal fun ContrarrelojDoor(record: Int?, plus: Boolean, onClick: () -> Unit, 
  * La hoja corta que abre la puerta de Avance SIN Nubi Plus (Tarea 199): qué trae la página, en una lista breve, y UN solo botón, «Entendido». El botón de compra llega con Google Play Billing (Etapa 4, `docs/modelo-negocio.md`); hasta entonces la hoja solo cuenta qué hay detrás. Sin precios ni promesas.
  */
 @Composable
-internal fun PlusLockSheet(onDismiss: () -> Unit, compared: Boolean = false) {
+internal fun PlusLockSheet(onDismiss: () -> Unit, kind: com.example.data.Comparison.Kind = com.example.data.Comparison.Kind.NONE) {
   Dialog(onDismissRequest = onDismiss) {
     ClayCard(Modifier.fillMaxWidth().padding(8.dp).testTag("plus_sheet"), color = Clay.Cream, size = SlabSize.LARGE, contentPadding = 20.dp) {
       // se desliza: con tres líneas (Tarea 203) y letra 2,0 la hoja puede no caber entera en el alto de una pantalla
       Column(Modifier.fillMaxWidth().verticalScroll(androidx.compose.foundation.rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(PlusAccess.SHEET_TITLE, color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 24.sp, modifier = Modifier.semantics { heading() }.testTag("plus_sheet_title"))
-        Text(PlusAccess.sheetLead(compared), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("plus_sheet_lead"))
+        Text(PlusAccess.sheetLead(kind), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("plus_sheet_lead"))
         Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("plus_sheet_items")) {
-          PlusAccess.sheetItems(compared).forEachIndexed { i, item ->
+          PlusAccess.sheetItems(kind).forEachIndexed { i, item ->
             Row(verticalAlignment = Alignment.Top) {
               KitGlyph(Glyph.CHECK, size = 20.dp, modifier = Modifier.padding(top = 1.dp))
               Spacer(Modifier.width(8.dp))

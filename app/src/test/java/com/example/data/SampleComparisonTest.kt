@@ -143,7 +143,7 @@ class SampleComparisonTest {
     assertEquals(listOf("Comparison.kt"), builders.sorted())
     assertEquals("solo el enum de mundos se nombra fuera: $others", emptyList<String>(), others)
     val source = File("src/main/java/com/example/data/Comparison.kt").readText()
-    assertTrue("sourceFor solo arma la muestra con debugBuild", Regex("""debugBuild -> SampleComparison\(world\)""").containsMatchIn(source))
+    assertTrue("sourceFor solo arma la muestra con debugBuild", Regex("""debugBuild && world != SampleComparison\.World\.REFERENCE -> SampleComparison\(world\)""").containsMatchIn(source))
     val screen = File("src/main/java/com/example/ui/screens/ProgressScreen.kt").readText()
     assertTrue("la pantalla pide la fuente con BuildConfig.DEBUG", screen.contains("Comparison.sourceFor(com.example.BuildConfig.DEBUG"))
   }

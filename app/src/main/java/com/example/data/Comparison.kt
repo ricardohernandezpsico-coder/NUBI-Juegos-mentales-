@@ -49,34 +49,111 @@ object Comparison {
   const val BELL_TITLE = "La campana de tu edad"
   const val BELL_CAPTION = "La línea marca la mitad de las personas."
 
+  // ---- la REFERENCIA ESTIMADA (Tarea 205; `auditoria-fable/referencia-estimada.md` §4 y las decisiones de Opus del 1-nov): siempre dicha; en cada losa solo «referencia estimada»; nunca se llama «personas»
+  const val ESTIMATED_BELL_CAPTION = "La línea marca la mitad de la referencia estimada."
+  /** Bajo el gráfico de las semanas (con la referencia estimada). */
+  const val WEEKS_ESTIMATED_NOTE = "Semanas comparadas con la referencia estimada."
+
+  /** La frase larga, UNA vez por página, bajo el rótulo de la comparación (reemplaza al aviso de muestra): qué es y que no son personas. */
+  fun estimatedNotice(range: AgeRange): String =
+    "Referencia estimada para ${range.label}: sale de estudios por edad y de un programa que jugó esta misma pista en un computador, no en tu teléfono. No son personas."
+
+  /**
+   * La frase de la campana, según sea la referencia estimada o no. El TÍTULO es el mismo («La campana de tu edad»): «La campana estimada de tu edad» partía en dos líneas hasta con letra 1,0 a 393 dp (56,3 dp de alto, `ContrarrelojPageTest`), así que
+   * «referencia estimada» va en la frase de abajo (Opus, 1-nov: «si no cabe en UNA línea…»).
+   */
+  fun bellCaption(estimated: Boolean): String = if (estimated) ESTIMATED_BELL_CAPTION else BELL_CAPTION
+
   // ------------------------------------------------------------------ la distribución
 
   /**
    * Las mejores marcas semanales de UNA clase de referencia (juego, pista, semana o semanas, franja o franjas): cuántas [people] y, en [bins], cuántas cayeron en cada tramo de 5 aciertos (16 tramos, sin suavizar); [p25], [p50] y [p75] son los cuartiles en aciertos, dichos tal cual por quien arma la distribución
    * (el servidor los calcula con las marcas crudas; en los datos de muestra salen de su tabla). Con menos de [MIN_PEOPLE] personas no alcanza para decir un lugar ([enough]).
    */
-  data class Distribution(val people: Int, val bins: List<Int>, val p25: Int, val p50: Int, val p75: Int) {
+  data class Distribution(
+    val people: Int, val bins: List<Int>, val p25: Int, val p50: Int, val p75: Int,
+    /** El ancho del tramo en aciertos (Tarea 205: cada juego trae el suyo; 1 en Rescate, 2 en Acoplamiento y 5 en los otros dos). */
+    val binWidth: Int = BIN_WIDTH,
+    /** true = la referencia ESTIMADA (robots que juegan la pista real, `EstimatedReference`): [people] es la cuenta de robots y NO se dice; nunca se presenta como personas. */
+    val estimated: Boolean = false
+  ) {
     init {
-      require(bins.size == BINS && bins.all { it >= 0 } && bins.sum() == people) { "el histograma debe tener $BINS tramos que sumen las $people personas" }
+      require(bins.size >= 2 && binWidth >= 1 && bins.all { it >= 0 } && bins.sum() == people) { "el histograma debe tener 2 tramos o más, de ancho 1 o más, que sumen las $people personas" }
     }
 
-    val enough: Boolean get() = people >= MIN_PEOPLE
+    /**
+     * Alcanza para decir un lugar: 50 personas reales o más, o la referencia ESTIMADA (Tarea 205, Opus 1-nov: lo que depende de «cuántos» lee `estimated`, no `people`; los robots que arman la tabla nunca se cuentan ni se muestran ni deciden nada en la página:
+     * `EstimatedReference.parse` solo deja entrar tablas con [MIN_PEOPLE] robots o más, y una clase vacía queda con `estimated = false`).
+     */
+    val enough: Boolean get() = estimated || people >= MIN_PEOPLE
+
+    /** El borde derecho de la campana: el último tramo («75 o más») se dibuja de [lastStart] a [topMark]. */
+    val topMark: Int get() = binWidth * bins.size
+
+    /** Donde EMPIEZA el último tramo, el de «o más» (75 en 16 tramos de 5; 23 en 24 de 1). */
+    val lastStart: Int get() = binWidth * (bins.size - 1)
+
+    companion object {
+      /** Una clase sin gente (no alcanza para decir un lugar). */
+      fun empty(binWidth: Int = BIN_WIDTH, binCount: Int = BINS): Distribution = Distribution(0, List(binCount) { 0 }, 0, 0, 0, binWidth, false)
+    }
   }
 
   /** De dónde salen las marcas de las otras personas (hoy: `SampleComparison`, solo en depuración). [ranges] null = todas las edades; [weeks] semanas que TERMINAN [weeksAgo] semanas atrás (0 = esta semana). */
   interface Source {
     fun distribution(game: String, ranges: List<AgeRange>?, weeksAgo: Int, weeks: Int = 1): Distribution
+
+    /** Si la fuente tiene con qué comparar este juego (la referencia estimada es por juego y versión de la pista: sin su archivo no hay comparación). */
+    fun covers(game: String): Boolean = true
+  }
+
+  /** Con qué se compara una persona, para los textos que no dependen de un lugar concreto (subtítulo, hoja del candado): nada, la referencia ESTIMADA (la de la tienda) o «personas» (los datos de muestra de depuración; mañana, personas reales). */
+  enum class Kind { NONE, ESTIMATED, PEOPLE }
+
+  /** El tipo de comparación de una fuente: null = ninguna; la muestra de depuración = personas; cualquier otra (la compuesta, con la referencia estimada) = estimada. */
+  fun kindOf(source: Source?): Kind = when (source) {
+    null -> Kind.NONE
+    is SampleComparison -> Kind.PEOPLE
+    else -> Kind.ESTIMATED
+  }
+
+  /** El tipo de comparación de la sección que dibuja la página. */
+  fun kindOf(section: Section?): Kind = when {
+    section == null -> Kind.NONE
+    section.estimated -> Kind.ESTIMATED
+    else -> Kind.PEOPLE
+  }
+
+  /**
+   * La fuente compuesta (Tarea 205): para cada (juego, franja, semana) usa la REAL si tiene [MIN_PEOPLE] personas o más y, si no, la ESTIMADA. Hoy no hay servidor, así que la real es siempre null y la estimada es la que manda; el día que haya servidor, cada franja deja la referencia
+   * cuando llega a 50 personas reales. Una clase que ninguna de las dos alcanza (todas las edades, las franjas juntas con la sola referencia) queda vacía: no hay lugar que decir.
+   */
+  class ComposedSource(private val real: Source?, private val estimated: Source?) : Source {
+    override fun covers(game: String): Boolean = real?.covers(game) == true || estimated?.covers(game) == true
+
+    override fun distribution(game: String, ranges: List<AgeRange>?, weeksAgo: Int, weeks: Int): Distribution {
+      val r = real?.distribution(game, ranges, weeksAgo, weeks)
+      if (r != null && r.enough) return r
+      val e = estimated?.distribution(game, ranges, weeksAgo, weeks)
+      if (e != null && e.enough) return e
+      return r ?: e ?: Distribution.empty()
+    }
   }
 
   /**
    * De dónde sale la comparación en ESTA build: con [Features.COMPARE] encendida sería el servidor, que todavía no existe (devuelve null: no hay sección); con ella apagada, SOLO las builds de depuración usan los datos de muestra ([world]: «muchos», «pocos» o «muy pocos»), y la de la tienda no tiene nada.
    * `ContrarrelojPageTest` y `ComparisonTest` aseguran que en release no hay sección.
    */
-  fun sourceFor(debugBuild: Boolean, world: SampleComparison.World): Source? = when {
-    Features.COMPARE -> null
-    debugBuild -> SampleComparison(world)
-    else -> null
+  fun sourceFor(debugBuild: Boolean, world: SampleComparison.World, estimated: Source? = null): Source? = when {
+    debugBuild && world != SampleComparison.World.REFERENCE -> SampleComparison(world)
+    estimated == null -> null
+    else -> ComposedSource(realSource(), estimated)
   }
+
+  /**
+   * La fuente de personas REALES: hoy ninguna (no hay servidor). [Features.COMPARE] queda EXACTAMENTE para eso: cuando exista la fuente del servidor, se devuelve aquí con la bandera encendida; la referencia estimada no depende de ella (Tarea 205: la tienda ya trae la comparación con la referencia).
+   */
+  private fun realSource(): Source? = if (Features.COMPARE) null else null
 
   /**
    * La franja con que se compara una persona: la suya; si no la eligió, en las builds de depuración con datos de muestra la de 45 a 54 años (para poder ver la sección) y en cualquier otra, ninguna (sin franja no hay con quién compararla). Con de 13 a 17 años, ninguna mientras [Features.COMPARE_MINORS] sea false:
@@ -99,11 +176,22 @@ object Comparison {
   fun percentile(mark: Int, d: Distribution): Int {
     if (d.people <= 0) return 0
     val m = mark.coerceAtLeast(0)
-    val i = min(m / BIN_WIDTH, BINS - 1)
-    val belowTimes5 = d.bins.take(i).sum().toLong() * BIN_WIDTH
-    val withinTimes5 = if (i == BINS - 1) 0L else d.bins[i].toLong() * (m - i * BIN_WIDTH)
-    return ((100L * (belowTimes5 + withinTimes5)) / (BIN_WIDTH.toLong() * d.people)).toInt().coerceIn(0, 99)
+    val w = d.binWidth
+    val last = d.bins.size - 1
+    val i = min(m / w, last)
+    val belowTimesW = d.bins.take(i).sum().toLong() * w
+    val withinTimesW = if (i == last) 0L else d.bins[i].toLong() * (m - i * w)
+    return ((100L * (belowTimesW + withinTimesW)) / (w.toLong() * d.people)).toInt().coerceIn(0, 99)
   }
+
+  /** El primer acierto con que el percentil llega a [p] (null si ni con el borde de la pista se llega): la regla única de [thresholds], de la mitad y de los cuartiles. */
+  fun firstMarkReaching(p: Int, d: Distribution): Int? = (0 until d.topMark).firstOrNull { percentile(it, d) >= p }
+
+  /**
+   * El acierto donde se cruza el percentil [p] (25, 50 o 75): la mitad de la campana y los cuartiles de la referencia estimada salen de los TRAMOS con la misma regla del percentil y de la escalera (Tarea 205, Opus 1-nov), no de los p25/p50/p75 del JSON, que el robot calcula de otra forma
+   * y difieren 1 o 2 aciertos en los bordes (esos campos quedan solo como informe). Si no se alcanza, empieza el último tramo.
+   */
+  fun markAtPercentile(p: Int, d: Distribution): Int = firstMarkReaching(p, d) ?: d.lastStart
 
   /** Las cinco divisiones con nombre de la fase 2 (`docs/contrarreloj.md` §8): por tramos fijos del percentil. Van DESPUÉS del número y nunca en su lugar. */
   enum class Division(val label: String, val from: Int) {
@@ -145,7 +233,10 @@ object Comparison {
   enum class Scope { OWN_WEEK, OWN_4_WEEKS, NEIGHBORS_4_WEEKS, ALL_WEEK, ALL_4_WEEKS }
 
   /** Un lugar dicho: la [mark] de esta semana contra [distribution] (de [ranges], null = todas las edades), con su [percentile] y su [division]. */
-  data class Ranked(val mark: Int, val percentile: Int, val division: Division, val scope: Scope, val ranges: List<AgeRange>?, val distribution: Distribution)
+  data class Ranked(val mark: Int, val percentile: Int, val division: Division, val scope: Scope, val ranges: List<AgeRange>?, val distribution: Distribution) {
+    /** true si la clase de referencia es la ESTIMADA (robots): los textos dicen «referencia estimada», nunca «personas». */
+    val estimated: Boolean get() = distribution.estimated
+  }
 
   sealed interface Place {
     /** Alcanzan 50 personas en la clase de referencia (la franja esta semana, o la primera de las más amplias de las reglas 2 y 3 de §4). */
@@ -195,6 +286,10 @@ object Comparison {
    * Con letra muy grande la unidad pasa a la frase ([withUnit]: «de cada 100 personas de 45 a 54 años quedan detrás…») y la cifra queda sola.
    */
   fun heroCaption(r: Ranked, range: AgeRange, gameTitle: String, withUnit: Boolean = false): String {
+    if (r.estimated) {
+      val estimatedBody = "marcas de la referencia estimada para ${range.label} quedan detrás de tu mejor marca de esta semana en $gameTitle."
+      return if (withUnit) "$HERO_UNIT $estimatedBody" else estimatedBody
+    }
     val who = whoText(r, range)
     val body = if (r.scope == Scope.OWN_WEEK || r.scope == Scope.ALL_WEEK) "personas $who quedan detrás de tu mejor marca de esta semana en $gameTitle."
     else "personas $who que jugaron $gameTitle en las últimas $RECENT_WEEKS semanas quedan detrás de tu mejor marca de esta semana."
@@ -224,8 +319,7 @@ object Comparison {
    * Una división a la que no se llega (el percentil no alcanza ni con 75 aciertos o más) o que queda vacía (su primer acierto es el de la siguiente) no tiene peldaño.
    */
   fun thresholds(d: Distribution): List<Rung> {
-    fun firstMarkReaching(p: Int): Int? = (0 until TOP_MARK).firstOrNull { percentile(it, d) >= p }
-    val all = Division.entries.mapNotNull { div -> (if (div == Division.PLATFORM) 0 else firstMarkReaching(div.from))?.let { Rung(div, it) } }
+    val all = Division.entries.mapNotNull { div -> (if (div == Division.PLATFORM) 0 else firstMarkReaching(div.from, d))?.let { Rung(div, it) } }
     return all.filterIndexed { i, rung -> i == all.lastIndex || rung.from < all[i + 1].from }
   }
 
@@ -266,6 +360,7 @@ object Comparison {
    * con las franjas juntas o todas las edades dice cuáles («Con las 240 personas de 30 a 54 años que jugaron en las últimas 4 semanas.»).
    */
   fun ladderNote(r: Ranked, range: AgeRange): String {
+    if (r.estimated) return "Peldaños de la referencia estimada para ${range.label}; no cambian de semana en semana."
     val whenText = if (r.scope == Scope.OWN_WEEK || r.scope == Scope.ALL_WEEK) "esta semana" else "en las últimas $RECENT_WEEKS semanas"
     val who = if (r.scope == Scope.OWN_WEEK || r.scope == Scope.OWN_4_WEEKS) "de tu franja" else whoText(r, range)
     return "Con las ${r.distribution.people} personas $who que jugaron $whenText."
@@ -295,13 +390,17 @@ object Comparison {
   fun freeSentence(place: Place): String? {
     val r = (place as? Place.Found)?.ranked ?: return null
     val l = ladder(r)
+    if (r.estimated) {
+      if (l.next == null || l.missing == null) return "Esta semana estás ${r.division.label} en la referencia estimada para tu edad, la división más alta."
+      return "Esta semana estás ${r.division.label} en la referencia estimada para tu edad. ${needSentence(l, r)}"
+    }
     if (l.next == null || l.missing == null) return "Esta semana estás ${r.division.label}, la división más alta de tu franja."
     return "Esta semana estás ${r.division.label}. ${needSentence(l, r)}"
   }
 
   /** La frase gratis de la puerta de Avance: la de [freeSentence] con el lugar de esta semana de la persona en [game] (null sin lugar dicho). */
   fun freeSentenceFor(source: Source, game: String, range: AgeRange, results: List<TimeTrialResult>, now: Long): String? =
-    freeSentence(place(source, game, range, bestOfWeek(TimeTrialDay.ofGame(results, game), now, 0)))
+    if (!source.covers(game)) null else freeSentence(place(source, game, range, bestOfWeek(TimeTrialDay.ofGame(results, game), now, 0)))
 
   /** El rótulo izquierdo del eje de las semanas: «hace 3 semanas» (la más vieja con punto); null si la más vieja es esta (no hay de qué separar). */
   fun weeksAxisLeft(points: List<WeekPoint>): String? {
@@ -313,7 +412,9 @@ object Comparison {
   fun scopeLine(r: Ranked): String? = if (r.scope == Scope.NEIGHBORS_4_WEEKS) MERGED_LINE else null
 
   /** Lo que lee el lector de pantalla de la campana (el dibujo no habla; las dos frases de abajo son el contenido): «Campana con las marcas de las 128 personas. Tu mejor marca de esta semana, 43 aciertos, está marcada.» */
-  fun bellSpoken(r: Ranked): String = "Campana con las marcas de las ${r.distribution.people} personas. Tu mejor marca de esta semana, ${TimeTrialDay.hitsText(r.mark)}, está marcada."
+  fun bellSpoken(r: Ranked, range: AgeRange? = null): String =
+    if (r.estimated) "Campana de la referencia estimada para ${range?.label ?: "tu edad"}. Tu mejor marca de esta semana, ${TimeTrialDay.hitsText(r.mark)}, está marcada."
+    else "Campana con las marcas de las ${r.distribution.people} personas. Tu mejor marca de esta semana, ${TimeTrialDay.hitsText(r.mark)}, está marcada."
 
   /** «Todavía somos pocos: 23 personas de 45 a 54 años jugaron Tinta o Palabra esta semana. Cuando sean 50, verás aquí tu lugar entre ellas.» (con una sola: «1 persona … jugó …»). */
   fun fewSentence(few: Place.Few, range: AgeRange, gameTitle: String): String {
@@ -335,7 +436,8 @@ object Comparison {
   }
 
   /** Sin marca esta semana: qué hacer para ver el lugar (sin números inventados). */
-  fun noMarkSentence(gameTitle: String): String = "Todavía no tienes una marca esta semana en $gameTitle. Juega su Contrarreloj para ver tu lugar entre personas de tu edad."
+  fun noMarkSentence(gameTitle: String, estimated: Boolean = false): String =
+    "Todavía no tienes una marca esta semana en $gameTitle. Juega su Contrarreloj para ver tu lugar " + if (estimated) "en la referencia estimada para tu edad." else "entre personas de tu edad."
 
   // ------------------------------------------------------------------ tu percentil en las últimas 7 semanas
 
@@ -371,8 +473,8 @@ object Comparison {
   }
 
   /** Lo que lee el lector de pantalla del gráfico de las semanas, semana por semana: «Tu percentil en las últimas 7 semanas: hace 6 semanas, supera a 52 de cada 100; …; esta semana, supera a 63 de cada 100.» */
-  fun weeksSpoken(points: List<WeekPoint>): String =
-    "$WEEKS_TITLE: " + points.joinToString("; ") { pt -> val n = pt.percentile; "${weeksAgoText(pt.weeksAgo)}, deja detrás a $n de cada 100" } + "."
+  fun weeksSpoken(points: List<WeekPoint>, estimated: Boolean = false): String =
+    "$WEEKS_TITLE" + (if (estimated) ", comparado con la referencia estimada" else "") + ": " + points.joinToString("; ") { pt -> val n = pt.percentile; "${weeksAgoText(pt.weeksAgo)}, deja detrás a $n de cada 100" } + "."
 
   fun weeksAgoText(weeksAgo: Int): String = when (weeksAgo) {
     0 -> "esta semana"
@@ -396,19 +498,23 @@ object Comparison {
    * que en los primeros meses serían casi todas); la propia lleva «(tu franja)». [Others.hidden] avisa que falta alguna y null = no hay ninguna fila que mostrar (la losa no va).
    */
   fun others(source: Source, game: String, range: AgeRange, mark: Int): Others? {
+    var anyEstimated = false
     fun row(label: String, ranges: List<AgeRange>?, own: Boolean): OtherRow? {
       val d = source.distribution(game, ranges, 0)
-      return if (d.enough) OtherRow(if (own) "$label (tu franja)" else label, percentile(mark, d), own, d.people) else null
+      if (d.enough && d.estimated) anyEstimated = true
+      return if (d.enough) OtherRow(if (own) "$label (tu franja)" else label, percentile(mark, d), own, if (d.estimated) 0 else d.people) else null
     }
     val ages = AgeRange.entries.filter { it != AgeRange.R13_17 || Features.COMPARE_MINORS }
     val rows = ages.mapNotNull { row(it.label, listOf(it), it == range) }
     val all = row("Todas las edades", null, false)
     if (rows.isEmpty() && all == null) return null
-    return Others(rows, all, hidden = rows.size < ages.size || all == null)
+    // con la referencia estimada no hay fila de «Todas las edades» (no hay población que ponderar) y no se dice nada de lo que falta: cada franja siempre tiene su fila
+    return Others(rows, all, hidden = rows.size < ages.size || (all == null && !anyEstimated))
   }
 
   /** «De cada 100 personas que jugaron Tinta o Palabra esta semana, tu mejor marca deja detrás a:» (la marca ya está en la cifra de arriba: no se repite). */
-  fun othersLead(gameTitle: String): String = "De cada 100 personas que jugaron $gameTitle esta semana, tu mejor marca deja detrás a:"
+  fun othersLead(gameTitle: String, estimated: Boolean = false): String =
+    if (estimated) "De cada 100 marcas de la referencia estimada de cada edad, tu mejor marca deja detrás a:" else "De cada 100 personas que jugaron $gameTitle esta semana, tu mejor marca deja detrás a:"
 
   /** Lo que lee el lector de pantalla de una fila: «45 a 54 años (tu franja), 63 de cada 100». */
   fun rowSpoken(row: OtherRow): String = "${row.label}, ${row.value}"
@@ -422,7 +528,11 @@ object Comparison {
     val mark: Int?,
     val place: Place,
     val weeks: List<WeekPoint>,
-    val others: Others?
+    val others: Others?,
+    /** La referencia con que se compara es la ESTIMADA (robots que juegan la pista real). */
+    val estimated: Boolean = false,
+    /** Son los datos de muestra de depuración (`SampleComparison`): la página lo dice en vez de la frase de la referencia estimada. */
+    val sample: Boolean = false
   )
 
   /** La mejor marca de [results] (ya de UN juego y de la pista de hoy) en la semana que empezó [weeksAgo] semanas atrás; null si no hubo partida. */
@@ -441,7 +551,8 @@ object Comparison {
     val mark = bests[0]
     val place = place(source, game, range, mark)
     val others = if (mark != null) others(source, game, range, mark) else null
-    return Section(range, gameTitle, mark, place, weekPoints(source, game, range, bests), others)
+    val estimated = source.distribution(game, listOf(range), 0).estimated
+    return Section(range, gameTitle, mark, place, weekPoints(source, game, range, bests), others, estimated, sample = source is SampleComparison)
   }
 
   // ------------------------------------------------------------------ la forma de la campana
@@ -458,8 +569,8 @@ object Comparison {
   /**
    * La altura de la campana en [x] (en aciertos, de 0 a [TOP_MARK]): una curva suave (Catmull-Rom) por los centros de los tramos suavizados, nunca por debajo de 0. El dibujo y la barra «Tú» usan la MISMA función, así la barra llega justo a la curva.
    */
-  fun bellHeight(smoothed: List<Double>, x: Double): Double {
-    val u = x / BIN_WIDTH - 0.5                                // posición entre centros: el tramo i tiene su centro en u = i
+  fun bellHeight(smoothed: List<Double>, x: Double, binWidth: Int = BIN_WIDTH): Double {
+    val u = x / binWidth - 0.5                                // posición entre centros: el tramo i tiene su centro en u = i
     val i = Math.floor(u).toInt().coerceIn(0, smoothed.size - 2)
     val t = (u - i).coerceIn(0.0, 1.0)
     fun at(k: Int) = smoothed[k.coerceIn(0, smoothed.lastIndex)]
@@ -469,7 +580,15 @@ object Comparison {
   }
 
   /** Dónde cae [mark] en el eje de la campana (de 0 a [TOP_MARK]): al centro de su marca; el último tramo («75 o más») se topa en el borde derecho. */
-  fun markX(mark: Int): Double = (mark.coerceIn(0, TOP_MARK - 1) + 0.5).coerceAtMost(TOP_MARK.toDouble())
+  fun markX(mark: Int, topMark: Int = TOP_MARK): Double = (mark.coerceIn(0, topMark - 1) + 0.5).coerceAtMost(topMark.toDouble())
+
+  /**
+   * Los rótulos del eje de la campana (Tarea 205): «0 aciertos», dos intermedios y donde EMPIEZA el último tramo («75 o más»), a un tercio y dos tercios de él. Con 16 tramos de 5 son 0 · 25 · 50 · 75 (los de siempre); con 24 de 1 (Rescate), 0 · 8 · 15 · 23; con 16 de 2 (Acoplamiento), 0 · 10 · 20 · 30.
+   */
+  fun axisTicks(d: Distribution): List<Int> {
+    val end = d.lastStart
+    return listOf(0, (end / 3.0).let { Math.round(it).toInt() }, (end * 2 / 3.0).let { Math.round(it).toInt() }, end)
+  }
 
   /** El hueco entre rótulos que pide el dibujo antes de omitir uno (14 sp): 8 dp. */
   const val AXIS_GAP_DP = 8

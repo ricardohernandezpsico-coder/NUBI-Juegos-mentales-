@@ -48,6 +48,10 @@ object UnityGameLauncher {
   const val FRESH_LAUNCH_PREFIX = "primera-vez-"
   fun isFreshLaunch(launchId: String?): Boolean = launchId != null && launchId.startsWith(FRESH_LAUNCH_PREFIX)
 
+  /** Las partidas de «[Debug] Contrarreloj de invitado» (Tarea 205): su id de lanzamiento lleva este prefijo; la partida muestra su marca al final y NO se guarda (ni partida, ni récord, ni racha, ni farolas, ni lo «ya visto»). */
+  const val GUEST_LAUNCH_PREFIX = "invitado-"
+  fun isGuestLaunch(launchId: String?): Boolean = launchId != null && launchId.startsWith(GUEST_LAUNCH_PREFIX)
+
   @JsonClass(generateAdapter = true)
   data class ConfigDetailsDto(
     val level: Int,
@@ -167,8 +171,9 @@ object UnityGameLauncher {
     rescStage: Int = 0,             // solo las herramientas de prueba: Rescate relámpago empieza en este nivel (0 = normal)
     timeTrial: Boolean = false,     // el Contrarreloj de hoy (Tarea 177): la pista fija del día (la fecha va en track_seed), 120 s y sin dificultad adaptativa
     trackSeed: Int = 0,             // la fecha del Contrarreloj (aaaammdd); solo se lee con timeTrial
+    guest: Boolean = false,         // solo las herramientas de prueba: «Contrarreloj de invitado» (Tarea 205): Unity no lee ni escribe lo «ya visto»; el resultado no se guarda (el id lleva GUEST_LAUNCH_PREFIX)
     freshStart: Boolean = false     // solo las herramientas de prueba: «Jugar como la primera vez» (tutorial, subida y tarjetas como alguien nuevo; el resultado no se guarda: el id de lanzamiento lleva FRESH_LAUNCH_PREFIX)
-  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, mode, forceTutorial, debugOverlay, conStage, mailStage, satStage, satSurprise, pilStage, pilSectorS, rescStage, timeTrial, trackSeed, freshStart)
+  ): Intent = buildIntent(context, userId, gameId, level, baseIntensity, timed, ageBand, soundEnabled, launchId, assessmentStep, assessmentTotal, mode, forceTutorial, debugOverlay, conStage, mailStage, satStage, satSurprise, pilStage, pilSectorS, rescStage, timeTrial, trackSeed, guest, freshStart)
 
   private fun buildIntent(
     context: Context,
@@ -194,6 +199,7 @@ object UnityGameLauncher {
     rescStage: Int = 0,
     timeTrial: Boolean = false,
     trackSeed: Int = 0,
+    guest: Boolean = false,
     freshStart: Boolean = false
   ): Intent {
     val assessment = assessmentStep > 0
@@ -221,7 +227,7 @@ object UnityGameLauncher {
         ) == 0f,
         show_tutorial = forceTutorial || freshStart || shouldShowTutorial(gameId, repo.gameHistory.value, repo.timeTrialResults.value),
         first_game = firstGame,
-        fresh_start = freshStart,
+        fresh_start = freshStart || guest,
         reset_unity_prefs = UnityPrefs.resetPending(context),
         debug_build = com.example.BuildConfig.DEBUG,
         launch_at_ms = if (com.example.BuildConfig.DEBUG) System.currentTimeMillis() else 0L,
@@ -254,6 +260,6 @@ object UnityGameLauncher {
     return Intent(context, UnityPlayerGameActivity::class.java)
       .addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
       .putExtra(EXTRA_CONFIG_JSON, json)
-      .putExtra(EXTRA_LAUNCH_ID, launchId ?: (if (freshStart) FRESH_LAUNCH_PREFIX else "") + java.util.UUID.randomUUID().toString())
+      .putExtra(EXTRA_LAUNCH_ID, launchId ?: (if (freshStart) FRESH_LAUNCH_PREFIX else if (guest) GUEST_LAUNCH_PREFIX else "") + java.util.UUID.randomUUID().toString())
   }
 }

@@ -483,7 +483,8 @@ class ContrarrelojPageTest {
     val page = src("ui/screens/ContrarrelojPage.kt")
     assertTrue("el rótulo va en Fredoka negrita 18 sp con OnNight", Regex("""Text\(text, color = NubiTokens\.OnNight, fontSize = 18\.sp, fontWeight = FontWeight\.Bold, fontFamily = AppFamily""").containsMatchIn(page))
     assertTrue("la línea del rótulo es OnNight al 35 %", page.contains("NubiTokens.OnNight.copy(alpha = 0.35f)"))
-    assertTrue("la nota de muestra, en OnNight de 16 sp", Regex("""Text\(Comparison\.SAMPLE_NOTICE, color = NubiTokens\.OnNight, fontSize = 16\.sp""").containsMatchIn(page))
+    assertTrue("el aviso (la frase de la referencia estimada o la nota de muestra), en OnNight de 16 sp", Regex("""Text\(notice\.first\.glueNumbers\(\)\.glueNames\(\), color = NubiTokens\.OnNight, fontSize = 16\.sp""").containsMatchIn(page))
+    assertTrue("y los dos textos salen de Comparison", page.contains("Comparison.estimatedNotice(s.range)") && page.contains("Comparison.SAMPLE_NOTICE"))
     assertTrue("el recuadro de «Todavía somos pocos» usa el lila de «Marca nueva» (TimeTrialDoneFill), sin copiar el literal", page.contains("background(TimeTrialDoneFill)") && !Regex("0x[Ff][Ff][Dd]9[Cc][Ee][Ff][Ff]").containsMatchIn(page))
   }
 
@@ -864,9 +865,9 @@ class ContrarrelojPageTest {
   private val place = listOf("contrarreloj_place_(title|nomark)", "contrarreloj_few_(note|meanwhile)", "contrarreloj_few_bar_(bar|value)")
   private val weeksPercentile = listOf("contrarreloj_percweeks_(title|sentence|half)", "contrarreloj_percweeks_fig_\\d", "contrarreloj_percweeks_bar_\\d", "contrarreloj_percweeks_axis_(left|right)")
   private val othersGroup = listOf("contrarreloj_others_(title|lead|hidden)", "contrarreloj_others_(\\d|all)_(label|value)")
-  private val sections = listOf("contrarreloj_section_(marks|compare)", "contrarreloj_section_(marks|compare)_line", "contrarreloj_sample_notice")
+  private val sections = listOf("contrarreloj_section_(marks|compare)", "contrarreloj_section_(marks|compare)_line", "contrarreloj_(sample|estimated)_notice")
 
-  private fun assertCompareNoClashes(widthDp: Int, scale: Float, world: SampleComparison, label: String) {
+  private fun assertCompareNoClashes(widthDp: Int, scale: Float, world: Comparison.Source, label: String) {
     show(widthDp, scale, compare = world, ageRange = AgeRange.R45_54)
     val all = boxes()
     val problems = mutableListOf<String>()
@@ -1016,5 +1017,149 @@ class ContrarrelojPageTest {
     assertTrue("solo las familias de hoy (Rubik y Fredoka): $families", families.all { it == "TitleFamily" || it == "AppFamily" })
     assertFalse("sin fuentes nuevas", Regex("""FontFamily\(|Font\(R\.font""").containsMatchIn(page))
     assertFalse("sin colores copiados: la lima, la tinta y la crema salen de Clay", Regex("""Color\(0x""").containsMatchIn(page))
+  }
+
+  // ---------------------------------------------------------------- Tarea 205: la referencia estimada (la que trae el APK y ve la tienda)
+
+  /** La referencia estimada REAL del APK (los 4 JSON de `assets/referencia/`), como la ve la tienda: la fuente compuesta sin personas reales. */
+  private val estWorld: Comparison.Source by lazy {
+    val dir = File("src/main/assets/${com.example.data.EstimatedReference.ASSET_DIR}")
+    Comparison.ComposedSource(null, com.example.data.EstimatedReference.of(dir.listFiles { f -> f.extension == "json" }.orEmpty().sortedBy { it.name }.map { it.readText(Charsets.UTF_8) }))
+  }
+
+  /** TODO lo que dice la pantalla, escrito y hablado: cada texto y cada descripción del árbol SIN fusionar, con los espacios duros como espacios. */
+  private fun everythingSaid(): List<String> {
+    val out = mutableListOf<String>()
+    fun walk(node: SemanticsNode) {
+      node.config.getOrNull(SemanticsProperties.Text)?.let { out += it.joinToString("") { s -> s.text } }
+      node.config.getOrNull(SemanticsProperties.ContentDescription)?.let { out += it.joinToString(". ") }
+      node.children.forEach(::walk)
+    }
+    walk(rule.onRoot(useUnmergedTree = true).fetchSemanticsNode())
+    return out.map { it.replace(NBSP, " ") }
+  }
+
+  @Test fun con_la_referencia_estimada_la_frase_larga_va_una_sola_vez_bajo_el_rotulo_y_el_aviso_de_muestra_no_va() {
+    show(compare = estWorld, ageRange = AgeRange.R45_54)
+    val b = boxes()
+    assertEquals("Esta semana, comparado con tu edad", n("contrarreloj_section_compare"))
+    assertEquals("Referencia estimada para 45 a 54 años: sale de estudios por edad y de un programa que jugó esta misma pista en un computador, no en tu teléfono. No son personas.", n("contrarreloj_estimated_notice"))
+    assertNull("ya no es un dato de muestra", b["contrarreloj_sample_notice"])
+    assertEquals("la frase larga va bajo el rótulo, a 8 dp", 8f, b.getValue("contrarreloj_estimated_notice").y - b.getValue("contrarreloj_section_compare").b, 1.5f)
+    assertEquals("y UNA sola vez en toda la pantalla", 1, everythingSaid().count { it.startsWith("Referencia estimada para") })
+    assertEquals("las demás se dicen igual con otra franja", "Referencia estimada para 75 años o más: sale de estudios por edad y de un programa que jugó esta misma pista en un computador, no en tu teléfono. No son personas.", Comparison.estimatedNotice(AgeRange.R75_PLUS))
+  }
+
+  private fun assertNeverPeople(scale: Float) {
+    show(scale = scale, compare = estWorld, ageRange = AgeRange.R45_54)
+    val said = everythingSaid()
+    val notice = Comparison.estimatedNotice(AgeRange.R45_54)
+    val rest = said.filter { it != notice && !it.contains("Referencia estimada para") }
+    for (text in rest) {
+      val low = text.lowercase()
+      assertFalse("con letra $scale, «$text» llama personas a la referencia", "personas" in low || "persona " in low || " gente" in low)
+      for (gone in listOf("todas las edades", "todavía somos pocos", "mientras tanto", "las demás edades aparecen", "datos de muestra", "cuando lleguen", "personas reales")) assertFalse("con letra $scale, «$text» dice «$gone»", gone in low)
+      // los robots que arman la tabla nunca se nombran ni se cuentan (Opus, 1-nov): ni «robot» ni «2.000»
+      for (count in listOf("robot", "2000", "2.000", "2 000")) assertFalse("con letra $scale, «$text» dice «$count»", count in low)
+    }
+    assertTrue("la pantalla sí dice «referencia estimada»", said.any { "referencia estimada" in it.lowercase() })
+    assertTrue("y dijo bastante (la prueba vio la página)", said.size > 40)
+  }
+
+  @Test fun la_referencia_estimada_nunca_se_llama_personas_ni_en_lo_escrito_ni_en_lo_hablado_con_letra_1_0() = assertNeverPeople(1f)
+  @Test fun la_referencia_estimada_nunca_se_llama_personas_ni_en_lo_escrito_ni_en_lo_hablado_con_letra_2_0() = assertNeverPeople(2f)
+
+  @Test fun en_cada_losa_la_referencia_se_dice_solo_referencia_estimada() {
+    show(compare = estWorld, ageRange = AgeRange.R45_54)
+    val said = everythingSaid()
+    assertTrue("la cifra: «marcas de la referencia estimada para 45 a 54 años quedan detrás…»", said.any { it == "marcas de la referencia estimada para 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra." })
+    assertTrue("la campana, en su frase", said.any { it == Comparison.ESTIMATED_BELL_CAPTION })
+    assertTrue("«Otras edades», en su encabezado", said.any { it == "De cada 100 marcas de la referencia estimada de cada edad, tu mejor marca deja detrás a:" })
+    assertTrue("las semanas, en su nota", said.any { it == Comparison.WEEKS_ESTIMATED_NOTE })
+    assertEquals("y el percentil se dice como siempre", "Percentil ${Regex("""\d+""").find(n("contrarreloj_hero_percentile"))!!.value}", n("contrarreloj_hero_percentile"))
+  }
+
+  @Test fun con_la_referencia_estimada_no_hay_todas_las_edades_ni_la_linea_de_las_demas_edades() {
+    show(compare = estWorld, ageRange = AgeRange.R45_54)
+    val b = boxes()
+    assertEquals("Otras edades", textOf("contrarreloj_others_title"))
+    assertNull("sin fila «Todas las edades»", b["contrarreloj_others_all_label"])
+    assertNull("sin la línea que dice que faltan", b["contrarreloj_others_hidden"])
+    assertEquals("las seis franjas de 18 en adelante, cada una con su fila", 6, (0..5).count { b.containsKey("contrarreloj_others_${it}_label") })
+    assertNull("sin «Todavía somos pocos»", b["contrarreloj_place_title"])
+  }
+
+  /** Los seis títulos con la referencia: el de la campana es el que decide el nombre («La campana estimada de tu edad» o «La campana de tu edad»). */
+  private fun assertEstimatedTitlesInOneLine(widthDp: Int) {
+    show(widthDp = widthDp, compare = estWorld, ageRange = AgeRange.R45_54)
+    val b = boxes()
+    for (tag in titleTags) assertTrue("«${textOf(tag)}» a $widthDp dp con letra 1,0 mide %.1f dp de alto (una línea de Rubik 24 mide 28)".format(b.getValue(tag).h), b.getValue(tag).h <= 28.5f)
+  }
+
+  @Test fun con_la_referencia_los_seis_titulos_de_losa_caben_en_una_linea_a_393_con_letra_1_0() = assertEstimatedTitlesInOneLine(393)
+  @Test fun con_la_referencia_los_seis_titulos_de_losa_caben_en_una_linea_a_360_con_letra_1_0() = assertEstimatedTitlesInOneLine(360)
+
+  @Test fun el_titulo_de_la_campana_con_la_referencia_es_el_de_siempre_y_su_frase_dice_referencia_estimada() {
+    show(compare = estWorld, ageRange = AgeRange.R45_54)
+    assertEquals("La campana de tu edad", textOf("contrarreloj_bell_title"))
+    assertEquals("La línea marca la mitad de la referencia estimada.", textOf("contrarreloj_bell_caption"))
+    assertFalse("«La campana estimada de tu edad» partía en dos líneas: no hay un texto así", Regex("\"La campana estimada").containsMatchIn(src("data/Comparison.kt")))
+  }
+
+  @Test fun comparacion_estimada_cero_choques_a_393_con_letra_1_0() = assertCompareNoClashes(393, 1f, estWorld, "referencia estimada")
+  @Test fun comparacion_estimada_cero_choques_a_393_con_letra_1_3() = assertCompareNoClashes(393, 1.3f, estWorld, "referencia estimada")
+  @Test fun comparacion_estimada_cero_choques_a_393_con_letra_2_0() = assertCompareNoClashes(393, 2f, estWorld, "referencia estimada")
+  @Test fun comparacion_estimada_cero_choques_a_360_con_letra_1_0() = assertCompareNoClashes(360, 1f, estWorld, "referencia estimada")
+  @Test fun comparacion_estimada_cero_choques_a_360_con_letra_1_3() = assertCompareNoClashes(360, 1.3f, estWorld, "referencia estimada")
+  @Test fun comparacion_estimada_cero_choques_a_360_con_letra_2_0() = assertCompareNoClashes(360, 2f, estWorld, "referencia estimada")
+
+  /** El eje y la marca «Tú» de la campana de [game] con la referencia: los rótulos caen donde `axisTicks` los pone, en el ancho de SU pista, y la barra «Tú» en el centro de su tramo. */
+  private fun assertBellOfGame(game: String, mine: List<TimeTrialResult>, mark: Int) {
+    show(compare = estWorld, ageRange = AgeRange.R45_54, selected = game, results = mine)
+    val b = boxes()
+    val d = estWorld.distribution(game, listOf(AgeRange.R45_54), 0, 1)
+    val ticks = Comparison.axisTicks(d)
+    val area = b.getValue("contrarreloj_bell_area")
+    val shown = (0..3).filter { b.containsKey("contrarreloj_bell_axis_$it") }
+    assertTrue("$game: el eje trae al menos «0 aciertos» y el último rótulo ($shown)", 0 in shown && 3 in shown)
+    for (i in shown) {
+      val label = b.getValue("contrarreloj_bell_axis_$i")
+      val center = label.x + label.w / 2 - area.x
+      val want = area.w * ticks[i] / d.topMark
+      when (i) {
+        0 -> assertEquals("$game: «0 aciertos» al borde izquierdo", 0f, label.x - area.x, 1.5f)
+        3 -> assertEquals("$game: el último, al borde derecho", area.w, label.r - area.x, 1.5f)
+        else -> assertEquals("$game: el rótulo $i (${ticks[i]}) sobre su lugar", want, center, 2.5f)
+      }
+    }
+    val you = b.getValue("contrarreloj_bell_you_bar")
+    assertEquals("$game: la barra «Tú» en el centro del tramo de la marca $mark", (area.w * Comparison.markX(mark, d.topMark) / d.topMark).toFloat(), you.x + you.w / 2 - area.x, 1.5f)
+    assertTrue("$game: tiene su escalera", b.containsKey("contrarreloj_ladder_you") && b.keys.any { it.startsWith("contrarreloj_ladder_row_") })
+  }
+
+  @Test fun el_eje_y_la_barra_de_Tinta_o_Palabra_son_de_5_en_5_hasta_75() = assertBellOfGame("stroop", ten, 43)
+  @Test fun el_eje_y_la_barra_de_Verdad_o_disparate_son_de_5_en_5_hasta_75() = assertBellOfGame("disparate", listOf(r(31, 27, game = "disparate")), 31)
+  @Test fun el_eje_y_la_barra_de_Rescate_son_de_a_1_acierto_hasta_23() = assertBellOfGame("radar", listOf(r(14, 27, game = "radar")), 14)
+  @Test fun el_eje_y_la_barra_de_Acoplamiento_son_de_a_2_aciertos_hasta_30() = assertBellOfGame("acoplamiento", listOf(r(24, 27, game = "acoplamiento")), 24)
+
+  @Test fun un_juego_sin_tabla_de_su_pista_queda_sin_comparacion_como_la_pagina_de_antes() {
+    val none = Comparison.ComposedSource(null, com.example.data.EstimatedReference.of(emptyList()))
+    show(compare = none, ageRange = AgeRange.R45_54)
+    val b = boxes()
+    assertNull(b["contrarreloj_section_compare"]); assertNull(b["contrarreloj_estimated_notice"]); assertNull(b["contrarreloj_hero"]); assertNull(b["contrarreloj_section_marks"])
+    assertEquals("subtítulo de siempre, solo contigo", com.example.data.TimeTrialMarks.subtitle(Comparison.Kind.NONE), textOf("contrarreloj_subtitle"))
+  }
+
+  @Test fun de_13_a_17_anos_la_referencia_tampoco_se_muestra() {
+    show(compare = estWorld, ageRange = AgeRange.R13_17)
+    val b = boxes()
+    assertNull(b["contrarreloj_estimated_notice"]); assertNull(b["contrarreloj_hero"]); assertNull(b["contrarreloj_section_compare"])
+  }
+
+  @Test fun el_subtitulo_con_la_referencia_dice_referencia_estimada_y_la_nota_no_habla_de_capacidad_ni_de_personas() {
+    show(compare = estWorld, ageRange = AgeRange.R45_54)
+    assertEquals(com.example.data.TimeTrialMarks.subtitle(Comparison.Kind.ESTIMATED), textOf("contrarreloj_subtitle"))
+    val sub = textOf("contrarreloj_subtitle").lowercase()
+    assertTrue("referencia estimada" in sub && "personas" !in sub)
   }
 }

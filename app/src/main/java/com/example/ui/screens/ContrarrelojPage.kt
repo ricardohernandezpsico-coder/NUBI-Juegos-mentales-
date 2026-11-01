@@ -133,7 +133,7 @@ internal fun ContrarrelojPage(
   // La comparación con personas de tu edad (Tarea 202): solo si hay de dónde sacarla (`compare`: nunca en la build de la tienda) y una franja con la que comparar (la de 13 a 17 años no ve la sección). Sin ella, la página queda como en la Tarea 201.
   val section = remember(compare, ageRange, results, selected, now, lang) {
     val range = compare?.let { Comparison.rangeFor(ageRange, it) }
-    if (compare == null || range == null) null
+    if (compare == null || range == null || !compare.covers(selected)) null
     else Comparison.section(compare, selected, GameRegistry.getById(selected)?.let { getGameTitle(it.id, lang, it.title) } ?: selected, range, results, now)
   }
   val scroll = rememberScrollState()
@@ -154,19 +154,19 @@ internal fun ContrarrelojPage(
     }
   ) {
     Column(Modifier.fillMaxSize().verticalScroll(scroll).testTag("contrarreloj_scroll")) {
-      PageHeader(onBack, compared = section != null, Modifier.onSizeChanged { headerPx = it.height })
+      PageHeader(onBack, kind = Comparison.kindOf(section), Modifier.onSizeChanged { headerPx = it.height })
       Spacer(Modifier.height(FadeHeight))
       Column(Modifier.padding(horizontal = PageMargin).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(CardGap)) {
         GameSelector(records, selected, lang, onSelect)
         if (section != null) {
           // primero la comparación (D2): la cifra, la escalera, la campana, otras edades y semana a semana; los rótulos solo con DOS secciones
-          CompareHeader()
+          CompareHeader(section)
           when (val place = section.place) {
-            is Comparison.Place.Found -> { HeroCard(place.ranked, section); LadderCard(place.ranked, section); BellCard(place.ranked) }
+            is Comparison.Place.Found -> { HeroCard(place.ranked, section); LadderCard(place.ranked, section); BellCard(place.ranked, section.range) }
             else -> PlaceCard(section)
           }
           section.others?.let { OthersCard(section, it) }
-          if (section.weeks.isNotEmpty()) PercentileWeeksCard(section.weeks)
+          if (section.weeks.isNotEmpty()) PercentileWeeksCard(section.weeks, section.estimated)
           SectionLabel(Comparison.SECTION_MARKS, "contrarreloj_section_marks")
         }
         // después lo tuyo: tres cifras, las 10 marcas y el ritmo; al final, las notas
@@ -185,7 +185,7 @@ internal fun ContrarrelojPage(
 
 /** El disco de volver, «Contrarreloj» (Rubik, con tope de letra 1,3) y su subtítulo, que parte la línea por palabras bajo el título (del disco al margen). Todo con [OnBoardText]: el cielo tiene luceros. */
 @Composable
-private fun PageHeader(onBack: () -> Unit, compared: Boolean, modifier: Modifier = Modifier) {
+private fun PageHeader(onBack: () -> Unit, kind: Comparison.Kind, modifier: Modifier = Modifier) {
   Column(modifier.fillMaxWidth().padding(start = PageMargin, end = PageMargin, top = 8.dp).testTag("contrarreloj_header")) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
       KitBackButton(onBack, Modifier.testTag("contrarreloj_back"), label = "Volver a Avance")
@@ -196,7 +196,7 @@ private fun PageHeader(onBack: () -> Unit, compared: Boolean, modifier: Modifier
     }
     Row(Modifier.fillMaxWidth()) {
       Spacer(Modifier.width(64.dp))
-      OnBoardText(TimeTrialMarks.subtitle(compared), color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.weight(1f).testTag("contrarreloj_subtitle"))
+      OnBoardText(TimeTrialMarks.subtitle(kind), color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.weight(1f).testTag("contrarreloj_subtitle"))
     }
   }
 }
@@ -396,10 +396,10 @@ private fun ProgressBar(fraction: Float, tag: String) {
 
 /** «Cómo se reparten las marcas»: la campana real en su propia losa (Ricardo no aceptó mandarla a una hoja), con UNA frase corta que no repite ningún número de la escalera. */
 @Composable
-private fun BellCard(r: Comparison.Ranked) {
+private fun BellCard(r: Comparison.Ranked, range: AgeRange) {
   InfoCard("contrarreloj_bell", Comparison.BELL_TITLE) {
-    BellChart(r)
-    Text(Comparison.BELL_CAPTION, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 12.dp).testTag("contrarreloj_bell_caption"))
+    BellChart(r, range)
+    Text(Comparison.bellCaption(r.estimated), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 12.dp).testTag("contrarreloj_bell_caption"))
   }
 }
 
@@ -770,13 +770,23 @@ private fun SectionLabel(text: String, tag: String) {
   }
 }
 
-/** El rótulo de la sección de comparación y, bajo él, la frase que dice que lo que sigue son datos de muestra (solo en depuración; nunca personas inventadas presentadas como reales): crema, 16 sp. */
+/**
+ * El rótulo de la sección de comparación y, bajo él, UNA frase que dice con qué se compara (crema, 16 sp): con la REFERENCIA ESTIMADA (Tarea 205), «Referencia estimada para 45 a 54 años: sale de estudios por edad y de un programa que jugó esta misma pista en un computador, no en tu teléfono. No son personas.» —va una sola vez por página;
+ * las losas repiten solo «referencia estimada»—; con los datos de muestra de depuración, «Estos son datos de muestra: solo se ven en la versión de prueba.»; con personas reales, ninguna.
+ */
 @Composable
-private fun CompareHeader() {
+private fun CompareHeader(s: Comparison.Section) {
   Column {
     SectionLabel(Comparison.SECTION_COMPARE, "contrarreloj_section_compare")
-    Spacer(Modifier.height(8.dp))
-    Text(Comparison.SAMPLE_NOTICE, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_sample_notice"))
+    val notice = when {
+      s.estimated -> Comparison.estimatedNotice(s.range) to "contrarreloj_estimated_notice"
+      s.sample -> Comparison.SAMPLE_NOTICE to "contrarreloj_sample_notice"
+      else -> null
+    }
+    if (notice != null) {
+      Spacer(Modifier.height(8.dp))
+      Text(notice.first.glueNumbers().glueNames(), color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag(notice.second))
+    }
   }
 }
 
@@ -796,7 +806,7 @@ private fun FlatNote(text: String, tag: String) {
 private fun PlaceCard(s: Comparison.Section) {
   InfoCard("contrarreloj_place", Comparison.PLACE_TITLE) {
     when (val p = s.place) {
-      is Comparison.Place.NoMark -> Text(Comparison.noMarkSentence(s.gameTitle), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("contrarreloj_place_nomark"))
+      is Comparison.Place.NoMark -> Text(Comparison.noMarkSentence(s.gameTitle, s.estimated), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("contrarreloj_place_nomark"))
       is Comparison.Place.Few -> FewBlock(p, s)
       is Comparison.Place.Found -> Unit
     }
@@ -825,19 +835,19 @@ private const val BELL_SAMPLES = 160
  * hasta la curva con la moneda del visto y la palabra encima, y el eje «0 aciertos · 25 · 50 · 75 o más». La barra, la línea y la curva salen de la MISMA función ([Comparison.bellHeight]), así que la barra llega justo a la curva. El lector de pantalla dice «Campana con las marcas de las 128 personas…» (el dibujo no habla; las dos frases de abajo son el contenido).
  */
 @Composable
-private fun BellChart(r: Comparison.Ranked) {
+private fun BellChart(r: Comparison.Ranked, range: AgeRange) {
   val d = r.distribution
   val smooth = remember(d) { Comparison.smoothed(d.bins) }
   val peak = remember(smooth) { smooth.max().coerceAtLeast(1.0) }
-  NightWindow("contrarreloj_bell_window", Modifier.semantics { contentDescription = Comparison.bellSpoken(r) }) {
+  NightWindow("contrarreloj_bell_window", Modifier.semantics { contentDescription = Comparison.bellSpoken(r, range) }) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
       val width = maxWidth
       val canvasHeight = BellTopReserve + BellCurveMax
-      fun xDp(x: Double): Dp = width * (x / Comparison.TOP_MARK).toFloat()
-      fun heightAt(x: Double): Dp = BellCurveMax * (Comparison.bellHeight(smooth, x) / peak).toFloat()
-      val youX = Comparison.markX(r.mark)
+      fun xDp(x: Double): Dp = width * (x / d.topMark).toFloat()
+      fun heightAt(x: Double): Dp = BellCurveMax * (Comparison.bellHeight(smooth, x, d.binWidth) / peak).toFloat()
+      val youX = Comparison.markX(r.mark, d.topMark)
       val barH = heightAt(youX).coerceAtLeast(6.dp)
-      val medianH = heightAt(Comparison.markX(d.p50))
+      val medianH = heightAt(Comparison.markX(d.p50, d.topMark))
       Column {
         Box(Modifier.fillMaxWidth().height(canvasHeight)) {
           Canvas(Modifier.fillMaxSize().hiddenTag("contrarreloj_bell_area")) {
@@ -845,8 +855,8 @@ private fun BellChart(r: Comparison.Ranked) {
             val path = Path().apply {
               moveTo(0f, base)
               for (i in 0..BELL_SAMPLES) {
-                val x = Comparison.TOP_MARK * i / BELL_SAMPLES.toDouble()
-                lineTo(size.width * i / BELL_SAMPLES, base - (Comparison.bellHeight(smooth, x) / peak).toFloat() * BellCurveMax.toPx())
+                val x = d.topMark * i / BELL_SAMPLES.toDouble()
+                lineTo(size.width * i / BELL_SAMPLES, base - (Comparison.bellHeight(smooth, x, d.binWidth) / peak).toFloat() * BellCurveMax.toPx())
               }
               lineTo(size.width, base)
               close()
@@ -855,7 +865,7 @@ private fun BellChart(r: Comparison.Ranked) {
             drawRect(NubiTokens.OnNightDim.copy(alpha = 0.4f), topLeft = Offset(0f, base - 2.dp.toPx()), size = Size(size.width, 2.dp.toPx()))
           }
           // la mitad: una línea fina, del color de la ventanilla, que corta el lila hasta la curva
-          Box(Modifier.offset(x = xDp(Comparison.markX(d.p50)) - 0.75.dp, y = canvasHeight - medianH).width(1.5.dp).height(medianH).background(NubiTokens.NightWindow).hiddenTag("contrarreloj_bell_median"))
+          Box(Modifier.offset(x = xDp(Comparison.markX(d.p50, d.topMark)) - 0.75.dp, y = canvasHeight - medianH).width(1.5.dp).height(medianH).background(NubiTokens.NightWindow).hiddenTag("contrarreloj_bell_median"))
           // «Tú»: la barra sol hasta la curva, y encima la moneda del visto y la palabra (sobre la barra, sin salirse de la ventanilla)
           Box(
             Modifier.offset(x = xDp(youX) - 3.dp, y = canvasHeight - barH).width(6.dp).height(barH).clip(RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)).background(Clay.Sun).hiddenTag("contrarreloj_bell_you_bar")
@@ -872,7 +882,7 @@ private fun BellChart(r: Comparison.Ranked) {
           }
         }
         Spacer(Modifier.height(4.dp))
-        BellAxis(width)
+        BellAxis(width, Comparison.axisTicks(d), d.topMark)
       }
     }
   }
@@ -882,16 +892,16 @@ private fun BellChart(r: Comparison.Ranked) {
  * El eje de la campana (14 sp, rótulo de gráfico): «0 aciertos» al borde izquierdo, «75 o más» al derecho y «25» y «50» sobre su lugar; un rótulo que no deja 8 dp al anterior se omite (primero se guardan los dos extremos, luego el «50» y por último el «25»). Con tope de escala 1,3 como el resto de los gráficos.
  */
 @Composable
-private fun BellAxis(width: Dp) {
+private fun BellAxis(width: Dp, ticks: List<Int>, topMark: Int) {
   CapScale(RHYTHM_TEXT_CAP) {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val style = androidx.compose.material3.LocalTextStyle.current.merge(TextStyle(fontSize = 14.sp))
     val widthPx = with(density) { width.toPx() }
     val gapPx = with(density) { Comparison.AXIS_GAP_DP.dp.toPx() }
-    val labels = listOf(Comparison.BELL_AXIS_LEFT, Comparison.BELL_AXIS_MIDDLE[0].toString(), Comparison.BELL_AXIS_MIDDLE[1].toString(), Comparison.BELL_AXIS_RIGHT)
+    val labels = listOf("0 aciertos", ticks[1].toString(), ticks[2].toString(), "${ticks[3]} o más")
     val w = labels.map { measurer.measure(it, style, softWrap = false, maxLines = 1).size.width.toFloat() }
-    val start = listOf(0f, widthPx * Comparison.BELL_AXIS_MIDDLE[0] / Comparison.TOP_MARK - w[1] / 2, widthPx * Comparison.BELL_AXIS_MIDDLE[1] / Comparison.TOP_MARK - w[2] / 2, widthPx - w[3])
+    val start = listOf(0f, widthPx * ticks[1] / topMark - w[1] / 2, widthPx * ticks[2] / topMark - w[2] / 2, widthPx - w[3])
     val shown = mutableListOf<Int>()
     for (i in listOf(0, 3, 2, 1)) if (shown.all { j -> start[i] >= start[j] + w[j] + gapPx || start[j] >= start[i] + w[i] + gapPx }) shown += i
     Box(Modifier.fillMaxWidth().height(with(density) { 18.sp.toDp() })) {
@@ -904,10 +914,11 @@ private fun BellAxis(width: Dp) {
 
 /** «Tu percentil semanal»: las semanas con marca propia y con 50 personas o más en la franja, en barras de 0 a 100 en la ventanilla noche, y la frase («En 3 de las 4 semanas estuviste por encima de la mitad de tu franja.»). */
 @Composable
-private fun PercentileWeeksCard(points: List<Comparison.WeekPoint>) {
+private fun PercentileWeeksCard(points: List<Comparison.WeekPoint>, estimated: Boolean) {
   InfoCard("contrarreloj_percweeks", Comparison.WEEKS_TITLE) {
-    PercentileWeeksChart(points)
+    PercentileWeeksChart(points, estimated)
     Comparison.weeksSentence(points)?.let { Text(it, color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 12.dp).testTag("contrarreloj_percweeks_sentence")) }
+    if (estimated) Text(Comparison.WEEKS_ESTIMATED_NOTE, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 8.dp).testTag("contrarreloj_percweeks_note"))
   }
 }
 
@@ -917,7 +928,7 @@ private fun PercentileWeeksCard(points: List<Comparison.WeekPoint>) {
  * con muchas semanas y letra grande el rótulo pasa a dos líneas («la / mitad») y el carril se angosta, para que las cifras de dos dígitos conserven 8 dp entre columnas. El lector de pantalla dice cada semana ([Comparison.weeksSpoken]).
  */
 @Composable
-private fun PercentileWeeksChart(points: List<Comparison.WeekPoint>) {
+private fun PercentileWeeksChart(points: List<Comparison.WeekPoint>, estimated: Boolean) {
   val byAgo = points.associateBy { it.weeksAgo }
   val oldest = points.first().weeksAgo
   val measurer = rememberTextMeasurer()
@@ -929,7 +940,7 @@ private fun PercentileWeeksChart(points: List<Comparison.WeekPoint>) {
   val labelStyle = base.merge(TextStyle(fontSize = 14.sp))
   fun labelWidthOf(text: String) = with(density) { (measurer.measure(text, labelStyle, softWrap = false, maxLines = 1, density = capped).size.width + 1).toDp() }
   val figureWidth = with(density) { measurer.measure("99", base.merge(TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily)), softWrap = false, maxLines = 1, density = capped).size.width.toDp() }
-  NightWindow("contrarreloj_percweeks_window", Modifier.semantics { contentDescription = Comparison.weeksSpoken(points) }) {
+  NightWindow("contrarreloj_percweeks_window", Modifier.semantics { contentDescription = Comparison.weeksSpoken(points, estimated) }) {
     BoxWithConstraints(Modifier.fillMaxWidth()) {
       val oneLineWidth = labelWidthOf(Comparison.WEEKS_HALF_LABEL)
       val stacked = (maxWidth - oneLineWidth - HalfLabelGap) / (oldest + 1) < figureWidth + 8.dp
@@ -1012,7 +1023,7 @@ private fun WeeksAxis(width: Dp, left: String?) {
 @Composable
 private fun OthersCard(s: Comparison.Section, o: Comparison.Others) {
   InfoCard("contrarreloj_others", Comparison.OTHERS_TITLE) {
-    Text(Comparison.othersLead(s.gameTitle).glueNumbers(), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("contrarreloj_others_lead"))
+    Text(Comparison.othersLead(s.gameTitle, s.estimated).glueNumbers(), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("contrarreloj_others_lead"))
     Spacer(Modifier.height(12.dp))
     o.rows.forEachIndexed { i, row -> FactRow(row.label, row.value, "contrarreloj_others_$i", bold = row.own) }
     o.all?.let { all ->

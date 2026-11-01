@@ -17,6 +17,15 @@ object TimeTrialMarks {
 
   /** El subtítulo de la página: «solo contigo» sin comparación (la tienda, o de 13 a 17 años) y [SUBTITLE_COMPARED] con ella. */
   fun subtitle(compared: Boolean): String = if (compared) SUBTITLE_COMPARED else SUBTITLE
+
+  /** Con la REFERENCIA ESTIMADA (Tarea 205): nunca «personas». */
+  const val SUBTITLE_ESTIMATED = "Tus marcas, comparadas contigo y con una referencia estimada para tu edad."
+
+  fun subtitle(kind: Comparison.Kind): String = when (kind) {
+    Comparison.Kind.NONE -> SUBTITLE
+    Comparison.Kind.ESTIMATED -> SUBTITLE_ESTIMATED
+    Comparison.Kind.PEOPLE -> SUBTITLE_COMPARED
+  }
   const val FIRST_MARK = "Tu primera marca. Desde la segunda, se dibujan aquí."
   const val NO_MARKS_DOOR = "Todavía sin marcas"
   const val NO_MARK_TILE = "sin marca aún"

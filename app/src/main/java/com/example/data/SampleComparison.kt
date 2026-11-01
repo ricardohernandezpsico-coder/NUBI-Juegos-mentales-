@@ -16,9 +16,15 @@ import kotlin.math.roundToInt
  */
 class SampleComparison(private val world: World) : Comparison.Source {
   /** Los tres mundos de los datos de muestra: «muchos» (lo normal), «pocos» (la franja no llega a 50 pero todas las edades de ESTA semana sí) y «muy pocos» (ni siquiera todas las edades esta semana: solo con las últimas 4 semanas). */
-  enum class World { MANY, FEW, VERY_FEW }
+  enum class World {
+    /** NO es una muestra: es la referencia estimada (la de la tienda), el valor de fábrica de «[Debug] Comparación» (Tarea 205). Ninguna `SampleComparison` se arma con él. */
+    REFERENCE,
+    MANY, FEW, VERY_FEW
+  }
 
   constructor(few: Boolean) : this(if (few) World.FEW else World.MANY)
+
+  init { require(world != World.REFERENCE) { "la referencia estimada no es una muestra: EstimatedReference" } }
 
   companion object {
     /** Las 128 personas de 45 a 54 años que jugaron Tinta o Palabra esta semana, por tramo de 5 aciertos (0 a 4, …, 75 o más). */
@@ -84,7 +90,7 @@ class SampleComparison(private val world: World) : Comparison.Source {
 
   /** Cuántas personas de [range] jugaron esa semana: las de la tabla en la semana de hoy y, antes, un vaivén fijo (más o menos 6 %) o, en el mundo de «pocos», poco más de la cuarta parte. */
   private fun peopleOf(range: AgeRange, weeksAgo: Int): Int {
-    val base = when (world) { World.MANY -> MANY_PEOPLE; World.FEW -> FEW_PEOPLE; World.VERY_FEW -> VERY_FEW_PEOPLE }.getValue(range)
+    val base = when (world) { World.MANY, World.REFERENCE -> MANY_PEOPLE; World.FEW -> FEW_PEOPLE; World.VERY_FEW -> VERY_FEW_PEOPLE }.getValue(range)
     if (weeksAgo == 0) return base
     if (world != World.MANY) return max(1, (base * 0.27).roundToInt())
     val factor = 1.0 + 0.03 * ((weeksAgo * 3) % 5 - 2)

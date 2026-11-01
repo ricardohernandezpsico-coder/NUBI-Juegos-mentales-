@@ -116,6 +116,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   val currentTab by viewModel.currentTab.collectAsState()
   val activeGame by viewModel.activeGame.collectAsState()
   val lastResult by viewModel.lastResult.collectAsState()
+  val guestTrial by viewModel.guestTrial.collectAsState()           // el final de invitado (Tarea 205, solo [Debug]): la marca, sin guardar nada
   val lastTimeTrial by viewModel.lastTimeTrial.collectAsState()      // el final del Contrarreloj (Tarea 177): con él, `lastResult` es la marca de ese Contrarreloj
   val modeNote by viewModel.modeNote.collectAsState()
   val atlas by viewModel.atlas.collectAsState()
@@ -238,6 +239,16 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
 
         // Last Result Screen Overlay
         lastResult?.let { (result, didLevelUp) ->
+          // «[Debug] Contrarreloj de invitado» (Tarea 205): solo la marca; no se guardó nada
+          val guest = guestTrial
+          if (guest != null) {
+            com.example.games.GuestTrialScreen(
+              trial = guest,
+              onAgain = { viewModel.startGuestTimeTrial(guest.gameId) },
+              onDone = { viewModel.closeGameOrResult() }
+            )
+            return@let
+          }
           val timeTrial = lastTimeTrial?.takeIf { result.isTimeTrial && it.result.gameId == result.gameId }
           if (timeTrial != null) {
             // el Contrarreloj tiene su propio final: la marca, el récord, las últimas 5 y la mejor de la semana; «Otra vez» repite el mismo juego y la misma pista

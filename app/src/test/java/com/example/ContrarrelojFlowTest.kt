@@ -180,11 +180,11 @@ class ContrarrelojFlowTest {
     assertNull("sin Plus no se abre la página", vm.contrarreloj.value)
     rule.onNodeWithTag("plus_sheet").assertIsDisplayed()
     assertEquals(PlusAccess.SHEET_TITLE, textOf("plus_sheet_title"))
-    // en depuración hay comparación de muestra: la hoja habla del lugar entre personas de tu edad y trae TRES líneas (Tarea 203); en la tienda diría solo lo que hay detrás
-    assertEquals(PlusAccess.sheetLead(compared = true), textOf("plus_sheet_lead"))
+    // desde la Tarea 205 la referencia estimada (de fábrica en depuración y en la tienda) llega a la hoja: habla de la referencia estimada, nunca de personas, y trae TRES líneas
+    assertEquals(PlusAccess.sheetLead(com.example.data.Comparison.Kind.ESTIMATED), textOf("plus_sheet_lead"))
     assertEquals("tres líneas de lo que trae", 3, (0 until 12).count { rule.onAllNodes(hasTestTag("plus_sheet_item_$it"), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() })
-    assertEquals(PlusAccess.sheetItems(compared = true), (0 until 3).map { textOf("plus_sheet_item_$it") })
-    assertEquals("Entendido", rule.onNodeWithTag("btn_plus_sheet_ok").fetchSemanticsNode().config.getOrNull(SemanticsProperties.Text)?.joinToString("") { it.text })
+    assertEquals(PlusAccess.sheetItems(com.example.data.Comparison.Kind.ESTIMATED), (0 until 3).map { textOf("plus_sheet_item_$it") })
+    assertEquals("Cerrar", rule.onNodeWithTag("btn_plus_sheet_ok").fetchSemanticsNode().config.getOrNull(SemanticsProperties.Text)?.joinToString("") { it.text })
     rule.onNodeWithTag("btn_plus_sheet_ok").performClick(); rule.waitForIdle()
     assertEquals("la hoja se cierra", 0, count("plus_sheet"))
     assertNull(vm.contrarreloj.value)
@@ -192,15 +192,16 @@ class ContrarrelojFlowTest {
 
   @Test
   fun sin_Plus_la_puerta_dice_gratis_la_division_y_lo_que_falta_cuando_hay_una_marca_esta_semana() {
-    val vm = withData(); vm.setPlus(false)
+    val vm = withData(); vm.setPlus(false); vm.setAgeRange(com.example.model.AgeRange.R45_54)
+    TestSupport.awaitUntil(30_000) { vm.ageRange.value == com.example.model.AgeRange.R45_54 }
     val repo = (app as NeuroVidaApplication).repository
     val today = TimeTrialDay.gameFor(vm.todayKey())
-    // una marca de ESTE momento (de la semana en curso, sea cual sea el día): 99 aciertos está en el último tramo de cualquier franja de muestra
+    // una marca de ESTE momento (de la semana en curso, sea cual sea el día): 99 aciertos está en el último tramo de cualquier franja de la referencia estimada (desde la Tarea 205 la tienda y la depuración de fábrica comparan con ella)
     runBlocking { repo.recordTimeTrial(TimeTrialResult(id = "flow-now", gameId = today, day = vm.todayKey(), trackVersion = TimeTrialDay.trackVersion(today), hits = 101, errors = 2, level = 5, seconds = 120, timestamp = System.currentTimeMillis())) }
     TestSupport.awaitUntil(30_000) { vm.timeTrialResults.value.size >= 12 }
     show(vm)
-    assertEquals("Esta semana estás Entre estrellas, la división más alta de tu franja.", textOf("avance_contrarreloj_free").replace(NBSP, " "))
-    assertEquals("la puerta se lee de corrido con la frase gratis y el candado", "Tus marcas del Contrarreloj. Tu récord de hoy: 99 aciertos. Esta semana estás Entre estrellas, la división más alta de tu franja. Con Nubi Plus.",
+    assertEquals("Esta semana estás Entre estrellas en la referencia estimada para tu edad, la división más alta.", textOf("avance_contrarreloj_free").replace(NBSP, " "))
+    assertEquals("la puerta se lee de corrido con la frase gratis y el candado", "Tus marcas del Contrarreloj. Tu récord de hoy: 99 aciertos. Esta semana estás Entre estrellas en la referencia estimada para tu edad, la división más alta. Con Nubi Plus.",
       rule.onNodeWithTag("avance_contrarreloj_door").fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString(". ")?.replace(NBSP, " "))
     assertEquals("el candado sigue (la página entera es Plus)", 1, rule.onAllNodes(hasTestTag("avance_contrarreloj_lock"), useUnmergedTree = true).fetchSemanticsNodes().size)
     assertTrue("la frase va entre el récord y el candado", top("avance_contrarreloj_line") < top("avance_contrarreloj_free") && top("avance_contrarreloj_free") < top("avance_contrarreloj_lock"))
@@ -208,13 +209,26 @@ class ContrarrelojFlowTest {
 
   @Test
   fun con_Plus_la_puerta_no_repite_la_frase_gratis_porque_la_pagina_la_trae_completa() {
-    val vm = withData(); vm.setPlus(true)
+    val vm = withData(); vm.setPlus(true); vm.setAgeRange(com.example.model.AgeRange.R45_54)
+    TestSupport.awaitUntil(30_000) { vm.ageRange.value == com.example.model.AgeRange.R45_54 }
     val repo = (app as NeuroVidaApplication).repository
     val today = TimeTrialDay.gameFor(vm.todayKey())
     runBlocking { repo.recordTimeTrial(TimeTrialResult(id = "flow-now", gameId = today, day = vm.todayKey(), trackVersion = TimeTrialDay.trackVersion(today), hits = 101, errors = 2, level = 5, seconds = 120, timestamp = System.currentTimeMillis())) }
     TestSupport.awaitUntil(30_000) { vm.timeTrialResults.value.size >= 12 }
     show(vm)
     assertEquals(0, rule.onAllNodes(hasTestTag("avance_contrarreloj_free"), useUnmergedTree = true).fetchSemanticsNodes().size)
+  }
+
+  @Test
+  fun sin_una_franja_de_edad_elegida_no_hay_con_quien_compararse_y_la_puerta_no_dice_la_frase_gratis() {
+    val vm = withData(); vm.setPlus(false)
+    val repo = (app as NeuroVidaApplication).repository
+    val today = TimeTrialDay.gameFor(vm.todayKey())
+    runBlocking { repo.recordTimeTrial(TimeTrialResult(id = "flow-now", gameId = today, day = vm.todayKey(), trackVersion = TimeTrialDay.trackVersion(today), hits = 101, errors = 2, level = 5, seconds = 120, timestamp = System.currentTimeMillis())) }
+    TestSupport.awaitUntil(30_000) { vm.timeTrialResults.value.size >= 12 }
+    assertNull("sin franja guardada (quien solo tenía la banda vieja)", vm.ageRange.value)
+    show(vm)
+    assertEquals("la referencia estimada es por franja: sin ella no hay frase gratis", 0, rule.onAllNodes(hasTestTag("avance_contrarreloj_free"), useUnmergedTree = true).fetchSemanticsNodes().size)
   }
 
   @Test
