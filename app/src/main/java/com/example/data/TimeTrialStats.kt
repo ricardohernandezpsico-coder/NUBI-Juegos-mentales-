@@ -63,6 +63,8 @@ object TimeTrialStats {
   const val SEAL = "¡Tu mejor marca hasta hoy!"
   const val UNIT = "en 2 minutos de Contrarreloj"
   const val RULE = "La marca cuenta los aciertos menos los errores, sin bajar de cero."
+  /** Solo en Rescate relámpago (Tarea 208, decisión de Opus del 1-nov: Nubi no esconde reglas): qué es un acierto y qué es un error cuando la marca cuenta por cápsula. Va en el detalle del final, junto a [RULE]. */
+  const val RADAR_RULE = "En Rescate relámpago, cada cápsula bien marcada es un acierto y cada cápsula marcada que no estaba, un error."
   const val LAST_TITLE = "Tus últimas partidas"
   const val AGAIN = "Otra vez"
   const val DONE = "Listo"
@@ -109,10 +111,11 @@ object TimeTrialStats {
     return "La mejor de esta semana: ${TimeTrialDay.hitsText(best)}" + if (o.weekBestIsToday) ", la de hoy." else "."
   }
 
-  /** Lo que dice el detalle de la partida (los números que la vista no muestra): aciertos y errores, cómo se cuenta la marca, el paso, la duración y, si la hay, el récord de una pista anterior. */
+  /** Lo que dice el detalle de la partida (los números que la vista no muestra): aciertos y errores, cómo se cuenta la marca (y, en Rescate relámpago, qué es un acierto y qué un error: [RADAR_RULE]), el paso, la duración y, si la hay, el récord de una pista anterior. */
   fun detailLines(o: Outcome): List<String> = buildList {
     add("Hiciste ${TimeTrialDay.hitsText(o.result.hits)} y ${if (o.result.errors == 1) "1 error" else "${o.result.errors} errores"}.")
     add(RULE)
+    if (o.result.gameId == "radar") add(RADAR_RULE)
     add(stepLine(o.result.level, o.maxLevel))
     add("La partida duró ${o.result.seconds} segundos.")
     o.olderTrackRecord?.let { (version, hits) -> add("Tu récord de la pista $version: ${TimeTrialDay.hitsText(hits)}.") }

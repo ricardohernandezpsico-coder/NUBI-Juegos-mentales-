@@ -260,9 +260,19 @@ namespace NeuroVida.Games.Tests
         }
 
         [Test]
-        public void TheFourTracksAreVersion2_BecauseTheMarkChanged()
+        public void TheTracksAreVersion2_AndRescateIsVersion3_BecauseItsMarkNowCountsPerCapsule()
         {
-            foreach (var g in Games) Assert.AreEqual(2, TimeTrial.TrackVersion(g), g + ": la regla de la marca cambió (Tarea 178): los récords empiezan de nuevo");
+            foreach (var g in Games)
+                Assert.AreEqual(g == "radar" ? 3 : 2, TimeTrial.TrackVersion(g), g + (g == "radar" ? ": la marca cuenta por cápsula (Tarea 208): los récords de Rescate empiezan de nuevo" : ": la regla de la marca cambió (Tarea 178): los récords empiezan de nuevo"));
+        }
+
+        [Test]
+        public void RescatesSeedChangesWithItsTrackVersion()
+        {
+            // la versión entra en la semilla: el mismo día, Rescate juega OTRA pista desde la versión 3 (valores fijos calculados con la misma fórmula: FNV-1a del id, fecha × la constante de oro, versión << 32, SplitMix64)
+            Assert.AreEqual(15825842088206235552UL, TimeTrial.Seed(20261026, "radar"), "versión 3");
+            Assert.AreNotEqual(15746051940230642383UL, TimeTrial.Seed(20261026, "radar"), "no es la semilla de la versión 2");
+            Assert.AreEqual(3509569136056027780UL, TimeTrial.Seed(20261026, "stroop"), "las otras pistas siguen en la versión 2: su semilla no cambió");
         }
 
         [Test]
@@ -295,6 +305,100 @@ namespace NeuroVida.Games.Tests
             for (int i = 0; i < 60; i++) run.Register(true, 60f);
             Assert.AreEqual(12, run.Level);
             Assert.AreEqual(12, run.PeakLevel);
+        }
+
+        // ------------------------------------------------------------------ Rescate relámpago por cápsula (Tarea 208): RegisterRound y StepHits
+
+        [Test]
+        public void ARoundCountsEachCapsule_ButTheLadderCountsRounds()
+        {
+            var run = new TimeTrial.Run("radar", Day);
+            Assert.IsFalse(run.RegisterRound(2, 1, false, 60f), "una ronda con 2 bien y 1 de más no sube");
+            Assert.AreEqual((2, 1, 1, 0, 1), (run.Hits, run.Errors, run.Score, run.StepHits, run.Trials), "2 aciertos, 1 error, marca 1, ninguna ronda lograda y UN número de ensayo");
+            var m = new StroopSessionMetrics();
+            run.Fill(m);
+            CollectionAssert.AreEqual(new[] { 60000, 60000, 60000 }, m.tt_t_ms, "una cápsula, un elemento de ritmo, todos con el mismo instante");
+            CollectionAssert.AreEqual(new[] { 1, 1, 0 }, m.tt_ok, "primero los aciertos y luego los errores");
+            CollectionAssert.AreEqual(new[] { 1, 1, 1 }, m.tt_level, "todos en el paso en que se jugó la ronda");
+            Assert.AreEqual((2, 1), (m.tt_hits, m.tt_errors), "la telemetría lleva las cápsulas, sin restar");
+            Assert.AreEqual(m.tt_hits + m.tt_errors, run.LoggedTrials, "el ritmo queda completo: tantos elementos como aciertos más errores");
+        }
+
+        [Test]
+        public void ARoundHasNoFloor_OnlyTheWholeGameDoes()
+        {
+            var run = new TimeTrial.Run("radar", Day);
+            run.RegisterRound(0, 3, false, 50f);
+            Assert.AreEqual(0, run.Score, "la partida nunca baja de 0");
+            run.RegisterRound(3, 0, true, 40f);
+            Assert.AreEqual((3, 3, 0), (run.Hits, run.Errors, run.Score), "la ronda mala NO se perdona por piso: las 3 de más se descuentan de las 3 de la siguiente");
+            run.RegisterRound(2, 0, true, 30f);
+            Assert.AreEqual(2, run.Score, "y desde ahí vuelve a subir");
+        }
+
+        [Test]
+        public void ARoundWithNoMarksAddsATrialNumberAndNothingElse()
+        {
+            var run = new TimeTrial.Run("radar", Day);
+            Assert.IsFalse(run.RegisterRound(0, 0, false, 50f));
+            Assert.AreEqual((0, 0, 0, 0, 1, 0), (run.Hits, run.Errors, run.Score, run.StepHits, run.Trials, run.LoggedTrials));
+        }
+
+        [Test]
+        public void TheStepClimbsWithSuccessfulRounds_NotWithCapsules()
+        {
+            var up = new TimeTrial.Run("radar", Day);                       // un paso cada 3 rondas logradas
+            Assert.IsFalse(up.RegisterRound(2, 0, true, 100f));
+            Assert.IsFalse(up.RegisterRound(2, 0, true, 90f));
+            Assert.IsTrue(up.RegisterRound(2, 0, true, 80f), "la 3.ª ronda lograda sube al paso 2");
+            Assert.AreEqual((2, 3, 6), (up.Level, up.StepHits, up.Hits), "con 6 cápsulas bien marcadas");
+            var loose = new TimeTrial.Run("radar", Day);
+            for (int i = 0; i < 3; i++) Assert.IsFalse(loose.RegisterRound(3, 0, false, 100f - 10 * i), "nueve cápsulas sueltas, sin ronda lograda, no suben");
+            Assert.AreEqual((1, 0, 9), (loose.Level, loose.StepHits, loose.Hits));
+            Assert.AreEqual(1, loose.PeakLevel);
+            Assert.AreEqual(2, up.PeakLevel, "el paso más alto de la partida");
+        }
+
+        [Test]
+        public void TheNextRoundsRandomUsesTheRoundNumber_NotTheCapsules()
+        {
+            var run = new TimeTrial.Run("radar", Day);
+            run.RegisterRound(3, 1, false, 50f);
+            Assert.AreEqual(TimeTrial.TrialRng(run.Seed, 1).Next(1000000), run.Rng().Next(1000000), "después de la ronda 0 viene el azar del ensayo 1, no el del 4");
+            Assert.AreEqual(TimeTrial.TrialRng(run.Seed, 1, 1).NextDouble(), run.Rng(1).NextDouble());
+        }
+
+        [Test]
+        public void ThePastTheCapRoundIsStillCounted_ButNoLongerLogged()
+        {
+            var run = new TimeTrial.Run("radar", Day);
+            for (int i = 0; i < TimeTrial.Run.MaxLoggedTrials; i++) run.RegisterRound(1, 0, false, 60f);
+            run.RegisterRound(3, 1, true, 60f);
+            Assert.AreEqual(TimeTrial.Run.MaxLoggedTrials, run.LoggedTrials, "el registro llega al tope y no pasa");
+            Assert.AreEqual((TimeTrial.Run.MaxLoggedTrials + 3, 1, TimeTrial.Run.MaxLoggedTrials + 1), (run.Hits, run.Errors, run.Trials), "pero todo se sigue contando");
+        }
+
+        [Test]
+        public void TheOtherThreeGamesKeepCountingOneTrialAtATime_SameListsSameStepAsBefore()
+        {
+            foreach (var g in new[] { "stroop", "disparate", "acoplamiento" })
+            {
+                var a = new TimeTrial.Run(g, Day);
+                var b = new TimeTrial.Run(g, Day);
+                bool[] ok = { true, true, false, true, true, false, false, true, true, true, true, true, false, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true };
+                for (int i = 0; i < ok.Length; i++)
+                {
+                    bool stepA = a.Register(ok[i], 119f - 4 * i);
+                    bool stepB = b.RegisterRound(ok[i] ? 1 : 0, ok[i] ? 0 : 1, ok[i], 119f - 4 * i);
+                    Assert.AreEqual(stepA, stepB, g + " ensayo " + i);
+                }
+                Assert.AreEqual((a.Hits, a.Errors, a.Trials, a.Level, a.PeakLevel, a.StepHits), (b.Hits, b.Errors, b.Trials, b.Level, b.PeakLevel, b.StepHits), g);
+                Assert.AreEqual(a.Hits, a.StepHits, g + ": en estos juegos el paso se cuenta con los aciertos, como siempre");
+                var ma = new StroopSessionMetrics(); var mb = new StroopSessionMetrics();
+                a.Fill(ma); b.Fill(mb);
+                CollectionAssert.AreEqual(ma.tt_t_ms, mb.tt_t_ms, g); CollectionAssert.AreEqual(ma.tt_ok, mb.tt_ok, g); CollectionAssert.AreEqual(ma.tt_level, mb.tt_level, g);
+                Assert.AreEqual(ok.Length, ma.tt_ok.Length, g + ": un elemento de ritmo por ensayo");
+            }
         }
 
         [Test]

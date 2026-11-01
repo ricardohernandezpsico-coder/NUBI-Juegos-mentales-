@@ -1,0 +1,24 @@
+{
+  "estimada": true,
+  "modelo": 2,
+  "fuente_modelo": "auditoria-fable/referencia-estimada.md §2.2 y auditoria-fable/rescate-por-capsula.md §3 (Rescate relámpago)",
+  "juego": "radar",
+  "version_pista": 3,
+  "ancho_tramo": 3,
+  "tramos": 16,
+  "robots_por_franja": 2000,
+  "partidas_por_semana": 3,
+  "dias_de_pista": 7,
+  "primer_dia": 20261101,
+  "semilla": 20261101,
+  "escala": 1,
+  "generado": "2026-11-01",
+  "franjas": {
+    "R18_29": { "robots": 2000, "tramos": [0, 0, 0, 0, 1, 12, 70, 210, 399, 562, 452, 225, 57, 11, 1, 0], "media": 27.99, "p25": 25, "p50": 28, "p75": 31, "p90": 33 },
+    "R30_44": { "robots": 2000, "tramos": [0, 0, 0, 0, 0, 23, 89, 255, 495, 548, 404, 155, 29, 2, 0, 0], "media": 27.14, "p25": 25, "p50": 27, "p75": 30, "p90": 32 },
+    "R45_54": { "robots": 2000, "tramos": [0, 0, 0, 0, 7, 42, 149, 336, 535, 511, 281, 106, 31, 2, 0, 0], "media": 26.09, "p25": 23, "p50": 26, "p75": 29, "p90": 31 },
+    "R55_64": { "robots": 2000, "tramos": [0, 0, 3, 4, 27, 71, 233, 428, 509, 427, 216, 69, 13, 0, 0, 0], "media": 24.81, "p25": 22, "p50": 25, "p75": 28, "p90": 30 },
+    "R65_74": { "robots": 2000, "tramos": [0, 1, 7, 23, 61, 196, 362, 488, 444, 282, 99, 33, 3, 1, 0, 0], "media": 22.54, "p25": 20, "p50": 23, "p75": 26, "p90": 28 },
+    "R75_PLUS": { "robots": 2000, "tramos": [0, 7, 34, 69, 195, 313, 455, 443, 296, 137, 38, 11, 2, 0, 0, 0], "media": 19.85, "p25": 16, "p50": 20, "p75": 23, "p90": 26 }
+  }
+}

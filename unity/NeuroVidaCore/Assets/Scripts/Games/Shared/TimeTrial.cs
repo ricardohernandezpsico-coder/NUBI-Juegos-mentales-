@@ -52,6 +52,7 @@ namespace NeuroVida.Games.Shared
         /// <summary>
         /// La pista de un juego: su VERSIÓN (si la pista o la regla de la marca cambian —los pasos, los generadores, cómo se cuenta—, se sube y el récord de la persona empieza de nuevo; el viejo queda en el detalle), cada cuántos aciertos sube un paso y cuántos pasos tiene. La versión también entra en la semilla: otra versión, otra pista.
         /// Versión 2 (Tarea 178): la marca es aciertos menos errores y el error ya no cuesta pausa.
+        /// Versión 3 SOLO de Rescate relámpago (Tarea 208, decisión de Ricardo del 1-nov): la marca cuenta por CÁPSULA —cada cápsula bien marcada suma 1 acierto y cada cápsula marcada que no estaba resta 1 error; una equivocación ya no anula la ronda—, y la pista sigue subiendo un paso cada 3 RONDAS logradas (<see cref="Run.StepHits"/>).
         /// </summary>
         public readonly struct Track
         {
@@ -72,7 +73,7 @@ namespace NeuroVida.Games.Shared
         {
             new Track(StroopContract.GameId, 2, 8, StroopContract.MaxLevel),
             new Track(DisparateContract.GameId, 2, 3, DisparateContract.MaxLevel),
-            new Track(RadarContract.GameId, 2, 3, RadarContract.MaxLevel),
+            new Track(RadarContract.GameId, 3, 3, RadarContract.MaxLevel),
             new Track(DockingContract.GameId, 2, 2, DockingContract.MaxLevel),
         };
 
@@ -208,10 +209,17 @@ namespace NeuroVida.Games.Shared
             public readonly string GameId;
             public readonly ulong Seed;
             public readonly int DayKey;
-            /// <summary>Ensayos ya resueltos (los aciertos y los errores): el ensayo que viene lleva este número.</summary>
+            /// <summary>Ensayos ya resueltos: el ensayo que viene lleva este número. En los tres juegos de un acierto o un error por ensayo es la suma de los dos; en Rescate relámpago es la RONDA (una ronda = un número de ensayo para la semilla, con cuantas cápsulas se marquen).</summary>
             public int Trials { get; private set; }
+            /// <summary>Los aciertos de la partida (en Rescate relámpago, las cápsulas bien marcadas; Tarea 208).</summary>
             public int Hits { get; private set; }
+            /// <summary>Los errores de la partida (en Rescate relámpago, las cápsulas marcadas que no estaban; Tarea 208).</summary>
             public int Errors { get; private set; }
+            /// <summary>
+            /// Con cuántos ensayos LOGRADOS sube la pista (Tarea 208): lo que lee <see cref="Level"/>. En Tinta, ¿Verdad o disparate? y Acoplamiento es igual a <see cref="Hits"/> (un acierto, un ensayo logrado); en Rescate relámpago cuenta las RONDAS logradas
+            /// (<c>RadarContract.Success</c>: todas las cápsulas y ninguna de más), no las cápsulas: la escalera no cambia aunque la marca cuente por cápsula.
+            /// </summary>
+            public int StepHits { get; private set; }
             /// <summary>La marca de ahora: aciertos menos errores, con piso en 0. Es lo que muestra el chip y lo que se compara.</summary>
             public int Score => Mark(Hits, Errors);
             /// <summary>El paso más alto que alcanzó la pista en la partida (nunca baja).</summary>
@@ -239,26 +247,39 @@ namespace NeuroVida.Games.Shared
             }
 
             /// <summary>El paso de la pista en que está la persona ahora.</summary>
-            public int Level => LevelFor(GameId, Hits);
+            public int Level => LevelFor(GameId, StepHits);
 
             /// <summary>
             /// Registra un ensayo resuelto; true si con él SUBIÓ de paso. <paramref name="secondsLeft"/> = los segundos que quedan en el reloj de la PARTIDA al resolverlo (el mismo número que cada juego le da a <see cref="UpdateHud"/>: sale de su <c>GameClock.Time</c>, que una pausa detiene, y de
             /// su fin de partida, que «Cómo se juega» desplaza). Anota el ensayo para el ritmo (Tarea 200): cuándo (<see cref="ElapsedMs"/>, desde el «¡Ya!»), si fue acierto y EL PASO EN QUE SE JUGÓ (el de antes de registrarlo: un acierto que sube de paso se anota en el paso donde se jugó, no en el que abre).
             /// </summary>
-            public bool Register(bool correct, float secondsLeft)
+            public bool Register(bool correct, float secondsLeft) => RegisterRound(correct ? 1 : 0, correct ? 0 : 1, correct, secondsLeft);
+
+            /// <summary>
+            /// Registra una RONDA resuelta con <paramref name="hits"/> aciertos y <paramref name="extras"/> errores (Tarea 208; Rescate relámpago: cápsulas bien marcadas y cápsulas marcadas que no estaban), y dice si con ella SUBIÓ de paso. <paramref name="success"/> = la ronda
+            /// quedó lograda (es lo que sube la pista, <see cref="StepHits"/>). Una ronda es UN número de ensayo para la semilla (<see cref="Trials"/>) y anota un elemento de ritmo por cápsula (primero los aciertos, luego los errores, todos con el mismo <c>t_ms</c> y el paso de
+            /// ANTES de la ronda); pasado <see cref="MaxLoggedTrials"/> se sigue contando sin anotar. Una ronda con 0 marcas suma el número de ensayo y nada más. <see cref="Register"/> es el caso de un solo ensayo (1 acierto o 1 error) y deja las mismas listas y el mismo paso que antes.
+            /// </summary>
+            public bool RegisterRound(int hits, int extras, bool success, float secondsLeft)
             {
+                hits = Math.Max(0, hits);
+                extras = Math.Max(0, extras);
                 int before = Level;
                 if (_tMs.Count < MaxLoggedTrials)
                 {
                     int ms = ElapsedMs(secondsLeft);
                     if (_tMs.Count > 0) ms = Math.Max(ms, _tMs[_tMs.Count - 1]);      // el reloj de juego no retrocede: nunca decrece, aunque un cuadro lo dijera
-                    _tMs.Add(ms);
-                    _ok.Add(correct ? 1 : 0);
-                    _level.Add(before);
+                    for (int i = 0; i < hits + extras && _tMs.Count < MaxLoggedTrials; i++)
+                    {
+                        _tMs.Add(ms);
+                        _ok.Add(i < hits ? 1 : 0);
+                        _level.Add(before);
+                    }
                 }
                 Trials++;
-                if (correct) Hits++;
-                else Errors++;
+                Hits += hits;
+                Errors += extras;
+                if (success) StepHits++;
                 int after = Level;
                 PeakLevel = Math.Max(PeakLevel, after);
                 return after > before;

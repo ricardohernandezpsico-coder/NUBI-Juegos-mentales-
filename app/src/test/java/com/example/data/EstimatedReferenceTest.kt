@@ -19,10 +19,10 @@ class EstimatedReferenceTest {
   private val reference: EstimatedReference by lazy { EstimatedReference.of(files.map { it.readText(Charsets.UTF_8) }) }
 
   /**
-   * (ancho del tramo, número de tramos) de cada juego. El ANCHO lo decidió Ricardo el 1-nov: 1 en Rescate relámpago, 2 en Acoplamiento y 5 en los otros dos. El NÚMERO es su consecuencia técnica: 24 en Rescate (Tarea 204b) y, desde la Tarea 206, 20 en Tinta o Palabra (0 a 99) y en Acoplamiento (0 a 39),
+   * (ancho del tramo, número de tramos) de cada juego. El ANCHO lo decidió Ricardo el 1-nov: 1 en Rescate relámpago (3 desde la Tarea 208), 2 en Acoplamiento y 5 en los otros dos. El NÚMERO es su consecuencia técnica: 24 de a 1 en Rescate (Tarea 204b) y, desde la Tarea 208 (la marca cuenta por cápsula), 16 de a 3 (0 a 47) y, desde la Tarea 206, 20 en Tinta o Palabra (0 a 99) y en Acoplamiento (0 a 39),
    * para que con las escalas calibradas el último tramo no junte a los jóvenes y el percentil 90 se alcance; ¿Verdad o disparate? se queda en 16.
    */
-  private val shapes = mapOf("stroop" to (5 to 20), "disparate" to (5 to 16), "radar" to (1 to 24), "acoplamiento" to (2 to 20))
+  private val shapes = mapOf("stroop" to (5 to 20), "disparate" to (5 to 16), "radar" to (3 to 16), "acoplamiento" to (2 to 20))
 
   /** La escala de cada juego tras la Tarea 206 (`ReferenceScales` en Unity): la que deja la mediana de los 5 percentiles de la primera semana lo más cerca de 50. Rescate relámpago no se calibró. */
   private val calibratedScales = mapOf("stroop" to 0.89, "disparate" to 0.92, "radar" to 1.0, "acoplamiento" to 0.90)
@@ -44,7 +44,7 @@ class EstimatedReferenceTest {
   }
 
   @Test
-  fun `cada juego trae su ancho de tramo y su numero de tramos, anchos 1 2 5 y 5 y tramos 24 20 16 y 20`() {
+  fun `cada juego trae su ancho de tramo y su numero de tramos, anchos 3 2 5 y 5 y tramos 16 20 16 y 20`() {
     for ((game, shape) in shapes) {
       val table = reference.loaded.single { it.game == game }
       assertEquals("ancho del tramo de $game", shape.first, table.binWidth)
@@ -124,8 +124,8 @@ class EstimatedReferenceTest {
     assertNull("no es una referencia estimada", EstimatedReference.parse(ok.replace(""""estimada": true""", """"estimada": false""")))
     assertNull("no es un JSON", EstimatedReference.parse("{ esto no es"))
     assertNull("los robots de una franja no suman su histograma", EstimatedReference.parse(ok.replaceFirst(""""robots": 2000""", """"robots": 1999""")))
-    assertNull("otro número de tramos que el que dice", EstimatedReference.parse(ok.replace(""""tramos": 24,""", """"tramos": 16,""")))
-    assertNull("un ancho de tramo imposible", EstimatedReference.parse(ok.replace(""""ancho_tramo": 1,""", """"ancho_tramo": 0,""")))
+    assertNull("otro número de tramos que el que dice", EstimatedReference.parse(ok.replace(""""tramos": 16,""", """"tramos": 15,""")))
+    assertNull("un ancho de tramo imposible", EstimatedReference.parse(ok.replace(""""ancho_tramo": 3,""", """"ancho_tramo": 0,""")))
   }
 
   // ------------------------------------------------------------------ de ellos salen el percentil, la escalera y el eje
@@ -142,10 +142,10 @@ class EstimatedReferenceTest {
       }
       assertEquals("${table.game} $range: con 0 aciertos nadie queda detrás", 0, Comparison.percentile(0, d))
     }
-    // Rescate cuenta de a 1 acierto: la marca 14 de los 18 a 29 años deja detrás a quienes sacaron 13 o menos, y no al «tramo de 5»
+    // Rescate cuenta de a 3 aciertos (Tarea 208): la marca 9 de los 18 a 29 años deja detrás justo a los tres primeros tramos (0 a 8), y no al «tramo de 5»
     val radar = reference.distribution("radar", listOf(AgeRange.R18_29), 0, 1)
-    val behind = radar.bins.take(14).sum()
-    assertEquals(100 * behind / radar.people, Comparison.percentile(14, radar))
+    val behind = radar.bins.take(3).sum()
+    assertEquals(100 * behind / radar.people, Comparison.percentile(9, radar))
     // y en Tinta o Palabra, de a 5: la marca 5 deja detrás justo al tramo 0 a 4
     val stroop = reference.distribution("stroop", listOf(AgeRange.R18_29), 0, 1)
     assertEquals(100 * stroop.bins[0] / stroop.people, Comparison.percentile(5, stroop))
@@ -173,20 +173,20 @@ class EstimatedReferenceTest {
     val ticks = shapes.mapValues { (game, _) -> Comparison.axisTicks(reference.distribution(game, listOf(AgeRange.R45_54), 0, 1)) }
     assertEquals("Tinta o Palabra: 20 tramos de 5, 0 · 32 · 63 · 95", listOf(0, 32, 63, 95), ticks["stroop"])
     assertEquals("¿Verdad o disparate?: 0 · 25 · 50 · 75", listOf(0, 25, 50, 75), ticks["disparate"])
-    assertEquals("Rescate relámpago: 24 tramos de 1, 0 · 8 · 15 · 23", listOf(0, 8, 15, 23), ticks["radar"])
+    assertEquals("Rescate relámpago: 16 tramos de 3, 0 · 15 · 30 · 45", listOf(0, 15, 30, 45), ticks["radar"])
     assertEquals("Acoplamiento: 20 tramos de 2, 0 · 13 · 25 · 38", listOf(0, 13, 25, 38), ticks["acoplamiento"])
     val radar = reference.distribution("radar", listOf(AgeRange.R45_54), 0, 1)
-    assertEquals("la marca dibujada se topa en el centro del último tramo de SU juego", 23.5, Comparison.markX(40, radar.topMark), 0.0)
+    assertEquals("la marca dibujada se topa en el centro del último tramo de SU juego", 47.5, Comparison.markX(60, radar.topMark), 0.0)
     assertEquals(0.5, Comparison.markX(0, radar.topMark), 0.0)
   }
 
   @Test
-  fun `el ultimo tramo no se parte aunque el juego sea de a 1 acierto`() {
+  fun `el ultimo tramo no se parte aunque sea de a mas de un acierto`() {
     val radar = reference.distribution("radar", listOf(AgeRange.R18_29), 0, 1)
-    assertEquals("Rescate empieza su último tramo en 23", 23, radar.lastStart)
+    assertEquals("Rescate empieza su último tramo en 45", 45, radar.lastStart)
     val below = 100 * radar.bins.take(radar.bins.lastIndex).sum() / radar.people
-    assertEquals("de 23 en adelante cuenta solo a los de abajo", minOf(99, below), Comparison.percentile(23, radar))
-    assertEquals(Comparison.percentile(23, radar), Comparison.percentile(60, radar))
+    assertEquals("de 45 en adelante cuenta solo a los de abajo", minOf(99, below), Comparison.percentile(45, radar))
+    assertEquals(Comparison.percentile(45, radar), Comparison.percentile(60, radar))
   }
 
   @Test

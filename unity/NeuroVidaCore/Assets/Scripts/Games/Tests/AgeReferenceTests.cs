@@ -97,7 +97,7 @@ namespace NeuroVida.Games.Tests
                 StringAssert.Contains("\"partidas_por_semana\": 3", json);
                 StringAssert.Contains("\"dias_de_pista\": 7", json);
                 StringAssert.Contains("\"modelo\": " + AgeReference.ModelVersion, json);
-                StringAssert.Contains("\"fuente_modelo\": \"auditoria-fable/referencia-estimada.md §2.2\"", json);
+                StringAssert.Contains("\"fuente_modelo\": \"" + AgeReference.Source + "\"", json);
                 Assert.AreEqual(g + "_v" + TimeTrial.TrackVersion(g) + ".json", AgeReference.FileName(t));
                 Assert.AreEqual(6, t.Ranges.Length, "seis franjas, de 18 a 29 a 75 o más (sin 13 a 17)");
                 foreach (var r in t.Ranges)
@@ -116,11 +116,11 @@ namespace NeuroVida.Games.Tests
         [Test]
         public void BinWidthsAreTheOnesRicardoChose()
         {
-            Assert.AreEqual(1, AgeReference.BinWidth("radar"));
+            Assert.AreEqual(3, AgeReference.BinWidth("radar"), "Rescate relámpago: de a 3 aciertos desde la marca por cápsula (Tarea 208)");
             Assert.AreEqual(2, AgeReference.BinWidth("acoplamiento"));
             Assert.AreEqual(5, AgeReference.BinWidth("stroop"));
             Assert.AreEqual(5, AgeReference.BinWidth("disparate"));
-            Assert.AreEqual(24, AgeReference.BinCount("radar"), "Rescate relámpago: 24 tramos de a 1 (0 a 23)");
+            Assert.AreEqual(16, AgeReference.BinCount("radar"), "Rescate relámpago: 16 tramos de a 3 (0 a 47; Tarea 208)");
             Assert.AreEqual(20, AgeReference.BinCount("stroop"), "Tinta o Palabra: 20 tramos de a 5 (0 a 99; Tarea 206)");
             Assert.AreEqual(20, AgeReference.BinCount("acoplamiento"), "Acoplamiento: 20 tramos de a 2 (0 a 39; Tarea 206)");
             Assert.AreEqual(16, AgeReference.BinCount("disparate"), "¿Verdad o disparate?: 16 tramos de a 5 (0 a 79)");
@@ -130,7 +130,7 @@ namespace NeuroVida.Games.Tests
         public void TheMarksOfEveryGameFitTheirBins()
         {
             // Lo que importa (Opus, Tarea 206): que el percentil 90 se alcance CON MARGEN en todas las franjas, es decir, que el último tramo («N o más») junte 5 % o menos de los robots; si junta más, los de arriba se amontonan ahí, el percentil 90 no se alcanza y «Entre estrellas» se queda sin peldaño.
-            // Rescate relámpago (decisión de Opus, 1-nov) conserva su regla: MENOS del 1 % en 18 a 29 años (con 16 tramos de a 1 juntaba del 21 al 29 %; con 24 no junta a nadie).
+            // Rescate relámpago cumple la regla general desde la Tarea 208 (16 tramos de a 3) y conserva la suya: MENOS del 1 % de 18 a 29 años en el último tramo y NINGÚN robot sobre 45 aciertos (el techo del juego: unas 15 rondas de 7 s, una partida perfecta vale unos 39).
             foreach (var g in TimeTrial.GameIds)
             {
                 var t = TableOf(g);
@@ -140,7 +140,7 @@ namespace NeuroVida.Games.Tests
                 {
                     double young = t.Ranges[0].Bins[AgeReference.BinCount(g) - 1] / (double)t.Ranges[0].People;
                     Assert.Less(young, 0.01, g + ": el último tramo no es donde se amontona la gente (los tramos cubren la marca máxima razonable)");
-                    continue;
+                    foreach (var r in t.Ranges) Assert.AreEqual(0, r.Bins[AgeReference.BinCount(g) - 1], g + " " + r.Key + ": ningún robot pasa de 45 aciertos (el techo del juego)");
                 }
                 foreach (var r in t.Ranges)
                 {
@@ -221,6 +221,79 @@ namespace NeuroVida.Games.Tests
             CollectionAssert.AreEqual(new[] { 20261129, 20261130, 20261201 }, AgeReference.DayKeys(20261129, 3));
         }
 
+        // ------------------------------------------------------------------ Rescate relámpago por cápsula (Tarea 208)
+
+        [Test]
+        public void TheRadarRobotNeverMarksMoreTypesThanThereWereCapsules()
+        {
+            var rng = new TimeTrial.TrackRandom(12345UL);
+            int checkedRounds = 0;
+            for (int f = 0; f < AgeReference.RangeKeys.Length; f++)
+                for (int k = 0; k < 40; k++)
+                {
+                    var person = AgeReference.Draw(f, 1.0, rng);
+                    foreach (int n in new[] { 2, 3, 4 })
+                        foreach (int rocks in new[] { 0, 1, 2 })
+                            foreach (double ms in new[] { 100.0, 280.0, 800.0 })
+                            {
+                                AgeReference.RadarRoundMarks(person, n, rocks, ms, rng, out int hits, out int extras);
+                                Assert.GreaterOrEqual(hits, 0); Assert.GreaterOrEqual(extras, 0);
+                                Assert.LessOrEqual(hits + extras, n, "marcó " + (hits + extras) + " tipos con " + n + " cápsulas (el tablero no deja pasar de n)");
+                                Assert.LessOrEqual(hits, n);
+                                checkedRounds++;
+                            }
+                }
+            Assert.Greater(checkedRounds, 4000);
+        }
+
+        [Test]
+        public void TheRadarRobotMisreadsAndLapsesAsOftenAsTheModelSays()
+        {
+            // una persona que lo ve todo (capacidad 4,5, lenta 1,0) con 3 cápsulas y 1000 ms: sin lapso ni error nombra bien 3 de 3; con el modelo, ~17,5 % de las rondas salen en 0 vistas (lapso) y ~5 % de lo visto sale mal
+            var rng = new TimeTrial.TrackRandom(777UL);
+            var person = new AgeReference.Person(1.0, 0.95, 4.5, false);
+            int rounds = 20000, perfect = 0; double hitsSum = 0;
+            for (int i = 0; i < rounds; i++)
+            {
+                AgeReference.RadarRoundMarks(person, 3, 0, 1000.0, rng, out int hits, out int extras);
+                hitsSum += hits;
+                if (hits == 3 && extras == 0) perfect++;
+            }
+            double perfectShare = perfect / (double)rounds;
+            // perfecta = sin lapso (0,825) y sin error de nombre en las 3 (0,95³ = 0,857) ≈ 0,707, más lo poco que acierta adivinando de las rondas perdidas: ~0,71
+            Assert.AreEqual(0.710, perfectShare, 0.025, "la proporción de rondas perfectas debe salir de LAPSE e IDERR");
+        }
+
+        [Test]
+        public void TheRadarTableHasThe21To29MediansOfTheSimulation_InOrderByAge()
+        {
+            var t = TableOf("radar");
+            int[] expected = { 29, 28, 27, 26, 24, 21 };
+            for (int f = 0; f < expected.Length; f++)
+                Assert.AreEqual(expected[f], t.Ranges[f].P50, 2, "la mitad de " + t.Ranges[f].Label + " (la simulación de Fable da " + expected[f] + " ± 2)");
+            for (int f = 0; f + 1 < expected.Length; f++) Assert.LessOrEqual(t.Ranges[f + 1].P50, t.Ranges[f].P50, "el orden por edad");
+            Assert.Greater(t.Ranges[0].P50 - t.Ranges[5].P50, 4, "de 18 a 29 a 75 o más la mitad baja varios aciertos (Fable: 8)");
+        }
+
+        [Test]
+        public void TheOldRuleWithTheFivePeopleGivesAMedianNear50()
+        {
+            // el ajuste de LAPSE e IDERR: con la regla VIEJA (rondas logradas menos rondas fallidas) y los 5 de la primera semana (P1 9, P2 7, P3 4, P4 14, P5 14), la mediana de sus percentiles queda cerca de 50 (Fable: 51 con 2.000 robots)
+            var options = new AgeReference.Options(1000, 3, 20261101, 20261101UL, 0.0, legacyRadarMark: true);
+            var legacy = AgeReference.Build("radar", Bank, options);
+            (int range, int mark)[] people = { (1, 9), (0, 7), (3, 4), (1, 14), (2, 14) };      // 30-44, 18-29, 55-64, 30-44, 45-54
+            var pcts = new List<int>();
+            foreach (var (range, mark) in people)
+            {
+                var marks = legacy.Ranges[range].Marks;
+                int below = 0;
+                foreach (int m in marks) if (m < mark) below++;
+                pcts.Add(System.Math.Min(99, 100 * below / marks.Length));
+            }
+            pcts.Sort();
+            Assert.That(pcts[2], Is.InRange(44, 56), "la mediana de los percentiles con la regla vieja: " + string.Join(" · ", pcts));
+        }
+
         [Test]
         public void TheParametersAreTheOnesOfTheDesignTable()
         {
@@ -234,6 +307,14 @@ namespace NeuroVida.Games.Tests
             Assert.AreEqual(1.25, AgeReference.StroopResponse);
             Assert.AreEqual(0.30, AgeReference.DisparatePerWord);
             Assert.AreEqual(2.2, AgeReference.RadarResponse);
+            // Rescate por cápsula (Tarea 208, auditoria-fable/rescate-por-capsula.md §3): los dos números nuevos ajustados con la regla vieja a las 5 personas, y la adivinanza de a una
+            Assert.AreEqual(0.175, AgeReference.RadarLapse);
+            Assert.AreEqual(0.05, AgeReference.RadarNameError);
+            Assert.AreEqual(0.70, AgeReference.RadarGuessRate);
+            Assert.AreEqual(120, AgeReference.RadarTauMs); Assert.AreEqual(0.12, AgeReference.RadarRockMistake); Assert.AreEqual(0.25, AgeReference.RadarPerCapsule);
+            Assert.AreEqual(2, AgeReference.ModelVersion, "el modelo es la versión 2 desde que Rescate cuenta por cápsula");
+            StringAssert.Contains("rescate-por-capsula.md", AgeReference.Source);
+            StringAssert.Contains("referencia-estimada", AgeReference.Source);
             Assert.AreEqual(1.3, AgeReference.DockingBase);
         }
     }

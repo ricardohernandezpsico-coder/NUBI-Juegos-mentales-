@@ -13,7 +13,7 @@ import java.util.Calendar
  */
 class TimeTrialMarksTest {
   private fun at(day: Int, h: Int = 12) = Calendar.getInstance().apply { set(2026, Calendar.OCTOBER, day, h, 0, 0); set(Calendar.MILLISECOND, 0) }.timeInMillis
-  private fun r(mark: Int, day: Int, game: String = "stroop", version: Int = 2, errors: Int = 2, level: Int = 4, h: Int = 12) =
+  private fun r(mark: Int, day: Int, game: String = "stroop", version: Int = TimeTrialDay.trackVersion(game), errors: Int = 2, level: Int = 4, h: Int = 12) =
     TimeTrialResult(id = "r-$game-$day-$h-$mark", gameId = game, day = "2026-10-%02d".format(day), trackVersion = version, hits = mark + errors, errors = errors, level = level, seconds = 120, timestamp = at(day, h))
 
   /** Las diez marcas de la lámina: 31, 35, 39, 36, 44 (el récord, 17 de octubre; 46 aciertos y 2 errores), 38, 41, 37, 42 y 43 (hoy, miércoles 28); las últimas cinco con 3 errores cada una. */
@@ -163,5 +163,21 @@ class TimeTrialMarksTest {
     val free = "Esta semana estás En órbita. Te faltan 7 aciertos para En la Luna."
     assertEquals("Tus marcas del Contrarreloj. Tu récord de hoy: 44 aciertos. $free Con Nubi Plus.", TimeTrialMarks.doorSpoken(44, plus = false, freeLine = free))
     assertEquals("con Plus la frase gratis no va: la página la trae completa", TimeTrialMarks.doorSpoken(44, plus = true), TimeTrialMarks.doorSpoken(44, plus = true, freeLine = free))
+  }
+
+  // ------------------------------------------------------------------ Rescate relámpago por cápsula (Tarea 208): varias cápsulas en el mismo instante
+
+  @Test
+  fun `el ritmo con tiempos repetidos cuenta las capsulas de una ronda en el mismo medio minuto`() {
+    // dos rondas: la primera a los 40 s con 2 bien y 1 de más (tres cápsulas en el mismo ms), la segunda a los 100 s con 3 bien
+    val trials = TimeTrialTrials.of(listOf(40_000, 40_000, 40_000, 100_000, 100_000, 100_000), listOf(1, 1, 0, 1, 1, 1), listOf(1, 1, 1, 1, 1, 1))!!
+    val result = TimeTrialResult(gameId = "radar", day = "2026-10-26", trackVersion = TimeTrialDay.trackVersion("radar"), hits = 5, errors = 1, level = 1, timestamp = 1_000L, trials = trials)
+    assertTrue("el ritmo está completo: tantos elementos como aciertos más errores", result.hasPace)
+    val pace = TimeTrialMarks.paceOf(result)!!
+    assertEquals("0 a 30: nada", Pair(0, 0), pace.halves[0].let { it.hits to it.errors })
+    assertEquals("30 a 60: 2 aciertos y 1 error de la misma ronda", Pair(2, 1), pace.halves[1].let { it.hits to it.errors })
+    assertEquals("60 a 90: nada", Pair(0, 0), pace.halves[2].let { it.hits to it.errors })
+    assertEquals("90 a 120: 3 aciertos", Pair(3, 0), pace.halves[3].let { it.hits to it.errors })
+    assertEquals("el mejor medio minuto es el último", listOf(3), pace.bestHalves)
   }
 }

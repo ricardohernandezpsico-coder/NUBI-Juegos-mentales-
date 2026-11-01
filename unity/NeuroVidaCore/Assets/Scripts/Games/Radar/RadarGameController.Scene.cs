@@ -158,7 +158,7 @@ namespace NeuroVida.Games.Radar
             if (_guided) return;
             if (_tt != null)
             {
-                // Contrarreloj: «N aciertos» (rondas logradas) en el chip y el tiempo que queda en la fila de consigna
+                // Contrarreloj: «N aciertos» (cápsulas bien marcadas menos las marcadas que no estaban, Tarea 208) en el chip y el tiempo que queda en la fila de consigna
                 _hud.SetLevel(_tt.Level);
                 _tt.UpdateHud(_hud, _clock != null ? _clock.Remaining(GameClock.Time) : TimeTrial.TotalSeconds);
                 UpdateHudExtras();

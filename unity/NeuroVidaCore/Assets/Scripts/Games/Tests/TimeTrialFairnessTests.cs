@@ -31,7 +31,7 @@ namespace NeuroVida.Games.Tests
         public void TheReportIsWrittenWithTheNumbersOfTheFourGames()
         {
             var results = new List<TimeTrialSimulation.Result>();
-            foreach (var g in TimeTrial.GameIds) results.Add(TimeTrialSimulation.Measure(g, Bank));
+            foreach (var g in TimeTrial.GameIds) results.AddRange(TimeTrialSimulation.MeasureAll(g, Bank));          // en Rescate relámpago, las cuatro jugadas a ciegas (Tarea 208)
             var inv = System.Globalization.CultureInfo.InvariantCulture;
             var sb = new StringBuilder();
             sb.AppendLine("Contrarreloj · prueba del azar (Tarea 176, con la marca neta de la Tarea 178): la MISMA pista del día (" + TimeTrialSimulation.Day + ") jugada " + TimeTrialSimulation.Runs + " veces con un bot de azar y " + TimeTrialSimulation.Runs + " con uno de cuidado (acierta el " + (int)(TimeTrialSimulation.Careful * 100) + " %).");
@@ -40,7 +40,7 @@ namespace NeuroVida.Games.Tests
             sb.AppendLine();
             sb.AppendLine("juego\tcuidado (media)\tazar (media)\tazar (p90)\tazar (máx.)\tazar/cuidado\tresultado");        // las medias son MARCAS netas
             foreach (var r in results)
-                sb.AppendLine(string.Format(inv, "{0}\t{1:0.0}\t{2:0.0}\t{3:0.0}\t{4:0.0}\t{5:0}%\t{6}", r.Game, r.CareMean, r.ChanceMean, r.ChanceP90, r.ChanceMax, 100 * r.ChanceMean / r.CareMean, r.Passes ? "pasa" : "FALLA"));
+                sb.AppendLine(string.Format(inv, "{0}\t{1:0.0}\t{2:0.0}\t{3:0.0}\t{4:0.0}\t{5:0}%\t{6}", r.Game + (r.Blind == null ? "" : " [" + r.Blind + "]"), r.CareMean, r.ChanceMean, r.ChanceP90, r.ChanceMax, 100 * r.ChanceMean / r.CareMean, r.Passes ? "pasa" : "FALLA"));
             string text = sb.ToString();
             Debug.Log("[TimeTrialFairness]\n" + text);
             try

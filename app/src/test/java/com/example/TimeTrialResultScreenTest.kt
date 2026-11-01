@@ -26,6 +26,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.example.data.TimeTrialDay
 import com.example.data.TimeTrialResult
 import com.example.data.TimeTrialStats
 import com.example.games.TimeTrialBarMax
@@ -62,7 +63,7 @@ class TimeTrialResultScreenTest {
   private fun at(day: Int, h: Int = 12) = Calendar.getInstance().apply { set(2026, Calendar.OCTOBER, day, h, 0, 0); set(Calendar.MILLISECOND, 0) }.timeInMillis
   // por defecto SIN errores: la marca (aciertos menos errores) es igual a los aciertos; los de la marca neta ponen los suyos (Tarea 178)
   private fun r(hits: Int, day: Int, game: String = "stroop", errors: Int = 0, level: Int = 4) =
-    TimeTrialResult(id = "r-$game-$day-$hits-$errors", gameId = game, day = "2026-10-%02d".format(day), trackVersion = 2, hits = hits, errors = errors, level = level, seconds = 120, timestamp = at(day))
+    TimeTrialResult(id = "r-$game-$day-$hits-$errors", gameId = game, day = "2026-10-%02d".format(day), trackVersion = TimeTrialDay.trackVersion(game), hits = hits, errors = errors, level = level, seconds = 120, timestamp = at(day))
 
   private val history = listOf(r(31, 20), r(35, 21), r(41, 23), r(36, 24))
 
@@ -299,4 +300,32 @@ class TimeTrialResultScreenTest {
       resize(w, h, fs); assertFits(w, h, fs, o, name)
     }
   }
+
+  // ------------------------------------------------------------------ Rescate relámpago por cápsula (Tarea 208): la frase del detalle
+
+  @Test
+  fun `el detalle de Rescate dice que es un acierto y que un error con letra 1_0 y 2_0 sin partir palabras`() {
+    val rescate = r(31, 26, game = "radar", errors = 3, level = 4).let { TimeTrialStats.outcome(listOf(it), it) }
+    mount(); show(rescate)
+    rule.onNodeWithTag("detail_toggle").performScrollTo().performClick(); rule.waitForIdle()
+    assertEquals("la frase va en el detalle, bajo «cómo se cuenta la marca», en 16 sp", TimeTrialStats.RADAR_RULE, detailText(2))
+    assertEquals(TimeTrialStats.RULE, detailText(1))
+    assertTrue("y se ve en pantalla", allText().contains(TimeTrialStats.RADAR_RULE))
+    assertNoWordSplit()
+    for ((w, h, fs) in listOf(Triple(360, 780, 1f), Triple(393, 873, 2f), Triple(360, 780, 2f))) {
+      resize(w, h, fs)
+      rule.onNodeWithTag("timetrial_detail_2", useUnmergedTree = true).performScrollTo()
+      assertEquals("a $w dp con letra $fs la frase sigue en el detalle", TimeTrialStats.RADAR_RULE, detailText(2))
+      assertNoWordSplit()
+    }
+    // el lector de pantalla lee el detalle con sus mismas palabras (cada línea es un texto del árbol)
+    assertTrue(allText().contains(TimeTrialStats.RADAR_RULE))
+    // y en un juego de Tinta o Palabra no está
+    resize(393, 873, 1f)
+    show(marcaNueva)
+    assertFalse("Tinta o Palabra no lleva la frase de Rescate", allText().contains(TimeTrialStats.RADAR_RULE))
+  }
+
+  private fun detailText(i: Int): String =
+    rule.onNodeWithTag("timetrial_detail_$i", useUnmergedTree = true).fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.Text].joinToString("") { it.text }
 }

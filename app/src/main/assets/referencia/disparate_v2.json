@@ -1,7 +1,7 @@
 {
   "estimada": true,
-  "modelo": 1,
-  "fuente_modelo": "auditoria-fable/referencia-estimada.md §2.2",
+  "modelo": 2,
+  "fuente_modelo": "auditoria-fable/referencia-estimada.md §2.2 y auditoria-fable/rescate-por-capsula.md §3 (Rescate relámpago)",
   "juego": "disparate",
   "version_pista": 2,
   "ancho_tramo": 5,

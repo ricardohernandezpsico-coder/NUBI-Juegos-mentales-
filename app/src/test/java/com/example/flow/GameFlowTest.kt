@@ -254,7 +254,7 @@ class GameFlowTest {
   private fun timeTrialResult(gameId: String, hits: Int, errors: Int = 4, peak: Int = 2, trials: com.example.data.TimeTrialTrials? = null) =
     GamePlayResult(
       gameId = gameId, score = 50, correctAnswers = hits, totalTrials = hits + errors, timed = true, level = 2, endRating = 0.5f, modeTrials = 0, modeHits = 0,
-      ttHits = hits, ttErrors = errors, ttPeakLevel = peak, ttSeconds = 120, ttTrackVersion = 2, ttTrials = trials
+      ttHits = hits, ttErrors = errors, ttPeakLevel = peak, ttSeconds = 120, ttTrackVersion = com.example.data.TimeTrialDay.trackVersion(gameId), ttTrials = trials
     )
 
   private fun savedTimeTrials(): List<com.example.data.TimeTrialResult> =
@@ -287,7 +287,7 @@ class GameFlowTest {
     vm.onUnityResult(timeTrialResult(id, hits = 38), "LT1")
     TestSupport.awaitUntil(message = "El Contrarreloj no se guardó") { savedTimeTrials().size == 1 }
     val saved = savedTimeTrials().single()
-    assertEquals("Unity manda los aciertos y los errores SIN restar", listOf<Any>(id, 38, 4, 2, 120, 2), listOf(saved.gameId, saved.hits, saved.errors, saved.level, saved.seconds, saved.trackVersion))
+    assertEquals("Unity manda los aciertos y los errores SIN restar", listOf<Any>(id, 38, 4, 2, 120, com.example.data.TimeTrialDay.trackVersion(id)), listOf(saved.gameId, saved.hits, saved.errors, saved.level, saved.seconds, saved.trackVersion))
     assertEquals("la marca es aciertos menos errores", 34, saved.mark)
     assertEquals("con el día de la pista", vm.todayKey(), saved.day)
     assertEquals("NO es una partida de siempre: no entra en game_results", 0, savedResults())

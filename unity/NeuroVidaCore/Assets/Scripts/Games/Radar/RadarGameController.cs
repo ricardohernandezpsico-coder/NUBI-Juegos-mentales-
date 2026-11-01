@@ -33,7 +33,7 @@ namespace NeuroVida.Games.Radar
 
         private System.Random _rng;
         private AdaptiveDifficulty _dda;
-        /// <summary>El CONTRARRELOJ (Tarea 176; <c>docs/contrarreloj.md</c>): si no es null, la pista es fija (la dicta <c>_tt</c> por rondas logradas), sin lluvias, con el azar de cada ronda sembrado por el día y el DDA apagado; el reloj es el de la partida (120 s) y el viaje de la nave a la estación sigue sin descontarle tiempo. null = juega como siempre.</summary>
+        /// <summary>El CONTRARRELOJ (Tarea 176; <c>docs/contrarreloj.md</c>): si no es null, la pista es fija (la dicta <c>_tt</c> por RONDAS logradas, Tarea 208: la marca cuenta por cápsula pero la escalera sigue siendo por rondas), sin lluvias, con el azar de cada ronda sembrado por el día y el DDA apagado; el reloj es el de la partida (120 s) y el viaje de la nave a la estación sigue sin descontarle tiempo. null = juega como siempre.</summary>
         private TimeTrial.Run _tt;
         private RadarRun _run = new RadarRun();
         private RadarRound _round;
@@ -312,7 +312,7 @@ namespace NeuroVida.Games.Radar
             if (!_guided)
             {
                 var outcome = _run.Add(_round, answer.Hits, answer.Extras, _actualMs);
-                if (_tt != null) _tt.Register(outcome.Success, _clock != null ? _clock.Remaining(GameClock.Time) : TimeTrial.TotalSeconds);                  // Contrarreloj: la pista sube por rondas logradas y el DDA no corre; + cuándo (el reloj de la partida, sin el viaje de la nave), para el ritmo
+                if (_tt != null) _tt.RegisterRound(answer.Hits, answer.Extras, outcome.Success, _clock != null ? _clock.Remaining(GameClock.Time) : TimeTrial.TotalSeconds);                  // Contrarreloj (Tarea 208): cada cápsula bien marcada suma 1 acierto y cada una marcada que no estaba, 1 error (una equivocación ya no anula la ronda); la pista sube por RONDAS logradas y el DDA no corre; + cuándo (el reloj de la partida, sin el viaje de la nave), para el ritmo
                 else if (!_round.Rain) _dda.Register(outcome.Success);          // las lluvias quedan fuera del motor
 #if UNITY_EDITOR
                 Debug.Log("[SmokeTest] Radar: ronda " + _run.RoundsPlayed + (_round.Rain ? " (lluvia)" : " nivel " + _round.Level) + ": " + answer.Hits + " de " + _round.Count + ", " + answer.Extras + " de más, destello real " + _actualMs.ToString("0") + " ms de " + _round.ExposureMs + ", racha " + _run.Streak);

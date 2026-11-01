@@ -24,7 +24,7 @@ class TimeTrialPaceTest {
     return (ok + bad).sortedBy { it.first }
   }
 
-  private fun game(vararg trials: List<Triple<Int, Boolean, Int>>, id: String = "g", gameId: String = "stroop", at: Long = 1_000L, version: Int = 2): TimeTrialResult {
+  private fun game(vararg trials: List<Triple<Int, Boolean, Int>>, id: String = "g", gameId: String = "stroop", at: Long = 1_000L, version: Int = TimeTrialDay.trackVersion(gameId)): TimeTrialResult {
     val all = trials.toList().flatten()
     val tr = TimeTrialTrials(all.map { it.first }, all.map { it.second }, all.map { it.third })
     return TimeTrialResult(id = id, gameId = gameId, day = "2026-10-28", trackVersion = version, hits = tr.hits, errors = tr.errors, level = all.maxOfOrNull { it.third } ?: 1, timestamp = at, trials = tr)

@@ -68,7 +68,7 @@ class ContrarrelojLetraTest {
 
   private fun at(day: Int, h: Int = 12) = Calendar.getInstance().apply { set(2026, Calendar.OCTOBER, day, h, 0, 0); set(Calendar.MILLISECOND, 0) }.timeInMillis
   private fun r(mark: Int, day: Int = 27, game: String = "stroop") =
-    TimeTrialResult(id = "r-$game-$day-$mark", gameId = game, day = "2026-10-%02d".format(day), trackVersion = 2, hits = mark + 2, errors = 2, level = 4, seconds = 120, timestamp = at(day))
+    TimeTrialResult(id = "r-$game-$day-$mark", gameId = game, day = "2026-10-%02d".format(day), trackVersion = com.example.data.TimeTrialDay.trackVersion(game), hits = mark + 2, errors = 2, level = 4, seconds = 120, timestamp = at(day))
   private val now = at(28, 18)
 
   /** Los lugares donde un renglón terminó DENTRO de una palabra: entre dos letras (ni espacio ni salto), que es como Android corta lo que no tiene dónde partir. Los espacios duros no cuentan como espacio: pegan. */
@@ -111,7 +111,7 @@ class ContrarrelojLetraTest {
       }
     }
     fun free(game: String, mark: Int) = Comparison.freeSentence(Comparison.place(estimated, game, AgeRange.R45_54, mark))!!
-    val lines = listOf(free("radar", 1) to 12, free("radar", 9) to 4, free("stroop", 40) to 15, free("stroop", 50) to 5, free("stroop", 63) to 5, free("stroop", 57) to 4)
+    val lines = listOf(free("radar", 12) to 12, free("radar", 20) to 4, free("stroop", 40) to 15, free("stroop", 50) to 5, free("stroop", 63) to 5, free("stroop", 57) to 4)
     assertTrue("las frases traen su «Te faltan N»: ${lines.map { it.first }}", lines.all { (s, n) -> "Te faltan $n aciertos" in s || "Te falta $n aciertos" in s })
     val problems = mutableListOf<String>()
     var checked = 0

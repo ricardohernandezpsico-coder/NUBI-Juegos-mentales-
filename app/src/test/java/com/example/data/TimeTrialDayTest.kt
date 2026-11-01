@@ -17,7 +17,7 @@ import java.io.File
 class TimeTrialDayTest {
   private val day = "2026-10-26"
   // por defecto SIN errores: la marca (aciertos menos errores) es igual a los aciertos; las pruebas de la marca neta ponen sus errores
-  private fun r(game: String, hits: Int, at: Long, d: String = day, version: Int = 2, errors: Int = 0, level: Int = 2, id: String = "r$at") =
+  private fun r(game: String, hits: Int, at: Long, d: String = day, version: Int = TimeTrialDay.trackVersion(game), errors: Int = 0, level: Int = 2, id: String = "r$at") =
     TimeTrialResult(id = id, gameId = game, day = d, trackVersion = version, hits = hits, errors = errors, level = level, seconds = 120, timestamp = at)
 
   // ------------------------------------------------------------------ el juego del día
@@ -87,7 +87,8 @@ class TimeTrialDayTest {
   fun `la versión y el largo de la pista salen de la tabla`() {
     assertEquals(5, TimeTrialDay.maxLevel("stroop"))
     assertEquals(12, TimeTrialDay.maxLevel("acoplamiento"))
-    assertEquals("la versión 2 es la de la marca neta (Tarea 178)", 2, TimeTrialDay.trackVersion("radar"))
+    assertEquals("la versión 2 es la de la marca neta (Tarea 178)", 2, TimeTrialDay.trackVersion("stroop"))
+    assertEquals("Rescate relámpago va en la 3: la marca cuenta por cápsula (Tarea 208)", 3, TimeTrialDay.trackVersion("radar"))
     assertTrue(TimeTrialDay.supports("disparate"))
     assertFalse(TimeTrialDay.supports("calculo"))
   }

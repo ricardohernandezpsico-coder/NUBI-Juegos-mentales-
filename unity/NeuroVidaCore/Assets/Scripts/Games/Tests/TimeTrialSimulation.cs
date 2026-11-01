@@ -30,39 +30,58 @@ namespace NeuroVida.Games.Tests
         public struct Result
         {
             public string Game;
+            /// <summary>La jugada a ciegas que midió el azar (solo Rescate relámpago, Tarea 208: <see cref="RadarBlindNames"/>); null en los otros juegos.</summary>
+            public string Blind;
             public double CareMean, ChanceMean, ChanceP90, CareP90, ChanceMax;
             public bool Passes => ChanceMean < 0.7 * CareMean && ChanceP90 < CareMean;
         }
 
         public static string Describe(Result r) =>
-            string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}: cuidado {1:0.0} · azar {2:0.0} (p90 {3:0.0}, máx. {4:0.0}) = {5:0}% del cuidado", r.Game, r.CareMean, r.ChanceMean, r.ChanceP90, r.ChanceMax, 100 * r.ChanceMean / r.CareMean);
+            string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}{6}: cuidado {1:0.0} · azar {2:0.0} (p90 {3:0.0}, máx. {4:0.0}) = {5:0}% del cuidado", r.Game, r.CareMean, r.ChanceMean, r.ChanceP90, r.ChanceMax, 100 * r.ChanceMean / r.CareMean, r.Blind == null ? "" : " [" + r.Blind + "]");
 
-        /// <summary>Juega la pista del día <see cref="Runs"/> veces con cada bot y resume.</summary>
+        /// <summary>
+        /// Las jugadas a ciegas de Rescate relámpago (Tarea 208, <c>auditoria-fable/rescate-por-capsula.md</c> §1.3): con la marca por cápsula, marcar k tipos al azar vale en promedio k·(2n − 6)/6 por ronda (negativo con 2 cápsulas, 0 con 3), así que se miden las cuatro y la prueba exige la PEOR (la de mayor media).
+        /// </summary>
+        public static readonly string[] RadarBlindNames = { "no marca nada", "marca 1 al azar", "marca tantos tipos como cápsulas", "marca 3 al azar (tope las cápsulas)" };
+
+        /// <summary>Juega la pista del día <see cref="Runs"/> veces con cada bot y resume. En Rescate relámpago el azar juega las cuatro jugadas a ciegas y se devuelve la PEOR (la de mayor media): es la que la prueba exige.</summary>
         public static Result Measure(string game, SentenceBank bank, int runs = Runs)
         {
+            var all = MeasureAll(game, bank, runs);
+            var worst = all[0];
+            foreach (var r in all) if (r.ChanceMean > worst.ChanceMean) worst = r;
+            return worst;
+        }
+
+        /// <summary>Lo mismo, con UN resultado por jugada a ciegas (cuatro en Rescate relámpago; uno en los otros juegos): el informe <c>contrarreloj-azar.txt</c> las muestra todas.</summary>
+        public static List<Result> MeasureAll(string game, SentenceBank bank, int runs = Runs)
+        {
             var care = new double[runs];
-            var chance = new double[runs];
-            for (int i = 0; i < runs; i++)
-            {
-                care[i] = Play(game, true, new Random(1000 + i), bank);
-                chance[i] = Play(game, false, new Random(9000 + i), bank);
-            }
+            for (int i = 0; i < runs; i++) care[i] = Play(game, true, new Random(1000 + i), bank);
             Array.Sort(care);
-            Array.Sort(chance);
             double Mean(double[] a) { double s = 0; foreach (var v in a) s += v; return s / a.Length; }
-            return new Result { Game = game, CareMean = Mean(care), CareP90 = Percentile(care, 0.9), ChanceMean = Mean(chance), ChanceP90 = Percentile(chance, 0.9), ChanceMax = chance[chance.Length - 1] };
+            var results = new List<Result>();
+            int strategies = game == "radar" ? RadarBlindNames.Length : 1;
+            for (int k = 0; k < strategies; k++)
+            {
+                var chance = new double[runs];
+                for (int i = 0; i < runs; i++) chance[i] = Play(game, false, new Random(9000 + i), bank, k);
+                Array.Sort(chance);
+                results.Add(new Result { Game = game, Blind = game == "radar" ? RadarBlindNames[k] : null, CareMean = Mean(care), CareP90 = Percentile(care, 0.9), ChanceMean = Mean(chance), ChanceP90 = Percentile(chance, 0.9), ChanceMax = chance[chance.Length - 1] });
+            }
+            return results;
         }
 
         private static double Percentile(double[] sorted, double p) => sorted[Math.Min(sorted.Length - 1, (int)Math.Ceiling(p * sorted.Length) - 1)];
 
         /// <summary>Una partida simulada de 120 s sobre la pista del día: la MARCA del bot (aciertos menos errores, con piso en 0).</summary>
-        public static double Play(string game, bool careful, Random bot, SentenceBank bank)
+        public static double Play(string game, bool careful, Random bot, SentenceBank bank, int blind = 2)
         {
             switch (game)
             {
                 case "stroop": return PlayStroop(careful, bot);
                 case "disparate": return PlayDisparate(careful, bot, bank);
-                case "radar": return PlayRadar(careful, bot);
+                case "radar": return PlayRadar(careful, bot, blind);
                 default: return PlayDocking(careful, bot);
             }
         }
@@ -122,7 +141,11 @@ namespace NeuroVida.Games.Tests
 
         // ------------------------------------------------------------------ Rescate relámpago
 
-        private static double PlayRadar(bool careful, Random bot)
+        /// <summary>
+        /// Una partida de Rescate relámpago con la marca POR CÁPSULA (Tarea 208): cada cápsula bien marcada suma 1 acierto y cada cápsula marcada que no estaba suma 1 error; la escalera sube por rondas logradas. El de «cuidado» logra el 85 % de las rondas perfectas y, si no, deja n − 1
+        /// bien y 1 de más (una cápsula cambiada por otra); el de «azar» marca, según <paramref name="blind"/>, 0, 1, n o min(3, n) tipos al azar (<see cref="RadarBlindNames"/>) y toca «¡Rescatar!»: ~0,3 s más 0,25 s por tipo. Sin respuesta (0 marcas) la ronda no suma ni resta.
+        /// </summary>
+        private static double PlayRadar(bool careful, Random bot, int blind)
         {
             var run = new TimeTrial.Run("radar", Day);
             double t = 0;
@@ -131,27 +154,32 @@ namespace NeuroVida.Games.Tests
                 int level = run.Level;
                 var round = RadarContract.NextRound(level, run.Rng());
                 double watch = RadarContract.WatchMinSeconds + (RadarContract.WatchMaxSeconds - RadarContract.WatchMinSeconds) * run.Rng(1).NextDouble();
-                int need = round.Needed;
-                // el que adivina marca tantos tipos como hacen falta para lograr la ronda (la mejor jugada a ciegas) y toca «¡Rescatar!»: ~0,3 s más 0,25 s por tipo
-                double answer = careful ? CareTime("radar", bot) : 0.3 + 0.25 * need;
+                int n = round.Count;
+                int marks = careful ? n : (blind == 0 ? 0 : blind == 1 ? 1 : blind == 2 ? n : Math.Min(3, n));
+                double answer = careful ? CareTime("radar", bot) : 0.3 + 0.25 * marks;
                 double answerAt = t + watch + round.ExposureMs / 1000.0 + RadarContract.MaskMs / 1000.0 + answer;
                 if (answerAt > TimeTrial.Seconds) break;
-                bool success;
-                if (careful) success = bot.NextDouble() < Careful;
+                int hits, extras;
+                if (careful)
+                {
+                    if (bot.NextDouble() < Careful) { hits = n; extras = 0; }
+                    else { hits = n - 1; extras = 1; }
+                }
                 else
                 {
                     var types = round.Types();
                     var all = new List<int> { 0, 1, 2, 3, 4, 5 };
-                    int hits = 0;
-                    for (int k = 0; k < need; k++)
+                    hits = 0;
+                    extras = 0;
+                    for (int k = 0; k < marks; k++)
                     {
                         int j = bot.Next(all.Count);
                         if (types.Contains((CapsuleType)all[j])) hits++;
+                        else extras++;
                         all.RemoveAt(j);
                     }
-                    success = RadarContract.Success(round.Count, hits, need - hits);
                 }
-                run.Register(success, (float)(TimeTrial.Seconds - answerAt));
+                run.RegisterRound(hits, extras, RadarContract.Success(n, hits, extras), (float)(TimeTrial.Seconds - answerAt));
                 t = answerAt + RadarContract.RevealSeconds;
                 if (t >= TimeTrial.Seconds) break;
             }

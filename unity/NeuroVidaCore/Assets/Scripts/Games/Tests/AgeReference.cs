@@ -19,8 +19,11 @@ namespace NeuroVida.Games.Tests
     /// </summary>
     public static class AgeReference
     {
-        /// <summary>La versión del MODELO (los parámetros y las reglas de abajo): si cambian, se sube y el JSON la lleva.</summary>
-        public const int ModelVersion = 1;
+        /// <summary>
+        /// La versión del MODELO (los parámetros y las reglas de abajo): si cambian, se sube y el JSON la lleva. 2 desde la Tarea 208: Rescate relámpago cuenta por cápsula y su robot tiene dos números nuevos (<see cref="RadarLapse"/> y <see cref="RadarNameError"/>);
+        /// las reglas de los otros tres juegos son las de la versión 1 y sus tablas salen idénticas (solo el campo <c>modelo</c> del JSON dice 2).
+        /// </summary>
+        public const int ModelVersion = 2;
 
         // ------------------------------------------------------------------ las franjas (sin la de 13 a 17 años: no se compara; `Features.COMPARE_MINORS`)
 
@@ -51,8 +54,11 @@ namespace NeuroVida.Games.Tests
         public const double StroopResponse = 1.25, StroopCongruentFactor = 0.85, StroopSwitchExtra = 0.25;
         /// <summary>¿Verdad o disparate?: leer = 0,7 s + 0,30 s por palabra.</summary>
         public const double DisparateBase = 0.7, DisparatePerWord = 0.30;
-        /// <summary>Rescate relámpago: respuesta (s) + 0,25 s por cápsula; τ de encodificación 120 ms; una roca se marca de más con 12 %; lo no visto se adivina con 35 %.</summary>
-        public const double RadarResponse = 2.2, RadarPerCapsule = 0.25, RadarTauMs = 120, RadarRockMistake = 0.12, RadarGuess = 0.35;
+        /// <summary>
+        /// Rescate relámpago: respuesta (s) + 0,25 s por cápsula; τ de encodificación 120 ms; una roca se marca de más con 12 % (× lentitud). Tarea 208 (<c>auditoria-fable/rescate-por-capsula.md</c> §3): la marca cuenta por cápsula y el robot suma dos números ajustados con la regla vieja a las 5 personas de Ricardo:
+        /// <see cref="RadarLapse"/> = la persona se perdió el relámpago de la ronda (vio 0) y <see cref="RadarNameError"/> = nombró mal una cápsula que sí vio; y lo que no vio lo adivina <see cref="RadarGuessRate"/> (0,70 = el 0,35 + 0,35 de antes), de a una entre los tipos que quedan.
+        /// </summary>
+        public const double RadarResponse = 2.2, RadarPerCapsule = 0.25, RadarTauMs = 120, RadarRockMistake = 0.12, RadarLapse = 0.175, RadarNameError = 0.05, RadarGuessRate = 0.70;
         /// <summary>Acoplamiento: decidir = 1,3 s + ángulo / 150 (+0,3 s si es espejo); exactitud 0,98 − 0,0004 × ángulo en jóvenes.</summary>
         public const double DockingBase = 1.3, DockingDegPerSecond = 150, DockingMirrorExtra = 0.3, DockingAccuracyBonus = 0.03, DockingAccuracyPerDeg = 0.0004;
 
@@ -89,13 +95,13 @@ namespace NeuroVida.Games.Tests
         // ------------------------------------------------------------------ jugar la pista real
 
         /// <summary>Una partida de 120 s de <paramref name="person"/> sobre la pista REAL de <paramref name="game"/> del día <paramref name="day"/> (aaaammdd): la MARCA (aciertos menos errores, con piso en 0). <paramref name="rng"/> es el vaivén de la persona ese día.</summary>
-        public static double Play(string game, Person person, int day, Random rng, SentenceBank bank)
+        public static double Play(string game, Person person, int day, Random rng, SentenceBank bank, bool legacyRadarMark = false)
         {
             switch (game)
             {
                 case "stroop": return PlayStroop(person, day, rng);
                 case "disparate": return PlayDisparate(person, day, rng, bank);
-                case "radar": return PlayRadar(person, day, rng);
+                case "radar": return PlayRadar(person, day, rng, legacyRadarMark);
                 case "acoplamiento": return PlayDocking(person, day, rng);
                 default: throw new ArgumentException("juego sin Contrarreloj: " + game);
             }
@@ -143,7 +149,7 @@ namespace NeuroVida.Games.Tests
             return run.Score;
         }
 
-        private static double PlayRadar(Person p, int day, Random rng)
+        private static double PlayRadar(Person p, int day, Random rng, bool legacyMark)
         {
             var run = new TimeTrial.Run("radar", day);
             double t = 0;
@@ -152,25 +158,55 @@ namespace NeuroVida.Games.Tests
                 int level = run.Level;
                 var round = RadarContract.NextRound(level, run.Rng());
                 double watch = RadarContract.WatchMinSeconds + (RadarContract.WatchMaxSeconds - RadarContract.WatchMinSeconds) * run.Rng(1).NextDouble();
-                int n = round.Count, rocks = round.Rocks.Length;
+                int n = round.Count;
                 double ms = round.ExposureMs;
                 double answerAt = t + watch + ms / 1000.0 + RadarContract.MaskMs / 1000.0 + p.Rt(rng, RadarResponse) + RadarPerCapsule * n;
                 if (answerAt > TimeTrial.Seconds) break;
-                // los objetos que VIO de verdad: capacidad × (1 − e^(−destello / τ)), con τ más largo cuanto más lenta la persona; lo que no vio lo adivina
-                double seen = Math.Min(n, p.Objects * (1.0 - Math.Exp(-ms / (RadarTauMs * p.Slowness))));
-                int good = 0;
-                for (int i = 0; i < n; i++) if (rng.NextDouble() < seen / n) good++;
-                int extras = 0;
-                for (int i = 0; i < rocks; i++) if (rng.NextDouble() < RadarRockMistake * p.Slowness) extras++;
-                int guess = n - good;
-                for (int i = 0; i < guess; i++) if (rng.NextDouble() < RadarGuess) good++;
-                for (int i = 0; i < guess; i++) if (rng.NextDouble() < RadarGuess) extras++;
-                bool success = RadarContract.Success(n, good, extras);
-                run.Register(success, (float)(TimeTrial.Seconds - answerAt));
+                RadarRoundMarks(p, n, round.Rocks.Length, ms, rng, out int hits, out int extras);
+                // 5. la ronda lograda sube la escalera; la marca suma los aciertos y resta los de más (Tarea 208)
+                run.RegisterRound(hits, extras, RadarContract.Success(n, hits, extras), (float)(TimeTrial.Seconds - answerAt));
                 t = answerAt + RadarContract.RevealSeconds;
                 if (t >= TimeTrial.Seconds) break;
             }
-            return run.Score;
+            // la regla vieja (solo la prueba de calibración): rondas logradas menos rondas fallidas
+            return legacyMark ? TimeTrial.Mark(run.StepHits, run.Trials - run.StepHits) : run.Score;
+        }
+
+        /// <summary>
+        /// Lo que marca una persona en UNA ronda de Rescate relámpago de <paramref name="n"/> cápsulas, <paramref name="rocks"/> rocas y un destello de <paramref name="ms"/> ms (Tarea 208; <c>auditoria-fable/rescate-por-capsula.md</c> §3.2): cuántas cápsulas marcó bien (<paramref name="hits"/>)
+        /// y cuántos tipos marcó que no estaban (<paramref name="extras"/>); nunca más marcas que cápsulas (<c>hits + extras ≤ n</c>: el tablero no deja marcar más tipos que cápsulas había).
+        /// </summary>
+        public static void RadarRoundMarks(Person p, int n, int rocks, double ms, Random rng, out int hits, out int extras)
+        {
+            // 1. un lapso: la persona se perdió el relámpago y no vio nada; si no, lo que VIO de verdad es capacidad × (1 − e^(−destello / τ)), con τ más largo cuanto más lenta la persona; cada cápsula se vio con probabilidad visto / n
+            double seen = rng.NextDouble() < RadarLapse ? 0.0 : Math.Min(n, p.Objects * (1.0 - Math.Exp(-ms / (RadarTauMs * p.Slowness))));
+            hits = 0;
+            extras = 0;
+            int picks = 0, unseen = 0;
+            for (int i = 0; i < n; i++)
+            {
+                // 2. cada cápsula vista se marca: bien, o mal (un tipo que no estaba) con RadarNameError
+                if (rng.NextDouble() < seen / n)
+                {
+                    if (rng.NextDouble() < RadarNameError) extras++;
+                    else hits++;
+                    picks++;
+                }
+                else unseen++;
+            }
+            // 3. una roca gris tomada por cápsula se marca de más (mientras queden marcas)
+            for (int i = 0; i < rocks; i++)
+                if (picks < n && rng.NextDouble() < RadarRockMistake * p.Slowness) { extras++; picks++; }
+            // 4. lo que no vio lo adivina, de a una, entre los tipos que quedan sin marcar: acierta con probabilidad (aciertos que faltan) / (tipos que quedan); tope de n marcas
+            int rightLeft = n - hits, typesLeft = RadarContract.TypeCount - picks;
+            for (int i = 0; i < unseen; i++)
+            {
+                if (picks >= n || rng.NextDouble() >= RadarGuessRate) continue;
+                if (rng.NextDouble() < (double)rightLeft / Math.Max(1, typesLeft)) { hits++; rightLeft--; }
+                else extras++;
+                picks++;
+                typesLeft--;
+            }
         }
 
         private static double PlayDocking(Person p, int day, Random rng)
@@ -207,14 +243,14 @@ namespace NeuroVida.Games.Tests
         {
             switch (game)
             {
-                case "radar": return 1;
+                case "radar": return 3;
                 case "acoplamiento": return 2;
                 default: return 5;
             }
         }
 
         /// <summary>
-        /// Cuántos tramos tiene la tabla de un juego (Opus, 1-nov; Ricardo decidió el ANCHO y el número es su consecuencia técnica): **24 en Rescate relámpago** (de a 1: 0 a 23), porque con 16 (0 a 15) el 21 al 29 % de los jóvenes se juntaba en el último tramo («15 o más»);
+        /// Cuántos tramos tiene la tabla de un juego (Opus, 1-nov; Ricardo decidió el ANCHO y el número es su consecuencia técnica): **16 en Rescate relámpago desde la Tarea 208** (de a 3: 0 a 47, último «45 o más»; con la marca por cápsula una partida perfecta vale unos 39 y el techo está en 42; antes eran 24 tramos de a 1, 0 a 23, porque con 16 (0 a 15) el 21 al 29 % de los jóvenes se juntaba en el último tramo);
         /// **20 en Tinta o Palabra** (de a 5: 0 a 99, último «95 o más») **y en Acoplamiento** (de a 2: 0 a 39, último «38 o más»), desde la Tarea 206: con la escala calibrada (robots más rápidos) los jóvenes llegan a 80 en Tinta y a 31 en Acoplamiento, y con 16 el último tramo juntaba del 10 al 22 % de los de 18 a 44 años,
         /// así que el percentil 90 no se alcanzaba nunca y «Entre estrellas» se quedaba sin peldaño; **16 en ¿Verdad o disparate?** (0 a 79: su último tramo no junta a nadie). El JSON lo dice (<c>tramos</c>) y la app lo lee de ahí.
         /// </summary>
@@ -222,7 +258,7 @@ namespace NeuroVida.Games.Tests
         {
             switch (game)
             {
-                case "radar": return 24;
+                case "radar": return 16;
                 case "stroop":
                 case "acoplamiento": return 20;
                 default: return 16;
@@ -242,9 +278,12 @@ namespace NeuroVida.Games.Tests
             public readonly ulong Seed;
             /// <summary>Multiplica la lentitud de todas las personas del juego; 1,0 = las medianas de la §2.3 de Fable. Si es 0 o menos se usa <see cref="ReferenceScales.For"/>.</summary>
             public readonly double Scale;
+            /// <summary>SOLO para la prueba de calibración (Tarea 208): Rescate relámpago cuenta con la regla VIEJA (rondas logradas menos rondas fallidas, piso 0), la de las marcas de la primera semana de las 5 personas. Nunca para generar la tabla.</summary>
+            public readonly bool LegacyRadarMark;
 
-            public Options(int people, int played, int firstDay, ulong seed, double scale = 0.0)
+            public Options(int people, int played, int firstDay, ulong seed, double scale = 0.0, bool legacyRadarMark = false)
             {
+                LegacyRadarMark = legacyRadarMark;
                 People = people;
                 Played = Math.Max(1, Math.Min(WeekDays, played));
                 FirstDay = firstDay;
@@ -282,6 +321,8 @@ namespace NeuroVida.Games.Tests
             public int[] Bins;
             public double Mean;
             public int P25, P50, P75, P90;
+            /// <summary>Las mejores marcas de cada robot de la franja, ordenadas (Tarea 208: la prueba de calibración calcula los percentiles de las 5 personas con la regla de la app sobre las marcas sin agrupar).</summary>
+            public int[] Marks;
         }
 
         /// <summary>La tabla de UN juego: todas sus franjas.</summary>
@@ -330,7 +371,7 @@ namespace NeuroVida.Games.Tests
                     foreach (int d in PickDays(personSeed, options.Played))
                     {
                         var rng = new TimeTrial.TrackRandom(Mix(personSeed ^ ((ulong)(uint)week[d] * 0x8CB92BA72F3D8DD7UL)));
-                        top = Math.Max(top, Play(game, person, week[d], rng, bank));
+                        top = Math.Max(top, Play(game, person, week[d], rng, bank, options.LegacyRadarMark));
                     }
                     best[i] = (int)top;
                 }
@@ -351,13 +392,13 @@ namespace NeuroVida.Games.Tests
             var sorted = (int[])marks.Clone();
             Array.Sort(sorted);
             int Q(double q) => sorted.Length == 0 ? 0 : sorted[Math.Min(sorted.Length - 1, (int)(q * sorted.Length))];
-            return new RangeResult { Key = RangeKeys[range], Label = RangeLabels[range], People = marks.Length, Bins = bins, Mean = marks.Length == 0 ? 0 : sum / marks.Length, P25 = Q(0.25), P50 = Q(0.50), P75 = Q(0.75), P90 = Q(0.90) };
+            return new RangeResult { Key = RangeKeys[range], Label = RangeLabels[range], People = marks.Length, Bins = bins, Mean = marks.Length == 0 ? 0 : sum / marks.Length, Marks = sorted, P25 = Q(0.25), P50 = Q(0.50), P75 = Q(0.75), P90 = Q(0.90) };
         }
 
         // ------------------------------------------------------------------ el JSON (lo que lee la app: `app/src/main/assets/referencia/<juego>_v<version>.json`)
 
         /// <summary>De dónde salen los parámetros del modelo (lo escribe el JSON junto a la versión del modelo).</summary>
-        public const string Source = "auditoria-fable/referencia-estimada.md §2.2";
+        public const string Source = "auditoria-fable/referencia-estimada.md §2.2 y auditoria-fable/rescate-por-capsula.md §3 (Rescate relámpago)";
 
         /// <summary>
         /// El JSON de una tabla, a mano y con cultura invariante. Lleva el ancho del tramo, la versión de la pista, la cuenta de robots, las partidas por semana, la escala, las semillas, la versión del modelo y de dónde sale; por franja, los 16 tramos, la media y p25/p50/p75/p90. <paramref name="date"/> es solo metadata (cuándo se generó): no entra en

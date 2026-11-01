@@ -13,7 +13,7 @@ import java.util.Calendar
 class TimeTrialStatsTest {
   private fun at(day: Int, h: Int = 12) = Calendar.getInstance().apply { set(2026, Calendar.OCTOBER, day, h, 0, 0); set(Calendar.MILLISECOND, 0) }.timeInMillis
   // por defecto SIN errores: la marca es igual a los aciertos; la pista de hoy es la versión 2 (la marca neta, Tarea 178)
-  private fun r(hits: Int, day: Int, game: String = "stroop", version: Int = 2, errors: Int = 0, level: Int = 3, h: Int = 12) =
+  private fun r(hits: Int, day: Int, game: String = "stroop", version: Int = TimeTrialDay.trackVersion(game), errors: Int = 0, level: Int = 3, h: Int = 12) =
     TimeTrialResult(id = "r-$game-$day-$h-$hits", gameId = game, day = "2026-10-%02d".format(day), trackVersion = version, hits = hits, errors = errors, level = level, seconds = 120, timestamp = at(day, h))
 
   // el 26-oct-2026 es lunes: la semana empieza ese día; el 22 y el 23 son de la semana anterior
@@ -189,5 +189,40 @@ class TimeTrialStatsTest {
     assertEquals("Tus marcas, comparadas contigo y con una referencia estimada para tu edad.", com.example.data.TimeTrialMarks.subtitle(com.example.data.Comparison.Kind.ESTIMATED))
     for (t in listOf(TimeTrialStats.SEAL, TimeTrialStats.UNIT, TimeTrialStats.RULE, TimeTrialStats.NOTE, TimeTrialStats.FIRST_PHRASE, TimeTrialStats.scoreLine(r(38, 26, errors = 4))))
       for (banned in listOf("percentil", "Percentil", "nivel", "Nivel", "cerebro", "cognitiv", "entrenamiento")) assertFalse("«$t» no debe decir «$banned»", t.contains(banned))
+  }
+
+  // ------------------------------------------------------------------ Rescate relámpago por cápsula (Tarea 208)
+
+  @Test
+  fun `el detalle de Rescate dice que es un acierto y que es un error y los otros juegos no`() {
+    val rescate = r(31, 26, game = "radar", errors = 3, level = 4)
+    val o = TimeTrialStats.outcome(listOf(rescate), rescate)
+    assertEquals(
+      listOf("Hiciste 31 aciertos y 3 errores.", TimeTrialStats.RULE, TimeTrialStats.RADAR_RULE, "Llegaste al paso 4 de 12 de la pista.", "La partida duró 120 segundos."),
+      TimeTrialStats.detailLines(o)
+    )
+    assertEquals("En Rescate relámpago, cada cápsula bien marcada es un acierto y cada cápsula marcada que no estaba, un error.", TimeTrialStats.RADAR_RULE)
+    for (game in listOf("stroop", "disparate", "acoplamiento")) {
+      val other = r(20, 26, game = game, errors = 1, level = 3)
+      assertFalse("$game no lleva la frase de Rescate", TimeTrialStats.RADAR_RULE in TimeTrialStats.detailLines(TimeTrialStats.outcome(listOf(other), other)))
+    }
+    val low = TimeTrialStats.RADAR_RULE.lowercase()
+    for (bad in listOf("cognitiv", "cerebro", "entrenamiento", "ranking", "velocidad", "capacidad", "edad mental", "personas", "robot")) assertFalse("la frase dice «$bad»", bad in low)
+  }
+
+  @Test
+  fun `una marca de la pista 2 de Rescate queda como pista anterior y Rescate arranca sin marcas`() {
+    // la pista 3 cuenta por cápsula: lo guardado con la regla de rondas (pista 2) no se mezcla con lo nuevo (Tarea 208)
+    val old = r(12, 20, game = "radar", version = 2, errors = 0)
+    val all = listOf(old)
+    assertNull("ningún récord con la regla vieja", TimeTrialStats.record(all, "radar"))
+    assertNull("ni mejor de la semana", TimeTrialStats.bestOfWeek(all, "radar", at(21)))
+    assertEquals("Hoy lo ve sin partida", TimeTrialState.PENDIENTE, TimeTrialDay.stateOf(all, "2026-10-20", "radar"))
+    val today = r(31, 26, game = "radar", errors = 3)
+    val o = TimeTrialStats.outcome(all + today, today)
+    assertTrue("la partida nueva es la primera de su pista", o.isFirst)
+    assertEquals("y el detalle muestra el récord de la pista anterior con su regla", "Tu récord de la pista 2: 12 aciertos.", TimeTrialStats.detailLines(o).last())
+    assertEquals("la marca no tiene versión propia: aciertos menos errores en la 2 y en la 3", 28, TimeTrialDay.markOf(3, 31, 3))
+    assertEquals(TimeTrialDay.markOf(2, 31, 3), TimeTrialDay.markOf(3, 31, 3))
   }
 }

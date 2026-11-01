@@ -55,7 +55,7 @@ object TimeTrialDay {
   val TRACKS: Map<String, Track> = mapOf(
     "stroop" to Track(version = 2, stepEvery = 8, maxLevel = 5),
     "disparate" to Track(version = 2, stepEvery = 3, maxLevel = 12),
-    "radar" to Track(version = 2, stepEvery = 3, maxLevel = 12),
+    "radar" to Track(version = 3, stepEvery = 3, maxLevel = 12),          // versión 3 (Tarea 208): la marca de Rescate relámpago cuenta por cápsula; la escalera sigue por rondas logradas
     "acoplamiento" to Track(version = 2, stepEvery = 2, maxLevel = 12)
   )
 

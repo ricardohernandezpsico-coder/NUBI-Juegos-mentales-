@@ -361,13 +361,13 @@ class ComparisonTest {
 
   /**
    * Tarea 206: con la escala calibrada los robots son más rápidos y, si el último tramo («N o más») junta demasiado, el percentil 90 no se alcanza y «Entre estrellas» se queda sin peldaño (pasó con 16 tramos en Tinta y Acoplamiento).
-   * Las tablas REALES del APK tienen que dar los cinco peldaños en las seis franjas de los tres juegos de a 5 y de a 2; Rescate relámpago está fuera a propósito (sus cuatro peldaños en 18 a 54 años son una decisión de Opus). Si una escala futura vuelve a perderlo, falla AQUÍ y no en una lámina.
+   * Las tablas REALES del APK tienen que dar los cinco peldaños en las seis franjas de los cuatro juegos; Rescate relámpago entra desde la Tarea 208 (la marca por cápsula separa a las personas y vuelve a dar los cinco peldaños; antes tenía cuatro en 18 a 54 años). Si una escala futura vuelve a perderlo, falla AQUÍ y no en una lámina.
    */
   @Test
-  fun `las tablas del APK dan los cinco peldaños en las seis franjas de Tinta, Disparate y Acoplamiento`() {
+  fun `las tablas del APK dan los cinco peldaños en las seis franjas de los cuatro juegos`() {
     val reference = realReference
     val all = Comparison.Division.entries
-    for (game in listOf("stroop", "disparate", "acoplamiento")) {
+    for (game in listOf("stroop", "disparate", "radar", "acoplamiento")) {
       val table = reference.loaded.single { it.game == game }
       assertEquals("$game: las seis franjas de 18 en adelante", 6, table.ranges.size)
       for ((range, d) in table.ranges) {
@@ -398,7 +398,7 @@ class ComparisonTest {
   fun `la seccion usa la mejor marca de cada semana del juego con la pista de hoy`() {
     val now = java.util.Calendar.getInstance().apply { set(2026, java.util.Calendar.OCTOBER, 28, 18, 0, 0); set(java.util.Calendar.MILLISECOND, 0) }.timeInMillis
     fun at(day: Int) = java.util.Calendar.getInstance().apply { set(2026, java.util.Calendar.OCTOBER, day, 12, 0, 0); set(java.util.Calendar.MILLISECOND, 0) }.timeInMillis
-    fun r(mark: Int, day: Int, game: String = "stroop", version: Int = 2) = TimeTrialResult(id = "r$game$day$mark", gameId = game, day = "2026-10-%02d".format(day), trackVersion = version, hits = mark + 2, errors = 2, level = 4, timestamp = at(day))
+    fun r(mark: Int, day: Int, game: String = "stroop", version: Int = TimeTrialDay.trackVersion(game)) = TimeTrialResult(id = "r$game$day$mark", gameId = game, day = "2026-10-%02d".format(day), trackVersion = version, hits = mark + 2, errors = 2, level = 4, timestamp = at(day))
     val results = listOf(r(31, 8), r(35, 10), r(39, 13), r(36, 15), r(44, 17), r(38, 19), r(41, 22), r(37, 26), r(42, 27), r(43, 28), r(60, 21, game = "disparate"), r(70, 27, version = 1))
     val s = Comparison.section(SampleComparison(few = false), "stroop", "Tinta o Palabra", AgeRange.R45_54, results, now)
     assertEquals("43, la mejor de esta semana (lunes 26 a hoy); la pista 1 y otro juego no cuentan", 43, s.mark)
@@ -673,7 +673,7 @@ class ComparisonTest {
   fun `la frase gratis de la puerta usa la mejor marca de esta semana del juego de hoy`() {
     val now = java.util.Calendar.getInstance().apply { set(2026, java.util.Calendar.OCTOBER, 28, 18, 0, 0); set(java.util.Calendar.MILLISECOND, 0) }.timeInMillis
     fun at(day: Int) = java.util.Calendar.getInstance().apply { set(2026, java.util.Calendar.OCTOBER, day, 12, 0, 0); set(java.util.Calendar.MILLISECOND, 0) }.timeInMillis
-    fun r(mark: Int, day: Int, game: String = "stroop") = TimeTrialResult(id = "r$game$day$mark", gameId = game, day = "2026-10-%02d".format(day), trackVersion = 2, hits = mark + 2, errors = 2, level = 4, timestamp = at(day))
+    fun r(mark: Int, day: Int, game: String = "stroop") = TimeTrialResult(id = "r$game$day$mark", gameId = game, day = "2026-10-%02d".format(day), trackVersion = TimeTrialDay.trackVersion(game), hits = mark + 2, errors = 2, level = 4, timestamp = at(day))
     val src = SampleComparison(few = false)
     assertEquals(
       "Esta semana estás En órbita. Te faltan 7 aciertos para En la Luna.",
@@ -739,7 +739,7 @@ class ComparisonTest {
   fun `la puerta de Avance calla con menos de tres partidas del juego y habla desde la tercera`() {
     val now = java.util.Calendar.getInstance().apply { set(2026, java.util.Calendar.OCTOBER, 28, 18, 0, 0); set(java.util.Calendar.MILLISECOND, 0) }.timeInMillis
     fun at(day: Int) = java.util.Calendar.getInstance().apply { set(2026, java.util.Calendar.OCTOBER, day, 12, 0, 0); set(java.util.Calendar.MILLISECOND, 0) }.timeInMillis
-    fun r(mark: Int, day: Int, game: String = "stroop") = TimeTrialResult(id = "r$game$day$mark", gameId = game, day = "2026-10-%02d".format(day), trackVersion = 2, hits = mark + 2, errors = 2, level = 4, timestamp = at(day))
+    fun r(mark: Int, day: Int, game: String = "stroop") = TimeTrialResult(id = "r$game$day$mark", gameId = game, day = "2026-10-%02d".format(day), trackVersion = TimeTrialDay.trackVersion(game), hits = mark + 2, errors = 2, level = 4, timestamp = at(day))
     val src = SampleComparison(few = false)
     assertNull("con una partida esta semana, la puerta calla", Comparison.freeSentenceFor(src, "stroop", AgeRange.R45_54, listOf(r(43, 27)), now))
     assertNull("con dos, también", Comparison.freeSentenceFor(src, "stroop", AgeRange.R45_54, listOf(r(30, 13), r(43, 27)), now))

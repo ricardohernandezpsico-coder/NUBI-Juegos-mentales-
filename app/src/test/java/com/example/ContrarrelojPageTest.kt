@@ -65,7 +65,7 @@ class ContrarrelojPageTest {
   @Before fun setUp() { TestSupport.fastFrames() }
 
   private fun at(day: Int, h: Int = 12) = Calendar.getInstance().apply { set(2026, Calendar.OCTOBER, day, h, 0, 0); set(Calendar.MILLISECOND, 0) }.timeInMillis
-  private fun r(mark: Int, day: Int, errors: Int = 2, game: String = "stroop", version: Int = 2) =
+  private fun r(mark: Int, day: Int, errors: Int = 2, game: String = "stroop", version: Int = com.example.data.TimeTrialDay.trackVersion(game)) =
     TimeTrialResult(id = "r-$game-$day-$mark", gameId = game, day = "2026-10-%02d".format(day), trackVersion = version, hits = mark + errors, errors = errors, level = 4, seconds = 120, timestamp = at(day))
 
   private val now = at(28, 18)
@@ -1513,5 +1513,32 @@ class ContrarrelojPageTest {
     val axisNodes = listOf("contrarreloj_bell_axis_0", "contrarreloj_bell_axis_1", "contrarreloj_bell_axis_3").flatMap { tag -> rule.onAllNodes(hasTestTag(tag), useUnmergedTree = true).fetchSemanticsNodes() }
     assertTrue("los rótulos del eje se ven pero no se leen: no llevan texto en el árbol", axisNodes.size == 3 && axisNodes.all { it.config.getOrNull(SemanticsProperties.Text) == null })
     for (word in listOf(" 32", " 63", "95 o más")) assertFalse("el lector no dice «$word»: $bell", word in bell)
+  }
+
+  // ---------------------------------------------------------------- Tarea 208: Rescate relámpago cuenta por cápsula (tramos de a 3, 0 a 47)
+
+  @Test fun en_Rescate_la_escalera_tiene_los_cinco_peldanos_en_las_seis_franjas_y_la_campana_llega_a_45() {
+    val s = live(estWorld, AgeRange.R18_29)
+    s.selected = "radar"
+    for (range in listOf(AgeRange.R18_29, AgeRange.R30_44, AgeRange.R45_54, AgeRange.R55_64, AgeRange.R65_74, AgeRange.R75_PLUS)) {
+      val d = estWorld.distribution("radar", listOf(range), 0, 1)
+      s.range = range; s.results = gamesOf("radar", 3, d.p50); rule.waitForIdle()
+      val b = boxes()
+      val rows = b.keys.count { Regex("contrarreloj_ladder_row_\\d").matches(it) } + (if (b.containsKey("contrarreloj_ladder_you")) 1 else 0)
+      assertEquals("$range: cinco divisiones en la escalera de Rescate", 5, rows)
+      assertEquals("$range: la campana de Rescate va de 0 a 47 (último tramo «45 o más»)", 48, d.topMark)
+      assertEquals("$range: el eje termina en «45 o más»", listOf(0, 15, 30, 45), Comparison.axisTicks(d))
+      assertTrue("$range: la raya de la mitad y la barra «Tú» están (la marca es la mitad: la barra la tapa y la frase lo dice)", b.containsKey("contrarreloj_bell_you_bar"))
+    }
+  }
+
+  @Test fun Rescate_con_una_marca_de_la_pista_2_arranca_sin_marcas_y_la_dice_como_pista_anterior() {
+    // la pista de Rescate es la 3 (la marca cuenta por cápsula): lo guardado con la regla de rondas no se mezcla con lo nuevo
+    show(compare = estWorld, ageRange = AgeRange.R45_54, selected = "radar", results = listOf(r(12, 20, game = "radar", version = 2)))
+    val b = boxes()
+    assertNotNull("Rescate arranca sin marcas", b["contrarreloj_empty"])
+    assertNull("ni cifras ni ritmo de la pista vieja", b["contrarreloj_stats"])
+    assertEquals("Tu récord de la pista 2: 12 aciertos. Las marcas de otra pista no se comparan.", n("contrarreloj_older_text"))
+    assertEquals("la partida vieja cuenta como una guardada: falta para la tercera", Comparison.EARLY_NOTICE, n("contrarreloj_early_notice"))
   }
 }
