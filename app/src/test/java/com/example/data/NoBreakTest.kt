@@ -39,4 +39,36 @@ class NoBreakTest {
     val once = "Tu mejor racha: 21 días, desde el 8 de octubre".glueNumbers()
     assertEquals(once, once.glueNumbers())
   }
+
+  // ------------------------------------------------------------------ los nombres de la página «Contrarreloj» (Tarea 203b)
+
+  @Test
+  fun los_nombres_de_las_divisiones_no_se_parten() {
+    assertEquals("para En${NBSP}la${NBSP}Luna.", "para En la Luna.".glueNames())
+    assertEquals("Entre${NBSP}estrellas", "Entre estrellas".glueNames())
+    assertEquals("En${NBSP}la${NBSP}plataforma", "En la plataforma".glueNames())
+    assertEquals("Llevas 3 semanas seguidas En${NBSP}órbita o más arriba.", "Llevas 3 semanas seguidas En órbita o más arriba.".glueNames())
+    assertEquals("una sola palabra queda igual", "Despegando", "Despegando".glueNames())
+  }
+
+  @Test
+  fun la_franja_de_edad_va_entera_con_su_unidad() {
+    assertEquals("personas de 45${NBSP}a${NBSP}54${NBSP}años quedan detrás", "personas de 45 a 54 años quedan detrás".glueNames())
+    assertEquals("de 75${NBSP}años${NBSP}o${NBSP}más", "de 75 años o más".glueNames())
+    assertEquals("30${NBSP}a${NBSP}54${NBSP}años", "30 a 54 años".glueNames())
+    assertEquals("65${NBSP}años${NBSP}o${NBSP}más", "65 años o más".glueNames())
+  }
+
+  @Test
+  fun te_faltan_va_con_su_cifra_y_su_unidad() {
+    assertEquals("Te${NBSP}faltan${NBSP}7${NBSP}aciertos para En${NBSP}la${NBSP}Luna.", "Te faltan 7 aciertos para En la Luna.".glueNames())
+    assertEquals("Te${NBSP}falta${NBSP}1${NBSP}acierto para En${NBSP}órbita.", "Te falta 1 acierto para En órbita.".glueNames())
+  }
+
+  @Test
+  fun glueNames_es_idempotente_y_no_toca_lo_demas() {
+    val s = "Esta semana estás En órbita. Te faltan 7 aciertos para En la Luna. Con las 128 personas de 45 a 54 años.".glueNames()
+    assertEquals(s, s.glueNames())
+    for (x in listOf("Tu récord es del 17 de octubre", "una frase sin nombres", "de 2 a 3 veces")) assertEquals(x, x.glueNames())
+  }
 }

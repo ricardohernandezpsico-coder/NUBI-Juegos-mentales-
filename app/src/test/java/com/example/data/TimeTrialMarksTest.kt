@@ -71,7 +71,7 @@ class TimeTrialMarksTest {
   }
 
   @Test
-  fun `las tres cifras de Tus marcas llevan cada una su unidad y la tercera no depende de otras personas`() {
+  fun `las tres cifras de Tus marcas llevan cada una su unidad y son solo de la persona`() {
     val p = TimeTrialMarks.page(ten, "stroop", now)
     assertEquals(
       listOf(
@@ -79,24 +79,24 @@ class TimeTrialMarksTest {
         TimeTrialMarks.Stat("43", "aciertos esta semana"),
         TimeTrialMarks.Stat("3", "partidas esta semana")
       ),
-      TimeTrialMarks.stats(p, weeksAbove = null)
+      TimeTrialMarks.stats(p)
     )
-    assertEquals("con comparación, la tercera son las semanas arriba de la mitad", TimeTrialMarks.Stat("3 de 4", "semanas arriba de la mitad"), TimeTrialMarks.stats(p, weeksAbove = "3 de 4")[2])
-    assertEquals("44 aciertos, tu récord", TimeTrialMarks.statSpoken(TimeTrialMarks.stats(p, null)[0]))
-    assertEquals("3 de 4 semanas arriba de la mitad", TimeTrialMarks.statSpoken(TimeTrialMarks.stats(p, "3 de 4")[2]))
+    assertEquals("la tercera cifra es SIEMPRE de la persona (Tarea 203b): las partidas de la semana, con o sin comparación", "partidas esta semana", TimeTrialMarks.stats(p)[2].label)
+    assertEquals("44 aciertos, tu récord", TimeTrialMarks.statSpoken(TimeTrialMarks.stats(p)[0]))
+    assertEquals("3 partidas esta semana", TimeTrialMarks.statSpoken(TimeTrialMarks.stats(p)[2]))
   }
 
   @Test
   fun `sin partida esta semana la segunda cifra es cero partidas y la tercera cuenta las de siempre`() {
     val quiet = TimeTrialMarks.page(ten, "stroop", at(30, 9) + 3 * 86_400_000L)
-    val s = TimeTrialMarks.stats(quiet, weeksAbove = null)
+    val s = TimeTrialMarks.stats(quiet)
     assertEquals(TimeTrialMarks.Stat("0", "partidas esta semana"), s[1])
     assertEquals(TimeTrialMarks.Stat("10", "partidas en total"), s[2])
     val one = TimeTrialMarks.page(listOf(r(30, 28, h = 9)), "stroop", now)
-    assertEquals(TimeTrialMarks.Stat("30", "aciertos, tu récord"), TimeTrialMarks.stats(one, null)[0])
-    assertEquals(TimeTrialMarks.Stat("1", "partida esta semana"), TimeTrialMarks.stats(one, null)[2])
-    assertEquals("1 acierto, en singular", "acierto esta semana", TimeTrialMarks.stats(TimeTrialMarks.page(listOf(r(1, 28, h = 9)), "stroop", now), null)[1].label)
-    for (st in TimeTrialMarks.stats(one, null) + s) assertFalse("«${st.label}» no es solo un número", st.label.isBlank())
+    assertEquals(TimeTrialMarks.Stat("30", "aciertos, tu récord"), TimeTrialMarks.stats(one)[0])
+    assertEquals(TimeTrialMarks.Stat("1", "partida esta semana"), TimeTrialMarks.stats(one)[2])
+    assertEquals("1 acierto, en singular", "acierto esta semana", TimeTrialMarks.stats(TimeTrialMarks.page(listOf(r(1, 28, h = 9)), "stroop", now))[1].label)
+    for (st in TimeTrialMarks.stats(one) + s) assertFalse("«${st.label}» no es solo un número", st.label.isBlank())
   }
 
   @Test

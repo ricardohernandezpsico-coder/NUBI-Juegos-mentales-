@@ -20,6 +20,7 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
+import com.example.data.Comparison
 import com.example.data.SampleComparison
 import com.example.data.TimeTrialDay
 import com.example.data.TimeTrialResult
@@ -51,14 +52,14 @@ import org.robolectric.annotation.GraphicsMode
 import java.util.Calendar
 
 /**
- * La lámina «hoy | ahora» de la Tarea 203 (`docs/previews/tarea-203.png`): la página «Contrarreloj» rediseñada (dirección D2 de Fable): la cifra «63 de cada 100» con su división y su percentil, la escalera de divisiones con «Te faltan 7 aciertos para En la Luna.», la campana en su propia losa, «Tus marcas» (tres cifras, las 10 marcas, el ritmo y las notas),
- * letra 2,0, 360 dp, sin comparación, «Todavía somos pocos» y la puerta de Avance con la frase gratis. «hoy» sale de las capturas de las Tareas 199, 201 y 202 (la página de antes); «ahora», de esta prueba. No corre en las pruebas de siempre: solo al grabar
- * (`./gradlew.bat :app:recordRoborazziDebug --tests "*Tarea203CapturasTest*"`); los PNG van a `src/test/screenshots/t203/` y `tools/previews/tarea_203.py` arma la hoja. Mismos datos de la Tarea 202 (las diez marcas de la lámina de Fable con el ritmo de la Tarea 201).
+ * La lámina «antes (T203) | ahora» de la Tarea 203b (`docs/previews/tarea-203b.png`): los arreglos chicos de la página «Contrarreloj» —títulos de una línea, «hasta 30 aciertos», «Otras edades» sin filas de relleno, «Tu percentil semanal» con su raya de la mitad, el ritmo más corto, el pie de la escalera,
+ * nombres que no se parten y la puerta de Avance con la misma meta que la página—. «antes» sale de las capturas de la Tarea 203 (`t203/`); «ahora», de esta prueba. No corre en las pruebas de siempre: solo al grabar
+ * (`./gradlew.bat :app:recordRoborazziDebug --tests "*Tarea203bCapturasTest*"`); los PNG van a `src/test/screenshots/t203b/` y `tools/previews/tarea_203b.py` arma la hoja. Mismos datos de la Tarea 203.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w393dp-h873dp-xxhdpi", sdk = [36])
-class Tarea203CapturasTest {
+class Tarea203bCapturasTest {
   @get:Rule val rule = createAndroidComposeRule<ComponentActivity>()
 
   private lateinit var app: Application
@@ -121,31 +122,30 @@ class Tarea203CapturasTest {
     }
     rule.waitForIdle()
     if (to != null) scrollTo(to, margin)
-    rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/t203/ahora_$name.png")
+    rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/t203b/ahora_$name.png")
   }
 
   private val few get() = SampleComparison(few = true)
 
-  @Test fun a_arriba_393_10() = page("top_393_10", 393, 873, 1f)
-  @Test fun b_escalera_393_10() = page("ladder_393_10", 393, 873, 1f, to = "contrarreloj_ladder")
-  @Test fun c_escalera_pie_393_10() = page("ladder_foot_393_10", 393, 873, 1f, to = "contrarreloj_ladder_need", margin = 330)
-  @Test fun d_campana_393_10() = page("bell_393_10", 393, 873, 1f, to = "contrarreloj_bell")
-  @Test fun e_otras_semanas_393_10() = page("others_393_10", 393, 873, 1f, to = "contrarreloj_others")
-  @Test fun f_marcas_393_10() = page("marks_393_10", 393, 873, 1f, to = "contrarreloj_section_marks")
-  @Test fun g_ritmo_notas_393_10() = page("notes_393_10", 393, 873, 1f, to = "contrarreloj_notes", margin = 400)
-  @Test fun h_sin_comparacion_arriba_393_10() = page("nocompare_top_393_10", 393, 873, 1f, world = null)
-  @Test fun i_sin_comparacion_marcas_393_10() = page("nocompare_marks_393_10", 393, 873, 1f, world = null, to = "contrarreloj_marks")
+  private val septemberMarks = listOf(r(34, 1), r(36, -5), r(38, -12))      // las tres semanas anteriores a octubre, para tener siete semanas con marca
+
+  @Test fun a_escalera_393_10() = page("ladder_393_10", 393, 873, 1f, to = "contrarreloj_ladder")
+  @Test fun b_escalera_pie_393_10() = page("ladder_foot_393_10", 393, 873, 1f, to = "contrarreloj_ladder_need", margin = 330)
+  @Test fun c_campana_393_10() = page("bell_393_10", 393, 873, 1f, to = "contrarreloj_bell")
+  @Test fun d_otras_edades_393_10() = page("others_393_10", 393, 873, 1f, to = "contrarreloj_others")
+  @Test fun e_otras_edades_pocos_393_10() = page("few_others_393_10", 393, 873, 1f, world = few, to = "contrarreloj_others", margin = 40)
+  @Test fun f_muy_pocos_393_10() = page("veryfew_393_10", 393, 873, 1f, world = SampleComparison(SampleComparison.World.VERY_FEW), to = "contrarreloj_section_compare")
+  @Test fun g_semanas_393_10() = page("weeks_393_10", 393, 873, 1f, to = "contrarreloj_percweeks")
+  @Test fun h_marcas_393_10() = page("marks_393_10", 393, 873, 1f, to = "contrarreloj_section_marks")
+  @Test fun i_ritmo_notas_393_10() = page("notes_393_10", 393, 873, 1f, to = "contrarreloj_notes", margin = 400)
   @Test fun j_arriba_393_20() = page("top_393_20", 393, 873, 2f)
-  @Test fun k_cifra_393_20() = page("hero_393_20", 393, 873, 2f, to = "contrarreloj_hero")
-  @Test fun l_escalera_393_20() = page("ladder_393_20", 393, 873, 2f, to = "contrarreloj_ladder")
-  @Test fun m_marcas_393_20() = page("marks_393_20", 393, 873, 2f, to = "contrarreloj_section_marks")
-  @Test fun n_pocos_393_10() = page("few_393_10", 393, 873, 1f, world = few, to = "contrarreloj_section_compare")
-  @Test fun o_pocos_393_20() = page("few_393_20", 393, 873, 2f, world = few, to = "contrarreloj_place")
-  @Test fun p_arriba_360_10() = page("top_360_10", 360, 780, 1f)
-  @Test fun q_escalera_360_10() = page("ladder_360_10", 360, 780, 1f, to = "contrarreloj_ladder")
-  @Test fun r_marcas_360_10() = page("marks_360_10", 360, 780, 1f, to = "contrarreloj_section_marks")
-  @Test fun s_division_mas_alta_393_10() = page("topdivision_393_10", 393, 873, 1f, results = listOf(r(70, 28, 2)) + others, to = "contrarreloj_ladder")
-  @Test fun t_sin_marca_esta_semana_393_10() = page("nomark_393_10", 393, 873, 1f, results = ten.dropLast(3) + others, to = "contrarreloj_section_compare")
+  @Test fun k_escalera_393_20() = page("ladder_393_20", 393, 873, 2f, to = "contrarreloj_ladder")
+  @Test fun l_cifra_393_20() = page("hero_393_20", 393, 873, 2f, to = "contrarreloj_hero")
+  @Test fun m_siete_semanas_360_20() = page("weeks7_360_20", 360, 780, 2f, results = ten + others + septemberMarks, to = "contrarreloj_percweeks")
+  @Test fun n_siete_semanas_393_10() = page("weeks7_393_10", 393, 873, 1f, results = ten + others + septemberMarks, to = "contrarreloj_percweeks")
+  @Test fun o_arriba_360_10() = page("top_360_10", 360, 780, 1f)
+  @Test fun p_escalera_360_10() = page("ladder_360_10", 360, 780, 1f, to = "contrarreloj_ladder_need", margin = 330)
+  @Test fun q_sin_comparacion_393_10() = page("nocompare_393_10", 393, 873, 1f, world = null)
 
   // ---------------------------------------------------------------- Avance con la puerta y su frase gratis (con la pantalla real y su ViewModel)
 
@@ -167,13 +167,16 @@ class Tarea203CapturasTest {
     }
     val model = NeuroVidaViewModel(app).also { viewModels.add(it) }
     TestSupport.awaitUntil(30_000) { model.gameHistory.value.size >= n }
-    // las marcas del juego de HOY (el de la puerta): 44 es el récord y una de ESTE momento (la semana en curso) para que la puerta tenga con qué decir la división
+    // las marcas del juego de HOY (el de la puerta): las de antes, de la semana pasada hacia atrás (44 es el récord), y UNA de este momento sembrada para que la puerta diga la misma meta que la página de Tinta o Palabra: «Te faltan 7 aciertos para En la Luna.»
+    // (el juego del día cambia con la fecha real y la muestra corre la silueta por juego: por eso la marca se calcula con la escalera de ESE juego)
     val today = TimeTrialDay.gameFor(model.todayKey())
+    val moon = Comparison.thresholds(SampleComparison(few = false).distribution(today, listOf(AgeRange.R45_54), 0)).first { it.division == Comparison.Division.MOON }.from
+    val doorMark = moon - 7
     runBlocking {
       listOf(31, 35, 39, 36, 44, 38, 41, 37, 42).forEachIndexed { i, m ->
-        repo.recordTimeTrial(TimeTrialResult(id = "avance-$i", gameId = today, day = model.todayKey(), trackVersion = TimeTrialDay.trackVersion(today), hits = m + 2, errors = 2, level = 4, seconds = 120, timestamp = real - (10 - i) * day))
+        repo.recordTimeTrial(TimeTrialResult(id = "avance-$i", gameId = today, day = model.todayKey(), trackVersion = TimeTrialDay.trackVersion(today), hits = m + 2, errors = 2, level = 4, seconds = 120, timestamp = real - (17 - i) * day))
       }
-      repo.recordTimeTrial(TimeTrialResult(id = "avance-now", gameId = today, day = model.todayKey(), trackVersion = TimeTrialDay.trackVersion(today), hits = 45, errors = 2, level = 4, seconds = 120, timestamp = real))
+      repo.recordTimeTrial(TimeTrialResult(id = "avance-now", gameId = today, day = model.todayKey(), trackVersion = TimeTrialDay.trackVersion(today), hits = doorMark + 2, errors = 2, level = 4, seconds = 120, timestamp = real))
     }
     TestSupport.awaitUntil(30_000) { model.timeTrialResults.value.size >= 10 }
     model.setTab(AppTab.PROGRESO)
@@ -192,7 +195,7 @@ class Tarea203CapturasTest {
     }
     rule.waitForIdle()
     if (sheet) { rule.onNode(hasTestTag("avance_contrarreloj_door")).performClick(); rule.waitForIdle() }
-    rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/t203/ahora_$name.png")
+    rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/t203b/ahora_$name.png")
   }
 
   @Test fun u_avance_sin_plus_393_10() = avance("avance_sinplus_393_10", plus = false)

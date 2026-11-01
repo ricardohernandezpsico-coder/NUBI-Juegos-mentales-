@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.data.PlusAccess
 import com.example.data.TimeTrialMarks
+import com.example.data.glueNames
 import com.example.data.glueNumbers
 import com.example.ui.components.ClayClockIcon
 import com.example.ui.components.Glyph
@@ -52,7 +53,7 @@ internal fun ContrarrelojDoor(record: Int?, plus: Boolean, onClick: () -> Unit, 
         Text("Tus marcas del Contrarreloj", color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 22.sp, modifier = Modifier.testTag("avance_contrarreloj_title"))
         Text(TimeTrialMarks.doorLine(record).glueNumbers(), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.testTag("avance_contrarreloj_line"))
         // LO GRATIS (Tarea 203, Ricardo): sin Plus, la división y la meta de esta semana («Esta semana estás En órbita. Te faltan 7 aciertos para En la Luna.»); solo hay con una comparación disponible (hoy, datos de muestra en depuración)
-        if (!plus && freeLine != null) Text(freeLine.glueNumbers(), color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp, modifier = Modifier.padding(top = 4.dp).testTag("avance_contrarreloj_free"))
+        if (!plus && freeLine != null) Text(freeLine.glueNumbers().glueNames(), color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp, modifier = Modifier.padding(top = 4.dp).testTag("avance_contrarreloj_free"))
         if (!plus) {
           Row(Modifier.padding(top = 4.dp).testTag("avance_contrarreloj_lock"), verticalAlignment = Alignment.CenterVertically) {
             KitGlyph(Glyph.LOCK, size = 20.dp)

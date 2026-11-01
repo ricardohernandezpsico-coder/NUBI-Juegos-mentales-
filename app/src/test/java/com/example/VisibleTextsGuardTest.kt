@@ -25,7 +25,7 @@ class VisibleTextsGuardTest {
    * por texto completo y no por archivo. Cualquier otro texto con «percentil» sigue fallando, y si uno de estos cambia o desaparece, la prueba de más abajo pide quitarlo de la lista.
    */
   private val percentileTexts = setOf(
-    "Tu percentil, semana a semana",
+    "Tu percentil semanal",
     "Percentil \$p"
   )
 
@@ -523,7 +523,7 @@ class VisibleTextsGuardTest {
       assertTrue("la guardia no atrapa «$bad» dentro de un Text(...)", visibleLiteralsOf("""Text("$bad", fontSize = 20.sp)""").any { measureHit(it) != null })
     }
     for (name in listOf("VELOCIDAD", "VELOCIDAD_DE_PROCESAMIENTO", "RANKING")) assertTrue("«$name» es un nombre interno, no un texto", measureHit(name) == null)
-    for (good in listOf("Tu mejor marca", "Aciertos y errores", "Tu ritmo en la última partida", "Tu mejor medio minuto fue el de 30 a 60 segundos, con 14 aciertos.")) assertTrue("la guardia atrapa «$good» sin motivo", measureHit(good) == null)
+    for (good in listOf("Tu mejor marca", "Aciertos y errores", "Tu ritmo en 2 minutos", "En tu última partida, tu mejor medio minuto fue el de 30 a 60 segundos, con 14 aciertos.")) assertTrue("la guardia atrapa «$good» sin motivo", measureHit(good) == null)
     // una excepción lo es por texto COMPLETO: la misma frase con algo de más o de menos ya no pasa
     for (exact in measureExceptions) {
       assertTrue(measureHit(exact) != null)

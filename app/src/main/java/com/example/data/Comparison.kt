@@ -30,9 +30,13 @@ object Comparison {
   const val SECTION_COMPARE = "Esta semana, comparado con tu edad"
   const val SAMPLE_NOTICE = "Estos son datos de muestra: solo se ven en la versión de prueba."
   const val PLACE_TITLE = "Tu lugar esta semana"
-  const val WEEKS_TITLE = "Tu percentil, semana a semana"
-  const val OTHERS_TITLE = "Comparado con otras edades"
-  const val NO_MINORS = "De 13 a 17 años no hay comparación por ahora."
+  const val WEEKS_TITLE = "Tu percentil semanal"
+  const val OTHERS_TITLE = "Otras edades"
+  const val LADDER_TITLE = "La escalera de tu franja"
+  /** Cierra «Otras edades» cuando alguna franja (o todas las edades) todavía no llega a 50 personas: no se muestran filas vacías. */
+  const val OTHERS_HIDDEN = "Las demás edades aparecen cuando lleguen a 50 personas."
+  /** El rótulo de la raya de 50 en «Tu percentil semanal» (14 sp, como los ejes). */
+  const val WEEKS_HALF_LABEL = "la mitad"
   const val WEEKS_AXIS_RIGHT = "esta semana"
   const val BELL_AXIS_LEFT = "0 aciertos"
   const val BELL_AXIS_RIGHT = "75 o más"
@@ -40,12 +44,10 @@ object Comparison {
   const val MERGED_LINE = "Juntamos dos franjas porque todavía somos pocos."
   const val FEW_TITLE = "Todavía somos pocos"
   const val FEW_BAR_GOAL = MIN_PEOPLE
-  const val NOT_ENOUGH_PEOPLE = "todavía somos pocos"
   const val HERO_UNIT = "de cada 100"
   const val CLOSES = "La semana cierra el domingo."
-  const val BELL_TITLE = "Cómo se reparten las marcas"
-  const val BELL_CAPTION = "La línea marca la mitad de las personas. Es la forma real de las marcas, no una curva teórica."
-  const val WEEKS_ABOVE_LABEL = "semanas arriba de la mitad"
+  const val BELL_TITLE = "La campana de tu edad"
+  const val BELL_CAPTION = "La línea marca la mitad de las personas."
 
   // ------------------------------------------------------------------ la distribución
 
@@ -241,11 +243,12 @@ object Comparison {
     return Ladder(up.asReversed(), current, next, missing, progress)
   }
 
-  /** «Las divisiones de tu franja esta semana» (con las 4 semanas o las franjas juntas: «Las divisiones de tu franja»). */
-  fun ladderTitle(r: Ranked): String = if (r.scope == Scope.OWN_WEEK) "Las divisiones de tu franja esta semana" else "Las divisiones de tu franja"
-
-  /** «desde 39 aciertos» (el primer acierto de la división). */
-  fun rungFrom(rung: Rung): String = "desde ${TimeTrialDay.hitsText(rung.from)}"
+  /**
+   * Lo que dice cada fila de la escalera: «desde 39 aciertos» (el primer acierto de la división). La de abajo, En la plataforma, empieza en 0 y «desde 0 aciertos» no dice nada: dice hasta dónde llega, «hasta 30 aciertos» (el primer acierto de la división de [above], la de arriba, menos uno; Tarea 203b).
+   * Sin división de arriba (la escalera tiene un solo peldaño) queda «desde 0 aciertos».
+   */
+  fun rungText(rung: Rung, above: Rung?): String =
+    if (rung.division == Division.PLATFORM && above != null) "hasta ${TimeTrialDay.hitsText(above.from - 1)}" else "desde ${TimeTrialDay.hitsText(rung.from)}"
 
   /** «Tú · 43 aciertos»: la fila de la persona, en lima. */
   fun youRow(r: Ranked): String = "Tú · ${TimeTrialDay.hitsText(r.mark)}"
@@ -258,10 +261,14 @@ object Comparison {
     return "${if (missing == 1) "Te falta" else "Te faltan"} ${TimeTrialDay.hitsText(missing)} para ${next.division.label}."
   }
 
-  /** «Con las marcas de las 128 personas de 45 a 54 años que jugaron Tinta o Palabra esta semana.» (la clase de la escalera, dicha una sola vez). */
-  fun ladderNote(r: Ranked, range: AgeRange, gameTitle: String): String {
-    val whenText = if (r.scope == Scope.OWN_WEEK) "esta semana" else "en las últimas $RECENT_WEEKS semanas"
-    return "Con las marcas de las ${r.distribution.people} personas ${whoText(r, range)} que jugaron $gameTitle $whenText."
+  /**
+   * «Con las 128 personas de tu franja que jugaron esta semana.» (la clase de la escalera, dicha una sola vez; la franja exacta y el juego ya están en la cifra de arriba). Con las 4 semanas lo dice: «…que jugaron en las últimas 4 semanas.»;
+   * con las franjas juntas o todas las edades dice cuáles («Con las 240 personas de 30 a 54 años que jugaron en las últimas 4 semanas.»).
+   */
+  fun ladderNote(r: Ranked, range: AgeRange): String {
+    val whenText = if (r.scope == Scope.OWN_WEEK || r.scope == Scope.ALL_WEEK) "esta semana" else "en las últimas $RECENT_WEEKS semanas"
+    val who = if (r.scope == Scope.OWN_WEEK || r.scope == Scope.OWN_4_WEEKS) "de tu franja" else whoText(r, range)
+    return "Con las ${r.distribution.people} personas $who que jugaron $whenText."
   }
 
   /**
@@ -302,13 +309,6 @@ object Comparison {
     return if (oldest == 0) null else weeksAgoText(oldest)
   }
 
-  /** La tercera cifra de «Tus marcas» con comparación: «3 de 4» semanas arriba de la mitad (con dos semanas con dato o más); null con menos. */
-  fun weeksAboveFigure(points: List<WeekPoint>): String? {
-    if (points.size < 2) return null
-    val n = points.count { it.percentile >= Division.ORBIT.from }
-    return "$n de ${points.size}"
-  }
-
   /** La línea que dice qué clase se usó cuando no es la normal: «Juntamos dos franjas porque todavía somos pocos.» (solo con las franjas vecinas; las otras ya lo dicen en la frase). */
   fun scopeLine(r: Ranked): String? = if (r.scope == Scope.NEIGHBORS_4_WEEKS) MERGED_LINE else null
 
@@ -330,8 +330,8 @@ object Comparison {
    */
   fun meanwhileSentence(r: Ranked): String {
     val n = r.percentile
-    if (r.scope == Scope.ALL_WEEK) return "Mientras tanto, comparada con todas las edades de esta semana, tu mejor marca, ${TimeTrialDay.hitsText(r.mark)}, supera a $n de cada 100 personas."
-    return "Mientras tanto, comparada con todas las edades de las últimas $RECENT_WEEKS semanas, tu mejor marca de esta semana, ${TimeTrialDay.hitsText(r.mark)}, supera a $n de cada 100 personas."
+    if (r.scope == Scope.ALL_WEEK) return "Mientras tanto, comparada con todas las edades de esta semana, tu mejor marca, ${TimeTrialDay.hitsText(r.mark)}, deja detrás a $n de cada 100 personas."
+    return "Mientras tanto, comparada con todas las edades de las últimas $RECENT_WEEKS semanas, tu mejor marca de esta semana, ${TimeTrialDay.hitsText(r.mark)}, deja detrás a $n de cada 100 personas."
   }
 
   /** Sin marca esta semana: qué hacer para ver el lugar (sin números inventados). */
@@ -372,7 +372,7 @@ object Comparison {
 
   /** Lo que lee el lector de pantalla del gráfico de las semanas, semana por semana: «Tu percentil en las últimas 7 semanas: hace 6 semanas, supera a 52 de cada 100; …; esta semana, supera a 63 de cada 100.» */
   fun weeksSpoken(points: List<WeekPoint>): String =
-    "$WEEKS_TITLE: " + points.joinToString("; ") { pt -> val n = pt.percentile; "${weeksAgoText(pt.weeksAgo)}, supera a $n de cada 100" } + "."
+    "$WEEKS_TITLE: " + points.joinToString("; ") { pt -> val n = pt.percentile; "${weeksAgoText(pt.weeksAgo)}, deja detrás a $n de cada 100" } + "."
 
   fun weeksAgoText(weeksAgo: Int): String = when (weeksAgo) {
     0 -> "esta semana"
@@ -382,24 +382,29 @@ object Comparison {
 
   // ------------------------------------------------------------------ comparado con otras edades
 
-  /** Una fila de «Comparado con otras edades»: [label] (la franja o «Todas las edades»), [percentile] (null = todavía somos pocos), [own] = la franja de la persona. */
-  data class OtherRow(val label: String, val percentile: Int?, val own: Boolean, val people: Int) {
-    /** «63 de cada 100» o «todavía somos pocos». */
-    val value: String get() = percentile?.let { "$it de cada 100" } ?: NOT_ENOUGH_PEOPLE
+  /** Una fila de «Otras edades»: [label] (la franja o «Todas las edades») con su [percentile] (solo hay fila con 50 personas o más), [own] = la franja de la persona. */
+  data class OtherRow(val label: String, val percentile: Int, val own: Boolean, val people: Int) {
+    /** «63 de cada 100». */
+    val value: String get() { val p = percentile; return "$p de cada 100" }
   }
 
-  data class Others(val rows: List<OtherRow>, val all: OtherRow)
+  /** Las filas con datos de «Otras edades»; [hidden] = alguna franja (o todas las edades) todavía no llega a 50 personas y la losa cierra con [OTHERS_HIDDEN]. */
+  data class Others(val rows: List<OtherRow>, val all: OtherRow?, val hidden: Boolean)
 
   /**
-   * La marca de esta semana contra cada franja (6 mientras [Features.COMPARE_MINORS] sea false, sin la de 13 a 17) y contra todas las edades, esta semana: con 50 personas o más, su «N de cada 100»; con menos, «todavía somos pocos». La propia lleva «(tu franja)».
+   * La marca de esta semana contra cada franja (hasta 6 mientras [Features.COMPARE_MINORS] sea false, sin la de 13 a 17) y contra todas las edades, esta semana: solo las clases con 50 personas o más tienen fila, con su «N de cada 100» (Tarea 203b: ya no hay filas de «todavía somos pocos»,
+   * que en los primeros meses serían casi todas); la propia lleva «(tu franja)». [Others.hidden] avisa que falta alguna y null = no hay ninguna fila que mostrar (la losa no va).
    */
-  fun others(source: Source, game: String, range: AgeRange, mark: Int): Others {
-    fun row(label: String, ranges: List<AgeRange>?, own: Boolean): OtherRow {
+  fun others(source: Source, game: String, range: AgeRange, mark: Int): Others? {
+    fun row(label: String, ranges: List<AgeRange>?, own: Boolean): OtherRow? {
       val d = source.distribution(game, ranges, 0)
-      return OtherRow(if (own) "$label (tu franja)" else label, if (d.enough) percentile(mark, d) else null, own, d.people)
+      return if (d.enough) OtherRow(if (own) "$label (tu franja)" else label, percentile(mark, d), own, d.people) else null
     }
-    val rows = AgeRange.entries.filter { it != AgeRange.R13_17 || Features.COMPARE_MINORS }.map { row(it.label, listOf(it), it == range) }
-    return Others(rows, row("Todas las edades", null, false))
+    val ages = AgeRange.entries.filter { it != AgeRange.R13_17 || Features.COMPARE_MINORS }
+    val rows = ages.mapNotNull { row(it.label, listOf(it), it == range) }
+    val all = row("Todas las edades", null, false)
+    if (rows.isEmpty() && all == null) return null
+    return Others(rows, all, hidden = rows.size < ages.size || all == null)
   }
 
   /** «De cada 100 personas que jugaron Tinta o Palabra esta semana, tu mejor marca deja detrás a:» (la marca ya está en la cifra de arriba: no se repite). */
