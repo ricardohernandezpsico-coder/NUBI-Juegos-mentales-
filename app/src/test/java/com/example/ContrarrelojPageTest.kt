@@ -22,12 +22,14 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.data.Comparison
 import com.example.data.NBSP
 import com.example.data.SampleComparison
 import com.example.data.TimeTrialResult
+import com.example.data.TimeTrialStats
 import com.example.data.TimeTrialTrials
 import com.example.model.AgeRange
 import com.example.ui.components.BoardBackground
@@ -478,7 +480,7 @@ class ContrarrelojPageTest {
     assertEquals("Esta semana, comparado con tu edad", textOf("contrarreloj_section_compare"))
     assertEquals("Tus marcas", textOf("contrarreloj_section_marks"))
     assertEquals("Estos son datos de muestra: solo se ven en la versión de prueba.", textOf("contrarreloj_sample_notice"))
-    val order = listOf("contrarreloj_game_radar", "contrarreloj_section_compare", "contrarreloj_sample_notice", "contrarreloj_hero", "contrarreloj_ladder", "contrarreloj_bell", "contrarreloj_others", "contrarreloj_percweeks", "contrarreloj_section_marks", "contrarreloj_stats", "contrarreloj_marks", "contrarreloj_rhythm", "contrarreloj_notes")
+    val order = listOf("contrarreloj_game_radar", "contrarreloj_section_compare", "contrarreloj_hero", "contrarreloj_ladder", "contrarreloj_bell", "contrarreloj_others", "contrarreloj_percweeks", "contrarreloj_section_marks", "contrarreloj_stats", "contrarreloj_marks", "contrarreloj_rhythm", "contrarreloj_notes", "contrarreloj_sample_notice")
     for ((a, c) in order.zipWithNext()) assertTrue("«$a» va antes que «$c»", b.getValue(a).b <= b.getValue(c).y + 0.5f)
     assertEquals("24 dp de aire sobre el primer rótulo: 16 de entre losas y 8 propios", 24f, b.getValue("contrarreloj_section_compare").y - b.getValue("contrarreloj_game_radar").b, 1.5f)
     assertEquals("y sobre el segundo", 24f, b.getValue("contrarreloj_section_marks").y - b.getValue("contrarreloj_percweeks").b, 1.5f)
@@ -487,7 +489,10 @@ class ContrarrelojPageTest {
       assertEquals("la línea mide 1 dp", 1f, line.h, 0.1f)
       assertTrue("y va desde el final del texto hasta el margen derecho (16 dp)", line.x >= label.r + 11.5f && Math.abs(line.r - (393f - 16f)) < 1f)
     }
-    assertEquals("el aviso de muestra va bajo el rótulo, a 8 dp", 8f, b.getValue("contrarreloj_sample_notice").y - b.getValue("contrarreloj_section_compare").b, 1.5f)
+    // Tarea 211: el aviso de muestra va AL FINAL de la página, después de las notas y no bajo el rótulo de la comparación (que queda solo, con la cifra debajo)
+    assertTrue("el aviso de muestra va después de las notas (%.1f dp de aire)".format(b.getValue("contrarreloj_sample_notice").y - b.getValue("contrarreloj_notes").b), b.getValue("contrarreloj_sample_notice").y - b.getValue("contrarreloj_notes").b >= 7.5f)
+    assertEquals("y el rótulo de la comparación queda solo sobre la cifra, a 16 dp", 16f, b.getValue("contrarreloj_hero").y - b.getValue("contrarreloj_section_compare").b, 1.5f)
+    assertEquals("es lo último de la página", b.values.maxOf { it.b }, b.getValue("contrarreloj_sample_notice").b, 0.5f)
   }
 
   @Test fun el_rotulo_de_seccion_y_la_nota_de_muestra_van_en_fredoka_18_y_en_crema_de_16_sp_en_el_codigo() {
@@ -1070,14 +1075,24 @@ class ContrarrelojPageTest {
     return out.map { it.replace(NBSP, " ") }
   }
 
-  @Test fun con_la_referencia_estimada_la_frase_larga_va_una_sola_vez_bajo_el_rotulo_y_el_aviso_de_muestra_no_va() {
+  @Test fun con_la_referencia_estimada_la_frase_larga_va_una_sola_vez_al_final_de_la_pagina_despues_de_las_notas_y_el_aviso_de_muestra_no_va() {
     show(compare = estWorld, ageRange = AgeRange.R45_54)
     val b = boxes()
     assertEquals("Esta semana, comparado con tu edad", n("contrarreloj_section_compare"))
     assertEquals("No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para 45 a 54 años es estimada: sale de estudios por edad y de un programa que jugó este mismo Contrarreloj en un computador, no en tu teléfono.", n("contrarreloj_estimated_notice"))
     assertNull("ya no es un dato de muestra", b["contrarreloj_sample_notice"])
-    assertEquals("la frase larga va bajo el rótulo, a 8 dp", 8f, b.getValue("contrarreloj_estimated_notice").y - b.getValue("contrarreloj_section_compare").b, 1.5f)
+    // Tarea 211 (decisión de Ricardo, 1-nov): la frase larga y la fila van AL FINAL, después de las notas; arriba el rótulo queda solo y quien entra ve primero sus datos
+    val notes = b.getValue("contrarreloj_notes"); val notice = b.getValue("contrarreloj_estimated_notice"); val link = b.getValue("contrarreloj_source_link")
+    assertTrue("la frase va después de las notas (%.1f dp de aire)".format(notice.y - notes.b), notice.y - notes.b >= 7.5f)
+    assertTrue("y la fila, debajo de la frase", link.y >= notice.b)
+    assertEquals("la fila es lo último de la página", b.values.maxOf { it.b }, link.b, 0.5f)
+    assertEquals("el rótulo de la comparación queda solo sobre la cifra, a 16 dp", 16f, b.getValue("contrarreloj_hero").y - b.getValue("contrarreloj_section_compare").b, 1.5f)
     assertEquals("y UNA sola vez en toda la pantalla", 1, everythingSaid().count { it.startsWith("No son otras personas:") })
+    // el lector de pantalla las dice al final y en el mismo orden: las notas, la frase y la fila
+    val said = everythingSaid()
+    val iNote = said.indexOfFirst { it == TimeTrialStats.note(true) }; val iNotice = said.indexOfFirst { it.startsWith("No son otras personas:") }; val iLink = said.indexOfFirst { it.startsWith("De dónde sale la referencia") }
+    assertTrue("el lector las encuentra (nota $iNote, frase $iNotice, fila $iLink)", iNote >= 0 && iNotice >= 0 && iLink >= 0)
+    assertTrue("y las dice en orden: las notas, luego la frase y luego la fila", iNote < iNotice && iNotice < iLink)
     assertEquals("las demás se dicen igual con otra franja", "No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para 75 años o más es estimada: sale de estudios por edad y de un programa que jugó este mismo Contrarreloj en un computador, no en tu teléfono.", Comparison.estimatedNotice(AgeRange.R75_PLUS))
   }
 
@@ -1093,7 +1108,7 @@ class ContrarrelojPageTest {
     rule.onNode(hasText("De dónde sale la referencia ›"), useUnmergedTree = true).assertExists()
     assertEquals("el lector dice «De dónde sale la referencia, botón»: la descripción sin el «›» y el rol de botón", "De dónde sale la referencia", descriptionOf("contrarreloj_source_link"))
     assertEquals(androidx.compose.ui.semantics.Role.Button, rule.onNode(hasTestTag("contrarreloj_source_link")).fetchSemanticsNode().config.getOrNull(SemanticsProperties.Role))
-    rule.onNodeWithTag("contrarreloj_source_link").performClick(); rule.waitForIdle()
+    rule.onNodeWithTag("contrarreloj_source_link").performScrollTo().performClick(); rule.waitForIdle()          // Tarea 211: la fila está al final de la página: se baja hasta ella, como una persona
     assertEquals("tocar la fila abre el panel", 1, sourceCalls)
   }
 
@@ -1108,7 +1123,9 @@ class ContrarrelojPageTest {
     val link = b.getValue("contrarreloj_source_link")
     assertTrue("a $widthDp dp con letra $scale: la fila mide 48 dp o más (%.1f)".format(link.h), link.h >= 47.5f)
     assertTrue("y entre los márgenes de 16 dp (x %.1f a %.1f)".format(link.x, link.r), link.x >= 15.5f && link.r <= widthDp - 15.5f)
-    assertTrue("y a 8 dp o más de la cifra (%.1f)".format(b.getValue("contrarreloj_hero").y - link.b), b.getValue("contrarreloj_hero").y - link.b >= 7.5f)
+    assertTrue("y a 8 dp o más de las notas, que van antes (%.1f)".format(link.y - b.getValue("contrarreloj_notes").b), link.y - b.getValue("contrarreloj_notes").b >= 7.5f)
+    val notice = b.getValue("contrarreloj_estimated_notice")
+    assertTrue("la frase cabe entre los márgenes de 16 dp (x %.1f a %.1f)".format(notice.x, notice.r), notice.x >= 15.5f && notice.r <= widthDp - 15.5f)
   }
 
   @Test fun la_fila_de_donde_sale_cabe_a_393_con_letra_1_0() = assertSourceLinkFits(393, 1f)
