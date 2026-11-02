@@ -203,6 +203,7 @@ class PreguntasYReferenciaScreenTest {
   fun la_hoja_dice_primero_que_no_son_otras_personas_y_trae_los_diez_estudios_en_cuatro_grupos() {
     mount { ReferenciaScreen(openLink = { url -> opened += url; true }) }
     assertEquals(ReferenciaFuentes.INTRO, textOf("referencia_intro"))
+    assertEquals("el segundo párrafo (Tarea 213: el de antes, sin su primera frase)", ReferenciaFuentes.INTRO_2, textOf("referencia_intro_2"))
     assertEquals(ReferenciaFuentes.ABOUT, textOf("referencia_about"))
     for (g in ReferenciaFuentes.groups) assertTrue("falta el grupo «${g.title}»", exists("referencia_grupo_${g.key}"))
     assertEquals("la línea del último grupo", ReferenciaFuentes.SHARED_LINE, textOf("referencia_linea_otros"))
@@ -215,7 +216,7 @@ class PreguntasYReferenciaScreenTest {
     mount(widthDp, scale) { ReferenciaScreen(openLink = { true }) }
     val label = "a $widthDp dp con letra $scale"
     assertNoWordSplit(label)
-    for (tag in listOf("referencia_intro", "referencia_about") + ReferenciaFuentes.studies.map { "estudio_${it.doi}" })
+    for (tag in listOf("referencia_intro", "referencia_intro_2", "referencia_about") + ReferenciaFuentes.studies.map { "estudio_${it.doi}" })
       assertTrue("$label: «$tag» se sale del margen de 20 dp (x %.1f a %.1f)".format(left(tag), right(tag)), left(tag) >= 19.5f && right(tag) <= widthDp - 19.5f)
     for (e in ReferenciaFuentes.studies) assertTrue("$label: la losa de ${e.cite} mide 48 dp o más", heightDp("estudio_${e.doi}") >= 48f)
   }

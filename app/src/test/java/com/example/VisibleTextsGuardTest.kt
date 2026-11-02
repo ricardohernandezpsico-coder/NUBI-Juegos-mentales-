@@ -300,13 +300,15 @@ class VisibleTextsGuardTest {
   /**
    * Excepciones, todas justificadas: `DebugTools.kt` (los botones «[Debug]» solo existen en las compilaciones de depuración, no los ve nadie más) y `StarMeasures.kt` (guarda la unidad INTERNA de cada medida —«°», «%», «ms»—, que
    * nunca se dice: lo que se ve sale de `MeasurePhrases`). Y dos cifras con «%» cuyo «de qué» va pegado: la cifra grande de un final B (`FinalModels.kt`; su `unit` empieza con «de …», lo vigila `FinalModelsTest`) y el valor de cada barra del vocabulario
-   * (`GameResultScreen.kt`; la frase de arriba dice «el porcentaje de palabras de ese grupo que reconociste»).
+   * (`GameResultScreen.kt`; la frase de arriba dice «el porcentaje de palabras de ese grupo que reconociste») y, desde la Tarea 213, el «Supera al N %» de cada fila de «Otras edades» (`Comparison.kt`; la frase de entrada dice contra qué); y el patrón `(\d) (?=%)` de `NoBreak.kt` (una expresión regular, no un texto).
    */
   private fun looseException(file: File, text: String): Boolean {
     val path = file.path.replace('\\', '/')
     val big = path.endsWith("games/FinalModels.kt") && text.trim() in setOf("\$it %", "\${it.roundToInt()} %")
     val bar = path.endsWith("games/GameResultScreen.kt") && text.trim() == "\$percent %"
-    return path.endsWith("ui/screens/DebugTools.kt") || path.endsWith("data/StarMeasures.kt") || big || bar
+    val others = path.endsWith("data/Comparison.kt") && text.trim() == "Supera al \$p %"            // Tarea 213: cada fila de «Otras edades»; el «de qué» lo dice la frase de entrada («Tu mejor marca de esta semana, frente a la referencia estimada de cada edad:»)
+    val glue = path.endsWith("data/NoBreak.kt") && text.trim() == "(\\d) (?=%)"                       // Tarea 213: el patrón que pega la cifra con su «%» (glueNumbers); es una expresión regular, no un texto
+    return path.endsWith("ui/screens/DebugTools.kt") || path.endsWith("data/StarMeasures.kt") || big || bar || others || glue
   }
 
   @Test
@@ -363,9 +365,14 @@ class VisibleTextsGuardTest {
     }
     val bySubtitle = com.example.model.GameRegistry.allGames.associate { it.id to it.subtitle }
     assertEquals("Repite el camino de la chispa", bySubtitle["secuencia"])
-    assertEquals("Frena cuando suena la alarma", bySubtitle["freno"])
+    assertEquals("Lanza cuando toca y espera cuando no", bySubtitle["freno"])
     assertEquals("Gira la pieza en tu mente", bySubtitle["acoplamiento"])
-    assertEquals("Posa la nave en el número", bySubtitle["aterrizaje"])
+    assertEquals("Calcula dónde va cada número en la regla", bySubtitle["aterrizaje"])
+    // Tarea 213 (Fable §3, tras MiroFish): dicen qué se hace, sin «rápido», «velocidad» ni «alarma»
+    assertEquals("Reconoce las palabras de verdad", bySubtitle["meteoros"])
+    assertEquals("Lee la frase y di si tiene sentido", bySubtitle["disparate"])
+    assertEquals("Guía la nave y atiende las señales a la vez", bySubtitle["piloto"])
+    for (id in listOf("freno", "meteoros", "disparate", "piloto", "aterrizaje")) for (bad in listOf("rápido", "velocidad", "alarma")) assertFalse("$id: el subtítulo dice «$bad»", bad in bySubtitle.getValue(id).lowercase())
     assertEquals("Sigue varios satélites a la vez", bySubtitle["satelites"])
     assertEquals("Acuérdate a tiempo de cada encargo", bySubtitle["correo"])
   }

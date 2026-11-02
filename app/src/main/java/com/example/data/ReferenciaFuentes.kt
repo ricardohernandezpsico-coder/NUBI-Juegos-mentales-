@@ -14,8 +14,11 @@ object ReferenciaFuentes {
   /** La fila de «En qué se basa Nubi», entre «Cómo está hecha Nubi» y «Las palabras»: abre esta hoja (el lector dice «…, botón»). */
   const val FUENTES_ROW = "De dónde sale la referencia del Contrarreloj ›"
 
-  /** El primer párrafo: primero la razón (no son otras personas) y luego qué es la referencia. */
-  const val INTRO = "No son otras personas: Nubi no junta datos de nadie. La referencia se arma con estudios publicados que midieron cómo cambian con la edad la rapidez y la exactitud en tareas parecidas, y con un programa que jugó el mismo Contrarreloj en un computador con esos números. Cada estudio dice cuántas personas tuvo."
+  /** El primer párrafo (Tarea 213, Fable §1 y decisión de Ricardo): con qué se compara la persona y que sus marcas se quedan en su teléfono. Sin «por ahora» (promete el cambio a personas, que no se promete sin servidor) y sin «bots de IA» (los robots son reglas sacadas de estudios). */
+  const val INTRO = "Te comparas con una referencia estimada para tu edad, no con otras personas. Nubi no junta datos de nadie: tus marcas se quedan en tu teléfono."
+
+  /** El segundo párrafo: qué es la referencia (el párrafo de antes de la Tarea 213 sin su primera frase, que ahora es el primer párrafo). */
+  const val INTRO_2 = "La referencia se arma con estudios publicados que midieron cómo cambian con la edad la rapidez y la exactitud en tareas parecidas, y con un programa que jugó el mismo Contrarreloj en un computador con esos números. Cada estudio dice cuántas personas tuvo."
 
   /** El segundo párrafo, en `OnNightDim` (la decisión de Ricardo: es lo honesto; sin cifras). */
   const val ABOUT = "Los números de cada edad se calcularon a partir de esos estudios; ninguno usó los juegos de Nubi. El ritmo del programa se ajustó con las primeras partidas de quienes probaron Nubi antes de salir."

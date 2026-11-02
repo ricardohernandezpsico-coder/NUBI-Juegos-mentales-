@@ -7,9 +7,10 @@ package com.example.data
 const val NBSP = "\u00A0"
 
 private val DIGIT_THEN_WORD = Regex("""(\d) (?=\p{L})""")
+private val DIGIT_THEN_PERCENT = Regex("""(\d) (?=%)""")
 private val DE_THEN_YEAR = Regex("""\bde (?=(?:19|20)\d{2}\b)""")
 
-fun String.glueNumbers(): String = replace(DIGIT_THEN_WORD, "$1$NBSP").replace(DE_THEN_YEAR, "de$NBSP")
+fun String.glueNumbers(): String = replace(DIGIT_THEN_WORD, "$1$NBSP").replace(DIGIT_THEN_PERCENT, "$1$NBSP").replace(DE_THEN_YEAR, "de$NBSP")
 
 /** Los nombres de las divisiones de la página «Contrarreloj» (Tarea 203b): «En la Luna» no se parte entre «En la» y «Luna». */
 private val DIVISION_NAMES = listOf("En la plataforma", "En la Luna", "Entre estrellas", "En órbita")

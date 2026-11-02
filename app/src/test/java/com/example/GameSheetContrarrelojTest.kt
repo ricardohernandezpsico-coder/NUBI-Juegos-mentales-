@@ -270,7 +270,7 @@ class GameSheetContrarrelojTest {
   /**
    * Tarea 181: cuánto se pasa la ficha del marco de la ventana real (dp; 0 = cabe entera sin deslizar), a 393 × 873 y a 360 × 780 (menos las barras del sistema), con letra 1,0, 1,3 y 2,0, plegada y desplegada. «Antes» = un juego con la misma ficha de antes (Freno: con su «¿Con reloj?» y sin el botón), para compararla con los
    * cuatro de ahora. ¿Verdad o disparate? y Rescate relámpago tienen los nombres más largos; Tinta o Palabra, el más corto. Solo MIDE e informa (la regla de la tarea: nada se achica sin el OK de Opus) y fija lo medido para que una regresión se note: a 393 × 873 la ficha plegada cabe entera con letra 1,0 y 1,3
-   * (los estados de todos los días), a 360 × 780 con 1,0, y con 1,3 se pasa 43 dp; con 2,0 se desliza (la tarjeta hace scroll por dentro, nada se corta).
+   * (los estados de todos los días), a 360 × 780 con 1,0, y con 1,3 se pasa 43 dp (69 en ¿Verdad o disparate? desde la Tarea 213: su frase nueva, «Lee la frase y di si tiene sentido», ocupa dos renglones); con 2,0 se desliza (la tarjeta hace scroll por dentro, nada se corta).
    */
   @Test
   fun tarea_181_medidas() {
@@ -283,7 +283,7 @@ class GameSheetContrarrelojTest {
         cells += "%s plegada %s desplegada %+.0f".format(label, if (fit.folded < 0.5f) "cabe (sobran %.0f)".format(fit.slack) else "+%.0f".format(fit.folded), fit.unfolded)
         val where = "$label a ${w}x${h + 72} letra $fs"
         if (id !in four) continue
-        val tolerance = when { w == 393 && fs <= 1.3f -> 0.5f; w == 360 && fs == 1f -> 0.5f; w == 360 && fs == 1.3f -> 44f; else -> 1000f }            // lo medido; con 2,0 se desliza y no se fija
+        val tolerance = when { w == 393 && fs <= 1.3f -> 0.5f; w == 360 && fs == 1f -> 0.5f; w == 360 && fs == 1.3f && id == "disparate" -> 70f; w == 360 && fs == 1.3f -> 44f; else -> 1000f }            // lo medido; con 2,0 se desliza y no se fija; ¿Verdad o disparate? 70 desde la Tarea 213 (su frase nueva, «Lee la frase y di si tiene sentido», pasa a dos renglones: unos 25 dp más)
         assertTrue("$where: plegada se pasa ${fit.folded} dp (tolerancia $tolerance)", fit.folded <= tolerance)
       }
       rows += "MEDIDA %dx%d letra %.1f: %s".format(w, h + 72, fs, cells.joinToString(" | "))

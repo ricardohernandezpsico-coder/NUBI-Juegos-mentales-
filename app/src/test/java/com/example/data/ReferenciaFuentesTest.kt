@@ -57,14 +57,18 @@ class ReferenciaFuentesTest {
   @Test
   fun los_dos_parrafos_dicen_lo_que_decidieron_Fable_y_Opus_sin_cifras_ni_interpolacion() {
     assertEquals(
-      "No son otras personas: Nubi no junta datos de nadie. La referencia se arma con estudios publicados que midieron cómo cambian con la edad la rapidez y la exactitud en tareas parecidas, y con un programa que jugó el mismo Contrarreloj en un computador con esos números. Cada estudio dice cuántas personas tuvo.",
+      "Te comparas con una referencia estimada para tu edad, no con otras personas. Nubi no junta datos de nadie: tus marcas se quedan en tu teléfono.",
       ReferenciaFuentes.INTRO
+    )
+    assertEquals(
+      "La referencia se arma con estudios publicados que midieron cómo cambian con la edad la rapidez y la exactitud en tareas parecidas, y con un programa que jugó el mismo Contrarreloj en un computador con esos números. Cada estudio dice cuántas personas tuvo.",
+      ReferenciaFuentes.INTRO_2
     )
     assertEquals(
       "Los números de cada edad se calcularon a partir de esos estudios; ninguno usó los juegos de Nubi. El ritmo del programa se ajustó con las primeras partidas de quienes probaron Nubi antes de salir.",
       ReferenciaFuentes.ABOUT
     )
-    for (t in listOf(ReferenciaFuentes.INTRO, ReferenciaFuentes.ABOUT)) assertFalse("«$t» trae una cifra (ni robots ni cuántos probaron)", t.any { it.isDigit() })
+    for (t in listOf(ReferenciaFuentes.INTRO, ReferenciaFuentes.INTRO_2, ReferenciaFuentes.ABOUT)) assertFalse("«$t» trae una cifra (ni robots ni cuántos probaron)", t.any { it.isDigit() })
     assertFalse("sin «interpolación»", ReferenciaFuentes.ABOUT.lowercase().contains("interpol"))
     assertEquals("De dónde sale la referencia", ReferenciaFuentes.TITLE)
     assertEquals("De dónde sale la referencia del Contrarreloj ›", ReferenciaFuentes.FUENTES_ROW)
@@ -72,7 +76,7 @@ class ReferenciaFuentesTest {
 
   @Test
   fun nunca_se_dice_el_numero_de_robots_ni_una_promesa_de_pasar_a_personas_ni_una_palabra_que_no_va() {
-    val everything = listOf(ReferenciaFuentes.TITLE, ReferenciaFuentes.FUENTES_ROW, ReferenciaFuentes.INTRO, ReferenciaFuentes.ABOUT, ReferenciaFuentes.SHARED_LINE) +
+    val everything = listOf(ReferenciaFuentes.TITLE, ReferenciaFuentes.FUENTES_ROW, ReferenciaFuentes.INTRO, ReferenciaFuentes.INTRO_2, ReferenciaFuentes.ABOUT, ReferenciaFuentes.SHARED_LINE) +
       ReferenciaFuentes.groups.map { it.title } + ReferenciaFuentes.studies.flatMap { listOf(it.cite, it.line) }
     for (t in everything) {
       val low = t.lowercase()

@@ -45,7 +45,6 @@ object Comparison {
   const val MERGED_LINE = "Juntamos dos franjas porque todavía somos pocos."
   const val FEW_TITLE = "Todavía somos pocos"
   const val FEW_BAR_GOAL = MIN_PEOPLE
-  const val HERO_UNIT = "de cada 100"
   const val CLOSES = "La semana cierra el domingo."
   const val BELL_TITLE = "La campana de tu edad"
   /** Sin franja de edad guardada (Tarea 205b): la página dice dónde elegirla. Es la ruta real: Tú › «Más ajustes» › «Juego» › «Rango de edad». */
@@ -99,15 +98,14 @@ object Comparison {
   /** Bajo el gráfico de las semanas (con la referencia estimada). */
   const val WEEKS_ESTIMATED_NOTE = "Semanas comparadas con la referencia estimada."
 
-  /**
-   * La frase larga, UNA vez por página, bajo el rótulo de la comparación (reemplaza al aviso de muestra): primero la razón («No son otras personas: Nubi no junta datos de nadie», la duda que aparecía en las cuatro corridas de MiroFish) y después qué es la referencia
-   * (Tarea 209; `auditoria-fable/claridad-plus-y-ayuda.md` §1.1). La palabra «personas» solo va en ese «No son otras personas:».
-   */
-  fun estimatedNotice(range: AgeRange): String =
-    "No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para ${range.label} es estimada: sale de estudios por edad y de un programa que jugó este mismo Contrarreloj en un computador, no en tu teléfono."
-
-  /** La fila de 48 dp bajo esa frase, en la hoja del candado y en la pregunta «¿Con qué me compara el Contrarreloj?»: abre la hoja «De dónde sale la referencia» (el lector dice «…, botón»). */
+  /** La fila de 48 dp en la hoja del candado y en la pregunta «¿Con qué me compara el Contrarreloj?»: abre la hoja «De dónde sale la referencia» (el lector dice «…, botón»). */
   const val SOURCE_LINK = "De dónde sale la referencia ›"
+
+  /**
+   * La fila de la página «Contrarreloj» (Tarea 213, decisión de Ricardo, 2-nov): DEBAJO de la losa de la cifra y antes de la escalera, abre la misma hoja «De dónde sale la referencia». Reemplaza a la frase larga y a la fila del final de la página (Tarea 211): la explicación vive en la hoja y la página
+   * no la repite. El lector dice «Con qué te comparas, botón».
+   */
+  const val COMPARE_LINK = "Con qué te comparas ›"
 
   /**
    * La frase de la campana, según sea la referencia estimada o no. El TÍTULO es el mismo («La campana de tu edad»): «La campana estimada de tu edad» partía en dos líneas hasta con letra 1,0 a 393 dp (56,3 dp de alto, `ContrarrelojPageTest`), así que
@@ -357,12 +355,6 @@ object Comparison {
 
   // ------------------------------------------------------------------ la cifra protagonista y la escalera de divisiones (Tarea 203; `auditoria-fable/contrarreloj-rediseno.md` §3, D2)
 
-  /** «63 de cada 100»: la cifra protagonista, siempre con su unidad (nunca un número suelto). */
-  fun heroFigure(r: Ranked): String {
-    val p = r.percentile
-    return "$p $HERO_UNIT"
-  }
-
   /** Quiénes son «las personas» de la cifra: «de 45 a 54 años», «de 30 a 54 años» o «de todas las edades» (la clase de referencia siempre completa). */
   private fun whoText(r: Ranked, range: AgeRange): String = when (r.scope) {
     Scope.OWN_WEEK, Scope.OWN_4_WEEKS -> "de ${range.label}"
@@ -370,30 +362,34 @@ object Comparison {
     Scope.ALL_WEEK, Scope.ALL_4_WEEKS -> "de todas las edades"
   }
 
-  /**
-   * La frase que lee la cifra: «personas de 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra.» (con las 4 semanas o las franjas juntas lo dice: «personas de 30 a 54 años que jugaron Tinta o Palabra en las últimas 4 semanas quedan detrás de tu mejor marca de esta semana.»).
-   * Con letra muy grande la unidad pasa a la frase ([withUnit]: «de cada 100 personas de 45 a 54 años quedan detrás…») y la cifra queda sola.
-   */
-  fun heroCaption(r: Ranked, range: AgeRange, gameTitle: String, withUnit: Boolean = false): String {
-    if (r.estimated) {
-      val estimatedBody = "marcas de la referencia estimada para ${range.label} quedan detrás de tu mejor marca de esta semana en $gameTitle."
-      return if (withUnit) "$HERO_UNIT $estimatedBody" else estimatedBody
-    }
-    val who = whoText(r, range)
-    val body = if (r.scope == Scope.OWN_WEEK || r.scope == Scope.ALL_WEEK) "personas $who quedan detrás de tu mejor marca de esta semana en $gameTitle."
-    else "personas $who que jugaron $gameTitle en las últimas $RECENT_WEEKS semanas quedan detrás de tu mejor marca de esta semana."
-    return if (withUnit) "$HERO_UNIT $body" else body
+  /** Con quiénes se compara la persona cuando la clase de referencia son PERSONAS (el futuro con servidor; hoy solo los datos de muestra de depuración): «las personas de tu edad que jugaron esta semana». */
+  private fun peopleOf(r: Ranked, range: AgeRange): String = when (r.scope) {
+    Scope.OWN_WEEK -> "las personas de tu edad que jugaron esta semana"
+    Scope.OWN_4_WEEKS -> "las personas de tu edad que jugaron en las últimas $RECENT_WEEKS semanas"
+    Scope.NEIGHBORS_4_WEEKS -> "las personas ${whoText(r, range)} que jugaron en las últimas $RECENT_WEEKS semanas"
+    Scope.ALL_WEEK -> "las personas de todas las edades que jugaron esta semana"
+    Scope.ALL_4_WEEKS -> "las personas de todas las edades que jugaron en las últimas $RECENT_WEEKS semanas"
   }
 
   /**
-   * Lo que lee el lector de pantalla de la tarjeta de la cifra, de corrido: «63 de cada 100 marcas de la referencia estimada para 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra. En órbita. La tercera de cinco divisiones.»
+   * La cifra de la página, en UNA sola frase (Tarea 213; decisión de Ricardo, 2-nov: «breve y claro; si explicas mucho se complica»; reemplaza a «63 de cada 100» con su frase de abajo, que seis de cada treinta y cinco personajes de MiroFish leían al revés): «Con 46 aciertos, superas al 5 % de la referencia estimada para tu edad.»
+   * El número es el mismo percentil de siempre (los tramos SIN suavizar, hacia abajo, con tope 99). La referencia siempre se dice «estimada» (regla del 1-nov). Con 0 %, sin culpa y sin número: «Con 3 aciertos, todavía no superas ninguna marca de la referencia estimada para tu edad.»
+   * Con PERSONAS reales (el futuro con servidor; hoy solo los datos de muestra), la misma frase sobre ellas y con la clase que se usó: «Con 46 aciertos, superas al 5 % de las personas de tu edad que jugaron esta semana.» (con las 4 semanas o las franjas juntas lo dice). La página la pega con espacios duros ([glueNumbers]: «5 %» no se parte);
+   * aquí queda con espacios normales, que es lo que lee el lector de pantalla ([heroSpoken]). Una sola frase y un solo estilo: la división y su lugar van debajo, sin cambio.
+   */
+  fun heroSentence(r: Ranked, range: AgeRange): String {
+    val hits = TimeTrialDay.hitsText(r.mark)
+    val p = r.percentile
+    if (r.estimated) return if (p > 0) "Con $hits, superas al $p % de la referencia estimada para tu edad." else "Con $hits, todavía no superas ninguna marca de la referencia estimada para tu edad."
+    val people = peopleOf(r, range)
+    return if (p > 0) "Con $hits, superas al $p % de $people." else "Con $hits, todavía no superas a ninguna de $people."
+  }
+
+  /**
+   * Lo que lee el lector de pantalla de la tarjeta de la cifra, de corrido: la frase y después la división y su lugar: «Con 46 aciertos, superas al 5 % de la referencia estimada para tu edad. En la plataforma. La primera de cinco divisiones.»
    * (Tarea 209: ya no dice «percentil», que Ricardo quitó de todo texto el 1-nov; el lugar de la división ocupa su sitio.)
    */
-  fun heroSpoken(r: Ranked, range: AgeRange, gameTitle: String): String {
-    val figure = heroFigure(r)
-    val caption = heroCaption(r, range, gameTitle)
-    return "$figure $caption ${r.division.label}. ${divisionPlaceLine(r.division)}"
-  }
+  fun heroSpoken(r: Ranked, range: AgeRange): String = "${heroSentence(r, range)} ${r.division.label}. ${divisionPlaceLine(r.division)}"
 
   /** Un peldaño de la escalera: la división y el PRIMER acierto con que se llega a ella. */
   data class Rung(val division: Division, val from: Int)
@@ -513,12 +509,12 @@ object Comparison {
   fun fewBarText(own: Int): String = "$own de $FEW_BAR_GOAL personas"
 
   /**
-   * «Mientras tanto, comparada con todas las edades de esta semana, tu mejor marca, 43 aciertos, supera a 51 de cada 100 personas.» (el MISMO número que la fila «Todas las edades» de «Comparado con otras edades»); solo si esta semana no llegan a 50: «Mientras tanto, comparada con todas las edades de las últimas 4 semanas, tu mejor marca de esta semana, 43 aciertos, supera a 53 de cada 100 personas.» y entonces esa fila dice «todavía somos pocos».
+   * «Mientras tanto, comparada con todas las edades de esta semana, tu mejor marca, 43 aciertos, supera al 51 % de las personas.» (el MISMO número que la fila «Todas las edades» de «Comparado con otras edades»); solo si esta semana no llegan a 50: «Mientras tanto, comparada con todas las edades de las últimas 4 semanas, tu mejor marca de esta semana, 43 aciertos, supera al 53 % de las personas.» y entonces esa fila dice «todavía somos pocos».
    */
   fun meanwhileSentence(r: Ranked): String {
     val n = r.percentile
-    if (r.scope == Scope.ALL_WEEK) return "Mientras tanto, comparada con todas las edades de esta semana, tu mejor marca, ${TimeTrialDay.hitsText(r.mark)}, deja detrás a $n de cada 100 personas."
-    return "Mientras tanto, comparada con todas las edades de las últimas $RECENT_WEEKS semanas, tu mejor marca de esta semana, ${TimeTrialDay.hitsText(r.mark)}, deja detrás a $n de cada 100 personas."
+    if (r.scope == Scope.ALL_WEEK) return "Mientras tanto, comparada con todas las edades de esta semana, tu mejor marca, ${TimeTrialDay.hitsText(r.mark)}, supera al $n % de las personas."
+    return "Mientras tanto, comparada con todas las edades de las últimas $RECENT_WEEKS semanas, tu mejor marca de esta semana, ${TimeTrialDay.hitsText(r.mark)}, supera al $n % de las personas."
   }
 
   /** Sin marca esta semana: qué hacer para ver el lugar (sin números inventados). */
@@ -541,7 +537,7 @@ object Comparison {
       if (!d.enough) null else WeekPoint(ago, mark, percentile(mark, d))
     }
 
-  /** Una semana está «por encima de la mitad de tu franja» cuando supera a 50 de cada 100 o más. */
+  /** Una semana está «por encima de la mitad de tu franja» cuando supera al 50 % o más. */
   private fun above(p: WeekPoint) = p.percentile >= 50
 
   /** «En 6 de las 7 semanas estuviste por encima de la mitad de tu franja.» (todas: «En las 4 semanas …»; ninguna: «En ninguna de las 4 semanas …»; una sola semana: «Tu única semana con marca estuvo …»). */
@@ -558,9 +554,15 @@ object Comparison {
     }
   }
 
-  /** Lo que lee el lector de pantalla del gráfico de las semanas, semana por semana: «Tu percentil en las últimas 7 semanas: hace 6 semanas, supera a 52 de cada 100; …; esta semana, supera a 63 de cada 100.» */
+  /**
+   * Lo que lee el lector de pantalla del gráfico de las semanas, semana por semana (Tarea 213: la misma forma que la cifra, «superas al N %»): «Semana a semana, comparado con la referencia estimada: hace 6 semanas, superas al 52 % de ella; …; esta semana, superas al 63 % de ella.»
+   * Con personas reales (futuro): «…, superas al 52 % de las personas de tu edad».
+   */
   fun weeksSpoken(points: List<WeekPoint>, estimated: Boolean = false): String =
-    "$WEEKS_TITLE" + (if (estimated) ", comparado con la referencia estimada" else "") + ": " + points.joinToString("; ") { pt -> val n = pt.percentile; "${weeksAgoText(pt.weeksAgo)}, deja detrás a $n de cada 100" } + "."
+    "$WEEKS_TITLE" + (if (estimated) ", comparado con la referencia estimada" else "") + ": " + points.joinToString("; ") { pt ->
+      val place = weeksAgoText(pt.weeksAgo); val n = pt.percentile
+      if (estimated) "$place, superas al $n % de ella" else "$place, superas al $n % de las personas de tu edad"
+    } + "."
 
   fun weeksAgoText(weeksAgo: Int): String = when (weeksAgo) {
     0 -> "esta semana"
@@ -572,8 +574,8 @@ object Comparison {
 
   /** Una fila de «Otras edades»: [label] (la franja o «Todas las edades») con su [percentile] (solo hay fila con 50 personas o más), [own] = la franja de la persona. */
   data class OtherRow(val label: String, val percentile: Int, val own: Boolean, val people: Int) {
-    /** «63 de cada 100». */
-    val value: String get() { val p = percentile; return "$p de cada 100" }
+    /** «Supera al 63 %» (Tarea 213: antes «63 de cada 100»): la forma corta de la cifra; de qué dice la frase de entrada ([othersLead]). */
+    val value: String get() { val p = percentile; return "Supera al $p %" }
   }
 
   /** Las filas con datos de «Otras edades»; [hidden] = alguna franja (o todas las edades) todavía no llega a 50 personas y la losa cierra con [OTHERS_HIDDEN]. */
@@ -598,11 +600,14 @@ object Comparison {
     return Others(rows, all, hidden = rows.size < ages.size || (all == null && !anyEstimated))
   }
 
-  /** «De cada 100 personas que jugaron Tinta o Palabra esta semana, tu mejor marca deja detrás a:» (la marca ya está en la cifra de arriba: no se repite). */
+  /**
+   * La frase de entrada de «Otras edades» (Tarea 213: antes «De cada 100 marcas de la referencia estimada de cada edad, tu mejor marca deja detrás a:»): dice de qué es cada «Supera al N %» de las filas: «Tu mejor marca de esta semana, frente a la referencia estimada de cada edad:»
+   * (con personas: «…, frente a las personas que jugaron Tinta o Palabra esta semana:»). La marca ya está en la cifra de arriba: no se repite.
+   */
   fun othersLead(gameTitle: String, estimated: Boolean = false): String =
-    if (estimated) "De cada 100 marcas de la referencia estimada de cada edad, tu mejor marca deja detrás a:" else "De cada 100 personas que jugaron $gameTitle esta semana, tu mejor marca deja detrás a:"
+    if (estimated) "Tu mejor marca de esta semana, frente a la referencia estimada de cada edad:" else "Tu mejor marca de esta semana, frente a las personas que jugaron $gameTitle esta semana:"
 
-  /** Lo que lee el lector de pantalla de una fila: «45 a 54 años (tu franja), 63 de cada 100». */
+  /** Lo que lee el lector de pantalla de una fila: «45 a 54 años (tu franja), Supera al 63 %». */
   fun rowSpoken(row: OtherRow): String = "${row.label}, ${row.value}"
 
   // ------------------------------------------------------------------ la sección entera

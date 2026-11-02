@@ -63,6 +63,7 @@ fun ReferenciaScreen(modifier: Modifier = Modifier, openLink: ((String) -> Boole
   ) {
     Spacer(Modifier.height(4.dp))
     OnBoardText(ReferenciaFuentes.INTRO, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("referencia_intro"))
+    OnBoardText(ReferenciaFuentes.INTRO_2, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("referencia_intro_2"))
     OnBoardText(ReferenciaFuentes.ABOUT, color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("referencia_about"))
     if (noBrowser) OnBoardText("No se encontró un navegador para abrir el estudio.", color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.testTag("referencia_no_browser"))
 
@@ -83,14 +84,14 @@ fun ReferenciaScreen(modifier: Modifier = Modifier, openLink: ((String) -> Boole
  * `PanelAccent` sobre crema (la hoja del candado y las preguntas). La usan la página «Contrarreloj», la hoja del candado y la pregunta «¿Con qué me compara el Contrarreloj?».
  */
 @Composable
-internal fun SourceLinkRow(onClick: () -> Unit, color: Color, tag: String, modifier: Modifier = Modifier) {
+internal fun SourceLinkRow(onClick: () -> Unit, color: Color, tag: String, modifier: Modifier = Modifier, label: String = Comparison.SOURCE_LINK) {
   Box(
     modifier.fillMaxWidth().heightIn(min = 48.dp)
       .clickable(role = Role.Button, onClickLabel = "Abrir de dónde sale la referencia", onClick = onClick)
-      .semantics(mergeDescendants = true) { contentDescription = Comparison.SOURCE_LINK.removeSuffix(" ›") }
+      .semantics(mergeDescendants = true) { contentDescription = label.removeSuffix(" ›") }
       .testTag(tag),
     contentAlignment = Alignment.CenterStart
   ) {
-    Text(Comparison.SOURCE_LINK, color = color, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, fontFamily = AppFamily, lineHeight = 22.sp, modifier = Modifier.padding(vertical = 13.dp))
+    Text(label, color = color, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, fontFamily = AppFamily, lineHeight = 22.sp, modifier = Modifier.padding(vertical = 13.dp))
   }
 }

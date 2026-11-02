@@ -111,9 +111,9 @@ private const val BIG_TEXT_SCALE_CAP = 1.3f
  * De arriba abajo: la cabecera sobre el cielo («Contrarreloj» y «Tus marcas, comparadas solo contigo.» —con la referencia estimada, «Tus marcas, comparadas contigo y con una referencia estimada para tu edad.»; con datos de muestra o personas reales, «…con personas de tu edad.»—, con [OnBoardText]); el cielo se DESVANECE en 24 dp hasta el noche plano ([NubiTokens.NightFlat]) y de ahí para abajo todo va en losas crema
  * sobre ese fondo plano; el selector de los cuatro juegos (dos filas parejas; una columna si «Acoplamiento» no cabe entero en media fila; el elegido en lima con el visto; abre con el juego de hoy).
  *
- * **Con comparación (solo [compare] no nulo, con una franja de edad y desde la tercera partida guardada de ESTE juego, Tarea 207: antes, la página dice «Tu lugar aparece desde tu tercera partida…» una vez; la persona de 13 a 17 años no la ve, y sin franja guardada la página dice dónde elegirla; la precedencia es `Comparison.gate`):** primero la comparación, bajo el rótulo «Esta semana, comparado con tu edad»: la cifra ([HeroCard]: «63 de cada 100», su frase, la división y su lugar entre las cinco, «La tercera de cinco divisiones.»), la escalera de divisiones con «Te faltan N aciertos»
+ * **Con comparación (solo [compare] no nulo, con una franja de edad y desde la tercera partida guardada de ESTE juego, Tarea 207: antes, la página dice «Tu lugar aparece desde tu tercera partida…» una vez; la persona de 13 a 17 años no la ve, y sin franja guardada la página dice dónde elegirla; la precedencia es `Comparison.gate`):** primero la comparación, bajo el rótulo «Esta semana, comparado con tu edad»: la cifra ([HeroCard]: UNA frase, «Con 46 aciertos, superas al 5 % de la referencia estimada para tu edad.» —Tarea 213—, y debajo la división con su emblema y su lugar entre las cinco, «La tercera de cinco divisiones.»), la fila «Con qué te comparas ›» ([CompareLink], solo con la referencia estimada), la escalera de divisiones con «Te faltan N aciertos»
  * y las semanas seguidas ([LadderCard]), la campana en su losa ([BellCard]), «Otras edades» y «Semana a semana»; con «Todavía somos pocos» o sin marca esta semana, en vez de la cifra y la escalera, su losa ([PlaceCard]: nada de umbrales inventados). Después, bajo el rótulo «Tus marcas»: las tres cifras ([StatsCard]), «Tus últimas 10 marcas» ([MarksCard]),
- * «Tu ritmo en la última partida» ([RhythmCard]) y las notas ([NotesCard]). **Al final de todo** (Tarea 211: antes iban bajo el rótulo de la comparación, y Ricardo prefirió ver primero sus datos), la frase que dice con qué se compara (la de la referencia estimada, «No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para 45 a 54 años es estimada: …»; con los datos de muestra de depuración, su frase; con personas reales, ninguna) y la fila «De dónde sale la referencia ›» ([ReferenceFooter]). **Sin comparación**, la página es solo eso último, sin rótulos de sección y con la tercera cifra sin depender de otras personas. Una línea fina separa lo que una losa junta, y los gráficos van en una ventanilla noche ([NightWindow]).
+ * «Tu ritmo en la última partida» ([RhythmCard]) y las notas ([NotesCard]). **Al final de todo, nada** (Tarea 213: la frase larga y la fila «De dónde sale la referencia ›» que desde la Tarea 211 iban aquí desaparecieron; la explicación vive en la hoja que abre «Con qué te comparas ›»): solo, en depuración con datos de muestra, su aviso ([SampleFooter]). **Sin comparación**, la página es solo eso último, sin rótulos de sección y con la tercera cifra sin depender de otras personas. Una línea fina separa lo que una losa junta, y los gráficos van en una ventanilla noche ([NightWindow]).
  *
  * Todo a 16 sp o más (14 sp solo los rótulos de los ejes); cada número con su unidad y en frase completa; nada solo por color (el récord lleva moneda con visto y la palabra; tu fila de la escalera, la división en palabras). [results] = TODAS las partidas del Contrarreloj; [selected] = el juego elegido; [now] = el momento de mirar.
  */
@@ -175,8 +175,9 @@ internal fun ContrarrelojPage(
           // primero la comparación (D2): la cifra, la escalera, la campana, otras edades y semana a semana; los rótulos solo con DOS secciones
           CompareHeader()
           when (val place = section.place) {
-            is Comparison.Place.Found -> { HeroCard(place.ranked, section); LadderCard(place.ranked, section); BellCard(place.ranked, section.range) }
-            else -> PlaceCard(section)
+            // Tarea 213: la fila «Con qué te comparas ›» va DEBAJO de la losa de la cifra (o de la de «Tu lugar esta semana», cuando no hay cifra) y antes de la escalera
+            is Comparison.Place.Found -> { HeroCard(place.ranked, section); CompareLink(section, onOpenSource); LadderCard(place.ranked, section); BellCard(place.ranked, section.range) }
+            else -> { PlaceCard(section); CompareLink(section, onOpenSource) }
           }
           section.others?.let { OthersCard(section, it) }
           if (section.weeks.isNotEmpty()) PercentileWeeksCard(section.weeks, section.estimated)
@@ -189,8 +190,8 @@ internal fun ContrarrelojPage(
           RhythmCard(pace)
         } else EmptyCard()
         NotesCard(page, compared = section != null)
-        // Tarea 211 (decisión de Ricardo, 1-nov): con qué se compara y de dónde sale va AL FINAL, lo último de la página: quien entra quiere ver primero sus datos y cómo se compara
-        if (section != null) ReferenceFooter(section, onOpenSource)
+        // Tarea 213: el pie de la Tarea 211 (la frase larga y la fila al final) desapareció: la explicación vive en la hoja que abre «Con qué te comparas ›». Solo queda, en depuración, el aviso de los datos de muestra
+        if (section != null) SampleFooter(section)
       }
     }
   }
@@ -293,28 +294,21 @@ private fun ThinLine() {
 }
 
 /**
- * La tarjeta de la cifra (D2): «63 de cada 100» en Rubik 40 con tope de escala 1,3 y, debajo, la frase que la lee («personas de 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra.»), la división con nombre (Fredoka negrita 18) y debajo su lugar entre las cinco (Tarea 209: antes «Percentil 63» a la derecha).
- * La cifra manda y la frase la lee: nunca un número sin unidad. Con letra tan grande que «63 de cada 100» no cabe en una línea, la cifra queda sola («63») y «de cada 100» pasa a la frase; el lugar de la división va siempre bajo su nombre. Si la comparación usó otra clase (las 4 semanas o las franjas juntas) la frase lo dice y,
- * con las franjas juntas, una línea más. El lector de pantalla lo dice de corrido. Desde la Tarea 212 (D3) la división lleva a su izquierda su emblema de plasticina, de 52 dp ([DivisionEmblem]; decorativo: el lector no lo nombra, la división ya está dicha en palabras).
+ * La tarjeta de la cifra (D2; Tarea 213): UNA sola frase, «Con 46 aciertos, superas al 5 % de la referencia estimada para tu edad.», en Rubik Bold de 24 sp con tope de escala 1,3 como las cifras grandes (un tamaño de la escala de la página, un solo estilo: sin negritas sueltas dentro; «5 %» y «46 aciertos» no se
+ * parten: [glueNumbers]) —decisión de Ricardo del 2-nov, «breve y claro; si explicas mucho se complica», en lugar de «63 de cada 100» con su frase de abajo, que muchos leían al revés—, y debajo, sin cambio, la división con nombre y su emblema de plasticina (Tarea 212) y su lugar entre las cinco
+ * («La tercera de cinco divisiones.»). Si la comparación usó otra clase (las 4 semanas o las franjas juntas) la frase lo dice y, con las franjas juntas, una línea más. El lector de pantalla lo dice de corrido: la frase y después la división y su lugar ([Comparison.heroSpoken]).
+ * El emblema es decorativo: la división ya está dicha en palabras.
  */
 @Composable
 private fun HeroCard(r: Comparison.Ranked, s: Comparison.Section) {
-  InfoCard("contrarreloj_hero", null, Modifier.semantics(mergeDescendants = true) { contentDescription = Comparison.heroSpoken(r, s.range, s.gameTitle) }) {
-    val measurer = rememberTextMeasurer()
-    val density = LocalDensity.current
-    val capped = Density(density.density, minOf(density.fontScale, BIG_TEXT_SCALE_CAP))
-    BoxWithConstraints(Modifier.fillMaxWidth()) {
-      val full = Comparison.heroFigure(r)
-      val fits = measurer.measure(full, TextStyle(fontSize = 40.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily), softWrap = false, maxLines = 1, density = capped).size.width <= constraints.maxWidth
-      Column {
-        CapScale(BIG_TEXT_SCALE_CAP) {
-          Text((if (fits) full else r.percentile.toString()).glueNumbers(), color = Clay.Ink, fontSize = 40.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 44.sp, softWrap = false, modifier = Modifier.testTag("contrarreloj_hero_figure"))
-        }
-        Text(Comparison.heroCaption(r, s.range, s.gameTitle, withUnit = !fits).glueNumbers().glueNamesForLetter(), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 4.dp).testTag("contrarreloj_hero_caption"))
-        Spacer(Modifier.height(12.dp))
-        DivisionLine(r)
-        Comparison.scopeLine(r)?.let { Text(it, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 8.dp).testTag("contrarreloj_hero_scope")) }
+  InfoCard("contrarreloj_hero", null, Modifier.semantics(mergeDescendants = true) { contentDescription = Comparison.heroSpoken(r, s.range) }) {
+    Column(Modifier.fillMaxWidth()) {
+      CapScale(BIG_TEXT_SCALE_CAP) {
+        Text(Comparison.heroSentence(r, s.range).glueNumbers(), color = Clay.Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 30.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_hero_sentence"))
       }
+      Spacer(Modifier.height(12.dp))
+      DivisionLine(r)
+      Comparison.scopeLine(r)?.let { Text(it, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 8.dp).testTag("contrarreloj_hero_scope")) }
     }
   }
 }
@@ -805,7 +799,7 @@ private fun SectionLabel(text: String, tag: String) {
 }
 
 /**
- * El rótulo de la sección de comparación, «Esta semana, comparado con tu edad», y nada más (Tarea 211: la frase de con qué se compara y la fila de dónde sale pasaron al final de la página, [ReferenceFooter]; la página sigue diciendo desde arriba que es una referencia estimada: el subtítulo de la cabecera y las losas dicen «referencia estimada»).
+ * El rótulo de la sección de comparación, «Esta semana, comparado con tu edad», y nada más (la frase de con qué se compara salió de la página en la Tarea 213; la fila «Con qué te comparas ›» va debajo de la cifra, [CompareLink]; la página sigue diciendo desde arriba que es una referencia estimada: el subtítulo de la cabecera y las losas dicen «referencia estimada»).
  */
 @Composable
 private fun CompareHeader() {
@@ -813,22 +807,20 @@ private fun CompareHeader() {
 }
 
 /**
- * Lo último de la página (Tarea 211, decisión de Ricardo del 1-nov: antes iba arriba, bajo el rótulo de la comparación, y quien entra quiere ver primero sus datos): UNA frase que dice con qué se compara (crema, 16 sp, sobre el noche plano): con la REFERENCIA ESTIMADA (Tarea 205; la redacción de la Tarea 209),
- * «No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para 45 a 54 años es estimada: sale de estudios por edad y de un programa que jugó este mismo Contrarreloj en un computador, no en tu teléfono.» —va una sola vez por página; las losas repiten solo «referencia estimada»— y, debajo, la fila «De dónde sale la referencia ›» (48 dp, en `SunOnNight`)
- * que abre la hoja de los estudios; con los datos de muestra de depuración, «Estos son datos de muestra: solo se ven en la versión de prueba.» y sin fila (no hay estudios que mostrar); con personas reales, nada. Sin título nuevo: va solo con la sección de comparación y después de [NotesCard].
+ * La fila «Con qué te comparas ›» (Tarea 213, decisión de Ricardo del 2-nov): DEBAJO de la losa de la cifra y antes de la escalera, abre «De dónde sale la referencia» ([onOpenSource] → `TopPanel.REFERENCIA`). Reemplaza a la frase larga y a la fila «De dónde sale la referencia ›» que desde la Tarea 211 iban al final:
+ * 29 y 25 de 35 personajes de MiroFish la querían arriba, «donde está el número», y Ricardo quería ver primero sus datos; una fila de 48 dp cumple las dos cosas. Mismo molde de [SourceLinkRow] (rol de botón, tocable entera, `SunOnNight` de 16 sp sobre el noche plano; el lector dice «Con qué te comparas, botón»)
+ * y la misma marca de prueba, `contrarreloj_source_link`. Solo con la referencia estimada: con los datos de muestra de depuración no hay estudios que mostrar, y con personas reales (futuro) no hace falta.
  */
 @Composable
-private fun ReferenceFooter(s: Comparison.Section, onOpenSource: () -> Unit) {
-  val notice = when {
-    s.estimated -> Comparison.estimatedNotice(s.range) to "contrarreloj_estimated_notice"
-    s.sample -> Comparison.SAMPLE_NOTICE to "contrarreloj_sample_notice"
-    else -> return
-  }
-  Column(Modifier.fillMaxWidth()) {
-    Text(notice.first.glueNumbers().glueNamesForLetter(), color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag(notice.second))
-    // Tarea 209: con la referencia estimada, debajo de la frase, la fila que abre de dónde sale (48 dp, tocable entera); los datos de muestra de depuración no tienen fuente que mostrar
-    if (s.estimated) SourceLinkRow(onOpenSource, NubiTokens.SunOnNight, "contrarreloj_source_link", Modifier.padding(top = 4.dp))
-  }
+private fun CompareLink(s: Comparison.Section, onOpenSource: () -> Unit) {
+  if (s.estimated) SourceLinkRow(onOpenSource, NubiTokens.SunOnNight, "contrarreloj_source_link", label = Comparison.COMPARE_LINK)
+}
+
+/** Lo último de la página, SOLO en depuración con datos de muestra (Tarea 213: antes, con la referencia estimada, también iban aquí la frase larga y su fila): «Estos son datos de muestra: solo se ven en la versión de prueba.» */
+@Composable
+private fun SampleFooter(s: Comparison.Section) {
+  if (s.estimated || !s.sample) return
+  Text(Comparison.SAMPLE_NOTICE.glueNumbers().glueNamesForLetter(), color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_sample_notice"))
 }
 
 /**

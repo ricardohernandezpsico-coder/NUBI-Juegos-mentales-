@@ -121,14 +121,14 @@ object GameRegistry {
       id = "meteoros",
       title = "Lluvia de meteoros",
       domain = DomainType.LENGUAJE,
-      subtitle = "Toca solo las palabras que existen",
+      subtitle = "Reconoce las palabras de verdad",
       instruction = "Caen meteoros con palabras. Toca las que existen y deja pasar las inventadas: no pierdes nada si dudas. Las palabras raras valen más."
     ),
     GameDefinition(
       id = "disparate",
       title = "¿Verdad o disparate?",
       domain = DomainType.LENGUAJE,
-      subtitle = "Lee y decide rápido",
+      subtitle = "Lee la frase y di si tiene sentido",
       instruction = "Llegan frases cortas desde la radio. Toca Verdad si es cierta o Disparate si no tiene sentido; también puedes deslizar la frase. Si una frase no se entiende, mantenla presionada."
     ),
     GameDefinition(
@@ -149,14 +149,14 @@ object GameRegistry {
       id = "piloto",
       title = "Piloto Estelar",
       domain = DomainType.ATENCION,
-      subtitle = "Pilota y atrapa las señales de tu misión",
+      subtitle = "Guía la nave y atiende las señales a la vez",
       instruction = "Guía la nave por la ruta de luces con un pulgar y, con el otro dedo, atrapa solo las señales de tu misión. Las dos cosas van juntas desde el primer segundo; al empezar, la ruta es más fácil y las señales salen más espaciadas."
     ),
     GameDefinition(
       id = "freno",
       title = "Freno de Emergencia",
       domain = DomainType.ATENCION,
-      subtitle = "Frena cuando suena la alarma",
+      subtitle = "Lanza cuando toca y espera cuando no",
       instruction = "Lanza lo más rápido que puedas el cohete que se enciende. Si suena la alarma y aparece ¡ALTO!, no toques: frena a tiempo."
     ),
     GameDefinition(
@@ -177,7 +177,7 @@ object GameRegistry {
       id = "aterrizaje",
       title = "Aterrizaje Lunar",
       domain = DomainType.RAZONAMIENTO,
-      subtitle = "Posa la nave en el número",
+      subtitle = "Calcula dónde va cada número en la regla",
       instruction = "Posa la nave justo en el número de la misión. La regla solo tiene marcados los extremos: arrastra para mover la nave y suelta para aterrizar."
     )
   )

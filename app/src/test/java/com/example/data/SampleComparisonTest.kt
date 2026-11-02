@@ -25,8 +25,7 @@ class SampleComparisonTest {
     assertEquals(63, Comparison.percentile(43, d))
     assertEquals("En órbita", Comparison.division(63).label)
     val r = Comparison.Ranked(43, 63, Comparison.division(63), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), d)
-    assertEquals("63 de cada 100", Comparison.heroFigure(r))
-    assertEquals("personas de 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra.", Comparison.heroCaption(r, AgeRange.R45_54, "Tinta o Palabra"))
+    assertEquals("Con 43 aciertos, superas al 63 % de las personas de tu edad que jugaron esta semana.", Comparison.heroSentence(r, AgeRange.R45_54))
     assertEquals("la escalera de esta semana: la división de 43 es En órbita y le faltan 7 aciertos para En la Luna", "Esta semana estás En órbita, la tercera de cinco divisiones. Te faltan 7 aciertos para En la Luna.", Comparison.freeSentence(Comparison.Place.Found(r)))
   }
 

@@ -45,7 +45,7 @@ object PlusAccess {
     "Tu récord de las pistas anteriores."
   )
   val SHEET_ITEMS_COMPARED: List<String> = listOf(
-    "Tu lugar entre personas de tu edad: cuántas de cada 100 superas y en qué división estás.",
+    "Tu lugar entre personas de tu edad: qué % de ellas superas y en qué división estás.",
     "La escalera de divisiones con su primer acierto, y tus semanas seguidas arriba de la mitad.",
     "Tus marcas: el récord, las últimas 10 y tu ritmo en los 2 minutos."
   )
@@ -55,7 +55,7 @@ object PlusAccess {
    */
   const val SHEET_LEAD_ESTIMATED = SHEET_LEAD_COMPARED
   val SHEET_ITEMS_ESTIMATED: List<String> = listOf(
-    "Dónde queda tu marca frente a la referencia estimada para tu edad y frente a otras edades: cuántas de cada 100 marcas superas.",
+    "Tu lugar en una referencia estimada para tu edad: qué % de ella superas y en qué división estás.",
     "La escalera de las cinco divisiones, con su primer acierto, y tus semanas seguidas arriba de la mitad.",
     "Todas tus marcas: el récord, las últimas 10 y tu ritmo en los 2 minutos."
   )

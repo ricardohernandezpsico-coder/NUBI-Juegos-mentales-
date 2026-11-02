@@ -28,7 +28,7 @@ object Preguntas {
   val general: List<Pregunta> = listOf(
     Pregunta(
       "telefono", "¿Qué pasa si cambio de teléfono?",
-      "Tu avance se guarda en tu teléfono y en la copia de seguridad de Android de tu cuenta de Google, si la tienes activada. En el teléfono nuevo, entra con la misma cuenta de Google y restaura la copia: vuelven tus partidas, tu avance por juego, tus medallas y tu semana. La copia la hace Android, no Nubi: Nubi no envía tus datos a nadie."
+      "Tu avance vive en tu teléfono: Nubi no lo envía a nadie. Si tienes activada la copia de seguridad de Android, el teléfono guarda una copia en tu cuenta de Google, como hace con tus otras apps; Nubi no la ve. En el teléfono nuevo, entra con la misma cuenta de Google y restaura la copia: vuelven tus partidas, tu avance por juego, tu racha, tus medallas y tu semana. Sin la copia activada, el avance queda solo en este teléfono."
     ),
     Pregunta(
       "racha", "¿Cómo funciona la racha?",

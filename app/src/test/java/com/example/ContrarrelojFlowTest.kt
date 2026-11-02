@@ -18,6 +18,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.NBSP
@@ -498,9 +499,9 @@ class ContrarrelojFlowTest {
     showWithReferenciaPanel(vm, heightDp = 700)                       // una ventana corta: la página se desliza
     rule.onNodeWithTag("avance_contrarreloj_door").performClick(); rule.waitForIdle()
     rule.onNodeWithTag("contrarreloj_page").assertIsDisplayed()
-    rule.onNodeWithTag("contrarreloj_source_link").performScrollTo(); rule.waitForIdle()          // Tarea 211: la fila está al FINAL de la página: se baja hasta ella
+    rule.onNodeWithTag("contrarreloj_scroll").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.ScrollBy) { it(0f, 250f) }; rule.waitForIdle()          // Tarea 213: la fila «Con qué te comparas ›» está bajo la cifra, a mitad de página: se baja un poco y sigue a la vista
     val scrolled = rule.onNodeWithTag("contrarreloj_scroll").fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value()
-    assertTrue("la página bajó hasta el final ($scrolled px)", scrolled > 100f)
+    assertTrue("la página bajó ($scrolled px)", scrolled > 100f)
     val linkY = top("contrarreloj_source_link")
     rule.onNodeWithTag("contrarreloj_source_link").performClick(); rule.waitForIdle()
     assertEquals("se abre el panel de los estudios", com.example.viewmodel.TopPanel.REFERENCIA, vm.topPanel.value)

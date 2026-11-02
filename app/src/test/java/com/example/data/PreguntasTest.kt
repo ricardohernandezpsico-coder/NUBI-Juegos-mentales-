@@ -40,10 +40,17 @@ class PreguntasTest {
   }
 
   @Test
-  fun la_respuesta_del_cambio_de_telefono_dice_que_la_copia_la_hace_Android_y_no_Nubi() {
+  fun la_respuesta_del_cambio_de_telefono_dice_donde_vive_el_avance_que_la_copia_es_de_Android_y_que_vuelve_la_racha() {
+    // Tarea 213 (Fable §4): primero dónde vive el avance y que Nubi no lo envía; después la copia (de Android, en tu cuenta de Google, que Nubi no ve); lo que vuelve, CON LA RACHA; y qué pasa sin la copia
     val a = Preguntas.general.first { it.key == "telefono" }.answer
-    assertTrue("el ajuste de Opus: la última frase", a.endsWith("La copia la hace Android, no Nubi: Nubi no envía tus datos a nadie."))
-    assertTrue("y viene después de la copia de Google", a.indexOf("restaura la copia") < a.indexOf("no envía tus datos"))
+    assertEquals(
+      "Tu avance vive en tu teléfono: Nubi no lo envía a nadie. Si tienes activada la copia de seguridad de Android, el teléfono guarda una copia en tu cuenta de Google, como hace con tus otras apps; Nubi no la ve. En el teléfono nuevo, entra con la misma cuenta de Google y restaura la copia: vuelven tus partidas, tu avance por juego, tu racha, tus medallas y tu semana. Sin la copia activada, el avance queda solo en este teléfono.",
+      a
+    )
+    assertTrue("primero dónde vive y que no se envía, y recién después la copia", a.indexOf("Nubi no lo envía a nadie") in 0 until a.indexOf("copia de seguridad de Android"))
+    assertTrue("la copia es de Android y Nubi no la ve", a.contains("como hace con tus otras apps; Nubi no la ve"))
+    assertTrue("vuelve la racha", a.contains("tu racha"))
+    assertTrue("y dice qué pasa sin la copia", a.endsWith("Sin la copia activada, el avance queda solo en este teléfono."))
   }
 
   @Test
