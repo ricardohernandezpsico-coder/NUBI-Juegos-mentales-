@@ -5,7 +5,7 @@ import com.example.model.AgeRange
 import kotlin.math.min
 
 /**
- * Tu lugar entre personas de tu edad (Tarea 202; `auditoria-fable/nubi-plus-comparacion.md` §1, §4 y §11, opción B), LÓGICA PURA: el percentil desde el histograma SIN suavizar, la frase en «de cada 100», la división con nombre, las reglas de «pocos», el percentil semana a semana,
+ * Tu lugar entre personas de tu edad (Tarea 202; `auditoria-fable/nubi-plus-comparacion.md` §1, §4 y §11, opción B), LÓGICA PURA: el percentil desde el histograma SIN suavizar, la frase «superas al N %», la división con nombre, las reglas de «pocos», el percentil semana a semana,
  * «otras edades» y la forma de la campana; desde la Tarea 203, la cifra protagonista, la escalera de divisiones con su primer acierto, «te faltan», la racha de semanas y la frase gratis. No sabe de pantallas ni de dónde salen las marcas de las otras personas: las pide a una [Source] (desde la Tarea 205, la REFERENCIA ESTIMADA que lee `EstimatedReference` de los JSON del APK, también en la tienda, y en depuración, con un mundo de muestra, los datos de `SampleComparison`; el día que haya servidor, sus documentos semanales con personas reales, que mandan sobre la referencia en cada franja que llegue a [MIN_PEOPLE]).
  *
  * Lo que NO hace, a propósito: nunca habla de «capacidad», «edad mental», «ranking» ni «velocidad»; no hay lista de nombres ni «los 10 mejores»; la franja de 13 a 17 años queda fuera mientras [Features.COMPARE_MINORS] sea false; nunca presenta una referencia estimada como personas (con ella dice siempre «referencia estimada», jamás «personas» ni cuenta robots) ni inventa lugar con personas reales que son pocas (una clase con menos de [MIN_PEOPLE] se dice «todavía somos pocos»).
@@ -30,7 +30,7 @@ object Comparison {
   const val SECTION_COMPARE = "Esta semana, comparado con tu edad"
   const val SAMPLE_NOTICE = "Estos son datos de muestra: solo se ven en la versión de prueba."
   const val PLACE_TITLE = "Tu lugar esta semana"
-  /** Antes «Tu percentil semanal» (Tarea 209, decisión de Ricardo, 1-nov): «percentil» salió de todo texto visible; los mismos números («27 de cada 100») y la raya «la mitad». Primero se llamó «Tu lugar cada semana», pero quedaba casi igual a [PLACE_TITLE] en la misma página (la losa de «sin marca esta semana» y las semanas pasadas); Ricardo eligió «Semana a semana» (Tarea 209b, 1-nov; una línea a 393 y 360 dp con letra 1,0, regla de la Tarea 203b). */
+  /** Antes «Tu percentil semanal» (Tarea 209, decisión de Ricardo, 1-nov): «percentil» salió de todo texto visible; los mismos números (el lugar de cada semana) y la raya «la mitad». Primero se llamó «Tu lugar cada semana», pero quedaba casi igual a [PLACE_TITLE] en la misma página (la losa de «sin marca esta semana» y las semanas pasadas); Ricardo eligió «Semana a semana» (Tarea 209b, 1-nov; una línea a 393 y 360 dp con letra 1,0, regla de la Tarea 203b). */
   const val WEEKS_TITLE = "Semana a semana"
   const val OTHERS_TITLE = "Otras edades"
   const val LADDER_TITLE = "La escalera de tu franja"
@@ -464,7 +464,7 @@ object Comparison {
   }
 
   /**
-   * LO GRATIS (Ricardo, 31-oct): la división, su lugar entre las cinco (Tarea 209) y la meta, sin la cifra de «de cada 100», sin escalera y sin otras edades: «Esta semana estás En órbita, la tercera de cinco divisiones de la referencia estimada para tu edad. Te faltan 7 aciertos para En la Luna.»
+   * LO GRATIS (Ricardo, 31-oct): la división, su lugar entre las cinco (Tarea 209) y la meta, sin la frase de la cifra («superas al N %»), sin escalera y sin otras edades: «Esta semana estás En órbita, la tercera de cinco divisiones de la referencia estimada para tu edad. Te faltan 7 aciertos para En la Luna.»
    * (en la más alta: «Esta semana estás Entre estrellas, la quinta y más alta de las cinco divisiones de la referencia estimada para tu edad.»; con personas, lo mismo sin «de la referencia estimada para tu edad»). Solo con un lugar dicho ([Place.Found]); con «pocos» o sin marca no hay nada que decir.
    */
   fun freeSentence(place: Place): String? {
@@ -582,7 +582,7 @@ object Comparison {
   data class Others(val rows: List<OtherRow>, val all: OtherRow?, val hidden: Boolean)
 
   /**
-   * La marca de esta semana contra cada franja (hasta 6 mientras [Features.COMPARE_MINORS] sea false, sin la de 13 a 17) y contra todas las edades, esta semana: solo las clases con 50 personas o más tienen fila, con su «N de cada 100» (Tarea 203b: ya no hay filas de «todavía somos pocos»,
+   * La marca de esta semana contra cada franja (hasta 6 mientras [Features.COMPARE_MINORS] sea false, sin la de 13 a 17) y contra todas las edades, esta semana: solo las clases con 50 personas o más tienen fila, con su «Supera al N %» (Tarea 203b: ya no hay filas de «todavía somos pocos»,
    * que en los primeros meses serían casi todas); la propia lleva «(tu franja)». [Others.hidden] avisa que falta alguna y null = no hay ninguna fila que mostrar (la losa no va).
    */
   fun others(source: Source, game: String, range: AgeRange, mark: Int): Others? {

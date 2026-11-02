@@ -9,7 +9,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Los datos de muestra de la comparación (`SampleComparison`, Tarea 202): deterministas, coherentes con la lámina de Fable (128 personas de 45 a 54 años, 43 aciertos supera a 63 de cada 100, la mitad 39 y la cuarta parte más alta 47), con dos mundos («muchos» y «pocos»)
+ * Los datos de muestra de la comparación (`SampleComparison`, Tarea 202): deterministas, coherentes con la lámina de Fable (128 personas de 45 a 54 años, 43 aciertos supera al 63 %, la mitad 39 y la cuarta parte más alta 47), con dos mundos («muchos» y «pocos»)
  * y, sobre todo, SOLO en las builds de depuración: ninguna otra parte de la app los nombra.
  */
 class SampleComparisonTest {

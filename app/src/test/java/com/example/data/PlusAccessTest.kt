@@ -51,7 +51,7 @@ class PlusAccessTest {
   @Test
   fun `con la referencia estimada la hoja la nombra y nunca la llama personas ni promete pasar a personas reales`() {
     val items = PlusAccess.sheetItems(Comparison.Kind.ESTIMATED)
-    assertEquals("Tu lugar en una referencia estimada para tu edad: qué % de ella superas y en qué división estás.", items[0])
+    assertEquals("Tu lugar en una referencia estimada para tu edad: qué porcentaje de ella superas y en qué división estás.", items[0])
     assertEquals("La escalera de las cinco divisiones, con su primer acierto, y tus semanas seguidas arriba de la mitad.", items[1])
     assertEquals("Todas tus marcas: el récord, las últimas 10 y tu ritmo en los 2 minutos.", items[2])
     assertEquals("lo gratis primero y después lo que agrega Plus", "Gratis: tu división de la semana. Con Nubi Plus, además:", PlusAccess.sheetLead(Comparison.Kind.ESTIMATED))

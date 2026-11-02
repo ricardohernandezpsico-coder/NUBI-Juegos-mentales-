@@ -82,7 +82,7 @@ class PilotoTest {
     val g = com.example.model.GameRegistry.getById("piloto")!!
     val text = (g.subtitle + " " + g.instruction).lowercase()
     for (bad in listOf("multitarea", "atención dividida", "atencion dividida", "piloto automático", "piloto automatico", "costo")) org.junit.Assert.assertFalse(bad, text.contains(bad))
-    assertEquals("Guía la nave y atiende las señales a la vez", g.subtitle)
+    assertEquals("Pilota y atiende las señales a la vez", g.subtitle)
     assertTrue(g.instruction, g.instruction.contains("juntas desde el primer segundo"))
   }
 }

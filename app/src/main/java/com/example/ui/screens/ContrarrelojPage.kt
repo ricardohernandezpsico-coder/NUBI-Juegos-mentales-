@@ -1051,7 +1051,7 @@ private fun WeeksAxis(width: Dp, left: String?) {
 }
 
 /**
- * «Otras edades» (Tarea 203b): la frase de entrada y una fila por franja con «N de cada 100» a la derecha (la propia, en negrita y con «(tu franja)»), SOLO las que llegan a 50 personas; una línea y «Todas las edades» (si llega a 50) y, si alguna falta, UNA línea que cierra:
+ * «Otras edades» (Tarea 203b): la frase de entrada y una fila por franja con «Supera al N %» a la derecha (la propia, en negrita y con «(tu franja)»), SOLO las que llegan a 50 personas; una línea y «Todas las edades» (si llega a 50) y, si alguna falta, UNA línea que cierra:
  * «Las demás edades aparecen cuando lleguen a 50 personas.». Sin ninguna fila la losa no va (la página no la pone). Sin la línea de «13 a 17 años» (quien tiene esa edad no ve la comparación) y sin filas de relleno que dijeran «todavía somos pocos». Sin botón ni hoja aparte: una sola puerta, nada que tocar.
  */
 @Composable

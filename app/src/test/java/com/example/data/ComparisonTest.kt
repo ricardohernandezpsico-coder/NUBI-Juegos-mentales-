@@ -11,7 +11,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Tu lugar entre personas de tu edad (`Comparison`, Tarea 202; `auditoria-fable/nubi-plus-comparacion.md` §1 y §4): el percentil desde los tramos sin suavizar, la división, la frase en «de cada 100», las reglas de «pocos» en orden, el percentil semana a semana, «otras edades» sin la franja de 13 a 17 años, la franja
+ * Tu lugar entre personas de tu edad (`Comparison`, Tarea 202; `auditoria-fable/nubi-plus-comparacion.md` §1 y §4): el percentil desde los tramos sin suavizar, la división, la frase «superas al N %», las reglas de «pocos» en orden, el percentil semana a semana, «otras edades» sin la franja de 13 a 17 años, la franja
  * de la persona y la forma de la campana. Lógica pura.
  */
 class ComparisonTest {
@@ -35,7 +35,7 @@ class ComparisonTest {
   // ------------------------------------------------------------------ el percentil
 
   @Test
-  fun `la marca de la lamina de Fable, 43 aciertos entre 128 personas, supera a 63 de cada 100`() {
+  fun `la marca de la lamina de Fable, 43 aciertos entre 128 personas, supera al 63 por ciento`() {
     val d = shaped(128)
     assertEquals(128, d.people)
     assertEquals("43 cae en el tramo 40 a 44: 72 personas debajo y 3 quintos de las 15 de ese tramo = 81 de 128", 63, Comparison.percentile(43, d))

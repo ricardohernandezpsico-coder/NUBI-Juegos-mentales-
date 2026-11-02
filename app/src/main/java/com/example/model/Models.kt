@@ -128,7 +128,7 @@ object GameRegistry {
       id = "disparate",
       title = "¿Verdad o disparate?",
       domain = DomainType.LENGUAJE,
-      subtitle = "Lee la frase y di si tiene sentido",
+      subtitle = "Di si la frase tiene sentido",
       instruction = "Llegan frases cortas desde la radio. Toca Verdad si es cierta o Disparate si no tiene sentido; también puedes deslizar la frase. Si una frase no se entiende, mantenla presionada."
     ),
     GameDefinition(
@@ -149,7 +149,7 @@ object GameRegistry {
       id = "piloto",
       title = "Piloto Estelar",
       domain = DomainType.ATENCION,
-      subtitle = "Guía la nave y atiende las señales a la vez",
+      subtitle = "Pilota y atiende las señales a la vez",
       instruction = "Guía la nave por la ruta de luces con un pulgar y, con el otro dedo, atrapa solo las señales de tu misión. Las dos cosas van juntas desde el primer segundo; al empezar, la ruta es más fácil y las señales salen más espaciadas."
     ),
     GameDefinition(
@@ -177,7 +177,7 @@ object GameRegistry {
       id = "aterrizaje",
       title = "Aterrizaje Lunar",
       domain = DomainType.RAZONAMIENTO,
-      subtitle = "Calcula dónde va cada número en la regla",
+      subtitle = "Ubica cada número en la regla",
       instruction = "Posa la nave justo en el número de la misión. La regla solo tiene marcados los extremos: arrastra para mover la nave y suelta para aterrizar."
     )
   )

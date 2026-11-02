@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertContentDescriptionEquals
@@ -26,6 +27,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.data.PlayMode
@@ -270,7 +272,7 @@ class GameSheetContrarrelojTest {
   /**
    * Tarea 181: cuánto se pasa la ficha del marco de la ventana real (dp; 0 = cabe entera sin deslizar), a 393 × 873 y a 360 × 780 (menos las barras del sistema), con letra 1,0, 1,3 y 2,0, plegada y desplegada. «Antes» = un juego con la misma ficha de antes (Freno: con su «¿Con reloj?» y sin el botón), para compararla con los
    * cuatro de ahora. ¿Verdad o disparate? y Rescate relámpago tienen los nombres más largos; Tinta o Palabra, el más corto. Solo MIDE e informa (la regla de la tarea: nada se achica sin el OK de Opus) y fija lo medido para que una regresión se note: a 393 × 873 la ficha plegada cabe entera con letra 1,0 y 1,3
-   * (los estados de todos los días), a 360 × 780 con 1,0, y con 1,3 se pasa 43 dp (69 en ¿Verdad o disparate? desde la Tarea 213: su frase nueva, «Lee la frase y di si tiene sentido», ocupa dos renglones); con 2,0 se desliza (la tarjeta hace scroll por dentro, nada se corta).
+   * (los estados de todos los días), a 360 × 780 con 1,0, y con 1,3 se pasa 43 dp (en la Tarea 213 ¿Verdad o disparate? llegó a 69, porque su frase nueva ocupaba dos renglones; la Tarea 214 la acortó a «Di si la frase tiene sentido» y volvió a 43); con 2,0 se desliza (la tarjeta hace scroll por dentro, nada se corta).
    */
   @Test
   fun tarea_181_medidas() {
@@ -283,11 +285,55 @@ class GameSheetContrarrelojTest {
         cells += "%s plegada %s desplegada %+.0f".format(label, if (fit.folded < 0.5f) "cabe (sobran %.0f)".format(fit.slack) else "+%.0f".format(fit.folded), fit.unfolded)
         val where = "$label a ${w}x${h + 72} letra $fs"
         if (id !in four) continue
-        val tolerance = when { w == 393 && fs <= 1.3f -> 0.5f; w == 360 && fs == 1f -> 0.5f; w == 360 && fs == 1.3f && id == "disparate" -> 70f; w == 360 && fs == 1.3f -> 44f; else -> 1000f }            // lo medido; con 2,0 se desliza y no se fija; ¿Verdad o disparate? 70 desde la Tarea 213 (su frase nueva, «Lee la frase y di si tiene sentido», pasa a dos renglones: unos 25 dp más)
+        val tolerance = when { w == 393 && fs <= 1.3f -> 0.5f; w == 360 && fs == 1f -> 0.5f; w == 360 && fs == 1.3f -> 44f; else -> 1000f }            // lo medido; con 2,0 se desliza y no se fija
         assertTrue("$where: plegada se pasa ${fit.folded} dp (tolerancia $tolerance)", fit.folded <= tolerance)
       }
       rows += "MEDIDA %dx%d letra %.1f: %s".format(w, h + 72, fs, cells.joinToString(" | "))
     }
     rows.forEach { println(it) }
+  }
+
+  // ------------------------------------------------------------------ Tarea 214: la frase de cada juego, en UNA línea en la ficha
+
+  /** La frase de la ficha (`sheet_subtitle`): cuántas líneas ocupa y su ancho de tinta en un solo renglón (si parte, la suma de sus líneas más un espacio por corte; dp). */
+  private fun subtitleFit(): Pair<Int, Float> {
+    val out = mutableListOf<TextLayoutResult>()
+    rule.onNodeWithTag("sheet_subtitle").fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult].action!!(out)
+    val layout = out.first(); val d = rule.density.density
+    val ink = (0 until layout.lineCount).sumOf { (layout.getLineRight(it) - layout.getLineLeft(it)).toDouble() }.toFloat() / d + (layout.lineCount - 1) * 4f
+    return layout.lineCount to ink
+  }
+
+  /**
+   * Tarea 214 (2-nov, Ricardo tras la auditoría de Fable de la 213): la ficha lleva el nombre y UNA línea, también en los teléfonos de 360 dp (el ancho de muchos teléfonos baratos): se mide la frase de los 17 juegos a 360 × 780 y a 393 con letra 1,0. El ancho que tiene la frase es el de
+   * la tarjeta menos su relleno: 296 dp a 360 y 329 a 393 (el marco de 14 dp a cada lado y 18 dp de relleno de la tarjeta). Si una no cabe, NO se cambia su frase: se avisa con la medida, que decide Ricardo; mientras tanto queda en [pendientes] y la prueba exige que no haya otra ni que esa
+   * ya quepa (así, el día que se acorte, la prueba avisa que se la saque de la lista). Imprime la tabla `MEDIDA frase …`. Medido el 2-nov: a 360 dp Freno de Emergencia es la más larga que cabe (292 de 296 dp) y Bodega de carga («Recuerda dónde guardó cada cosa el robot», unos 335 dp en un renglón) pasa a dos.
+   */
+  private val pendientes = mapOf(360 to setOf("bodega"), 393 to emptySet())
+
+  @Test
+  fun la_frase_de_los_17_juegos_va_en_una_linea_en_la_ficha_a_360_dp_con_letra_1_0() {
+    assertEquals(17, GameRegistry.allGames.size)
+    mount(Cfg(GameRegistry.allGames.first().id, width = 360, height = 780 - 72))
+    for (width in listOf(360, 393)) {
+      val room = width - 64f
+      val partidas = mutableSetOf<String>()
+      for (g in GameRegistry.allGames) {
+        show(Cfg(g.id, width = width, height = 780 - 72))
+        val (lines, ink) = subtitleFit()
+        println("MEDIDA frase %d dp letra 1,0 — %s «%s»: %d línea(s), %.0f dp de %.0f".format(width, g.id, g.subtitle, lines, ink, room))
+        if (lines != 1) partidas += g.id
+      }
+      assertEquals("a $width dp con letra 1,0 las frases que pasan a más de una línea en la ficha (la medida está arriba, `MEDIDA frase`)", pendientes.getValue(width), partidas)
+    }
+  }
+
+  /** Tarea 214: con letra 1,3 a 360 dp, la frase de ¿Verdad o disparate? («Di si la frase tiene sentido», 242 dp según Fable) sigue en una línea: la ficha se pasa 43 dp, no 69. */
+  @Test
+  fun la_frase_de_Disparate_va_en_una_linea_a_360_dp_con_letra_1_3() {
+    mount(Cfg("disparate", 33, 360, 780 - 72, 1.3f))
+    val (lines, ink) = subtitleFit()
+    println("MEDIDA frase 360 dp letra 1,3 — disparate: %d línea(s), %.0f dp de %.0f".format(lines, ink, 360 - 64f))
+    assertEquals("«${GameRegistry.getById("disparate")!!.subtitle}» a 360 dp con letra 1,3: %.0f dp de %.0f".format(ink, 360 - 64f), 1, lines)
   }
 }

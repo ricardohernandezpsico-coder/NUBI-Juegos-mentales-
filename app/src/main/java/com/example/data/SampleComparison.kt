@@ -10,7 +10,7 @@ import kotlin.math.roundToInt
  * Los DATOS DE MUESTRA de la comparación (Tarea 202): una fuente [Comparison.Source] determinista que se usa SOLO en las builds de depuración y SOLO para ver cómo queda la pantalla ([Comparison.sourceFor]); no son personas: son números inventados a propósito, y la pantalla lo dice
  * con una frase visible («Estos son datos de muestra: solo se ven en la versión de prueba.»). Nunca llegan a la build de la tienda ni se presentan como personas reales (`Features.COMPARE` sigue apagado: el día que haya servidor, esta fuente se reemplaza por sus documentos semanales).
  *
- * Coherente con la Tarea 199 y la lámina de Fable (§7): para una persona de 45 a 54 años que jugó Tinta o Palabra, la semana de hoy tiene **128 personas**, su marca de 43 aciertos supera a **63 de cada 100**, la mitad hizo **39 aciertos o menos** y la cuarta parte más alta **47 o más**.
+ * Coherente con la Tarea 199 y la lámina de Fable (§7): para una persona de 45 a 54 años que jugó Tinta o Palabra, la semana de hoy tiene **128 personas**, su marca de 43 aciertos supera al **63 %**, la mitad hizo **39 aciertos o menos** y la cuarta parte más alta **47 o más**.
  * Las otras franjas, semanas y juegos salen de esa misma silueta corrida y escalada con reglas fijas (sin azar): las franjas más jóvenes marcan más; las mayores, menos; cada juego tiene su propio rango. [few] arma el mundo de «pocos»: 23 personas de 45 a 54 años esta semana, y todavía menos
  * en las últimas 4 semanas y en las franjas vecinas, pero sí más de 50 con todas las edades de esta semana; [World.VERY_FEW] baja también a todas las edades de esta semana (45 personas) y solo las últimas 4 semanas llegan a 50.
  */

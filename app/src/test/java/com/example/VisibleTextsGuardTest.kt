@@ -22,7 +22,7 @@ class VisibleTextsGuardTest {
 
   /**
    * «Percentil» no se dice en NINGÚN texto de la app (regla del 8-oct: ni percentiles ni comparaciones con otras personas). Entre el 31-oct y el 1-nov hubo dos textos exactos exceptuados en la comparación del Contrarreloj («Tu percentil semanal» y «Percentil N»); la Tarea 209
-   * (1-nov, decisión de Ricardo) los quitó: la cifra queda con «N de cada 100», la división y su lugar entre las cinco, y el gráfico se llama «Semana a semana». Esta lista quedó VACÍA a propósito y la prueba de más abajo exige que siga así.
+   * (1-nov, decisión de Ricardo) los quitó: la cifra queda como UNA frase («Con N aciertos, superas al N % de la referencia estimada para tu edad.», desde la Tarea 213), la división y su lugar entre las cinco, y el gráfico se llama «Semana a semana». Esta lista quedó VACÍA a propósito y la prueba de más abajo exige que siga así.
    */
   private val percentileTexts: Set<String> = emptySet()
 
@@ -367,11 +367,11 @@ class VisibleTextsGuardTest {
     assertEquals("Repite el camino de la chispa", bySubtitle["secuencia"])
     assertEquals("Lanza cuando toca y espera cuando no", bySubtitle["freno"])
     assertEquals("Gira la pieza en tu mente", bySubtitle["acoplamiento"])
-    assertEquals("Calcula dónde va cada número en la regla", bySubtitle["aterrizaje"])
+    assertEquals("Ubica cada número en la regla", bySubtitle["aterrizaje"])
     // Tarea 213 (Fable §3, tras MiroFish): dicen qué se hace, sin «rápido», «velocidad» ni «alarma»
     assertEquals("Reconoce las palabras de verdad", bySubtitle["meteoros"])
-    assertEquals("Lee la frase y di si tiene sentido", bySubtitle["disparate"])
-    assertEquals("Guía la nave y atiende las señales a la vez", bySubtitle["piloto"])
+    assertEquals("Di si la frase tiene sentido", bySubtitle["disparate"])
+    assertEquals("Pilota y atiende las señales a la vez", bySubtitle["piloto"])
     for (id in listOf("freno", "meteoros", "disparate", "piloto", "aterrizaje")) for (bad in listOf("rápido", "velocidad", "alarma")) assertFalse("$id: el subtítulo dice «$bad»", bad in bySubtitle.getValue(id).lowercase())
     assertEquals("Sigue varios satélites a la vez", bySubtitle["satelites"])
     assertEquals("Acuérdate a tiempo de cada encargo", bySubtitle["correo"])
