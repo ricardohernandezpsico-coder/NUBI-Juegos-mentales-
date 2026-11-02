@@ -895,8 +895,8 @@ class ContrarrelojPageTest {
 
   // ---- la prueba de cajas con la comparación: 4 dp entre cada par de piezas, nada fuera del margen y 8 dp entre losas
 
-  private val hero = listOf("contrarreloj_hero_(figure|caption|scope|division|place)")
-  private val ladder = listOf("contrarreloj_ladder_(title|need|closes|streak|note)", "contrarreloj_ladder_row_\\d_(label|value)", "contrarreloj_ladder_you_(name|value)", "contrarreloj_ladder_bar")
+  private val hero = listOf("contrarreloj_hero_(figure|caption|scope|division|place)", "contrarreloj_hero_emblem_[A-Z]+")
+  private val ladder = listOf("contrarreloj_ladder_(title|need|closes|streak|note)", "contrarreloj_ladder_row_\\d_(label|value)", "contrarreloj_ladder_you_(name|value)", "contrarreloj_ladder_bar", "contrarreloj_ladder_(you_)?emblem(_\\d)?")
   private val bell = listOf("contrarreloj_bell_(title|caption|you|coin|you_bar|median)", "contrarreloj_bell_axis_\\d")
   private val place = listOf("contrarreloj_place_(title|nomark)", "contrarreloj_few_(note|meanwhile)", "contrarreloj_few_bar_(bar|value)")
   private val weeksPercentile = listOf("contrarreloj_percweeks_(title|sentence|half)", "contrarreloj_percweeks_fig_\\d", "contrarreloj_percweeks_bar_\\d", "contrarreloj_percweeks_axis_(left|right)")
@@ -1094,6 +1094,123 @@ class ContrarrelojPageTest {
     assertTrue("el lector las encuentra (nota $iNote, frase $iNotice, fila $iLink)", iNote >= 0 && iNotice >= 0 && iLink >= 0)
     assertTrue("y las dice en orden: las notas, luego la frase y luego la fila", iNote < iNotice && iNotice < iLink)
     assertEquals("las demás se dicen igual con otra franja", "No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para 75 años o más es estimada: sale de estudios por edad y de un programa que jugó este mismo Contrarreloj en un computador, no en tu teléfono.", Comparison.estimatedNotice(AgeRange.R75_PLUS))
+  }
+
+
+  // ---------------------------------------------------------------- Tarea 212: los emblemas de las cinco divisiones (D3)
+
+  /** Una persona En la plataforma (la división más baja: su nombre es el más largo de las cinco): tres partidas flojas y una marca de 3 esta semana. */
+  private val platformResults = List(3) { r(1, 20 + it) } + r(3, 27)
+
+  @Test fun la_cifra_lleva_el_emblema_de_su_division_de_52_dp_a_la_izquierda_del_nombre_y_del_lugar() {
+    show(compare = manyWorld, ageRange = AgeRange.R45_54)
+    val b = boxes()
+    val e = b.getValue("contrarreloj_hero_emblem_ORBIT"); val name = b.getValue("contrarreloj_hero_division"); val place = b.getValue("contrarreloj_hero_place")
+    assertEquals("el emblema de En órbita mide 52 dp", 52f, e.w, 0.6f); assertEquals(52f, e.h, 0.6f)
+    assertEquals("hay UNO solo en la cifra, el de su división", 1, b.keys.count { it.startsWith("contrarreloj_hero_emblem_") })
+    assertEquals("12 dp de aire entre el emblema y el texto", 12f, name.x - e.r, 1f)
+    assertEquals("el lugar queda a la misma altura que el nombre", name.x, place.x, 0.6f)
+    assertEquals("arriba, a la altura de la primera línea", name.y, e.y, 1f)
+    assertTrue("el lugar va debajo del nombre", place.y >= name.b - 0.5f)
+    assertEquals("el bloque de la división mide 52 dp con letra 1,0 (el emblema)", 52f, maxOf(e.b, place.b) - e.y, 1.5f)
+  }
+
+  @Test fun la_escalera_trae_los_cinco_emblemas_de_28_dp_en_orden_y_las_filas_no_crecen() {
+    show(compare = manyWorld, ageRange = AgeRange.R45_54)
+    val b = boxes()
+    val tags = listOf("contrarreloj_ladder_emblem_0", "contrarreloj_ladder_emblem_1", "contrarreloj_ladder_you_emblem", "contrarreloj_ladder_emblem_3", "contrarreloj_ladder_emblem_4")
+    for (t in tags) { assertEquals("«$t» mide 28 dp", 28f, b.getValue(t).w, 0.6f); assertEquals(28f, b.getValue(t).h, 0.6f) }
+    for ((a, c) in tags.zipWithNext()) assertTrue("«$a» va arriba de «$c»", b.getValue(a).b <= b.getValue(c).y + 0.5f)
+    // a la izquierda de su nombre, con 10 dp de aire
+    for ((emblem, label) in listOf(tags[0] to "contrarreloj_ladder_row_0_label", tags[1] to "contrarreloj_ladder_row_1_label", tags[2] to "contrarreloj_ladder_you_name", tags[3] to "contrarreloj_ladder_row_3_label", tags[4] to "contrarreloj_ladder_row_4_label"))
+      assertEquals("«$label» queda 10 dp a la derecha de su emblema", 10f, b.getValue(label).x - b.getValue(emblem).r, 1f)
+    // las filas no crecen: cada fila apagada sigue ocupando 41 dp de punta a punta (40 de fila y la raya de 1 dp) y la lima mide 44 dp con 4 de aire arriba y abajo (52)
+    assertEquals("de la fila 0 a la 1: 41 dp", 41f, b.getValue("contrarreloj_ladder_row_1").y - b.getValue("contrarreloj_ladder_row_0").y, 1.5f)
+    assertEquals("la fila lima mide 44 dp (52 con su aire)", 44f, b.getValue("contrarreloj_ladder_you").h, 1.5f)
+    assertEquals("de la fila lima a la fila 3: 44 de recuadro, 4 de aire, la raya de 1 y los 6 de arriba de la fila apagada (55 dp)", 55f, b.getValue("contrarreloj_ladder_row_3").y - b.getValue("contrarreloj_ladder_you").y, 1.5f)
+    assertTrue("el emblema de la fila lima queda dentro del recuadro, a 12 dp del borde", b.getValue("contrarreloj_ladder_you_emblem").x >= b.getValue("contrarreloj_ladder_you").x + 11.5f)
+  }
+
+  @Test fun cada_division_trae_su_propio_emblema_con_su_orden_de_la_escalera() {
+    for ((tag, game) in listOf("contrarreloj_hero_emblem_PLATFORM" to platformResults)) {
+      show(compare = manyWorld, ageRange = AgeRange.R45_54, results = game + others)
+      assertNotNull("En la plataforma: el emblema de la cifra es el de su división (no el de En órbita)", boxes()[tag])
+      assertEquals("y solo uno", 1, boxes().keys.count { it.startsWith("contrarreloj_hero_emblem_") })
+      assertEquals("la escalera dice En la plataforma en la fila lima", "En la plataforma", n("contrarreloj_ladder_you_name"))
+    }
+  }
+
+  @Test fun con_el_emblema_la_fila_lima_de_En_la_plataforma_se_apila_a_393_y_nada_se_encima() {
+    show(compare = manyWorld, ageRange = AgeRange.R45_54, results = platformResults + others)
+    val b = boxes()
+    val you = b.getValue("contrarreloj_ladder_you"); val e = b.getValue("contrarreloj_ladder_you_emblem"); val name = b.getValue("contrarreloj_ladder_you_name"); val value = b.getValue("contrarreloj_ladder_you_value")
+    assertEquals("En la plataforma: el nombre más largo no cabe en una línea con el emblema y la marca: se apila (+28 dp)", 72f, you.h, 4f)
+    assertTrue("la marca va debajo del nombre y del emblema (%.1f)".format(value.y - name.b), value.y >= name.b - 0.5f && value.y >= e.b - 0.5f)
+    assertTrue("y a la derecha", value.r >= you.r - 12.5f - 1f)
+    assertTrue("el nombre a 10 dp del emblema, sin tocarlo", name.x - e.r >= 9f)
+    assertTrue("nada sale del recuadro lima", e.x >= you.x + 11.5f && name.r <= you.r - 11.5f && value.r <= you.r - 11.5f)
+  }
+
+  @Test fun el_lector_de_pantalla_dice_lo_mismo_que_antes_y_no_nombra_los_emblemas() {
+    show(compare = manyWorld, ageRange = AgeRange.R45_54)
+    val said = everythingSaid()
+    assertEquals("la fila lima: la división y «Tú»", "En órbita, Tú · 43 aciertos", descriptionOf("contrarreloj_ladder_you").replace(NBSP, " "))
+    assertEquals("las demás, su primer acierto", "Entre estrellas, desde 60 aciertos", descriptionOf("contrarreloj_ladder_row_0").replace(NBSP, " "))
+    assertEquals("En la Luna, desde 50 aciertos", descriptionOf("contrarreloj_ladder_row_1").replace(NBSP, " "))
+    assertEquals("la cifra lo dice de corrido (heroSpoken), con la división dicha una sola vez", 1, said.count { it.contains("En órbita") && it.contains("de cada 100") })
+    val hero = said.first { it.contains("de cada 100") && it.contains("En órbita") }
+    assertTrue("sin nada de «emblema», «imagen» ni «icono»: $hero", listOf("emblema", "imagen", "icono", "ícono").none { hero.lowercase().contains(it) })
+    assertTrue("ningún nodo dice «emblema»", said.none { it.lowercase().contains("emblema") })
+    for (tag in listOf("contrarreloj_hero_emblem_ORBIT", "contrarreloj_ladder_emblem_0", "contrarreloj_ladder_you_emblem")) {
+      val node = rule.onNode(hasTestTag(tag), useUnmergedTree = true).fetchSemanticsNode()
+      assertNull("«$tag» no tiene descripción: es decorativo", node.config.getOrNull(SemanticsProperties.ContentDescription))
+    }
+  }
+
+  private fun assertEmblemsFit(widthDp: Int, scale: Float, results: List<TimeTrialResult> = ten + others, label: String) {
+    show(widthDp, scale, compare = manyWorld, ageRange = AgeRange.R45_54, results = results)
+    val b = boxes()
+    val hero = b.keys.single { it.startsWith("contrarreloj_hero_emblem_") }
+    assertEquals("$label: el de la cifra sigue en 52 dp con la letra a $scale (no escala)", 52f, b.getValue(hero).w, 0.6f)
+    val ladder = b.keys.filter { Regex("contrarreloj_ladder_(you_)?emblem(_\\d)?").matches(it) }
+    assertEquals("$label: los cinco de la escalera", 5, ladder.size)
+    for (t in ladder) assertEquals("$label: «$t» sigue en 28 dp con la letra a $scale", 28f, b.getValue(t).w, 0.6f)
+    val problems = mutableListOf<String>()
+    fun near(tag: String, others: List<String>, card: String) {
+      val e = b.getValue(tag); val c = b.getValue(card)
+      if (e.x < c.x + 15.5f || e.r > c.r - 15.5f) problems += "«$tag» no deja los 16 dp de relleno de «$card» (x %.1f a %.1f; losa %.1f a %.1f)".format(e.x, e.r, c.x, c.r)
+      for (o in others) b[o]?.let { p -> val s = gap(e, p); if (s < 3.5f) problems += "«$tag» y «$o» a %.1f dp".format(s) }
+    }
+    near(hero, listOf("contrarreloj_hero_figure", "contrarreloj_hero_caption", "contrarreloj_hero_division", "contrarreloj_hero_place", "contrarreloj_hero_scope"), "contrarreloj_hero")
+    for (t in ladder) near(t, listOf("contrarreloj_ladder_title", "contrarreloj_ladder_need", "contrarreloj_ladder_closes") + (0..4).flatMap { listOf("contrarreloj_ladder_row_${it}_label", "contrarreloj_ladder_row_${it}_value") } + listOf("contrarreloj_ladder_you_name", "contrarreloj_ladder_you_value"), "contrarreloj_ladder")
+    for (i in ladder.indices) for (j in i + 1 until ladder.size) { val s = gap(b.getValue(ladder[i]), b.getValue(ladder[j])); if (s < 3.5f) problems += "los emblemas «${ladder[i]}» y «${ladder[j]}» a %.1f dp".format(s) }
+    // ninguna palabra de la cifra ni de la escalera se parte: los textos parten por palabras (lo vigila ContrarrelojLetraTest); aquí, que el nombre de la fila lima no salga del recuadro
+    b["contrarreloj_ladder_you"]?.let { y -> b["contrarreloj_ladder_you_name"]?.let { n -> if (n.r > y.r - 11.5f || n.x < y.x + 11.5f) problems += "el nombre de la fila lima se sale del recuadro" } }
+    assertTrue("$label a $widthDp dp con letra $scale:\n" + problems.joinToString("\n"), problems.isEmpty())
+  }
+
+  @Test fun los_emblemas_caben_a_393_con_letra_1_0() = assertEmblemsFit(393, 1f, label = "En órbita")
+  @Test fun los_emblemas_caben_a_393_con_letra_1_3() = assertEmblemsFit(393, 1.3f, label = "En órbita")
+  @Test fun los_emblemas_caben_a_393_con_letra_2_0() = assertEmblemsFit(393, 2f, label = "En órbita")
+  @Test fun los_emblemas_caben_a_360_con_letra_1_0() = assertEmblemsFit(360, 1f, label = "En órbita")
+  @Test fun los_emblemas_caben_a_360_con_letra_1_3() = assertEmblemsFit(360, 1.3f, label = "En órbita")
+  @Test fun los_emblemas_caben_a_360_con_letra_2_0() = assertEmblemsFit(360, 2f, label = "En órbita")
+  @Test fun los_emblemas_caben_a_393_con_letra_1_0_en_la_plataforma() = assertEmblemsFit(393, 1f, platformResults + others, "En la plataforma")
+  @Test fun los_emblemas_caben_a_393_con_letra_2_0_en_la_plataforma() = assertEmblemsFit(393, 2f, platformResults + others, "En la plataforma")
+  @Test fun los_emblemas_caben_a_360_con_letra_1_0_en_la_plataforma() = assertEmblemsFit(360, 1f, platformResults + others, "En la plataforma")
+  @Test fun los_emblemas_caben_a_360_con_letra_2_0_en_la_plataforma() = assertEmblemsFit(360, 2f, platformResults + others, "En la plataforma")
+
+  @Test fun los_cinco_emblemas_son_recursos_distintos_y_decorativos_en_el_codigo() {
+    val files = (1..5).map { i -> listOf("plataforma", "despegando", "orbita", "luna", "estrellas")[i - 1] }.map { java.io.File("src/main/res/drawable-nodpi/division_$it.webp") }
+    for (f in files) assertTrue("falta ${f.name}", f.exists() && f.length() in 1500..60_000)
+    assertEquals("cinco imágenes distintas", 5, files.map { it.readBytes().contentHashCode() }.toSet().size)
+    val src = src("ui/components/DivisionEmblem.kt")
+    assertTrue("decorativo: contentDescription = null", Regex("""contentDescription = null""").containsMatchIn(src))
+    assertTrue("sobre la ventanilla noche", src.contains("NubiTokens.NightWindow"))
+    assertTrue("esquina de 0,23 del lado y objeto al 86 %", src.contains("CORNER = 0.23f") && src.contains("OBJECT = 0.86f"))
+    val page = src("ui/screens/ContrarrelojPage.kt")
+    assertFalse("el emblema NO va en la puerta gratis de Avance ni en el final del Contrarreloj", src("ui/screens/ProgressScreen.kt").contains("DivisionEmblem") || java.io.File("src/main/java/com/example/games/TimeTrialResultScreen.kt").readText().contains("DivisionEmblem"))
+    assertEquals("la cifra y la escalera lo usan, y nadie más en la página (2 sitios en la escalera y 1 en la cifra)", 3, Regex("""DivisionEmblem\(""").findAll(page).count())
   }
 
   // ---------------------------------------------------------------- Tarea 209: «De dónde sale la referencia ›»

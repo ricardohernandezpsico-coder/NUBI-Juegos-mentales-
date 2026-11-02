@@ -66,6 +66,8 @@ Blender 4.5 ──► tools/juegos/out/<grupo>/*.png ──► empaqueta.py ─�
 | `mide_punta.py` | La ficha, la casilla y la perla: tamaño del cuerpo, la letra de tinta sobre cada estado teñido y que los cuatro metales se sigan distinguiendo. |
 | `mide_freno.py` | Botón, cohetes, plataforma y ALTO: huella contra el procedural, contraste contra el suelo de la luna y el cielo, flecha contra botón. |
 | `huella.py` | Lo que comparten las dos mediciones (la silueta de HOY y el contraste WCAG; solo numpy). |
+| `emblemas_divisiones.py` | Los emblemas de las cinco divisiones del Contrarreloj (Tarea 212, D3; diseño de Fable en `auditoria-fable/emblemas-divisiones.md`): la dirección A «Los cinco lugares» que eligió Ricardo —la plataforma de Freno con el cohete parado, el cohete despegando con sus nubes, el planeta con anillo de Constelaciones, la luna llena con cráteres y tres luceros— en un lienzo cuadrado de 2 unidades a 220 px por unidad (440 px), con la misma luz y material del kit; reutiliza `plasticina.py` y `cohete.py`. La dirección B «El viaje del cohete» (descartada) queda en el script. `blender -b -P tools/juegos/emblemas_divisiones.py -- --solo a --samples 112 --out tools/juegos/out/divisiones` (unos 70 s por emblema en el PC de Ricardo). |
+| `emblemas_divisiones_app.py` | Lleva esas cinco maestras a la app: les quita la bruma del «shadow catcher», las reduce a 135 px (3 px por dp) con Lanczos y alfa premultiplicado y las deja como `app/src/main/res/drawable-nodpi/division_{plataforma,despegando,orbita,luna,estrellas}.webp` (unos 25 KB entre las cinco). `python -I tools/juegos/emblemas_divisiones_app.py`. |
 | `lamina.py` | Una lámina de contacto para MIRAR los renders sobre un fondo liso. |
 
 ## Cómo se corre

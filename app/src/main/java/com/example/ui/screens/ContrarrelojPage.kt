@@ -70,6 +70,9 @@ import com.example.model.AgeRange
 import com.example.model.AppLanguage
 import com.example.model.GameRegistry
 import com.example.ui.components.ClaySlab
+import com.example.ui.components.DivisionEmblem
+import com.example.ui.components.DivisionEmblemHero
+import com.example.ui.components.DivisionEmblemLadder
 import com.example.ui.components.GameEmblem
 import com.example.ui.components.Glyph
 import com.example.ui.components.KitBackButton
@@ -292,7 +295,7 @@ private fun ThinLine() {
 /**
  * La tarjeta de la cifra (D2): «63 de cada 100» en Rubik 40 con tope de escala 1,3 y, debajo, la frase que la lee («personas de 45 a 54 años quedan detrás de tu mejor marca de esta semana en Tinta o Palabra.»), la división con nombre (Fredoka negrita 18) y debajo su lugar entre las cinco (Tarea 209: antes «Percentil 63» a la derecha).
  * La cifra manda y la frase la lee: nunca un número sin unidad. Con letra tan grande que «63 de cada 100» no cabe en una línea, la cifra queda sola («63») y «de cada 100» pasa a la frase; el lugar de la división va siempre bajo su nombre. Si la comparación usó otra clase (las 4 semanas o las franjas juntas) la frase lo dice y,
- * con las franjas juntas, una línea más. El lector de pantalla lo dice de corrido. Deja lista la tarjeta para sumarle un emblema de la división (D3) sin rehacerla: es una columna con la cifra arriba y la división abajo.
+ * con las franjas juntas, una línea más. El lector de pantalla lo dice de corrido. Desde la Tarea 212 (D3) la división lleva a su izquierda su emblema de plasticina, de 52 dp ([DivisionEmblem]; decorativo: el lector no lo nombra, la división ya está dicha en palabras).
  */
 @Composable
 private fun HeroCard(r: Comparison.Ranked, s: Comparison.Section) {
@@ -317,13 +320,18 @@ private fun HeroCard(r: Comparison.Ranked, s: Comparison.Section) {
 }
 
 /**
- * La división («En órbita», Fredoka negrita 18) y, debajo, su lugar entre las cinco en 16 sp `InkMuted` («La tercera de cinco divisiones.»; Tarea 209: reemplaza a «Percentil 63», que Ricardo quitó de todo texto el 1-nov). Siempre una columna: así con letra grande nunca se encima nada.
+ * La división («En órbita», Fredoka negrita 18) y, debajo, su lugar entre las cinco en 16 sp `InkMuted` («La tercera de cinco divisiones.»; Tarea 209: reemplaza a «Percentil 63», que Ricardo quitó de todo texto el 1-nov), con el emblema de la división a la izquierda (Tarea 212: 52 dp, 12 dp de aire, arriba, a la altura de la primera línea).
+ * El emblema no crece con la letra y los textos van en una columna a su lado, así que con letra grande los textos parten por palabras («En la / plataforma») y nunca se encima nada; el bloque mide 52 dp con letra 1,0 (antes 50: la losa crece 2 dp).
  */
 @Composable
 private fun DivisionLine(r: Comparison.Ranked) {
-  Column(Modifier.fillMaxWidth()) {
-    Text(r.division.label, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.testTag("contrarreloj_hero_division"))
-    Text(Comparison.divisionPlaceLine(r.division), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 4.dp).testTag("contrarreloj_hero_place"))
+  Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+    DivisionEmblem(r.division, DivisionEmblemHero, Modifier.hiddenTag("contrarreloj_hero_emblem_${r.division.name}"))
+    Spacer(Modifier.width(12.dp))
+    Column(Modifier.weight(1f)) {
+      Text(r.division.label, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.testTag("contrarreloj_hero_division"))
+      Text(Comparison.divisionPlaceLine(r.division), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 4.dp).testTag("contrarreloj_hero_place"))
+    }
   }
 }
 
@@ -331,6 +339,7 @@ private fun DivisionLine(r: Comparison.Ranked) {
  * La escalera de divisiones (D2): las cinco de arriba abajo, cada una con el primer acierto con que se llega a ella («desde 39 aciertos»), la fila de la persona en lima («En órbita · Tú · 43 aciertos»: la división dicha en palabras, no solo por el color) y, al pie, lo que sigue: «Te faltan 7 aciertos para En la Luna.» con su barra,
  * «La semana cierra el domingo.», la racha de semanas («Llevas 3 semanas seguidas En órbita o más arriba.»; sin racha no dice nada) y la clase de la escalera dicha una sola vez («Con las marcas de las 128 personas de 45 a 54 años que jugaron Tinta o Palabra esta semana.»). En la división más alta: «Estás en la división más alta de tu franja esta semana.», sin barra.
  * Los umbrales salen de la distribución de la franja esa semana ([Comparison.thresholds]) y cambian con la gente. No es una liga: no hay grupo, ni nombres, ni ascenso entre personas.
+ * Desde la Tarea 212 (D3) cada fila lleva el emblema de su división (28 dp, a todo color también las apagadas: la escalera es la leyenda de las cinco, y el estado nunca depende del color) antes del nombre; las filas apagadas siguen midiendo 40 dp (relleno de 6 arriba y 2 abajo en vez de 10 y 6) y la lima 52 dp.
  */
 @Composable
 private fun LadderCard(r: Comparison.Ranked, s: Comparison.Section) {
@@ -339,7 +348,10 @@ private fun LadderCard(r: Comparison.Ranked, s: Comparison.Section) {
     ladder.rungs.forEachIndexed { i, rung ->
       if (i > 0) ThinLine()
       if (rung.division == r.division) LadderYouRow(r)
-      else Column(Modifier.padding(top = 10.dp, bottom = 6.dp)) { FactRow(rung.division.label, Comparison.rungText(rung, ladder.rungs.getOrNull(i - 1)), "contrarreloj_ladder_row_$i", muted = true) }
+      else Column(Modifier.padding(top = 6.dp, bottom = 2.dp)) {          // con el emblema de 28 dp la fila sigue en 40 dp: 6 + 28 + 4 + 2
+        FactRow(rung.division.label, Comparison.rungText(rung, ladder.rungs.getOrNull(i - 1)), "contrarreloj_ladder_row_$i", muted = true, leadingWidth = DivisionEmblemLadder,
+          leading = { DivisionEmblem(rung.division, DivisionEmblemLadder, Modifier.hiddenTag("contrarreloj_ladder_emblem_$i")) })
+      }
     }
     ClayDivider("contrarreloj_divider_ladder")
     Text(Comparison.needSentence(ladder, r).glueNumbers().glueNamesForLetter(), color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.testTag("contrarreloj_ladder_need"))
@@ -353,7 +365,10 @@ private fun LadderCard(r: Comparison.Ranked, s: Comparison.Section) {
   }
 }
 
-/** La fila de la persona en la escalera: un recuadro PLANO lima (esquina de 12 dp, sin borde ni sombra, no tocable) con la división a la izquierda y «Tú · 43 aciertos» a la derecha (Fredoka negrita 18); con letra grande, uno bajo el otro. */
+/**
+ * La fila de la persona en la escalera: un recuadro PLANO lima (esquina de 12 dp, sin borde ni sombra, no tocable) con el emblema de la división (28 dp; Tarea 212), la división a su derecha y «Tú · 43 aciertos» a la derecha (Fredoka negrita 18); con letra grande, uno bajo el otro.
+ * El relleno vertical interior es de 8 dp (antes 10) para que la fila siga en 52 dp con el emblema; con el emblema, «En la plataforma» + «Tú · 46 aciertos» ya no caben en una línea a 393 dp y la fila se apila (el emblema y el nombre arriba, «Tú · 46 aciertos» abajo a la derecha), como con letra grande.
+ */
 @Composable
 private fun LadderYouRow(r: Comparison.Ranked) {
   val measurer = rememberTextMeasurer()
@@ -365,18 +380,25 @@ private fun LadderYouRow(r: Comparison.Ranked) {
   val style = base.merge(TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily))
   BoxWithConstraints(
     Modifier.fillMaxWidth().padding(vertical = 4.dp).semantics(mergeDescendants = true) { contentDescription = "$spoken, ${Comparison.youRow(r)}" }.testTag("contrarreloj_ladder_you")
-      .clip(RoundedCornerShape(12.dp)).background(Clay.Lime).padding(horizontal = 12.dp, vertical = 10.dp)
+      .clip(RoundedCornerShape(12.dp)).background(Clay.Lime).padding(horizontal = 12.dp, vertical = 8.dp)
   ) {
-    val need = measurer.measure(name, style, softWrap = false, maxLines = 1).size.width + with(density) { 12.dp.roundToPx() } + measurer.measure(you, style, softWrap = false, maxLines = 1).size.width
+    val emblem = @Composable { DivisionEmblem(r.division, DivisionEmblemLadder, Modifier.hiddenTag("contrarreloj_ladder_you_emblem")) }
+    val need = with(density) { (DivisionEmblemLadder + 10.dp).roundToPx() } + measurer.measure(name, style, softWrap = false, maxLines = 1).size.width + with(density) { 12.dp.roundToPx() } + measurer.measure(you, style, softWrap = false, maxLines = 1).size.width
     if (need <= constraints.maxWidth) {
       Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        emblem()
+        Spacer(Modifier.width(10.dp))
         Text(name, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.weight(1f).testTag("contrarreloj_ladder_you_name"))
         Spacer(Modifier.width(12.dp))
         Text(you, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, softWrap = false, modifier = Modifier.testTag("contrarreloj_ladder_you_value"))
       }
     } else {
       Column(Modifier.fillMaxWidth()) {
-        Text(name, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.testTag("contrarreloj_ladder_you_name"))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+          emblem()
+          Spacer(Modifier.width(10.dp))
+          Text(name, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.weight(1f).testTag("contrarreloj_ladder_you_name"))
+        }
         Text(you, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth().padding(top = 4.dp).testTag("contrarreloj_ladder_you_value"))
       }
     }
@@ -689,10 +711,11 @@ private fun RhythmCell(width: Dp, value: Int, most: Int, barWidth: Dp, color: Co
 
 /**
  * Una fila «rótulo … cifra»: el rótulo a la izquierda y la cifra (en negrita y cifras de igual ancho) a la derecha; si no caben en una línea con la letra de la persona, la cifra pasa debajo. El lector de pantalla las dice juntas («Jugaste, 3 partidas»).
+ * [leading] (Tarea 212: el emblema de la división de la escalera, de [leadingWidth] de ancho) va antes del rótulo con 10 dp de aire y centrado con él; cuando la fila no cabe en una línea, el emblema y el rótulo quedan juntos en la primera y la cifra debajo, a la derecha. No cambia lo que dice el lector.
  * Cada texto tiene 20 sp de interlínea y la fila suma 4 dp: entre dos filas siempre quedan 4 dp (24 dp de paso con letra 1,0).
  */
 @Composable
-private fun FactRow(label: String, value: String, tag: String, bold: Boolean = false, muted: Boolean = false) {
+private fun FactRow(label: String, value: String, tag: String, bold: Boolean = false, muted: Boolean = false, leading: (@Composable () -> Unit)? = null, leadingWidth: Dp = 0.dp) {
   val measurer = rememberTextMeasurer()
   val base = androidx.compose.material3.LocalTextStyle.current
   val valueStyle = TextStyle(fontSize = 16.sp, fontWeight = if (muted) FontWeight.Normal else FontWeight.Bold, fontFamily = AppFamily, fontFeatureSettings = "tnum", lineHeight = 20.sp)
@@ -700,17 +723,25 @@ private fun FactRow(label: String, value: String, tag: String, bold: Boolean = f
   BoxWithConstraints(Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = TimeTrialMarks.rowSpoken(label, value) }.testTag(tag)) {
     val shown = value.glueNumbers()
     val label = label.glueNamesForLetter()
-    val need = measurer.measure(label, base.merge(TextStyle(fontSize = 16.sp, fontWeight = if (bold) FontWeight.Bold else null)), softWrap = false, maxLines = 1).size.width + with(LocalDensity.current) { 12.dp.roundToPx() } +
+    val lead = if (leading != null) with(LocalDensity.current) { (leadingWidth + 10.dp).roundToPx() } else 0
+    val need = lead + measurer.measure(label, base.merge(TextStyle(fontSize = 16.sp, fontWeight = if (bold) FontWeight.Bold else null)), softWrap = false, maxLines = 1).size.width + with(LocalDensity.current) { 12.dp.roundToPx() } +
       measurer.measure(shown, base.merge(valueStyle), softWrap = false, maxLines = 1).size.width
     if (need <= constraints.maxWidth) {
       Row(Modifier.fillMaxWidth().padding(bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (leading != null) { leading(); Spacer(Modifier.width(10.dp)) }
         Text(label, color = Clay.Ink, fontSize = 16.sp, fontWeight = if (bold) FontWeight.Bold else null, lineHeight = 20.sp, modifier = Modifier.weight(1f).testTag("${tag}_label"))
         Spacer(Modifier.width(12.dp))
         Text(shown, color = valueColor, style = valueStyle, softWrap = false, textAlign = TextAlign.End, modifier = Modifier.testTag("${tag}_value"))
       }
     } else {
       Column(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
-        Text(label, color = Clay.Ink, fontSize = 16.sp, fontWeight = if (bold) FontWeight.Bold else null, lineHeight = 20.sp, modifier = Modifier.testTag("${tag}_label"))
+        if (leading != null) {
+          Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            leading()
+            Spacer(Modifier.width(10.dp))
+            Text(label, color = Clay.Ink, fontSize = 16.sp, fontWeight = if (bold) FontWeight.Bold else null, lineHeight = 20.sp, modifier = Modifier.weight(1f).testTag("${tag}_label"))
+          }
+        } else Text(label, color = Clay.Ink, fontSize = 16.sp, fontWeight = if (bold) FontWeight.Bold else null, lineHeight = 20.sp, modifier = Modifier.testTag("${tag}_label"))
         Spacer(Modifier.height(4.dp))
         Text(shown, color = valueColor, style = valueStyle, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth().testTag("${tag}_value"))
       }
