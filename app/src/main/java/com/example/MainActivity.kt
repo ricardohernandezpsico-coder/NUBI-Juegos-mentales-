@@ -149,7 +149,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   // La guía de Nubi en la primera entrada a Hoy (Tarea 193, `HoyGuide`): dónde están los elementos que ilumina (los publican Hoy y la barra) y en qué paso va (vive en el ViewModel).
   val guideTargets = remember { com.example.ui.components.GuideTargets() }
   val guideStep by viewModel.guideStep.collectAsState()
-  val plus by viewModel.plus.collectAsState()                 // Nubi Plus (Tarea 199): el atajo «Todas tus marcas ›» del final del Contrarreloj
+  val plus by viewModel.plus.collectAsState()                 // Nubi Plus (Tarea 199): el atajo «Todas tus marcas ›» del final del Contrarreloj, que desde la Tarea 215 abre la pestaña Contrarreloj
 
   androidx.compose.runtime.CompositionLocalProvider(com.example.ui.components.LocalGuideTargets provides guideTargets) {
   Box(modifier = Modifier.fillMaxSize()) {
@@ -188,6 +188,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
             ) { page ->
               when (tabs[page]) {
                 AppTab.HOY -> HomeScreen(viewModel = viewModel)
+                AppTab.CONTRARRELOJ -> com.example.ui.screens.ContrarrelojScreen(viewModel = viewModel)
                 AppTab.PROGRESO -> ProgressScreen(viewModel = viewModel)
                 AppTab.TU -> TuScreen(viewModel = viewModel)
               }
@@ -259,7 +260,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
             // el Contrarreloj tiene su propio final: la marca, el récord, las últimas 5 y la mejor de la semana; «Otra vez» juega el mismo juego con una pista nueva (cada partida trae la suya, Tarea 210)
             com.example.games.TimeTrialResultScreen(
               outcome = timeTrial,
-              onAgain = { viewModel.startTimeTrial(timeTrial.result.gameId, timeTrial.result.day) },
+              onAgain = { viewModel.timeTrialAgain(timeTrial.result.gameId, timeTrial.result.day) },
               onDone = { viewModel.closeGameOrResult() },
               soundEnabled = userSettings.soundEnabled,
               plus = plus,

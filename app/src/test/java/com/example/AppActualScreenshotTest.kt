@@ -52,7 +52,11 @@ import com.example.ui.components.NeuroNavBar
 import com.example.ui.screens.FirstFlightScreen
 import com.example.ui.screens.FlightActions
 import com.example.ui.screens.GameSheetContent
+import com.example.data.TimeTrialDay
+import com.example.data.TimeTrialResult
+import com.example.model.AgeRange
 import com.example.ui.screens.AllGamesScreen
+import com.example.ui.screens.ContrarrelojScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.LicensesScreen
 import com.example.ui.screens.TuScreen
@@ -149,7 +153,7 @@ class AppActualScreenshotTest {
   private val BAR_DP = 88
 
   private enum class Scene {
-    HOY, TODOS, FICHA, AVANCE, TU, AJUSTES, LICENCIAS, BARRA, BARRA_AVANCE, BARRA_TU, VUELO_1, VUELO_JUEGO, VUELO_EDAD, VUELO_2, VUELO_PUNTO, VUELO_3, RESULTADO, RESULTADO_RECORD, RESULTADO_CON, MEDALLA_PIEZA, MEDALLA_SIN, CARGA
+    HOY, TODOS, FICHA, CONTRARRELOJ, AVANCE, TU, AJUSTES, LICENCIAS, BARRA, BARRA_CONTRARRELOJ, BARRA_AVANCE, BARRA_TU, VUELO_1, VUELO_JUEGO, VUELO_EDAD, VUELO_2, VUELO_PUNTO, VUELO_3, RESULTADO, RESULTADO_RECORD, RESULTADO_CON, MEDALLA_PIEZA, MEDALLA_SIN, CARGA
   }
 
   private val rastro = GamePlayResult(
@@ -196,6 +200,10 @@ class AppActualScreenshotTest {
                     val data = cardData(g, g.title, 0.55f)
                     GameSheetContent(data, AgeBand.ADULT, expertOpen = false, choice = PlayMode.A_TU_MEDIDA, onChoose = {}, onPlay = {}, timed = true, onChooseTimed = {})
                   }
+                  Scene.CONTRARRELOJ -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) {            // la pestaña nueva (Tarea 215): entre Hoy y Avance
+                    CompositionLocalProvider(LocalBarInset provides barInset) { Box(top) { ContrarrelojScreen(viewModel = vm!!) } }
+                    NavBar(AppTab.CONTRARRELOJ) { barPx = it }
+                  }
                   Scene.AVANCE -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) {
                     CompositionLocalProvider(LocalBarInset provides barInset) { Box(top) { ProgressScreen(viewModel = vm!!) } }
                     if (!sheetOpen) NavBar(AppTab.PROGRESO) { barPx = it }                    // con la lámina de un área abierta la barra se esconde (como en la app)
@@ -207,6 +215,7 @@ class AppActualScreenshotTest {
                   Scene.AJUSTES -> Box(top) { SettingsPanel(viewModel = vm!!, onClose = {}) }
                   Scene.LICENCIAS -> Box(top) { LicensesScreen(onClose = {}) }
                   Scene.BARRA -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) { NavBar(AppTab.HOY) }
+                  Scene.BARRA_CONTRARRELOJ -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) { NavBar(AppTab.CONTRARRELOJ) }
                   Scene.BARRA_AVANCE -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) { NavBar(AppTab.PROGRESO) }
                   Scene.BARRA_TU -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) { NavBar(AppTab.TU) }
                   Scene.VUELO_1 -> FirstFlightScreen(FlightState(FlightMode.FULL, FlightStep.HOLA), emptyList(), FlightActions.None)
@@ -323,6 +332,33 @@ class AppActualScreenshotTest {
     r.shot("tu-vacio-letra13", 873, 1.3f)
   }
 
+  // ---------------------------------------------------------------- Contrarreloj, Avance, Tú y ajustes
+
+  /** La pestaña «Contrarreloj» (Tarea 215) con unas partidas del juego de hoy, con Plus (la de depuración) y sin él (lo gratis arriba y las dos losas grises), entera y con letra 1,3. */
+  @Test
+  fun contrarreloj() {
+    val vm = viewModel()
+    val repo = (app as NeuroVidaApplication).repository
+    val today = TimeTrialDay.gameFor(vm.todayKey())
+    runBlocking {
+      listOf(31, 35, 39, 36, 44, 38, 41, 37, 42, 43).forEachIndexed { i, m ->
+        repo.recordTimeTrial(TimeTrialResult(id = "app-actual-$i", gameId = today, day = vm.todayKey(), trackVersion = TimeTrialDay.trackVersion(today), hits = m + 2, errors = 2, level = 4, seconds = 120, timestamp = System.currentTimeMillis() - (10 - i) * day / 2))
+      }
+    }
+    TestSupport.awaitUntil(30_000) { vm.timeTrialResults.value.size >= 10 }
+    vm.setAgeRange(AgeRange.R45_54)
+    TestSupport.awaitUntil(30_000) { vm.ageRange.value == AgeRange.R45_54 }
+    TestSupport.awaitUntil(30_000, "La referencia estimada no se cargó") { vm.estimatedReference.value != null }
+    val r = Rig(vm, Scene.CONTRARRELOJ)
+    vm.setPlus(true)
+    r.settle(); r.shot("contrarreloj", 873)
+    r.shot("contrarreloj-letra13", 873, 1.3f)
+    r.shot("contrarreloj-completa", 3300, 1f)
+    vm.setPlus(false)
+    r.settle(); r.shot("contrarreloj-sin-plus", 873)
+    r.shot("contrarreloj-sin-plus-completa", 1500, 1f)
+  }
+
   // ---------------------------------------------------------------- Avance, Tú y ajustes
 
   @Test
@@ -381,6 +417,8 @@ class AppActualScreenshotTest {
     val r = Rig(null, Scene.BARRA)
     r.settle(); r.shot("barra", 873)
     r.shot("barra-letra13", 873, 1.3f)
+    r.go(Scene.BARRA_CONTRARRELOJ, 873); r.shot("barra-contrarreloj", 873)       // Tarea 215: la pestaña nueva, con columnas de ancho desigual
+    r.shot("barra-contrarreloj-letra13", 873, 1.3f)
     r.go(Scene.BARRA_AVANCE, 873); r.shot("barra-avance", 873)                   // cada pestaña elegida (Tarea 158: la lámina mide los íconos de las tres)
     r.shot("barra-avance-letra13", 873, 1.3f)
     r.go(Scene.BARRA_TU, 873); r.shot("barra-tu", 873)

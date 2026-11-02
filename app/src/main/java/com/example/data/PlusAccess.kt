@@ -5,7 +5,7 @@ package com.example.data
  *
  * - **Pasajera, NO va en el respaldo** (`BackupRulesTest`): quién tiene Plus lo dirá Google Play al restaurar, no una copia de la preferencia.
  * - **Las builds de depuración empiezan con Plus ENCENDIDO** (lo que se prueba es la página entera) y un botón «[Debug]» de Ajustes lo apaga o lo enciende; la de la tienda, apagado, hasta que haya compra.
- * - **Lo que cuelga de él:** la página «Contrarreloj» de Avance entera y el atajo «Todas tus marcas ›» del final; sin Plus, la puerta de Avance dice «Con Nubi Plus» y abre una hoja corta que cuenta qué trae. Lo demás del Contrarreloj (jugarlo, el récord de Hoy, el final de siempre) es gratis y no cambia.
+ * - **Lo que cuelga de él:** la pestaña «Contrarreloj» (desde la Tarea 215; antes una página dentro de Avance) en su mitad de abajo —las secciones «tu lugar en detalle» y «todas tus marcas»— y el atajo «Todas tus marcas ›» del final; sin Plus, esas dos mitades van en gris con candado y abren una hoja corta que cuenta qué trae. Lo demás del Contrarreloj (jugarlo, el récord de Hoy, el final de siempre) es gratis y no cambia.
  * - **Lo que FALTA (Etapa 4, Google Play Billing):** el botón de compra de la hoja. Cuando exista, `PlusAccess.resolve` recibirá el estado de la suscripción en vez de la preferencia; el resto de la app solo mira `plus` y no cambia.
  */
 object PlusAccess {
@@ -21,6 +21,14 @@ object PlusAccess {
   // ------------------------------------------------------------------ lo que dice la hoja del candado (sin Plus)
 
   const val LOCK_LABEL = "Con Nubi Plus"
+
+  // ------------------------------------------------------------------ las dos losas grises de la pestaña Contrarreloj (Tarea 215; `auditoria-fable/idea-pestana-contrarreloj.md` §3.1)
+
+  /** Sin Plus, lo de Plus de la pestaña va en DOS losas grises con candado, cada una con su título legible (los rótulos de sus secciones con Plus, más cortos para caber en una línea) y la frase «Con Nubi Plus: …» en negrita. */
+  const val LOCKED_PLACE_TITLE = "Comparado con tu edad"
+  const val LOCKED_PLACE = "Con Nubi Plus: tu lugar en detalle."
+  const val LOCKED_MARKS_TITLE = "Tus marcas"
+  const val LOCKED_MARKS = "Con Nubi Plus: todas tus marcas."
 
   /**
    * El candado de la puerta de Avance CON comparación (Tarea 209; `auditoria-fable/claridad-plus-y-ayuda.md` §1.2 a): dice qué agrega Plus sobre lo gratis. «Además» porque la frase gratis de arriba ya dio la división. Sin comparación (sin franja de edad, de 13 a 17 años o sin tabla) el candado queda corto, [LOCK_LABEL]:

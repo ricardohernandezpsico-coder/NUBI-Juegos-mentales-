@@ -47,7 +47,7 @@ import org.robolectric.annotation.GraphicsMode
 /**
  * La barra de abajo sin «lag» (Tarea 142, 19-oct): Ricardo deslizaba de Hoy a otra pestaña y la página se movía bien, pero los íconos de la barra cambiaban recién DESPUÉS de que terminaba el movimiento: la barra leía la pestaña del ViewModel, que solo se actualiza
  * cuando el pager se asienta (`settledPage`). Ahora la barra lee el pager EN VIVO (`PagerNavBar`: `targetPage`). Estas pruebas arman el mismo cableado que `MainActivity` (`rememberTabPager` + `HorizontalPager` + `PagerNavBar`, con un estado en el lugar del ViewModel) y miran
- * lo que se ve ANTES de que el pager se asiente.
+ * lo que se ve ANTES de que el pager se asiente. Desde la Tarea 215 son CUATRO pestañas (Hoy · Contrarreloj · Avance · Tú): la vecina de Hoy es Contrarreloj (página 1); Avance es la 2 y Tú la 3.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -92,17 +92,17 @@ class TabPagerBarTest {
   }
 
   private fun assertOnlySelected(tag: String) {
-    for (t in listOf("nav_item_hoy", "nav_item_progreso", "nav_item_tu")) {
+    for (t in listOf("nav_item_hoy", "nav_item_contrarreloj", "nav_item_progreso", "nav_item_tu")) {
       if (t == tag) rule.onNodeWithTag(t).assertIsSelected() else rule.onNodeWithTag(t).assertIsNotSelected()
     }
   }
 
   @Test
-  fun arrastrar_el_pager_mas_alla_de_la_mitad_sin_soltar_ya_selecciona_Avance_antes_de_asentarse() {
+  fun arrastrar_el_pager_mas_alla_de_la_mitad_sin_soltar_ya_selecciona_Contrarreloj_antes_de_asentarse() {
     show()
     assertOnlySelected("nav_item_hoy")
     dragWithoutRelease(0.6f)                                                  // más allá de la mitad de la página, el dedo sigue abajo
-    assertOnlySelected("nav_item_progreso")                                    // la barra ya cambió…
+    assertOnlySelected("nav_item_contrarreloj")                                // la barra ya cambió…
     assertEquals("…y el pager todavía no se asentó", 0, pager.settledPage)
     assertEquals("…ni el ViewModel (la lógica sigue con settledPage)", AppTab.HOY, viewModelTab)
     assertTrue("no hubo aviso de asentamiento", settledCalls.isEmpty())
@@ -113,16 +113,16 @@ class TabPagerBarTest {
     rule.waitForIdle()
     assertEquals(1, pager.settledPage)
     assertEquals(1f, tabPager.contentAlpha, 0f)
-    assertEquals(AppTab.PROGRESO, viewModelTab)
-    assertEquals(listOf(AppTab.PROGRESO), settledCalls)
-    assertOnlySelected("nav_item_progreso")
+    assertEquals(AppTab.CONTRARRELOJ, viewModelTab)
+    assertEquals(listOf(AppTab.CONTRARRELOJ), settledCalls)
+    assertOnlySelected("nav_item_contrarreloj")
   }
 
   @Test
   fun la_barra_cambia_en_cuanto_el_gesto_decide_sin_esperar_a_la_mitad() {
     show()
     dragWithoutRelease(0.25f)                                                // un cuarto de página: pasó el umbral del pager (unos 56 dp), todavía no la mitad
-    assertOnlySelected("nav_item_progreso")
+    assertOnlySelected("nav_item_contrarreloj")
     assertEquals(0, pager.settledPage)
   }
 
@@ -143,7 +143,7 @@ class TabPagerBarTest {
   fun si_se_arrastra_mas_alla_y_se_vuelve_atras_antes_de_soltar_la_barra_se_deshace() {
     show()
     dragWithoutRelease(0.6f)
-    assertOnlySelected("nav_item_progreso")
+    assertOnlySelected("nav_item_contrarreloj")
     rule.onNodeWithTag("tabs_pager").performTouchInput { repeat(8) { moveBy(Offset(width * 0.6f / 8f, 0f), delayMillis = 16) } }
     rule.mainClock.advanceTimeBy(50)
     rule.waitForIdle()
@@ -162,7 +162,7 @@ class TabPagerBarTest {
     assertEquals(AppTab.TU, viewModelTab)
     rule.mainClock.advanceTimeBy(1_000)
     rule.waitForIdle()
-    assertEquals(2, pager.settledPage)
+    assertEquals(3, pager.settledPage)
     assertOnlySelected("nav_item_tu")
     assertTrue("tocar no es un asentamiento por gesto: el aviso no se repite", settledCalls.isEmpty())
   }
@@ -179,8 +179,22 @@ class TabPagerBarTest {
     assertOnlySelected("nav_item_progreso")
     rule.mainClock.advanceTimeBy(1_000)
     rule.waitForIdle()
-    assertEquals(1, pager.settledPage)
+    assertEquals(2, pager.settledPage)
     assertEquals(AppTab.PROGRESO, viewModelTab)
+  }
+
+  @Test
+  fun tocar_Contrarreloj_la_selecciona_al_instante_y_el_pager_se_desliza_a_su_pagina() {
+    show()
+    rule.onNodeWithTag("nav_item_contrarreloj").performClick()
+    rule.mainClock.advanceTimeBy(48)
+    rule.waitForIdle()
+    assertOnlySelected("nav_item_contrarreloj")
+    assertEquals("el pager todavía no llegó", 0, pager.settledPage)
+    rule.mainClock.advanceTimeBy(1_000)
+    rule.waitForIdle()
+    assertEquals(1, pager.settledPage)
+    assertEquals(AppTab.CONTRARRELOJ, viewModelTab)
   }
 
   @Test
@@ -190,6 +204,6 @@ class TabPagerBarTest {
     rule.mainClock.advanceTimeBy(32)
     rule.waitForIdle()
     assertOnlySelected("nav_item_progreso")
-    assertEquals("de golpe: el pager ya está en Avance", 1, pager.settledPage)
+    assertEquals("de golpe: el pager ya está en Avance", 2, pager.settledPage)
   }
 }

@@ -51,7 +51,6 @@ import com.example.ui.components.HoyGuideOverlay
 import com.example.ui.components.LocalGuideTargets
 import com.example.ui.components.LocalReduceMotion
 import com.example.ui.components.NeuroNavBar
-import com.example.ui.components.guideHoleOf
 import com.example.ui.components.hiddenUntil
 import com.example.ui.screens.HomeContent
 import com.example.ui.screens.HomeTimeTrial
@@ -161,7 +160,7 @@ class HoyGuideOverlayTest {
 
   private fun holeOf(s: GuideStep): Rect {
     val pad = 8f * composeTestRule.density.density
-    val r = guideHoleOf(s, targets.rects.getValue(targetOfStep(s)))
+    val r = targets.rects.getValue(targetOfStep(s))
     return Rect(r.left - pad, r.top - pad, r.right + pad, r.bottom + pad)
   }
 
@@ -203,14 +202,19 @@ class HoyGuideOverlayTest {
   }
 
   @Test
-  fun el_hueco_del_paso_3_cubre_las_pestanas_Avance_y_Tu_y_no_Hoy() {
+  fun el_hueco_del_paso_3_cubre_las_pestanas_Contrarreloj_Avance_y_Tu_y_no_Hoy() {
     show(); start()
     composeTestRule.runOnUiThread { step = GuideStep.BARRA }; composeTestRule.waitForIdle()
-    val bar = targets.rects.getValue(GuideTarget.TAB_BAR)
+    // (con la guía abierta la barra queda fuera del lector de pantalla: sus nodos solo están en el árbol sin fusionar)
+    fun raw(tag: String): Rect = composeTestRule.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+    val bar = raw("bottom_nav_bar")
     val hole = bounds("guide_hole")
     val pad = 8f * composeTestRule.density.density
-    assertEquals("empieza a un tercio de la barra (donde termina Hoy)", bar.left + bar.width / 3f - pad, hole.left, 1.5f)
-    assertTrue("y llega hasta el borde de la derecha", hole.right >= bar.right - 1f)
+    // (Tarea 215: las columnas ya no son tercios; el hueco empieza donde termina la columna de Hoy, la que mide la barra)
+    val hoy = raw("nav_item_hoy"); val contrarreloj = raw("nav_item_contrarreloj"); val tu = raw("nav_item_tu")
+    assertEquals("empieza donde empieza la columna de Contrarreloj (donde termina Hoy)", contrarreloj.left - pad, hole.left, 1.5f)
+    assertTrue("Hoy queda fuera del hueco: ${hoy.right} contra ${hole.left}", hoy.right <= hole.left + pad + 1f)
+    assertTrue("y llega hasta el borde de la derecha, con Tú adentro", hole.right >= bar.right - 1f && hole.right >= tu.right - 1f)
     assertEquals(bar.top - pad, hole.top, 1.5f)
     assertTrue("no entra en la franja de gestos (ni en los 3 botones): abajo llega hasta donde llega la barra", hole.bottom <= bar.bottom + 1f)
   }

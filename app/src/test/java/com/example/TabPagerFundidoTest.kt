@@ -45,13 +45,13 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * De Hoy a Tú sin pasar por Avance (Tarea 184, 27-oct, decisión de Ricardo): al tocar «Tú» estando en Hoy (o al revés), el pager deslizaba DOS páginas y se veía pasar Avance. Ahora entre pestañas que NO son vecinas hay un «fade through» de Material: la
+ * De Hoy a Tú sin pasar por las del medio (Tarea 184, 27-oct, decisión de Ricardo; con tres pestañas era Avance, y desde la Tarea 215 hay cuatro: Hoy · Contrarreloj · Avance · Tú): al tocar «Tú» estando en Hoy (o al revés), el pager deslizaba varias páginas y se veían pasar. Ahora entre pestañas que NO son vecinas hay un «fade through» de Material: la
  * página de ahora se desvanece (90 ms), se cambia de página de golpe en lo más transparente y entra la nueva con un fundido y una escala de 0,96 a 1 (210 ms), 300 ms en total. Entre vecinas se desliza como siempre, deslizar con el dedo no cambia y con
  * «quitar animaciones» se salta de golpe. Estas pruebas arman el mismo cableado que `MainActivity` (`rememberTabPager` + `HorizontalPager` con `tabFade` + `PagerNavBar`) y REGISTRAN, cuadro por cuadro, qué páginas están visibles, compuestas y asentadas,
  * la opacidad y la escala de las páginas y lo que marca la barra.
  *
  * COSTO (resuelto en la Tarea 187, 28-oct): cada prueba que movía el pager con `animateScrollToPage` (un deslizamiento de verdad) tardaba ~170 s, casi todo en `waitForIdle`. NO era una animación infinita sino el prefetch del pager contra el reloj virtual de Robolectric; `TestSupport.fastFrames()`
- * (en el `@Before`) lo arregla y ahora tardan ~2 s. Por eso aquí desliza SOLO UNA prueba (Hoy → Avance, la que pide la tarea): se dejó así cuando salía carísimo; el resto usa el fundido y `scrollToPage`.
+ * (en el `@Before`) lo arregla y ahora tardan ~2 s. Por eso aquí desliza SOLO UNA prueba (Hoy → Contrarreloj, vecinas): se dejó así cuando salía carísimo; el resto usa el fundido y `scrollToPage`.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -115,35 +115,37 @@ class TabPagerFundidoTest {
    * unos 190 s por prueba (lo mismo que cuesta cada prueba de `TabPagerBarTest` que mueve el pager; el toque de verdad ya lo prueba esa clase). Aquí se cambia la pestaña en el hilo de la interfaz y se avanzan los cuadros.
    */
   private fun tap(tag: String) {
-    val tab = when (tag) { "nav_item_hoy" -> AppTab.HOY; "nav_item_progreso" -> AppTab.PROGRESO; else -> AppTab.TU }
+    val tab = when (tag) { "nav_item_hoy" -> AppTab.HOY; "nav_item_contrarreloj" -> AppTab.CONTRARRELOJ; "nav_item_progreso" -> AppTab.PROGRESO; else -> AppTab.TU }
     rule.runOnUiThread { viewModelTab = tab; Snapshot.sendApplyNotifications() }          // (sin esto, el cambio de estado no llega a la composición hasta que algo espera a que esté quieta)
   }
 
-  private fun assertNeverSawAvance(frames: List<Frame>) {
+  /** Las páginas del medio ([middle]; por omisión Contrarreloj y Avance, las que quedan entre Hoy y Tú) no se ven, no se componen, no se asientan y la barra no las marca. */
+  private fun assertNeverSawMiddle(frames: List<Frame>, middle: Set<Int> = setOf(1, 2)) {
+    val tabs = middle.map { AppTab.entries[it] }
     for (f in frames) {
-      assertFalse("a los ${f.ms} ms Avance está a la vista: ${f.visible}", 1 in f.visible)
-      assertFalse("a los ${f.ms} ms Avance está compuesto: ${f.composed}", 1 in f.composed)
-      assertTrue("a los ${f.ms} ms el pager ya está en Avance (actual ${f.current}, asentado ${f.settled})", f.current != 1 && f.settled != 1)
+      assertTrue("a los ${f.ms} ms una página del medio está a la vista: ${f.visible}", f.visible.none { it in middle })
+      assertTrue("a los ${f.ms} ms una página del medio está compuesta: ${f.composed}", f.composed.none { it in middle })
+      assertTrue("a los ${f.ms} ms el pager ya está en una del medio (actual ${f.current}, asentado ${f.settled})", f.current !in middle && f.settled !in middle)
       assertTrue("a los ${f.ms} ms el pager está entre dos páginas (${f.offset})", f.offset == 0f)
-      assertTrue("a los ${f.ms} ms la barra marca Avance", f.selected != AppTab.PROGRESO)
+      assertTrue("a los ${f.ms} ms la barra marca una del medio (${f.selected})", f.selected !in tabs)
     }
-    assertFalse("Avance nunca llegó a componerse ($everComposed)", 1 in everComposed)
+    assertTrue("ninguna del medio llegó a componerse ($everComposed)", everComposed.none { it in middle })
   }
 
   @Test
-  fun de_Hoy_a_Tu_Avance_nunca_se_dibuja_ni_se_asienta_y_dura_lo_de_una_pestana() {
+  fun de_Hoy_a_Tu_ni_Contrarreloj_ni_Avance_se_dibujan_ni_se_asientan_y_dura_lo_de_una_pestana() {
     show()
     assertEquals(setOf(0), live)
     tap("nav_item_tu")
     val frames = frames(480)
-    assertNeverSawAvance(frames)
+    assertNeverSawMiddle(frames)
     // la barra marca el destino de una vez, sin esperar al fundido ni pasar por Avance
     assertEquals("a los 32 ms la barra ya marca Tú", AppTab.TU, frames[1].selected)
     // el fundido: sale la página de ahora (la opacidad baja hasta casi nada)…
     val dip = frames.minBy { it.alpha }
     assertTrue("la opacidad baja casi a cero (${dip.alpha})", dip.alpha <= 0.1f)
     // …el cambio de página se hace en lo más transparente…
-    val switched = frames.first { it.current == 2 }
+    val switched = frames.first { it.current == 3 }
     assertTrue("la página cambia con la opacidad baja (${switched.alpha})", switched.alpha <= 0.35f)
     assertTrue("y no antes de que casi no se vea (a los ${switched.ms} ms)", switched.ms in 64L..160L)
     // …y entra la nueva: la opacidad sube a 1 y la escala de 0,96 a 1
@@ -153,19 +155,19 @@ class TabPagerFundidoTest {
     val done = frames.first { it.alpha == 1f && it.scale == 1f && it.ms > switched.ms }
     assertTrue("todo termina unos 300 ms después de que arranca el efecto (a los ${done.ms} ms contando desde el toque, que arranca un par de cuadros antes)", done.ms in 280L..400L)
     val last = frames.last()
-    assertEquals(2, last.settled); assertEquals(2, last.current); assertEquals(1f, last.alpha, 0f); assertEquals(1f, last.scale, 0f)
+    assertEquals(3, last.settled); assertEquals(3, last.current); assertEquals(1f, last.alpha, 0f); assertEquals(1f, last.scale, 0f)
     assertEquals(AppTab.TU, viewModelTab)
     assertTrue("un toque no es un asentamiento por gesto: el aviso no se repite", settledCalls.isEmpty())
     rule.onNodeWithTag("nav_item_tu").assertIsSelected()
   }
 
   @Test
-  fun de_Tu_a_Hoy_tambien_es_un_fundido_sin_pasar_por_Avance() {
+  fun de_Tu_a_Hoy_tambien_es_un_fundido_sin_pasar_por_las_del_medio() {
     show(startAt = AppTab.TU)
-    assertEquals(setOf(2), live)
+    assertEquals(setOf(3), live)
     tap("nav_item_hoy")
     val frames = frames(480)
-    assertNeverSawAvance(frames)
+    assertNeverSawMiddle(frames)
     assertEquals(0, frames.last().settled)
     assertEquals(1f, frames.last().alpha, 0f)
     assertEquals(AppTab.HOY, viewModelTab)
@@ -173,25 +175,49 @@ class TabPagerFundidoTest {
   }
 
   @Test
-  fun de_Hoy_a_Avance_sigue_deslizando_sin_fundido() {
+  fun de_Hoy_a_Contrarreloj_sigue_deslizando_sin_fundido() {
     show()
-    tap("nav_item_progreso")
+    tap("nav_item_contrarreloj")
     val frames = frames(480)
-    assertTrue("hubo un cuadro con Hoy y Avance a la vez (se deslizó)", frames.any { 0 in it.visible && 1 in it.visible })
+    assertTrue("hubo un cuadro con Hoy y Contrarreloj a la vez (se deslizó)", frames.any { 0 in it.visible && 1 in it.visible })
     assertTrue("el pager estuvo entre dos páginas", frames.any { it.offset != 0f || it.current != it.settled })
     for (f in frames) { assertEquals("sin fundido a los ${f.ms} ms", 1f, f.alpha, 0f); assertEquals(1f, f.scale, 0f) }
     assertEquals(1, frames.last().settled)
-    assertEquals(AppTab.PROGRESO, viewModelTab)
+    assertEquals(AppTab.CONTRARRELOJ, viewModelTab)
     assertTrue(settledCalls.isEmpty())
   }
 
   @Test
-  fun con_quitar_animaciones_de_Hoy_a_Tu_salta_de_golpe_sin_pasar_por_Avance() {
+  fun de_Hoy_a_Avance_ya_no_son_vecinas_y_es_un_fundido_sin_pasar_por_Contrarreloj() {
+    show()
+    tap("nav_item_progreso")
+    val frames = frames(480)
+    assertNeverSawMiddle(frames, middle = setOf(1))
+    val dip = frames.minBy { it.alpha }
+    assertTrue("la opacidad baja casi a cero (${dip.alpha})", dip.alpha <= 0.1f)
+    assertEquals(2, frames.last().settled); assertEquals(1f, frames.last().alpha, 0f)
+    assertEquals(AppTab.PROGRESO, viewModelTab)
+    assertTrue("un toque no es un asentamiento por gesto", settledCalls.isEmpty())
+  }
+
+  @Test
+  fun de_Contrarreloj_a_Tu_tampoco_son_vecinas_y_es_un_fundido_sin_pasar_por_Avance() {
+    show(startAt = AppTab.CONTRARRELOJ)
+    assertEquals(setOf(1), live)
+    tap("nav_item_tu")
+    val frames = frames(480)
+    assertNeverSawMiddle(frames, middle = setOf(2))
+    assertEquals(3, frames.last().settled); assertEquals(1f, frames.last().alpha, 0f)
+    assertEquals(AppTab.TU, viewModelTab)
+  }
+
+  @Test
+  fun con_quitar_animaciones_de_Hoy_a_Tu_salta_de_golpe_sin_pasar_por_las_del_medio() {
     show(reduce = true)
     tap("nav_item_tu")
     val frames = frames(160)
-    assertNeverSawAvance(frames)
-    assertEquals("de golpe: a los 48 ms el pager ya está en Tú", 2, frames.first { it.ms >= 48 }.settled)
+    assertNeverSawMiddle(frames)
+    assertEquals("de golpe: a los 48 ms el pager ya está en Tú", 3, frames.first { it.ms >= 48 }.settled)
     for (f in frames) { assertEquals("sin fundido a los ${f.ms} ms", 1f, f.alpha, 0f); assertEquals(1f, f.scale, 0f) }
     assertEquals(AppTab.TU, viewModelTab)
   }
@@ -201,9 +227,10 @@ class TabPagerFundidoTest {
     show()
     tap("nav_item_tu")
     frames(480)
-    rule.onNodeWithText("página 2").assertIsDisplayed()
+    rule.onNodeWithText("página 3").assertIsDisplayed()
     rule.onAllNodesWithText("página 0").assertCountEquals(0)
     rule.onAllNodesWithText("página 1").assertCountEquals(0)
+    rule.onAllNodesWithText("página 2").assertCountEquals(0)
   }
 
   @Test
@@ -215,8 +242,8 @@ class TabPagerFundidoTest {
     assertTrue("a medio fundido (${salida.last().alpha})", salida.last().alpha < 1f)
     tap("nav_item_hoy")                                                      // se arrepiente
     val frames = frames(480)
-    assertNeverSawAvance(frames)
-    assertTrue("nunca se llegó a Tú", frames.all { it.settled == 0 && it.current == 0 && 2 !in it.composed })
+    assertNeverSawMiddle(frames)
+    assertTrue("nunca se llegó a Tú", frames.all { it.settled == 0 && it.current == 0 && 3 !in it.composed })
     assertEquals("la página vuelve a su opacidad", 1f, frames.last().alpha, 0f)
     assertEquals(1f, frames.last().scale, 0f)
     assertEquals(AppTab.HOY, frames.last().selected)
@@ -226,7 +253,7 @@ class TabPagerFundidoTest {
     everComposed.clear(); everComposed += live
     tap("nav_item_tu")
     val otra = frames(480)
-    assertNeverSawAvance(otra)
-    assertEquals(2, otra.last().settled)
+    assertNeverSawMiddle(otra)
+    assertEquals(3, otra.last().settled)
   }
 }

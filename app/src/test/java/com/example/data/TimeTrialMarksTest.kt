@@ -71,32 +71,18 @@ class TimeTrialMarksTest {
   }
 
   @Test
-  fun `las tres cifras de Tus marcas llevan cada una su unidad y son solo de la persona`() {
+  fun `lo gratis dice el record y la semana en frases completas, cada numero con su unidad`() {
     val p = TimeTrialMarks.page(ten, "stroop", now)
-    assertEquals(
-      listOf(
-        TimeTrialMarks.Stat("44", "aciertos, tu récord"),
-        TimeTrialMarks.Stat("43", "aciertos esta semana"),
-        TimeTrialMarks.Stat("3", "partidas esta semana")
-      ),
-      TimeTrialMarks.stats(p)
-    )
-    assertEquals("la tercera cifra es SIEMPRE de la persona (Tarea 203b): las partidas de la semana, con o sin comparación", "partidas esta semana", TimeTrialMarks.stats(p)[2].label)
-    assertEquals("44 aciertos, tu récord", TimeTrialMarks.statSpoken(TimeTrialMarks.stats(p)[0]))
-    assertEquals("3 partidas esta semana", TimeTrialMarks.statSpoken(TimeTrialMarks.stats(p)[2]))
-  }
-
-  @Test
-  fun `sin partida esta semana la segunda cifra es cero partidas y la tercera cuenta las de siempre`() {
-    val quiet = TimeTrialMarks.page(ten, "stroop", at(30, 9) + 3 * 86_400_000L)
-    val s = TimeTrialMarks.stats(quiet)
-    assertEquals(TimeTrialMarks.Stat("0", "partidas esta semana"), s[1])
-    assertEquals(TimeTrialMarks.Stat("10", "partidas en total"), s[2])
-    val one = TimeTrialMarks.page(listOf(r(30, 28, h = 9)), "stroop", now)
-    assertEquals(TimeTrialMarks.Stat("30", "aciertos, tu récord"), TimeTrialMarks.stats(one)[0])
-    assertEquals(TimeTrialMarks.Stat("1", "partida esta semana"), TimeTrialMarks.stats(one)[2])
-    assertEquals("1 acierto, en singular", "acierto esta semana", TimeTrialMarks.stats(TimeTrialMarks.page(listOf(r(1, 28, h = 9)), "stroop", now))[1].label)
-    for (st in TimeTrialMarks.stats(one) + s) assertFalse("«${st.label}» no es solo un número", st.label.isBlank())
+    assertEquals("Tu récord: 44 aciertos.", TimeTrialMarks.freeRecordLine(p.recordMark))
+    assertEquals("Tu récord: 1 acierto.", TimeTrialMarks.freeRecordLine(1))
+    assertEquals("Todavía no tienes récord en este juego.", TimeTrialMarks.freeRecordLine(null))
+    assertEquals("Esta semana jugaste 3 partidas; la mejor, 43 aciertos.", TimeTrialMarks.weekLine(p.thisWeek))
+    assertEquals("Esta semana jugaste 1 partida; la mejor, 1 acierto.", TimeTrialMarks.weekLine(TimeTrialMarks.WeekSummary(1, 1)))
+    assertEquals("Esta semana todavía no jugaste.", TimeTrialMarks.weekLine(TimeTrialMarks.WeekSummary(0, null)))
+    assertEquals("sin partida esta semana (los días siguientes)", "Esta semana todavía no jugaste.", TimeTrialMarks.weekLine(TimeTrialMarks.page(ten, "stroop", at(30, 9) + 3 * 86_400_000L).thisWeek))
+    assertEquals("Jugar · 2 minutos", TimeTrialMarks.PLAY)
+    for (t in listOf(TimeTrialMarks.freeRecordLine(44), TimeTrialMarks.weekLine(p.thisWeek), TimeTrialMarks.PLAY, TimeTrialMarks.SUBTITLE_PLACE, TimeTrialMarks.SUBTITLE))
+      for (banned in listOf("intento", "bloquead", "desbloque", "percentil", "Percentil")) assertFalse("«$t» no debe decir «$banned»", t.contains(banned))
   }
 
   @Test
@@ -152,28 +138,15 @@ class TimeTrialMarksTest {
   }
 
   @Test
-  fun `el selector y la puerta dicen el record o que todavia no hay marcas`() {
+  fun `el selector dice el record, cual es el de hoy y cuales piden Nubi Plus`() {
     assertEquals("44 aciertos", TimeTrialMarks.tileValue(44)); assertEquals("sin marca aún", TimeTrialMarks.tileValue(null))
     assertEquals("Tinta o Palabra, récord 44 aciertos, elegido", TimeTrialMarks.tileSpoken("Tinta o Palabra", 44, true))
     assertEquals("Acoplamiento, sin marca aún", TimeTrialMarks.tileSpoken("Acoplamiento", null, false))
-    assertEquals("Tu récord de hoy: 44 aciertos", TimeTrialMarks.doorLine(44)); assertEquals("Todavía sin marcas", TimeTrialMarks.doorLine(null))
-    assertEquals("Tu récord de hoy: 1 acierto", TimeTrialMarks.doorLine(1))
-    assertTrue(TimeTrialMarks.doorSpoken(44, plus = false).endsWith("Con Nubi Plus."))
-    assertFalse(TimeTrialMarks.doorSpoken(44, plus = true).contains("Plus"))
-    val free = "Esta semana estás En órbita. Te faltan 7 aciertos para En la Luna."
-    assertEquals("Tus marcas del Contrarreloj. Tu récord de hoy: 44 aciertos. $free Con Nubi Plus.", TimeTrialMarks.doorSpoken(44, plus = false, freeLine = free))
-    // Tarea 209: con comparación, el lector dice el candado largo, sin sumarle otro punto
-    assertEquals(
-      "Tus marcas del Contrarreloj. Tu récord de hoy: 44 aciertos. $free Con Nubi Plus: además, dónde queda tu marca frente a tu edad y a otras edades.",
-      TimeTrialMarks.doorSpoken(44, plus = false, freeLine = free, lockLabel = PlusAccess.LOCK_LABEL_COMPARED)
-    )
-    assertEquals(
-      "sin frase gratis, solo el candado largo",
-      "Tus marcas del Contrarreloj. Tu récord de hoy: 44 aciertos. Con Nubi Plus: además, dónde queda tu marca frente a tu edad y a otras edades.",
-      TimeTrialMarks.doorSpoken(44, plus = false, lockLabel = PlusAccess.LOCK_LABEL_COMPARED)
-    )
-    assertEquals("con Plus no se dice el candado", "Tus marcas del Contrarreloj. Tu récord de hoy: 44 aciertos.", TimeTrialMarks.doorSpoken(44, plus = true, lockLabel = PlusAccess.LOCK_LABEL_COMPARED))
-    assertEquals("con Plus la frase gratis no va: la página la trae completa", TimeTrialMarks.doorSpoken(44, plus = true), TimeTrialMarks.doorSpoken(44, plus = true, freeLine = free))
+    // Tarea 215: el de hoy lo dice; en gris, «con Nubi Plus» (el candado y el gris no se leen)
+    assertEquals("Tinta o Palabra, récord 44 aciertos, el de hoy, elegido", TimeTrialMarks.tileSpoken("Tinta o Palabra", 44, selected = true, today = true))
+    assertEquals("Rescate relámpago, récord 12 aciertos, con Nubi Plus", TimeTrialMarks.tileSpoken("Rescate relámpago", 12, selected = false, locked = true))
+    assertEquals("Acoplamiento, sin marca aún, con Nubi Plus", TimeTrialMarks.tileSpoken("Acoplamiento", null, selected = false, locked = true))
+    assertEquals("Hoy", TimeTrialMarks.TODAY_TAG)
   }
 
   // ------------------------------------------------------------------ Rescate relámpago por cápsula (Tarea 208): varias cápsulas en el mismo instante

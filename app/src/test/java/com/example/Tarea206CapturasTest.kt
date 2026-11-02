@@ -77,7 +77,7 @@ class Tarea206CapturasTest {
         NeuroVidaTheme {
           Box(Modifier.width(widthDp.dp).height(heightDp.dp)) {
             BoardBackground()
-            ContrarrelojPage(results = results, selected = game, onSelect = {}, onBack = {}, now = now, compare = estWorld, ageRange = AgeRange.R30_44)
+            ContrarrelojPage(results = results, selected = game, onSelect = {}, now = now, compare = estWorld, ageRange = AgeRange.R30_44)
           }
         }
       }

@@ -27,7 +27,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -61,6 +60,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.Comparison
+import com.example.data.PlusAccess
 import com.example.data.TimeTrialDay
 import com.example.data.TimeTrialMarks
 import com.example.data.TimeTrialResult
@@ -69,13 +69,14 @@ import com.example.data.glueNumbers
 import com.example.model.AgeRange
 import com.example.model.AppLanguage
 import com.example.model.GameRegistry
+import com.example.ui.components.CapScale
 import com.example.ui.components.ClaySlab
 import com.example.ui.components.DivisionEmblem
 import com.example.ui.components.DivisionEmblemHero
 import com.example.ui.components.DivisionEmblemLadder
 import com.example.ui.components.GameEmblem
 import com.example.ui.components.Glyph
-import com.example.ui.components.KitBackButton
+import com.example.ui.components.KitButton
 import com.example.ui.components.KitGlyph
 import com.example.ui.components.OnBoardText
 import com.example.ui.components.SlabColor
@@ -105,31 +106,42 @@ private val HalfLabelGap = 8.dp
 private const val BIG_TEXT_SCALE_CAP = 1.3f
 
 /**
- * La PÁGINA «Contrarreloj» de Avance (Tarea 199; rediseñada en la Tarea 203, dirección D2 de Fable, `auditoria-fable/contrarreloj-rediseno.md`; solo con Nubi Plus): TODAS tus marcas del Contrarreloj (`TimeTrialMarks`: lo guardado en `time_trial_results`) y, con [compare], tu lugar entre personas de tu edad. Se abre como la página de un
- * área (reemplaza la lista de Avance; Atrás vuelve; la barra de pestañas sigue en «Avance») y se desliza entera. Escala de letra fija: 40 (la cifra), 24 (títulos y las tres cifras), 18 (Fredoka), 16 y 14 (solo los rótulos de los ejes); el título de la página, 26, es el de toda página de Avance.
+ * La PESTAÑA «Contrarreloj» (Tarea 215, 2-nov; Ricardo decidió las 9 decisiones de `auditoria-fable/idea-pestana-contrarreloj.md` §10 en su opción recomendada). Antes (Tarea 199, rediseñada en la 203 con la dirección D2 de Fable) era una página dentro de Avance, detrás de una puerta y entera para Nubi Plus; ahora es la pestaña de al lado de Hoy
+ * y se parte en DOS mitades: **arriba lo gratis, a color; debajo lo de Plus** (sin Plus, DOS losas en gris con candado; con Plus, las secciones de siempre, a color y en el mismo orden). Lo que la persona no tendría ni con Plus no se muestra en gris (sin franja de edad, de 13 a 17 años o sin tabla del juego no hay losa de «tu lugar»: una promesa que no se cumple es contenido engañoso para Play).
+ * Se desliza entera; ya no tiene flecha de volver (es una pestaña). Escala de letra fija: 24 (títulos y la cifra), 18 (Fredoka), 16 y 14 (solo los rótulos de los ejes); el título de la página, 26, es el de toda pestaña con título.
  *
- * De arriba abajo: la cabecera sobre el cielo («Contrarreloj» y «Tus marcas, comparadas solo contigo.» —con la referencia estimada, «Tus marcas, comparadas contigo y con una referencia estimada para tu edad.»; con datos de muestra o personas reales, «…con personas de tu edad.»—, con [OnBoardText]); el cielo se DESVANECE en 24 dp hasta el noche plano ([NubiTokens.NightFlat]) y de ahí para abajo todo va en losas crema
- * sobre ese fondo plano; el selector de los cuatro juegos (dos filas parejas; una columna si «Acoplamiento» no cabe entero en media fila; el elegido en lima con el visto; abre con el juego de hoy).
+ * De arriba abajo: la cabecera sobre el cielo («Contrarreloj» y, solo cuando hay comparación, «El Contrarreloj define tu lugar de la semana.»; sin ella, «Tus marcas, comparadas solo contigo.», con [OnBoardText]); el cielo se DESVANECE en 24 dp hasta el noche plano ([NubiTokens.NightFlat]) y de ahí para abajo todo va en losas sobre ese fondo plano;
+ * el selector de los cuatro juegos ([GameSelector]: el de hoy marcado «Hoy»; sin Plus, los otros tres en gris con candado —tocarlos abre la hoja— y con su récord siempre a la vista); **LO GRATIS en UNA losa crema** ([FreeCard]: «Jugar · 2 minutos», «Tu récord: 44 aciertos.», «Esta semana jugaste 3 partidas; la mejor, 41 aciertos.», y con comparación la división con su emblema y su lugar entre las cinco,
+ * «Te faltan 7 aciertos para En la Luna.» con su barra y «La semana cierra el domingo.»; antes era lo que daba la puerta de Avance) y la fila «Con qué te comparas ›» ([CompareLink], solo con la referencia estimada: es la honestidad de la referencia, no un dato de pago). Sin franja de edad, de 13 a 17 años o antes de la tercera partida (Tarea 207) lo gratis no dice la división y
+ * el aviso de siempre sale bajo el selector ([Comparison.Gate]).
  *
- * **Con comparación (solo [compare] no nulo, con una franja de edad y desde la tercera partida guardada de ESTE juego, Tarea 207: antes, la página dice «Tu lugar aparece desde tu tercera partida…» una vez; la persona de 13 a 17 años no la ve, y sin franja guardada la página dice dónde elegirla; la precedencia es `Comparison.gate`):** primero la comparación, bajo el rótulo «Esta semana, comparado con tu edad»: la cifra ([HeroCard]: UNA frase, «Con 46 aciertos, superas al 5 % de la referencia estimada para tu edad.» —Tarea 213—, y debajo la división con su emblema y su lugar entre las cinco, «La tercera de cinco divisiones.»), la fila «Con qué te comparas ›» ([CompareLink], solo con la referencia estimada), la escalera de divisiones con «Te faltan N aciertos»
- * y las semanas seguidas ([LadderCard]), la campana en su losa ([BellCard]), «Otras edades» y «Semana a semana»; con «Todavía somos pocos» o sin marca esta semana, en vez de la cifra y la escalera, su losa ([PlaceCard]: nada de umbrales inventados). Después, bajo el rótulo «Tus marcas»: las tres cifras ([StatsCard]), «Tus últimas 10 marcas» ([MarksCard]),
- * «Tu ritmo en la última partida» ([RhythmCard]) y las notas ([NotesCard]). **Al final de todo, nada** (Tarea 213: la frase larga y la fila «De dónde sale la referencia ›» que desde la Tarea 211 iban aquí desaparecieron; la explicación vive en la hoja que abre «Con qué te comparas ›»): solo, en depuración con datos de muestra, su aviso ([SampleFooter]). **Sin comparación**, la página es solo eso último, sin rótulos de sección y con la tercera cifra sin depender de otras personas. Una línea fina separa lo que una losa junta, y los gráficos van en una ventanilla noche ([NightWindow]).
+ * **Con Plus** vienen debajo, bajo el rótulo «Esta semana, comparado con tu edad», «tu lugar en detalle» ([HeroCard]: la frase «Con 46 aciertos, superas al 5 % de la referencia estimada para tu edad.», [LadderCard]: la escalera de divisiones con sus semanas seguidas, [BellCard], [OthersCard] y «Semana a semana»), y bajo «Tus marcas», «todas tus marcas» (las últimas 10 en [MarksCard],
+ * el ritmo en [RhythmCard] y las notas en [NotesCard]); el récord, la mejor de la semana y las partidas ya las dice lo gratis, así que las tres cifras de la Tarea 203 salieron. **Sin Plus** esas dos mitades son [LockedCard]: la imagen crema del kit sin saturación y un 12 % más oscura, el título legible en Rubik 18, el candado, «Con Nubi Plus: tu lugar en detalle.» / «Con Nubi Plus: todas tus marcas.»
+ * en tinta negrita y una silueta decorativa que el lector no lee; toda la losa es un botón que abre la hoja del candado. **Nunca va en gris**: la pestaña, «Jugar», el récord, la división ni «Con qué te comparas ›». El gris tampoco aparece a mitad de una partida ni en el final.
  *
- * Todo a 16 sp o más (14 sp solo los rótulos de los ejes); cada número con su unidad y en frase completa; nada solo por color (el récord lleva moneda con visto y la palabra; tu fila de la escalera, la división en palabras). [results] = TODAS las partidas del Contrarreloj; [selected] = el juego elegido; [now] = el momento de mirar.
+ * Todo a 16 sp o más (14 sp solo los rótulos de los ejes); cada número con su unidad y en frase completa; nada solo por color (el récord lleva moneda con visto y la palabra; tu fila de la escalera, la división en palabras; el gris, el candado y su frase). [results] = TODAS las partidas del Contrarreloj; [selected] = el juego elegido (sin Plus,
+ * el de [today]); [today] = el juego del día; [plus] = Nubi Plus ([onLocked] abre la hoja del candado); [onPlay] juega el juego elegido; [now] = el momento de mirar.
  */
 @Composable
 internal fun ContrarrelojPage(
   results: List<TimeTrialResult>,
   selected: String,
   onSelect: (String) -> Unit,
-  onBack: () -> Unit,
   now: Long,
   modifier: Modifier = Modifier,
   lang: AppLanguage = com.example.ui.i18n.LocalAppLanguage.current,
   compare: Comparison.Source? = null,
   ageRange: AgeRange? = null,
-  /** Abre «De dónde sale la referencia» (Tarea 209): la fila bajo la frase de la comparación. */
-  onOpenSource: () -> Unit = {}
+  /** Abre «De dónde sale la referencia» (Tarea 209): la fila «Con qué te comparas ›». */
+  onOpenSource: () -> Unit = {},
+  /** Nubi Plus (Tarea 215): con él, el selector se toca entero y las dos mitades de abajo van a color; sin él, el gris con candado. */
+  plus: Boolean = true,
+  /** El juego del día (`TimeTrialDay.gameFor`): el selector lo marca «Hoy» y, sin Plus, es el único que se toca. null = ninguno marcado. */
+  today: String? = null,
+  /** «Jugar · 2 minutos»: juega el juego elegido (sin Plus, siempre el de hoy). */
+  onPlay: () -> Unit = {},
+  /** Tocar algo en gris abre la hoja del candado. */
+  onLocked: () -> Unit = {}
 ) {
   val page = remember(results, selected, now) { TimeTrialMarks.page(results, selected, now) }
   val records = remember(results) { TimeTrialDay.GAMES.map { it to TimeTrialStats.record(results, it) } }
@@ -161,37 +173,50 @@ internal fun ContrarrelojPage(
     }
   ) {
     Column(Modifier.fillMaxSize().verticalScroll(scroll).testTag("contrarreloj_scroll")) {
-      PageHeader(onBack, kind = Comparison.kindOf(section), Modifier.onSizeChanged { headerPx = it.height })
+      PageHeader(compared = section != null, Modifier.onSizeChanged { headerPx = it.height })
       Spacer(Modifier.height(FadeHeight))
       Column(Modifier.padding(horizontal = PageMargin).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(CardGap)) {
-        GameSelector(records, selected, lang, onSelect)
+        GameSelector(records, selected, today, plus, lang, onSelect, onLocked)
         // Tarea 205b: hay referencia para este juego pero la persona no tiene franja de edad guardada (instaló antes de la Tarea 195): la página no se queda callada, dice dónde elegirla
         if (gate == Comparison.Gate.NEEDS_AGE) Text(Comparison.AGE_HINT, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_age_hint"))
         // Tarea 209: de 13 a 17 años la página lo DICE en vez de callar (esa franja no se compara, `Features.COMPARE_MINORS`): una línea corrida y sin negrita, donde van los demás avisos
         if (gate == Comparison.Gate.MINOR) Text(Comparison.MINORS_NOTICE, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_minors_notice"))
         // Tarea 207: con franja y tabla pero menos de tres partidas de este juego, UNA línea corrida y sin negrita donde iría el rótulo de la comparación: las primeras partidas sirven para conocer el juego y no se comparan
         if (gate == Comparison.Gate.EARLY) Text(Comparison.EARLY_NOTICE, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_early_notice"))
+
+        // ---- LO GRATIS: nunca en gris
+        FreeCard(page, section, onPlay)
         if (section != null) {
-          // primero la comparación (D2): la cifra, la escalera, la campana, otras edades y semana a semana; los rótulos solo con DOS secciones
-          CompareHeader()
-          when (val place = section.place) {
-            // Tarea 213: la fila «Con qué te comparas ›» va DEBAJO de la losa de la cifra (o de la de «Tu lugar esta semana», cuando no hay cifra) y antes de la escalera
-            is Comparison.Place.Found -> { HeroCard(place.ranked, section); CompareLink(section, onOpenSource); LadderCard(place.ranked, section); BellCard(place.ranked, section.range) }
-            else -> { PlaceCard(section); CompareLink(section, onOpenSource) }
-          }
-          section.others?.let { OthersCard(section, it) }
-          if (section.weeks.isNotEmpty()) PercentileWeeksCard(section.weeks, section.estimated)
-          SectionLabel(Comparison.SECTION_MARKS, "contrarreloj_section_marks")
+          // sin lugar que decir (sin marca esta semana, «Todavía somos pocos») va su losa; la fila «Con qué te comparas ›» queda DEBAJO de lo gratis, antes de lo de Plus (Tarea 213: debajo de la losa de la cifra)
+          if (section.place !is Comparison.Place.Found) PlaceCard(section)
+          CompareLink(section, onOpenSource)
         }
-        // después lo tuyo: tres cifras, las 10 marcas y el ritmo; al final, las notas
-        if (page.hasMarks) {
-          StatsCard(TimeTrialMarks.stats(page))
-          MarksCard(page, now)
-          RhythmCard(pace)
-        } else EmptyCard()
-        NotesCard(page, compared = section != null)
-        // Tarea 213: el pie de la Tarea 211 (la frase larga y la fila al final) desapareció: la explicación vive en la hoja que abre «Con qué te comparas ›». Solo queda, en depuración, el aviso de los datos de muestra
-        if (section != null) SampleFooter(section)
+
+        // ---- LO DE PLUS: a color con Plus; sin Plus, dos losas en gris con candado
+        if (plus) {
+          // «tu lugar en detalle»: bajo su rótulo solo va lo que hay (el rótulo no se queda solo); el de «Tus marcas» solo cuando hay dos secciones
+          val detail = section != null && (section.place is Comparison.Place.Found || section.others != null || section.weeks.isNotEmpty())
+          if (section != null && detail) {
+            CompareHeader()
+            (section.place as? Comparison.Place.Found)?.let { HeroCard(it.ranked, section); LadderCard(it.ranked, section); BellCard(it.ranked, section.range) }
+            section.others?.let { OthersCard(section, it) }
+            if (section.weeks.isNotEmpty()) PercentileWeeksCard(section.weeks, section.estimated)
+            SectionLabel(Comparison.SECTION_MARKS, "contrarreloj_section_marks")
+          }
+          // «todas tus marcas»: las últimas 10 y el ritmo; al final, las notas
+          if (page.hasMarks) {
+            MarksCard(page, now)
+            RhythmCard(pace)
+          } else EmptyCard()
+          NotesCard(page, compared = section != null)
+          // Tarea 213: el pie de la Tarea 211 (la frase larga y la fila al final) desapareció: la explicación vive en la hoja que abre «Con qué te comparas ›». Solo queda, en depuración, el aviso de los datos de muestra
+          if (section != null) SampleFooter(section)
+        } else {
+          // sin franja de edad, de 13 a 17 años o sin tabla del juego, Plus no daría «tu lugar»: no se vende en gris (antes de la tercera partida sí: con Plus se vería desde la tercera)
+          if (gate == Comparison.Gate.SHOW || gate == Comparison.Gate.EARLY) LockedCard("contrarreloj_locked_place", PlusAccess.LOCKED_PLACE_TITLE, PlusAccess.LOCKED_PLACE, onLocked) { PlaceSilhouette() }
+          LockedCard("contrarreloj_locked_marks", PlusAccess.LOCKED_MARKS_TITLE, PlusAccess.LOCKED_MARKS, onLocked) { MarksSilhouette() }
+          if (section != null) SampleFooter(section)
+        }
       }
     }
   }
@@ -199,32 +224,26 @@ internal fun ContrarrelojPage(
 
 // ------------------------------------------------------------------ la cabecera, sobre el cielo
 
-/** El disco de volver, «Contrarreloj» (Rubik, con tope de letra 1,3) y su subtítulo, que parte la línea por palabras bajo el título (del disco al margen). Todo con [OnBoardText]: el cielo tiene luceros. */
+/** «Contrarreloj» (Rubik, con tope de letra 1,3) y su subtítulo, que parte la línea por palabras. Sin flecha de volver: es una pestaña (Tarea 215). Todo con [OnBoardText]: el cielo tiene luceros. [compared] = hay comparación: «El Contrarreloj define tu lugar de la semana.». */
 @Composable
-private fun PageHeader(onBack: () -> Unit, kind: Comparison.Kind, modifier: Modifier = Modifier) {
-  Column(modifier.fillMaxWidth().padding(start = PageMargin, end = PageMargin, top = 8.dp).testTag("contrarreloj_header")) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-      KitBackButton(onBack, Modifier.testTag("contrarreloj_back"), label = "Volver a Avance")
-      Spacer(Modifier.width(16.dp))
-      CapScale(BIG_TEXT_SCALE_CAP) {
-        OnBoardText(TimeTrialMarks.TITLE, color = NubiTokens.OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 32.sp, modifier = Modifier.weight(1f).semantics { heading() }.testTag("contrarreloj_title"))
-      }
+private fun PageHeader(compared: Boolean, modifier: Modifier = Modifier) {
+  Column(modifier.fillMaxWidth().padding(start = 20.dp, end = PageMargin, top = 8.dp).testTag("contrarreloj_header")) {
+    CapScale(BIG_TEXT_SCALE_CAP) {
+      OnBoardText(TimeTrialMarks.TITLE, color = NubiTokens.OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 32.sp, modifier = Modifier.fillMaxWidth().semantics { heading() }.testTag("contrarreloj_title"))
     }
-    Row(Modifier.fillMaxWidth()) {
-      Spacer(Modifier.width(64.dp))
-      OnBoardText(TimeTrialMarks.subtitle(kind), color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.weight(1f).testTag("contrarreloj_subtitle"))
-    }
+    OnBoardText(TimeTrialMarks.subtitle(compared), color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().padding(top = 4.dp).testTag("contrarreloj_subtitle"))
   }
 }
 
 // ------------------------------------------------------------------ el selector de los cuatro juegos
 
 /**
- * Los cuatro juegos en losas: el emblema, el nombre y su récord («44 aciertos» o «sin marca aún»); el ELEGIDO va en lima con el visto sobre su emblema (forma y color, nunca solo color) y el lector de pantalla dice «Tinta o Palabra, récord 44 aciertos, elegido». Dos filas de dos, parejas (cada fila tiene el alto de su losa
- * más alta); si la palabra más larga («Acoplamiento») no cabe entera en media fila a la letra de la persona, UNA columna: una palabra nunca se parte. Cada losa se toca en 72 dp o más (la losa pide 78: 6 dp son su sombra).
+ * Los cuatro juegos en losas: el emblema, el nombre y su récord («44 aciertos» o «sin marca aún»); el ELEGIDO va en lima con el visto sobre su emblema (forma y color, nunca solo color) y el lector de pantalla dice «Tinta o Palabra, récord 44 aciertos, elegido». El de HOY lleva además la palabra «Hoy» (Tarea 215).
+ * **Sin Nubi Plus ([plus] falso) los otros tres van en gris con candado** (la misma imagen crema sin saturación, el candado sobre el emblema y «con Nubi Plus» para el lector) y tocarlos abre la hoja ([onLocked]); su récord sigue a la vista, porque es tuyo. Dos filas de dos, parejas (cada fila tiene el alto de su losa más alta);
+ * si la palabra más larga («Acoplamiento») no cabe entera en media fila a la letra de la persona, UNA columna: una palabra nunca se parte. Cada losa se toca en 72 dp o más (la losa pide 78: 6 dp son su sombra).
  */
 @Composable
-private fun GameSelector(records: List<Pair<String, Int?>>, selected: String, lang: AppLanguage, onSelect: (String) -> Unit) {
+private fun GameSelector(records: List<Pair<String, Int?>>, selected: String, today: String?, plus: Boolean, lang: AppLanguage, onSelect: (String) -> Unit, onLocked: () -> Unit) {
   val measurer = rememberTextMeasurer()
   val base = androidx.compose.material3.LocalTextStyle.current
   val density = LocalDensity.current
@@ -241,7 +260,8 @@ private fun GameSelector(records: List<Pair<String, Int?>>, selected: String, la
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
           row.forEach { i ->
             val (id, record) = records[i]
-            GameTile(id, titles[i], record, id == selected, { onSelect(id) }, Modifier.weight(1f).fillMaxHeight())
+            val locked = !plus && id != today
+            GameTile(id, titles[i], record, selected = id == selected, isToday = id == today, locked = locked, onClick = { if (locked) onLocked() else onSelect(id) }, modifier = Modifier.weight(1f).fillMaxHeight())
           }
         }
       }
@@ -254,20 +274,112 @@ private val TileEmblem = 36.dp
 private val TileGap = 10.dp
 
 @Composable
-private fun GameTile(gameId: String, title: String, record: Int?, selected: Boolean, onClick: () -> Unit, modifier: Modifier) {
+private fun GameTile(gameId: String, title: String, record: Int?, selected: Boolean, isToday: Boolean, locked: Boolean, onClick: () -> Unit, modifier: Modifier) {
   ClaySlab(
-    color = if (selected) SlabColor.LIME else SlabColor.CREAM, size = SlabSize.SMALL, onClick = onClick, role = Role.RadioButton, contentAlignment = Alignment.CenterStart,
-    modifier = modifier.heightIn(min = 78.dp).semantics(mergeDescendants = true) { this.selected = selected; contentDescription = TimeTrialMarks.tileSpoken(title, record, selected) }.testTag("contrarreloj_game_$gameId")
+    color = if (selected) SlabColor.LIME else SlabColor.CREAM, size = SlabSize.SMALL, onClick = onClick, role = if (locked) Role.Button else Role.RadioButton, contentAlignment = Alignment.CenterStart, locked = locked,
+    modifier = modifier.heightIn(min = 78.dp).semantics(mergeDescendants = true) { this.selected = selected; contentDescription = TimeTrialMarks.tileSpoken(title, record, selected, isToday, locked) }.testTag("contrarreloj_game_$gameId")
   ) {
     Row(Modifier.fillMaxWidth().padding(horizontal = TilePad, vertical = TilePad), verticalAlignment = Alignment.CenterVertically) {
-      GameEmblem(gameId, TileEmblem, Modifier.testTag("contrarreloj_game_emblem_$gameId"), done = selected)
+      GameEmblem(gameId, TileEmblem, Modifier.testTag("contrarreloj_game_emblem_$gameId"), done = selected, locked = locked)
       Spacer(Modifier.width(TileGap))
       Column(Modifier.weight(1f)) {
         Text(title, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 20.sp, modifier = Modifier.testTag("contrarreloj_game_name_$gameId"))
         Spacer(Modifier.height(4.dp))
         Text(TimeTrialMarks.tileValue(record).glueNumbers(), color = if (selected) Clay.Ink else Clay.InkMuted, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.testTag("contrarreloj_game_value_$gameId"))
+        // «Hoy»: el juego del día, en una pastilla plana de tinta al 12 % (forma y palabra, nunca solo color)
+        if (isToday) Text(
+          TimeTrialMarks.TODAY_TAG, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 20.sp,
+          modifier = Modifier.padding(top = 6.dp).clip(RoundedCornerShape(8.dp)).background(Clay.Ink.copy(alpha = 0.12f)).padding(horizontal = 8.dp, vertical = 1.dp).testTag("contrarreloj_game_today_$gameId")
+        )
       }
     }
+  }
+}
+
+// ------------------------------------------------------------------ lo gratis (Tarea 215)
+
+/**
+ * LO GRATIS, en UNA losa crema: «Jugar · 2 minutos» (sol; juega el juego elegido), «Tu récord: 44 aciertos.» (Fredoka 18), «Esta semana jugaste 3 partidas; la mejor, 41 aciertos.» y, con una comparación que decir ([Comparison.Place.Found]), una línea fina y la división con su emblema y su lugar entre las cinco ([DivisionLine]),
+ * «Te faltan 7 aciertos para En la Luna.» con su barra y «La semana cierra el domingo.» (antes lo daba la puerta de Avance, y la barra y el domingo eran de la escalera). Sin comparación queda solo lo de tus marcas. El lector de pantalla lee cada grupo por separado: el botón, el récord y la semana, y la división con su lugar.
+ */
+@Composable
+private fun FreeCard(page: TimeTrialMarks.Page, section: Comparison.Section?, onPlay: () -> Unit) {
+  val found = (section?.place as? Comparison.Place.Found)?.ranked
+  InfoCard("contrarreloj_free", null) {
+    KitButton(TimeTrialMarks.PLAY, onClick = onPlay, color = SlabColor.SUN, modifier = Modifier.testTag("btn_contrarreloj_play"))
+    Spacer(Modifier.height(12.dp))
+    Text(TimeTrialMarks.freeRecordLine(page.recordMark).glueNumbers(), color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.testTag("contrarreloj_free_record"))
+    Text(TimeTrialMarks.weekLine(page.thisWeek).glueNumbers(), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 4.dp).testTag("contrarreloj_free_week"))
+    if (found != null) {
+      val ladder = remember(found) { Comparison.ladder(found) }
+      ClayDivider("contrarreloj_divider_free")
+      DivisionLine(found)
+      Text(Comparison.needSentence(ladder, found).glueNumbers().glueNamesForLetter(), color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp, modifier = Modifier.padding(top = 12.dp).testTag("contrarreloj_ladder_need"))
+      ladder.progress?.let {
+        Spacer(Modifier.height(8.dp))
+        ProgressBar(it, "contrarreloj_ladder_bar")
+      }
+      Text(Comparison.CLOSES, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 8.dp).testTag("contrarreloj_ladder_closes"))
+    }
+  }
+}
+
+// ------------------------------------------------------------------ lo de Plus que no se tiene: la losa gris con candado (Tarea 215)
+
+/**
+ * Una mitad de lo de Plus VISTA pero no tenida (Fable §3.2): la losa crema del kit sin saturación y un 12 % más oscura ([com.example.ui.components.LockedSlabFilter], sin render nuevo), el [title] legible en tinta (Rubik 18), el candado del kit a 20 dp con [phrase] —«Con Nubi Plus: tu lugar en detalle.»— en tinta negrita de 16 sp
+ * y una silueta decorativa ([silhouette]: sin números ni letras; el lector de pantalla no la lee). Toda la losa es un botón que abre la hoja del candado ([onClick]); el lector dice «Con Nubi Plus: tu lugar en detalle. Botón.». Nada se dice solo con el color: lleva el candado y la frase.
+ */
+@Composable
+private fun LockedCard(tag: String, title: String, phrase: String, onClick: () -> Unit, silhouette: @Composable () -> Unit) {
+  ClaySlab(
+    SlabColor.CREAM, Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = phrase }.testTag(tag), size = SlabSize.LARGE, onClick = onClick, locked = true
+  ) {
+    Column(Modifier.fillMaxWidth().padding(16.dp)) {
+      Text(title, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 24.sp, modifier = Modifier.testTag("${tag}_title"))
+      Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        KitGlyph(Glyph.LOCK, size = 20.dp, modifier = Modifier.hiddenTag("${tag}_lock"))
+        Spacer(Modifier.width(8.dp))
+        Text(phrase, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp, modifier = Modifier.weight(1f).testTag("${tag}_phrase"))
+      }
+      Spacer(Modifier.height(12.dp))
+      Box(Modifier.fillMaxWidth().height(SilhouetteHeight).hiddenTag("${tag}_silhouette")) { silhouette() }
+    }
+  }
+}
+
+/** El alto de la silueta decorativa de una losa gris, y su color: un gris más claro que la losa (#D0D0D0). */
+private val SilhouetteHeight = 56.dp
+private val SilhouetteColor = Color.White.copy(alpha = 0.55f)
+
+/** «Tu lugar en detalle»: una escalera de barras a la izquierda y una campana a la derecha. Solo formas, sin números ni letras. */
+@Composable
+private fun PlaceSilhouette() {
+  Canvas(Modifier.fillMaxSize()) {
+    val h = size.height; val w = size.width
+    val rungs = 5; val rungH = h / (rungs * 2 - 1).toFloat(); val half = w * 0.42f
+    for (i in 0 until rungs) {                                       // la escalera: cinco peldaños que crecen
+      val bw = half * (0.35f + 0.65f * (i + 1) / rungs)
+      drawRoundRect(SilhouetteColor, topLeft = Offset(0f, i * 2 * rungH), size = Size(bw, rungH), cornerRadius = androidx.compose.ui.geometry.CornerRadius(rungH / 2))
+    }
+    val path = Path().apply {                                        // la campana
+      val x0 = w * 0.54f; val bell = w - x0
+      moveTo(x0, h)
+      for (i in 0..40) { val t = i / 40f; val x = x0 + bell * t; val y = h - h * 0.95f * Math.exp(-Math.pow((t - 0.5) / 0.18, 2.0)).toFloat(); lineTo(x, y) }
+      lineTo(w, h); close()
+    }
+    drawPath(path, SilhouetteColor)
+  }
+}
+
+/** «Todas tus marcas»: siete barras de alturas distintas sobre una base. Solo formas, sin números ni letras. */
+@Composable
+private fun MarksSilhouette() {
+  Canvas(Modifier.fillMaxSize()) {
+    val h = size.height; val w = size.width
+    val heights = listOf(0.45f, 0.7f, 0.55f, 0.9f, 0.62f, 0.8f, 1f)
+    val gap = 8.dp.toPx(); val bw = (w - gap * (heights.size - 1)) / heights.size
+    heights.forEachIndexed { i, f -> drawRoundRect(SilhouetteColor, topLeft = Offset(i * (bw + gap), h - h * f), size = Size(bw, h * f), cornerRadius = androidx.compose.ui.geometry.CornerRadius(6.dp.toPx())) }
   }
 }
 
@@ -294,20 +406,17 @@ private fun ThinLine() {
 }
 
 /**
- * La tarjeta de la cifra (D2; Tarea 213): UNA sola frase, «Con 46 aciertos, superas al 5 % de la referencia estimada para tu edad.», en Rubik Bold de 24 sp con tope de escala 1,3 como las cifras grandes (un tamaño de la escala de la página, un solo estilo: sin negritas sueltas dentro; «5 %» y «46 aciertos» no se
- * parten: [glueNumbers]) —decisión de Ricardo del 2-nov, «breve y claro; si explicas mucho se complica», en lugar de «63 de cada 100» con su frase de abajo, que muchos leían al revés—, y debajo, sin cambio, la división con nombre y su emblema de plasticina (Tarea 212) y su lugar entre las cinco
- * («La tercera de cinco divisiones.»). Si la comparación usó otra clase (las 4 semanas o las franjas juntas) la frase lo dice y, con las franjas juntas, una línea más. El lector de pantalla lo dice de corrido: la frase y después la división y su lugar ([Comparison.heroSpoken]).
- * El emblema es decorativo: la división ya está dicha en palabras.
+ * «Tu lugar en detalle», primera losa (D2; Tarea 213; Tarea 215): UNA sola frase, «Con 46 aciertos, superas al 5 % de la referencia estimada para tu edad.», en Rubik Bold de 24 sp con tope de escala 1,3 como las cifras grandes (un tamaño de la escala de la página, un solo estilo: sin negritas sueltas dentro; «5 %» y «46 aciertos» no se
+ * parten: [glueNumbers]) —decisión de Ricardo del 2-nov, «breve y claro; si explicas mucho se complica», en lugar de «63 de cada 100» con su frase de abajo, que muchos leían al revés—. Si la comparación usó otra clase (las 4 semanas o las franjas juntas) la frase lo dice y, con las franjas juntas, una línea más.
+ * **Desde la Tarea 215 la división, con su emblema de plasticina (Tarea 212) y su lugar entre las cinco, ya no va aquí sino arriba, en lo gratis ([FreeCard])**: esta losa es de Plus y la división no. El lector de pantalla lee la frase (y, con las franjas juntas, su línea).
  */
 @Composable
 private fun HeroCard(r: Comparison.Ranked, s: Comparison.Section) {
-  InfoCard("contrarreloj_hero", null, Modifier.semantics(mergeDescendants = true) { contentDescription = Comparison.heroSpoken(r, s.range) }) {
+  InfoCard("contrarreloj_hero", null, Modifier.semantics(mergeDescendants = true) { contentDescription = listOfNotNull(Comparison.heroSentence(r, s.range), Comparison.scopeLine(r)).joinToString(" ") }) {
     Column(Modifier.fillMaxWidth()) {
       CapScale(BIG_TEXT_SCALE_CAP) {
         Text(Comparison.heroSentence(r, s.range).glueNumbers(), color = Clay.Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 30.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_hero_sentence"))
       }
-      Spacer(Modifier.height(12.dp))
-      DivisionLine(r)
       Comparison.scopeLine(r)?.let { Text(it, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 8.dp).testTag("contrarreloj_hero_scope")) }
     }
   }
@@ -319,7 +428,7 @@ private fun HeroCard(r: Comparison.Ranked, s: Comparison.Section) {
  */
 @Composable
 private fun DivisionLine(r: Comparison.Ranked) {
-  Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+  Row(Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = "${r.division.label}. ${Comparison.divisionPlaceLine(r.division)}" }.testTag("contrarreloj_hero_division_line"), verticalAlignment = Alignment.Top) {
     DivisionEmblem(r.division, DivisionEmblemHero, Modifier.hiddenTag("contrarreloj_hero_emblem_${r.division.name}"))
     Spacer(Modifier.width(12.dp))
     Column(Modifier.weight(1f)) {
@@ -348,14 +457,9 @@ private fun LadderCard(r: Comparison.Ranked, s: Comparison.Section) {
       }
     }
     ClayDivider("contrarreloj_divider_ladder")
-    Text(Comparison.needSentence(ladder, r).glueNumbers().glueNamesForLetter(), color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.testTag("contrarreloj_ladder_need"))
-    ladder.progress?.let {
-      Spacer(Modifier.height(8.dp))
-      ProgressBar(it, "contrarreloj_ladder_bar")
-    }
-    Text(Comparison.CLOSES, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 8.dp).testTag("contrarreloj_ladder_closes"))
-    Comparison.streakSentence(Comparison.streak(s.weeks))?.let { Text(it, color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 4.dp).testTag("contrarreloj_ladder_streak")) }
-    Text(Comparison.ladderNote(r, s.range).glueNumbers().glueNamesForLetter(), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 12.dp).testTag("contrarreloj_ladder_note"))
+    // (Tarea 215: «Te faltan N aciertos», su barra y «La semana cierra el domingo.» subieron a lo gratis, [FreeCard]: eran lo que daba la puerta de Avance)
+    Comparison.streakSentence(Comparison.streak(s.weeks))?.let { Text(it, color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(bottom = 8.dp).testTag("contrarreloj_ladder_streak")) }
+    Text(Comparison.ladderNote(r, s.range).glueNumbers().glueNamesForLetter(), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("contrarreloj_ladder_note"))
   }
 }
 
@@ -423,44 +527,6 @@ private fun BellCard(r: Comparison.Ranked, range: AgeRange) {
 }
 
 // ------------------------------------------------------------------ «Tus marcas» (Tarea 203)
-
-/**
- * Las tres cifras de «Tus marcas» (D2): el récord, la mejor marca de esta semana y la tercera («partidas esta semana»; desde la Tarea 203b nunca depende de otras personas), cada una con su unidad debajo, en Rubik 24 con tope de escala 1,3.
- * Funde «Esta semana y la pasada», «Aciertos y errores» y «Pistas anteriores». Con letra de 1,3 o más, una columna: cada cifra con su rótulo al lado.
- */
-@Composable
-private fun StatsCard(stats: List<TimeTrialMarks.Stat>) {
-  val stacked = LocalDensity.current.fontScale >= BIG_TEXT_SCALE_CAP
-  InfoCard("contrarreloj_stats", null) {
-    if (stacked) {
-      stats.forEachIndexed { i, st ->
-        if (i > 0) ThinLine()
-        Row(Modifier.fillMaxWidth().padding(vertical = 8.dp).semantics(mergeDescendants = true) { contentDescription = TimeTrialMarks.statSpoken(st) }.testTag("contrarreloj_stat_$i"), verticalAlignment = Alignment.CenterVertically) {
-          StatFigure(st.figure, i)
-          Spacer(Modifier.width(12.dp))
-          Text(st.label, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.weight(1f).testTag("contrarreloj_stat_${i}_label"))
-        }
-      }
-    } else {
-      Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
-        stats.forEachIndexed { i, st ->
-          if (i > 0) Box(Modifier.width(1.dp).fillMaxHeight().background(Clay.Ink.copy(alpha = 0.14f)).hiddenTag("contrarreloj_stats_line_$i"))
-          Column(Modifier.weight(1f).padding(horizontal = 8.dp).semantics(mergeDescendants = true) { contentDescription = TimeTrialMarks.statSpoken(st) }.testTag("contrarreloj_stat_$i")) {
-            StatFigure(st.figure, i)
-            Text(st.label, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 4.dp).testTag("contrarreloj_stat_${i}_label"))
-          }
-        }
-      }
-    }
-  }
-}
-
-@Composable
-private fun StatFigure(figure: String, i: Int) {
-  CapScale(BIG_TEXT_SCALE_CAP) {
-    Text(figure.glueNumbers(), color = Clay.Ink, fontSize = 24.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 28.sp, softWrap = false, modifier = Modifier.testTag("contrarreloj_stat_${i}_figure"))
-  }
-}
 
 /** «Tus últimas 10 marcas» (y, bajo la ventanilla, el récord con su fecha y su paso): su propia losa. */
 @Composable
@@ -1066,14 +1132,6 @@ private fun OthersCard(s: Comparison.Section, o: Comparison.Others) {
     }
     if (o.hidden) Text(Comparison.OTHERS_HIDDEN, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 8.dp).testTag("contrarreloj_others_hidden"))
   }
-}
-
-/** La letra de [content] no pasa de [max] veces el tamaño base (los números y títulos grandes: con 2,0 se saldrían del margen). */
-@Composable
-internal fun CapScale(max: Float, content: @Composable () -> Unit) {
-  val d = LocalDensity.current
-  if (d.fontScale <= max) { content(); return }
-  CompositionLocalProvider(LocalDensity provides Density(d.density, max)) { content() }
 }
 
 /**

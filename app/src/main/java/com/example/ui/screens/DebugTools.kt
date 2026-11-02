@@ -116,7 +116,7 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
     DebugButton(if (tutorialOverlay) "[Debug] Rectángulos del tutorial: SÍ (tocar para quitar)" else "[Debug] Rectángulos del tutorial: NO (tocar para ver)", "btn_debug_tutorial_overlay") { tutorialOverlay = !tutorialOverlay }
     if (com.example.Features.LEAGUES) DebugButton("[Debug] Ver celebración de ascenso de liga", "btn_debug_promotion") { viewModel.debugShowPromotion() }
     DebugButton("[Debug] Ver celebración de logro", "btn_debug_achievement") { viewModel.debugShowAchievement() }
-    // Nubi Plus (Tarea 199, `PlusAccess`): la compra llega con Google Play Billing (Etapa 4); mientras, este botón enciende o apaga la página «Contrarreloj» de Avance y el atajo del final. Las builds de depuración empiezan con Plus encendido.
+    // Nubi Plus (Tarea 199, `PlusAccess`): la compra llega con Google Play Billing (Etapa 4); mientras, este botón enciende o apaga las dos mitades de Plus de la pestaña «Contrarreloj» y el atajo del final. Las builds de depuración empiezan con Plus encendido.
     val plus by viewModel.plus.collectAsState()
     DebugButton(if (plus) "[Debug] Nubi Plus: SÍ (tocar para quitar)" else "[Debug] Nubi Plus: NO (tocar para poner)", "btn_debug_plus") { viewModel.setPlus(!plus) }
     // La comparación (Tareas 202, 202b y 205): el valor de fábrica es la «referencia» estimada, lo mismo que ve la tienda; los otros tres son datos de muestra («muchos», «pocos» y «muy pocos», los dos mundos de «Todavía somos pocos»): este botón da la vuelta entre los cuatro.

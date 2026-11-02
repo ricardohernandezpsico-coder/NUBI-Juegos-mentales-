@@ -26,17 +26,18 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
 /**
- * Las 3 pestañas (Tarea 158, 21-oct, «La isla es el mapa»): Hoy (jugar: la isla es el mapa de los juegos), Avance (ver cómo voy) y Tú (lo mío: tu isla, tu nombre, tus medallas y los Ajustes). Antes eran Hoy, Juegos y Avance (29-sep): Juegos repetía lo de Hoy y de Avance
- * (las cuatro áreas con la misma lámina) y se fue; sus juegos se eligen en la isla o en «Todos los juegos» (Hoy).
+ * Las 4 pestañas (Tarea 215, 2-nov; antes 3, Tarea 158): Hoy (jugar: la ruta del día), Contrarreloj (¿cuál es mi marca y dónde quedo?: la página que antes vivía dentro de Avance), Avance (cómo voy en las cuatro áreas) y Tú (lo mío: tu nombre, tus medallas y los Ajustes).
+ * El orden es el de la barra y el del pager (`ordinal`): Hoy y Avance ya no son vecinas, así que entre ellas, como entre Hoy y Tú o Contrarreloj y Tú, hay un fundido y no un deslizado (Tarea 184, `TabPager`).
  */
 enum class AppTab(val title: String) {
   HOY("Hoy"),
+  CONTRARRELOJ("Contrarreloj"),
   PROGRESO("Avance"),
   TU("Tú")
 }
 
 /** Lo que se abre encima de una pestaña como panel: los Ajustes (desde «Tú»). El Perfil ya no es un panel: es la pestaña «Tú» (Tarea 158). */
-/** Los paneles con flecha que se abren encima de una pestaña: Ajustes y «En qué se basa Nubi» (Tarea 185), «Preguntas frecuentes» (desde Tú) y «De dónde sale la referencia» (desde la página Contrarreloj de Avance y su hoja del candado; Tarea 209). */
+/** Los paneles con flecha que se abren encima de una pestaña: Ajustes y «En qué se basa Nubi» (Tarea 185), «Preguntas frecuentes» (desde Tú) y «De dónde sale la referencia» (desde la pestaña Contrarreloj y su hoja del candado; Tarea 209). */
 enum class TopPanel { AJUSTES, FUENTES, PREGUNTAS, REFERENCIA }
 
 /**
@@ -491,14 +492,23 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   /**
    * «Contrarreloj de hoy» (Tarea 177; `docs/contrarreloj.md`): el juego de la fecha (el mismo para todas las personas: rotación fija sobre los cuatro de la primera tanda) en «La escalera de 2 minutos»: 120 s, la pista fija del día, sin dificultad adaptativa. NO es la ruta (no la avanza) y se
-   * puede repetir sin límite; gratis; no cuenta para el futuro tope de partidas libres (`TimeTrialDay.COUNTS_FOR_FREE_CAP`). Al terminar vuelve a donde se vino (Hoy, o «Todos los juegos» si se lanzó desde la ficha). [gameId] lo piden «Otra vez» (el mismo juego, con una pista nueva, aunque el día haya
+   * puede repetir sin límite; gratis; no cuenta para el futuro tope de partidas libres (`TimeTrialDay.COUNTS_FOR_FREE_CAP`). Al terminar vuelve a donde se vino (Hoy; «Todos los juegos» si se lanzó desde la ficha; la pestaña «Contrarreloj» si [fromTab], Tarea 215). [gameId] lo piden «Otra vez» (el mismo juego, con una pista nueva, aunque el día haya
    * cambiado mientras se jugaba) y el botón «Contrarreloj» de la ficha (Tarea 181: CUALQUIERA de los cuatro juegos, con la fecha y la versión de la pista de ese juego, como Hoy; se guarda igual y, si es el juego del día, Hoy lo ve como jugado o con marca nueva porque su estado sale de la tabla).
    */
-  fun startTimeTrial(gameId: String? = null, day: String? = null) {
+  fun startTimeTrial(gameId: String? = null, day: String? = null, fromTab: Boolean = false) {
     val d = day ?: repository.todayKey()
     val g = gameId ?: com.example.data.TimeTrialDay.gameFor(d)
-    rememberOrigin(ORIGIN_HOY, g)
+    rememberOrigin(if (fromTab) ORIGIN_CONTRARRELOJ else ORIGIN_HOY, g)
     launchGame(g, timeTrialDay = d)
+  }
+
+  /**
+   * «Otra vez» del final del Contrarreloj: el mismo juego con una pista nueva (Tarea 210), y al terminar vuelve a donde se vino la primera vez (Hoy, o la pestaña «Contrarreloj», Tarea 215): el origen que ya estaba anotado para este juego se conserva en vez de pasar siempre a Hoy.
+   */
+  fun timeTrialAgain(gameId: String, day: String) {
+    val origin = if (focusPrefs.getString("origin_game", null) == gameId) focusPrefs.getString("origin", null) else null
+    rememberOrigin(origin ?: ORIGIN_HOY, gameId)
+    launchGame(gameId, timeTrialDay = day)
   }
 
   /**
@@ -872,6 +882,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     val origin = if (gameId != null && focusPrefs.getString("origin_game", null) == gameId) focusPrefs.getString("origin", null) else null
     when (origin) {
       ORIGIN_HOY -> { _currentTab.value = AppTab.HOY; _avanceArea.value = null }
+      ORIGIN_CONTRARRELOJ -> { _currentTab.value = AppTab.CONTRARRELOJ; _allGames.value = null; _avanceArea.value = null }
       else -> { _allGames.value = null; _avanceArea.value = null }
     }
     focusPrefs.edit().remove("origin").remove("origin_game").apply()
@@ -913,9 +924,10 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   /** «‹ Avance» o Atrás en la página de un área: vuelve a la lista de áreas, donde estaba. */
   fun closeAvanceArea() { _avanceArea.value = null }
 
-  // La página «Contrarreloj» abierta en Avance (Tarea 199; el id del juego elegido en su selector, null = cerrada). Como la de un área: vive solo en memoria, Atrás vuelve a la lista de Avance y cambiar de pestaña la cierra.
-  private val _contrarreloj = MutableStateFlow<String?>(null)
-  val contrarreloj: StateFlow<String?> = _contrarreloj.asStateFlow()
+  // El juego elegido en el selector de la pestaña «Contrarreloj» (Tarea 215; antes la página vivía dentro de Avance y esto era «la página abierta», Tarea 199): null = el juego de hoy. Vive solo en memoria y NO se cierra al cambiar de pestaña: es una pestaña, no una lámina,
+  // y quien eligió Rescate relámpago lo encuentra elegido al volver (también tras jugarlo). Sin Nubi Plus la pantalla muestra siempre el de hoy, aunque aquí quede otro.
+  private val _contrarrelojGame = MutableStateFlow<String?>(null)
+  val contrarrelojGame: StateFlow<String?> = _contrarrelojGame.asStateFlow()
 
   /** Nubi Plus (una sola fuente local: `PlusAccess`). */
   val plus: StateFlow<Boolean> = repository.plus
@@ -927,17 +939,11 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   fun setCompareWorld(world: com.example.data.SampleComparison.World) = repository.setCompareWorld(world)
 
-  /** Abre la página con [gameId] elegido (por defecto, el juego de hoy). */
-  fun openContrarreloj(gameId: String? = null) { _contrarreloj.value = gameId ?: com.example.data.TimeTrialDay.gameFor(repository.dateKeyOf(System.currentTimeMillis())) }
-
-  /** Elige otro juego en el selector de la página. */
-  fun selectContrarrelojGame(gameId: String) { if (_contrarreloj.value != null) _contrarreloj.value = gameId }
-
-  /** «‹ Avance» o Atrás en la página: vuelve a la lista de Avance, donde estaba. */
-  fun closeContrarreloj() { _contrarreloj.value = null }
+  /** Elige otro juego en el selector de la pestaña «Contrarreloj». */
+  fun selectContrarrelojGame(gameId: String) { _contrarrelojGame.value = gameId }
 
   /**
-   * «Todas tus marcas ›» del final del Contrarreloj (solo con Plus): deja el final, va a Avance y abre la misma página con el juego que se acaba de jugar elegido. No es otra puerta: es la misma vista desde donde nació la marca. Atrás vuelve a la lista de Avance.
+   * «Todas tus marcas ›» del final del Contrarreloj (solo con Plus): deja el final y va a la pestaña «Contrarreloj» con el juego que se acaba de jugar elegido (Tarea 215: antes abría la página dentro de Avance). No es otra puerta: es la misma vista desde donde nació la marca.
    */
   fun openContrarrelojFromFinal(gameId: String) {
     focusPrefs.edit().remove("origin").remove("origin_game").apply()
@@ -945,15 +951,14 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     _avanceArea.value = null
     _activeGame.value = null
     _lastResult.value = null
-    _currentTab.value = AppTab.PROGRESO
-    _contrarreloj.value = gameId
+    _currentTab.value = AppTab.CONTRARRELOJ
+    _contrarrelojGame.value = gameId
   }
 
   /** Nada abierto sobre las pestañas (y sin origen que recordar). */
   private fun clearOpenSheets() {
     _allGames.value = null
     _avanceArea.value = null
-    _contrarreloj.value = null
     focusPrefs.edit().remove("origin").remove("origin_game").apply()
   }
 
@@ -1126,6 +1131,8 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   private companion object {
     const val ORIGIN_HOY = "hoy"
+    /** La partida se lanzó desde la pestaña «Contrarreloj» (Tarea 215): al cerrar el resultado se vuelve a ella. */
+    const val ORIGIN_CONTRARRELOJ = "contrarreloj"
   }
 
   fun triggerHapticFeedback(type: HapticType = HapticType.LIGHT) {

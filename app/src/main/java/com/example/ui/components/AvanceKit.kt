@@ -85,11 +85,11 @@ internal fun KitPieceImage(key: String, @DrawableRes res: Int, modifier: Modifie
 }
 
 /**
- * El emblema de un juego: su ficha (64 dp de cuerpo, en el pastel de su área, con el objeto del juego) a [size] dp. Con [done], el sello lima con el ✓ de «jugado hoy» (forma, no solo color). Un juego sin emblema (retirado) cae al planeta de siempre.
+ * El emblema de un juego: su ficha (64 dp de cuerpo, en el pastel de su área, con el objeto del juego) a [size] dp. Con [done], el sello lima con el ✓ de «jugado hoy» (forma, no solo color); con [locked] (Tarea 215), el sello crema con el candado. Un juego sin emblema (retirado) cae al planeta de siempre.
  * La caja es cuadrada de [size] para que las filas se alineen.
  */
 @Composable
-internal fun GameEmblem(gameId: String, size: Dp, modifier: Modifier = Modifier, done: Boolean = false) {
+internal fun GameEmblem(gameId: String, size: Dp, modifier: Modifier = Modifier, done: Boolean = false, locked: Boolean = false) {
   val res = emblemRes(gameId)
   if (res == null) { MiniPlanet(gameId, size, modifier, done); return }
   Box(modifier.size(size), contentAlignment = Alignment.Center) {
@@ -99,6 +99,12 @@ internal fun GameEmblem(gameId: String, size: Dp, modifier: Modifier = Modifier,
         Modifier.align(Alignment.TopEnd).offset(x = 4.dp, y = (-4).dp).size(size * 0.42f).clip(CircleShape).background(Clay.Lime).border(2.dp, Clay.Ink, CircleShape),
         contentAlignment = Alignment.Center
       ) { KitGlyph(Glyph.CHECK, size = size * 0.3f) }
+    } else if (locked) {
+      // el mismo sello que el visto, en crema y con el candado: «de Nubi Plus y no lo tienes» (Tarea 215, selector de la pestaña Contrarreloj)
+      Box(
+        Modifier.align(Alignment.TopEnd).offset(x = 4.dp, y = (-4).dp).size(size * 0.5f).clip(CircleShape).background(Clay.Cream).border(2.dp, Clay.Ink, CircleShape),
+        contentAlignment = Alignment.Center
+      ) { KitGlyph(Glyph.LOCK, size = size * 0.34f) }
     }
   }
 }

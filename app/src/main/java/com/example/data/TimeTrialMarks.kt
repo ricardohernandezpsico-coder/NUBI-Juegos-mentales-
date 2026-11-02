@@ -1,7 +1,7 @@
 package com.example.data
 
 /**
- * Lo que dice la PÁGINA «Contrarreloj» de Avance (Tarea 199; `auditoria-fable/estadisticas-contrarreloj.md` §2.1 y §11), SOLO contigo y SIN servidor: sale entero de las partidas guardadas ([TimeTrialResult], tabla `time_trial_results`) y de [TimeTrialStats]; no hay tabla ni migración nuevas.
+ * Lo que dice la PÁGINA «Contrarreloj» (hoy la pestaña de al lado de Hoy, Tarea 215; antes una página dentro de Avance, Tarea 199; `auditoria-fable/estadisticas-contrarreloj.md` §2.1 y §11), SOLO contigo y SIN servidor: sale entero de las partidas guardadas ([TimeTrialResult], tabla `time_trial_results`) y de [TimeTrialStats]; no hay tabla ni migración nuevas.
  * Todo del MISMO juego y la MISMA versión de la pista ([TimeTrialDay.ofGame]): las marcas de otra pista no se comparan (solo el récord de la pista anterior queda aparte, en «Pistas anteriores»). Lógica pura, con pruebas (`TimeTrialMarksTest`).
  */
 object TimeTrialMarks {
@@ -10,22 +10,37 @@ object TimeTrialMarks {
   const val HALF = 5
 
   const val TITLE = "Contrarreloj"
+
+  /** El subtítulo de la pestaña SIN comparación (sin franja de edad, de 13 a 17 años, antes de la tercera partida o sin tabla del juego): lo que se ve es solo tuyo. */
   const val SUBTITLE = "Tus marcas, comparadas solo contigo."
 
-  /** El subtítulo cuando la página trae la comparación con personas de tu edad (datos de muestra de depuración; mañana, personas reales; Tarea 202b): «solo contigo» sería falso. */
-  const val SUBTITLE_COMPARED = "Tus marcas, comparadas contigo y con personas de tu edad."
+  /**
+   * El subtítulo CON comparación (Tarea 215, frase de Ricardo): lo gratis de la pestaña ya dice la división de la semana, así que la cabecera lo cuenta en una frase corta, sin decir con qué se compara (eso lo dice «Con qué te comparas ›»).
+   * Reemplaza a «Tus marcas, comparadas contigo y con una referencia estimada para tu edad.» (Tarea 205) y a su versión con personas.
+   */
+  const val SUBTITLE_PLACE = "El Contrarreloj define tu lugar de la semana."
 
-  /** Con la REFERENCIA ESTIMADA (Tarea 205): nunca «personas». */
-  const val SUBTITLE_ESTIMATED = "Tus marcas, comparadas contigo y con una referencia estimada para tu edad."
-
-  fun subtitle(kind: Comparison.Kind): String = when (kind) {
-    Comparison.Kind.NONE -> SUBTITLE
-    Comparison.Kind.ESTIMATED -> SUBTITLE_ESTIMATED
-    Comparison.Kind.PEOPLE -> SUBTITLE_COMPARED
-  }
+  fun subtitle(compared: Boolean): String = if (compared) SUBTITLE_PLACE else SUBTITLE
   const val FIRST_MARK = "Tu primera marca. Desde la segunda, se dibujan aquí."
-  const val NO_MARKS_DOOR = "Todavía sin marcas"
   const val NO_MARK_TILE = "sin marca aún"
+
+  /** El botón de lo gratis (Tarea 215): jugar el juego elegido, 2 minutos. */
+  const val PLAY = "Jugar · ${TimeTrialDay.MINUTES_TEXT}"
+
+  /** La pastilla del selector que marca el juego del día. */
+  const val TODAY_TAG = "Hoy"
+
+  /** «Tu récord: 44 aciertos.» de lo gratis; sin marca en el juego, qué falta. */
+  fun freeRecordLine(record: Int?): String = record?.let { TimeTrialDay.recordLine(it) } ?: "Todavía no tienes récord en este juego."
+
+  /**
+   * «Esta semana jugaste 3 partidas; la mejor, 41 aciertos.» (lo gratis, Tarea 215; reemplaza a la cifra «partidas esta semana» de la Tarea 203): las partidas de esta semana de la pista de hoy y su mejor marca. Con una sola, «Esta semana jugaste 1 partida; la mejor, 41 aciertos.»;
+   * sin ninguna, «Esta semana todavía no jugaste.».
+   */
+  fun weekLine(week: WeekSummary): String {
+    val best = week.best ?: return "Esta semana todavía no jugaste."
+    return "Esta semana jugaste ${if (week.games == 1) "1 partida" else "${week.games} partidas"}; la mejor, ${TimeTrialDay.hitsText(best)}."
+  }
   const val OLDER_NOTE = "Las marcas de otra pista no se comparan."
 
   /** Las partidas de una semana: cuántas y la mejor marca (null = ninguna). */
@@ -123,27 +138,6 @@ object TimeTrialMarks {
   /** Una fila «rótulo … cifra» dicha de corrido: «Desde 39 aciertos, En órbita». */
   fun rowSpoken(label: String, value: String): String = "$label, $value"
 
-  /** Una de las tres cifras de «Tus marcas»: la [figure] y su [label] con la unidad («44» · «aciertos, tu récord»). */
-  data class Stat(val figure: String, val label: String)
-
-  /**
-   * Las tres cifras de «Tus marcas» (Tarea 203; `auditoria-fable/contrarreloj-rediseno.md` §3.3): el récord («44 · aciertos, tu récord»), la mejor marca de esta semana («43 · aciertos esta semana»; sin partida esta semana, «0 · partidas esta semana») y la tercera: las partidas de esta semana
-   * (o, si ya las dice la segunda cifra, las de siempre); nunca depende de otras personas (la versión de la Tarea 203 con «3 de 4 semanas arriba de la mitad» se quitó en la 203b). Cada cifra con su unidad; nunca un número suelto. Sin récord (sin marcas) la página no usa esta lista.
-   */
-  fun stats(page: Page): List<Stat> {
-    val week = page.thisWeek
-    val record = Stat((page.record?.mark ?: 0).toString(), "aciertos, tu récord")
-    val second = week.best?.let { Stat(it.toString(), if (it == 1) "acierto esta semana" else "aciertos esta semana") } ?: Stat("0", "partidas esta semana")
-    val third = when {
-      week.best != null -> Stat(week.games.toString(), if (week.games == 1) "partida esta semana" else "partidas esta semana")
-      else -> Stat(page.total.toString(), if (page.total == 1) "partida en total" else "partidas en total")
-    }
-    return listOf(record, second, third)
-  }
-
-  /** Para el lector de pantalla: «44 aciertos, tu récord», «3 partidas esta semana». */
-  fun statSpoken(stat: Stat): String = "${stat.figure} ${stat.label}"
-
   /** «Tu récord es del 17 de octubre; llegaste al paso 4 de 5 de la pista.» (bajo las 10 marcas: la fecha y el paso del récord). */
   fun recordLine(record: TimeTrialResult, now: Long, maxLevel: Int): String =
     "Tu récord es del ${TuStats.since(record.timestamp, now)}; llegaste al paso ${record.level.coerceIn(1, maxLevel)} de $maxLevel de la pista."
@@ -154,19 +148,11 @@ object TimeTrialMarks {
   /** Lo que dice cada juego en el selector: su récord («44 aciertos») o «sin marca aún». */
   fun tileValue(record: Int?): String = record?.let { TimeTrialDay.hitsText(it) } ?: NO_MARK_TILE
 
-  /** Para el lector de pantalla: «Tinta o Palabra, récord 44 aciertos, elegido». */
-  fun tileSpoken(title: String, record: Int?, selected: Boolean): String =
-    title + ", " + (record?.let { "récord ${TimeTrialDay.hitsText(it)}" } ?: NO_MARK_TILE) + if (selected) ", elegido" else ""
-
-  /** La segunda línea de la puerta de Avance: «Tu récord de hoy: 44 aciertos» (el juego del día) o «Todavía sin marcas». */
-  fun doorLine(record: Int?): String = record?.let { "Tu récord de hoy: ${TimeTrialDay.hitsText(it)}" } ?: NO_MARKS_DOOR
-
   /**
-   * Lo que lee el lector de pantalla de la puerta: el título y la línea de abajo (y el candado, sin Plus). [lockLabel] es el del candado de la puerta ([PlusAccess.lockLabel]: el largo con comparación, «Con Nubi Plus» sin ella; Tarea 209);
-   * si ya termina en punto, no se le suma otro.
+   * Para el lector de pantalla: «Tinta o Palabra, récord 44 aciertos, el de hoy, elegido» (Tarea 215: [today] = el juego del día) o, en gris, «Rescate relámpago, récord 12 aciertos, con Nubi Plus» ([locked]: sin Plus, tocarlo abre la hoja del candado).
    */
-  fun doorSpoken(record: Int?, plus: Boolean, freeLine: String? = null, lockLabel: String = PlusAccess.LOCK_LABEL): String =
-    "Tus marcas del Contrarreloj. ${doorLine(record)}" + if (plus) "." else ". " + (freeLine?.let { "$it " } ?: "") + lockLabel + (if (lockLabel.endsWith(".")) "" else ".")
+  fun tileSpoken(title: String, record: Int?, selected: Boolean, today: Boolean = false, locked: Boolean = false): String =
+    title + ", " + (record?.let { "récord ${TimeTrialDay.hitsText(it)}" } ?: NO_MARK_TILE) + (if (today) ", el de hoy" else "") + (if (selected) ", elegido" else "") + (if (locked) ", con Nubi Plus" else "")
 
   // ------------------------------------------------------------------ el ritmo de la última partida (Tarea 200; `auditoria-fable/nubi-plus-comparacion.md` §2.3)
 

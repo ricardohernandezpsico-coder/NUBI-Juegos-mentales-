@@ -31,6 +31,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -139,10 +141,20 @@ internal fun nineSlice(slab: KitSlab, pxPerDp: Float, density: Float, body: Rect
   return out
 }
 
-/** Dibuja la losa [image] como nine-slice sobre [body] (px). */
-internal fun DrawScope.drawNineSlice(image: ImageBitmap, slab: KitSlab, pxPerDp: Float, body: Rect, alpha: Float = 1f) {
+/**
+ * El filtro de la losa «de Nubi Plus que no tienes» (Tarea 215; `auditoria-fable/idea-pestana-contrarreloj.md` §3.2): la MISMA imagen del kit sin saturación (grises por luminancia) y un 12 % más oscura, sin render nuevo. La crema queda en un gris de ~#D0D0D0: contra la crema normal
+ * 1,32 a 1 (se nota que es otra) y contra el cielo 10 a 1; la tinta sobre ella, 11,3 a 1. El estado nunca depende solo de este color: lleva el candado y «Con Nubi Plus: …» en palabras.
+ */
+internal val LockedSlabFilter: ColorFilter = run {
+  val k = 0.88f                                     // 12 % más oscura
+  val r = 0.299f * k; val g = 0.587f * k; val b = 0.114f * k
+  ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(r, g, b, 0f, 0f, r, g, b, 0f, 0f, r, g, b, 0f, 0f, 0f, 0f, 0f, 1f, 0f)))
+}
+
+/** Dibuja la losa [image] como nine-slice sobre [body] (px); con [colorFilter] (la losa «de Plus que no tienes»: [LockedSlabFilter]) la imagen sale con ese filtro. */
+internal fun DrawScope.drawNineSlice(image: ImageBitmap, slab: KitSlab, pxPerDp: Float, body: Rect, alpha: Float = 1f, colorFilter: ColorFilter? = null) {
   for (p in nineSlice(slab, pxPerDp, density, body)) {
-    drawImage(image, srcOffset = IntOffset(p.srcX, p.srcY), srcSize = IntSize(p.srcW, p.srcH), dstOffset = IntOffset(p.dstX, p.dstY), dstSize = IntSize(p.dstW, p.dstH), alpha = alpha, filterQuality = FilterQuality.High)
+    drawImage(image, srcOffset = IntOffset(p.srcX, p.srcY), srcSize = IntSize(p.srcW, p.srcH), dstOffset = IntOffset(p.dstX, p.dstY), dstSize = IntSize(p.dstW, p.dstH), alpha = alpha, colorFilter = colorFilter, filterQuality = FilterQuality.High)
   }
 }
 
@@ -186,6 +198,8 @@ internal fun ClaySlab(
   contentAlignment: Alignment = Alignment.TopStart,
   /** Lo que dice el lector de pantalla que pasa al tocar («Mostrar opciones»); sin valor, solo «tocar dos veces para activar». */
   onClickLabel: String? = null,
+  /** La losa «de Nubi Plus que no tienes» (Tarea 215): la misma imagen en gris ([LockedSlabFilter]). Solo cambia lo que se dibuja; quien la usa pone el candado y la frase «Con Nubi Plus: …» dentro. */
+  locked: Boolean = false,
   content: @Composable BoxScope.() -> Unit
 ) {
   val spec = rememberClayKitSpec()
@@ -206,8 +220,9 @@ internal fun ClaySlab(
     Box(
       Modifier.matchParentSize().drawBehind {
         val body = Rect(Offset.Zero, Size(this.size.width, this.size.height))
-        if (p < 1f) drawNineSlice(normal, slab, spec.pxPerDp, body, alpha = 1f - p)
-        if (p > 0f) drawNineSlice(pressedImg, slab, spec.pxPerDp, body, alpha = p)
+        val filter = if (locked) LockedSlabFilter else null
+        if (p < 1f) drawNineSlice(normal, slab, spec.pxPerDp, body, alpha = 1f - p, colorFilter = filter)
+        if (p > 0f) drawNineSlice(pressedImg, slab, spec.pxPerDp, body, alpha = p, colorFilter = filter)
       }
     )
     Box(Modifier.offset(y = (slab.pressTextDy * p).dp)) { content() }

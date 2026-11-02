@@ -32,7 +32,6 @@ import com.example.data.TimeTrialResult
 import com.example.model.AgeRange
 import com.example.ui.components.BoardBackground
 import com.example.ui.components.LocalReduceMotion
-import com.example.ui.screens.ContrarrelojDoor
 import com.example.ui.screens.ContrarrelojPage
 import com.example.ui.screens.PanelHeader
 import com.example.ui.screens.PlusLockSheetContent
@@ -104,31 +103,16 @@ class Tarea209CapturasTest {
   // ---------------------------------------------------------------- la página con su frase nueva, su enlace y el lugar de la división
 
   @Test fun a_comparacion_393_10() {
-    shot("a") { ContrarrelojPage(results = results, selected = "stroop", onSelect = {}, onBack = {}, now = now, compare = estWorld, ageRange = AgeRange.R45_54) }
+    shot("a") { ContrarrelojPage(results = results, selected = "stroop", onSelect = {}, now = now, compare = estWorld, ageRange = AgeRange.R45_54) }
     // baja hasta el rótulo de la comparación para que se vea la frase, el enlace y la cifra con su lugar
     scrollTo("contrarreloj_section_compare")
     save("comparacion_393_10")
   }
 
   @Test fun b_menores_393_10() {
-    shot("b") { ContrarrelojPage(results = results, selected = "stroop", onSelect = {}, onBack = {}, now = now, compare = estWorld, ageRange = AgeRange.R13_17) }
+    shot("b") { ContrarrelojPage(results = results, selected = "stroop", onSelect = {}, now = now, compare = estWorld, ageRange = AgeRange.R13_17) }
     save("menores_393_10")
   }
-
-  // ---------------------------------------------------------------- la puerta de Avance sin Plus: la frase gratis dice el lugar y el candado dice qué agrega Plus
-
-  private fun door(scale: Float, name: String) {
-    val free = Comparison.freeSentenceFor(estWorld, "stroop", AgeRange.R45_54, results, now)
-    shot(name, scale) {
-      Column(Modifier.fillMaxSize().padding(horizontal = 16.dp).padding(top = 16.dp)) {
-        ContrarrelojDoor(record = 64, plus = false, onClick = {}, freeLine = free, lockLabel = PlusAccess.lockLabel(Comparison.Kind.ESTIMATED))
-      }
-    }
-    save(name)
-  }
-
-  @Test fun c_puerta_393_10() = door(1f, "puerta_393_10")
-  @Test fun c2_puerta_393_20() = door(2f, "puerta_393_20")
 
   // ---------------------------------------------------------------- la hoja del candado (el contenido, sin Dialog)
 

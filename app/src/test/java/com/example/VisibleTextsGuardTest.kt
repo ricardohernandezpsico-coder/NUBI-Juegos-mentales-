@@ -1,6 +1,8 @@
 package com.example
 
 import com.example.data.HealthNotice
+import com.example.data.PlusAccess
+import com.example.data.TimeTrialMarks
 import com.example.model.AppLanguage
 import com.example.model.WeeklyChallengeRegistry
 import com.example.ui.i18n.getTranslations
@@ -346,12 +348,37 @@ class VisibleTextsGuardTest {
   fun `lo que Avance dice de las medidas va en segundos y en palabras, sin milisegundos ni abreviaturas`() {
     val found = mutableListOf<String>()
     val bad = listOf(" ms", "°", " dp", "pts", "sem.", "→", "▲", "▼", " seg.")
-    for (name in listOf("ui/screens/AvanceAreas.kt", "ui/screens/AvanceAreaPage.kt", "ui/screens/ContrarrelojPage.kt", "ui/screens/ContrarrelojDoor.kt", "data/TimeTrialMarks.kt", "data/PlusAccess.kt", "data/MeasurePhrases.kt", "data/LevelLines.kt", "data/AreaPoints.kt")) {
+    for (name in listOf("ui/screens/AvanceAreas.kt", "ui/screens/AvanceAreaPage.kt", "ui/screens/ContrarrelojPage.kt", "ui/screens/PlusLockSheet.kt", "ui/screens/ContrarrelojScreen.kt", "data/TimeTrialMarks.kt", "data/PlusAccess.kt", "data/MeasurePhrases.kt", "data/LevelLines.kt", "data/AreaPoints.kt")) {
       File("src/main/java/com/example/$name").readLines().forEachIndexed { i, raw ->
         for (text in visibleLiteralsOf(raw)) bad.firstOrNull { it in text }?.let { found += "$name:${i + 1} «$text» (por «$it»)" }
       }
     }
     assertTrue("Textos de Avance con abreviaturas o cifras internas:\n" + found.joinToString("\n"), found.isEmpty())
+  }
+
+  /**
+   * La pestaña «Contrarreloj» y todo lo de Nubi Plus (Tarea 215; `auditoria-fable/idea-pestana-contrarreloj.md` §3.2 y decisión 3): lo de Plus que no se tiene va «con Nubi Plus», nunca «bloqueado» ni «desbloquea» («bloqueado» es la palabra de trabajo, no la de la app), y se juega en «partidas», nunca en «intentos».
+   * La guardia mira los archivos de esa pestaña, su hoja y sus textos; NO toca las medallas ni el modo Desafío de la ficha, que ya decían «bloqueada» y «Desbloqueaste» antes (Tareas 151 y 167): aplicarla a toda la app sería otra tarea, con Ricardo.
+   */
+  @Test
+  fun `la pestana Contrarreloj y Nubi Plus no dicen bloqueado, desbloquea ni intentos`() {
+    val words = listOf("bloquead", "desbloque", "intento")
+    val files = listOf(
+      "ui/screens/ContrarrelojPage.kt", "ui/screens/ContrarrelojScreen.kt", "ui/screens/PlusLockSheet.kt", "ui/components/NeuroNavBar.kt", "ui/components/HoyGuideOverlay.kt",
+      "data/TimeTrialMarks.kt", "data/TimeTrialDay.kt", "data/TimeTrialStats.kt", "data/PlusAccess.kt", "data/Comparison.kt", "data/HoyGuide.kt"
+    )
+    val found = mutableListOf<String>()
+    for (name in files) File("src/main/java/com/example/$name").readLines().forEachIndexed { i, raw ->
+      for (text in visibleLiteralsOf(raw)) words.firstOrNull { it in text.lowercase() }?.let { found += "$name:${i + 1} «$text» (por «$it»)" }
+    }
+    assertTrue("Textos de la pestaña Contrarreloj o de Nubi Plus con «bloqueado», «desbloquea» o «intentos» (la palabra es «Con Nubi Plus» y «partidas»):\n" + found.joinToString("\n"), found.isEmpty())
+    // y la guardia atrapa lo que debe
+    for (malo in listOf("Contrarreloj bloqueado", "Se desbloquea con Plus", "Te quedan 2 intentos de hoy.", "Bloqueada")) assertTrue("no atrapa «$malo»", words.any { it in malo.lowercase() })
+    for (bueno in listOf("Con Nubi Plus: todas tus marcas.", "Te quedan 2 partidas de hoy.", "Esta semana jugaste 3 partidas; la mejor, 41 aciertos.")) assertTrue("atrapa «$bueno» sin motivo", words.none { it in bueno.lowercase() })
+    // los textos nuevos de la Tarea 215 por su valor
+    for (t in listOf(PlusAccess.LOCKED_PLACE, PlusAccess.LOCKED_MARKS, PlusAccess.LOCKED_PLACE_TITLE, PlusAccess.LOCKED_MARKS_TITLE, TimeTrialMarks.PLAY, TimeTrialMarks.SUBTITLE_PLACE, TimeTrialMarks.freeRecordLine(null), TimeTrialMarks.weekLine(TimeTrialMarks.WeekSummary(3, 41)))) {
+      assertTrue("«$t»", words.none { it in t.lowercase() })
+    }
   }
 
   @Test

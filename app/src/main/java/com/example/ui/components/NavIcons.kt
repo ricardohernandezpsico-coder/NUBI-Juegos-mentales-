@@ -40,6 +40,20 @@ internal enum class NavIcon(private val shapes: List<Shape>) {
     )
   ),
 
+  /**
+   * Contrarreloj (Tarea 215): un cronómetro de línea de tinta, del mismo estilo que la isla, las barras y la persona: la caja redonda, la corona con su tapa arriba, el pulsador chico en diagonal y una manecilla (sin números ni marcas, que a 40 dp se juntarían). Es el cronómetro y no
+   * el reloj de plasticina de los botones: ese es un objeto y este, un ícono de la barra; la corona y el pulsador lo separan de «un reloj cualquiera».
+   */
+  CRONOMETRO(
+    listOf(
+      Shape(circle(24f, 27f, 15f), stroke = 3f),
+      Shape("M24 12 L24 7", stroke = 3f),
+      Shape("M19 6 L29 6", stroke = 3f),
+      Shape("M36 14 L39 11", stroke = 3f),
+      Shape("M24 27 L30 20", stroke = 3f)
+    )
+  ),
+
   /** Avance: tres barras que suben, de izquierda a derecha. */
   BARRAS(listOf(Shape(rrect(8f, 27f, 8f, 13f), stroke = 3f), Shape(rrect(20f, 19f, 8f, 21f), stroke = 3f), Shape(rrect(32f, 10f, 8f, 30f), stroke = 3f))),
 

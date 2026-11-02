@@ -118,7 +118,7 @@ class Tarea208CapturasTest {
         NeuroVidaTheme {
           Box(Modifier.width(393.dp).height(873.dp)) {
             BoardBackground()
-            ContrarrelojPage(results = results, selected = "radar", onSelect = {}, onBack = {}, now = now, compare = estWorld, ageRange = range)
+            ContrarrelojPage(results = results, selected = "radar", onSelect = {}, now = now, compare = estWorld, ageRange = range)
           }
         }
       }

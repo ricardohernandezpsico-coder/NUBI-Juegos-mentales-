@@ -69,7 +69,7 @@ object Comparison {
   fun placeUnlocked(results: List<TimeTrialResult>, game: String): Boolean = gamesPlayed(results, game) >= PLACE_FROM_GAME
 
   /**
-   * Qué hace la comparación de un juego con una persona, la PRECEDENCIA en un solo lugar (la página y la puerta de Avance la leen):
+   * Qué hace la comparación de un juego con una persona, la PRECEDENCIA en un solo lugar (la pestaña Contrarreloj la lee; la puerta de Avance, que la leía, se fue en la Tarea 215):
    * [NONE] no hay nada que decir (sin fuente o sin tabla para ese juego); [NEEDS_AGE] hay con qué comparar pero falta la franja de edad (la página dice dónde elegirla, [AGE_HINT]);
    * [MINOR] la franja guardada es la de 13 a 17 años y [Features.COMPARE_MINORS] está apagada (Tarea 209: antes era [NONE] y la página callaba; ahora dice [MINORS_NOTICE]);
    * [EARLY] hay franja y tabla pero el juego tiene menos de [PLACE_FROM_GAME] partidas guardadas (la página dice [EARLY_NOTICE] y no muestra ningún lugar); [SHOW] todo como siempre.

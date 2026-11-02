@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -30,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import com.example.ui.components.BoardBackground
 import com.example.ui.components.LocalReduceMotion
 import com.example.ui.components.NeuroNavBar
+import com.example.ui.components.navColumnWidths
 import com.example.ui.theme.NeuroVidaTheme
 import com.example.viewmodel.AppTab
 import com.github.takahirom.roborazzi.RobolectricDeviceQualifiers
@@ -44,9 +47,10 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * La barra inferior del kit (Tarea 156, opción C de Fable): tres discos crema de 48 dp con un ícono vectorial de línea de tinta (isla, barras, persona; Tarea 158: Hoy · Avance · Tú), su rótulo de 16 sp debajo y la pestaña elegida sobre una losa sol, con el rótulo dentro, en tinta y negrita.
- * Se prueba que cada pestaña sea `Role.Tab` con `selected` y su nombre, que ocupe toda su columna (un tercio del ancho y todo el alto de la barra: ≥ 48 dp en los dos ejes), que la barra y sus rótulos queden DENTRO de la pantalla y sobre el inset de navegación
- * (48 dp, como con 3 botones), que a 393 dp mida ~89 dp (95 con letra 1,3), que los rótulos sean de 16 sp o más y de UNA línea hasta con letra 2,0, que SOLO la elegida lleve la losa, y que con «quitar animaciones» la elegida cambie de golpe; y se capturan las tres pestañas.
+ * La barra inferior del kit (Tarea 156, opción C de Fable): cuatro discos crema de 48 dp con un ícono vectorial de línea de tinta (isla, cronómetro, barras, persona; Tarea 215: Hoy · Contrarreloj · Avance · Tú), su rótulo de 16 sp debajo y la pestaña elegida sobre una losa sol, con el rótulo dentro, en tinta y negrita.
+ * Se prueba que cada pestaña sea `Role.Tab` con `selected` y su nombre, que ocupe toda su columna (de ancho desigual, medido con el rótulo en NEGRITA, y todo el alto de la barra: ≥ 48 dp en los dos ejes), que elegir otra pestaña no mueva ninguna columna, que la losa sol mida el ancho de su columna menos 8 dp,
+ * que la barra y sus rótulos queden DENTRO de la pantalla y sobre el inset de navegación (48 dp, como con 3 botones), que a 393 dp mida ~89 dp (95 con letra 1,3, y de ahí no sube: los rótulos tienen tope de letra 1,3), que los rótulos sean de 16 sp o más y de UNA línea con letra 1,0, 1,3 y 2,0
+ * a 360 y 393 dp, que SOLO la elegida lleve la losa, y que con «quitar animaciones» la elegida cambie de golpe; y se capturan las cuatro pestañas.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -57,16 +61,27 @@ class NeuroNavBarTest {
   private var selected: AppTab? = null
   private var shown by mutableStateOf(AppTab.HOY)
 
+  // Una sola composición por prueba (Compose no deja `setContent` dos veces): `show` de nuevo solo cambia el ancho, el alto, la letra y la pestaña.
+  private var contentSet = false
+  private var widthState by mutableIntStateOf(393)
+  private var heightState by mutableIntStateOf(873)
+  private var scaleState by mutableFloatStateOf(1f)
+  private var reduceState by mutableStateOf(false)
+
   private fun show(current: AppTab, widthDp: Int = 393, heightDp: Int = 873, fontScale: Float = 1f, reduce: Boolean = false) {
     shown = current
-    rule.setContent {
-      val base = LocalDensity.current
-      CompositionLocalProvider(LocalDensity provides Density(base.density, fontScale), LocalReduceMotion provides reduce) {
-        NeuroVidaTheme {
-          Box(Modifier.width(widthDp.dp).height(heightDp.dp)) {
-            BoardBackground()
-            // 48 dp de la barra de navegación del teléfono (3 botones) bajo la nuestra
-            Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp)) { NeuroNavBar(current = shown, onSelect = { selected = it }) }
+    widthState = widthDp; heightState = heightDp; scaleState = fontScale; reduceState = reduce
+    if (!contentSet) {
+      contentSet = true
+      rule.setContent {
+        val base = LocalDensity.current
+        CompositionLocalProvider(LocalDensity provides Density(base.density, scaleState), LocalReduceMotion provides reduceState) {
+          NeuroVidaTheme {
+            Box(Modifier.width(widthState.dp).height(heightState.dp)) {
+              BoardBackground()
+              // 48 dp de la barra de navegación del teléfono (3 botones) bajo la nuestra
+              Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 48.dp)) { NeuroNavBar(current = shown, onSelect = { selected = it }) }
+            }
           }
         }
       }
@@ -76,7 +91,7 @@ class NeuroNavBarTest {
 
   private fun bounds(tag: String): Rect = rule.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
 
-  private val tabs = listOf("nav_item_hoy" to "Hoy", "nav_item_progreso" to "Avance", "nav_item_tu" to "Tú")
+  private val tabs = listOf("nav_item_hoy" to "Hoy", "nav_item_contrarreloj" to "Contrarreloj", "nav_item_progreso" to "Avance", "nav_item_tu" to "Tú")
 
   private fun layoutOf(label: String): TextLayoutResult {
     val results = mutableListOf<TextLayoutResult>()
@@ -97,6 +112,7 @@ class NeuroNavBarTest {
     }
     rule.onNodeWithTag("nav_item_progreso").assertIsSelected()
     rule.onNodeWithTag("nav_item_hoy").assertIsNotSelected()
+    rule.onNodeWithTag("nav_item_contrarreloj").assertIsNotSelected()
     rule.onNodeWithTag("nav_item_tu").assertIsNotSelected()
   }
 
@@ -107,12 +123,17 @@ class NeuroNavBarTest {
     assertEquals(AppTab.TU, selected)
     rule.onNodeWithTag("nav_item_progreso").performClick()
     assertEquals(AppTab.PROGRESO, selected)
+    rule.onNodeWithTag("nav_item_contrarreloj").performClick()
+    assertEquals(AppTab.CONTRARRELOJ, selected)
   }
 
   @Test
-  fun las_tres_etiquetas_son_Hoy_Avance_y_Tu() {
+  fun las_cuatro_etiquetas_son_Hoy_Contrarreloj_Avance_y_Tu_en_ese_orden() {
     show(AppTab.TU)
-    for (t in listOf("Hoy", "Avance", "Tú")) rule.onNodeWithText(t, useUnmergedTree = true).assertIsDisplayed()
+    for (t in listOf("Hoy", "Contrarreloj", "Avance", "Tú")) rule.onNodeWithText(t, useUnmergedTree = true).assertIsDisplayed()
+    assertEquals(listOf(AppTab.HOY, AppTab.CONTRARRELOJ, AppTab.PROGRESO, AppTab.TU), AppTab.entries)
+    val lefts = tabs.map { bounds(it.first).left }
+    assertEquals("las columnas van de izquierda a derecha en el orden de las pestañas", lefts.sorted(), lefts)
   }
 
   // ---- La elegida: forma (losa sol) y peso, nunca solo color
@@ -146,10 +167,10 @@ class NeuroNavBarTest {
   @Test
   fun la_losa_se_funde_y_termina_en_la_nueva_elegida() {
     show(AppTab.HOY)
-    shown = AppTab.PROGRESO
+    shown = AppTab.CONTRARRELOJ
     rule.waitForIdle()
     rule.onNodeWithTag("nav_slab_hoy", useUnmergedTree = true).assertDoesNotExist()
-    rule.onNodeWithTag("nav_slab_progreso", useUnmergedTree = true).assertExists()
+    rule.onNodeWithTag("nav_slab_contrarreloj", useUnmergedTree = true).assertExists()
   }
 
   // ---- Medidas: dentro de la pantalla, sobre el inset, toque amplio
@@ -178,17 +199,82 @@ class NeuroNavBarTest {
   @Test fun la_barra_cabe_con_letra_1_3() { show(AppTab.HOY, fontScale = 1.3f); assertFitsAboveNavigation(393, 873) }
   @Test fun la_barra_cabe_con_letra_2_0_y_crece_en_vez_de_cortar() { show(AppTab.HOY, fontScale = 2f); assertFitsAboveNavigation(393, 873) }
 
+  // ---- Las columnas de ancho desigual (Tarea 215)
+
+  /** El ancho de cada rótulo en negrita según Fable (`auditoria-fable/idea-pestana-contrarreloj.md` §1.3, a 16 sp sin hinting): Hoy 28,4 · Contrarreloj 90,6 · Avance 55,2 · Tú 19,3 dp. */
+  private val fableLabels = listOf(28.4f, 90.6f, 55.2f, 19.3f)
+
   @Test
-  fun las_tres_columnas_son_tercios_parejos_y_cada_rotulo_va_centrado_en_la_suya() {
-    show(AppTab.HOY)
-    val density = rule.density.density
-    val third = 393f / 3f
-    for ((i, pair) in tabs.withIndex()) {
-      val col = bounds(pair.first)
-      assertEquals("${pair.first} mide un tercio del ancho", third, col.width / density, 1f)
-      val label = rule.onNodeWithText(pair.second, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
-      assertEquals("«${pair.second}» centrada en su columna", col.center.x, label.center.x, 1.5f * density)
-      assertEquals("la columna $i empieza donde toca", third * i, col.left / density, 1f)
+  fun el_reparto_de_ancho_suma_la_pantalla_respeta_los_48_dp_y_da_a_cada_rotulo_su_ancho_mas_aire() {
+    for (total in listOf(360f, 393f, 411f)) {
+      val w = navColumnWidths(fableLabels, total)
+      assertEquals("las cuatro columnas suman el ancho de la pantalla ($total)", total, w.sum(), 0.01f)
+      assertTrue("todas miden 48 dp o más: $w", w.all { it >= 48f })
+      assertTrue("y cada una cabe su rótulo con 12 dp de aire: $w", w.indices.all { w[it] >= fableLabels[it] + 12f })
+      assertTrue("la columna más ancha es la de Contrarreloj", w[1] == w.max())
+      val gain = w.indices.map { w[it] - maxOf(fableLabels[it] + 12f, 48f) }
+      assertTrue("el sobrante se reparte parejo: todas ganan lo mismo (%s)".format(gain), gain.all { Math.abs(it - gain[0]) < 0.01f })
+    }
+  }
+
+  @Test
+  fun si_no_hubiera_ni_para_los_minimos_se_achican_todas_parejas_en_vez_de_salirse() {
+    val w = navColumnWidths(listOf(200f, 200f, 200f, 200f), 360f)
+    assertEquals(360f, w.sum(), 0.01f)
+    assertTrue("en la misma proporción", w.all { Math.abs(it - 90f) < 0.01f })
+  }
+
+  @Test
+  fun a_360_y_a_393_las_columnas_son_las_que_dice_la_cuenta_y_cada_rotulo_va_centrado_en_la_suya() {
+    for (width in listOf(360, 393)) {
+      show(AppTab.HOY, width, 873)
+      val density = rule.density.density
+      val cols = tabs.map { bounds(it.first) }
+      var left = 0f
+      for ((i, pair) in tabs.withIndex()) {
+        val col = cols[i]
+        assertEquals("$width dp: ${pair.first} empieza donde termina la anterior", left, col.left / density, 1f)
+        assertTrue("$width dp: ${pair.first} mide al menos 48 dp: ${col.width / density}", col.width / density >= 47.5f)
+        val label = rule.onNodeWithText(pair.second, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        assertEquals("$width dp: «${pair.second}» centrada en su columna", col.center.x, label.center.x, 1.5f * density)
+        left += col.width / density
+      }
+      assertEquals("las cuatro llenan el ancho", width.toFloat(), left, 1f)
+      assertTrue("Contrarreloj es la más ancha y Tú la más angosta: ${cols.map { it.width / density }}", cols[1].width == cols.maxOf { it.width } && cols[3].width == cols.minOf { it.width })
+    }
+  }
+
+  @Test
+  fun elegir_otra_pestana_no_mueve_ninguna_columna() {
+    for (width in listOf(360, 393)) for (scale in listOf(1f, 1.3f, 2f)) {
+      show(AppTab.HOY, width, 873, fontScale = scale)
+      val before = tabs.map { bounds(it.first) }
+      for (t in AppTab.entries) {
+        shown = t
+        rule.waitForIdle()
+        val now = tabs.map { bounds(it.first) }
+        // (a lo ancho, nada: ni un píxel; a lo alto, a lo sumo 1 px de redondeo de la línea del rótulo en negrita, como antes de la Tarea 215)
+        for (i in tabs.indices) {
+          assertEquals("a $width dp con letra $scale, la columna ${tabs[i].second} no se corre al elegir $t", before[i].left, now[i].left, 0f)
+          assertEquals("a $width dp con letra $scale, la columna ${tabs[i].second} no cambia de ancho al elegir $t", before[i].right, now[i].right, 0f)
+          assertEquals("y tampoco de alto (${tabs[i].second}, $t): como mucho lo que mide una línea de más del rótulo en negrita", before[i].height, now[i].height, 2.5f * rule.density.density)
+        }
+      }
+    }
+  }
+
+  @Test
+  fun la_losa_sol_mide_el_ancho_de_su_columna_menos_8_dp() {
+    for (width in listOf(360, 393)) {
+      for (t in AppTab.entries) {
+        show(t, width, 873, reduce = true)
+        val density = rule.density.density
+        val slab = rule.onNodeWithTag("nav_slab_body_${t.name.lowercase()}", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val col = bounds("nav_item_${t.name.lowercase()}")
+        // (la losa lleva 6 dp de sombra abajo, pero el ancho es el del cuerpo: el contenedor la centra en su columna)
+        assertEquals("a $width dp la losa de $t: columna ${col.width / density} menos 8", (col.width / density) - 8f, slab.width / density, 1.5f)
+        assertEquals("y centrada en su columna", col.center.x, slab.center.x, 1.5f * density)
+      }
     }
   }
 
@@ -208,34 +294,53 @@ class NeuroNavBarTest {
 
   // ---- Rótulos: 16 sp o más y una sola línea, hasta con letra 2,0
 
-  private fun rotulosDe16SpYUnaLinea(scale: Float) {
-    show(AppTab.PROGRESO, fontScale = scale)
+  private fun rotulosDe16SpYUnaLinea(scale: Float, widthDp: Int = 393) {
+    show(AppTab.PROGRESO, widthDp, if (widthDp == 360) 780 else 873, fontScale = scale)
     for ((tag, t) in tabs) {
       val layout = layoutOf(t)
       assertTrue("«$t» a letra $scale mide ≥ 16 sp: ${layout.layoutInput.style.fontSize}", layout.layoutInput.style.fontSize.value >= 16f)
-      assertEquals("«$t» a letra $scale es de una sola línea", 1, layout.lineCount)
+      assertTrue("«$t» tiene tope de letra 1,3: la escala con que se dibuja es ${layout.layoutInput.density.fontScale}", layout.layoutInput.density.fontScale <= 1.3f + 1e-3f)
+      assertEquals("«$t» a $widthDp dp con letra $scale es de una sola línea", 1, layout.lineCount)
       assertTrue("«$t» a letra $scale entera: no se corta a lo alto", !layout.didOverflowHeight)
       // (`didOverflowWidth` no sirve aquí: con softWrap apagado el párrafo mide el ancho disponible y el texto es más angosto)
-      assertTrue("«$t» a letra $scale cabe en su columna: ${layout.size.width} px contra ${bounds(tag).width}", layout.size.width <= bounds(tag).width + 1f)
+      assertTrue("«$t» a $widthDp dp con letra $scale cabe en su columna: ${layout.size.width} px contra ${bounds(tag).width}", layout.size.width <= bounds(tag).width + 1f)
     }
   }
 
   @Test fun los_rotulos_son_de_16_sp_o_mas_y_de_una_linea_con_letra_1_0() = rotulosDe16SpYUnaLinea(1f)
   @Test fun los_rotulos_son_de_16_sp_o_mas_y_de_una_linea_con_letra_1_3() = rotulosDe16SpYUnaLinea(1.3f)
-  @Test fun los_rotulos_son_de_16_sp_o_mas_y_de_una_linea_con_letra_2_0() = rotulosDe16SpYUnaLinea(2f)
+  @Test fun los_rotulos_son_de_16_sp_o_mas_y_de_una_linea_con_letra_2_0_topada() = rotulosDe16SpYUnaLinea(2f)
+  @Test fun a_360_los_rotulos_son_de_una_linea_con_letra_1_0() = rotulosDe16SpYUnaLinea(1f, 360)
+  @Test fun a_360_los_rotulos_son_de_una_linea_con_letra_1_3() = rotulosDe16SpYUnaLinea(1.3f, 360)
+  @Test fun a_360_los_rotulos_son_de_una_linea_con_letra_2_0_topada() = rotulosDe16SpYUnaLinea(2f, 360)
 
   @Test
-  fun con_letra_2_0_la_barra_es_mas_alta_que_a_letra_normal() {
+  fun con_letra_2_0_la_barra_no_crece_mas_que_con_1_3_porque_los_rotulos_estan_topados() {
+    show(AppTab.PROGRESO, fontScale = 1.3f)
+    val h13 = bounds("bottom_nav_bar").height / rule.density.density
     show(AppTab.PROGRESO, fontScale = 2f)
-    assertTrue("a letra 2,0 la barra crece", bounds("bottom_nav_bar").height / rule.density.density > 100f)
+    val h20 = bounds("bottom_nav_bar").height / rule.density.density
+    assertEquals("la barra mide lo mismo con 1,3 que con 2,0 (%.1f y %.1f dp)".format(h13, h20), h13, h20, 1f)
+    assertTrue("y más que a letra normal", h20 > 92f)
   }
 
-  // ---- Capturas de las tres pestañas
+  @Test
+  fun con_letra_2_0_el_rotulo_se_dibuja_a_20_8_sp_y_no_a_32() {
+    show(AppTab.PROGRESO, fontScale = 2f)
+    val layout = layoutOf("Contrarreloj")
+    assertEquals("16 sp × 1,3", 20.8f, layout.layoutInput.style.fontSize.value * layout.layoutInput.density.fontScale, 0.1f)
+  }
+
+  // ---- Capturas de las cuatro pestañas
 
   @Test fun captura_hoy_393() { show(AppTab.HOY); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-hoy-393.png") }
+  @Test fun captura_contrarreloj_393() { show(AppTab.CONTRARRELOJ); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-contrarreloj-393.png") }
   @Test fun captura_avance_393() { show(AppTab.PROGRESO); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-avance-393.png") }
   @Test fun captura_tu_393() { show(AppTab.TU); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-tu-393.png") }
   @Test fun captura_hoy_360() { show(AppTab.HOY, 360, 780); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-hoy-360.png") }
+  @Test fun captura_contrarreloj_360() { show(AppTab.CONTRARRELOJ, 360, 780); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-contrarreloj-360.png") }
+  @Test fun captura_hoy_360_letra_1_3() { show(AppTab.HOY, 360, 780, fontScale = 1.3f); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-hoy-360-letra13.png") }
+  @Test fun captura_contrarreloj_360_letra_1_3() { show(AppTab.CONTRARRELOJ, 360, 780, fontScale = 1.3f); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-contrarreloj-360-letra13.png") }
   @Test fun captura_avance_360() { show(AppTab.PROGRESO, 360, 780); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-avance-360.png") }
   @Test fun captura_tu_360() { show(AppTab.TU, 360, 780); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-tu-360.png") }
   @Test fun captura_hoy_411() { show(AppTab.HOY, 411, 914); rule.onRoot().captureRoboImage(filePath = "src/test/screenshots/barra-hoy-411.png") }

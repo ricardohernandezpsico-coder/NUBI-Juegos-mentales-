@@ -94,7 +94,7 @@ class Tarea199CapturasTest {
         NeuroVidaTheme {
           Box(Modifier.width(widthDp.dp).height(heightDp.dp)) {
             BoardBackground()
-            ContrarrelojPage(results = results, selected = selected, onSelect = {}, onBack = {}, now = now)
+            ContrarrelojPage(results = results, selected = selected, onSelect = {}, now = now)
           }
         }
       }

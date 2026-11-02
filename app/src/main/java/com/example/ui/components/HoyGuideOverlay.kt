@@ -84,12 +84,6 @@ internal fun targetOf(step: GuideStep): GuideTarget = when (step) {
 }
 
 /**
- * El hueco de un paso, en coordenadas de la raíz y SIN el aire de [GuideHolePadding]: el rectángulo del elemento; en el paso de la barra, solo sus dos tercios de la derecha (Avance y Tú; Hoy, la pestaña donde ya está la persona, queda bajo el velo).
- */
-internal fun guideHoleOf(step: GuideStep, rect: Rect): Rect =
-  if (step == GuideStep.BARRA) Rect(rect.left + rect.width / 3f, rect.top, rect.right, rect.bottom) else rect
-
-/**
  * Quien aloja la guía (Tarea 193, `HoyGuide`): decide CUÁNDO sale (el día del vuelo, sin la marca, con Hoy a la vista sin nada encima y el arranque terminado, [HoyGuide.STEP_DELAY_MS] después del fundido del arranque) y dibuja el velo del paso en que va el ViewModel.
  * [somethingAbove] es verdadero si Hoy no está a la vista o hay algo encima (una medalla, un resultado, un panel, «Todos los juegos»): si llega algo mientras la guía está abierta, se esconde hasta que Hoy vuelva a estar libre.
  */
@@ -135,7 +129,9 @@ internal fun HoyGuideOverlay(step: GuideStep, targets: GuideTargets, onNext: () 
   val appear = remember { Animatable(if (reduce) 1f else 0f) }
   LaunchedEffect(Unit) { if (!reduce) appear.animateTo(1f, tween(NubiMotion.STATE_MS)) }
 
-  val raw = targets.rects[target]?.takeIf { settledStep == step }?.let { guideHoleOf(step, it) }
+  // El hueco es el rectángulo del elemento tal cual: en el paso de la barra, el que publica la fila de las tres columnas de la derecha (Contrarreloj, Avance y Tú; Hoy, donde ya está la persona, queda bajo el velo; Tarea 215: con las
+  // columnas desiguales ya no se saca de «un tercio de la barra»)
+  val raw = targets.rects[target]?.takeIf { settledStep == step }
   val pad = with(density) { GuideHolePadding.toPx() }
   // El aire de 8 dp va por los cuatro lados, salvo en la barra: abajo y a la derecha el hueco llega hasta donde llega la barra, para no entrar en la franja de gestos (o los 3 botones) de Android ni salirse de la pantalla.
   val liveHole = raw?.let { if (step == GuideStep.BARRA) Rect(it.left - pad, it.top - pad, it.right, it.bottom) else Rect(it.left - pad, it.top - pad, it.right + pad, it.bottom + pad) }

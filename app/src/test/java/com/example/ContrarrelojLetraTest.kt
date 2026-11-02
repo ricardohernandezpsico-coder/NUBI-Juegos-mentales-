@@ -34,7 +34,6 @@ import com.example.ui.components.BoardBackground
 import com.example.ui.components.LocalReduceMotion
 import com.example.ui.screens.ContrarrelojPage
 import com.example.ui.screens.PlusLockSheetContent
-import com.example.ui.screens.ContrarrelojDoor
 import com.example.ui.theme.NeuroVidaTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -97,34 +96,6 @@ class ContrarrelojLetraTest {
   private fun textOf(tag: String): String =
     rule.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode().config.getOrNull(SemanticsProperties.Text)?.joinToString("") { it.text }.orEmpty().replace(NBSP, " ")
 
-  // ---------------------------------------------------------------- la puerta de Avance (16 sp en negrita; 20 dp de margen a cada lado en Avance)
-
-  @Test
-  fun la_puerta_no_parte_ninguna_palabra_por_dentro_con_letra_1_0_1_3_y_2_0_a_393_y_360_con_Te_faltan_de_una_y_de_dos_cifras() {
-    var width by mutableIntStateOf(393)
-    var scale by mutableFloatStateOf(1f)
-    var line by mutableStateOf("")
-    rule.setContent {
-      val base = LocalDensity.current
-      CompositionLocalProvider(LocalDensity provides Density(base.density, scale), LocalReduceMotion provides true) {
-        NeuroVidaTheme { Box(Modifier.width(width.dp).padding(horizontal = 20.dp)) { ContrarrelojDoor(record = 12, plus = false, onClick = {}, freeLine = line) } }
-      }
-    }
-    fun free(game: String, mark: Int) = Comparison.freeSentence(Comparison.place(estimated, game, AgeRange.R45_54, mark))!!
-    val lines = listOf(free("radar", 12) to 12, free("radar", 20) to 4, free("stroop", 40) to 15, free("stroop", 50) to 5, free("stroop", 63) to 5, free("stroop", 57) to 4)
-    assertTrue("las frases traen su «Te faltan N»: ${lines.map { it.first }}", lines.all { (s, n) -> "Te faltan $n aciertos" in s || "Te falta $n aciertos" in s })
-    val problems = mutableListOf<String>()
-    var checked = 0
-    for ((sentence, _) in lines) for (w in listOf(393, 360)) for (s in listOf(1f, 1.3f, 2f)) {
-      width = w; scale = s; line = sentence
-      rule.waitForIdle()
-      cutsOnScreen().forEach { problems += "a $w dp con letra $s, «$sentence»: $it" }
-      checked += 1
-    }
-    assertEquals("se miró cada combinación", lines.size * 6, checked)
-    assertTrue("palabras cortadas por dentro:\n" + problems.joinToString("\n"), problems.isEmpty())
-  }
-
   // ---------------------------------------------------------------- la página con la referencia (la escalera y todo lo demás)
 
   @Test
@@ -138,7 +109,7 @@ class ContrarrelojLetraTest {
         NeuroVidaTheme {
           Box(Modifier.width(width.dp).height(873.dp)) {
             BoardBackground()
-            ContrarrelojPage(results = results, selected = "stroop", onSelect = {}, onBack = {}, now = now, lang = com.example.model.AppLanguage.SPANISH, compare = estimated, ageRange = AgeRange.R45_54)
+            ContrarrelojPage(results = results, selected = "stroop", onSelect = {}, now = now, lang = com.example.model.AppLanguage.SPANISH, compare = estimated, ageRange = AgeRange.R45_54)
           }
         }
       }

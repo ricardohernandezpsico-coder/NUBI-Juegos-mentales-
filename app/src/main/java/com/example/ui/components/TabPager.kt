@@ -25,7 +25,7 @@ import com.example.viewmodel.AppTab
 import kotlin.math.abs
 
 /**
- * El pager de las tres pestañas (Hoy, Avance, Tú) con su fundido, sincronizado con la pestaña que guarda el ViewModel (Tarea 142, 19-oct; Tarea 184, 27-oct). Lo arma [rememberTabPager].
+ * El pager de las cuatro pestañas (Hoy, Contrarreloj, Avance, Tú; eran tres hasta la Tarea 215) con su fundido, sincronizado con la pestaña que guarda el ViewModel (Tarea 142, 19-oct; Tarea 184, 27-oct). Lo arma [rememberTabPager].
  * [state] es el estado del `HorizontalPager`; [selectedTab] es lo que marca la barra; [tabFade] es el modificador del fundido, que va en el `HorizontalPager`.
  */
 @Stable
@@ -37,15 +37,15 @@ class TabPager internal constructor(
 ) {
   /**
    * La pestaña que marca la barra EN VIVO (Tarea 142: Ricardo notaba «lag» cuando los íconos cambiaban recién después de que terminaba el movimiento). Si el código pidió un movimiento (se tocó una pestaña), es el DESTINO desde el primer
-   * cuadro, también en el fundido de Hoy ↔ Tú, donde el pager todavía no se movió; si no, es `state.targetPage`: al arrastrar cambia en cuanto el gesto decide (pasado el umbral de posición del pager, unos 56 dp, sin soltar el dedo) y se deshace
+   * cuadro, también en el fundido entre pestañas que no son vecinas, donde el pager todavía no se movió; si no, es `state.targetPage`: al arrastrar cambia en cuanto el gesto decide (pasado el umbral de posición del pager, unos 56 dp, sin soltar el dedo) y se deshace
    * si se suelta antes y vuelve.
    */
   val selectedTab: AppTab
     get() { val p = pending.intValue; return AppTab.entries[if (p >= 0) p else state.targetPage.coerceIn(0, AppTab.entries.lastIndex)] }
 
-  /** La opacidad de las páginas (1 = normal; baja en el fundido de Hoy ↔ Tú). */
+  /** La opacidad de las páginas (1 = normal; baja en el fundido entre pestañas que no son vecinas). */
   val contentAlpha: Float get() = alpha.value
-  /** La escala de las páginas (1 = normal; entra desde [NubiMotion.TAB_FADE_MIN_SCALE] en el fundido de Hoy ↔ Tú). */
+  /** La escala de las páginas (1 = normal; entra desde [NubiMotion.TAB_FADE_MIN_SCALE] en el fundido entre pestañas que no son vecinas). */
   val contentScale: Float get() = scale.value
 
   internal fun setPending(page: Int) { pending.intValue = page }
@@ -78,10 +78,10 @@ fun Modifier.tabFade(tabPager: TabPager): Modifier = graphicsLayer {
 }
 
 /**
- * El pager de las tres pestañas, sincronizado con la pestaña que guarda el ViewModel.
+ * El pager de las cuatro pestañas, sincronizado con la pestaña que guarda el ViewModel.
  * - Si [currentTab] cambia por fuera (se tocó una pestaña de la barra, se volvió de un juego…), el pager va hasta ella:
  *   - a una pestaña VECINA, se desliza (300 ms con la curva enfatizada de `NubiMotion`);
- *   - a una que NO es vecina (Hoy ↔ Tú), un «fade through» de Material en vez de deslizar: Avance, que queda en el medio, no se ve pasar (la página de ahora se desvanece en [NubiMotion.TAB_FADE_OUT_MS] ms y entra la nueva en
+ *   - a una que NO es vecina (Hoy ↔ Avance, Hoy ↔ Tú o Contrarreloj ↔ Tú), un «fade through» de Material en vez de deslizar: la pestaña que queda en el medio no se ve pasar (la página de ahora se desvanece en [NubiMotion.TAB_FADE_OUT_MS] ms y entra la nueva en
  *     [NubiMotion.TAB_FADE_IN_MS], con una escala de [NubiMotion.TAB_FADE_MIN_SCALE] a 1: 300 ms en total, los de «pestaña»);
  *   - con «quitar animaciones», de golpe, a cualquiera.
  *   Deslizar con el dedo no cambia: lo decide el pager.
@@ -109,7 +109,7 @@ fun rememberTabPager(currentTab: AppTab, onTabSettled: (AppTab) -> Unit): TabPag
       tabPager.settleFade()
     } else {
       tabPager.setPending(target)
-      val skipsAMiddlePage = abs(target - pagerState.currentPage) >= 2          // Hoy ↔ Tú: deslizar pasaría por Avance
+      val skipsAMiddlePage = abs(target - pagerState.currentPage) >= 2          // Hoy ↔ Avance, Hoy ↔ Tú, Contrarreloj ↔ Tú: deslizar pasaría por la del medio
       when {
         reduce -> { tabPager.snapFade(); pagerState.scrollToPage(target) }
         skipsAMiddlePage -> tabPager.fadeThrough(target)

@@ -16,8 +16,8 @@ import org.robolectric.annotation.Config
 @Config(sdk = [36])
 class NavIconsTest {
   @Test
-  fun los_cuatro_vectores_se_arman_con_su_rejilla_de_48() {
-    assertEquals(listOf("ISLA", "BARRAS", "PERSONA", "CASILLAS"), NavIcon.values().map { it.name })
+  fun los_cinco_vectores_se_arman_con_su_rejilla_de_48() {
+    assertEquals(listOf("ISLA", "CRONOMETRO", "BARRAS", "PERSONA", "CASILLAS"), NavIcon.values().map { it.name })
     for (icon in NavIcon.values()) {
       val v = icon.vector
       assertEquals("${icon.name}: rejilla de 48", 48f, v.viewportWidth, 0f)
