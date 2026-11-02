@@ -78,7 +78,7 @@ object GameRegistry {
       id = "bodega",
       title = "Bodega de carga",
       domain = DomainType.MEMORIA,
-      subtitle = "Recuerda dónde guardó cada cosa el robot",
+      subtitle = "Recuerda dónde guardó cada cosa",
       instruction = "La carga entra por la esclusa y el robot la guarda en las escotillas de una bodega redonda. Mira bien dónde queda cada cosa: después te las piden una por una y tocas la escotilla que la tiene. A veces el robot cambia una caja de lugar y a veces la bodega gira."
     ),
     GameDefinition(

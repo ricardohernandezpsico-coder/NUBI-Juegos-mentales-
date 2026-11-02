@@ -306,25 +306,23 @@ class GameSheetContrarrelojTest {
 
   /**
    * Tarea 214 (2-nov, Ricardo tras la auditoría de Fable de la 213): la ficha lleva el nombre y UNA línea, también en los teléfonos de 360 dp (el ancho de muchos teléfonos baratos): se mide la frase de los 17 juegos a 360 × 780 y a 393 con letra 1,0. El ancho que tiene la frase es el de
-   * la tarjeta menos su relleno: 296 dp a 360 y 329 a 393 (el marco de 14 dp a cada lado y 18 dp de relleno de la tarjeta). Si una no cabe, NO se cambia su frase: se avisa con la medida, que decide Ricardo; mientras tanto queda en [pendientes] y la prueba exige que no haya otra ni que esa
-   * ya quepa (así, el día que se acorte, la prueba avisa que se la saque de la lista). Imprime la tabla `MEDIDA frase …`. Medido el 2-nov: a 360 dp Freno de Emergencia es la más larga que cabe (292 de 296 dp) y Bodega de carga («Recuerda dónde guardó cada cosa el robot», unos 335 dp en un renglón) pasa a dos.
+   * la tarjeta menos su relleno: 296 dp a 360 y 329 a 393 (el marco de 14 dp a cada lado y 18 dp de relleno de la tarjeta). Si una no cabe, NO se cambia su frase sin avisar: se informa la medida y decide Ricardo (así pasó con Bodega de carga el 2-nov: «Recuerda dónde guardó cada cosa el robot» medía unos 321 dp contra 296 y pasaba a
+   * dos líneas; Ricardo la acortó en la Tarea 214b a «Recuerda dónde guardó cada cosa», y desde entonces la prueba NO tiene excepciones: los 17 juegos, en una línea). Imprime la tabla `MEDIDA frase …`. Medido el 2-nov a 360 dp: Freno de Emergencia es la más larga (292 de 296 dp, solo 4 dp de sobra).
    */
-  private val pendientes = mapOf(360 to setOf("bodega"), 393 to emptySet())
-
   @Test
   fun la_frase_de_los_17_juegos_va_en_una_linea_en_la_ficha_a_360_dp_con_letra_1_0() {
     assertEquals(17, GameRegistry.allGames.size)
     mount(Cfg(GameRegistry.allGames.first().id, width = 360, height = 780 - 72))
     for (width in listOf(360, 393)) {
       val room = width - 64f
-      val partidas = mutableSetOf<String>()
+      val partidas = mutableListOf<String>()
       for (g in GameRegistry.allGames) {
         show(Cfg(g.id, width = width, height = 780 - 72))
         val (lines, ink) = subtitleFit()
         println("MEDIDA frase %d dp letra 1,0 — %s «%s»: %d línea(s), %.0f dp de %.0f".format(width, g.id, g.subtitle, lines, ink, room))
         if (lines != 1) partidas += g.id
       }
-      assertEquals("a $width dp con letra 1,0 las frases que pasan a más de una línea en la ficha (la medida está arriba, `MEDIDA frase`)", pendientes.getValue(width), partidas)
+      assertTrue("a $width dp con letra 1,0 estas frases pasan a más de una línea en la ficha (la medida está arriba, `MEDIDA frase`): $partidas", partidas.isEmpty())
     }
   }
 
