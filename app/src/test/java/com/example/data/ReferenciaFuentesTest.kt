@@ -57,7 +57,7 @@ class ReferenciaFuentesTest {
   @Test
   fun los_dos_parrafos_dicen_lo_que_decidieron_Fable_y_Opus_sin_cifras_ni_interpolacion() {
     assertEquals(
-      "No son otras personas: Nubi no junta datos de nadie. La referencia se arma con estudios publicados que midieron cómo cambian con la edad la rapidez y la exactitud en tareas parecidas, y con un programa que jugó este mismo Contrarreloj en un computador con esos números. Cada estudio dice cuántas personas tuvo.",
+      "No son otras personas: Nubi no junta datos de nadie. La referencia se arma con estudios publicados que midieron cómo cambian con la edad la rapidez y la exactitud en tareas parecidas, y con un programa que jugó el mismo Contrarreloj en un computador con esos números. Cada estudio dice cuántas personas tuvo.",
       ReferenciaFuentes.INTRO
     )
     assertEquals(

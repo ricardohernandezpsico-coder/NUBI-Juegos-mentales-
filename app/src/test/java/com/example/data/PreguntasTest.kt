@@ -51,7 +51,7 @@ class PreguntasTest {
     assertEquals(listOf("referencia"), all.filter { it.sourceLink }.map { it.key })
     val a = Preguntas.general.first { it.key == "referencia" }.answer
     assertEquals(
-      "Con una referencia estimada para tu edad, no con otras personas: Nubi no junta datos de nadie. La referencia sale de estudios por edad y de un programa que jugó este mismo Contrarreloj en un computador. Gratis ves tu división de la semana; con Nubi Plus, además, dónde queda tu marca frente a tu edad y a otras edades.",
+      "Con una referencia estimada para tu edad, no con otras personas: Nubi no junta datos de nadie. La referencia sale de estudios por edad y de un programa que jugó el mismo Contrarreloj en un computador. Gratis ves tu división de la semana; con Nubi Plus, además, dónde queda tu marca frente a tu edad y a otras edades.",
       a
     )
   }

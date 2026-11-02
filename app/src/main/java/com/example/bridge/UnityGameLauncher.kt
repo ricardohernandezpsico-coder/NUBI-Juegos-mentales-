@@ -169,7 +169,7 @@ object UnityGameLauncher {
     pilStage: Int = 0,              // solo las herramientas de prueba: Piloto empieza en este nivel (0 = normal)
     pilSectorS: Int = 0,            // solo las herramientas de prueba: segundos por sector de Piloto (0 = 30)
     rescStage: Int = 0,             // solo las herramientas de prueba: Rescate relámpago empieza en este nivel (0 = normal)
-    timeTrial: Boolean = false,     // el Contrarreloj de hoy (Tarea 177): la pista fija del día (la fecha va en track_seed), 120 s y sin dificultad adaptativa
+    timeTrial: Boolean = false,     // el Contrarreloj de hoy (Tarea 177): la forma de la pista fija (la fecha va en track_seed; Unity mezcla un número de cada partida, Tarea 210), 120 s y sin dificultad adaptativa
     trackSeed: Int = 0,             // la fecha del Contrarreloj (aaaammdd); solo se lee con timeTrial
     guest: Boolean = false,         // solo las herramientas de prueba: «Contrarreloj de invitado» (Tarea 205): Unity no lee ni escribe lo «ya visto»; el resultado no se guarda (el id lleva GUEST_LAUNCH_PREFIX)
     freshStart: Boolean = false     // solo las herramientas de prueba: «Jugar como la primera vez» (tutorial, subida y tarjetas como alguien nuevo; el resultado no se guarda: el id de lanzamiento lleva FRESH_LAUNCH_PREFIX)
