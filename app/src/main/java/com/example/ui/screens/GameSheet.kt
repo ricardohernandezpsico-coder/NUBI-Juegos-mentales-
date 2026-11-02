@@ -267,7 +267,7 @@ internal fun GameSheetContent(
   options: MutableState<Boolean> = rememberSaveable(data.game.id) { mutableStateOf(false) },
   /** El botón «Contrarreloj» a todo el ancho bajo «Desafío | Más opciones» (Tarea 181; solo Tinta o Palabra, ¿Verdad o disparate?, Rescate relámpago y Acoplamiento); null = el juego no lo tiene. */
   timeTrial: SheetTimeTrial? = null,
-  /** Lanza el Contrarreloj de ESTE juego con la pista del día. */
+  /** Lanza el Contrarreloj de ESTE juego (cada partida trae su propia pista, Tarea 210). */
   onTimeTrial: () -> Unit = {}
 ) {
   val g = data.game

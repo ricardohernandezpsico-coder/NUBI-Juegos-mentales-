@@ -60,7 +60,7 @@ data class ActiveGameSession(
   val assessmentStep: Int = 0,
   // Abre el juego con su tutorial guiado aunque la persona ya lo haya jugado (el inicio completo, `data/FirstFlight.kt`: el tutorial es parte del recorrido).
   val tutorial: Boolean = false,
-  // CONTRARRELOJ (Tarea 177): el día («yyyy-MM-dd») de la pista con que se juega; null = una partida de siempre. Con él la partida es «La escalera de 2 minutos» (la pista del día es la misma para todos) y su resultado va a `time_trial_results`.
+  // CONTRARRELOJ (Tarea 177): el día («yyyy-MM-dd») de la pista con que se juega; null = una partida de siempre. Con él la partida es «La escalera de 2 minutos» (la escalera es la misma, pero desde la Tarea 210 cada partida trae su propia pista) y su resultado va a `time_trial_results`.
   val timeTrialDay: String? = null,
   // «[Debug] Contrarreloj de invitado» (Tarea 205): la partida muestra su marca al final y NO se guarda (ni partida, ni récord, ni racha, ni farolas, ni lo «ya visto»); solo con [timeTrialDay]. Desde la Tarea 205c el invitado ELIGE su edad (una de las seis franjas de 18 en adelante) y
   // la partida se juega con la banda de esa edad (`toBand()`: la llegada de las tarjetas de Tinta es ×1,3 de 65 años en adelante), no con la del dueño del teléfono; null = una partida que no es de invitado.
@@ -491,8 +491,8 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   /**
    * «Contrarreloj de hoy» (Tarea 177; `docs/contrarreloj.md`): el juego de la fecha (el mismo para todas las personas: rotación fija sobre los cuatro de la primera tanda) en «La escalera de 2 minutos»: 120 s, la pista fija del día, sin dificultad adaptativa. NO es la ruta (no la avanza) y se
-   * puede repetir sin límite; gratis; no cuenta para el futuro tope de partidas libres (`TimeTrialDay.COUNTS_FOR_FREE_CAP`). Al terminar vuelve a donde se vino (Hoy, o «Todos los juegos» si se lanzó desde la ficha). [gameId] lo piden «Otra vez» (el mismo juego y la misma pista, aunque el día haya
-   * cambiado mientras se jugaba) y el botón «Contrarreloj» de la ficha (Tarea 181: CUALQUIERA de los cuatro juegos, con la pista del día de ese juego: la misma semilla que usaría Hoy; se guarda igual y, si es el juego del día, Hoy lo ve como jugado o con marca nueva porque su estado sale de la tabla).
+   * puede repetir sin límite; gratis; no cuenta para el futuro tope de partidas libres (`TimeTrialDay.COUNTS_FOR_FREE_CAP`). Al terminar vuelve a donde se vino (Hoy, o «Todos los juegos» si se lanzó desde la ficha). [gameId] lo piden «Otra vez» (el mismo juego, con una pista nueva, aunque el día haya
+   * cambiado mientras se jugaba) y el botón «Contrarreloj» de la ficha (Tarea 181: CUALQUIERA de los cuatro juegos, con la fecha y la versión de la pista de ese juego, como Hoy; se guarda igual y, si es el juego del día, Hoy lo ve como jugado o con marca nueva porque su estado sale de la tabla).
    */
   fun startTimeTrial(gameId: String? = null, day: String? = null) {
     val d = day ?: repository.todayKey()
@@ -502,7 +502,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   }
 
   /**
-   * «[Debug] Contrarreloj de invitado» (Tarea 205): juega la pista de HOY de [gameId] como el Contrarreloj de siempre, pero al final solo muestra la marca (`GuestTrialScreen`) y NO guarda nada: ni la partida, ni el récord, ni la racha, ni las farolas, ni lo «ya visto» de Unity (igual que «Jugar como la primera vez»).
+   * «[Debug] Contrarreloj de invitado» (Tarea 205): juega el Contrarreloj de HOY de [gameId] como el de siempre (cada partida con su propia pista), pero al final solo muestra la marca (`GuestTrialScreen`) y NO guarda nada: ni la partida, ni el récord, ni la racha, ni las farolas, ni lo «ya visto» de Unity (igual que «Jugar como la primera vez»).
    * Es para que Ricardo anote las marcas de sus 5 personas en su teléfono sin mezclarlas con las suyas.
    */
   fun startGuestTimeTrial(gameId: String, range: com.example.model.AgeRange) {

@@ -256,7 +256,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
           }
           val timeTrial = lastTimeTrial?.takeIf { result.isTimeTrial && it.result.gameId == result.gameId }
           if (timeTrial != null) {
-            // el Contrarreloj tiene su propio final: la marca, el récord, las últimas 5 y la mejor de la semana; «Otra vez» repite el mismo juego y la misma pista
+            // el Contrarreloj tiene su propio final: la marca, el récord, las últimas 5 y la mejor de la semana; «Otra vez» juega el mismo juego con una pista nueva (cada partida trae la suya, Tarea 210)
             com.example.games.TimeTrialResultScreen(
               outcome = timeTrial,
               onAgain = { viewModel.startTimeTrial(timeTrial.result.gameId, timeTrial.result.day) },

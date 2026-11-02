@@ -104,7 +104,7 @@ object Comparison {
    * (Tarea 209; `auditoria-fable/claridad-plus-y-ayuda.md` §1.1). La palabra «personas» solo va en ese «No son otras personas:».
    */
   fun estimatedNotice(range: AgeRange): String =
-    "No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para ${range.label} es estimada: sale de estudios por edad y de un programa que jugó esta misma pista en un computador, no en tu teléfono."
+    "No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para ${range.label} es estimada: sale de estudios por edad y de un programa que jugó este mismo Contrarreloj en un computador, no en tu teléfono."
 
   /** La fila de 48 dp bajo esa frase, en la hoja del candado y en la pregunta «¿Con qué me compara el Contrarreloj?»: abre la hoja «De dónde sale la referencia» (el lector dice «…, botón»). */
   const val SOURCE_LINK = "De dónde sale la referencia ›"

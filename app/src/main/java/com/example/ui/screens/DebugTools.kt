@@ -125,7 +125,7 @@ fun DebugTools(viewModel: NeuroVidaViewModel, userId: Long, ageBand: AgeBand) {
     val nextWorld = worlds[(compareWorld.ordinal + 1) % worlds.size]
     fun worldName(w: com.example.data.SampleComparison.World) = when (w) { com.example.data.SampleComparison.World.REFERENCE -> "referencia"; com.example.data.SampleComparison.World.MANY -> "muchos"; com.example.data.SampleComparison.World.FEW -> "pocos"; com.example.data.SampleComparison.World.VERY_FEW -> "muy pocos" }
     DebugButton("[Debug] Comparación: ${worldName(compareWorld)} (tocar para ${worldName(nextWorld)})", "btn_debug_compare") { viewModel.setCompareWorld(nextWorld) }
-    // «Contrarreloj de invitado» (Tarea 205; la edad se pregunta desde la 205c): la pista de hoy del juego elegido; al final muestra la marca y NO guarda nada (ni partida, ni récord, ni racha, ni farolas, ni lo «ya visto»): para anotar las marcas de otras personas en este teléfono sin mezclar las tuyas.
+    // «Contrarreloj de invitado» (Tarea 205; la edad se pregunta desde la 205c): un Contrarreloj de hoy del juego elegido (con su propia pista, como todos); al final muestra la marca y NO guarda nada (ni partida, ni récord, ni racha, ni farolas, ni lo «ya visto»): para anotar las marcas de otras personas en este teléfono sin mezclar las tuyas.
     com.example.data.TimeTrialDay.GAMES.forEach { id ->
       val title = com.example.model.GameRegistry.getById(id)?.title ?: id
       DebugButton("[Debug] Contrarreloj de invitado: $title", "btn_debug_guest_$id") { guestGame = id }

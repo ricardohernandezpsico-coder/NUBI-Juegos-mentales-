@@ -109,7 +109,7 @@ namespace NeuroVida.Contracts
         public int dock_best;
         /// <summary>CONTRARRELOJ (Tarea 176, 26-oct; <c>docs/contrarreloj.md</c>): la partida es «La escalera de 2 minutos» de Tinta o Palabra (<c>stroop</c>), ¿Verdad o disparate? (<c>disparate</c>), Rescate relámpago (<c>radar</c>) o Acoplamiento (<c>acoplamiento</c>): 120 s fijos,
         /// dificultad adaptativa APAGADA y una pista fija que parte siempre del paso 1 y sube un paso cada N aciertos. <c>track_seed</c> es la FECHA del día como número (aaaammdd, p. ej. 20261026): con la versión de la pista de cada juego (<c>TimeTrial.TrackVersion</c>)
-        /// y su id fija la semilla, así que todos los teléfonos ven la misma pista ese día. El Contrarreloj siempre corre con reloj (<c>timed</c> se fuerza a true en Unity). Una app vieja no lo manda: false.</summary>
+        /// y su id fija la semilla BASE del día; cada partida le mezcla su propio número (Tarea 210: <c>TimeTrial.NewGameNumber</c>, que la app no manda ni guarda), así que ese día cada partida trae su pista, con la misma escalera. El Contrarreloj siempre corre con reloj (<c>timed</c> se fuerza a true en Unity). Una app vieja no lo manda: false.</summary>
         public bool time_trial;
         public int track_seed;
         public string play_mode = "";

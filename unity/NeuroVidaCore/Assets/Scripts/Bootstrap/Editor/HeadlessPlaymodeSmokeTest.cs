@@ -714,6 +714,7 @@ namespace NeuroVida.Bridge.EditorTools
             bool timeTrial = _current.Name.StartsWith("Contrarreloj");
             EditorPlaytestBootstrap.TimeTrialOverride = timeTrial;                                                            // «Contrarreloj*»: la partida es un Contrarreloj de 16 s (Tarea 176)
             NeuroVida.Games.Shared.TimeTrial.SecondsOverride = timeTrial ? TimeTrialSmokeSeconds : 0;
+            if (timeTrial && _current.Id == NeuroVida.Games.Disparate.DisparateContract.GameId) PlayerPrefs.DeleteKey("disparate_recent");        // Tarea 210: el Contrarreloj de Disparate también anota sus frases como «vistas»; se parte sin ninguna para comprobarlo al final
             EditorPlaytestBootstrap.SoundOffOverride = _current.Name.EndsWith("Mudo");                                       // «…Mudo»: con «Efectos de sonido» apagado no tiene que sonar NADA (Tarea 64)
             _audioSampleAt = 0.0;
             _audioHeard = _audioReported = false;
@@ -1436,6 +1437,8 @@ namespace NeuroVida.Bridge.EditorTools
             if (timeTrial)
             {
                 _ttTelemetrySeen = true;
+                if (_current.Id == NeuroVida.Games.Disparate.DisparateContract.GameId && string.IsNullOrEmpty(PlayerPrefs.GetString("disparate_recent", "")))
+                { _errorCount++; Debug.Log("[SmokeTest] Error capturado: el Contrarreloj de ¿Verdad o disparate? no anotó sus frases como vistas (Tarea 210): la próxima partida no las evitaría"); }
                 bool bad = m.tt_hits < 0 || m.tt_errors < 0 || m.tt_peak_level < 1 || m.tt_seconds != TimeTrialSmokeSeconds || m.tt_track_version != NeuroVida.Games.Shared.TimeTrial.TrackVersion(_current.Id) || m.mode_trials != 0 || m.mode_hits != 0;
                 if (bad) { _errorCount++; Debug.Log($"[SmokeTest] Error capturado: la telemetría del Contrarreloj de {_current.Id} no trae la marca bien: tt_hits {m.tt_hits}, tt_errors {m.tt_errors}, tt_peak_level {m.tt_peak_level}, tt_seconds {m.tt_seconds}, tt_track_version {m.tt_track_version}, mode_trials {m.mode_trials}, mode_hits {m.mode_hits}"); }
                 else Debug.Log($"[SmokeTest] telemetría del Contrarreloj de {_current.Id}: {m.tt_hits} aciertos, {m.tt_errors} errores, paso {m.tt_peak_level}, pista v{m.tt_track_version}");

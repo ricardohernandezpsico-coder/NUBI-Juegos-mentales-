@@ -772,7 +772,7 @@ private fun SectionLabel(text: String, tag: String) {
 }
 
 /**
- * El rótulo de la sección de comparación y, bajo él, UNA frase que dice con qué se compara (crema, 16 sp): con la REFERENCIA ESTIMADA (Tarea 205; la redacción de la Tarea 209), «No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para 45 a 54 años es estimada: sale de estudios por edad y de un programa que jugó esta misma pista en un computador, no en tu teléfono.» —va una sola vez por página;
+ * El rótulo de la sección de comparación y, bajo él, UNA frase que dice con qué se compara (crema, 16 sp): con la REFERENCIA ESTIMADA (Tarea 205; la redacción de la Tarea 209), «No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para 45 a 54 años es estimada: sale de estudios por edad y de un programa que jugó este mismo Contrarreloj en un computador, no en tu teléfono.» —va una sola vez por página;
  * las losas repiten solo «referencia estimada»— y, debajo, la fila «De dónde sale la referencia ›» (48 dp) que abre la hoja de los estudios; con los datos de muestra de depuración, «Estos son datos de muestra: solo se ven en la versión de prueba.»; con personas reales, ninguna.
  */
 @Composable

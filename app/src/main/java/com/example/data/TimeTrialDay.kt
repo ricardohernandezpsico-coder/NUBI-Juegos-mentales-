@@ -33,7 +33,7 @@ data class TimeTrialResult(
  * El Contrarreloj de hoy, fase 1: local, sin servidor (Tarea 177, 26-oct; `docs/contrarreloj.md`; diseño de Fable en `auditoria-fable/contrarreloj.md`, mecánica A «La escalera de 2 minutos», elegida por Ricardo). Un juego al día, EL MISMO PARA TODAS LAS PERSONAS (rotación fija de la fecha, como Wordle), en
  * una pista fija de 2 minutos que sube un paso cada N aciertos y es la misma ese día para todos; la marca es «N aciertos en 2 minutos», contando los aciertos MENOS los errores (Tarea 178), y se compara solo con tu récord, tus últimas 5 partidas y la mejor de la semana. Reemplaza al «Desafío de hoy» de la Tarea 167 (`DailyChallenge`, retirado). Lógica pura con pruebas (`TimeTrialDayTest`).
  *
- * Es gratis y se repite sin límite; no cuenta para el futuro tope de partidas libres ([COUNTS_FOR_FREE_CAP]). Desde la Tarea 181 (fase 1b) los cuatro juegos también lo tienen en su ficha («Contrarreloj», con la pista de hoy): gratis y sin tope, sin ningún candado (todavía no hay cobro). No compara con otras personas (`Features.COMPARE` sigue apagado).
+ * Es gratis y se repite sin límite; no cuenta para el futuro tope de partidas libres ([COUNTS_FOR_FREE_CAP]). Desde la Tarea 181 (fase 1b) los cuatro juegos también lo tienen en su ficha («Contrarreloj», con su propia pista): gratis y sin tope, sin ningún candado (todavía no hay cobro). No compara con otras personas (`Features.COMPARE` sigue apagado).
  * El estado del día se DERIVA de lo guardado ([stateOf]): no hay preferencia pasajera.
  */
 object TimeTrialDay {
@@ -80,7 +80,7 @@ object TimeTrialDay {
    */
   fun gameFor(dateKey: String): String = GAMES[Math.floorMod(epochDayOf(dateKey), GAMES.size.toLong()).toInt()]
 
-  /** La FECHA como número (aaaammdd, p. ej. 20261026): es la `track_seed` que se manda a Unity; con la versión de la pista y el id del juego fija la semilla de la pista del día. */
+  /** La FECHA como número (aaaammdd, p. ej. 20261026): es la `track_seed` que se manda a Unity; con la versión de la pista y el id del juego fija la semilla BASE del día; Unity le mezcla un número propio de cada partida (Tarea 210), que la app no guarda. */
   fun trackSeed(dateKey: String): Int = dateKey.filter { it.isDigit() }.toIntOrNull() ?: 0
 
   /** La partida que Unity devolvió, ya en la forma que se guarda: la marca (`tt_hits`), los errores, el paso más alto de la pista, los segundos y la versión de la pista con que se jugó (sin ella, la de hoy). [day] = el día de la pista. */

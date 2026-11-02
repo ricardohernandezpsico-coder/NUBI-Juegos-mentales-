@@ -1074,11 +1074,11 @@ class ContrarrelojPageTest {
     show(compare = estWorld, ageRange = AgeRange.R45_54)
     val b = boxes()
     assertEquals("Esta semana, comparado con tu edad", n("contrarreloj_section_compare"))
-    assertEquals("No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para 45 a 54 años es estimada: sale de estudios por edad y de un programa que jugó esta misma pista en un computador, no en tu teléfono.", n("contrarreloj_estimated_notice"))
+    assertEquals("No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para 45 a 54 años es estimada: sale de estudios por edad y de un programa que jugó este mismo Contrarreloj en un computador, no en tu teléfono.", n("contrarreloj_estimated_notice"))
     assertNull("ya no es un dato de muestra", b["contrarreloj_sample_notice"])
     assertEquals("la frase larga va bajo el rótulo, a 8 dp", 8f, b.getValue("contrarreloj_estimated_notice").y - b.getValue("contrarreloj_section_compare").b, 1.5f)
     assertEquals("y UNA sola vez en toda la pantalla", 1, everythingSaid().count { it.startsWith("No son otras personas:") })
-    assertEquals("las demás se dicen igual con otra franja", "No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para 75 años o más es estimada: sale de estudios por edad y de un programa que jugó esta misma pista en un computador, no en tu teléfono.", Comparison.estimatedNotice(AgeRange.R75_PLUS))
+    assertEquals("las demás se dicen igual con otra franja", "No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para 75 años o más es estimada: sale de estudios por edad y de un programa que jugó este mismo Contrarreloj en un computador, no en tu teléfono.", Comparison.estimatedNotice(AgeRange.R75_PLUS))
   }
 
   // ---------------------------------------------------------------- Tarea 209: «De dónde sale la referencia ›»

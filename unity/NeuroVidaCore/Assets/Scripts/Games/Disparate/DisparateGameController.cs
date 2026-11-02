@@ -55,7 +55,7 @@ namespace NeuroVida.Games.Disparate
 
         private System.Random _rng;
         private AdaptiveDifficulty _dda;
-        /// <summary>El CONTRARRELOJ (Tarea 176; <c>docs/contrarreloj.md</c>): si no es null, la pista es fija (la dicta <c>_tt</c> por aciertos), sin Ráfagas, sin señal que se apaga y sin evitar las frases de las últimas partidas, el DDA no corre, el error cuesta su pausa en el reloj y la respuesta se acepta recién tras un mínimo (la frase se lee). null = juega como siempre.</summary>
+        /// <summary>El CONTRARRELOJ (Tarea 176; <c>docs/contrarreloj.md</c>): si no es null, la pista es una escalera (la dicta <c>_tt</c> por aciertos; cada partida con su propia semilla), sin Ráfagas y sin señal que se apaga, y evita las frases de las últimas partidas como el modo normal (Tarea 210), el DDA no corre, el error cuesta su pausa en el reloj y la respuesta se acepta recién tras un mínimo (la frase se lee). null = juega como siempre.</summary>
         private TimeTrial.Run _tt;
         private float _unlockAt;
         private SentenceBank _bank;
@@ -116,7 +116,7 @@ namespace NeuroVida.Games.Disparate
             _bank = SentenceBank.Load();
             string recent = "";
             try { recent = PlayerPrefs.GetString(RecentKey, ""); } catch (System.Exception) { }
-            _director = new DisparateDirector(_bank, _rng, _tt != null ? null : DisparateContract.RecentIds(recent));       // la pista del día es la misma para todos: no evita las frases que cada persona vio en sus últimas partidas
+            _director = new DisparateDirector(_bank, _rng, DisparateContract.RecentIds(recent));       // también en el Contrarreloj (Tarea 210): cada partida trae su propia pista, así que evita las frases de las últimas partidas, como el modo normal, para que no se aprenda las respuestas
             _director.NoBursts = _tt != null;
             _tally = new DisparateTally();
 
@@ -1201,11 +1201,8 @@ namespace NeuroVida.Games.Disparate
             _plate.gameObject.SetActive(false);
             _warpTarget = 0f;
             SetEdgeStatic(0f);
-            if (_tt == null)                                                                         // las frases del Contrarreloj no cuentan como «vistas» para evitarlas en las partidas de siempre
-            {
-                try { PlayerPrefs.SetString(RecentKey, DisparateContract.PushRecent(PlayerPrefs.GetString(RecentKey, ""), _director.UsedInOrder)); PlayerPrefs.Save(); }
-                catch (System.Exception) { }
-            }
+            try { PlayerPrefs.SetString(RecentKey, DisparateContract.PushRecent(PlayerPrefs.GetString(RecentKey, ""), _director.UsedInOrder)); PlayerPrefs.Save(); }       // las frases de esta partida, también las del Contrarreloj (Tarea 210), se evitan en las próximas
+            catch (System.Exception) { }
 
             int total = _tally.Total, correct = _tally.Correct;
             float acc = total > 0 ? (float)correct / total : 0f;

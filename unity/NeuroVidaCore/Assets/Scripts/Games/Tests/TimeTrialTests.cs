@@ -89,6 +89,127 @@ namespace NeuroVida.Games.Tests
             Assert.AreEqual(8221759096789279619UL, TimeTrial.Seed(20261027, "stroop"));
         }
 
+        // ------------------------------------------------------------------ una pista nueva en cada partida (Tarea 210)
+
+        private static SequenceInitConfig TrialConfig(string game) => new SequenceInitConfig { game_id = game, config = new SequenceConfigDetails { time_trial = true, track_seed = Day } };
+
+        [Test]
+        public void EveryRunOfTheSameDayAndGame_GetsItsOwnSeed_ButTheDaySeedStaysPureAndStable()
+        {
+            foreach (var g in Games)
+            {
+                var a = TimeTrial.Begin(TrialConfig(g));
+                var b = TimeTrial.Begin(TrialConfig(g));
+                Assert.AreNotEqual(a.Seed, b.Seed, g + ": dos partidas del mismo día y juego ya no comparten pista");
+                Assert.AreNotEqual(TimeTrial.Seed(Day, g), a.Seed, g + ": ni la del día a secas");
+                Assert.AreNotEqual(0UL, a.GameNumber, g);
+                Assert.AreEqual(TimeTrial.SeedOfGame(TimeTrial.Seed(Day, g), a.GameNumber), a.Seed, g + ": la semilla de la partida sale del día y de su número");
+                Assert.AreEqual(TimeTrial.Seed(Day, g), TimeTrial.Seed(Day, g), g + ": Seed sigue siendo una función pura");
+            }
+            // los valores fijos de la semilla del día NO cambian (las simulaciones y la referencia dependen de ellos)
+            Assert.AreEqual(3509569136056027780UL, TimeTrial.Seed(20261026, "stroop"));
+            Assert.AreEqual(7850226025669989732UL, TimeTrial.Seed(20261026, "disparate"));
+            Assert.AreEqual(15825842088206235552UL, TimeTrial.Seed(20261026, "radar"));
+        }
+
+        [Test]
+        public void SeedOfGame_IsPure_AndNumberZeroLeavesTheDaySeed()
+        {
+            ulong day = TimeTrial.Seed(Day, "radar");
+            Assert.AreEqual(day, TimeTrial.SeedOfGame(day, 0UL), "con 0, la pista del día a secas: las simulaciones y las pruebas");
+            Assert.AreEqual(TimeTrial.SeedOfGame(day, 12345UL), TimeTrial.SeedOfGame(day, 12345UL));
+            Assert.AreNotEqual(day, TimeTrial.SeedOfGame(day, 12345UL));
+            Assert.AreNotEqual(TimeTrial.SeedOfGame(day, 12345UL), TimeTrial.SeedOfGame(day, 12346UL), "otro número, otra pista");
+            Assert.AreNotEqual(TimeTrial.SeedOfGame(day, 12345UL), TimeTrial.SeedOfGame(TimeTrial.Seed(Day, "stroop"), 12345UL), "el mismo número en otro juego, otra pista");
+            Assert.AreEqual(day, new TimeTrial.Run("radar", Day).Seed, "new Run(juego, día) sin número = la semilla del día (así las simulaciones dan lo de siempre)");
+            Assert.AreEqual(TimeTrial.SeedOfGame(day, 99UL), new TimeTrial.Run("radar", Day, 99UL).Seed);
+        }
+
+        [Test]
+        public void TheGameNumber_IsNeverZero_NeverRepeats_AndATestCanFixIt()
+        {
+            var seen = new HashSet<ulong>();
+            for (int i = 0; i < 2000; i++)
+            {
+                ulong n = TimeTrial.NewGameNumber();
+                Assert.AreNotEqual(0UL, n, "0 quiere decir «sin número»");
+                Assert.IsTrue(seen.Add(n), "el número " + n + " salió dos veces");
+            }
+            var source = TimeTrial.GameNumberSource;
+            try
+            {
+                TimeTrial.GameNumberSource = () => 0UL;
+                Assert.AreEqual(TimeTrial.Seed(Day, "disparate"), TimeTrial.Begin(TrialConfig("disparate")).Seed, "con el número fijo en 0, Begin vuelve a la pista del día");
+                TimeTrial.GameNumberSource = () => 777UL;
+                Assert.AreEqual(TimeTrial.Begin(TrialConfig("radar")).Seed, TimeTrial.Begin(TrialConfig("radar")).Seed, "con el mismo número, la misma pista");
+            }
+            finally { TimeTrial.GameNumberSource = source; }
+        }
+
+        [Test]
+        public void RescateRounds_ComeOutDifferentInEveryRun_SoTheSequenceCannotBeLearned()
+        {
+            // lo que vio Ricardo: tres veces el Contrarreloj de Rescate y las cápsulas salían en el mismo orden
+            var a = TimeTrial.Begin(TrialConfig("radar"));
+            var b = TimeTrial.Begin(TrialConfig("radar"));
+            int same = 0;
+            for (int k = 0; k < 20; k++)
+            {
+                int level = TimeTrial.LevelFor("radar", k);
+                var x = RadarContract.NextRound(level, TimeTrial.TrialRng(a.Seed, k));
+                var y = RadarContract.NextRound(level, TimeTrial.TrialRng(b.Seed, k));
+                bool equal = x.Count == y.Count && x.ExposureMs == y.ExposureMs;
+                for (int i = 0; equal && i < x.Count; i++) equal = x.Capsules[i].Type == y.Capsules[i].Type && x.Capsules[i].X == y.Capsules[i].X && x.Capsules[i].Y == y.Capsules[i].Y;
+                if (equal) same++;
+            }
+            Assert.Less(same, 20, "alguna de las 20 primeras rondas tiene que ser distinta");
+            Assert.LessOrEqual(same, 2, "y casi todas");
+        }
+
+        [Test]
+        public void TheLadderTheMarkAndTheTrackVersionDoNotDependOnTheRunsSeed()
+        {
+            // la forma de la pista es la misma: la versión no sube (los récords y las 3 partidas del lugar no empiezan de nuevo), la escalera y la marca tampoco cambian
+            Assert.AreEqual(2, TimeTrial.TrackVersion("stroop")); Assert.AreEqual(2, TimeTrial.TrackVersion("disparate"));
+            Assert.AreEqual(3, TimeTrial.TrackVersion("radar")); Assert.AreEqual(2, TimeTrial.TrackVersion("acoplamiento"));
+            foreach (var g in Games)
+            {
+                var a = new TimeTrial.Run(g, Day, 1UL);
+                var b = new TimeTrial.Run(g, Day, 987654321UL);
+                var c = new TimeTrial.Run(g, Day);
+                bool[] ok = { true, true, false, true, true, false, true, true, true, true, true, true, false, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true };
+                for (int i = 0; i < ok.Length; i++)
+                {
+                    bool sa = a.Register(ok[i], 119f - 4 * i), sb = b.Register(ok[i], 119f - 4 * i), sc = c.Register(ok[i], 119f - 4 * i);
+                    Assert.AreEqual(sa, sb, g + " ensayo " + i); Assert.AreEqual(sa, sc, g + " ensayo " + i);
+                }
+                Assert.AreEqual((c.Hits, c.Errors, c.Score, c.Level, c.PeakLevel, c.StepHits, c.Trials), (a.Hits, a.Errors, a.Score, a.Level, a.PeakLevel, a.StepHits, a.Trials), g);
+                Assert.AreEqual((c.Hits, c.Errors, c.Score, c.Level, c.PeakLevel, c.StepHits, c.Trials), (b.Hits, b.Errors, b.Score, b.Level, b.PeakLevel, b.StepHits, b.Trials), g);
+                var ma = new StroopSessionMetrics(); var mc = new StroopSessionMetrics();
+                a.Fill(ma); c.Fill(mc);
+                CollectionAssert.AreEqual(mc.tt_t_ms, ma.tt_t_ms, g); CollectionAssert.AreEqual(mc.tt_ok, ma.tt_ok, g); CollectionAssert.AreEqual(mc.tt_level, ma.tt_level, g);
+                Assert.AreEqual((mc.tt_hits, mc.tt_errors, mc.tt_peak_level, mc.tt_seconds, mc.tt_track_version), (ma.tt_hits, ma.tt_errors, ma.tt_peak_level, ma.tt_seconds, ma.tt_track_version), g);
+            }
+        }
+
+        [Test]
+        public void InTheContrarreloj_DisparateAvoidsTheSentencesOfTheLastGames_LikeTheNormalMode()
+        {
+            // lo que hace el controlador (Tarea 210): el Director del Contrarreloj lleva las frases recientes, sin Ráfagas, con el azar de cada ensayo de la pista de ESA partida
+            var bank = SentenceBank.Load();
+            var run = TimeTrial.Begin(TrialConfig("disparate"));
+            var first = new DisparateDirector(bank, new System.Random(1)) { NoBursts = true };
+            for (int k = 0; k < 40; k++) first.Next(TimeTrial.LevelFor("disparate", k), false, false, TimeTrial.TrialRng(run.Seed, k));
+            var recent = DisparateContract.RecentIds(DisparateContract.PushRecent("", first.UsedInOrder));
+            Assert.AreEqual(40, recent.Count, "las 40 frases de la partida quedan anotadas como vistas");
+            var next = TimeTrial.Begin(TrialConfig("disparate"));
+            var second = new DisparateDirector(bank, new System.Random(2), recent) { NoBursts = true };
+            for (int k = 0; k < 40; k++) second.Next(TimeTrial.LevelFor("disparate", k), false, false, TimeTrial.TrialRng(next.Seed, k));
+            int repeated = 0;
+            foreach (var id in second.UsedInOrder) if (recent.Contains(id)) repeated++;
+            Assert.AreEqual(0, repeated, "hay frases de sobra en el banco: la partida siguiente no repite las de la anterior");
+        }
+
         [Test]
         public void TrackRandom_IsDeterministic_AndDoesNotDependOnSystemRandom()
         {
@@ -131,7 +252,7 @@ namespace NeuroVida.Games.Tests
             Assert.AreNotEqual(TimeTrial.TrialRng(seed, 7).Next(), TimeTrial.TrialRng(TimeTrial.Seed(Day + 1, "radar"), 7).Next());
         }
 
-        // ------------------------------------------------------------------ la misma pista para todos
+        // ------------------------------------------------------------------ la misma semilla, la misma pista
 
         [Test]
         public void SameSeed_SameTrack_ForTheFourGenerators()
@@ -422,7 +543,8 @@ namespace NeuroVida.Games.Tests
             var run = TimeTrial.Begin(c);
             Assert.IsNotNull(run);
             Assert.IsTrue(c.config.timed, "el Contrarreloj siempre es contra el reloj");
-            Assert.AreEqual(TimeTrial.Seed(Day, "disparate"), run.Seed);
+            Assert.AreEqual(TimeTrial.SeedOfGame(TimeTrial.Seed(Day, "disparate"), run.GameNumber), run.Seed, "la semilla de la partida: la del día con el número de ESA partida (Tarea 210)");
+            Assert.AreEqual(Day, run.DayKey);
             Assert.IsNull(TimeTrial.Begin(Cfg("disparate", false, true)), "sin time_trial, juega como siempre");
             Assert.IsNull(TimeTrial.Begin(Cfg("calculo", true, false)), "un juego sin pista");
             Assert.IsNull(TimeTrial.Begin(null));

@@ -501,7 +501,7 @@ class ComparisonTest {
   fun `la frase larga de la referencia dice de donde sale y que no son personas, una sola vez y sin prometer el cambio`() {
     for (range in AgeRange.entries) {
       val s = Comparison.estimatedNotice(range)
-      assertEquals("No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para ${range.label} es estimada: sale de estudios por edad y de un programa que jugó esta misma pista en un computador, no en tu teléfono.", s)
+      assertEquals("No son otras personas: Nubi no junta datos de nadie. Por eso la referencia para ${range.label} es estimada: sale de estudios por edad y de un programa que jugó este mismo Contrarreloj en un computador, no en tu teléfono.", s)
       val low = s.lowercase()
       for (promise in listOf("luego", "pronto", "cuando haya", "cuando lleguen", "reales", "después", "más adelante", "mientras", "todavía")) assertFalse("la frase larga promete «$promise»", promise in low)
       assertEquals("«No son otras personas:» es la única vez que se nombra a las personas", 1, Regex("personas").findAll(low).count())

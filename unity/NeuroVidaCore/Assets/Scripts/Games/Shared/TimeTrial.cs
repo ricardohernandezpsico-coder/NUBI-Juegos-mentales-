@@ -10,7 +10,8 @@ namespace NeuroVida.Games.Shared
 {
     /// <summary>
     /// El CONTRARRELOJ, fase 1 (Tarea 176, 26-oct; <c>docs/contrarreloj.md</c>, diseño de Fable en <c>auditoria-fable/contrarreloj.md</c> y su anexo): «La escalera de 2 minutos». Un modo para superarse uno mismo contra el tiempo, como el Puzzle Rush de chess.com: 120 s fijos, la dificultad adaptativa APAGADA y una
-    /// PISTA FIJA —la misma para todas las personas ese día— que parte siempre del paso 1 y sube un paso cada N aciertos (no seguidos). Un error no baja de paso y NO hace esperar (solo da el aviso breve de error, <see cref="ErrorFeedbackSeconds"/>); la MARCA es «aciertos menos errores» con piso en 0 (Tarea 178: antes el error costaba una pausa
+    /// PISTA de forma fija —la escalera es la misma para todas las personas— que parte siempre del paso 1 y sube un paso cada N aciertos (no seguidos). Desde la Tarea 210 (1-nov, decisión de Ricardo: jugó 3 veces Rescate y las cápsulas salían siempre en el mismo orden) CADA PARTIDA tiene su propia semilla —la del día mezclada con un número propio de esa partida
+    /// (<see cref="NewGameNumber"/>)—: la forma de la pista no cambia (los pasos, cada cuántos aciertos se sube, los 120 s y cómo se cuenta la marca), solo qué sale, dónde y en qué orden, para que repetir no deje aprenderse la secuencia. Un error no baja de paso y NO hace esperar (solo da el aviso breve de error, <see cref="ErrorFeedbackSeconds"/>); la MARCA es «aciertos menos errores» con piso en 0 (Tarea 178: antes el error costaba una pausa
     /// de 3, 6 o 9 s y la marca eran solo los aciertos; Ricardo la encontró demasiado larga). Se dice «N aciertos en 2 minutos».
     /// Esta pieza es lógica PURA (sin escena): la pista (el paso por aciertos, la semilla de cada ensayo), la marca neta, el mínimo antes de poder responder en los juegos de dos opciones, el reloj y los textos. Cada juego (Tinta o Palabra, ¿Verdad o disparate?, Rescate relámpago, Acoplamiento) la usa si la config trae
     /// <c>time_trial</c>; <c>TimeTrialTests</c> prueba la pista y <c>TimeTrialFairnessTests</c> prueba que adivinar no gana (con la marca neta: media del azar menor que el 70 % de la del cuidado y su p90 menor que la media del cuidado, en los cuatro).
@@ -125,10 +126,11 @@ namespace NeuroVida.Games.Shared
             return 0f;
         }
 
-        // ------------------------------------------------------------------ la semilla: fecha + versión de la pista + juego
+        // ------------------------------------------------------------------ la semilla: fecha + versión de la pista + juego (+ el número de cada partida)
 
         /// <summary>
-        /// La semilla de la pista de un día (<paramref name="dayKey"/> = la fecha como número, aaaammdd): la fecha, la versión de la pista y el id del juego. Es una función pura y estable (SplitMix64): el mismo día, el mismo juego y la misma versión dan la misma pista en cualquier teléfono, y mañana otra.
+        /// La semilla BASE de la pista de un día (<paramref name="dayKey"/> = la fecha como número, aaaammdd): la fecha, la versión de la pista y el id del juego. Es una función pura y estable (SplitMix64): el mismo día, el mismo juego y la misma versión dan la misma semilla en cualquier teléfono, y mañana otra.
+        /// Desde la Tarea 210 una partida real NO juega esta semilla a secas sino <see cref="SeedOfGame"/> (esta mezclada con el número de la partida); las simulaciones y las pruebas sí la usan directo (<c>new Run(juego, día)</c> sin número), y por eso dan lo mismo que antes.
         /// </summary>
         public static ulong Seed(int dayKey, string gameId)
         {
@@ -140,6 +142,30 @@ namespace NeuroVida.Games.Shared
                 return Mix(x);
             }
         }
+
+        /// <summary>
+        /// El número propio de una partida (Tarea 210): lo que se mezcla con la semilla del día para que cada partida tenga su propia pista. Por omisión es un número al azar de 64 bits (nunca 0); las pruebas lo reemplazan para fijar la pista (<c>() => 0UL</c> la deja en la semilla del día).
+        /// La app NO guarda este número (no hay columna ni tabla nueva); la fase 2 del Contrarreloj, con servidor, tendrá que mandar la semilla de cada partida para poder volver a jugarla y recalcular los aciertos.
+        /// </summary>
+        public static Func<ulong> GameNumberSource = RandomGameNumber;
+
+        /// <summary>El número de la partida que empieza ahora, de <see cref="GameNumberSource"/>.</summary>
+        public static ulong NewGameNumber() => GameNumberSource();
+
+        private static ulong RandomGameNumber()
+        {
+            unchecked
+            {
+                var b = Guid.NewGuid().ToByteArray();
+                ulong n = Mix(BitConverter.ToUInt64(b, 0) ^ (ulong)DateTime.UtcNow.Ticks) ^ Mix(BitConverter.ToUInt64(b, 8));
+                return n == 0UL ? 1UL : n;
+            }
+        }
+
+        /// <summary>
+        /// La semilla de UNA partida: la del día (<paramref name="daySeed"/>, de <see cref="Seed"/>) mezclada con el número de la partida (<paramref name="gameNumber"/>). Con 0 queda la del día a secas (las simulaciones y las pruebas). Es una función pura: la misma pareja da la misma semilla.
+        /// </summary>
+        public static ulong SeedOfGame(ulong daySeed, ulong gameNumber) => gameNumber == 0UL ? daySeed : Mix(daySeed ^ Mix(gameNumber));
 
         /// <summary>
         /// El azar del ENSAYO número <paramref name="index"/> de la pista (<paramref name="stream"/> separa dos usos dentro del mismo ensayo: el contenido y, por ejemplo, la espera del relámpago). Cada ensayo tiene su propia semilla —no un solo flujo que se va gastando—, así que quien falla un ensayo
@@ -207,8 +233,11 @@ namespace NeuroVida.Games.Shared
         public sealed class Run
         {
             public readonly string GameId;
+            /// <summary>La semilla de ESTA partida: <see cref="TimeTrial.SeedOfGame"/> de la del día y <see cref="GameNumber"/>.</summary>
             public readonly ulong Seed;
             public readonly int DayKey;
+            /// <summary>El número propio de esta partida (0 = ninguno: la pista del día a secas, como las simulaciones y las pruebas).</summary>
+            public readonly ulong GameNumber;
             /// <summary>Ensayos ya resueltos: el ensayo que viene lleva este número. En los tres juegos de un acierto o un error por ensayo es la suma de los dos; en Rescate relámpago es la RONDA (una ronda = un número de ensayo para la semilla, con cuantas cápsulas se marquen).</summary>
             public int Trials { get; private set; }
             /// <summary>Los aciertos de la partida (en Rescate relámpago, las cápsulas bien marcadas; Tarea 208).</summary>
@@ -239,11 +268,13 @@ namespace NeuroVida.Games.Shared
             /// <summary>Cuántos ensayos se anotaron para el ritmo (nunca más que <see cref="MaxLoggedTrials"/>).</summary>
             public int LoggedTrials => _tMs.Count;
 
-            public Run(string gameId, int dayKey)
+            /// <param name="gameNumber">El número propio de la partida (<see cref="NewGameNumber"/> en una partida real, Tarea 210). Con 0 —el valor por omisión— la semilla es la del día a secas: las simulaciones (<c>AgeReference</c>, <c>TimeTrialSimulation</c>, <c>TimeTrialFairnessTests</c>) y las pruebas dan lo mismo que antes.</param>
+            public Run(string gameId, int dayKey, ulong gameNumber = 0UL)
             {
                 GameId = gameId;
                 DayKey = dayKey;
-                Seed = TimeTrial.Seed(dayKey, gameId);
+                GameNumber = gameNumber;
+                Seed = SeedOfGame(TimeTrial.Seed(dayKey, gameId), gameNumber);
             }
 
             /// <summary>El paso de la pista en que está la persona ahora.</summary>
@@ -335,12 +366,12 @@ namespace NeuroVida.Games.Shared
             }
         }
 
-        /// <summary>Un Contrarreloj para esta config, o null si no lo es (la config no lo pide o el juego no lo tiene). Con él, <c>timed</c> queda en true.</summary>
+        /// <summary>Un Contrarreloj para esta config, o null si no lo es (la config no lo pide o el juego no lo tiene). Con él, <c>timed</c> queda en true. Cada llamada trae su propia pista (Tarea 210): la semilla del día mezclada con un número nuevo de partida.</summary>
         public static Run Begin(SequenceInitConfig config)
         {
             if (config == null || config.config == null || !config.config.time_trial || !Supports(config.game_id)) return null;
             config.config.timed = true;
-            return new Run(config.game_id, config.config.track_seed);
+            return new Run(config.game_id, config.config.track_seed, NewGameNumber());
         }
 
         // ------------------------------------------------------------------ textos

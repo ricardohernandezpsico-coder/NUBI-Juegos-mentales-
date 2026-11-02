@@ -117,7 +117,7 @@ object UnityGameLauncher {
     val resc_stage: Int = 0,
     // Solo «Acoplamiento» (id acoplamiento): el récord de módulos acoplados en una partida (progreso: la app lo guarda y Unity devuelve el nuevo).
     val dock_best: Int = 0,
-    // CONTRARRELOJ (Tarea 177; `docs/contrarreloj.md`): la partida es «La escalera de 2 minutos» (120 s, dificultad adaptativa apagada, pista fija) y `track_seed` es la FECHA del día como número (aaaammdd: la pista es la misma para todos ese día). Unity pone la versión de la pista.
+    // CONTRARRELOJ (Tarea 177; `docs/contrarreloj.md`): la partida es «La escalera de 2 minutos» (120 s, dificultad adaptativa apagada, pista fija) y `track_seed` es la FECHA del día como número (aaaammdd). Unity pone la versión de la pista y, desde la Tarea 210, un número propio de CADA partida que mezcla con esa fecha: la escalera es la misma, pero cada partida trae su pista (qué sale, dónde y en qué orden), así que repetir no deja aprenderse la secuencia; la app no guarda ese número.
     val time_trial: Boolean = false,
     val track_seed: Int = 0,
     val play_mode: String = "",

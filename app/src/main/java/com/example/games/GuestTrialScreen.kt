@@ -55,7 +55,7 @@ object GuestTrialText {
 }
 
 /**
- * El final de una partida de invitado: el juego, la marca con su unidad, cómo se cuenta («34 aciertos menos 2 errores, en 2 minutos de Contrarreloj.»), el aviso de que NO se guardó y dos botones («Otra vez» con el mismo juego y la misma pista de hoy, y «Listo»). Es para que Ricardo anote las marcas de sus 5 personas en su teléfono sin mezclar sus récords.
+ * El final de una partida de invitado: el juego, la marca con su unidad, cómo se cuenta («34 aciertos menos 2 errores, en 2 minutos de Contrarreloj.»), el aviso de que NO se guardó y dos botones («Otra vez» con el mismo juego y una pista nueva, y «Listo»). Es para que Ricardo anote las marcas de sus 5 personas en su teléfono sin mezclar sus récords.
  */
 @Composable
 fun GuestTrialScreen(trial: GuestTrial, onAgain: () -> Unit, onDone: () -> Unit, modifier: Modifier = Modifier) {
