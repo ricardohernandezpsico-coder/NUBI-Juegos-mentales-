@@ -99,7 +99,7 @@ class Tarea219CapturasTest {
     val ui = HomeUi(name = "Ricardo", now = at(26, 16), tier = RankTier.fromRating(0), streak = 3, weeklyGoal = 4, lamps = lamps, stops = homeStops(listOf("bodega", "calculo", "intrusa"), completed, AppLanguage.SPANISH), pausedTitle = null, flightDay = false, hasBaseline = true, timeTrial = t)
     frame(width, height, scale) {
       Box(Modifier.fillMaxSize()) {
-        HomeContent(ui = ui, onAllGames = {}, onPlay = {}, onResume = {}, onBaseline = {}, onTimeTrial = {}, onLocked = {}, modifier = Modifier.padding(top = 24.dp, bottom = 100.dp))
+        HomeContent(ui = ui, onPlay = {}, onResume = {}, onBaseline = {}, onTimeTrial = {}, onLocked = {}, modifier = Modifier.padding(top = 24.dp, bottom = 100.dp))
         Box(Modifier.align(Alignment.BottomCenter)) { NeuroNavBar(current = AppTab.HOY, onSelect = {}) }
       }
     }

@@ -200,39 +200,44 @@ class GameFlowTest {
     assertEquals(0, savedResults())
   }
 
-  // ---- Hoy (Tarea 158; Tarea 165: sin la lámina de un lugar): al terminar se vuelve a la pestaña desde donde se lanzó, con lo que había abierto («Todos los juegos») como se dejó
+  // ---- La pestaña Juegos (Tarea 158 como «Todos los juegos», la ventana de Hoy; Tarea 220: otra vez pestaña): al terminar se vuelve a la pestaña desde donde se lanzó, con lo que tenía (chip, búsqueda y fila marcada) como se dejó
 
   @Test
-  fun `desde Todos los juegos, al cerrar el resultado se vuelve con el mismo filtro, la misma busqueda y la fila marcada`() {
+  fun `desde la pestana Juegos, al cerrar el resultado se vuelve a ella con el mismo filtro, la misma busqueda y la fila marcada a la vista`() {
     val vm = newViewModel()
-    vm.openAllGames()
     vm.setAllGamesArea("ATENCION")
     vm.setAllGamesQuery("fre")
-    vm.playFromHome("freno", PlayMode.DESAFIO)
+    vm.playFromJuegos("freno", PlayMode.DESAFIO)
     assertEquals("freno", vm.activeGame.value?.gameDef?.id)
+    assertEquals("(la pestaña de ahora no es la que decide: el origen anotado manda)", AppTab.HOY, vm.currentTab.value)
     vm.closeGameOrResult()
-    assertEquals(AppTab.HOY, vm.currentTab.value)
+    assertEquals("«Listo» vuelve a la pestaña Juegos", AppTab.JUEGOS, vm.currentTab.value)
     assertEquals(AllGamesState(area = "ATENCION", query = "fre", mark = "freno"), vm.allGames.value)
+    assertEquals("con la fila marcada a la vista (una vez)", "freno", vm.juegosReveal.value)
+    vm.consumeJuegosReveal()
+    assertNull("y al recogerla no se repite: volver de otra pestaña no mueve la lista", vm.juegosReveal.value)
   }
 
   @Test
-  fun `desde un juego de Hoy sin nada abierto, al cerrar el resultado se sigue en Hoy sin nada abierto`() {
+  fun `una partida lanzada desde Hoy vuelve a Hoy y deja la pestana Juegos como estaba`() {
     val vm = newViewModel()
-    vm.playFromHome("calculo", PlayMode.A_TU_MEDIDA)
-    assertEquals("calculo", vm.activeGame.value?.gameDef?.id)
+    vm.setAllGamesQuery("pil")
+    vm.setAllGamesArea("MEMORIA")
+    vm.startTimeTrial()
+    assertNotNull(vm.activeGame.value)
     vm.closeGameOrResult()
     assertEquals(AppTab.HOY, vm.currentTab.value)
-    assertNull(vm.allGames.value)
+    assertEquals("la pestaña Juegos no se toca", AllGamesState(area = "MEMORIA", query = "pil", mark = null), vm.allGames.value)
+    assertNull("y no pide traer ninguna fila a la vista", vm.juegosReveal.value)
   }
 
   // ---- «Cómo se juega» de la ficha (Tarea 171)
 
   @Test
-  fun `Como se juega, en Sobre este juego, abre el juego con su tutorial aunque ya se haya jugado y al volver deja Todos los juegos como estaba`() {
+  fun `Como se juega, en Sobre este juego, abre el juego con su tutorial aunque ya se haya jugado y al volver deja la pestana Juegos como estaba`() {
     val vm = newViewModel()
-    vm.openAllGames()
     vm.setAllGamesQuery("pil")
-    vm.playTutorialFromHome("piloto")
+    vm.playTutorialFromJuegos("piloto")
     val session = vm.activeGame.value!!
     assertEquals("piloto", session.gameDef.id)
     assertTrue("el tutorial forzado (show_tutorial)", session.tutorial)
@@ -240,11 +245,11 @@ class GameFlowTest {
     assertEquals(PlayMode.A_TU_MEDIDA, session.mode)
     assertNull(vm.lastResult.value)
     vm.closeGameOrResult()
-    assertEquals(AppTab.HOY, vm.currentTab.value)
-    assertEquals("pil", vm.allGames.value?.query)
-    assertEquals("piloto", vm.allGames.value?.mark)
+    assertEquals(AppTab.JUEGOS, vm.currentTab.value)
+    assertEquals("pil", vm.allGames.value.query)
+    assertEquals("piloto", vm.allGames.value.mark)
     // jugar a secas NO lleva el tutorial: solo «Cómo se juega» lo pide
-    vm.playFromHome("piloto", PlayMode.A_TU_MEDIDA)
+    vm.playFromJuegos("piloto", PlayMode.A_TU_MEDIDA)
     assertFalse(vm.activeGame.value!!.tutorial)
   }
 
@@ -273,7 +278,7 @@ class GameFlowTest {
     assertFalse("no es la ruta: no avanza el camino de hoy", session.isDailyFlow)
     vm.closeGameOrResult()
     assertEquals("al terminar se vuelve a Hoy", AppTab.HOY, vm.currentTab.value)
-    assertNull("sin Todos los juegos abierto", vm.allGames.value)
+    assertEquals("y la pestaña Juegos no se toca", AllGamesState(), vm.allGames.value)
   }
 
   @Test
@@ -503,8 +508,7 @@ class GameFlowTest {
     val day = vm.todayKey()
     val ofDay = com.example.data.TimeTrialDay.gameFor(day)
     for ((i, game) in com.example.data.TimeTrialDay.GAMES.withIndex()) {
-      vm.openAllGames()
-      vm.startTimeTrial(game)
+      vm.startTimeTrial(game, fromJuegos = true)
       val s = vm.activeGame.value!!
       assertEquals(game, s.gameDef.id)
       assertEquals("$game: la pista es la de hoy (la fecha local), no la de otro día", day, s.timeTrialDay)
@@ -524,27 +528,30 @@ class GameFlowTest {
   }
 
   @Test
-  fun `el Contrarreloj lanzado desde la ficha vuelve a Todos los juegos con el juego marcado y desde Hoy vuelve a Hoy`() {
+  fun `el Contrarreloj lanzado desde la ficha vuelve a la pestana Juegos con el juego marcado y desde Hoy vuelve a Hoy`() {
     val vm = newViewModel()
-    vm.openAllGames()
     vm.setAllGamesArea("ATENCION")
-    vm.startTimeTrial("stroop")
+    vm.startTimeTrial("stroop", fromJuegos = true)
     vm.onUnityLaunched("LV1")
     vm.onUnityResult(timeTrialResult("stroop", hits = 25), "LV1")
     TestSupport.awaitUntil(message = "No se abrió el final") { vm.lastTimeTrial.value != null }
     vm.closeGameOrResult()
-    assertEquals("«Listo» vuelve a Todos los juegos como estaba, con el juego marcado", AllGamesState(area = "ATENCION", query = "", mark = "stroop"), vm.allGames.value)
+    assertEquals("«Listo» vuelve a la pestaña Juegos", AppTab.JUEGOS, vm.currentTab.value)
+    assertEquals("como estaba, con el juego marcado", AllGamesState(area = "ATENCION", query = "", mark = "stroop"), vm.allGames.value)
+    assertEquals("y a la vista", "stroop", vm.juegosReveal.value)
     assertNull(vm.lastResult.value)
-    // lanzado desde Hoy (sin Todos los juegos abierta): vuelve a Hoy, sin nada abierto
-    vm.closeAllGames()
+    // lanzado desde Hoy: vuelve a Hoy y no toca la pestaña Juegos
+    vm.consumeJuegosReveal()
+    vm.setTab(AppTab.HOY)
     vm.startTimeTrial()
     val today = vm.activeGame.value!!.gameDef.id
     vm.onUnityLaunched("LV2")
     vm.onUnityResult(timeTrialResult(today, hits = 25), "LV2")
     TestSupport.awaitUntil(message = "No se abrió el final de Hoy") { vm.lastTimeTrial.value?.result?.gameId == today }
     vm.closeGameOrResult()
-    assertNull("desde Hoy no queda Todos los juegos abierta", vm.allGames.value)
     assertEquals(AppTab.HOY, vm.currentTab.value)
+    assertEquals("desde Hoy la pestaña Juegos queda como estaba", AllGamesState(area = "ATENCION", query = "", mark = "stroop"), vm.allGames.value)
+    assertNull("sin traer nada a la vista", vm.juegosReveal.value)
   }
 
   @Test
@@ -554,8 +561,7 @@ class GameFlowTest {
     val ofDay = com.example.data.TimeTrialDay.gameFor(day)
     val other = com.example.data.TimeTrialDay.GAMES.first { it != ofDay }
     fun play(game: String, hits: Int, launch: String) {
-      vm.openAllGames()
-      vm.startTimeTrial(game)
+      vm.startTimeTrial(game, fromJuegos = true)
       vm.onUnityLaunched(launch)
       vm.onUnityResult(timeTrialResult(game, hits), launch)
     }
@@ -574,43 +580,56 @@ class GameFlowTest {
     assertEquals("y el de otro juego, del suyo", 26, com.example.data.TimeTrialStats.record(vm.timeTrialResults.value, other))
   }
 
+  /** Tarea 220: Juegos es una pestaña, no una ventana: existe siempre y cambiar de pestaña NO borra el chip, la búsqueda ni la fila marcada (como las otras pestañas recuerdan dónde quedaron, T209b). */
   @Test
-  fun `cerrar Todos los juegos lo olvida y cambiar de pestana tampoco lo reabre`() {
+  fun `cambiar de pestana no borra la busqueda, el chip ni la fila marcada de Juegos`() {
     val vm = newViewModel()
-    vm.openAllGames()
-    vm.closeAllGames()
-    assertNull(vm.allGames.value)
-    vm.openAllGames()
+    assertEquals("existe siempre, sin nada elegido", AllGamesState(), vm.allGames.value)
+    vm.setAllGamesArea("LENGUAJE")
+    vm.setAllGamesQuery("est")
     vm.setTab(AppTab.PROGRESO)
-    assertNull("al irse de Hoy «Todos los juegos» se cierra", vm.allGames.value)
-    vm.setTab(AppTab.HOY)
-    assertNull("y no se reabre al volver", vm.allGames.value)
-    vm.openAllGames()
+    assertEquals(AllGamesState(area = "LENGUAJE", query = "est", mark = null), vm.allGames.value)
+    vm.setTab(AppTab.JUEGOS)
     vm.setTab(AppTab.TU)
-    assertNull("lo mismo yendo a Tú", vm.allGames.value)
+    vm.setTab(AppTab.HOY)
+    assertEquals("ni yendo a Tú ni a Hoy", AllGamesState(area = "LENGUAJE", query = "est", mark = null), vm.allGames.value)
   }
 
   @Test
-  fun `un juego de la ruta de hoy lanzado tras Todos los juegos no lo reabre`() {
+  fun `un juego de la ruta de hoy lanzado tras una partida de Juegos no lleva de vuelta a Juegos`() {
     val vm = newViewModel()
-    vm.openAllGames()
-    vm.playFromHome("freno", PlayMode.DESAFIO)
+    vm.playFromJuegos("freno", PlayMode.DESAFIO)
     vm.launchGame("calculo", isDailyFlow = true)           // «Siguiente: … · 2 de 3» en el final de la partida
     vm.closeGameOrResult()
-    assertNull(vm.allGames.value)
+    assertEquals("la ruta no vuelve a la pestaña Juegos: el origen se borra", AppTab.HOY, vm.currentTab.value)
+    assertNull(vm.juegosReveal.value)
   }
 
   @Test
-  fun `Todos los juegos tambien se recuerda si Android cierra la app a mitad del juego`() {
+  fun `la pestana Juegos tambien se recuerda si Android cierra la app a mitad del juego`() {
     val first = newViewModel()
-    first.openAllGames()
     first.setAllGamesQuery("tinta")
-    first.playFromHome("stroop", PlayMode.A_TU_MEDIDA)
+    first.playFromJuegos("stroop", PlayMode.A_TU_MEDIDA)
     val second = newViewModel()
     assertEquals(AllGamesState(area = null, query = "tinta", mark = "stroop"), second.allGames.value)
     assertEquals(AppTab.HOY, second.currentTab.value)
-    assertEquals("Todos los juegos sigue abierto como estaba (el resultado de Unity lo cierra con «Listo» y no lo borra)", "tinta", second.allGames.value?.query)
-    assertEquals("la fila marcada es el juego que se lanzó", "stroop", second.allGames.value?.mark)
+    assertEquals("la pestaña Juegos sigue como estaba (el resultado de Unity lo cierra con «Listo» y no lo borra)", "tinta", second.allGames.value.query)
+    assertEquals("la fila marcada es el juego que se lanzó", "stroop", second.allGames.value.mark)
+  }
+
+  /** Tarea 220: «Todos los juegos» dejó de ser una ventana de Hoy y `all_open` se fue de `library_focus`; un valor viejo que quedó guardado (origen «hoy» con `all_open`) no abre nada ni rompe: la pestaña Juegos nace vacía y «Listo» vuelve a Hoy. */
+  @Test
+  fun `un all_open guardado por una version anterior no rompe nada tras la muerte del proceso`() {
+    app.getSharedPreferences("library_focus", android.content.Context.MODE_PRIVATE).edit()
+      .putString("origin", "hoy").putString("origin_game", "freno").putBoolean("all_open", true).putString("all_area", "ATENCION").putString("all_query", "fre").putString("all_mark", "freno").commit()
+    val vm = newViewModel()
+    assertEquals("la pestaña Juegos nace vacía: lo viejo no se lee", AllGamesState(), vm.allGames.value)
+    assertEquals(AppTab.HOY, vm.currentTab.value)
+    vm.launchGame("freno")
+    vm.closeGameOrResult()
+    assertEquals(AppTab.HOY, vm.currentTab.value)
+    assertEquals(AllGamesState(), vm.allGames.value)
+    assertNull(vm.juegosReveal.value)
   }
 
   // ---- Avance (Tarea 159): la página de un área no lanza juegos; se abre y se cierra, y cambiar de pestaña la cierra
@@ -637,7 +656,7 @@ class GameFlowTest {
     vm.setTab(AppTab.PROGRESO)
     vm.openAvanceArea("ATENCION")
     vm.setTab(AppTab.HOY)                                   // cambiar de pestaña cierra la página
-    vm.playFromHome("calculo", PlayMode.A_TU_MEDIDA)
+    vm.startTimeTrial()                                     // Hoy lanza el Contrarreloj de hoy
     vm.closeGameOrResult()
     assertEquals(AppTab.HOY, vm.currentTab.value)
     assertNull(vm.avanceArea.value)

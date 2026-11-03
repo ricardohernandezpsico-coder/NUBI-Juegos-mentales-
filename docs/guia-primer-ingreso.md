@@ -82,3 +82,20 @@ Con Hoy reordenada (ruta · «Todos los juegos» · Contrarreloj; `docs/contrarr
 - **El enlace «Encuentra tu punto de partida»** ahora va bajo el bloque del Contrarreloj, no bajo «Todos los juegos»: el aro del paso 2 llega a su caja pero no a su texto (la prueba lo mide con el bloque, `assertInviteClear`).
 - **Sin sol nuevo:** el sol vive solo en la tarjeta de la ruta; el Contrarreloj es celeste.
 - **Pruebas:** `HoyGuideTest` (el orden, los contadores, los textos hablados, «Nubi te muestra Hoy» solo en el primero), `HoyGuideOverlayTest` (todo con el orden nuevo y el hueco sobre el bloque). Las capturas de `HoyGuideScreenshotTest` y `LecturaScreenshotTest` llaman «paso1» al de «Todos los juegos».
+
+## 9. Tarea 220 (3-nov): «Todos los juegos» sale de Hoy y vuelve como pestaña Juegos
+
+Con la pestaña Juegos en la barra (Hoy · Juegos · Contrarreloj · Avance · Tú; `docs/arquitectura-app.md`, «La pestaña Juegos»), el paso «Todos los juegos» pierde su blanco en Hoy. Los pasos siguen la pantalla de arriba abajo (`auditoria-fable/pestana-juegos-historial.md` §4.5) y el hueco baja UNA vez y se queda abajo: **1 el Contrarreloj (el bloque de Hoy), 2 la columna Juegos de la barra, 3 las tres columnas de la derecha**. `GuideStep` es `{ CONTRARRELOJ, JUEGOS, BARRA }` y `GuideTarget`, `{ TIME_TRIAL, JUEGOS, TAB_BAR }` (`ALL_GAMES` se fue).
+
+| Paso | Blanco | Texto del globo | Lo que dice TalkBack |
+|---|---|---|---|
+| Paso 1 de 3 | el BLOQUE del Contrarreloj (sin cambios) | «El Contrarreloj dura 2 minutos y su juego cambia cada día.» | «Nubi te muestra Hoy. Paso 1 de 3. El Contrarreloj, debajo de tu ruta. …» |
+| Paso 2 de 3 | la COLUMNA Juegos de la barra (`GuideTarget.JUEGOS`, la publica su propio `NavItem`) | «Aquí están los 17 juegos: eliges el que quieras.» (sin cambios: «aquí» es la columna iluminada) | «Paso 2 de 3. La pestaña Juegos, en la barra de abajo. …» |
+| Paso 3 de 3 | las TRES columnas de la derecha (`GuideTarget.TAB_BAR`, que ahora empieza en la columna 3) | sin cambios | sin cambios |
+
+- **«Nubi te muestra Hoy»** va solo en el primer paso, como antes.
+- **El hueco del paso 2** lleva 8 dp de aire a la izquierda, a la derecha y arriba; abajo llega hasta donde llega la barra (como el del paso 3, para no entrar en la franja de gestos de Android). Es UNA columna: no incluye a Hoy ni a las tres de la derecha.
+- **`bringIntoView`:** el paso 2 no desliza nada (la barra es fija); el paso 1 sigue trayendo el bloque entero a la vista. Con el bloque 64 dp más arriba (ya no está «Todos los juegos» entre la tarjeta y él) casi nunca hace falta.
+- **Tocar lo iluminado = Seguir** y no cambia de pestaña (la guía no navega): `HoyGuideOverlayTest.tocar_lo_iluminado_…` toca la columna real y comprueba que la barra no recibió ninguna elección.
+- **Una palabra por concepto:** ningún texto de la guía (hablado ni escrito) dice ya «Todos los juegos»; la pestaña y su página se llaman «Juegos».
+- **Pruebas:** `HoyGuideTest` (el orden, los contadores, los textos hablados), `HoyGuideOverlayTest` (el hueco de cada paso, la columna aparte de las tres, tocar lo iluminado, 1,3 y 2,0, 360 dp), `HoyGuideScreenshotTest` y `LecturaScreenshotTest` (sus capturas «paso1» son ahora las del Contrarreloj; «paso2», las de la columna Juegos). Lámina: `docs/previews/tarea-220.png`.

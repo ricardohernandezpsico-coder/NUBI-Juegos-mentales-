@@ -26,11 +26,12 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
 /**
- * Las 4 pestañas (Tarea 215, 2-nov; antes 3, Tarea 158): Hoy (jugar: la ruta del día), Contrarreloj (¿cuál es mi marca y dónde quedo?: la página que antes vivía dentro de Avance), Avance (cómo voy en las cuatro áreas) y Tú (lo mío: tu nombre, tus medallas y los Ajustes).
- * El orden es el de la barra y el del pager (`ordinal`): Hoy y Avance ya no son vecinas, así que entre ellas, como entre Hoy y Tú o Contrarreloj y Tú, hay un fundido y no un deslizado (Tarea 184, `TabPager`).
+ * Las 5 pestañas (Tarea 220, 3-nov; antes 4, Tarea 215; antes 3, Tarea 158): Hoy (jugar: la ruta del día y el Contrarreloj de hoy), Juegos (los 17, con su buscador: «Todos los juegos» vuelve a ser pestaña por decisión de Ricardo), Contrarreloj (¿cuál es mi marca y dónde quedo?), Avance (cómo voy en las cuatro áreas)
+ * y Tú (lo mío: tu nombre, tus medallas y los Ajustes). El orden es el de la barra y el del pager (`ordinal`): solo las vecinas (Hoy–Juegos, Juegos–Contrarreloj, Contrarreloj–Avance, Avance–Tú) se pasan deslizando; entre las demás hay un fundido, para no ver pasar la del medio (Tarea 184, `TabPager`).
  */
 enum class AppTab(val title: String) {
   HOY("Hoy"),
+  JUEGOS("Juegos"),
   CONTRARRELOJ("Contrarreloj"),
   PROGRESO("Avance"),
   TU("Tú")
@@ -41,8 +42,8 @@ enum class AppTab(val title: String) {
 enum class TopPanel { AJUSTES, FUENTES, PREGUNTAS, REFERENCIA }
 
 /**
- * «Todos los juegos» (la ventana de Hoy con los 17): el filtro de área (la clave, `MEMORIA`…; null = Todas), lo escrito en el buscador y el juego marcado (el último que se abrió o se jugó desde ahí). Vive en el ViewModel porque el pager se retira mientras hay un juego encima:
- * al volver de la partida la ventana queda como se dejó (mismo filtro, misma búsqueda y la fila marcada).
+ * La pestaña Juegos (Tarea 220; antes «Todos los juegos», la ventana de Hoy, Tarea 158): el filtro de área (la clave, `MEMORIA`…; null = Todas), lo escrito en el buscador y el juego marcado (el último que se jugó desde ahí). Existe SIEMPRE (la pestaña no se «abre» ni se «cierra») y vive en el ViewModel porque el pager se retira mientras hay un juego encima:
+ * al volver de la partida la pestaña queda como se dejó (mismo filtro, misma búsqueda y la fila marcada). Cambiar de pestaña no lo borra.
  */
 data class AllGamesState(val area: String? = null, val query: String = "", val mark: String? = null)
 
@@ -477,8 +478,8 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   fun openTopPanel(panel: TopPanel?) { _topPanel.value = panel }
 
   /**
-   * Cambia de pestaña (barra de abajo, deslizar, «Ver en Tú» desde Avance). Lo abierto sobre una pestaña (la lámina de un lugar o «Todos los juegos» en Hoy, la lámina de un área en Avance) no sigue abierto al cambiar: la única forma de volver a ello es cerrar el resultado
-   * de un juego lanzado desde ahí ([closeGameOrResult], que no pasa por aquí).
+   * Cambia de pestaña (barra de abajo, deslizar, «Ver en Tú» desde Avance). Lo abierto sobre una pestaña (la página de un área en Avance) no sigue abierto al cambiar: la única forma de volver a ello es cerrar el resultado de un juego lanzado desde ahí ([closeGameOrResult], que no pasa por aquí).
+   * La pestaña Juegos NO es una «ventana abierta» (Tarea 220): su búsqueda, su chip y su fila marcada se quedan donde estaban.
    */
   fun setTab(tab: AppTab) {
     clearOpenSheets()
@@ -492,19 +493,19 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   /**
    * «Contrarreloj de hoy» (Tarea 177; `docs/contrarreloj.md`): el juego de la fecha (el mismo para todas las personas: rotación fija sobre los cuatro de la primera tanda) en «La escalera de 2 minutos»: 120 s, la pista fija del día, sin dificultad adaptativa. NO es la ruta (no la avanza) y se
-   * puede repetir mientras queden partidas (Tarea 218: sin Nubilus Plus solo el de HOY y [com.example.data.TimeTrialDay.FREE_GAMES_PER_DAY] al día, con las tres puertas —Hoy, la ficha y la pestaña— contando igual; con Plus, los cuatro y sin tope: [canPlayTimeTrial]). Al terminar vuelve a donde se vino (Hoy; «Todos los juegos» si se lanzó desde la ficha; la pestaña «Contrarreloj» si [fromTab], Tarea 215). [gameId] lo piden «Otra vez» (el mismo juego, con una pista nueva, aunque el día haya
+   * puede repetir mientras queden partidas (Tarea 218: sin Nubilus Plus solo el de HOY y [com.example.data.TimeTrialDay.FREE_GAMES_PER_DAY] al día, con las tres puertas —Hoy, la ficha y la pestaña— contando igual; con Plus, los cuatro y sin tope: [canPlayTimeTrial]). Al terminar vuelve a donde se vino (Hoy; la pestaña Juegos si se lanzó desde la ficha, [fromJuegos], Tarea 220; la pestaña «Contrarreloj» si [fromTab], Tarea 215). [gameId] lo piden «Otra vez» (el mismo juego, con una pista nueva, aunque el día haya
    * cambiado mientras se jugaba) y el botón «Contrarreloj» de la ficha (Tarea 181: CUALQUIERA de los cuatro juegos, con la fecha y la versión de la pista de ese juego, como Hoy; se guarda igual y, si es el juego del día, Hoy lo ve como jugado o con marca nueva porque su estado sale de la tabla).
    */
-  fun startTimeTrial(gameId: String? = null, day: String? = null, fromTab: Boolean = false) {
+  fun startTimeTrial(gameId: String? = null, day: String? = null, fromTab: Boolean = false, fromJuegos: Boolean = false) {
     val d = day ?: repository.todayKey()
     val g = gameId ?: com.example.data.TimeTrialDay.gameFor(d)
     if (!canPlayTimeTrial(g)) return                      // nunca se lanza una partida sin partidas (la pantalla ya no la ofrece; esto es el seguro)
-    rememberOrigin(if (fromTab) ORIGIN_CONTRARRELOJ else ORIGIN_HOY, g)
+    rememberOrigin(if (fromTab) ORIGIN_CONTRARRELOJ else if (fromJuegos) ORIGIN_JUEGOS else ORIGIN_HOY, g)
     launchGame(g, timeTrialDay = d)
   }
 
   /**
-   * «Otra vez» del final del Contrarreloj: el mismo juego con una pista nueva (Tarea 210), y al terminar vuelve a donde se vino la primera vez (Hoy, o la pestaña «Contrarreloj», Tarea 215): el origen que ya estaba anotado para este juego se conserva en vez de pasar siempre a Hoy.
+   * «Otra vez» del final del Contrarreloj: el mismo juego con una pista nueva (Tarea 210), y al terminar vuelve a donde se vino la primera vez (Hoy, la pestaña Juegos o la pestaña «Contrarreloj», Tareas 215 y 220): el origen que ya estaba anotado para este juego se conserva en vez de pasar siempre a Hoy.
    */
   fun timeTrialAgain(gameId: String, day: String) {
     if (!canPlayTimeTrial(gameId)) return
@@ -893,16 +894,17 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     )
 
   /**
-   * «Listo» del resultado: vuelve a Hoy, de donde se lanzó la partida, y lo deja como estaba (Tarea 159: solo se juega desde Hoy; antes también desde Avance, Tarea 158). Con la lámina del lugar o «Todos los juegos» abierta (mismo filtro, misma búsqueda y la fila marcada).
-   * Si la partida no se lanzó desde Hoy (el recordatorio, el inicio) no hay origen: se queda donde está y no queda nada abierto. También si Android cerró la app durante el juego y el ViewModel es nuevo (el origen vive en disco).
+   * «Listo» del resultado: vuelve a la pestaña de donde se lanzó la partida (Hoy, Juegos o Contrarreloj) y la deja como estaba. En Juegos, con el mismo filtro, la misma búsqueda y la fila marcada a la vista ([juegosReveal]; Tarea 220: antes era la ventana «Todos los juegos» de Hoy).
+   * Si la partida no se lanzó desde una pestaña (el recordatorio, el inicio) no hay origen: se queda donde está y no queda nada abierto. También si Android cerró la app durante el juego y el ViewModel es nuevo (el origen vive en disco).
    */
   fun closeGameOrResult() {
     val gameId = _lastResult.value?.first?.gameId ?: _activeGame.value?.gameDef?.id
     val origin = if (gameId != null && focusPrefs.getString("origin_game", null) == gameId) focusPrefs.getString("origin", null) else null
     when (origin) {
       ORIGIN_HOY -> { _currentTab.value = AppTab.HOY; _avanceArea.value = null }
-      ORIGIN_CONTRARRELOJ -> { _currentTab.value = AppTab.CONTRARRELOJ; _allGames.value = null; _avanceArea.value = null }
-      else -> { _allGames.value = null; _avanceArea.value = null }
+      ORIGIN_JUEGOS -> { _currentTab.value = AppTab.JUEGOS; _juegosReveal.value = gameId; _avanceArea.value = null }
+      ORIGIN_CONTRARRELOJ -> { _currentTab.value = AppTab.CONTRARRELOJ; _avanceArea.value = null }
+      else -> { _avanceArea.value = null }
     }
     focusPrefs.edit().remove("origin").remove("origin_game").apply()
     _activeGame.value = null
@@ -915,24 +917,26 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   private val focusPrefs by lazy { getApplication<Application>().getSharedPreferences("library_focus", android.content.Context.MODE_PRIVATE) }
   private val restoredOrigin: String? get() = focusPrefs.getString("origin", null)
 
-  // «Todos los juegos» abierta desde Hoy (null = cerrada).
-  private val _allGames = MutableStateFlow<AllGamesState?>(
-    if (restoredOrigin == ORIGIN_HOY && focusPrefs.getBoolean("all_open", false))
+  // La pestaña Juegos (Tarea 220): existe siempre. Si Android cerró la app durante una partida lanzada desde ella, se restaura lo que tenía; un `all_open` guardado por una versión anterior («Todos los juegos» como ventana de Hoy) ya no se lee.
+  private val _allGames = MutableStateFlow(
+    if (restoredOrigin == ORIGIN_JUEGOS)
       AllGamesState(focusPrefs.getString("all_area", null), focusPrefs.getString("all_query", null).orEmpty(), focusPrefs.getString("all_mark", null))
-    else null
+    else AllGamesState()
   )
-  val allGames: StateFlow<AllGamesState?> = _allGames.asStateFlow()
-
-  fun openAllGames() { _allGames.value = AllGamesState() }
+  val allGames: StateFlow<AllGamesState> = _allGames.asStateFlow()
 
   /** El chip de área elegido (la clave del área; null = Todas). */
-  fun setAllGamesArea(areaKey: String?) { _allGames.value = _allGames.value?.copy(area = areaKey) }
+  fun setAllGamesArea(areaKey: String?) { _allGames.value = _allGames.value.copy(area = areaKey) }
 
-  /** Lo escrito en el buscador (el campo guarda su propio texto; esto es para volver a él tras una partida). */
-  fun setAllGamesQuery(query: String) { _allGames.value = _allGames.value?.copy(query = query) }
+  /** Lo escrito en el buscador (el campo guarda su propio texto; esto es para volver a él tras una partida o al volver a la pestaña). */
+  fun setAllGamesQuery(query: String) { _allGames.value = _allGames.value.copy(query = query) }
 
-  /** La X o Atrás de «Todos los juegos». */
-  fun closeAllGames() { _allGames.value = null }
+  // El juego que la pestaña Juegos debe traer a la vista UNA vez: lo pone «Listo» de una partida lanzada desde ella y lo recoge la pantalla ([consumeJuegosReveal]). Sin esto, la pestaña (que sale de la composición al deslizar a otra) volvería a la fila marcada
+  // cada vez que se regresa a ella y perdería el deslizado que la persona dejó.
+  private val _juegosReveal = MutableStateFlow<String?>(null)
+  val juegosReveal: StateFlow<String?> = _juegosReveal.asStateFlow()
+
+  fun consumeJuegosReveal() { _juegosReveal.value = null }
 
   // La página de un área abierta en Avance (la clave del área: «MEMORIA»…; Tarea 159: antes la lámina de Tarea 155). Desde ella no se juega, así que no hay nada que recordar al volver de una partida: vive solo en memoria, y cambiar de pestaña la cierra.
   private val _avanceArea = MutableStateFlow<String?>(null)
@@ -966,7 +970,6 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
    */
   fun openContrarrelojFromFinal(gameId: String) {
     focusPrefs.edit().remove("origin").remove("origin_game").apply()
-    _allGames.value = null
     _avanceArea.value = null
     _activeGame.value = null
     _lastResult.value = null
@@ -974,35 +977,35 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     _contrarrelojGame.value = gameId
   }
 
-  /** Nada abierto sobre las pestañas (y sin origen que recordar). */
+  /** Nada abierto sobre las pestañas (y sin origen que recordar). La pestaña Juegos no cuenta: es una pestaña (Tarea 220), no una ventana. */
   private fun clearOpenSheets() {
-    _allGames.value = null
     _avanceArea.value = null
     focusPrefs.edit().remove("origin").remove("origin_game").apply()
   }
 
-  /** Anota de dónde sale esta partida y lo que hay abierto, para volver ahí al cerrar el resultado ([closeGameOrResult]). */
+  /** Anota de dónde sale esta partida y, si es de la pestaña Juegos, cómo estaba (el chip, la búsqueda y la fila marcada), para volver ahí al cerrar el resultado ([closeGameOrResult]). */
   private fun rememberOrigin(origin: String, gameId: String) {
-    val all = _allGames.value?.let { it.copy(mark = gameId) }.also { _allGames.value = it }
-    focusPrefs.edit()
-      .putString("origin", origin).putString("origin_game", gameId)
-      .putBoolean("all_open", all != null).putString("all_area", all?.area).putString("all_query", all?.query.orEmpty()).putString("all_mark", all?.mark)
-      .apply()
+    val edit = focusPrefs.edit().putString("origin", origin).putString("origin_game", gameId)
+    if (origin == ORIGIN_JUEGOS) {
+      val all = _allGames.value.copy(mark = gameId).also { _allGames.value = it }
+      edit.putString("all_area", all.area).putString("all_query", all.query).putString("all_mark", all.mark)
+    }
+    edit.apply()
   }
 
   /**
-   * «Jugar» desde Hoy (una piedrita de «Tu ruta de hoy», una fila de la lámina de un lugar o de «Todos los juegos», o el «Jugar <el que sugiere Nubi>» de la lámina): recuerda que se lanzó de aquí y la lámina o «Todos los juegos» que había abiertos, para volver a ello al terminar.
+   * «Jugar» desde la ficha de un juego de la pestaña Juegos (Tarea 220; antes «Todos los juegos», la ventana de Hoy): recuerda que se lanzó de aquí, con su chip, su búsqueda y la fila marcada, para volver a ello al terminar.
    * Si el juego es el que sigue en la ruta de hoy, su resultado la avanza igual (`recordGameResult` avanza la ruta con el juego que toca).
    */
-  fun playFromHome(gameId: String, mode: com.example.data.PlayMode, timed: Boolean? = null) {
-    rememberOrigin(ORIGIN_HOY, gameId)
+  fun playFromJuegos(gameId: String, mode: com.example.data.PlayMode, timed: Boolean? = null) {
+    rememberOrigin(ORIGIN_JUEGOS, gameId)
     if (timed != null) repository.setReto(gameId, timed)       // se recuerda por juego
     launchGame(gameId, mode = mode, customTimed = timed?.let { it && com.example.data.RetoChoice.supports(gameId) })
   }
 
   /** «Cómo se juega» de la ficha (Tarea 171): abre el juego con su tutorial guiado aunque la persona ya lo haya jugado (`show_tutorial` forzado; la ronda guiada no se guarda). A tu medida, con la elección de reloj que ya tenga el juego. */
-  fun playTutorialFromHome(gameId: String) {
-    rememberOrigin(ORIGIN_HOY, gameId)
+  fun playTutorialFromJuegos(gameId: String) {
+    rememberOrigin(ORIGIN_JUEGOS, gameId)
     launchGame(gameId, tutorial = true)
   }
 
@@ -1150,6 +1153,8 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   private companion object {
     const val ORIGIN_HOY = "hoy"
+    /** La partida se lanzó desde la pestaña Juegos (Tarea 220): al cerrar el resultado se vuelve a ella con la fila marcada a la vista. */
+    const val ORIGIN_JUEGOS = "juegos"
     /** La partida se lanzó desde la pestaña «Contrarreloj» (Tarea 215): al cerrar el resultado se vuelve a ella. */
     const val ORIGIN_CONTRARRELOJ = "contrarreloj"
   }

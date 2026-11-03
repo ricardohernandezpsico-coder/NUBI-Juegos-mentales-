@@ -122,7 +122,7 @@ class RetiredGameTest {
     // no se puede abrir
     vm.launchGame(old)
     assertNull(vm.activeGame.value)
-    vm.playFromHome(old, com.example.data.PlayMode.A_TU_MEDIDA)
+    vm.playFromJuegos(old, com.example.data.PlayMode.A_TU_MEDIDA)
     assertNull(vm.activeGame.value)
   }
 

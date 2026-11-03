@@ -12,7 +12,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -47,9 +52,9 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * «Todos los juegos» (Tarea 158, «La isla es el mapa»; antes esta clase era `LibraryScreenshotTest`, de la pestaña Juegos): la ventana de Hoy con los 17 juegos, su buscador (ignora tildes y mayúsculas), los chips de área y las filas de la lámina de un lugar. Se arma con `AllGamesContent` y datos fijos,
+ * La pestaña «Juegos» (Tarea 220; antes «Todos los juegos», la ventana de Hoy, Tarea 158; antes esta clase era `LibraryScreenshotTest`, de la pestaña Juegos de las cuatro áreas): los 17 juegos, su buscador (ignora tildes y mayúsculas), los chips de área y las filas de la lámina de un lugar. Se arma con `AllGamesContent` y datos fijos,
  * sin ViewModel. Se prueba que estén los 17 agrupados por área, que cada chip filtre, que «rescate relampago» encuentre «Rescate relámpago», que sin resultados haya una frase de Nubi, que la fila marcada quede a la vista y que todo quepa a letra 1,3 y 2,0; y se capturan
- * (`todos-los-juegos`, `todos-los-juegos-memoria`, `todos-los-juegos-letra13`) junto con la ficha de un juego (`library-ficha`, plegada y desplegada, que la abren estas filas).
+ * (`juegos`, `juegos-memoria`, `juegos-letra13`) junto con la ficha de un juego (`library-ficha`, plegada y desplegada, que la abren estas filas).
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -66,18 +71,19 @@ class AllGamesScreenshotTest {
   private var query by mutableStateOf("")
   private var mark by mutableStateOf<String?>(null)
   private var opened: String? = null
-  private var closed = 0
+  private var revealed = 0
 
-  private fun show(fontScale: Float = 1f, widthDp: Int = 393, heightDp: Int = 873) {
+  private fun show(fontScale: Float = 1f, widthDp: Int = 393, heightDp: Int = 873, reveal: String? = null, barInset: Int = 0) {
     composeTestRule.setContent {
       val base = LocalDensity.current
-      CompositionLocalProvider(LocalDensity provides Density(base.density, fontScale)) {
+      CompositionLocalProvider(LocalDensity provides Density(base.density, fontScale), com.example.ui.components.LocalBarInset provides barInset.dp) {
         NeuroVidaTheme {
           Box(Modifier.width(widthDp.dp).height(heightDp.dp)) {
             BoardBackground()
             AllGamesContent(
               places = places, area = area, query = query, mark = mark,
-              onQueryChange = { query = it }, onArea = { area = it }, onClose = { closed++ }, onGame = { opened = it },
+              onQueryChange = { query = it }, onArea = { area = it }, onGame = { opened = it },
+              reveal = reveal, onRevealed = { revealed++ },
               modifier = Modifier.padding(top = 24.dp)
             )
           }
@@ -154,18 +160,43 @@ class AllGamesScreenshotTest {
     assertEquals(0, count("all_area_memoria"))
   }
 
+  /** Tarea 220: es una pestaña, no una ventana: el título es «Juegos» (como el rótulo de la barra), es un encabezado para el lector de pantalla, y no hay X (Atrás hace lo de las otras pestañas). */
   @Test
-  fun la_x_cierra_la_ventana() {
+  fun la_pestana_se_llama_Juegos_es_un_encabezado_y_no_tiene_X() {
     show()
-    composeTestRule.onNodeWithTag("all_games_close").performClick()
-    assertEquals(1, closed)
+    composeTestRule.onNodeWithTag("all_games_title").assertIsDisplayed()
+    composeTestRule.onNodeWithTag("all_games_title").assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
+    assertEquals("el título dice «Juegos»", listOf("Juegos"), composeTestRule.onNodeWithTag("all_games_title").fetchSemanticsNode().config[SemanticsProperties.Text].map { it.text })
+    assertEquals("sin la X", 0, count("all_games_close"))
+    assertEquals("y ya no dice «Todos los juegos»", 0, composeTestRule.onAllNodesWithText("Todos los juegos").fetchSemanticsNodes().size)
+    val r = ArrayList<TextLayoutResult>()
+    composeTestRule.onNodeWithTag("all_games_title").fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult].action?.invoke(r)
+    assertEquals("26 sp, como «Avance» y «Tú»", 26f, r.first().layoutInput.style.fontSize.value, 0.01f)
+  }
+
+  /** La franja de la barra de abajo queda libre (`LocalBarInset`): la lista termina sobre ella, no detrás. */
+  @Test
+  fun la_lista_termina_sobre_la_franja_de_la_barra() {
+    show(heightDp = 873, barInset = 88)
+    val list = composeTestRule.onNodeWithTag("all_games_list").fetchSemanticsNode().boundsInRoot
+    val d = composeTestRule.density.density
+    assertTrue("la lista llega a ${list.bottom / d} dp y la barra empieza en ${873 - 88} dp", list.bottom <= (873f - 88f) * d + 1f)
   }
 
   @Test
   fun la_fila_marcada_queda_a_la_vista_aunque_este_abajo() {
     mark = "intrusa"                                    // un juego de Lenguaje: lo último de la lista
-    show(heightDp = 600)
+    show(heightDp = 600, reveal = "intrusa")
     composeTestRule.onNodeWithTag("place_game_intrusa").assertIsDisplayed()
+    assertEquals("y se avisa UNA vez, para que al volver de otra pestaña la lista quede donde se dejó", 1, revealed)
+  }
+
+  @Test
+  fun sin_reveal_la_lista_no_se_mueve_aunque_haya_una_fila_marcada() {
+    mark = "intrusa"
+    show(heightDp = 600)
+    assertEquals("la fila marcada sigue marcada pero no se trae a la vista", 0, count("place_game_intrusa"))
+    assertEquals(0, revealed)
   }
 
   private fun tocaBienConLetra(scale: Float, label: String) {
@@ -178,20 +209,18 @@ class AllGamesScreenshotTest {
     }
     val search = composeTestRule.onNodeWithTag("all_games_search").fetchSemanticsNode().boundsInRoot
     assertTrue("$label: el buscador mide ≥ 48 dp de alto: ${search.height / d}", search.height >= 48f * d)
-    val close = composeTestRule.onNodeWithTag("all_games_close").fetchSemanticsNode().boundsInRoot
-    assertTrue("$label: la X toca ≥ 48 dp", close.width >= 48f * d && close.height >= 48f * d)
   }
 
-  @Test fun los_chips_el_buscador_y_la_x_tocan_48_dp_con_letra_1_0() = tocaBienConLetra(1f, "letra 1,0")
-  @Test fun los_chips_el_buscador_y_la_x_tocan_48_dp_con_letra_1_3() = tocaBienConLetra(1.3f, "letra 1,3")
-  @Test fun los_chips_el_buscador_y_la_x_tocan_48_dp_con_letra_2_0() = tocaBienConLetra(2f, "letra 2,0")
+  @Test fun los_chips_y_el_buscador_tocan_48_dp_con_letra_1_0() = tocaBienConLetra(1f, "letra 1,0")
+  @Test fun los_chips_y_el_buscador_tocan_48_dp_con_letra_1_3() = tocaBienConLetra(1.3f, "letra 1,3")
+  @Test fun los_chips_y_el_buscador_tocan_48_dp_con_letra_2_0() = tocaBienConLetra(2f, "letra 2,0")
 
   // ---- Capturas
 
-  @Test fun captura_todos_los_juegos() { show(); composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/todos-los-juegos.png") }
-  @Test fun captura_todos_los_juegos_con_memoria() { area = "MEMORIA"; mark = null; show(); composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/todos-los-juegos-memoria.png") }
-  @Test fun captura_todos_los_juegos_buscando() { query = "tinta"; show(); composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/todos-los-juegos-buscando.png") }
-  @Test fun captura_todos_los_juegos_letra_1_3() { show(fontScale = 1.3f); composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/todos-los-juegos-letra13.png") }
+  @Test fun captura_juegos() { show(); composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/juegos.png") }
+  @Test fun captura_juegos_con_memoria() { area = "MEMORIA"; mark = null; show(); composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/juegos-memoria.png") }
+  @Test fun captura_juegos_buscando() { query = "tinta"; show(); composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/juegos-buscando.png") }
+  @Test fun captura_juegos_letra_1_3() { show(fontScale = 1.3f); composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/juegos-letra13.png") }
 
   @Test
   fun sheet() {

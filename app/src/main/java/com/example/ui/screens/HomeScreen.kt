@@ -48,7 +48,6 @@ import com.example.data.TimeTrialStats
 import com.example.data.Week
 import com.example.model.GameRegistry
 import com.example.model.RankTier
-import com.example.ui.components.AreaSquares
 import com.example.ui.components.ClayClockIcon
 import com.example.ui.components.GameEmblem
 import com.example.ui.components.Glyph
@@ -128,7 +127,6 @@ fun HomeScreen(
   )
   HomeContent(
     ui = ui,
-    onAllGames = { viewModel.openAllGames() },
     onPlay = { viewModel.startDailySession() },
     onResume = { viewModel.resumePausedGame() },
     onBaseline = { viewModel.startBaseline() },
@@ -237,14 +235,12 @@ internal fun routeMeta(ui: HomeUi): String {
 }
 
 /**
- * El contenido de Hoy sin ViewModel (Tareas 165, 167 y 177): saludo, la fecha con la meta de la semana, los siete farolitos con tu racha, UNA tarjeta con la ruta de hoy y, debajo, el Contrarreloj de hoy y «Todos los juegos» (y la invitación al punto de partida, si toca). Si algo no cabe (letra del sistema muy grande),
+ * El contenido de Hoy sin ViewModel (Tareas 165, 167, 177 y 220): saludo, la fecha con la meta de la semana, los siete farolitos con tu racha, UNA tarjeta con la ruta de hoy y, debajo, el Contrarreloj de hoy (y la invitación al punto de partida, si toca). «Todos los juegos» ya no está aquí: es la pestaña Juegos (Tarea 220). Si algo no cabe (letra del sistema muy grande),
  * toda la pantalla se desliza; con 1,3 cabe entera en 393 × 873 dp.
  */
 @Composable
 internal fun HomeContent(
   ui: HomeUi,
-  /** La losa «Todos los juegos»: abre la ventana con los 17 y su buscador (Tarea 158). */
-  onAllGames: () -> Unit,
   onPlay: () -> Unit,
   onResume: () -> Unit,
   onBaseline: () -> Unit,
@@ -273,14 +269,14 @@ internal fun HomeContent(
       com.example.ui.components.HoyWeek(ui.lamps, ui.streak, ui.streakNote, streakText = ui.streakText)
       Spacer(Modifier.height(10.dp))
       if (ui.stops.isNotEmpty() || ui.pausedTitle != null) HoyCard(ui, onPlay = onPlay, onResume = onResume, modifier = Modifier.padding(horizontal = 16.dp))
-      HoyBelow(ui, onAllGames = onAllGames, onTimeTrial = onTimeTrial, onLocked = onLocked, onBaseline = onBaseline)
+      HoyBelow(ui, onTimeTrial = onTimeTrial, onLocked = onLocked, onBaseline = onBaseline)
     }
   }
 }
 
 /**
  * LA tarjeta de Hoy: una losa crema con «Tu ruta de hoy» y su meta («1 de 3 · unos 4 minutos») a la izquierda y Nubi posada en su esquina de arriba a la derecha (`hola` de día; de noche duerme, con los ojos cerrados); debajo, los tres juegos de la ruta, cada uno con su emblema, su nombre y su estado en
- * palabras con su marca («Hecho» con el visto sobre lima, «Sigue» con un punto de tinta, «Después» con un aro vacío): NO se tocan —informan; un juego concreto se abre desde «Todos los juegos»—, y el botón sol ADENTRO («Empezar la ruta · 3 juegos», «Seguir la ruta · 2 juegos» o «Seguir tu partida»),
+ * palabras con su marca («Hecho» con el visto sobre lima, «Sigue» con un punto de tinta, «Después» con un aro vacío): NO se tocan —informan; un juego concreto se abre desde la pestaña Juegos—, y el botón sol ADENTRO («Empezar la ruta · 3 juegos», «Seguir la ruta · 2 juegos» o «Seguir tu partida»),
  * el único sol mientras la ruta sigue. Con la ruta COMPLETA la tarjeta se cierra sola (Tarea 167): las tres filas en «Hecho», la meta en negrita («3 de 3 · ruta completa») y Nubi saludando, sin botón ni rótulo; el sol pasa al Contrarreloj de hoy, debajo ([HoyBelow]). Las filas se leen una a una
  * («Bodega de carga, hecho»); el botón es el único toque de la tarjeta.
  */
@@ -405,9 +401,6 @@ private fun HoyStopRow(stop: HomeStop, number: Int, stacked: Boolean) {
     }
   }
 }
-
-/** El rótulo de la losa que abre la ventana con los 17 juegos. */
-internal const val ALL_GAMES_LABEL = "Todos los juegos"
 
 /** Lo que Hoy dice dentro de la tarjeta, bajo el botón, cuando hay algo que decir: la partida en pausa o el Primer vuelo. (Con la ruta completa la tarjeta ya no dice nada: el «Mañana…» pasó al bloque del Desafío, [HoyBelow].) */
 internal fun captionLine(ui: HomeUi): String? = when {
@@ -534,19 +527,7 @@ private fun TimeTrialStatus(line: String) {
 }
 
 /**
- * «Todos los juegos» (Tarea 180; Tarea 219: más grande): la losa crema a todo el ancho de 56 dp (antes 48), con la letra a 18 sp (antes 17) y las cuatro casillas de los colores de las áreas (2 × 2) a 36 dp (antes 28). Nada más: se reconoce por las casillas y el nombre.
- */
-@Composable
-private fun AllGamesButton(onAllGames: () -> Unit, modifier: Modifier = Modifier) {
-  KitButton(
-    text = ALL_GAMES_LABEL, onClick = onAllGames, color = SlabColor.CREAM, fontSize = 18.sp, minHeight = 56.dp,
-    leading = { AreaSquares(size = 36.dp) },
-    modifier = modifier.testTag("btn_all_games").guideTarget(GuideTarget.ALL_GAMES)
-  )
-}
-
-/**
- * El Contrarreloj de hoy bajo «Todos los juegos» (Tarea 219; `auditoria-fable/idea-pestana-contrarreloj.md` §2.2, forma B), con los estados de siempre —sin Nubilus Plus / con Plus—:
+ * El Contrarreloj de hoy bajo la tarjeta de la ruta (Tarea 219; desde la Tarea 220 «Todos los juegos» no está en Hoy y el bloque sube 64 dp; `auditoria-fable/idea-pestana-contrarreloj.md` §2.2, forma B), con los estados de siempre —sin Nubilus Plus / con Plus—:
  *  - **Sin jugar** (la ruta a medias o completa): la losa CELESTE, «Te quedan 3 partidas de hoy.» / «Tu récord: 41 aciertos.» bajo ella, en texto sobre el cielo.
  *  - **Jugado, quedan partidas:** la losa CREMA «Otra vez» con «Hoy: <juego>»; «Te quedan 2 partidas de hoy. Tu récord: 41 aciertos.» / «Tu récord: 41 aciertos.».
  *  - **Marca nueva hoy:** el recuadro plano en celeste claro con el visto («Marca nueva: 43 aciertos en Tinta o Palabra.») y, debajo, «Otra vez» (si quedan partidas; con Plus, siempre) y, sin Plus, «Te quedan 2 partidas de hoy.» (sin el récord: ya está en el recuadro).
@@ -580,16 +561,16 @@ private fun TimeTrialBlock(t: HomeTimeTrial, onTimeTrial: () -> Unit, onLocked: 
 }
 
 /**
- * Bajo la tarjeta (Tareas 167, 177, 180 y 219; «un solo sol a la vez», que ahora vive SOLO en la ruta): «Todos los juegos» (crema, 56 dp) y, debajo, el Contrarreloj de hoy ([TimeTrialBlock]) en su color propio, el celeste. Ya no hay título «Modos de juego». Y, si todavía no hizo la evaluación, la invitación a hacerla.
+ * Bajo la tarjeta (Tareas 167, 177, 180, 219 y 220; «un solo sol a la vez», que vive SOLO en la ruta): el Contrarreloj de hoy ([TimeTrialBlock]) en su color propio, el celeste. Ya no hay título «Modos de juego» ni la losa «Todos los juegos» (es la pestaña Juegos).
+ * Y, si todavía no hizo la evaluación, la invitación a hacerla.
  */
 @Composable
-private fun HoyBelow(ui: HomeUi, onAllGames: () -> Unit, onTimeTrial: () -> Unit, onLocked: () -> Unit, onBaseline: () -> Unit) {
+private fun HoyBelow(ui: HomeUi, onTimeTrial: () -> Unit, onLocked: () -> Unit, onBaseline: () -> Unit) {
   val pending = ui.stops.count { it.state != StopState.DONE }
   val routeDone = ui.stops.isNotEmpty() && pending == 0 && ui.pausedTitle == null
   val t = ui.timeTrial
   Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 4.dp)) {
     if (t == null && routeDone && !ui.flightDay) OnBoardText(ROUTE_TOMORROW, color = HoyCream, fontSize = 17.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp, modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("home_route_tomorrow"), textAlign = TextAlign.Center)
-    AllGamesButton(onAllGames, modifier = Modifier.padding(top = 8.dp))
     if (t != null) TimeTrialBlock(t, onTimeTrial, onLocked)
     if (ui.baselineInvite) {
       // El enlace sigue siendo un enlace pero en crema tenue (`OnNightDim`) con su chevrón, para que no compita con el sol de la ruta o del Desafío

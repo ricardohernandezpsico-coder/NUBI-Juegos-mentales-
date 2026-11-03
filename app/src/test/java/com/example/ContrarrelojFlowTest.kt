@@ -637,9 +637,10 @@ class ContrarrelojFlowTest {
     val main = java.io.File("src/main/java/com/example/MainActivity.kt").readText()
     val keep = main.indexOf("KeepTabsState(show = ")
     val pager = main.indexOf("HorizontalPager(")
-    assertTrue("el pager de las cuatro pestañas está dentro de KeepTabsState", keep in 0 until pager)
-    assertTrue("y se esconde con las mismas condiciones de siempre (juego, resultado, resumen, panel, Todos los juegos)",
-      main.substring(keep, pager).contains("activeGame == null && lastResult == null && sessionSummary == null && topPanel == null && allGames == null"))
+    assertTrue("el pager de las cinco pestañas está dentro de KeepTabsState", keep in 0 until pager)
+    assertTrue("y se esconde con las mismas condiciones de siempre (juego, resultado, resumen, panel; Tarea 220: «Todos los juegos» ya no es una ventana, es la pestaña Juegos)",
+      main.substring(keep, pager).contains("activeGame == null && lastResult == null && sessionSummary == null && topPanel == null") && !main.substring(keep, pager).contains("allGames"))
+    assertTrue("y la pestaña Juegos es una de sus páginas", main.contains("AppTab.JUEGOS -> com.example.ui.screens.AllGamesScreen(viewModel = viewModel)"))
     assertTrue("y la pestaña Contrarreloj es una de sus páginas", main.contains("AppTab.CONTRARRELOJ -> com.example.ui.screens.ContrarrelojScreen(viewModel = viewModel)"))
   }
 }

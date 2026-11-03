@@ -153,7 +153,7 @@ class AppActualScreenshotTest {
   private val BAR_DP = 88
 
   private enum class Scene {
-    HOY, TODOS, FICHA, CONTRARRELOJ, AVANCE, TU, AJUSTES, LICENCIAS, BARRA, BARRA_CONTRARRELOJ, BARRA_AVANCE, BARRA_TU, VUELO_1, VUELO_JUEGO, VUELO_EDAD, VUELO_2, VUELO_PUNTO, VUELO_3, RESULTADO, RESULTADO_RECORD, RESULTADO_CON, MEDALLA_PIEZA, MEDALLA_SIN, CARGA
+    HOY, JUEGOS, FICHA, CONTRARRELOJ, AVANCE, TU, AJUSTES, LICENCIAS, BARRA, BARRA_JUEGOS, BARRA_CONTRARRELOJ, BARRA_AVANCE, BARRA_TU, VUELO_1, VUELO_JUEGO, VUELO_EDAD, VUELO_2, VUELO_PUNTO, VUELO_3, RESULTADO, RESULTADO_RECORD, RESULTADO_CON, MEDALLA_PIEZA, MEDALLA_SIN, CARGA
   }
 
   private val rastro = GamePlayResult(
@@ -192,7 +192,10 @@ class AppActualScreenshotTest {
                     CompositionLocalProvider(LocalBarInset provides barInset) { Box(top) { HomeScreen(viewModel = vm!!) } }
                     if (!sheetOpen) NavBar(AppTab.HOY) { barPx = it }
                   }
-                  Scene.TODOS -> Box(top) { AllGamesScreen(viewModel = vm!!) }                          // «Todos los juegos»: ocupa toda la pantalla y esconde la barra (Tarea 158)
+                  Scene.JUEGOS -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) {                  // la pestaña Juegos (Tarea 220; antes «Todos los juegos», una ventana sin barra, Tarea 158)
+                    CompositionLocalProvider(LocalBarInset provides barInset) { Box(top) { AllGamesScreen(viewModel = vm!!) } }
+                    NavBar(AppTab.JUEGOS) { barPx = it }
+                  }
                   Scene.FICHA -> Box(Modifier.fillMaxSize().background(Color(0xFF050823)).padding(horizontal = 14.dp, vertical = 12.dp), contentAlignment = Alignment.Center) {
                     val g = GameRegistry.getById("radar")!!
                     val now = System.currentTimeMillis()
@@ -215,6 +218,7 @@ class AppActualScreenshotTest {
                   Scene.AJUSTES -> Box(top) { SettingsPanel(viewModel = vm!!, onClose = {}) }
                   Scene.LICENCIAS -> Box(top) { LicensesScreen(onClose = {}) }
                   Scene.BARRA -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) { NavBar(AppTab.HOY) }
+                  Scene.BARRA_JUEGOS -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) { NavBar(AppTab.JUEGOS) }
                   Scene.BARRA_CONTRARRELOJ -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) { NavBar(AppTab.CONTRARRELOJ) }
                   Scene.BARRA_AVANCE -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) { NavBar(AppTab.PROGRESO) }
                   Scene.BARRA_TU -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) { NavBar(AppTab.TU) }
@@ -297,17 +301,16 @@ class AppActualScreenshotTest {
     r.shot("hoy-letra20", 873, 2f)                                                  // Tarea 165: con letra 2,0 Hoy se desliza (la tarjeta no se corta)
   }
 
-  // ---------------------------------------------------------------- Todos los juegos
+  // ---------------------------------------------------------------- Juegos
 
-  /** La ventana con los 17 juegos, su buscador y los chips de área (Tarea 158): sin filtro, con «Memoria» y con letra 1,3. */
+  /** La pestaña Juegos con la barra de cinco, los 17 juegos, su buscador y los chips de área (Tarea 220; antes «Todos los juegos», Tarea 158): sin filtro, con letra 1,3 y con «Memoria». */
   @Test
-  fun todos_los_juegos() {
-    val r = Rig(viewModel(), Scene.TODOS)
-    composeTestRule.runOnIdle { r.vm!!.openAllGames() }
-    r.settle(); r.shot("todos-los-juegos", 873)
-    r.shot("todos-los-juegos-letra13", 873, 1.3f)
+  fun juegos() {
+    val r = Rig(viewModel(), Scene.JUEGOS)
+    r.settle(); r.shot("juegos", 873)
+    r.shot("juegos-letra13", 873, 1.3f)
     composeTestRule.runOnIdle { r.vm!!.setAllGamesArea("MEMORIA") }
-    r.settle(); r.shot("todos-los-juegos-memoria", 873, 1f)
+    r.settle(); r.shot("juegos-memoria", 873, 1f)
   }
 
   /** La ficha de un juego (Tarea 140): plegada por defecto, desplegada con «Listo» y las dos con la letra del sistema al 130 %. */
@@ -417,7 +420,9 @@ class AppActualScreenshotTest {
     val r = Rig(null, Scene.BARRA)
     r.settle(); r.shot("barra", 873)
     r.shot("barra-letra13", 873, 1.3f)
-    r.go(Scene.BARRA_CONTRARRELOJ, 873); r.shot("barra-contrarreloj", 873)       // Tarea 215: la pestaña nueva, con columnas de ancho desigual
+    r.go(Scene.BARRA_JUEGOS, 873); r.shot("barra-juegos", 873)                   // Tarea 220: la barra de cinco
+    r.shot("barra-juegos-letra13", 873, 1.3f)
+    r.go(Scene.BARRA_CONTRARRELOJ, 873); r.shot("barra-contrarreloj", 873)       // Tarea 215: la pestaña de las marcas, con columnas de ancho desigual
     r.shot("barra-contrarreloj-letra13", 873, 1.3f)
     r.go(Scene.BARRA_AVANCE, 873); r.shot("barra-avance", 873)                   // cada pestaña elegida (Tarea 158: la lámina mide los íconos de las tres)
     r.shot("barra-avance-letra13", 873, 1.3f)

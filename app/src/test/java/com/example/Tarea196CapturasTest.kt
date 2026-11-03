@@ -52,7 +52,7 @@ class Tarea196CapturasTest {
         NeuroVidaTheme {
           Box(Modifier.width(widthDp.dp).height(heightDp.dp)) {
             BoardBackground()
-            AllGamesContent(places = places, area = area, query = "", mark = null, onQueryChange = {}, onArea = {}, onClose = {}, onGame = {}, modifier = Modifier.padding(top = 24.dp))
+            AllGamesContent(places = places, area = area, query = "", mark = null, onQueryChange = {}, onArea = {}, onGame = {}, modifier = Modifier.padding(top = 24.dp))
           }
         }
       }

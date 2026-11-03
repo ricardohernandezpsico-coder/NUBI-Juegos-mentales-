@@ -81,7 +81,7 @@ fun Modifier.tabFade(tabPager: TabPager): Modifier = graphicsLayer {
  * El pager de las cuatro pestañas, sincronizado con la pestaña que guarda el ViewModel.
  * - Si [currentTab] cambia por fuera (se tocó una pestaña de la barra, se volvió de un juego…), el pager va hasta ella:
  *   - a una pestaña VECINA, se desliza (300 ms con la curva enfatizada de `NubiMotion`);
- *   - a una que NO es vecina (Hoy ↔ Avance, Hoy ↔ Tú o Contrarreloj ↔ Tú), un «fade through» de Material en vez de deslizar: la pestaña que queda en el medio no se ve pasar (la página de ahora se desvanece en [NubiMotion.TAB_FADE_OUT_MS] ms y entra la nueva en
+ *   - a una que NO es vecina (Hoy ↔ Contrarreloj, Hoy ↔ Avance, Hoy ↔ Tú, Juegos ↔ Avance, Juegos ↔ Tú o Contrarreloj ↔ Tú; Tarea 220: las vecinas son Hoy–Juegos, Juegos–Contrarreloj, Contrarreloj–Avance y Avance–Tú), un «fade through» de Material en vez de deslizar: la pestaña que queda en el medio no se ve pasar (la página de ahora se desvanece en [NubiMotion.TAB_FADE_OUT_MS] ms y entra la nueva en
  *     [NubiMotion.TAB_FADE_IN_MS], con una escala de [NubiMotion.TAB_FADE_MIN_SCALE] a 1: 300 ms en total, los de «pestaña»);
  *   - con «quitar animaciones», de golpe, a cualquiera.
  *   Deslizar con el dedo no cambia: lo decide el pager.
@@ -109,7 +109,7 @@ fun rememberTabPager(currentTab: AppTab, onTabSettled: (AppTab) -> Unit): TabPag
       tabPager.settleFade()
     } else {
       tabPager.setPending(target)
-      val skipsAMiddlePage = abs(target - pagerState.currentPage) >= 2          // Hoy ↔ Avance, Hoy ↔ Tú, Contrarreloj ↔ Tú: deslizar pasaría por la del medio
+      val skipsAMiddlePage = abs(target - pagerState.currentPage) >= 2          // Hoy ↔ Contrarreloj, Hoy ↔ Avance, Hoy ↔ Tú, Juegos ↔ Avance...: deslizar pasaría por la del medio
       when {
         reduce -> { tabPager.snapFade(); pagerState.scrollToPage(target) }
         skipsAMiddlePage -> tabPager.fadeThrough(target)

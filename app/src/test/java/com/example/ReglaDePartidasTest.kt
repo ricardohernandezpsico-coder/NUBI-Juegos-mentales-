@@ -255,7 +255,7 @@ class ReglaDePartidasTest {
         NeuroVidaTheme {
           Box(Modifier.width(width.dp).height(height.dp)) {
             BoardBackground()
-            HomeContent(ui = ui, onAllGames = {}, onPlay = {}, onResume = {}, onBaseline = {}, onTimeTrial = { homeTrials++ }, onLocked = { lockedTaps++ }, modifier = Modifier.padding(top = 24.dp, bottom = 163.dp))
+            HomeContent(ui = ui, onPlay = {}, onResume = {}, onBaseline = {}, onTimeTrial = { homeTrials++ }, onLocked = { lockedTaps++ }, modifier = Modifier.padding(top = 24.dp, bottom = 163.dp))
           }
         }
       }
@@ -269,8 +269,8 @@ class ReglaDePartidasTest {
     assertEquals("Hoy ya jugaste tus 3 partidas. Mañana: ¿Verdad o disparate?", textOf("home_timetrial_tomorrow"))
     assertEquals(PlusAccess.LOCKED_GAMES, textOf("home_locked_games_phrase"))
     assertEquals("UNA sola fila gris", 1, count("home_locked_games"))
-    assertTrue("en orden (Tarea 219: Hoy reordenada): «Todos los juegos», el recuadro de la frase y la fila gris", top("btn_all_games") < top("home_timetrial_none") && top("home_timetrial_none") < top("home_locked_games"))
-    assertEquals("«Todos los juegos» sigue", 1, count("btn_all_games"))
+    assertTrue("en orden: la tarjeta, el recuadro de la frase y la fila gris", top("home_card") < top("home_timetrial_none") && top("home_timetrial_none") < top("home_locked_games"))
+    assertEquals("«Todos los juegos» ya no está en Hoy (Tarea 220: es la pestaña Juegos)", 0, count("btn_all_games"))
     rule.onNodeWithTag("home_locked_games").performScrollTo().performClick(); rule.waitForIdle()
     assertEquals("la fila abre la hoja", 1, lockedTaps)
     assertEquals(0, homeTrials)
@@ -318,7 +318,7 @@ class ReglaDePartidasTest {
     }
     walk(rule.onRoot(useUnmergedTree = true).fetchSemanticsNode())
     assertEquals("ninguna palabra partida en Hoy sin partidas a $width dp con letra $scale", emptyList<String>(), cuts)
-    assertTrue("«Todos los juegos» queda más arriba que el recuadro y la fila gris (Tarea 219)", bottom("btn_all_games") <= top("home_timetrial_none") + 1f && bottom("home_timetrial_none") <= top("home_locked_games") + 1f)
+    assertTrue("la tarjeta queda más arriba que el recuadro y la fila gris (Tarea 220: sin «Todos los juegos» entre medio)", bottom("home_card") <= top("home_timetrial_none") + 1f && bottom("home_timetrial_none") <= top("home_locked_games") + 1f)
   }
 
   @Test fun Hoy_sin_partidas_a_393_x_873_con_letra_1_0() = hoyCabe(393, 873, 1f)

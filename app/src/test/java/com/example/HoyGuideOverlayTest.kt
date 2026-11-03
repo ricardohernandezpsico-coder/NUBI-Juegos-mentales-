@@ -118,7 +118,7 @@ class HoyGuideOverlayTest {
   )
 
   private var trialed = 0
-  private var allGames = 0
+  private var selectedTab: AppTab? = null
   private val targets = GuideTargets()
   private var step by mutableStateOf<GuideStep?>(null)
   private var seen = false
@@ -137,10 +137,10 @@ class HoyGuideOverlayTest {
             // como en `NeuroVidaApp`: lo de abajo queda fuera del lector y sin toques mientras la guía está abierta
             Box(Modifier.fillMaxSize().hiddenUntil(step == null)) {
               HomeContent(
-                ui = ui, onAllGames = { allGames++ }, onPlay = {}, onResume = {}, onBaseline = {}, onTimeTrial = { trialed++ },
+                ui = ui, onPlay = {}, onResume = {}, onBaseline = {}, onTimeTrial = { trialed++ },
                 modifier = Modifier.padding(top = 24.dp, bottom = 95.dp)
               )
-              Box(Modifier.align(Alignment.BottomCenter)) { NeuroNavBar(current = AppTab.HOY, onSelect = {}) }
+              Box(Modifier.align(Alignment.BottomCenter)) { NeuroNavBar(current = AppTab.HOY, onSelect = { selectedTab = it }) }
             }
             step?.let { s ->
               HoyGuideOverlay(
@@ -156,7 +156,7 @@ class HoyGuideOverlayTest {
     composeTestRule.waitForIdle()
   }
 
-  private fun start() { composeTestRule.runOnUiThread { step = HoyGuide.steps.first() }; composeTestRule.waitForIdle() }          // el paso 1: desde la Tarea 219, «Todos los juegos»
+  private fun start() { composeTestRule.runOnUiThread { step = HoyGuide.steps.first() }; composeTestRule.waitForIdle() }          // el paso 1: desde la Tarea 220, el Contrarreloj
 
   private fun holeOf(s: GuideStep): Rect {
     val pad = 8f * composeTestRule.density.density
@@ -164,7 +164,7 @@ class HoyGuideOverlayTest {
     return Rect(r.left - pad, r.top - pad, r.right + pad, r.bottom + pad)
   }
 
-  private fun targetOfStep(s: GuideStep): GuideTarget = when (s) { GuideStep.CONTRARRELOJ -> GuideTarget.TIME_TRIAL; GuideStep.TODOS -> GuideTarget.ALL_GAMES; GuideStep.BARRA -> GuideTarget.TAB_BAR }
+  private fun targetOfStep(s: GuideStep): GuideTarget = when (s) { GuideStep.CONTRARRELOJ -> GuideTarget.TIME_TRIAL; GuideStep.JUEGOS -> GuideTarget.JUEGOS; GuideStep.BARRA -> GuideTarget.TAB_BAR }
 
   private fun bounds(tag: String): Rect = composeTestRule.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
   private fun exists(tag: String) = composeTestRule.onAllNodes(hasTestTag(tag)).fetchSemanticsNodes().isNotEmpty()
@@ -176,7 +176,7 @@ class HoyGuideOverlayTest {
   fun al_abrir_hay_velo_globo_con_el_texto_del_paso_1_Seguir_y_Saltar_la_guia() {
     show(); start()
     composeTestRule.onNodeWithTag("guide_veil").assertExists()
-    assertEquals("lo que dice el lector es el paso, el lugar de lo iluminado y el texto", HoyGuide.spoken(GuideStep.TODOS), describe("guide_globe"))
+    assertEquals("lo que dice el lector es el paso, el lugar de lo iluminado y el texto", HoyGuide.spoken(GuideStep.CONTRARRELOJ), describe("guide_globe"))
     composeTestRule.onNodeWithTag("btn_guide_next").assertExists()
     composeTestRule.onNodeWithText("Seguir ›").assertExists()
     composeTestRule.onNodeWithTag("btn_guide_skip").assertExists()
@@ -184,26 +184,32 @@ class HoyGuideOverlayTest {
   }
 
   @Test
-  fun el_hueco_del_paso_1_cae_sobre_Todos_los_juegos_y_el_del_paso_2_sobre_el_bloque_del_Contrarreloj() {
+  fun el_hueco_del_paso_1_cae_sobre_el_bloque_del_Contrarreloj_y_el_del_paso_2_sobre_la_columna_Juegos_de_la_barra() {
     show(); start()
     val hole1 = bounds("guide_hole")
-    val all = targets.rects.getValue(GuideTarget.ALL_GAMES)
+    val block = targets.rects.getValue(GuideTarget.TIME_TRIAL)
     val pad = 8f * composeTestRule.density.density
-    assertEquals("el hueco = el botón real con 8 dp de aire", all.left - pad, hole1.left, 1.5f)
-    assertEquals(all.top - pad, hole1.top, 1.5f)
-    assertEquals(all.right + pad, hole1.right, 1.5f)
-    assertEquals(all.bottom + pad, hole1.bottom, 1.5f)
+    assertEquals("el blanco del paso 1 es el BLOQUE (la losa y su línea; sin partidas, el recuadro con la fila gris), no un botón: el hueco = el bloque con 8 dp de aire", block.left - pad, hole1.left, 1.5f)
+    assertEquals(block.top - pad, hole1.top, 1.5f)
+    assertEquals(block.right + pad, hole1.right, 1.5f)
+    assertEquals(block.bottom + pad, hole1.bottom, 1.5f)
     composeTestRule.onNodeWithTag("btn_guide_next").performClick()
     composeTestRule.waitForIdle()
-    assertEquals(GuideStep.CONTRARRELOJ, step)
-    val block = targets.rects.getValue(GuideTarget.TIME_TRIAL)
-    assertEquals("el blanco del paso 2 es el BLOQUE (la losa y su línea; sin partidas, el recuadro con la fila gris), no un botón", block.top - pad, bounds("guide_hole").top, 1.5f)
-    assertEquals(block.bottom + pad, bounds("guide_hole").bottom, 1.5f)
-    assertTrue("el bloque va DEBAJO de «Todos los juegos»: la guía sigue la pantalla de arriba abajo", block.top >= all.bottom)
+    assertEquals(GuideStep.JUEGOS, step)
+    val juegos = targets.rects.getValue(GuideTarget.JUEGOS)
+    val bar = targets.rects.getValue(GuideTarget.TAB_BAR)
+    val hole2 = bounds("guide_hole")
+    assertEquals("el blanco del paso 2 es la COLUMNA Juegos de la barra: 8 dp de aire a la izquierda, a la derecha y arriba", juegos.left - pad, hole2.left, 1.5f)
+    assertEquals(juegos.right + pad, hole2.right, 1.5f)
+    assertEquals(juegos.top - pad, hole2.top, 1.5f)
+    assertTrue("abajo llega hasta donde llega la barra, no entra en la franja de gestos: ${hole2.bottom} contra ${juegos.bottom}", hole2.bottom <= juegos.bottom + 1f)
+    assertTrue("la columna Juegos va ANTES de las tres de la derecha: ${juegos.right} contra ${bar.left}", juegos.right <= bar.left + 1f)
+    assertTrue("y es solo UNA columna, no la barra entera", juegos.width < bar.width)
+    assertTrue("la guía sigue la pantalla de arriba abajo: el bloque de Hoy está arriba y la columna Juegos abajo", block.bottom <= juegos.top)
   }
 
   @Test
-  fun el_hueco_del_paso_3_cubre_las_pestanas_Contrarreloj_Avance_y_Tu_y_no_Hoy() {
+  fun el_hueco_del_paso_3_cubre_las_pestanas_Contrarreloj_Avance_y_Tu_y_no_Hoy_ni_Juegos() {
     show(); start()
     composeTestRule.runOnUiThread { step = GuideStep.BARRA }; composeTestRule.waitForIdle()
     // (con la guía abierta la barra queda fuera del lector de pantalla: sus nodos solo están en el árbol sin fusionar)
@@ -212,9 +218,10 @@ class HoyGuideOverlayTest {
     val hole = bounds("guide_hole")
     val pad = 8f * composeTestRule.density.density
     // (Tarea 215: las columnas ya no son tercios; el hueco empieza donde termina la columna de Hoy, la que mide la barra)
-    val hoy = raw("nav_item_hoy"); val contrarreloj = raw("nav_item_contrarreloj"); val tu = raw("nav_item_tu")
-    assertEquals("empieza donde empieza la columna de Contrarreloj (donde termina Hoy)", contrarreloj.left - pad, hole.left, 1.5f)
+    val hoy = raw("nav_item_hoy"); val juegos = raw("nav_item_juegos"); val contrarreloj = raw("nav_item_contrarreloj"); val tu = raw("nav_item_tu")
+    assertEquals("empieza donde empieza la columna de Contrarreloj (donde termina Juegos)", contrarreloj.left - pad, hole.left, 1.5f)
     assertTrue("Hoy queda fuera del hueco: ${hoy.right} contra ${hole.left}", hoy.right <= hole.left + pad + 1f)
+    assertTrue("y Juegos también (Tarea 220: tiene su propio paso, el 2): ${juegos.right} contra ${hole.left}", juegos.right <= hole.left + pad + 1f)
     assertTrue("y llega hasta el borde de la derecha, con Tú adentro", hole.right >= bar.right - 1f && hole.right >= tu.right - 1f)
     assertEquals(bar.top - pad, hole.top, 1.5f)
     assertTrue("no entra en la franja de gestos (ni en los 3 botones): abajo llega hasta donde llega la barra", hole.bottom <= bar.bottom + 1f)
@@ -226,7 +233,7 @@ class HoyGuideOverlayTest {
   fun Seguir_tres_veces_cierra_y_marca_y_el_tercer_chip_dice_Listo() {
     show(); start()
     composeTestRule.onNodeWithTag("btn_guide_next").performClick(); composeTestRule.waitForIdle()
-    assertEquals(GuideStep.CONTRARRELOJ, step); assertFalse(seen)
+    assertEquals(GuideStep.JUEGOS, step); assertFalse(seen)
     composeTestRule.onNodeWithTag("btn_guide_next").performClick(); composeTestRule.waitForIdle()
     assertEquals(GuideStep.BARRA, step); assertFalse(seen)
     composeTestRule.onNodeWithText("Listo").assertExists()
@@ -241,7 +248,7 @@ class HoyGuideOverlayTest {
   fun Saltar_la_guia_cierra_y_marca_desde_el_paso_2() {
     show(); start()
     composeTestRule.onNodeWithTag("btn_guide_next").performClick(); composeTestRule.waitForIdle()
-    assertEquals(GuideStep.CONTRARRELOJ, step)
+    assertEquals(GuideStep.JUEGOS, step)
     composeTestRule.onNodeWithTag("btn_guide_skip").performClick(); composeTestRule.waitForIdle()
     assertNull(step)
     assertTrue(seen)
@@ -257,18 +264,18 @@ class HoyGuideOverlayTest {
   }
 
   @Test
-  fun tocar_lo_iluminado_avanza_igual_que_Seguir_y_NO_abre_Todos_los_juegos_ni_lanza_el_Contrarreloj() {
+  fun tocar_lo_iluminado_avanza_igual_que_Seguir_y_NO_lanza_el_Contrarreloj_ni_cambia_de_pestana() {
     show(); start()
-    val all = targets.rects.getValue(GuideTarget.ALL_GAMES)
-    composeTestRule.onRoot().performTouchInput { click(Offset(all.center.x, all.center.y)) }       // un toque en el botón REAL, que está bajo el hueco
-    composeTestRule.waitForIdle()
-    assertEquals("el toque sobre lo iluminado hace lo mismo que «Seguir»", GuideStep.CONTRARRELOJ, step)
-    assertEquals("y no abrió «Todos los juegos»", 0, allGames)
     val real = targets.rects.getValue(GuideTarget.TIME_TRIAL)
-    composeTestRule.onRoot().performTouchInput { click(Offset(real.center.x, real.center.y)) }
+    composeTestRule.onRoot().performTouchInput { click(Offset(real.center.x, real.center.y)) }     // un toque en el bloque REAL, que está bajo el hueco
+    composeTestRule.waitForIdle()
+    assertEquals("el toque sobre lo iluminado hace lo mismo que «Seguir»", GuideStep.JUEGOS, step)
+    assertEquals("y no lanzó el Contrarreloj (una partida de 2 minutos sin haberla pedido)", 0, trialed)
+    val juegos = targets.rects.getValue(GuideTarget.JUEGOS)
+    composeTestRule.onRoot().performTouchInput { click(Offset(juegos.center.x, juegos.center.y)) }  // y uno en la columna REAL de la barra
     composeTestRule.waitForIdle()
     assertEquals(GuideStep.BARRA, step)
-    assertEquals("ni lanzó el Contrarreloj (una partida de 2 minutos sin haberla pedido)", 0, trialed)
+    assertNull("ni abrió la pestaña Juegos: la guía no navega", selectedTab)
   }
 
   @Test
@@ -277,7 +284,7 @@ class HoyGuideOverlayTest {
     composeTestRule.onRoot().performTouchInput { click(Offset(8f, 8f)) }                                // arriba a la izquierda: velo, lejos de todo
     composeTestRule.onRoot().performTouchInput { click(Offset(width / 2f, height * 0.12f)) }            // sobre el saludo de Hoy, bajo el velo
     composeTestRule.waitForIdle()
-    assertEquals("el velo no cierra ni avanza la guía", GuideStep.TODOS, step)
+    assertEquals("el velo no cierra ni avanza la guía", GuideStep.CONTRARRELOJ, step)
     assertFalse(seen)
     assertEquals(0, trialed)
     // un toque sobre la barra de abajo (fuera del hueco del paso 1) tampoco cambia de pestaña: la barra ni siquiera está en el árbol
@@ -289,7 +296,7 @@ class HoyGuideOverlayTest {
   @Test
   fun mientras_esta_abierta_Hoy_y_la_barra_quedan_fuera_del_lector_y_el_globo_dice_lo_de_la_tabla() {
     show(); start()
-    for (tag in listOf("btn_all_games", "btn_timetrial", "nav_item_tu", "nav_item_progreso", "home_greeting", "home_card")) assertFalse("«$tag» no debe estar en el árbol de accesibilidad con la guía abierta", exists(tag))
+    for (tag in listOf("btn_timetrial", "nav_item_juegos", "nav_item_tu", "nav_item_progreso", "home_greeting", "home_card")) assertFalse("«$tag» no debe estar en el árbol de accesibilidad con la guía abierta", exists(tag))
     for (s in HoyGuide.steps) {
       composeTestRule.runOnUiThread { step = s }; composeTestRule.waitForIdle()
       assertEquals(HoyGuide.spoken(s), describe("guide_globe"))
@@ -297,7 +304,7 @@ class HoyGuideOverlayTest {
     }
     // al cerrarla, Hoy vuelve al lector
     composeTestRule.runOnUiThread { step = null }; composeTestRule.waitForIdle()
-    assertTrue(exists("btn_all_games")); assertTrue(exists("nav_item_tu"))
+    assertTrue(exists("btn_timetrial")); assertTrue(exists("nav_item_tu")); assertTrue(exists("nav_item_juegos"))
   }
 
   private fun assertChipsAtLeast48() {
@@ -355,13 +362,13 @@ class HoyGuideOverlayTest {
   }
 
   /**
-   * Decisión de Opus (30-oct): el blanco se trae a la vista SIEMPRE que no esté entero sobre la barra (no solo con letra 2,0). Con 1,3 el día del vuelo Hoy se desliza (4 filas: «Todos los juegos» queda 90 dp bajo la barra): en el paso 2 el botón debe quedar ENTERO y fuera de la barra antes de dibujar el hueco.
+   * Decisión de Opus (30-oct): el blanco se trae a la vista SIEMPRE que no esté entero sobre la barra (no solo con letra 2,0). Con 1,3 el día del vuelo Hoy se desliza (4 filas): en el paso 1 el bloque del Contrarreloj debe quedar ENTERO y fuera de la barra antes de dibujar el hueco (Tarea 220: el paso de Juegos ilumina la barra misma, que no se desliza).
    */
   @Test
   fun con_letra_1_3_el_dia_del_vuelo_cada_paso_deja_su_blanco_entero_y_sobre_la_barra() {
     show(fontScale = 1.3f); start()
     val d = composeTestRule.density.density
-    for (s in listOf(GuideStep.TODOS, GuideStep.CONTRARRELOJ)) {
+    for (s in listOf(GuideStep.CONTRARRELOJ)) {
       composeTestRule.runOnUiThread { step = s }; composeTestRule.waitForIdle()
       val target = targets.rects.getValue(targetOfStep(s))
       val bar = targets.rects.getValue(GuideTarget.TAB_BAR)
@@ -433,7 +440,7 @@ class HoyGuideOverlayTest {
         NeuroVidaTheme {
           Box(Modifier.width(393.dp).height(873.dp)) {
             BoardBackground()
-            HomeContent(ui = flightDayUi(), onAllGames = {}, onPlay = {}, onResume = {}, onBaseline = {}, onTimeTrial = {}, modifier = Modifier.padding(top = 24.dp, bottom = 95.dp))
+            HomeContent(ui = flightDayUi(), onPlay = {}, onResume = {}, onBaseline = {}, onTimeTrial = {}, modifier = Modifier.padding(top = 24.dp, bottom = 95.dp))
             Box(Modifier.align(Alignment.BottomCenter)) { NeuroNavBar(current = AppTab.HOY, onSelect = {}) }
             HoyGuideHost(viewModel = vm, targets = targets, somethingAbove = above)
           }
@@ -458,10 +465,10 @@ class HoyGuideOverlayTest {
     composeTestRule.mainClock.advanceTimeBy(500)
     assertNull("a los 500 ms todavía no (espera ${HoyGuide.STEP_DELAY_MS} ms)", vm.guideStep.value)
     composeTestRule.mainClock.advanceTimeBy(500)
-    assertEquals("pasado el tiempo sale, desde el paso 1", GuideStep.TODOS, vm.guideStep.value)
+    assertEquals("pasado el tiempo sale, desde el paso 1", GuideStep.CONTRARRELOJ, vm.guideStep.value)
     composeTestRule.mainClock.advanceTimeBy(300)
     assertTrue(exists("guide_veil")); assertTrue(exists("btn_guide_next")); assertTrue(exists("btn_guide_skip"))
-    assertEquals(HoyGuide.spoken(GuideStep.TODOS), describe("guide_globe"))
+    assertEquals(HoyGuide.spoken(GuideStep.CONTRARRELOJ), describe("guide_globe"))
   }
 
   @Test
@@ -474,7 +481,7 @@ class HoyGuideOverlayTest {
     assertNull("la guía no pisa la medalla", vm.guideStep.value)
     putAbove(false)
     composeTestRule.mainClock.advanceTimeBy(1_000)
-    assertEquals(GuideStep.TODOS, vm.guideStep.value)
+    assertEquals(GuideStep.CONTRARRELOJ, vm.guideStep.value)
   }
 
   @Test
@@ -482,12 +489,12 @@ class HoyGuideOverlayTest {
     val vm = viewModelFor(flightDone = true, flightDayRoute = true, games = 4)
     showHost(vm)
     composeTestRule.mainClock.advanceTimeBy(1_000)
-    assertEquals(GuideStep.TODOS, vm.guideStep.value)
+    assertEquals(GuideStep.CONTRARRELOJ, vm.guideStep.value)
     composeTestRule.mainClock.advanceTimeBy(300); assertTrue(exists("guide_veil"))
     putAbove(true)
     composeTestRule.mainClock.advanceTimeBy(100)
     assertFalse("con algo encima el velo se esconde", exists("guide_veil"))
-    assertEquals("pero la guía sigue en su paso", GuideStep.TODOS, vm.guideStep.value)
+    assertEquals("pero la guía sigue en su paso", GuideStep.CONTRARRELOJ, vm.guideStep.value)
     putAbove(false)
     composeTestRule.mainClock.advanceTimeBy(300)
     assertTrue("y vuelve", exists("guide_veil"))
@@ -521,10 +528,10 @@ class HoyGuideOverlayTest {
     assertTrue(vm.achievementQueue.value.isEmpty())
     showHost(vm)
     composeTestRule.mainClock.advanceTimeBy(1_000)
-    assertEquals(GuideStep.TODOS, vm.guideStep.value)
+    assertEquals(GuideStep.CONTRARRELOJ, vm.guideStep.value)
     composeTestRule.mainClock.advanceTimeBy(300)
     assertTrue(exists("guide_veil")); assertTrue(exists("btn_guide_next")); assertTrue(exists("btn_guide_skip"))
-    assertEquals(HoyGuide.spoken(GuideStep.TODOS), describe("guide_globe"))
+    assertEquals(HoyGuide.spoken(GuideStep.CONTRARRELOJ), describe("guide_globe"))
   }
 
   @Test
@@ -583,9 +590,9 @@ class HoyGuideOverlayTest {
   fun el_paso_vive_en_el_ViewModel_y_los_botones_lo_mueven_y_terminan_con_la_marca() {
     val vm = viewModelFor(flightDone = true, flightDayRoute = true, games = 4)
     vm.startGuide()
-    assertEquals(GuideStep.TODOS, vm.guideStep.value)
+    assertEquals(GuideStep.CONTRARRELOJ, vm.guideStep.value)
     vm.startGuide()                                                     // otra llamada no la reinicia
-    vm.guideNext(); assertEquals(GuideStep.CONTRARRELOJ, vm.guideStep.value)
+    vm.guideNext(); assertEquals(GuideStep.JUEGOS, vm.guideStep.value)
     vm.guideNext(); assertEquals(GuideStep.BARRA, vm.guideStep.value)
     assertFalse("la marca se escribe al TERMINAR, no antes", vm.hoyGuideSeen.value)
     vm.guideNext()
@@ -599,12 +606,12 @@ class HoyGuideOverlayTest {
   fun saltar_desde_cualquier_paso_marca_y_si_la_app_se_cierra_a_mitad_vuelve_desde_el_paso_1() {
     val vm = viewModelFor(flightDone = true, flightDayRoute = true, games = 4)
     vm.startGuide(); vm.guideNext()
-    assertEquals(GuideStep.CONTRARRELOJ, vm.guideStep.value)
+    assertEquals(GuideStep.JUEGOS, vm.guideStep.value)
     // otro ViewModel (la app se cerró en el paso 2): sin marca, la guía arranca de nuevo desde el paso 1
     val vm2 = NeuroVidaViewModel(app).also { viewModels.add(it) }
     assertNull(vm2.guideStep.value); assertFalse(vm2.hoyGuideSeen.value)
     vm2.startGuide()
-    assertEquals(GuideStep.TODOS, vm2.guideStep.value)
+    assertEquals(GuideStep.CONTRARRELOJ, vm2.guideStep.value)
     vm2.guideSkip()
     assertNull(vm2.guideStep.value); assertTrue(vm2.hoyGuideSeen.value)
   }
@@ -614,7 +621,7 @@ class HoyGuideOverlayTest {
   fun cerrada_a_mitad_y_con_la_app_reabierta_otro_dia_vuelve_desde_el_paso_1() {
     val first = viewModelFor(flightDone = true, flightDayRoute = true, games = 4)
     first.startGuide(); first.guideNext()
-    assertEquals(GuideStep.CONTRARRELOJ, first.guideStep.value)
+    assertEquals(GuideStep.JUEGOS, first.guideStep.value)
     // «otro día»: ya no es el día del vuelo (la ruta de hoy es normal y está sin empezar)
     runBlocking { NeuroVidaDatabase.getDatabase(app).dailySessionDao().insertOrUpdate(DailySessionEntity(today(), "bodega,calculo,intrusa", completedCount = 0, scoresRaw = "")) }
     TestSupport.release(first); viewModels.remove(first)
@@ -626,7 +633,7 @@ class HoyGuideOverlayTest {
     assertFalse(vm.hoyGuideSeen.value)
     showHost(vm)
     composeTestRule.mainClock.advanceTimeBy(1_000)
-    assertEquals("vuelve desde el paso 1", GuideStep.TODOS, vm.guideStep.value)
+    assertEquals("vuelve desde el paso 1", GuideStep.CONTRARRELOJ, vm.guideStep.value)
   }
 
   @Test

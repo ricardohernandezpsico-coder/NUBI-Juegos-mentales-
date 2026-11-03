@@ -79,7 +79,7 @@ private val GuideRingWidth = 2.5.dp
 /** Qué elemento real ilumina cada paso. */
 internal fun targetOf(step: GuideStep): GuideTarget = when (step) {
   GuideStep.CONTRARRELOJ -> GuideTarget.TIME_TRIAL
-  GuideStep.TODOS -> GuideTarget.ALL_GAMES
+  GuideStep.JUEGOS -> GuideTarget.JUEGOS
   GuideStep.BARRA -> GuideTarget.TAB_BAR
 }
 
@@ -109,7 +109,7 @@ internal fun HoyGuideHost(viewModel: NeuroVidaViewModel, targets: GuideTargets, 
 
 /**
  * La guía de Nubi sobre Hoy, un paso (Tarea 193; `auditoria-fable/guia-primer-ingreso.md` §3.3 y §3.4): un velo sobre TODA la pantalla (también la barra) con un hueco y su aro lima sobre el elemento real, y el globo de Nubi con el texto del paso, «Paso 1 de 3» y el chip lila «Seguir ›» (en el último,
- * «Listo»); arriba a la derecha, «Saltar la guía» en crema. Sin sol (el único sol de Hoy es el Contrarreloj iluminado en el paso 1), sin dedo, sin sonido.
+ * «Listo»); arriba a la derecha, «Saltar la guía» en crema. Sin sol (el único sol de Hoy es el de la ruta), sin dedo, sin sonido.
  *
  * - **Tocar lo iluminado = Seguir** y NO abre nada (lanzar el Contrarreloj desde adentro de una guía sería empezar una partida de 2 minutos sin pedirla). **Tocar el velo no hace nada** (con 65+ un toque accidental fuera no debe cerrarla) y tampoco se puede deslizar nada de abajo. **Atrás = saltar.**
  * - El hueco se mueve al elemento nuevo en [NubiMotion.TAB_MS] y el texto cambia con un fundido de [NubiMotion.STATE_MS]; con «quitar animaciones», de golpe.
@@ -133,8 +133,14 @@ internal fun HoyGuideOverlay(step: GuideStep, targets: GuideTargets, onNext: () 
   // columnas desiguales ya no se saca de «un tercio de la barra»)
   val raw = targets.rects[target]?.takeIf { settledStep == step }
   val pad = with(density) { GuideHolePadding.toPx() }
-  // El aire de 8 dp va por los cuatro lados, salvo en la barra: abajo y a la derecha el hueco llega hasta donde llega la barra, para no entrar en la franja de gestos (o los 3 botones) de Android ni salirse de la pantalla.
-  val liveHole = raw?.let { if (step == GuideStep.BARRA) Rect(it.left - pad, it.top - pad, it.right, it.bottom) else Rect(it.left - pad, it.top - pad, it.right + pad, it.bottom + pad) }
+  // El aire de 8 dp va por los cuatro lados, salvo en la barra: abajo (en las dos columnas) y a la derecha (en el paso de las tres de la derecha) el hueco llega hasta donde llega la barra, para no entrar en la franja de gestos (o los 3 botones) de Android ni salirse de la pantalla.
+  val liveHole = raw?.let {
+    when (step) {
+      GuideStep.BARRA -> Rect(it.left - pad, it.top - pad, it.right, it.bottom)
+      GuideStep.JUEGOS -> Rect(it.left - pad, it.top - pad, it.right + pad, it.bottom)
+      GuideStep.CONTRARRELOJ -> Rect(it.left - pad, it.top - pad, it.right + pad, it.bottom + pad)
+    }
+  }
   var lastHole by remember { mutableStateOf<Rect?>(null) }
   LaunchedEffect(liveHole) { if (liveHole != null) lastHole = liveHole }
   val hole = liveHole ?: lastHole

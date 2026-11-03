@@ -133,7 +133,6 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   val achievementUnlocks by viewModel.achievementUnlocks.collectAsState()
   val sessionSummary by viewModel.sessionSummary.collectAsState()
   val topPanel by viewModel.topPanel.collectAsState()
-  val allGames by viewModel.allGames.collectAsState()        // «Todos los juegos» (Hoy): una ventana que ocupa toda la pantalla y esconde la barra, como los Ajustes
   val lang = com.example.ui.i18n.LocalAppLanguage.current
   // Ventanas abiertas sobre una pestaña (la de un área, un detalle): mientras haya alguna, el dedo no cambia de
   // pestaña y la barra de abajo se esconde (la ventana tapa toda la pantalla y se cierra con su X o con Atrás).
@@ -141,7 +140,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   // Pestañas que se pasan deslizando con el dedo (29-sep, pedido de Ricardo), sincronizadas con la barra de abajo.
   val tabs = AppTab.entries
   // El pager y su sincronía con la pestaña del ViewModel viven en `rememberTabPager` (Tarea 142); la barra lee el pager EN VIVO (`PagerNavBar`), no la pestaña ya asentada del ViewModel. Entre pestañas que no son vecinas
-  // (Hoy ↔ Tú) no desliza: hace un fundido, para no ver pasar Avance (Tarea 184, `tabFade`).
+  // (Hoy ↔ Contrarreloj, Hoy ↔ Tú...) no desliza: hace un fundido, para no ver pasar la del medio (Tarea 184, `tabFade`).
   val tabPager = com.example.ui.components.rememberTabPager(currentTab) { viewModel.setTab(it) }
   val pagerState = tabPager.state
   // Tras la primera celebración de una partida, las siguientes (más logros) aparecen enseguida.
@@ -158,7 +157,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
     com.example.ui.components.BoardBackground()
     // La barra de pestañas es una capa FIJA encima de las páginas (Tarea 123): no es el `bottomBar` de un Scaffold, así que NO se encoge cuando se abre una lámina o una ventana (que la tapan) y las páginas no saltan; tampoco hay
     // desvanecido de página (`PAGE_BOTTOM_FADE` se quitó): cada pestaña deja la franja de la barra libre con `LocalBarInset` y su contenido termina nítido sobre ella. La barra tiene su propio inset (las barras del sistema).
-    val barVisible = activeGame == null && lastResult == null && promotion == null && achievementQueue.isEmpty() && sessionSummary == null && topPanel == null && allGames == null
+    val barVisible = activeGame == null && lastResult == null && promotion == null && achievementQueue.isEmpty() && sessionSummary == null && topPanel == null
     // La guía solo vive sobre Hoy a la vista, sin nada encima y sin que el dedo esté pasando de pestaña (con una ventana abierta, `swipeLock` > 0).
     val hoyFree = barVisible && swipeLock.intValue == 0 && pagerState.currentPage == AppTab.HOY.ordinal && !pagerState.isScrollInProgress
     val guideOpen = guideStep != null && hoyFree
@@ -175,7 +174,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
         // Content based on tab. Mientras hay un juego o un resultado encima no se compone: esas pantallas van
         // sobre el cielo transparente (se vería la pestaña detrás) y no deben dejar pasar toques a ella.
         // `KeepTabsState` (Tarea 209b): al esconder el pager guarda el deslizado de cada página y lo devuelve al volver (de «De dónde sale la referencia», de «En qué se basa Nubilus», de un juego...); sin él, la página volvía arriba.
-        com.example.ui.components.KeepTabsState(show = activeGame == null && lastResult == null && sessionSummary == null && topPanel == null && allGames == null) {
+        com.example.ui.components.KeepTabsState(show = activeGame == null && lastResult == null && sessionSummary == null && topPanel == null) {
           // Si la pestaña cambió mientras había un juego o el resumen encima, el pager vuelve a ella sin animar.
           LaunchedEffect(Unit) {
             if (pagerState.currentPage != currentTab.ordinal) pagerState.scrollToPage(currentTab.ordinal)
@@ -188,6 +187,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
             ) { page ->
               when (tabs[page]) {
                 AppTab.HOY -> HomeScreen(viewModel = viewModel)
+                AppTab.JUEGOS -> com.example.ui.screens.AllGamesScreen(viewModel = viewModel)
                 AppTab.CONTRARRELOJ -> com.example.ui.screens.ContrarrelojScreen(viewModel = viewModel)
                 AppTab.PROGRESO -> ProgressScreen(viewModel = viewModel)
                 AppTab.TU -> TuScreen(viewModel = viewModel)
@@ -208,9 +208,6 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
             com.example.ui.screens.ReferenciaPanel(onClose = { viewModel.openTopPanel(null) })
           null -> {}
         }
-
-        // «Todos los juegos»: la ventana de Hoy con los 17 y su buscador (Tarea 158). El pager y la barra no se componen mientras está abierta; al volver de una partida lanzada desde ella se abre como se dejó.
-        if (activeGame == null && lastResult == null && sessionSummary == null && topPanel == null && allGames != null) com.example.ui.screens.AllGamesScreen(viewModel = viewModel)
 
         // Resumen de la sesión del día recién terminada (sobre Hoy, una vez).
         if (activeGame == null && lastResult == null) sessionSummary?.let { summary ->

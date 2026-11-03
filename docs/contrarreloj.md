@@ -721,3 +721,30 @@ Con letra 2,0 se pasa de +348 (ruta completa) a +593 (sin partidas con marca nue
 **11. Tarea 219b** (3-nov, auditoría de Fable de la 219, punto 1 de «Conviene»; lámina `docs/previews/tarea-219b.png`, `tools/previews/tarea_219b.py`). Sin Plus, con marca nueva y partidas que quedan, Hoy dice bajo «Otra vez» cuántas quedan (arriba, en los estados). Medido con `home_end`: sin Plus y con marca nueva, a 393 × 873 con 1,0 sobra (−60 → −28 dp: cabe), con 1,3 se pasa +30 dp (antes −8) y a 360 × 780 con 1,0 se pasa +103 dp (antes +71); con 2,0 de +440 a +528 a 393 y de +569 a +657 a 360. La acción principal (el recuadro de la marca) sigue a la vista; con 1,3 y a 360 dp la línea queda bajo la barra y se alcanza deslizando (aceptable). `HoyTarjetaTest.sin_Plus_con_marca_nueva_y_partidas_bajo_Otra_vez_va_Te_quedan_N_partidas_…` (la línea, el singular, sin récord, el orden, el lector, y que con Plus y sin partidas no hay línea).
 
 **12. Lo que no se hizo.** El servidor y el cobro (Play Billing). «Reiniciar» y la pausa del Contrarreloj no cambian. CLAUDE.md no se tocó (Opus lo actualiza).
+
+## 30. Hoy sin «Todos los juegos»: las medidas de nuevo (Tarea 220, 3-nov-2026)
+
+Con «Todos los juegos» convertido en la pestaña Juegos (`docs/arquitectura-app.md`, «La pestaña Juegos y la barra de cinco»), Hoy pierde la losa crema y el bloque del Contrarreloj sube. **Sube 70 dp, no 64**: la losa medía 56 dp de cuerpo + 6 dp de sombra dura que `ClaySlab` reserva abajo + 8 dp de aire de arriba (Fable había contado 64: el aire de arriba del bloque, otros 8, se queda). Nada más cambia en Hoy: ni los estados, ni los textos, ni la regla de partidas. Se midió con la misma marca `home_end` de la §29 (`HoyTarjetaTest.tarea_219_medidas`, que sigue midiendo todos los estados), así que los números se comparan uno a uno con los de la §29.
+
+**dp que lo ÚLTIMO de Hoy se pasa de la barra de pestañas** (negativo = sobra; entre paréntesis, la §29):
+
+| 393 × 873 | letra 1,0 | letra 1,3 |
+|---|---|---|
+| primera hora / a mitad de ruta (con Plus) | −101 (−31) | −52 (+18) |
+| ruta completa / jugado | −173 (−103) | −124 (−54) |
+| marca nueva | −130 (−60) | −78 (−8) |
+| marca nueva con la ruta a medias | −58 (+12) | −6 (+64) |
+| partida en pausa | −72 (−1) | **+11** (+81) |
+| sin Plus, ruta a medias | −101 (−31) | −52 (+18) |
+| sin Plus, ruta completa | −173 (−103) | −124 (−54) |
+| sin Plus, jugado | −151 (−81) | −96 (−26) |
+| sin Plus, marca nueva (con la línea de la 219b) | −98 (−28) | −40 (+30) |
+| sin partidas | −150 (−80) | −58 (+12) |
+| sin partidas con marca nueva | −90 (−20) | **+36** (+106) |
+| sin partidas, ruta a medias | −78 (−8) | **+14** (+84) |
+| ruta completa sin Contrarreloj | −270 | −222 |
+
+- **A 393 × 873 con letra 1,0 Hoy cabe ENTERO en todos los estados** (antes, uno se pasaba 12 dp); con letra 1,3 solo se desliza en tres (la partida en pausa, sin partidas con marca nueva y sin partidas con la ruta a medias: de 11 a 36 dp). Lo que sobra abajo, entre el Contrarreloj y la barra (hasta unos 170 dp con la ruta completa), es el lugar de «Tus últimas partidas» de la Tarea 221.
+- **A 360 × 780 con letra 1,0:** +30 (primera hora y a mitad de ruta, con y sin Plus) · −42 (ruta completa, jugado, sin Plus ruta completa) · +1 (marca nueva) · +73 (marca nueva con la ruta a medias) · +81 (pausa) · −20 (sin Plus, jugado) · +33 (sin Plus, marca nueva) · −19 (sin partidas) · +41 (sin partidas con marca nueva) · +53 (sin partidas, ruta a medias). Antes (§29): de +28 a +151 en todos. Con letra 1,3 de +35 a +196 (antes +105 a +266) y con 2,0 de +407 a +691 (antes +477 a +761); a 393 con 2,0, de +278 a +522 (antes +348 a +593).
+- **La regla de siempre se cumple:** la acción principal (la ruta o, con la ruta completa, lo primero del bloque del Contrarreloj; para los recuadros de información bastan sus primeras 40 dp) se ve entera sin deslizar en todos los estados a 393 × 873 con 1,0 y 1,3 y a 360 × 780 con 1,0. Lo demás se alcanza deslizando; ninguna palabra se parte.
+- **Tolerancias de `HoyTarjetaTest`** (`scrollsAt393`, `scrollsAt360`): se recalibraron a lo medido arriba; a 393 con 1,0 ya no hay ninguna.

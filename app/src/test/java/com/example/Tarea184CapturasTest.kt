@@ -57,7 +57,7 @@ class Tarea184CapturasTest {
       NeuroVidaTheme {
         Box(Modifier.width(393.dp).height(873.dp)) {
           BoardBackground()
-          HomeContent(ui = ui, onAllGames = {}, onPlay = {}, onResume = {}, onBaseline = {}, onTimeTrial = {}, modifier = Modifier.padding(top = 24.dp, bottom = 163.dp))
+          HomeContent(ui = ui, onPlay = {}, onResume = {}, onBaseline = {}, onTimeTrial = {}, modifier = Modifier.padding(top = 24.dp, bottom = 163.dp))
         }
       }
     }

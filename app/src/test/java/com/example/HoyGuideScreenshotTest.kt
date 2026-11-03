@@ -86,7 +86,7 @@ class HoyGuideScreenshotTest {
             BoardBackground()
             Box(Modifier.fillMaxSize().padding(top = 24.dp, bottom = 24.dp).hiddenUntil(step == null)) {
               CompositionLocalProvider(LocalBarInset provides (if (fontScale >= 1.3f) 95.dp else 88.dp)) {
-                HomeContent(ui = ui, onAllGames = {}, onPlay = {}, onResume = {}, onBaseline = {}, onTimeTrial = {})
+                HomeContent(ui = ui, onPlay = {}, onResume = {}, onBaseline = {}, onTimeTrial = {})
               }
               Box(Modifier.align(Alignment.BottomCenter)) { NeuroNavBar(current = AppTab.HOY, onSelect = {}) }
             }
@@ -103,20 +103,20 @@ class HoyGuideScreenshotTest {
   @Test fun hoy_13() = shot("hoy_13", 1.3f, queue)
   @Test fun propuesta_10() = shot("propuesta_10", 1f, flight)
   @Test fun propuesta_13() = shot("propuesta_13", 1.3f, flight)
-  @Test fun paso1_10() = shot("paso1_10", 1f, flight, GuideStep.TODOS)
-  @Test fun paso2_10() = shot("paso2_10", 1f, flight, GuideStep.CONTRARRELOJ)
+  @Test fun paso1_10() = shot("paso1_10", 1f, flight, GuideStep.CONTRARRELOJ)
+  @Test fun paso2_10() = shot("paso2_10", 1f, flight, GuideStep.JUEGOS)
   @Test fun paso3_10() = shot("paso3_10", 1f, flight, GuideStep.BARRA)
-  @Test fun paso1_13() = shot("paso1_13", 1.3f, flight, GuideStep.TODOS)
-  @Test fun paso2_13() = shot("paso2_13", 1.3f, flight, GuideStep.CONTRARRELOJ)
+  @Test fun paso1_13() = shot("paso1_13", 1.3f, flight, GuideStep.CONTRARRELOJ)
+  @Test fun paso2_13() = shot("paso2_13", 1.3f, flight, GuideStep.JUEGOS)
   @Test fun paso3_13() = shot("paso3_13", 1.3f, flight, GuideStep.BARRA)
 
   // Tarea 193b: la guía con el vuelo terminado sin jugar ningún juego (lámina `docs/previews/tarea-193b.png`)
-  @Test fun cero_paso1_10() = shot("cero_paso1_10", 1f, queue, GuideStep.TODOS, zeroGamesUi(), startingPoint = false)
-  @Test fun cero_paso2_10() = shot("cero_paso2_10", 1f, queue, GuideStep.CONTRARRELOJ, zeroGamesUi(), startingPoint = false)
+  @Test fun cero_paso1_10() = shot("cero_paso1_10", 1f, queue, GuideStep.CONTRARRELOJ, zeroGamesUi(), startingPoint = false)
+  @Test fun cero_paso2_10() = shot("cero_paso2_10", 1f, queue, GuideStep.JUEGOS, zeroGamesUi(), startingPoint = false)
   @Test fun cero_paso3_10() = shot("cero_paso3_10", 1f, queue, GuideStep.BARRA, zeroGamesUi(), startingPoint = false)
   @Test fun cero_despues_10() = shot("cero_despues_10", 1f, queue, null, zeroGamesUi())
-  @Test fun cero_paso1_13() = shot("cero_paso1_13", 1.3f, queue, GuideStep.TODOS, zeroGamesUi(), startingPoint = false)
-  @Test fun cero_paso2_13() = shot("cero_paso2_13", 1.3f, queue, GuideStep.CONTRARRELOJ, zeroGamesUi(), startingPoint = false)
+  @Test fun cero_paso1_13() = shot("cero_paso1_13", 1.3f, queue, GuideStep.CONTRARRELOJ, zeroGamesUi(), startingPoint = false)
+  @Test fun cero_paso2_13() = shot("cero_paso2_13", 1.3f, queue, GuideStep.JUEGOS, zeroGamesUi(), startingPoint = false)
   @Test fun cero_paso3_13() = shot("cero_paso3_13", 1.3f, queue, GuideStep.BARRA, zeroGamesUi(), startingPoint = false)
   @Test fun cero_despues_13() = shot("cero_despues_13", 1.3f, queue, null, zeroGamesUi())
 

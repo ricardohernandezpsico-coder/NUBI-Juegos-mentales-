@@ -21,13 +21,13 @@ class HoyGuideTest {
 
   @Test
   fun son_tres_pasos_en_este_orden() {
-    assertEquals("Tarea 219: siguen la pantalla de arriba abajo (ruta → Todos los juegos → Contrarreloj → barra)", listOf(GuideStep.TODOS, GuideStep.CONTRARRELOJ, GuideStep.BARRA), HoyGuide.steps)
+    assertEquals("Tarea 220: siguen la pantalla de arriba abajo (el Contrarreloj de Hoy → la pestaña Juegos de la barra → las tres de la derecha)", listOf(GuideStep.CONTRARRELOJ, GuideStep.JUEGOS, GuideStep.BARRA), HoyGuide.steps)
   }
 
   @Test
   fun los_textos_son_los_de_la_spec_y_cumplen_las_reglas_de_los_globos() {
     assertEquals("El Contrarreloj dura 2 minutos y su juego cambia cada día.", HoyGuide.text(GuideStep.CONTRARRELOJ))
-    assertEquals("Aquí están los 17 juegos: eliges el que quieras.", HoyGuide.text(GuideStep.TODOS))
+    assertEquals("Aquí están los 17 juegos: eliges el que quieras.", HoyGuide.text(GuideStep.JUEGOS))
     assertEquals("En Contrarreloj ves tus marcas. En Avance, tu punto de partida; en Tú, tus ajustes.", HoyGuide.text(GuideStep.BARRA))
     assertEquals("el «17» del texto es el catálogo de verdad: si cambia, el texto se revisa a propósito", 17, GameRegistry.allGames.size)
     for (step in HoyGuide.steps) {
@@ -38,15 +38,15 @@ class HoyGuideTest {
 
   @Test
   fun el_contador_dice_Paso_N_de_3_sin_palabras_sueltas() {
-    assertEquals("Paso 1 de 3", HoyGuide.counter(GuideStep.TODOS))
-    assertEquals("Paso 2 de 3", HoyGuide.counter(GuideStep.CONTRARRELOJ))
+    assertEquals("Paso 1 de 3", HoyGuide.counter(GuideStep.CONTRARRELOJ))
+    assertEquals("Paso 2 de 3", HoyGuide.counter(GuideStep.JUEGOS))
     assertEquals("Paso 3 de 3", HoyGuide.counter(GuideStep.BARRA))
   }
 
   @Test
   fun el_chip_dice_Seguir_con_flecha_y_en_el_ultimo_paso_Listo_sin_flecha() {
-    assertEquals("Seguir ›", HoyGuide.chipLabel(GuideStep.TODOS))
     assertEquals("Seguir ›", HoyGuide.chipLabel(GuideStep.CONTRARRELOJ))
+    assertEquals("Seguir ›", HoyGuide.chipLabel(GuideStep.JUEGOS))
     assertEquals("Listo", HoyGuide.chipLabel(GuideStep.BARRA))
     assertEquals("para el lector de pantalla, sin la flecha", "Seguir", HoyGuide.chipSpoken(GuideStep.CONTRARRELOJ))
     assertEquals("Listo", HoyGuide.chipSpoken(GuideStep.BARRA))
@@ -55,16 +55,17 @@ class HoyGuideTest {
 
   @Test
   fun TalkBack_dice_el_paso_el_lugar_de_lo_iluminado_y_el_texto() {
-    assertEquals("«Nubi te muestra Hoy» va solo en el primer paso", "Nubi te muestra Hoy. Paso 1 de 3. El botón Todos los juegos, debajo de tu ruta. Aquí están los 17 juegos: eliges el que quieras.", HoyGuide.spoken(GuideStep.TODOS))
-    assertEquals("el Contrarreloj no dice «botón»: sin partidas lo iluminado es un recuadro con la fila gris, no un botón", "Paso 2 de 3. El Contrarreloj, debajo de Todos los juegos. El Contrarreloj dura 2 minutos y su juego cambia cada día.", HoyGuide.spoken(GuideStep.CONTRARRELOJ))
-    for (step in listOf(GuideStep.CONTRARRELOJ, GuideStep.BARRA)) assertFalse("solo el primer paso presenta a Nubi", HoyGuide.spoken(step).contains("Nubi te muestra"))
+    assertEquals("«Nubi te muestra Hoy» va solo en el primer paso; el Contrarreloj no dice «botón»: sin partidas lo iluminado es un recuadro con la fila gris, no un botón", "Nubi te muestra Hoy. Paso 1 de 3. El Contrarreloj, debajo de tu ruta. El Contrarreloj dura 2 minutos y su juego cambia cada día.", HoyGuide.spoken(GuideStep.CONTRARRELOJ))
+    assertEquals("lo iluminado es la columna de la pestaña Juegos de la barra, no un botón de Hoy", "Paso 2 de 3. La pestaña Juegos, en la barra de abajo. Aquí están los 17 juegos: eliges el que quieras.", HoyGuide.spoken(GuideStep.JUEGOS))
+    for (step in listOf(GuideStep.JUEGOS, GuideStep.BARRA)) assertFalse("solo el primer paso presenta a Nubi", HoyGuide.spoken(step).contains("Nubi te muestra"))
+    for (step in HoyGuide.steps) assertFalse("«Todos los juegos» ya no es un lugar de la app: una palabra por concepto", HoyGuide.spoken(step).contains("Todos los juegos"))
     assertEquals("Paso 3 de 3. Las pestañas Contrarreloj, Avance y Tú, en la barra de abajo. En Contrarreloj ves tus marcas. En Avance, tu punto de partida; en Tú, tus ajustes.", HoyGuide.spoken(GuideStep.BARRA))
   }
 
   @Test
   fun seguir_avanza_y_despues_del_tercer_paso_termina() {
-    assertEquals(GuideStep.CONTRARRELOJ, HoyGuide.next(GuideStep.TODOS))
-    assertEquals(GuideStep.BARRA, HoyGuide.next(GuideStep.CONTRARRELOJ))
+    assertEquals(GuideStep.JUEGOS, HoyGuide.next(GuideStep.CONTRARRELOJ))
+    assertEquals(GuideStep.BARRA, HoyGuide.next(GuideStep.JUEGOS))
     assertNull("tras el paso 3 la guía termina", HoyGuide.next(GuideStep.BARRA))
   }
 
@@ -88,13 +89,13 @@ class HoyGuideTest {
     assertEquals("En Contrarreloj ves tus marcas. En Avance, cada área; en Tú, tus ajustes.", HoyGuide.text(GuideStep.BARRA, startingPoint = false))
     assertEquals("con partidas, el texto de siempre", "En Contrarreloj ves tus marcas. En Avance, tu punto de partida; en Tú, tus ajustes.", HoyGuide.text(GuideStep.BARRA, startingPoint = true))
     assertEquals("por omisión, el de siempre", HoyGuide.text(GuideStep.BARRA, startingPoint = true), HoyGuide.text(GuideStep.BARRA))
-    for (step in listOf(GuideStep.CONTRARRELOJ, GuideStep.TODOS)) assertEquals(HoyGuide.text(step, startingPoint = true), HoyGuide.text(step, startingPoint = false))
+    for (step in listOf(GuideStep.CONTRARRELOJ, GuideStep.JUEGOS)) assertEquals(HoyGuide.text(step, startingPoint = true), HoyGuide.text(step, startingPoint = false))
     assertGlobe(HoyGuide.text(GuideStep.BARRA, startingPoint = false), "paso 3 sin partidas")
     assertEquals(
       "Paso 3 de 3. Las pestañas Contrarreloj, Avance y Tú, en la barra de abajo. En Contrarreloj ves tus marcas. En Avance, cada área; en Tú, tus ajustes.",
       HoyGuide.spoken(GuideStep.BARRA, startingPoint = false)
     )
-    assertEquals(HoyGuide.spoken(GuideStep.TODOS), HoyGuide.spoken(GuideStep.TODOS, startingPoint = false))
+    assertEquals(HoyGuide.spoken(GuideStep.JUEGOS), HoyGuide.spoken(GuideStep.JUEGOS, startingPoint = false))
     assertEquals(HoyGuide.spoken(GuideStep.CONTRARRELOJ), HoyGuide.spoken(GuideStep.CONTRARRELOJ, startingPoint = false))
   }
 

@@ -1,6 +1,5 @@
 package com.example.ui.screens
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -61,7 +60,7 @@ import com.example.ui.components.ClaySlab
 import com.example.ui.components.Glyph
 import com.example.ui.components.KitGlyph
 import com.example.ui.components.ClayTextField
-import com.example.ui.components.KitCloseButton
+import com.example.ui.components.LocalBarInset
 import com.example.ui.components.OnBoardText
 import com.example.ui.components.SlabColor
 import com.example.ui.components.SlabSize
@@ -71,15 +70,15 @@ import com.example.ui.theme.NubiTokens
 import com.example.viewmodel.NeuroVidaViewModel
 
 /**
- * «Todos los juegos» (Tarea 158, «La isla es el mapa»): la ventana que abre la losa de Hoy para quien busca un juego POR SU NOMBRE (la isla es el mapa de los juegos, pero no hace falta saber en qué edificio vive cada uno). Ocupa toda la pantalla, sin la barra de abajo, y se cierra con su X o con Atrás.
- * De arriba abajo: el título con la X, un buscador grande («Busca un juego por su nombre»: ignora tildes y mayúsculas, `GameSearch`), los chips de área (Todas · Memoria · Atención · Razonamiento · Lenguaje) y los 17 juegos agrupados por área, cada uno con la MISMA fila de la lámina de un lugar ([PlaceGameRowItem]: emblema, nombre y
- * «cuándo»); tocar una fila abre la ficha del juego y de ahí se juega. Lo escrito, el chip y la fila marcada (el último juego que se jugó desde aquí, en sol) viven en el ViewModel ([com.example.viewmodel.AllGamesState]): al volver de una partida la ventana queda como se dejó.
+ * La pestaña «Juegos» (Tarea 220, 3-nov; Ricardo: «Todos los juegos» sale de Hoy y vuelve a ser pestaña; antes, desde la Tarea 158, era la ventana que abría la losa de Hoy, y antes de eso la pestaña Juegos de las cuatro áreas con la lámina), para quien busca un juego POR SU NOMBRE.
+ * Es una página como Avance y Tú: el título «Juegos» (26 sp, `heading`), sin X ni Atrás propio (Atrás hace lo de las otras pestañas) y con la franja de la barra libre abajo ([LocalBarInset]). De arriba abajo: un buscador grande («Busca un juego por su nombre»: ignora tildes y mayúsculas, `GameSearch`),
+ * los chips de área (Todas · Memoria · Atención · Razonamiento · Lenguaje) y los 17 juegos agrupados por área, cada uno con la MISMA fila de la lámina de un lugar ([PlaceGameRowItem]: emblema, nombre y «cuándo»); tocar una fila abre la ficha del juego y de ahí se juega.
+ * Lo escrito, el chip y la fila marcada (el último juego que se jugó desde aquí, en sol) viven en el ViewModel ([com.example.viewmodel.AllGamesState]): cambiar de pestaña no los borra y al volver de una partida la pestaña queda como se dejó, con la fila marcada a la vista (una sola vez: [NeuroVidaViewModel.juegosReveal]).
  */
 @Composable
 fun AllGamesScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) {
-  val state by viewModel.allGames.collectAsState()
-  val s = state ?: return
-  BackHandler { viewModel.closeAllGames() }
+  val s by viewModel.allGames.collectAsState()
+  val reveal by viewModel.juegosReveal.collectAsState()
   val history by viewModel.gameHistory.collectAsState()
   val measures by viewModel.starMeasures.collectAsState()
   val daily by viewModel.dailySession.collectAsState()
@@ -97,23 +96,24 @@ fun AllGamesScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier)
     places = places, area = s.area, query = query, mark = s.mark,
     onQueryChange = { query = it.take(40); viewModel.setAllGamesQuery(query) },
     onArea = { viewModel.setAllGamesArea(it) },
-    onClose = { viewModel.closeAllGames() },
     onGame = { id -> GameRegistry.getById(id)?.let { sheetFor = it } },
+    reveal = reveal, onRevealed = { viewModel.consumeJuegosReveal() },
     modifier = modifier
   )
 
-  // La ficha del juego tocado; al jugar desde ella la ventana se recuerda (con su búsqueda, su chip y la fila marcada) y se vuelve a ella al terminar.
+  // La ficha del juego tocado; al jugar desde ella la pestaña se recuerda (con su búsqueda, su chip y la fila marcada) y se vuelve a ella al terminar.
   sheetFor?.let { g ->
     GameSheetHost(
-      game = g, viewModel = viewModel, onDismiss = { sheetFor = null }, onPlay = { m: PlayMode, timed: Boolean -> sheetFor = null; viewModel.playFromHome(g.id, m, timed) },
-      onTutorial = { sheetFor = null; viewModel.playTutorialFromHome(g.id) },           // «Cómo se juega» (Tarea 171): el tutorial otra vez
-      onTimeTrial = { sheetFor = null; viewModel.startTimeTrial(g.id) }                  // «Contrarreloj» (Tarea 181): el de ESTE juego, con su propia pista; al terminar vuelve aquí, como una partida de siempre
+      game = g, viewModel = viewModel, onDismiss = { sheetFor = null }, onPlay = { m: PlayMode, timed: Boolean -> sheetFor = null; viewModel.playFromJuegos(g.id, m, timed) },
+      onTutorial = { sheetFor = null; viewModel.playTutorialFromJuegos(g.id) },           // «Cómo se juega» (Tarea 171): el tutorial otra vez
+      onTimeTrial = { sheetFor = null; viewModel.startTimeTrial(g.id, fromJuegos = true) }   // «Contrarreloj» (Tarea 181): el de ESTE juego, con su propia pista; al terminar vuelve a esta pestaña, con el juego marcado (Tarea 220)
     )
   }
 }
 
 /**
- * Lo que dibuja «Todos los juegos» sin ViewModel (así se prueba y se captura con datos fijos): [places] = la lámina de cada área (de donde salen las filas), [area] = el chip elegido (la clave del área; null = Todas), [query] = lo escrito en el buscador y [mark] = el juego marcado.
+ * Lo que dibuja la pestaña Juegos sin ViewModel (así se prueba y se captura con datos fijos): [places] = la lámina de cada área (de donde salen las filas), [area] = el chip elegido (la clave del área; null = Todas), [query] = lo escrito en el buscador y [mark] = el juego marcado.
+ * [reveal] = el juego que se trae a la vista UNA vez al entrar (al volver de una partida lanzada desde aquí); cuando ya se hizo se avisa con [onRevealed]. Sin él la lista queda donde la persona la dejó.
  */
 @Composable
 internal fun AllGamesContent(
@@ -123,18 +123,18 @@ internal fun AllGamesContent(
   mark: String?,
   onQueryChange: (String) -> Unit,
   onArea: (String?) -> Unit,
-  onClose: () -> Unit,
   onGame: (String) -> Unit,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
+  reveal: String? = null,
+  onRevealed: () -> Unit = {}
 ) {
   val focusManager = LocalFocusManager.current
   val sections = remember(places, area, query) { allGamesSections(places, area, query) }
   val flat = remember(sections) { sections.flatMap { (place, rows) -> listOf<Any>(AllGamesHeader(place, rows.size)) + rows.map { AllGamesRow(place, it) } } }
 
-  Column(modifier.fillMaxSize()) {
-    Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 12.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-      OnBoardText("Todos los juegos", color = NubiTokens.OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, modifier = Modifier.weight(1f).semantics { heading() }.testTag("all_games_title"))
-      KitCloseButton(onClose, Modifier.testTag("all_games_close"))
+  Column(modifier.fillMaxSize().padding(bottom = LocalBarInset.current)) {         // la franja de la barra de pestañas queda libre
+    Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+      OnBoardText(AllGamesTitle, color = NubiTokens.OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, modifier = Modifier.weight(1f).semantics { heading() }.testTag("all_games_title"))
     }
     // El buscador y los chips quedan fijos arriba; con letra muy grande (> 1,3) ocupan casi la mitad de la pantalla y se deslizan con la lista
     val scrollControls = LocalDensity.current.fontScale > 1.3f
@@ -152,10 +152,13 @@ internal fun AllGamesContent(
     }
     if (!scrollControls) controls()
     val listState = rememberLazyListState()
-    // Al volver de una partida lanzada desde aquí, la fila marcada se deja a la vista
-    LaunchedEffect(Unit) {
-      val i = flat.indexOfFirst { it is AllGamesRow && it.row.gameId == mark }
-      if (i > 0) listState.scrollToItem(i + if (scrollControls) 1 else 0)          // (con letra muy grande el buscador y los chips son el primer elemento de la lista)
+    // Al volver de una partida lanzada desde aquí, la fila marcada se deja a la vista (una vez: al volver de otra pestaña la lista queda donde se dejó)
+    LaunchedEffect(reveal) {
+      if (reveal != null) {
+        val i = flat.indexOfFirst { it is AllGamesRow && it.row.gameId == reveal }
+        if (i > 0) listState.scrollToItem(i + if (scrollControls) 1 else 0)          // (con letra muy grande el buscador y los chips son el primer elemento de la lista)
+        onRevealed()
+      }
     }
     LazyColumn(Modifier.weight(1f).padding(horizontal = 16.dp).testTag("all_games_list"), state = listState, contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 6.dp, bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
       if (scrollControls) item { controls() }
@@ -177,6 +180,9 @@ internal fun AllGamesContent(
     }
   }
 }
+
+/** El título de la pestaña: una palabra por concepto, el mismo rótulo que lleva la barra de abajo (Tarea 220; antes «Todos los juegos»). */
+internal const val AllGamesTitle = "Juegos"
 
 /** Una fila de la lista (el juego con la lámina de su área, de donde sale si es el que sugiere Nubi). */
 private data class AllGamesRow(val place: PlaceSheetUi, val row: PlaceGameRow)

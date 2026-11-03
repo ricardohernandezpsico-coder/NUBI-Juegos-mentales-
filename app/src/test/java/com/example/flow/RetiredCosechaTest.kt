@@ -157,7 +157,7 @@ class RetiredCosechaTest {
     // no se puede abrir, ni desde Juegos ni desde las herramientas
     vm.launchGame(old)
     assertNull(vm.activeGame.value)
-    vm.playFromHome(old, PlayMode.A_TU_MEDIDA)
+    vm.playFromJuegos(old, PlayMode.A_TU_MEDIDA)
     assertNull(vm.activeGame.value)
   }
 
