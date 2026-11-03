@@ -202,7 +202,7 @@ class GameFlowTest {
     assertEquals(PlayMode.DESAFIO, byGame.getValue("freno").playMode)
     assertTrue("y se sabe con qué modo se jugó", byGame.values.all { it.modeKnown })
     val rows = com.example.data.historyRows(vm.gameHistory.value, vm.timeTrialResults.value, vm.starMeasures.value, System.currentTimeMillis())
-    assertEquals(listOf("En tu ruta", "Desafío").toSet(), rows.map { it.mode }.toSet())
+    assertEquals(listOf("en tu ruta", "en Desafío").toSet(), rows.map { it.mode }.toSet())
     assertEquals("hoy", rows.first().whenText)
     // en la base quedó guardado (el modo como texto, la ruta como 0 o 1)
     runBlocking {

@@ -68,16 +68,16 @@ class Tarea221CapturasTest {
   private val stroop = HomeTimeTrial("stroop", "Tinta o Palabra", TimeTrialState.PENDIENTE, record = 41)
 
   private val sample = listOf(
-    HistoryRow("calculo", "Carga exacta", "hoy", "En tu ruta", "70 % de las cargas, sin pista", now - 1),
-    HistoryRow("bodega", "Bodega de carga", "hoy", "En tu ruta", "75 % de los objetos, al primer intento", now - 2),
+    HistoryRow("calculo", "Carga exacta", "hoy", "en tu ruta", "70 % de las cargas, sin pista", now - 1),
+    HistoryRow("bodega", "Bodega de carga", "hoy", "en tu ruta", "75 % de los objetos, al primer intento", now - 2),
     HistoryRow("stroop", "Tinta o Palabra", "hoy", "Contrarreloj", "38 aciertos", now - 3, timeTrial = true),
-    HistoryRow("secuencia", "Rastro de luz", "ayer", "A tu medida", "7 luces seguidas", now - 4),
-    HistoryRow("satelites", "Satélites", "ayer", "Desafío", "3,2 satélites a la vez", now - 5),
+    HistoryRow("secuencia", "Rastro de luz", "ayer", "a tu medida", "7 luces seguidas", now - 4),
+    HistoryRow("satelites", "Satélites", "ayer", "en Desafío", "3,2 satélites a la vez", now - 5),
     HistoryRow("acoplamiento", "Acoplamiento", "ayer", "Contrarreloj", "21 aciertos", now - 6, timeTrial = true),
-    HistoryRow("intrusa", "La estrella intrusa", "ayer", "En tu ruta", "80 % de aciertos", now - 7),
-    HistoryRow("freno", "Freno de Emergencia", "hace 2 días", "A tu medida", "zona firme", now - 8),
-    HistoryRow("parejas", "Constelaciones", "hace 2 días", "Suave", "70 % de las veces, directo a una pareja ya vista", now - 9),
-    HistoryRow("meteoros", "Lluvia de meteoros", "hace 3 días", "Al límite", "61 % de las palabras menos comunes, reconocidas", now - 10)
+    HistoryRow("intrusa", "La estrella intrusa", "ayer", "en tu ruta", "80 % de aciertos", now - 7),
+    HistoryRow("freno", "Freno de Emergencia", "hace 2 días", "a tu medida", null, now - 8),
+    HistoryRow("parejas", "Constelaciones", "hace 2 días", "suave", "70 % de las veces, directo a una pareja ya vista", now - 9),
+    HistoryRow("meteoros", "Lluvia de meteoros", "hace 3 días", "al límite", "61 % de las palabras menos comunes, reconocidas", now - 10)
   )
 
   private fun ui(completed: Int, history: List<HistoryRow> = sample) = HomeUi(
@@ -128,4 +128,49 @@ class Tarea221CapturasTest {
   @Test fun deslizada_ruta_a_medias_360_10() = scrolled(1, "deslizada_ruta_a_medias_360_10", 360, 780)
   @Test fun final_ruta_a_medias_360_10() = scrolled(1, "final_ruta_a_medias_360_10", 360, 780, listEnd = true)
   @Test fun una_sola_partida_393_10() = run { frame(393, 873, 1f, 3, sample.take(2)); rule.onNodeWithTag("home_history").performScrollTo(); rule.waitForIdle(); save("dos_partidas_393_10") }
+
+  // ---- Tarea 221b: la segunda línea en minúscula salvo los nombres propios y Freno sin marca (una fila de cada modo, a 393 con 1,0)
+
+  private val hour = 3_600_000L
+  private val day = 86_400_000L
+
+  /** ANTES (Tarea 221): el modo con mayúscula («En tu ruta», «Suave», «Desafío», «Al límite») y Freno con la zona de esa partida. */
+  private val modesBefore = listOf(
+    HistoryRow("calculo", "Carga exacta", "hoy", "En tu ruta", "70 % de las cargas, sin pista", now - hour),
+    HistoryRow("stroop", "Tinta o Palabra", "hoy", "Contrarreloj", "38 aciertos", now - 2 * hour, timeTrial = true),
+    HistoryRow("satelites", "Satélites", "ayer", "Desafío", "3,2 satélites a la vez", now - day - hour),
+    HistoryRow("parejas", "Constelaciones", "ayer", "Suave", "70 % de las veces, directo a una pareja ya vista", now - day - 2 * hour),
+    HistoryRow("freno", "Freno de Emergencia", "hace 2 días", "A tu medida", "zona firme", now - 2 * day - hour),
+    HistoryRow("meteoros", "Lluvia de meteoros", "hace 3 días", "Al límite", "61 % de las palabras menos comunes, reconocidas", now - 3 * day - hour)
+  )
+
+  /** DESPUÉS: las mismas partidas pasadas por `historyRows` de verdad (modo en minúscula con `RetoChoice.modeWords`, Freno sin marca). */
+  private val modesAfter: List<HistoryRow> by lazy {
+    fun play(game: String, ago: Long, mode: com.example.data.PlayMode, route: Boolean = false) =
+      com.example.model.GamePlayResult(id = "$game-$ago", gameId = game, score = 70, correctAnswers = 7, totalTrials = 10, timed = false, level = 3, timestamp = now - ago, playMode = mode, route = route)
+    com.example.data.historyRows(
+      history = listOf(
+        play("calculo", hour, com.example.data.PlayMode.A_TU_MEDIDA, route = true), play("satelites", day + hour, com.example.data.PlayMode.DESAFIO), play("parejas", day + 2 * hour, com.example.data.PlayMode.SUAVE),
+        play("freno", 2 * day + hour, com.example.data.PlayMode.A_TU_MEDIDA), play("meteoros", 3 * day + hour, com.example.data.PlayMode.EXPERTO)
+      ),
+      timeTrials = listOf(com.example.data.TimeTrialResult(id = "tt", gameId = "stroop", day = "2026-10-26", trackVersion = com.example.data.TimeTrialDay.trackVersion("stroop"), hits = 40, errors = 2, level = 4, seconds = 120, timestamp = now - 2 * hour)),
+      measures = listOf(
+        com.example.data.MeasurePoint(now - hour, "carga", 70f), com.example.data.MeasurePoint(now - day - hour, "tracking", 3.2f), com.example.data.MeasurePoint(now - day - 2 * hour, "place", 70f),
+        com.example.data.MeasurePoint(now - 2 * day - hour, "brake", 260f), com.example.data.MeasurePoint(now - 3 * day - hour, "vocab", 61f)
+      ),
+      now = now
+    )
+  }
+
+  private fun modes(rows: List<HistoryRow>, name: String, listEnd: Boolean) {
+    frame(393, 873, 1f, 3, rows)
+    rule.onNodeWithTag("home_history").performScrollTo(); rule.waitForIdle()
+    if (listEnd) { rule.onNodeWithTag("home_history_list").performScrollToIndex(rows.size - 1); rule.waitForIdle() }
+    save(name)
+  }
+
+  @Test fun modos_antes_inicio_393_10() = modes(modesBefore, "modos_antes_inicio_393_10", false)
+  @Test fun modos_antes_final_393_10() = modes(modesBefore, "modos_antes_final_393_10", true)
+  @Test fun modos_despues_inicio_393_10() = modes(modesAfter, "modos_despues_inicio_393_10", false)
+  @Test fun modos_despues_final_393_10() = modes(modesAfter, "modos_despues_final_393_10", true)
 }

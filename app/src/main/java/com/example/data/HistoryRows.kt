@@ -8,7 +8,7 @@ import kotlin.math.max
 
 /**
  * Una fila de «Tus últimas partidas» en Hoy (Tarea 221; `auditoria-fable/pestana-juegos-historial.md` §5): el juego, cuándo se jugó, con qué modo y, si la partida trajo una medida válida, su marca. La fila INFORMA, no se toca (el juego se abre desde la pestaña Juegos).
- * [mode] es «En tu ruta», «Suave», «A tu medida», «Desafío», «Al límite» o «Contrarreloj»; null en una partida anterior a que se guardara el modo (no se inventa). [mark] es la frase de la medida de ese juego con su unidad, la misma de su final de partida
+ * [mode] es «en tu ruta», «suave», «a tu medida», «en Desafío», «al límite» (la forma del botón «Jugar · en Desafío · con reloj»: [RetoChoice.modeWords]) o «Contrarreloj»; la línea va en minúscula salvo los nombres propios; null en una partida anterior a que se guardara el modo (no se inventa). [mark] es la frase de la medida de ese juego con su unidad, la misma de su final de partida
  * («70 % de las cargas, sin pista»), o «38 aciertos» en el Contrarreloj; null si la partida no trajo una medida válida (o es tan vieja que ya no está entre las medidas guardadas).
  */
 data class HistoryRow(
@@ -26,16 +26,12 @@ data class HistoryRow(
   /** La segunda línea tal como se DIBUJA: cada número queda pegado a su unidad con un espacio duro («38 aciertos», «hace 2 días», «70 %»; [glueNumbers], el mismo de «Te quedan 2 partidas» en Hoy), para que el renglón nunca los separe. El «·» queda pegado a la palabra de antes (un renglón no empieza con el separador). El lector lee [spoken], con espacios normales. */
   val shownDetail: String get() = detail.glueNumbers().replace(" · ", "$NBSP· ")
 
-  /** Lo que dice el lector de pantalla de la fila entera, sin «botón» (no lo es): «Carga exacta, hoy, en tu ruta, 70 % de las cargas, sin pista.» El modo va en minúscula dentro de la frase, salvo el nombre propio «Contrarreloj». */
-  val spoken: String
-    get() {
-      val modeSpoken = mode?.let { if (timeTrial) it else it.replaceFirstChar { c -> c.lowercase() } }
-      return (listOf(title, whenText) + listOfNotNull(modeSpoken, mark)).joinToString(", ") + "."
-    }
+  /** Lo que dice el lector de pantalla de la fila entera, sin «botón» (no lo es): «Carga exacta, hoy, en tu ruta, 70 % de las cargas, sin pista.» La pantalla y el lector dicen lo mismo: el modo ya viene en minúscula (salvo el nombre propio «Contrarreloj»). */
+  val spoken: String get() = (listOf(title, whenText) + listOfNotNull(mode, mark)).joinToString(", ") + "."
 
   companion object {
     /** El modo de una partida de la ruta de hoy: «Tu ruta de hoy» es el nombre, nunca «camino», «sesión» ni «diaria». */
-    const val ROUTE_LABEL = "En tu ruta"
+    const val ROUTE_LABEL = "en tu ruta"
   }
 }
 
@@ -44,7 +40,7 @@ const val HISTORY_MAX = 10
 
 /**
  * Las últimas [max] partidas para «Tus últimas partidas», las más recientes primero (Tarea 221). Mezcla las de siempre ([history]: `game_results`) con las del Contrarreloj ([timeTrials]: `time_trial_results`) por su fecha; no lista los juegos retirados (no tienen emblema ni ficha).
- * La marca de una partida de siempre sale de [measures] (`star_measures`) cruzada por juego y fecha EXACTA (`MeasurePoint.timestamp == GamePlayResult.timestamp`, la misma con que se guardó): Freno se dice en zonas y nunca en milisegundos; Tinta o Palabra, en palabras.
+ * La marca de una partida de siempre sale de [measures] (`star_measures`) cruzada por juego y fecha EXACTA (`MeasurePoint.timestamp == GamePlayResult.timestamp`, la misma con que se guardó): Freno de Emergencia no lleva marca (su medida es un promedio, no una partida); Tinta o Palabra, en palabras.
  * Sin partidas, la lista queda vacía y Hoy no dibuja la tarjeta.
  */
 fun historyRows(
@@ -68,7 +64,7 @@ fun historyRows(
     val mark = if (measure == null || point == null) null else markOf(measure, point)
     val mode = when {
       r.route -> HistoryRow.ROUTE_LABEL
-      r.modeKnown -> r.playMode.label
+      r.modeKnown -> RetoChoice.modeWords(r.playMode)
       else -> null
     }
     rows += HistoryRow(r.gameId, getGameTitle(r.gameId, lang, def.title), whenOf(r.timestamp), mode, mark, r.timestamp)
@@ -80,10 +76,12 @@ fun historyRows(
   return rows.sortedByDescending { it.timestamp }.take(max)
 }
 
-/** La marca de una partida: la frase de su medida (`MeasurePhrases.value`); Freno, en zonas («zona firme»), y null si la estimación no es válida. */
+/**
+ * La marca de una partida: la frase de su medida (`MeasurePhrases.value`). **Freno de Emergencia no lleva marca** (Tarea 221b, auditoría de Fable): la app siempre dice el freno como el promedio de las últimas partidas (`Brake.average`, Tarea 57), así que la zona de una partida suelta
+ * podía contradecir su propio final; su fila termina en el modo («hace 2 días · a tu medida»).
+ */
 private fun markOf(def: MeasureDef, point: MeasurePoint): String? =
-  if (def.key == Brake.KEY) (if (Brake.isValid(point.value)) "zona ${Brake.zone(point.value).label}" else null)
-  else MeasurePhrases.value(def, point.value)
+  if (def.key == Brake.KEY) null else MeasurePhrases.value(def, point.value)
 
 /**
  * El alto de la tarjeta «Tus últimas partidas» (Tarea 221; `auditoria-fable/pestana-juegos-historial.md` §10.1): se mide EN FILAS, nunca en dp fijos, porque las filas no miden lo mismo (52 dp con la marca en una línea, 69 con dos, con letra 1,0) y crecen con la letra.

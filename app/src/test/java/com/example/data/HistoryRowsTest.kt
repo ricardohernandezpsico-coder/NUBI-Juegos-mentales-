@@ -82,9 +82,10 @@ class HistoryRowsTest {
       ),
       trials = listOf(trial("stroop", 500))
     ).associate { it.gameId to it.mode }
-    assertEquals("En tu ruta", r["calculo"])
-    assertEquals("Suave", r["freno"]); assertEquals("A tu medida", r["radar"]); assertEquals("Desafío", r["secuencia"]); assertEquals("Al límite", r["parejas"])
+    assertEquals("en tu ruta", r["calculo"])
+    assertEquals("suave", r["freno"]); assertEquals("a tu medida", r["radar"]); assertEquals("en Desafío", r["secuencia"]); assertEquals("al límite", r["parejas"])
     assertEquals("Contrarreloj", r["stroop"])
+    for (m in PlayMode.entries) assertEquals("el modo se dice como en el botón «Jugar · …» de la ficha", RetoChoice.modeWords(m), rows(history = listOf(play("radar", 1_000, m))).single().mode)
     for (word in listOf("Reto", "Experto", "partidas libres", "camino", "sesión", "diaria")) assertFalse("«$word» no es un nombre de modo", r.values.any { it?.contains(word, ignoreCase = true) == true })
   }
 
@@ -106,20 +107,23 @@ class HistoryRowsTest {
     )
     val row = rows(history = listOf(play("calculo", 1_000, route = true)), measures = measures).single()
     assertEquals("70 % de las cargas, sin pista", row.mark)
-    assertEquals("hoy · En tu ruta · 70 % de las cargas, sin pista", row.detail)
+    assertEquals("hoy · en tu ruta · 70 % de las cargas, sin pista", row.detail)
     assertEquals("Carga exacta, hoy, en tu ruta, 70 % de las cargas, sin pista.", row.spoken)
     assertNull("sin medida de esa fecha, sin marca", rows(history = listOf(play("calculo", 3_000)), measures = measures).single().mark)
   }
 
   @Test
-  fun Freno_se_dice_en_zonas_nunca_en_milisegundos_y_Tinta_o_Palabra_en_palabras() {
-    val zone = { ms: Float -> rows(history = listOf(play("freno", 1_000)), measures = listOf(MeasurePoint(now - 1_000, "brake", ms))).single().mark }
-    assertEquals("zona ágil", zone(200f)); assertEquals("zona firme", zone(260f)); assertEquals("zona pausado", zone(400f))
-    assertNull("una estimación que no es válida no es una marca", zone(2_000f))
+  fun Freno_no_lleva_marca_porque_su_medida_es_un_promedio_y_Tinta_o_Palabra_se_dice_en_palabras() {
+    val freno = { ms: Float -> rows(history = listOf(play("freno", 2 * day + 1_000)), measures = listOf(MeasurePoint(now - 2 * day - 1_000, "brake", ms))).single() }
+    for (ms in listOf(200f, 260f, 400f, 2_000f)) {
+      assertNull("Freno no dice una zona de ESA partida (con $ms ms): la app lo dice siempre como el promedio de las últimas", freno(ms).mark)
+      assertEquals("la línea termina en el modo", "hace 2 días · a tu medida", freno(ms).detail)
+      assertEquals("y el lector dice lo mismo", "Freno de Emergencia, hace 2 días, a tu medida.", freno(ms).spoken)
+    }
     val stroop = { ms: Float -> rows(history = listOf(play("stroop", 1_000)), measures = listOf(MeasurePoint(now - 1_000, "stroop", ms))).single().mark }
     assertEquals("la palabra casi no te frena", stroop(10f))
     assertEquals("la palabra te frena 0,4 segundos", stroop(400f))
-    assertFalse("ni «ms» ni «milisegundos»", listOf(zone(260f), stroop(400f)).joinToString(" ").contains("ms"))
+    assertFalse("ni «ms» ni «milisegundos»", stroop(400f)!!.contains("ms"))
   }
 
   @Test
@@ -136,7 +140,7 @@ class HistoryRowsTest {
   fun el_lector_dice_la_fila_entera_con_el_modo_en_minuscula_y_sin_la_palabra_boton() {
     val r = rows(history = listOf(play("secuencia", day + 1_000, PlayMode.A_TU_MEDIDA), play("freno", 2 * day + 1_000, PlayMode.DESAFIO)))
     assertEquals("Rastro de luz, ayer, a tu medida.", r[0].spoken)
-    assertEquals("Freno de Emergencia, hace 2 días, desafío.", r[1].spoken)
+    assertEquals("Freno de Emergencia, hace 2 días, en Desafío.", r[1].spoken)
     for (row in r) assertFalse(row.spoken.contains("botón", ignoreCase = true))
   }
 
@@ -160,8 +164,8 @@ class HistoryRowsTest {
   fun el_numero_queda_pegado_a_su_unidad_con_un_espacio_duro_solo_al_dibujar_y_el_lector_lee_espacios_normales() {
     val nbsp = '\u00A0'
     val row = rows(history = listOf(play("calculo", 2 * day + 1_000, route = true)), measures = listOf(MeasurePoint(now - 2 * day - 1_000, "carga", 70f)), trials = listOf(trial("stroop", 3 * day, hits = 40, errors = 2))).first { !it.timeTrial }
-    assertEquals("hace 2${nbsp}días${nbsp}· En tu ruta${nbsp}· 70${nbsp}% de las cargas, sin pista", row.shownDetail)
-    assertEquals("sin cambiar lo que dice el lector ni el texto de siempre", "hace 2 días · En tu ruta · 70 % de las cargas, sin pista", row.detail)
+    assertEquals("hace 2${nbsp}días${nbsp}· en tu ruta${nbsp}· 70${nbsp}% de las cargas, sin pista", row.shownDetail)
+    assertEquals("sin cambiar lo que dice el lector ni el texto de siempre", "hace 2 días · en tu ruta · 70 % de las cargas, sin pista", row.detail)
     assertFalse(row.spoken.contains(nbsp))
     val trialRow = rows(trials = listOf(trial("stroop", 1_000, hits = 40, errors = 2))).single()
     assertEquals("hoy${nbsp}· Contrarreloj${nbsp}· 38${nbsp}aciertos", trialRow.shownDetail)

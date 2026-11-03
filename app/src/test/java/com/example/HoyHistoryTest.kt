@@ -68,16 +68,16 @@ class HoyHistoryTest {
 
   /** Las diez filas de la lámina de Fable: las dos primeras con la marca en dos líneas (con letra 1,0 a 393 dp). */
   private val sample = listOf(
-    HistoryRow("calculo", "Carga exacta", "hoy", "En tu ruta", "70 % de las cargas, sin pista", now - 1),
-    HistoryRow("bodega", "Bodega de carga", "hoy", "En tu ruta", "75 % de los objetos, al primer intento", now - 2),
+    HistoryRow("calculo", "Carga exacta", "hoy", "en tu ruta", "70 % de las cargas, sin pista", now - 1),
+    HistoryRow("bodega", "Bodega de carga", "hoy", "en tu ruta", "75 % de los objetos, al primer intento", now - 2),
     HistoryRow("stroop", "Tinta o Palabra", "hoy", "Contrarreloj", "38 aciertos", now - 3, timeTrial = true),
-    HistoryRow("secuencia", "Rastro de luz", "ayer", "A tu medida", "7 luces seguidas", now - 4),
-    HistoryRow("satelites", "Satélites", "ayer", "Desafío", "3,2 satélites a la vez", now - 5),
+    HistoryRow("secuencia", "Rastro de luz", "ayer", "a tu medida", "7 luces seguidas", now - 4),
+    HistoryRow("satelites", "Satélites", "ayer", "en Desafío", "3,2 satélites a la vez", now - 5),
     HistoryRow("acoplamiento", "Acoplamiento", "ayer", "Contrarreloj", "21 aciertos", now - 6, timeTrial = true),
-    HistoryRow("intrusa", "La estrella intrusa", "ayer", "En tu ruta", "80 % de aciertos", now - 7),
-    HistoryRow("freno", "Freno de Emergencia", "hace 2 días", "A tu medida", "zona firme", now - 8),
-    HistoryRow("parejas", "Constelaciones", "hace 2 días", "Suave", "70 % de las veces, directo a una pareja ya vista", now - 9),
-    HistoryRow("meteoros", "Lluvia de meteoros", "hace 3 días", "Al límite", "61 % de las palabras menos comunes, reconocidas", now - 10)
+    HistoryRow("intrusa", "La estrella intrusa", "ayer", "en tu ruta", "80 % de aciertos", now - 7),
+    HistoryRow("freno", "Freno de Emergencia", "hace 2 días", "a tu medida", null, now - 8),
+    HistoryRow("parejas", "Constelaciones", "hace 2 días", "suave", "70 % de las veces, directo a una pareja ya vista", now - 9),
+    HistoryRow("meteoros", "Lluvia de meteoros", "hace 3 días", "al límite", "61 % de las palabras menos comunes, reconocidas", now - 10)
   )
 
   private val stroop = HomeTimeTrial("stroop", "Tinta o Palabra", TimeTrialState.PENDIENTE, todayHits = null, record = 41)
