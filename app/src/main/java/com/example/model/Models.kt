@@ -412,7 +412,11 @@ data class GamePlayResult(
   val ttSeconds: Int? = null,
   val ttTrackVersion: Int? = null,
   // El ritmo del Contrarreloj, ensayo por ensayo (Tarea 200; `data/TimeTrialTrials.kt`): cuándo se resolvió cada uno, si fue acierto y en qué paso de la pista. null = Unity no lo mandó (una versión vieja, una partida de siempre o un registro que no cuadra).
-  val ttTrials: com.example.data.TimeTrialTrials? = null
+  val ttTrials: com.example.data.TimeTrialTrials? = null,
+  // «Tus últimas partidas» de Hoy (Tarea 221; `game_results.mode` y `game_results.route`, migración 17 → 18): si la partida fue de la ruta de hoy (`ActiveGameSession.isDailyFlow`, lo pone el ViewModel al guardar) y si se SABE con qué modo se jugó ([playMode]):
+  // `false` = una partida anterior a la columna (su `mode` quedó en NULL: la fila del historial no inventa un modo). Las partidas nuevas, y las que no vienen de la base, lo saben siempre.
+  val route: Boolean = false,
+  val modeKnown: Boolean = true
 ) {
   /** ¿Es un Contrarreloj? (Unity manda `tt_hits` en las partidas de ese modo y -1 en las demás.) */
   val isTimeTrial: Boolean get() = ttHits != null

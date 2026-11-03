@@ -32,6 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -109,6 +110,8 @@ fun HomeScreen(
   val streakInfo = remember(activity, clock) { Streak.fromTimestamps(activity, clock) }
   // Con la racha en 0, Hoy dice cuál fue la mejor (Tarea 186, 5a): la más larga de siempre solo se calcula entonces
   val bestStreak = remember(activity, clock) { if (streakInfo.current > 0) 0 else Streak.longest(activity.map(Streak::dayOf)) }
+  val measures by viewModel.starMeasures.collectAsState()
+  val historyList = remember(history, timeTrialResults, measures, clock, lang) { com.example.data.historyRows(history, timeTrialResults, measures, clock, lang) }
   val ui = HomeUi(
     name = settings.name,
     now = clock,
@@ -123,7 +126,8 @@ fun HomeScreen(
     flightDay = dailySession.isFlightDay,
     hasBaseline = baseline != null,
     baselineInvite = com.example.data.BaselinePlan.showHomeInvite(baseline != null, history.size, history.minOfOrNull { it.timestamp }, clock),
-    timeTrial = timeTrialOf(timeTrialResults, viewModel.todayKey(), lang, plus)
+    timeTrial = timeTrialOf(timeTrialResults, viewModel.todayKey(), lang, plus),
+    history = historyList
   )
   HomeContent(
     ui = ui,
@@ -164,7 +168,9 @@ internal data class HomeUi(
   /** Si Hoy invita a «Encuentra tu punto de partida»: por omisión, mientras no lo haya; Hoy la apaga pasadas 5 partidas o 7 días (Tarea 152, B6.2). */
   val baselineInvite: Boolean = !hasBaseline,
   /** El Contrarreloj de hoy (Tarea 177): el juego de la fecha (el mismo para todas las personas) y cómo va; null solo si el juego del día no está en el catálogo (no pasa). */
-  val timeTrial: HomeTimeTrial? = null
+  val timeTrial: HomeTimeTrial? = null,
+  /** «Tus últimas partidas» (Tarea 221): las últimas partidas, las más recientes primero (`historyRows`); vacía = Hoy no dibuja la tarjeta. */
+  val history: List<com.example.data.HistoryRow> = emptyList()
 ) {
   val completed: Int get() = stops.count { it.state == StopState.DONE }
 }
@@ -235,7 +241,7 @@ internal fun routeMeta(ui: HomeUi): String {
 }
 
 /**
- * El contenido de Hoy sin ViewModel (Tareas 165, 167, 177 y 220): saludo, la fecha con la meta de la semana, los siete farolitos con tu racha, UNA tarjeta con la ruta de hoy y, debajo, el Contrarreloj de hoy (y la invitación al punto de partida, si toca). «Todos los juegos» ya no está aquí: es la pestaña Juegos (Tarea 220). Si algo no cabe (letra del sistema muy grande),
+ * El contenido de Hoy sin ViewModel (Tareas 165, 167, 177 y 220): saludo, la fecha con la meta de la semana, los siete farolitos con tu racha, UNA tarjeta con la ruta de hoy y, debajo, el Contrarreloj de hoy (y la invitación al punto de partida, si toca) y, al final, «Tus últimas partidas» (Tarea 221, [HistoryCard]: sin partidas no hay tarjeta; Hoy y la lista de la tarjeta se deslizan con [hoyFirstConnection]). «Todos los juegos» ya no está aquí: es la pestaña Juegos (Tarea 220). Si algo no cabe (letra del sistema muy grande),
  * toda la pantalla se desliza; con 1,3 cabe entera en 393 × 873 dp.
  */
 @Composable
@@ -253,7 +259,9 @@ internal fun HomeContent(
   // La barra de pestañas es una capa fija (`LocalBarInset`, Tarea 123): Hoy deja esa franja abajo.
   val barInset = com.example.ui.components.LocalBarInset.current
   BoxWithConstraints(modifier.fillMaxSize()) {
-    Column(Modifier.fillMaxSize().padding(bottom = barInset).verticalScroll(rememberScrollState())) {
+    // Hoy se desliza con UN estado propio: «Tus últimas partidas» (Tarea 221) tiene su propia lista por dentro y `hoyFirstConnection` decide quién se mueve primero (hacia arriba el dedo, Hoy; hacia abajo, la lista)
+    val scrollState = rememberScrollState()
+    Column(Modifier.fillMaxSize().padding(bottom = barInset).nestedScroll(remember(scrollState) { hoyFirstConnection(scrollState) }).verticalScroll(scrollState).testTag("home_scroll")) {
       // Saludo. Todo el texto va a la IZQUIERDA y desde 28 dp bajo la barra: la zona del fondo sin luceros (`ZONAS_HOY` en `tools/isla/isla.py`; la vigila `HoyIslaScreenshotTest`).
       Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 28.dp), verticalAlignment = Alignment.CenterVertically) {
         OnBoardText(
@@ -527,7 +535,7 @@ private fun TimeTrialStatus(line: String) {
 }
 
 /**
- * El Contrarreloj de hoy bajo la tarjeta de la ruta (Tarea 219; desde la Tarea 220 «Todos los juegos» no está en Hoy y el bloque sube 64 dp; `auditoria-fable/idea-pestana-contrarreloj.md` §2.2, forma B), con los estados de siempre —sin Nubilus Plus / con Plus—:
+ * El Contrarreloj de hoy bajo la tarjeta de la ruta (Tarea 219; desde la Tarea 220 «Todos los juegos» no está en Hoy y el bloque sube 70 dp; `auditoria-fable/idea-pestana-contrarreloj.md` §2.2, forma B), con los estados de siempre —sin Nubilus Plus / con Plus—:
  *  - **Sin jugar** (la ruta a medias o completa): la losa CELESTE, «Te quedan 3 partidas de hoy.» / «Tu récord: 41 aciertos.» bajo ella, en texto sobre el cielo.
  *  - **Jugado, quedan partidas:** la losa CREMA «Otra vez» con «Hoy: <juego>»; «Te quedan 2 partidas de hoy. Tu récord: 41 aciertos.» / «Tu récord: 41 aciertos.».
  *  - **Marca nueva hoy:** el recuadro plano en celeste claro con el visto («Marca nueva: 43 aciertos en Tinta o Palabra.») y, debajo, «Otra vez» (si quedan partidas; con Plus, siempre) y, sin Plus, «Te quedan 2 partidas de hoy.» (sin el récord: ya está en el recuadro).
@@ -598,6 +606,8 @@ private fun HoyBelow(ui: HomeUi, onTimeTrial: () -> Unit, onLocked: () -> Unit, 
         }
       }
     }
+    // «Tus últimas partidas» (Tarea 221): después del Contrarreloj y de la invitación, antes de la marca del final; sin partidas no hay tarjeta
+    if (ui.history.isNotEmpty()) HistoryCard(ui.history, modifier = Modifier.padding(top = 10.dp))
     Spacer(Modifier.testTag("home_end"))                         // marca (sin tamaño) donde termina lo último de Hoy: las pruebas miden con ella cuánto se pasa de la barra
   }
 }

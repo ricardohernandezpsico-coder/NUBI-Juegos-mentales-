@@ -16,7 +16,7 @@ import com.example.BuildConfig
     ClaimedWeeklyChallengeEntity::class,
     TimeTrialResultEntity::class
   ],
-  version = 17,
+  version = 18,
   exportSchema = true
 )
 abstract class NeuroVidaDatabase : RoomDatabase() {
@@ -111,6 +111,14 @@ abstract class NeuroVidaDatabase : RoomDatabase() {
       object : androidx.room.migration.Migration(16, 17) {
         override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
           db.execSQL("ALTER TABLE time_trial_results ADD COLUMN trials TEXT")
+        }
+      },
+      // 17 -> 18 (3-nov): «Tus últimas partidas» de Hoy (Tarea 221) necesita saber con qué modo se jugó cada partida y si fue de la ruta de hoy. `mode` admite NULL y no tiene valor por defecto: las partidas de antes quedan sin modo (la fila no lo inventa);
+      // `route` es 0 por defecto (las de antes no se sabe si lo fueron: no cuentan como de la ruta). Nada se borra ni se reescribe.
+      object : androidx.room.migration.Migration(17, 18) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+          db.execSQL("ALTER TABLE game_results ADD COLUMN mode TEXT")
+          db.execSQL("ALTER TABLE game_results ADD COLUMN route INTEGER NOT NULL DEFAULT 0")
         }
       }
     )

@@ -85,7 +85,7 @@ internal fun targetOf(step: GuideStep): GuideTarget = when (step) {
 
 /**
  * Quien aloja la guía (Tarea 193, `HoyGuide`): decide CUÁNDO sale (el día del vuelo, sin la marca, con Hoy a la vista sin nada encima y el arranque terminado, [HoyGuide.STEP_DELAY_MS] después del fundido del arranque) y dibuja el velo del paso en que va el ViewModel.
- * [somethingAbove] es verdadero si Hoy no está a la vista o hay algo encima (una medalla, un resultado, un panel, «Todos los juegos»): si llega algo mientras la guía está abierta, se esconde hasta que Hoy vuelva a estar libre.
+ * [somethingAbove] es verdadero si Hoy no está a la vista o hay algo encima (una medalla, un resultado, un panel): si llega algo mientras la guía está abierta, se esconde hasta que Hoy vuelva a estar libre.
  */
 @Composable
 internal fun HoyGuideHost(viewModel: NeuroVidaViewModel, targets: GuideTargets, somethingAbove: Boolean) {

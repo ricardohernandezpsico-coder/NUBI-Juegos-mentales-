@@ -95,7 +95,7 @@ Con la pestaña Juegos en la barra (Hoy · Juegos · Contrarreloj · Avance · T
 
 - **«Nubi te muestra Hoy»** va solo en el primer paso, como antes.
 - **El hueco del paso 2** lleva 8 dp de aire a la izquierda, a la derecha y arriba; abajo llega hasta donde llega la barra (como el del paso 3, para no entrar en la franja de gestos de Android). Es UNA columna: no incluye a Hoy ni a las tres de la derecha.
-- **`bringIntoView`:** el paso 2 no desliza nada (la barra es fija); el paso 1 sigue trayendo el bloque entero a la vista. Con el bloque 64 dp más arriba (ya no está «Todos los juegos» entre la tarjeta y él) casi nunca hace falta.
+- **`bringIntoView`:** el paso 2 no desliza nada (la barra es fija); el paso 1 sigue trayendo el bloque entero a la vista. Con el bloque 70 dp más arriba (ya no está «Todos los juegos» entre la tarjeta y él) casi nunca hace falta.
 - **Tocar lo iluminado = Seguir** y no cambia de pestaña (la guía no navega): `HoyGuideOverlayTest.tocar_lo_iluminado_…` toca la columna real y comprueba que la barra no recibió ninguna elección.
 - **Una palabra por concepto:** ningún texto de la guía (hablado ni escrito) dice ya «Todos los juegos»; la pestaña y su página se llaman «Juegos».
 - **Pruebas:** `HoyGuideTest` (el orden, los contadores, los textos hablados), `HoyGuideOverlayTest` (el hueco de cada paso, la columna aparte de las tres, tocar lo iluminado, 1,3 y 2,0, 360 dp), `HoyGuideScreenshotTest` y `LecturaScreenshotTest` (sus capturas «paso1» son ahora las del Contrarreloj; «paso2», las de la columna Juegos). Lámina: `docs/previews/tarea-220.png`.

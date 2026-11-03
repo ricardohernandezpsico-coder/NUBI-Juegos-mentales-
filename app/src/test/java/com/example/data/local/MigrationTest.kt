@@ -205,4 +205,35 @@ class MigrationTest {
     db.query("SELECT COUNT(*) FROM time_trial_results WHERE trials IS NULL").use { c -> assertTrue(c.moveToFirst()); assertEquals("la de antes y la sin ritmo", 2, c.getInt(0)) }
     db.close()
   }
+
+  /**
+   * Tarea 221: «Tus últimas partidas» de Hoy guarda con qué modo se jugó cada partida y si fue de la ruta de hoy. Las de antes quedan SIN modo (NULL: no se inventa) y fuera de la ruta (`route` = 0); nada se borra ni se reescribe.
+   */
+  @Test
+  fun `de la version 17 a la 18 las partidas ganan el modo y la ruta, las de antes quedan sin modo y todo lo demas se conserva`() {
+    helper.createDatabase("migracion18", 17).apply {
+      execSQL("INSERT INTO game_progress (gameId, currentLevel, highestScore, totalGamesPlayed, lastPlayedTimestamp, masteryStreak, eloRating, ddaRating) VALUES ('calculo', 4, 92, 17, 1700000000000, 3, 1200, 0.5)")
+      execSQL("INSERT INTO game_results (id, gameId, score, correctAnswers, totalTrials, timed, level, timestamp) VALUES ('vieja', 'calculo', 80, 10, 12, 1, 3, 1700000000000)")
+      execSQL("INSERT INTO time_trial_results (id, gameId, day, trackVersion, hits, errors, level, seconds, timestamp) VALUES ('tt', 'stroop', '2026-10-30', 2, 38, 4, 4, 120, 1700000050000)")
+      close()
+    }
+    val db = helper.runMigrationsAndValidate("migracion18", 18, true, *NeuroVidaDatabase.MIGRATIONS)
+    db.query("SELECT score, correctAnswers, totalTrials, timed, level, timestamp, mode, route FROM game_results WHERE id = 'vieja'").use { c ->
+      assertTrue("la partida de antes desapareció con la migración", c.moveToFirst())
+      assertEquals(80, c.getInt(0)); assertEquals(10, c.getInt(1)); assertEquals(12, c.getInt(2)); assertEquals(1, c.getInt(3)); assertEquals(3, c.getInt(4)); assertEquals(1700000000000L, c.getLong(5))
+      assertTrue("sin modo: la columna queda en NULL", c.isNull(6))
+      assertEquals("y no cuenta como de la ruta", 0, c.getInt(7))
+    }
+    // una partida nueva guarda su modo y si fue de la ruta; una sin la ruta sigue valiendo (valor por defecto 0)
+    db.execSQL("INSERT INTO game_results (id, gameId, score, correctAnswers, totalTrials, timed, level, timestamp, mode, route) VALUES ('nueva', 'calculo', 90, 11, 12, 1, 3, 1700000100000, 'DESAFIO', 1)")
+    db.execSQL("INSERT INTO game_results (id, gameId, score, correctAnswers, totalTrials, timed, level, timestamp) VALUES ('sin-ruta', 'calculo', 70, 9, 12, 1, 3, 1700000200000)")
+    db.query("SELECT mode, route FROM game_results WHERE id = 'nueva'").use { c -> assertTrue(c.moveToFirst()); assertEquals("DESAFIO", c.getString(0)); assertEquals(1, c.getInt(1)) }
+    db.query("SELECT COUNT(*) FROM game_results WHERE mode IS NULL AND route = 0").use { c -> assertTrue(c.moveToFirst()); assertEquals("la de antes y la sin ruta", 2, c.getInt(0)) }
+    db.query("SELECT ddaRating, totalGamesPlayed FROM game_progress WHERE gameId = 'calculo'").use { c ->
+      assertTrue("la fila del juego desapareció con la migración", c.moveToFirst())
+      assertEquals(0.5, c.getDouble(0), 1e-6); assertEquals(17, c.getInt(1))
+    }
+    db.query("SELECT hits, errors FROM time_trial_results WHERE id = 'tt'").use { c -> assertTrue("el Contrarreloj se conserva", c.moveToFirst()); assertEquals(38, c.getInt(0)); assertEquals(4, c.getInt(1)) }
+    db.close()
+  }
 }

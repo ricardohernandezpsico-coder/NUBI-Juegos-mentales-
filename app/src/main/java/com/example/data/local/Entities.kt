@@ -20,7 +20,11 @@ data class GameResultEntity(
   val totalTrials: Int,
   val timed: Boolean,
   val level: Int,
-  val timestamp: Long
+  val timestamp: Long,
+  /** Con qué modo se jugó (el nombre de `PlayMode`); NULL en las partidas anteriores a «Tus últimas partidas» (Tarea 221, migración 17 → 18): no se inventa. */
+  val mode: String? = null,
+  /** 1 si la partida fue de la ruta de hoy, 0 si no (Tarea 221). */
+  @ColumnInfo(defaultValue = "0") val route: Int = 0
 )
 
 fun GameResultEntity.toDomain(): GamePlayResult = GamePlayResult(
@@ -31,7 +35,10 @@ fun GameResultEntity.toDomain(): GamePlayResult = GamePlayResult(
   totalTrials = totalTrials,
   timed = timed,
   level = level,
-  timestamp = timestamp
+  timestamp = timestamp,
+  playMode = mode?.let { name -> com.example.data.PlayMode.entries.firstOrNull { it.name == name } } ?: com.example.data.PlayMode.A_TU_MEDIDA,
+  modeKnown = mode != null && com.example.data.PlayMode.entries.any { it.name == mode },
+  route = route != 0
 )
 
 fun GamePlayResult.toEntity(): GameResultEntity = GameResultEntity(
@@ -42,7 +49,9 @@ fun GamePlayResult.toEntity(): GameResultEntity = GameResultEntity(
   totalTrials = totalTrials,
   timed = timed,
   level = level,
-  timestamp = timestamp
+  timestamp = timestamp,
+  mode = playMode.name,
+  route = if (route) 1 else 0
 )
 
 @Entity(tableName = "game_progress")

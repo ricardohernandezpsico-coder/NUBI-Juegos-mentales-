@@ -181,6 +181,51 @@ class GameFlowTest {
     assertNull(GameSessionStore.takePendingResult())
   }
 
+  /**
+   * Tarea 221 («Tus últimas partidas» de Hoy): cada partida se guarda con el modo con que se jugó y con si fue de la ruta de hoy (columnas `mode` y `route`); el historial de Hoy las lista con «En tu ruta» o el modo de la ficha, y las de antes (sin modo) no inventan uno.
+   */
+  @Test
+  fun `la partida guardada lleva su modo y si fue de la ruta y el historial de Hoy la lista asi`() {
+    val vm = newViewModel()
+    vm.launchGame("calculo", isDailyFlow = true)               // la ruta de hoy: su modo es el de siempre
+    vm.onUnityLaunched("LH1")
+    vm.onUnityResult(result("calculo"), "LH1")
+    TestSupport.awaitUntil(message = "No se guardó la partida de la ruta") { vm.gameHistory.value.size == 1 }
+    vm.closeGameOrResult()
+    vm.playFromJuegos("freno", PlayMode.DESAFIO)                // la ficha de Juegos: Desafío, fuera de la ruta
+    vm.onUnityLaunched("LH2")
+    vm.onUnityResult(result("freno"), "LH2")
+    TestSupport.awaitUntil(message = "No se guardó la partida de la ficha") { vm.gameHistory.value.size == 2 }
+    val byGame = vm.gameHistory.value.associateBy { it.gameId }
+    assertTrue("la de la ruta lo dice", byGame.getValue("calculo").route)
+    assertFalse("la de la ficha, no", byGame.getValue("freno").route)
+    assertEquals(PlayMode.DESAFIO, byGame.getValue("freno").playMode)
+    assertTrue("y se sabe con qué modo se jugó", byGame.values.all { it.modeKnown })
+    val rows = com.example.data.historyRows(vm.gameHistory.value, vm.timeTrialResults.value, vm.starMeasures.value, System.currentTimeMillis())
+    assertEquals(listOf("En tu ruta", "Desafío").toSet(), rows.map { it.mode }.toSet())
+    assertEquals("hoy", rows.first().whenText)
+    // en la base quedó guardado (el modo como texto, la ruta como 0 o 1)
+    runBlocking {
+      val saved = NeuroVidaDatabase.getDatabase(app).gameResultDao().getAllResultsSync().associateBy { it.gameId }
+      assertEquals("DESAFIO", saved.getValue("freno").mode); assertEquals(0, saved.getValue("freno").route); assertEquals(1, saved.getValue("calculo").route)
+    }
+  }
+
+  @Test
+  fun `una partida guardada antes de la columna del modo queda sin modo y el historial no lo inventa`() {
+    runBlocking {
+      NeuroVidaDatabase.getDatabase(app).gameResultDao().insert(com.example.data.local.GameResultEntity("vieja", "calculo", 80, 8, 10, false, 2, System.currentTimeMillis() - 3 * 86_400_000L))
+    }
+    val vm = newViewModel()
+    TestSupport.awaitUntil(message = "No llegó la partida vieja") { vm.gameHistory.value.size == 1 }
+    val r = vm.gameHistory.value.single()
+    assertFalse("sin modo guardado, no se sabe", r.modeKnown)
+    assertFalse(r.route)
+    val row = com.example.data.historyRows(vm.gameHistory.value, emptyList(), emptyList(), System.currentTimeMillis()).single()
+    assertNull("la fila no inventa un modo", row.mode)
+    assertEquals("hace 3 días", row.whenText)
+  }
+
   @Test
   fun `un resultado de un boton de prueba, sin sesion, solo se guarda`() {
     val vm = newViewModel()

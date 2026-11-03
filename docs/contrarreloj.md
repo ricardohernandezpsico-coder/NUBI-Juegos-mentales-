@@ -748,3 +748,26 @@ Con «Todos los juegos» convertido en la pestaña Juegos (`docs/arquitectura-ap
 - **A 360 × 780 con letra 1,0:** +30 (primera hora y a mitad de ruta, con y sin Plus) · −42 (ruta completa, jugado, sin Plus ruta completa) · +1 (marca nueva) · +73 (marca nueva con la ruta a medias) · +81 (pausa) · −20 (sin Plus, jugado) · +33 (sin Plus, marca nueva) · −19 (sin partidas) · +41 (sin partidas con marca nueva) · +53 (sin partidas, ruta a medias). Antes (§29): de +28 a +151 en todos. Con letra 1,3 de +35 a +196 (antes +105 a +266) y con 2,0 de +407 a +691 (antes +477 a +761); a 393 con 2,0, de +278 a +522 (antes +348 a +593).
 - **La regla de siempre se cumple:** la acción principal (la ruta o, con la ruta completa, lo primero del bloque del Contrarreloj; para los recuadros de información bastan sus primeras 40 dp) se ve entera sin deslizar en todos los estados a 393 × 873 con 1,0 y 1,3 y a 360 × 780 con 1,0. Lo demás se alcanza deslizando; ninguna palabra se parte.
 - **Tolerancias de `HoyTarjetaTest`** (`scrollsAt393`, `scrollsAt360`): se recalibraron a lo medido arriba; a 393 con 1,0 ya no hay ninguna.
+
+## 31. «Tus últimas partidas» en Hoy: las medidas (Tarea 221, 3-nov-2026)
+
+La tarjeta va DESPUÉS de todo lo que ya había (`docs/arquitectura-app.md`, «Tus últimas partidas» en Hoy), así que lo de arriba no cambia: las medidas de la §30 siguen siendo las de Hoy sin tarjeta, y la acción principal (la ruta o, con la ruta completa, lo primero del bloque del Contrarreloj) sigue entera a la vista a 393 × 873 con 1,0 y 1,3 y a 360 × 780 con 1,0 en los 14 estados (`HoyHistoryTest.la_accion_principal_sigue_a_la_vista…`). Con la tarjeta, Hoy se pasa de la barra en TODOS los estados (la tarjeta mide más que cualquier hueco); lo que importa es **cuánto hay que deslizar Hoy para ver la tarjeta entera** (`HoyHistoryTest.medidas_cuanto_hay_que_deslizar…`; dp que el borde de abajo de la tarjeta, sin su sombra, se pasa de la barra, con las diez filas de la lámina de Fable):
+
+| 393 × 873 | letra 1,0 | letra 1,3 |
+|---|---|---|
+| ruta completa y jugado (con Plus); sin Plus, ruta completa | **+101** | +239 |
+| sin partidas | +130 | +311 |
+| sin Plus, jugado | +123 | +267 |
+| primera hora y a mitad de ruta (con Plus); sin Plus, ruta a medias | +173 | +311 |
+| marca nueva | +150 | +291 |
+| sin Plus, marca nueva | +176 | +323 |
+| sin partidas con marca nueva | +190 | +406 |
+| partida en pausa / sin partidas, ruta a medias | +202 | +374 / +383 |
+| marca nueva con la ruta a medias | **+222** | +363 |
+
+A 393 con 2,0, de +827 a +1078; a **360 × 780** con 1,0, de +241 a +364; con 1,3, de +424 a +590; con 2,0, de +1028 a +1318 (a 360 dp con 2,0 la tarjeta mide unos 580 dp y el título pasa a dos renglones; no se probó que quede entera sobre la barra con esa letra a ese ancho).
+
+- **El título asoma sin deslizar** (termina antes de la barra) a 393 × 873 con letra 1,0 en los **14 estados** (de 581 a 702 dp, contra 710 de la barra; el que menos deja es «marca nueva con la ruta a medias», 702) y con letra 1,3 con la ruta completa, jugado y marca nueva. A 360 dp no asoma en ningún estado (la ruta completa lo deja a 2 dp de la barra): Hoy ya se deslizaba (§30); se documenta, no se exige.
+- **El alto de la tarjeta, medido** (Pixel 8, la ventana de la lista, sin el título; las filas de la lámina de Fable, las dos primeras con la marca en dos renglones): 393 dp: **224** con 1,0 · 308 con 1,3 · 484 con 2,0; 360 dp: 233 · 334 · 519. Con el título (de 40 dp con 1,0), la tarjeta mide unos 264 dp a 393 con 1,0 (Fable calculó 259 con PIL). En todos, la cuarta fila se ve por la mitad (±2 dp).
+- **Deslizada hasta el final, la tarjeta queda entera sobre la barra** en todos los estados a 393 con 1,0, 1,3 y 2,0 y a 360 con 1,0 y 1,3.
+- **En el emulador** (`medium_phone`, letra 2,0, 393 y 360 dp; migración real 17 → 18 sobre una base de antes, sin pérdida): la tarjeta entera sobre la barra con la lista al principio y al final; los nombres («Rescate relámpago») pasan a dos renglones por palabras, ninguna palabra se parte y «38 aciertos» no se separa. El doble movimiento se siente como uno: sobre la tarjeta a medias el dedo mueve Hoy, y con Hoy en su final mueve las filas.
