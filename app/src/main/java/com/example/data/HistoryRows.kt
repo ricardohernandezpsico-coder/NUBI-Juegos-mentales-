@@ -23,8 +23,8 @@ data class HistoryRow(
   /** La segunda línea de la fila: «cuándo · modo · marca» (lo que falta se omite). Pasa a dos renglones por palabras. */
   val detail: String get() = listOfNotNull(whenText, mode, mark).joinToString(" · ")
 
-  /** La segunda línea tal como se DIBUJA: cada número queda pegado a su unidad con un espacio duro («38 aciertos», «hace 2 días», «70 %»; [glueNumbers], el mismo de «Te quedan 2 partidas» en Hoy), para que el renglón nunca los separe. El «·» queda pegado a la palabra de antes (un renglón no empieza con el separador). El lector lee [spoken], con espacios normales. */
-  val shownDetail: String get() = detail.glueNumbers().replace(" · ", "$NBSP· ")
+  /** La segunda línea tal como se DIBUJA: cada número queda pegado a su unidad con un espacio duro («38 aciertos», «hace 2 días», «70 %»; [glueNumbers], el mismo de «Te quedan 2 partidas» en Hoy), para que el renglón nunca los separe. El «·» queda pegado a la palabra de antes (un renglón no empieza con el separador) y «a la vez» (Satélites: «3,2 satélites a la vez») va pegado entre sí (Tarea 221c: nunca queda «vez» sola en un renglón). El lector lee [spoken], con espacios normales. */
+  val shownDetail: String get() = detail.glueNumbers().replace(" · ", "$NBSP· ").replace("a la vez", "a${NBSP}la${NBSP}vez")
 
   /** Lo que dice el lector de pantalla de la fila entera, sin «botón» (no lo es): «Carga exacta, hoy, en tu ruta, 70 % de las cargas, sin pista.» La pantalla y el lector dicen lo mismo: el modo ya viene en minúscula (salvo el nombre propio «Contrarreloj»). */
   val spoken: String get() = (listOf(title, whenText) + listOfNotNull(mode, mark)).joinToString(", ") + "."

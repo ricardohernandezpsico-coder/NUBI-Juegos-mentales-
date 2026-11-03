@@ -172,6 +172,22 @@ class HistoryRowsTest {
     assertEquals("un número solo, sin unidad ni letra detrás, no se toca", "hoy · 3 · x", "hoy · 3 · x".glueNumbers())
   }
 
+  /** Tarea 221c: con «en Desafío» la fila de Satélites ya no cabía en un renglón y «vez» quedaba sola abajo: «a la vez» va pegado con espacios duros, solo al dibujar. */
+  @Test
+  fun a_la_vez_va_pegado_con_espacios_duros_al_dibujar_y_el_lector_lo_lee_con_espacios_normales() {
+    val nbsp = '\u00A0'
+    val measures = listOf(MeasurePoint(now - day - 1_000, "tracking", 3.2f))
+    val row = rows(history = listOf(play("satelites", day + 1_000, PlayMode.DESAFIO)), measures = measures).single()
+    assertEquals("3,2 satélites a la vez", row.mark)
+    assertEquals("ayer${nbsp}· en Desafío${nbsp}· 3,2${nbsp}satélites a${nbsp}la${nbsp}vez", row.shownDetail)
+    assertTrue("«a la vez» no se puede partir en el dibujo", row.shownDetail.contains("a${nbsp}la${nbsp}vez"))
+    assertEquals("el texto de siempre, sin espacios duros", "ayer · en Desafío · 3,2 satélites a la vez", row.detail)
+    assertEquals("y el lector lee espacios normales", "Satélites, ayer, en Desafío, 3,2 satélites a la vez.", row.spoken)
+    assertFalse(row.spoken.contains(nbsp))
+    val one = rows(history = listOf(play("satelites", 1_000)), measures = listOf(MeasurePoint(now - 1_000, "tracking", 1f))).single()
+    assertEquals("con 1,0 (la medida lleva un decimal), igual", "hoy${nbsp}· a tu medida${nbsp}· 1,0${nbsp}satélites a${nbsp}la${nbsp}vez", one.shownDetail)
+  }
+
   // ---- El alto de la tarjeta (§10.1)
 
   @Test

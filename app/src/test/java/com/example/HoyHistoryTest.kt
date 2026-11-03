@@ -377,6 +377,21 @@ class HoyHistoryTest {
     }
   }
 
+  /** Tarea 221c: «ayer · en Desafío · 3,2 satélites a la vez» no cabe en un renglón; «a la vez» pasa junto y nunca queda «vez» sola. */
+  private fun assertNoLonelyVez(widthDp: Int, heightDp: Int, fs: Float) {
+    val satelites = HistoryRow("satelites", "Satélites", "ayer", "en Desafío", "3,2 satélites a la vez", now - 1)
+    show(ui(3, stroop, listOf(satelites) + sample.take(3)), widthDp, heightDp, fs)
+    val l = layouts("home_history_detail_1").single().second
+    val t = l.layoutInput.text.text
+    val lines = (0 until l.lineCount).map { t.substring(l.getLineStart(it), l.getLineEnd(it)).replace('\u00A0', ' ').trim() }
+    println("MEDIDA «a la vez» a $widthDp dp con letra $fs: " + lines.joinToString(" / "))
+    assertTrue("$widthDp dp, letra $fs: ningún renglón es solo «vez»: $lines", lines.none { it == "vez" || it == "la vez" })
+    assertTrue("y «a la vez» entero queda en un mismo renglón: $lines", lines.any { it.endsWith("a la vez") })
+  }
+
+  @Test fun a_393_con_1_0_nunca_queda_vez_sola_en_la_fila_de_Satelites() = assertNoLonelyVez(393, 873, 1f)
+  @Test fun a_360_con_1_0_nunca_queda_vez_sola_en_la_fila_de_Satelites() = assertNoLonelyVez(360, 780, 1f)
+
   @Test fun los_textos_se_leen_sin_partir_palabras_a_393_con_1_0() = assertReadable(393, 873, 1f)
   @Test fun los_textos_se_leen_sin_partir_palabras_a_393_con_1_3() = assertReadable(393, 873, 1.3f)
   @Test fun los_textos_se_leen_sin_partir_palabras_a_393_con_2_0() = assertReadable(393, 873, 2f)
