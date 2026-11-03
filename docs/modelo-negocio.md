@@ -1,6 +1,6 @@
 # Modelo de negocio y enganche: base Duolingo
 
-> **Nombre (2-nov):** la app se llama **Nubilus** («Nubilus – Juegos mentales» en la ficha de Play) y el plan pagado **«Nubilus Plus»**; la mascota sigue siendo Nubi. Abajo, donde dice «Nubi» como personaje (avisos, «Tu año con Nubi»), es la mascota (`auditoria-fable/nombre-app.md`).
+> **Nombre (2-nov):** la app se llama **Nubilus** («Nubilus – Juegos mentales» en la ficha de Play) y el plan pagado **«Nubilus Plus»**; la mascota sigue siendo Nubi. Abajo, donde dice «Nubi» como personaje (avisos, «Tu año con Nubi»), es la mascota; los demás «Nubi» («Nubi tiene un personaje», «En Nubi», «la moneda de Nubi», «Nubi debería asumir menos») son de la app, escritos el 14-oct, cuando se llamaba así (`auditoria-fable/nombre-app.md`).
 
 **Estado:** idea en estudio, NO implementar hasta que Ricardo lo pida. Escrito el 14-oct-2026 a partir de la conversación de Ricardo con Opus y de la segunda opinión de Fable ([`auditoria-fable/negocio-duolingo.md`], fuera del repo). Ricardo lo retomará con más investigación.
 
@@ -57,12 +57,12 @@
   - el resumen para compartir.
 - **Pagado:**
   - juego libre fuera de la ruta sin tope; el gratis tiene un **tope con número**, por definir;
-  - el Desafío y «Al límite» (antes «Experto») **en cualquier juego y a cualquier hora**. **El Desafío de hoy es la excepción y es GRATIS** (decisión de Ricardo, 25-oct; Tarea 167): uno al día, elegido por Nubi, que se puede repetir si no se supera; no cuenta para el tope de partidas libres (`DailyChallenge.COUNTS_FOR_FREE_CAP = false`). El cobro de Plus no se construye todavía (etapa de publicar, con Play Billing y el abogado: regla permanente 3);
+  - el Desafío y «Al límite» (antes «Experto») **en cualquier juego y a cualquier hora**. **El Desafío de hoy es la excepción y es GRATIS** (decisión de Ricardo, 25-oct; Tarea 167): uno al día, elegido por Nubi, que se puede repetir si no se supera; no cuenta para el tope de partidas libres (`DailyChallenge.COUNTS_FOR_FREE_CAP = false`) (historia: el Desafío de hoy lo reemplazó el Contrarreloj de hoy el 26-oct; **desde la Tarea 218, 2-nov, el Contrarreloj de hoy es gratis con 3 partidas al día, y los cuatro Contrarrelojes, cualquier día y con partidas libres, son de Nubilus Plus**; `COUNTS_FOR_FREE_CAP` salió). El cobro de Plus no se construye todavía (etapa de publicar, con Play Billing y el abogado: regla permanente 3);
   - la reparación mensual de la racha;
   - decoraciones extra;
   - el plan familiar.
 - **Nunca se bloquea la ruta del día.**
-- **Nubilus Plus, hoy (Tarea 199, 31-oct):** existe el INTERRUPTOR local (`data/PlusAccess.kt`, preferencia pasajera `plus_access`; las builds de depuración empiezan encendidas y un botón «[Debug]» lo cambia) y lo único que cuelga de él es la **página «Contrarreloj» de Avance entera** (todas tus marcas, comparadas solo contigo) con su atajo «Todas tus marcas ›» en el final del Contrarreloj. Sin Plus, la puerta de Avance dice el récord de hoy, lleva el candado «Con Nubilus Plus» y abre una hoja que cuenta qué trae; jugar el Contrarreloj, el récord de Hoy y el final de siempre siguen gratis. **Falta el botón de compra** (Google Play Billing, Etapa 4, con el abogado): la hoja del candado todavía no vende nada ni dice precios.
+- **Nubilus Plus, hoy (Tarea 199, 31-oct):** existe el INTERRUPTOR local (`data/PlusAccess.kt`, preferencia pasajera `plus_access`; las builds de depuración empiezan encendidas y un botón «[Debug]» lo cambia) y lo único que cuelga de él es la **página «Contrarreloj» de Avance entera** (todas tus marcas, comparadas solo contigo) con su atajo «Todas tus marcas ›» en el final del Contrarreloj. Sin Plus, la puerta de Avance dice el récord de hoy, lleva el candado «Con Nubilus Plus» y abre una hoja que cuenta qué trae; jugar el Contrarreloj, el récord de Hoy y el final de siempre siguen gratis. **Desde la Tarea 215 (2-nov)** la página es la pestaña «Contrarreloj» (lo gratis a color, lo de Plus en dos losas grises) y **desde la Tarea 218** Plus suma los cuatro Contrarrelojes con partidas libres (sin Plus, el de hoy con 3 partidas al día). **Falta el botón de compra** (Google Play Billing, Etapa 4, con el abogado): la hoja del candado todavía no vende nada ni dice precios.
 - Cómo se activa: lo pagado se activa dentro de la app con Google Play, **nunca desde un servidor**, por la regla permanente 3. Lo revisa el abogado.
 
 ## Planes y embudo
