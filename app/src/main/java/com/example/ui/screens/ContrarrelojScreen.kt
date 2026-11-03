@@ -20,7 +20,7 @@ import com.example.viewmodel.TopPanel
 /**
  * La pestaña «Contrarreloj» (Tarea 215): reúne lo que la página necesita del ViewModel y la dibuja ([ContrarrelojPage]); la hoja del candado ([PlusLockSheet]) vive aquí, porque la abre cualquier cosa en gris de la pestaña. Antes la página era un hijo de `ProgressScreen` (Tareas 199 y 203).
  *
- * - **El juego elegido** lo guarda el ViewModel (`contrarrelojGame`; null = el de hoy) y no se cierra al cambiar de pestaña. **Sin Nubi Plus se muestra siempre el de hoy**, aunque el ViewModel guarde otro (el interruptor de depuración, o un Plus que venció): los otros tres se ven en gris.
+ * - **El juego elegido** lo guarda el ViewModel (`contrarrelojGame`; null = el de hoy) y no se cierra al cambiar de pestaña. **Sin Nubilus Plus se muestra siempre el de hoy**, aunque el ViewModel guarde otro (el interruptor de depuración, o un Plus que venció): los otros tres se ven en gris.
  * - **«Jugar · 2 minutos»** lanza el juego elegido con la pista de hoy (`startTimeTrial(..., fromTab = true)`): al terminar, el final vuelve aquí y no a Hoy. La cuenta de partidas gratis llega con la Tarea 3 de la pestaña; hoy no hay tope.
  * - **El día de hoy** se vuelve a pedir cada 30 s (el mismo reloj de Hoy): a medianoche el juego marcado «Hoy» cambia solo.
  * - La comparación disponible en ESTA build es la REFERENCIA ESTIMADA del APK (Tarea 205; también en la tienda) o, en depuración, los datos de muestra que elija «[Debug] Comparación»; null si no hay con qué comparar (la referencia la carga el ViewModel fuera del hilo principal: null un instante al arrancar).

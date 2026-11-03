@@ -1,11 +1,11 @@
 package com.example.data
 
 /**
- * «En qué se basa Nubi» (Tarea 185, 28-oct; `auditoria-fable/tu-pestana.md` §3): de qué estudio sale la tarea de cada juego, en una línea y con el estudio a un toque. NO es una prueba de que Nubi funcione: Nubi no tiene estudios propios ni promete mejorar nada
+ * «En qué se basa Nubilus» (Tarea 185, 28-oct; `auditoria-fable/tu-pestana.md` §3): de qué estudio sale la tarea de cada juego, en una línea y con el estudio a un toque. NO es una prueba de que Nubi funcione: Nubi no tiene estudios propios ni promete mejorar nada
  * (`Fuentes.NO_DECIMOS`); es de dónde salen las tareas. Solo autor y año, nuestra línea en español y el enlace: ni el título en inglés ni la revista, porque `VisibleTextsGuardTest` prohíbe «cognitiv…» en cualquier texto del código y varios títulos y revistas
  * lo traen (la página del DOI los trae a un toque). Los 24 DOI se comprobaron contra doi.org y Crossref el 28-oct (autor y año coinciden con la cita; `docs/en-que-se-basa-nubi.md`). Las 17 líneas de «qué tomamos» las APROBÓ Ricardo el 28-oct (con un cambio en la de Constelaciones: «…lo que más cambia con los años», que es lo que dice Old y Naveh-Benjamin, 2008, sobre la memoria asociativa).
  *
- * Desde la Tarea 186 (28-oct) la pantalla suma, además de la fuente principal de cada juego, «Más estudios (N)» bajo cada losa, la sección «Cómo está hecha Nubi» y una «Lo que no decimos» más amplia: eso vive en [FuentesMas].
+ * Desde la Tarea 186 (28-oct) la pantalla suma, además de la fuente principal de cada juego, «Más estudios (N)» bajo cada losa, la sección «Cómo está hecho Nubilus» y una «Lo que no decimos» más amplia: eso vive en [FuentesMas].
  *
  * Lo que sale de aquí en una `Intent` de `ACTION_VIEW` hacia el navegador: la app no tiene (ni necesita) permiso de internet.
  */
@@ -22,7 +22,7 @@ data class Fuente(
   val url: String get() = Fuentes.urlOf(doi)
 }
 
-/** Un estudio suelto (los «Más estudios» de cada juego, «Cómo está hecha Nubi», lo que no decimos): la cita corta, su DOI y su línea «qué sustenta» en español (Tarea 186; `FuentesMas`). */
+/** Un estudio suelto (los «Más estudios» de cada juego, «Cómo está hecho Nubilus», lo que no decimos): la cita corta, su DOI y su línea «qué sustenta» en español (Tarea 186; `FuentesMas`). */
 data class Estudio(val cite: String, val doi: String, val line: String) {
   val url: String get() = Fuentes.urlOf(doi)
 }
@@ -34,7 +34,7 @@ object Fuentes {
   const val SEE_STUDY = "Ver el estudio ›"
 
   const val INTRO = "Cada juego parte de una tarea que la psicología estudia desde hace años. Aquí está de dónde sale cada uno, en una línea, y el estudio para quien quiera leerlo."
-  const val PROMISE = "Nubi no promete mejorar nada: es un juego."
+  const val PROMISE = "Nubilus no promete mejorar nada: es un juego."
 
   /** Los 17 juegos de la app, con la fuente de su tarea (el orden de cada área es el de `GameRegistry`). */
   val byGame: Map<String, Fuente> = listOf(
@@ -61,7 +61,7 @@ object Fuentes {
     Fuente("intrusa", "Ordenamos lo que sabemos por tipo de cosa y por lo que va junto.", "Mirman, Landrigan y Britt, 2017", "10.1037/bul0000092")
   ).associateBy { it.gameId }
 
-  // ---- Cómo se ajusta la dificultad (docs/DDA-comun.md y docs/dificultad-y-avance.md). Desde la Tarea 186 ya no es una sección aparte: es el primer grupo de «Cómo está hecha Nubi» («La dificultad se acomoda a ti», `FuentesMas.mechanisms`).
+  // ---- Cómo se ajusta la dificultad (docs/DDA-comun.md y docs/dificultad-y-avance.md). Desde la Tarea 186 ya no es una sección aparte: es el primer grupo de «Cómo está hecho Nubilus» («La dificultad se acomoda a ti», `FuentesMas.mechanisms`).
   const val METHOD_TEXT = "El nivel sube y baja hasta donde aciertas 8 de cada 10. Es un método de los laboratorios de percepción."
   val method: List<Estudio> = listOf(
     Estudio("Levitt, 1971", "10.1121/1.1912375", "La escalera «sube y baja»: el nivel sube con los aciertos y baja con los errores hasta quedar cerca de un nivel de aciertos fijo."),
@@ -77,7 +77,7 @@ object Fuentes {
 
   // ---- Lo que no decimos
   const val NO_DECIR_TITLE = "Lo que no decimos"
-  const val NO_DECIR_TEXT = "Que jugar mejore la memoria o la atención fuera del juego no está demostrado. Por eso Nubi no lo promete."
+  const val NO_DECIR_TEXT = "Que jugar mejore la memoria o la atención fuera del juego no está demostrado. Por eso Nubilus no lo promete."
   /** La revisión que sostiene la frase de arriba (Simons y otros, 2016); desde la Tarea 186 le acompañan otras tres (`FuentesMas.noDecir`). */
   val simons = Estudio("Simons y otros, 2016", "10.1177/1529100616661983", "Revisó los estudios de los programas de juegos mentales: lo practicado mejora, pero no hay evidencia suficiente de que mejore lo demás.")
 }

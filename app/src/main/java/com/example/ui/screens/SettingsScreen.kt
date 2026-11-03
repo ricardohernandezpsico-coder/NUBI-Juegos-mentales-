@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.glueNumbers
@@ -33,7 +34,7 @@ import com.example.ui.theme.ClayButton
 import com.example.viewmodel.NeuroVidaViewModel
 
 /**
- * Los Ajustes (Tarea 185, 28-oct; Fable, `auditoria-fable/tu-pestana.md` §2.4): cuatro losas en vez de nueve bloques — **Juego**, **Recordatorio**, **Tus datos** y **Acerca de Nubi**. Una sola puerta por ajuste (regla de la Tarea 152): el sonido, la vibración y el sí o no del
+ * Los Ajustes (Tarea 185, 28-oct; Fable, `auditoria-fable/tu-pestana.md` §2.4): cuatro losas en vez de nueve bloques — **Juego**, **Recordatorio**, **Tus datos** y **Acerca de Nubilus**. Una sola puerta por ajuste (regla de la Tarea 152): el sonido, la vibración y el sí o no del
  * recordatorio viven SOLO en Tú («Cómo juegas», [ComoJuegasPanel]); aquí quedan la meta semanal, la edad y los estudios (Juego), la HORA del recordatorio y «Probar el aviso» (Recordatorio) y lo demás. «Enviar informe de errores» se mudó a «Contacto» de Tú (es contacto, no un
  * ajuste). Ya no hay `Toast` de Android: cada cambio se ve en el control mismo y lo único que se explica es lo que no sale como se espera. Las herramientas de prueba salen solo en builds de depuración.
  */
@@ -162,7 +163,7 @@ fun SettingsScreen(
 
       // Las animaciones no son un ajuste de Nubi: la app ya respeta «quitar animaciones» de Android y no debe duplicar el del sistema (Fable, §2.4; la línea pasó de «Sonido y vibración» a «Juego» el 28-oct)
       Text(
-        text = "Las animaciones se quitan desde los ajustes de Android y Nubi lo respeta.",
+        text = "Las animaciones se quitan desde los ajustes de Android y Nubilus lo respeta.",
         fontSize = 16.sp, lineHeight = 21.sp, color = Clay.InkMuted, modifier = Modifier.testTag("settings_animations_note")
       )
     }
@@ -240,11 +241,12 @@ fun SettingsScreen(
       ClayButton(text = "Restablecer datos y puntuaciones", onClick = { showResetDialog = true }, color = Clay.Coral, modifier = Modifier.testTag("btn_reset_data"))
     }
 
-    // ---- 4. Acerca de Nubi: licencias y el aviso de salud (lo exige Google Play; texto aprobado por Ricardo, Tarea 121: sección con título y letra de lectura, no una nota chica; el mismo texto va en «Licencias y créditos»). La política de privacidad todavía no está (queda pendiente en la hoja de ruta).
+    // ---- 4. Acerca de Nubilus: licencias y el aviso de salud (lo exige Google Play; texto aprobado por Ricardo, Tarea 121: sección con título y letra de lectura, no una nota chica; el mismo texto va en «Licencias y créditos»). La política de privacidad todavía no está (queda pendiente en la hoja de ruta).
     ClayPanel(modifier = Modifier.fillMaxWidth().testTag("card_acerca"), verticalSpacing = 14.dp) {
-      Text(text = "Acerca de Nubi", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+      Text(text = "Acerca de Nubilus", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
       // La edad mínima (Tarea 216, decisión de Ricardo, 2-nov): una afirmación en la letra de lectura del panel y en tinta (no apagada), sin ícono ni recuadro; «14 años» no se parte entre renglones
-      Text(text = com.example.data.HealthNotice.AGE_LINE.glueNumbers(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.testTag("about_age_line"))
+      // con «Nubilus» la frase ya no cabe en una línea a 393 dp: renglones parejos (`LineBreak.Heading`), para que no quede «más.» solo (Tarea 217)
+      Text(text = com.example.data.HealthNotice.AGE_LINE.glueNumbers(), style = MaterialTheme.typography.bodyMedium.copy(lineBreak = LineBreak.Heading), color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.testTag("about_age_line"))
       ClayButton(text = "Licencias y créditos", onClick = onOpenLicenses, color = Clay.Cream, modifier = Modifier.testTag("btn_licenses"))
       Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("health_notice")) {
         Row(verticalAlignment = Alignment.CenterVertically) {

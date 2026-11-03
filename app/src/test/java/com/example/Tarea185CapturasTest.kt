@@ -57,7 +57,7 @@ import java.io.File
 import kotlin.math.sin
 
 /**
- * Las capturas de la lámina de la Tarea 185 («La pestaña Tú»): Tú con las dos variantes de cuadros (V1 «Centrado» y V2 «Ícono a la izquierda», letra 1,0 y 1,3, arriba y hasta Contacto), Ajustes en cuatro losas (recordatorio encendido y apagado), «En qué se basa Nubi»
+ * Las capturas de la lámina de la Tarea 185 («La pestaña Tú»): Tú con las dos variantes de cuadros (V1 «Centrado» y V2 «Ícono a la izquierda», letra 1,0 y 1,3, arriba y hasta Contacto), Ajustes en cuatro losas (recordatorio encendido y apagado), «En qué se basa Nubilus»
  * (al principio y al final, letra 1,0 y 1,3), el cierre del Primer vuelo con Nubi y las medidas de cabida. Solo corre al grabar capturas; deja los PNG en `src/test/screenshots/tarea-185/propuesta/` y las medidas en `medidas.txt`; los de «hoy» se grabaron con el código de antes
  * de la tarea (`git stash` no hizo falta: se grabaron antes de tocar nada) en `tarea-185/hoy/`.
  */
@@ -184,13 +184,13 @@ class Tarea185CapturasTest {
     shot("ajustes-1_0", 873)
     shot("ajustes-1_3", 873, 1.3f)
     shot("ajustes-completa-encendido", 2400)
-    measures += "Ajustes (cuatro losas) con letra 1,0: Juego termina a ${"%.0f".format(bottomOf("card_juego"))} dp, Recordatorio a ${"%.0f".format(bottomOf("card_notifications_workmanager"))} dp, Tus datos a ${"%.0f".format(bottomOf("card_tus_datos"))} dp y Acerca de Nubi a ${"%.0f".format(bottomOf("card_acerca"))} dp (antes, con nueve bloques, unos 1 900 dp)"
+    measures += "Ajustes (cuatro losas) con letra 1,0: Juego termina a ${"%.0f".format(bottomOf("card_juego"))} dp, Recordatorio a ${"%.0f".format(bottomOf("card_notifications_workmanager"))} dp, Tus datos a ${"%.0f".format(bottomOf("card_tus_datos"))} dp y Acerca de Nubilus a ${"%.0f".format(bottomOf("card_acerca"))} dp (antes, con nueve bloques, unos 1 900 dp)"
     vm.setReminderEnabled(false)
     TestSupport.awaitUntil { !vm.userSettings.value.notificationsEnabled }
     shot("ajustes-completa-apagado", 2400)
     rule.runOnIdle { fontScale = 1.3f; frameH = 2600 }
     settle()
-    measures += "Ajustes con letra 1,3: Acerca de Nubi termina a ${"%.0f".format(bottomOf("card_acerca"))} dp"
+    measures += "Ajustes con letra 1,3: Acerca de Nubilus termina a ${"%.0f".format(bottomOf("card_acerca"))} dp"
   }
 
   /** Lo que mide una pantalla que se desliza: lo que se ve más lo que falta por deslizar (dp), del rango de su lista. */
@@ -205,7 +205,7 @@ class Tarea185CapturasTest {
     setUp(null, "fuentes")
     settle()
     shot("fuentes-inicio-1_0", 873)
-    measures += "«En qué se basa Nubi» con letra 1,0 mide ${"%.0f".format(contentLength("fuentes_screen"))} dp de largo (Fable calculó 3 141)"
+    measures += "«En qué se basa Nubilus» con letra 1,0 mide ${"%.0f".format(contentLength("fuentes_screen"))} dp de largo (Fable calculó 3 141)"
     // (el final de la lista y el medio se capturan en el emulador, deslizando de verdad)
   }
 
@@ -214,7 +214,7 @@ class Tarea185CapturasTest {
     setUp(null, "fuentes")
     settle()
     shot("fuentes-inicio-1_3", 873, 1.3f)
-    measures += "«En qué se basa Nubi» con letra 1,3 mide ${"%.0f".format(contentLength("fuentes_screen"))} dp de largo (Fable calculó 4 394)"
+    measures += "«En qué se basa Nubilus» con letra 1,3 mide ${"%.0f".format(contentLength("fuentes_screen"))} dp de largo (Fable calculó 4 394)"
   }
 
   @Test

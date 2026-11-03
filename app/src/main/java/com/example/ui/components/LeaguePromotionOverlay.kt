@@ -278,7 +278,7 @@ fun LeaguePromotionOverlay(
           glyph = Glyph.SHARE,
           onClick = {
             val where = if (game != null) " en ${game.title}" else ""
-            val text = "¡Subí a la liga ${promotion.tier.tierName}$where en Nubi!"
+            val text = "¡Subí a la liga ${promotion.tier.tierName}$where en Nubilus!"
             scope.launch {
               try {
                 ShareCard.share(

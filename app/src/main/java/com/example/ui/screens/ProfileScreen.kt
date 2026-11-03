@@ -94,7 +94,7 @@ fun SettingsPanel(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
 /**
  * Tú (la tercera pestaña, Tarea 158, 21-oct; rehecha en la Tarea 185, 28-oct, con «Lo tuyo en cuadros» de Fable y los cambios de Ricardo): lo tuyo en un solo sitio, con nombre. De arriba abajo: SOLO Nubi (despierta y parpadeando, 120 dp; la isla salió de la app),
  * tu nombre con «Cambiar» y tu etapa general; cuatro cuadros 2 × 2 con datos reales y su unidad (racha, partidas, medallas y juegos probados; [TuCuadros], la variante «Centrada» que eligió Ricardo); tus medallas (y las anteriores); «Cómo juegas» con el sonido, la vibración y el recordatorio
- * a mano ([ComoJuegasPanel]: una sola puerta por ajuste); «Más ajustes» (abre Ajustes); «En qué se basa Nubi» y, al final, «Contacto» ([ContactoSection]). Es una página de pestaña como Hoy y Avance: sin X (se sale con la barra de abajo) y con la franja de la barra libre
+ * a mano ([ComoJuegasPanel]: una sola puerta por ajuste); «Más ajustes» (abre Ajustes); «En qué se basa Nubilus» y, al final, «Contacto» ([ContactoSection]). Es una página de pestaña como Hoy y Avance: sin X (se sale con la barra de abajo) y con la franja de la barra libre
  * (`LocalBarInset`). Cuando las ligas vuelvan (`Features.LEAGUES`), «Tu liga» va aquí, donde ya estaba en el perfil; hoy no se ve.
  */
 @Composable
@@ -231,10 +231,10 @@ fun TuScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) {
         glyph = com.example.ui.components.Glyph.GEAR, fontSize = 18.sp, modifier = Modifier.testTag("btn_open_settings")
       )
     }
-    // «En qué se basa Nubi»: de qué estudio sale la tarea de cada juego (Tarea 185)
+    // «En qué se basa Nubilus»: de qué estudio sale la tarea de cada juego (Tarea 185)
     item {
       com.example.ui.components.KitButton(
-        text = "En qué se basa Nubi", onClick = { viewModel.openTopPanel(com.example.viewmodel.TopPanel.FUENTES) }, color = com.example.ui.components.SlabColor.CREAM,
+        text = "En qué se basa Nubilus", onClick = { viewModel.openTopPanel(com.example.viewmodel.TopPanel.FUENTES) }, color = com.example.ui.components.SlabColor.CREAM,
         glyph = com.example.ui.components.Glyph.INFO, fontSize = 18.sp, modifier = Modifier.testTag("btn_open_fuentes")
       )
     }
@@ -245,7 +245,7 @@ fun TuScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) {
         glyph = com.example.ui.components.Glyph.INFO, fontSize = 18.sp, modifier = Modifier.testTag("btn_open_preguntas")
       )
     }
-    // «Quién hace Nubi» (Tarea 209): solo el psicólogo, sin nombre y sin la IA (que va en la pregunta frecuente)
+    // «Quién hace Nubilus» (Tarea 209): solo el psicólogo, sin nombre y sin la IA (que va en la pregunta frecuente)
     item {
       Column(Modifier.testTag("tu_quien_hace")) {
         SpaceSectionTitle(com.example.data.Preguntas.WHO_TITLE)

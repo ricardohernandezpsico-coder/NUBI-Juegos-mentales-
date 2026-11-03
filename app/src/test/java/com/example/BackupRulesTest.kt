@@ -12,7 +12,7 @@ import org.junit.Test
 class BackupRulesTest {
   // Estado pasajero: se pierde a propósito al cambiar de teléfono (una partida o un recorrido del inicio «fantasma» a medias no sirven).
   // `first_flight` = «Primer vuelo con Nubi» en curso (data/FirstFlight.kt). (`route_celebrations`, qué farolas de la ruta y qué ruta completa se celebraron hoy —Tarea 88—, se RETIRÓ en la Tarea 168: ya no se escribe; si un teléfono conserva el archivo, queda sin uso y no se respalda.) (`desafio_hoy`, cuál era el Desafío de hoy y cómo iba —Tarea 167—, se RETIRÓ en la Tarea 177 con `DailyChallenge`: el Contrarreloj de hoy se DERIVA de la tabla `time_trial_results`, que va en la base y sí se respalda; si un teléfono conserva el archivo, queda sin uso y no se respalda.) `isla_piezas` = qué piezas de la isla (las que dan las medallas) Hoy ya mostró (data/IslaPiezasSeen.kt; Tarea 136): las piezas se DERIVAN de las medallas, que sí se respaldan, así que al restaurar solo se pierde el «ya la vi» y Hoy siembra en silencio. color_vision NO es pasajero: vive en profile_extra, que sí se respalda (igual que lo que quedó guardado de result_focus / coach_tone, que ya no se lee).
-  // `plus_access` = el interruptor local de Nubi Plus (data/PlusAccess.kt; Tarea 199): quién tiene Plus lo dirá Google Play al restaurar (Etapa 4), no una copia de la preferencia.
+  // `plus_access` = el interruptor local de Nubilus Plus (data/PlusAccess.kt; Tarea 199): quién tiene Plus lo dirá Google Play al restaurar (Etapa 4), no una copia de la preferencia.
   private val transient = setOf("paused_game", "game_session", "unity_results", "library_focus", "first_flight", "isla_piezas", "unity_reset", "plus_access")
 
   private fun xml(name: String) = File("src/main/res/xml/$name").readText()

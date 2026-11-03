@@ -422,7 +422,8 @@ object Comparison {
    * con las franjas juntas o todas las edades dice cuáles («Con las 240 personas de 30 a 54 años que jugaron en las últimas 4 semanas.»).
    */
   fun ladderNote(r: Ranked, range: AgeRange): String {
-    if (r.estimated) return "Peldaños de la referencia estimada para ${range.label}; no cambian de semana en semana."
+    // la franja que se nombra es la de la TABLA: de 14 a 17 años es la de 18 a 29, igual que en la pregunta frecuente y en la hoja (Tarea 217, Fable H1)
+    if (r.estimated) return "Peldaños de la referencia estimada para ${EstimatedReference.tableRangeOf(range).label}; no cambian de semana en semana."
     val whenText = if (r.scope == Scope.OWN_WEEK || r.scope == Scope.ALL_WEEK) "esta semana" else "en las últimas $RECENT_WEEKS semanas"
     val who = if (r.scope == Scope.OWN_WEEK || r.scope == Scope.OWN_4_WEEKS) "de tu franja" else whoText(r, range)
     return "Con las ${r.distribution.people} personas $who que jugaron $whenText."
@@ -457,7 +458,7 @@ object Comparison {
   /** Lo que lee el lector de pantalla de la campana (el dibujo no habla; las dos frases de abajo son el contenido): «Campana con las marcas de las 128 personas. Tu mejor marca de esta semana, 43 aciertos, está marcada.» */
   fun bellSpoken(r: Ranked, range: AgeRange? = null, onHalf: Boolean = false): String {
     val end = if (onHalf) "está en la mitad." else "está marcada."
-    return if (r.estimated) "Campana de la referencia estimada para ${range?.label ?: "tu edad"}. Tu mejor marca de esta semana, ${TimeTrialDay.hitsText(r.mark)}, $end"
+    return if (r.estimated) "Campana de la referencia estimada para ${range?.let { EstimatedReference.tableRangeOf(it).label } ?: "tu edad"}. Tu mejor marca de esta semana, ${TimeTrialDay.hitsText(r.mark)}, $end"
     else "Campana con las marcas de las ${r.distribution.people} personas. Tu mejor marca de esta semana, ${TimeTrialDay.hitsText(r.mark)}, $end"
   }
 
@@ -555,7 +556,8 @@ object Comparison {
       if (d.enough && d.estimated) anyEstimated = true
       return if (d.enough) OtherRow(if (own) "$label (tu franja)" else label, percentile(mark, d), own, if (d.estimated) 0 else d.people) else null
     }
-    val ages = AgeRange.entries.filter { it != AgeRange.R14_17 }          // 14 a 17 comparte la tabla de 18 a 29: no lleva fila
+    // 14 a 17 comparte la tabla de 18 a 29: no lleva fila; y a quien tiene 14 a 17 tampoco se le muestra la de 18 a 29, que es SU referencia y repetiría el número de la cifra (Tarea 217, Fable M1)
+    val ages = AgeRange.entries.filter { it != AgeRange.R14_17 && !(range == AgeRange.R14_17 && it == EstimatedReference.tableRangeOf(range)) }
     val rows = ages.mapNotNull { row(it.label, listOf(it), it == range) }
     val all = row("Todas las edades", null, false)
     if (rows.isEmpty() && all == null) return null

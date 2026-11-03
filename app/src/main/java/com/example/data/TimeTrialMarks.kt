@@ -47,7 +47,9 @@ object TimeTrialMarks {
   fun weekLine(week: WeekSummary, record: Int? = null): String {
     val best = week.best ?: return "Esta semana todavía no jugaste."
     val played = if (week.games == 1) "1 partida" else "${week.games} partidas"
-    return if (best == record) "Esta semana jugaste $played y la mejor fue tu récord." else "Esta semana jugaste $played y la mejor fue de ${TimeTrialDay.hitsText(best)}."
+    // con UNA sola partida «la mejor» sobra: «…1 partida y fue tu récord.» (Tarea 217, Fable M3)
+    val which = if (week.games == 1) "fue" else "la mejor fue"
+    return if (best == record) "Esta semana jugaste $played y $which tu récord." else "Esta semana jugaste $played y $which de ${TimeTrialDay.hitsText(best)}."
   }
   const val OLDER_NOTE = "Las marcas de otra pista no se comparan."
 
@@ -157,10 +159,10 @@ object TimeTrialMarks {
   fun tileValue(record: Int?): String = record?.let { TimeTrialDay.hitsText(it) } ?: NO_MARK_TILE
 
   /**
-   * Para el lector de pantalla: «Tinta o Palabra, récord 44 aciertos, el de hoy, elegido» (Tarea 215: [today] = el juego del día) o, en gris, «Rescate relámpago, récord 12 aciertos, con Nubi Plus» ([locked]: sin Plus, tocarlo abre la hoja del candado).
+   * Para el lector de pantalla: «Tinta o Palabra, récord 44 aciertos, el de hoy, elegido» (Tarea 215: [today] = el juego del día) o, en gris, «Rescate relámpago, récord 12 aciertos, con Nubilus Plus» ([locked]: sin Plus, tocarlo abre la hoja del candado).
    */
   fun tileSpoken(title: String, record: Int?, selected: Boolean, today: Boolean = false, locked: Boolean = false): String =
-    title + ", " + (record?.let { "récord ${TimeTrialDay.hitsText(it)}" } ?: NO_MARK_TILE) + (if (today) ", el de hoy" else "") + (if (selected) ", elegido" else "") + (if (locked) ", con Nubi Plus" else "")
+    title + ", " + (record?.let { "récord ${TimeTrialDay.hitsText(it)}" } ?: NO_MARK_TILE) + (if (today) ", el de hoy" else "") + (if (selected) ", elegido" else "") + (if (locked) ", con Nubilus Plus" else "")
 
   // ------------------------------------------------------------------ el ritmo de la última partida (Tarea 200; `auditoria-fable/nubi-plus-comparacion.md` §2.3)
 

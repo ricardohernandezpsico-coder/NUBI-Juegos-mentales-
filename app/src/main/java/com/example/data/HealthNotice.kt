@@ -7,11 +7,11 @@ package com.example.data
  */
 object HealthNotice {
   /**
-   * La edad mínima de Nubi (Tarea 216; decisión de Ricardo, 2-nov: «solo por temas legales, así nos resguardamos», `auditoria-fable/referencia-14-17.md` §2): va en «Acerca de Nubi», de Ajustes, justo bajo el título, en una línea de lectura. Una sola constante, para que la guardia, las pruebas y el cambio de nombre la encuentren en un solo lugar.
+   * La edad mínima de Nubi (Tarea 216; decisión de Ricardo, 2-nov: «solo por temas legales, así nos resguardamos», `auditoria-fable/referencia-14-17.md` §2): va en «Acerca de Nubilus», de Ajustes, justo bajo el título, en una línea de lectura. Una sola constante, para que la guardia, las pruebas y el cambio de nombre la encuentren en un solo lugar.
    * Es una afirmación, no una barrera: no hay pantalla de edad ni fecha de nacimiento (una barrera solo invita a mentir).
    */
-  const val AGE_LINE = "Nubi es para personas de 14 años o más."
+  const val AGE_LINE = "Nubilus es para personas de 14 años o más."
 
   const val TITLE = "Aviso de salud"
-  const val TEXT = "Nubi es un conjunto de juegos para mantener la mente activa. No es un dispositivo médico: no diagnostica, trata, cura ni previene ninguna condición. Ante cualquier duda sobre tu salud, consulta a un profesional."
+  const val TEXT = "Nubilus es un conjunto de juegos para mantener la mente activa. No es un dispositivo médico: no diagnostica, trata, cura ni previene ninguna condición. Ante cualquier duda sobre tu salud, consulta a un profesional."
 }

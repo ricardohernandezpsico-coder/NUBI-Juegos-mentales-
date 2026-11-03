@@ -388,7 +388,7 @@ class AppActualScreenshotTest {
     r.shot("avance-vacio-letra13", 873, 1.3f)
   }
 
-  /** Tú (Tarea 158; rehecha en la Tarea 185): Nubi, tu nombre con «Cambiar», los cuatro cuadros, las medallas, «Cómo juegas», «Más ajustes», «En qué se basa Nubi» y «Contacto». */
+  /** Tú (Tarea 158; rehecha en la Tarea 185): Nubi, tu nombre con «Cambiar», los cuatro cuadros, las medallas, «Cómo juegas», «Más ajustes», «En qué se basa Nubilus» y «Contacto». */
   @Test
   fun tu() {
     val r = Rig(viewModel(), Scene.TU)

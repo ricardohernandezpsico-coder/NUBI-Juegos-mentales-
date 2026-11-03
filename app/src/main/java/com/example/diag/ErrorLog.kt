@@ -90,7 +90,7 @@ object ErrorLog {
   fun report(context: Context, extra: String = ""): String {
     val info = runCatching { context.packageManager.getPackageInfo(context.packageName, 0) }.getOrNull()
     val version = info?.let { "${it.versionName} (${PackageInfoCompat.getLongVersionCode(it)})" } ?: "?"
-    val header = "Nubi $version · Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}) · ${Build.MANUFACTURER} ${Build.MODEL}"
+    val header = "Nubilus $version · Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}) · ${Build.MANUFACTURER} ${Build.MODEL}"
     val body = readRecent()
     val more = if (extra.isBlank()) "" else "\n\n$extra"
     return (if (body.isBlank()) "$header\n\nNo hay errores registrados." else "$header\n\n$body") + more

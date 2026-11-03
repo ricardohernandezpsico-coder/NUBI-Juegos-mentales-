@@ -37,7 +37,7 @@ enum class AppTab(val title: String) {
 }
 
 /** Lo que se abre encima de una pestaña como panel: los Ajustes (desde «Tú»). El Perfil ya no es un panel: es la pestaña «Tú» (Tarea 158). */
-/** Los paneles con flecha que se abren encima de una pestaña: Ajustes y «En qué se basa Nubi» (Tarea 185), «Preguntas frecuentes» (desde Tú) y «De dónde sale la referencia» (desde la pestaña Contrarreloj y su hoja del candado; Tarea 209). */
+/** Los paneles con flecha que se abren encima de una pestaña: Ajustes y «En qué se basa Nubilus» (Tarea 185), «Preguntas frecuentes» (desde Tú) y «De dónde sale la referencia» (desde la pestaña Contrarreloj y su hoja del candado; Tarea 209). */
 enum class TopPanel { AJUSTES, FUENTES, PREGUNTAS, REFERENCIA }
 
 /**
@@ -925,11 +925,11 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   fun closeAvanceArea() { _avanceArea.value = null }
 
   // El juego elegido en el selector de la pestaña «Contrarreloj» (Tarea 215; antes la página vivía dentro de Avance y esto era «la página abierta», Tarea 199): null = el juego de hoy. Vive solo en memoria y NO se cierra al cambiar de pestaña: es una pestaña, no una lámina,
-  // y quien eligió Rescate relámpago lo encuentra elegido al volver (también tras jugarlo). Sin Nubi Plus la pantalla muestra siempre el de hoy, aunque aquí quede otro.
+  // y quien eligió Rescate relámpago lo encuentra elegido al volver (también tras jugarlo). Sin Nubilus Plus la pantalla muestra siempre el de hoy, aunque aquí quede otro.
   private val _contrarrelojGame = MutableStateFlow<String?>(null)
   val contrarrelojGame: StateFlow<String?> = _contrarrelojGame.asStateFlow()
 
-  /** Nubi Plus (una sola fuente local: `PlusAccess`). */
+  /** Nubilus Plus (una sola fuente local: `PlusAccess`). */
   val plus: StateFlow<Boolean> = repository.plus
 
   fun setPlus(on: Boolean) = repository.setPlus(on)

@@ -107,7 +107,7 @@ fun TimeTrialResultScreen(
   modifier: Modifier = Modifier,
   /** «Efectos de sonido» de Ajustes: con false, la marca nueva no suena (sí vibra, si la vibración está encendida). */
   soundEnabled: Boolean = true,
-  /** Nubi Plus (Tarea 199, `PlusAccess`): con Plus y [onAllMarks], bajo «La mejor de esta semana» va la losa chica «Todas tus marcas ›», que abre la pestaña «Contrarreloj» con este juego elegido. Sin Plus el final queda como siempre. */
+  /** Nubilus Plus (Tarea 199, `PlusAccess`): con Plus y [onAllMarks], bajo «La mejor de esta semana» va la losa chica «Todas tus marcas ›», que abre la pestaña «Contrarreloj» con este juego elegido. Sin Plus el final queda como siempre. */
   plus: Boolean = false,
   onAllMarks: (() -> Unit)? = null
 ) {
@@ -202,7 +202,7 @@ private fun LastGames(marks: List<Int>, weekLine: String?) {
   }
 }
 
-/** «Todas tus marcas ›» (Tarea 199, solo con Nubi Plus): una losa chica crema, a la derecha bajo «La mejor de esta semana», que abre la MISMA pestaña «Contrarreloj» (la de al lado de Hoy) (no es otra puerta: es esa vista desde donde acaba de nacer la marca). Toca 48 dp de alto como mínimo (la losa suma 6 dp de sombra abajo, que no se tocan: `heightIn(54)`). */
+/** «Todas tus marcas ›» (Tarea 199, solo con Nubilus Plus): una losa chica crema, a la derecha bajo «La mejor de esta semana», que abre la MISMA pestaña «Contrarreloj» (la de al lado de Hoy) (no es otra puerta: es esa vista desde donde acaba de nacer la marca). Toca 48 dp de alto como mínimo (la losa suma 6 dp de sombra abajo, que no se tocan: `heightIn(54)`). */
 @Composable
 private fun AllMarksShortcut(onClick: () -> Unit, modifier: Modifier = Modifier) {
   ClaySlab(

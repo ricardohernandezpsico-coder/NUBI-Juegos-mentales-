@@ -51,7 +51,7 @@ import org.robolectric.annotation.GraphicsMode
 import java.io.File
 
 /**
- * Tú y Ajustes con una sola puerta por ajuste (Tarea 185; Opus, 28-oct: la regla de la Tarea 152): el sonido, la vibración y el sí o no del recordatorio viven SOLO en «Cómo juegas» de Tú; Ajustes son cuatro losas (Juego, Recordatorio, Tus datos y Acerca de Nubi) y guarda la meta, la edad, los
+ * Tú y Ajustes con una sola puerta por ajuste (Tarea 185; Opus, 28-oct: la regla de la Tarea 152): el sonido, la vibración y el sí o no del recordatorio viven SOLO en «Cómo juegas» de Tú; Ajustes son cuatro losas (Juego, Recordatorio, Tus datos y Acerca de Nubilus) y guarda la meta, la edad, los
  * estudios y la HORA del recordatorio. Sin `Toast`s de Android: lo único que se explica es lo que no sale como se espera (Android no deja avisar; el aviso de prueba enviado, 2 s). Con un ViewModel de verdad sobre Room en memoria; el permiso de notificaciones se simula con un registro de resultados propio.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -185,7 +185,7 @@ class TuYAjustesTest {
     assertEquals("el texto del botón", "Preguntas frecuentes", allTextOf(rule.onNodeWithTag("btn_open_preguntas", useUnmergedTree = true).fetchSemanticsNode()))
     assertTrue("el botón mide 48 dp o más", rule.onNodeWithTag("btn_open_preguntas").fetchSemanticsNode().size.height / 440f * 160f >= 48f)
     rule.onNodeWithTag("tu_quien_hace").performScrollTo().assertIsDisplayed()
-    rule.onNodeWithText("Quién hace Nubi").assertExists()
+    rule.onNodeWithText("Quién hace Nubilus").assertExists()
     assertEquals("solo el psicólogo, sin nombre y sin la IA", "Un psicólogo chileno decide cada juego y cada texto.", rule.onNodeWithTag("tu_quien_hace_texto").fetchSemanticsNode().config[SemanticsProperties.Text].joinToString("") { it.text })
     val all = File("src/main/java/com/example/ui/screens/ProfileScreen.kt").readText()
     assertFalse("la sección no nombra la IA (va solo en la pregunta frecuente)", com.example.data.Preguntas.WHO_LINE.lowercase().let { "inteligencia" in it || " ia " in it || "herramienta" in it })
@@ -244,7 +244,7 @@ class TuYAjustesTest {
     show { SettingsScreen(viewModel = v) }
     val order = listOf("card_juego", "card_notifications_workmanager", "card_tus_datos", "card_acerca")
     val ys = order.map { yOf(it) }
-    assertEquals("Juego, Recordatorio, Tus datos y Acerca de Nubi, en ese orden: ${order.zip(ys)}", ys.sorted(), ys)
+    assertEquals("Juego, Recordatorio, Tus datos y Acerca de Nubilus, en ese orden: ${order.zip(ys)}", ys.sorted(), ys)
     for (gone in listOf("switch_sound", "switch_haptics", "switch_notifications_enabled", "btn_send_error_report", "card_language_selector")) assertFalse("«$gone» ya no está en Ajustes", exists(gone))
     assertEquals("ningún texto de Ajustes dice «Efectos de sonido» ni «Vibración»", 0, rule.onAllNodes(hasText("Efectos de sonido") or hasText("Vibración")).fetchSemanticsNodes().size)
     rule.onNodeWithTag("btn_licenses").assertExists()
@@ -253,7 +253,7 @@ class TuYAjustesTest {
     assertFalse("sin política de privacidad todavía", rule.onAllNodes(hasText("rivacidad", substring = true)).fetchSemanticsNodes().isNotEmpty())
   }
 
-  // ------------------------------------------------------------------ «Nubi es para personas de 14 años o más.» en «Acerca de Nubi» (Tarea 216, decisión de Ricardo, 2-nov)
+  // ------------------------------------------------------------------ «Nubilus es para personas de 14 años o más.» en «Acerca de Nubilus» (Tarea 216, decisión de Ricardo, 2-nov)
 
   private fun showSettings(widthDp: Int, scale: Float) {
     val v = vm()
@@ -277,20 +277,24 @@ class TuYAjustesTest {
   private fun boundsOf(tag: String) = rule.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
 
   @Test
-  fun acerca_de_Nubi_dice_que_es_para_personas_de_14_anos_o_mas_bajo_el_titulo_y_antes_del_boton_en_una_linea_a_393_con_letra_1_0() {
+  fun acerca_de_Nubilus_dice_que_es_para_personas_de_14_anos_o_mas_bajo_el_titulo_y_antes_del_boton_en_dos_renglones_por_palabras_a_393_con_letra_1_0() {
     showSettings(393, 1f)
     rule.onNodeWithTag("about_age_line").performScrollTo()
     val node = rule.onNodeWithTag("about_age_line")
     val said = node.fetchSemanticsNode().config.getOrNull(SemanticsProperties.Text)!!.joinToString("") { it.text }
-    assertEquals("Nubi es para personas de 14 años o más.", com.example.data.HealthNotice.AGE_LINE)
+    assertEquals("Nubilus es para personas de 14 años o más.", com.example.data.HealthNotice.AGE_LINE)
     assertEquals("el texto es el de HealthNotice.AGE_LINE (con «14 años» pegado)", com.example.data.HealthNotice.AGE_LINE, said.replace(com.example.data.NBSP, " "))
     assertTrue("«14 años» va con espacio duro", said.contains("14${com.example.data.NBSP}años"))
     val card = boundsOf("card_acerca"); val line = boundsOf("about_age_line"); val button = boundsOf("btn_licenses")
-    val title = rule.onNode(hasText("Acerca de Nubi")).fetchSemanticsNode().boundsInRoot
-    assertTrue("dentro de la losa «Acerca de Nubi»: $line contra $card", line.left >= card.left && line.right <= card.right && line.top >= card.top && line.bottom <= card.bottom)
+    val title = rule.onNode(hasText("Acerca de Nubilus")).fetchSemanticsNode().boundsInRoot
+    assertTrue("dentro de la losa «Acerca de Nubilus»: $line contra $card", line.left >= card.left && line.right <= card.right && line.top >= card.top && line.bottom <= card.bottom)
     assertTrue("justo debajo del título y antes del botón «Licencias y créditos»", title.bottom <= line.top + 1f && line.bottom <= button.top + 1f)
     val layout = layoutOf(node)
-    assertEquals("una sola línea a 393 dp con letra 1,0", 1, layout.lineCount)
+    // Tarea 217: con «Nubilus» (3 letras más que «Nubi») la frase ya no cabe en una línea a 393 dp con letra 1,0: pasa a dos renglones por palabras, con «14 años» junto
+    assertEquals("dos renglones a 393 dp con letra 1,0", 2, layout.lineCount)
+    val rows = (0 until layout.lineCount).map { layout.layoutInput.text.text.substring(layout.getLineStart(it), layout.getLineEnd(it)).trimEnd() }
+    assertTrue("«14 años» no se parte entre renglones: $rows", rows.none { it.endsWith("14") } && rows.none { it.startsWith("años") })
+    assertTrue("y el último renglón no es una palabra sola («${rows.last()}»): renglones parejos", ' ' in rows.last().trim())
     assertTrue("a 16 sp o más, la letra de lectura del panel: ${layout.layoutInput.style.fontSize}", layout.layoutInput.style.fontSize.value >= 16f)
     val notice = layoutOf(rule.onNode(hasText(com.example.data.HealthNotice.TEXT)))
     assertTrue("en tinta (onSurface), no en el color apagado del aviso de salud", layout.layoutInput.style.color != notice.layoutInput.style.color)
@@ -317,7 +321,7 @@ class TuYAjustesTest {
   @Test
   fun la_edad_minima_vive_en_una_sola_constante_y_en_acerca_de_Nubi_y_nunca_en_Tu_ni_en_la_pregunta_de_edad_del_vuelo() {
     val main = File("src/main/java/com/example")
-    val withLiteral = main.walkTopDown().filter { it.extension == "kt" && it.readText().contains("\"Nubi es para personas de 14 años o más.\"") }.map { it.name }.toList()
+    val withLiteral = main.walkTopDown().filter { it.extension == "kt" && it.readText().contains("\"Nubilus es para personas de 14 años o más.\"") }.map { it.name }.toList()
     assertEquals("la frase literal vive solo en HealthNotice (los demás la leen de AGE_LINE)", listOf("HealthNotice.kt"), withLiteral)
     assertTrue("Ajustes la usa", File("src/main/java/com/example/ui/screens/SettingsScreen.kt").readText().contains("HealthNotice.AGE_LINE"))
     assertFalse("Tú no (una sola puerta por ajuste)", File("src/main/java/com/example/ui/screens/ProfileScreen.kt").readText().contains("AGE_LINE"))

@@ -142,8 +142,8 @@ internal fun nineSlice(slab: KitSlab, pxPerDp: Float, density: Float, body: Rect
 }
 
 /**
- * El filtro de la losa «de Nubi Plus que no tienes» (Tarea 215; `auditoria-fable/idea-pestana-contrarreloj.md` §3.2): la MISMA imagen del kit sin saturación (grises por luminancia) y un 12 % más oscura, sin render nuevo. La crema queda en un gris de ~#D0D0D0: contra la crema normal
- * 1,32 a 1 (se nota que es otra) y contra el cielo 10 a 1; la tinta sobre ella, 11,3 a 1. El estado nunca depende solo de este color: lleva el candado y «Con Nubi Plus: …» en palabras.
+ * El filtro de la losa «de Nubilus Plus que no tienes» (Tarea 215; `auditoria-fable/idea-pestana-contrarreloj.md` §3.2): la MISMA imagen del kit sin saturación (grises por luminancia) y un 12 % más oscura, sin render nuevo. La crema queda en un gris de ~#D0D0D0: contra la crema normal
+ * 1,32 a 1 (se nota que es otra) y contra el cielo 10 a 1; la tinta sobre ella, 11,3 a 1. El estado nunca depende solo de este color: lleva el candado y «Con Nubilus Plus: …» en palabras.
  */
 internal val LockedSlabFilter: ColorFilter = run {
   val k = 0.88f                                     // 12 % más oscura
@@ -198,7 +198,7 @@ internal fun ClaySlab(
   contentAlignment: Alignment = Alignment.TopStart,
   /** Lo que dice el lector de pantalla que pasa al tocar («Mostrar opciones»); sin valor, solo «tocar dos veces para activar». */
   onClickLabel: String? = null,
-  /** La losa «de Nubi Plus que no tienes» (Tarea 215): la misma imagen en gris ([LockedSlabFilter]). Solo cambia lo que se dibuja; quien la usa pone el candado y la frase «Con Nubi Plus: …» dentro. */
+  /** La losa «de Nubilus Plus que no tienes» (Tarea 215): la misma imagen en gris ([LockedSlabFilter]). Solo cambia lo que se dibuja; quien la usa pone el candado y la frase «Con Nubilus Plus: …» dentro. */
   locked: Boolean = false,
   content: @Composable BoxScope.() -> Unit
 ) {

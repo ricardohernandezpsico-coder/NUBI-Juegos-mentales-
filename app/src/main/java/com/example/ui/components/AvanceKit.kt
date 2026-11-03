@@ -100,7 +100,7 @@ internal fun GameEmblem(gameId: String, size: Dp, modifier: Modifier = Modifier,
         contentAlignment = Alignment.Center
       ) { KitGlyph(Glyph.CHECK, size = size * 0.3f) }
     } else if (locked) {
-      // el mismo sello que el visto, en crema y con el candado: «de Nubi Plus y no lo tienes» (Tarea 215, selector de la pestaña Contrarreloj)
+      // el mismo sello que el visto, en crema y con el candado: «de Nubilus Plus y no lo tienes» (Tarea 215, selector de la pestaña Contrarreloj)
       Box(
         Modifier.align(Alignment.TopEnd).offset(x = 4.dp, y = (-4).dp).size(size * 0.5f).clip(CircleShape).background(Clay.Cream).border(2.dp, Clay.Ink, CircleShape),
         contentAlignment = Alignment.Center

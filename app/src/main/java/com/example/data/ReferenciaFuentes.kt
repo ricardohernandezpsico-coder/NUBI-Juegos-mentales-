@@ -2,26 +2,26 @@ package com.example.data
 
 /**
  * «De dónde sale la referencia» (Tarea 209, 1-nov; `auditoria-fable/claridad-plus-y-ayuda.md` §1.1.1): los estudios reales que fijan los números de la referencia estimada del Contrarreloj (los que nombra `AgeReference.cs`, Tarea 204; el §2.2 de `auditoria-fable/referencia-estimada.md`), agrupados,
- * con «Autor, año · N personas», una línea en español y el estudio a un toque, en el mismo molde de «En qué se basa Nubi» (`Estudio`, `StudyRow`). Se abre desde la página «Contrarreloj», desde la hoja del candado, desde la pregunta «¿Con qué me compara el Contrarreloj?» y desde una fila de «En qué se basa Nubi».
+ * con «Autor, año · N personas», una línea en español y el estudio a un toque, en el mismo molde de «En qué se basa Nubilus» (`Estudio`, `StudyRow`). Se abre desde la página «Contrarreloj», desde la hoja del candado, desde la pregunta «¿Con qué me compara el Contrarreloj?» y desde una fila de «En qué se basa Nubilus».
  *
- * Lo que NO dice, a propósito: cuántos robots son ni qué escala se calibró (el número de robots nunca se muestra), «Nubi Plus» (no es una venta), títulos en inglés (la guardia de «cognitiv…») ni ninguna promesa de que la referencia pase a ser de personas (regla del 1-nov: nada lo promete mientras no haya servidor).
+ * Lo que NO dice, a propósito: cuántos robots son ni qué escala se calibró (el número de robots nunca se muestra), «Nubilus Plus» (no es una venta), títulos en inglés (la guardia de «cognitiv…») ni ninguna promesa de que la referencia pase a ser de personas (regla del 1-nov: nada lo promete mientras no haya servidor).
  * El segundo párrafo lo redactó Opus el 1-nov (decisión de Ricardo): dice con honestidad que los números se calcularon a partir de los estudios y cómo se ajustó el ritmo del programa, sin cifras y sin la palabra «interpolación». Los 10 DOI se comprobaron contra doi.org y Crossref el 1-nov
  * (autor y año coinciden con la cita; el de Cerella 1985, el único sin confirmar en el diseño, resuelve a «Information processing rates in the elderly», 1985; Habekost y otros salió en línea en 2012 y en papel en abril de 2013: se cita 2013, como `AgeReference.cs`). Brinley (la recta de las lentitudes) es un método sin DOI y no va.
  */
 object ReferenciaFuentes {
   const val TITLE = "De dónde sale la referencia"
 
-  /** La fila de «En qué se basa Nubi», entre «Cómo está hecha Nubi» y «Las palabras»: abre esta hoja (el lector dice «…, botón»). */
+  /** La fila de «En qué se basa Nubilus», entre «Cómo está hecho Nubilus» y «Las palabras»: abre esta hoja (el lector dice «…, botón»). */
   const val FUENTES_ROW = "De dónde sale la referencia del Contrarreloj ›"
 
   /** El primer párrafo (Tarea 213, Fable §1 y decisión de Ricardo): con qué se compara la persona y que sus marcas se quedan en su teléfono. Sin «por ahora» (promete el cambio a personas, que no se promete sin servidor) y sin «bots de IA» (los robots son reglas sacadas de estudios). */
-  const val INTRO = "Te comparas con una referencia estimada para tu edad, no con otras personas. Nubi no junta datos de nadie: tus marcas se quedan en tu teléfono."
+  const val INTRO = "Te comparas con una referencia estimada para tu edad, no con otras personas. Nubilus no junta datos de nadie: tus marcas se quedan en tu teléfono."
 
   /** El segundo párrafo: qué es la referencia (el párrafo de antes de la Tarea 213 sin su primera frase, que ahora es el primer párrafo). */
   const val INTRO_2 = "La referencia se arma con estudios publicados que midieron cómo cambian con la edad la rapidez y la exactitud en tareas parecidas, y con un programa que jugó el mismo Contrarreloj en un computador con esos números. Cada estudio dice cuántas personas tuvo."
 
   /** El segundo párrafo, en `OnNightDim` (la decisión de Ricardo: es lo honesto; sin cifras). */
-  const val ABOUT = "Los números de cada edad se calcularon a partir de esos estudios; ninguno usó los juegos de Nubi. El ritmo del programa se ajustó con las primeras partidas de quienes probaron Nubi antes de salir."
+  const val ABOUT = "Los números de cada edad se calcularon a partir de esos estudios; ninguno usó los juegos de Nubilus. El ritmo del programa se ajustó con las primeras partidas de quienes probaron Nubilus antes de salir."
 
   /**
    * La línea de 14 a 17 años (Tarea 216; decisión de Ricardo, 2-nov, `auditoria-fable/referencia-14-17.md` §1.4): la franja de 14 a 17 usa la referencia de 18 a 29 y se dice, en `OnNightDim` como [ABOUT], justo después de él. Sin «menores», «adolescentes» ni «niños»: la franja se llama «14 a 17 años», como las demás.

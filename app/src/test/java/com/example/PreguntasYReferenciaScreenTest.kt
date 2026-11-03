@@ -136,10 +136,10 @@ class PreguntasYReferenciaScreenTest {
   }
 
   @Test
-  fun la_pregunta_del_Contrarreloj_trae_la_fila_de_donde_sale_la_referencia_y_las_demas_no() {
+  fun la_pregunta_del_Contrarreloj_y_la_de_14_a_17_traen_la_fila_de_donde_sale_la_referencia_y_las_demas_no() {
     expanded = Preguntas.general.map { it.key }.toSet()
     mountPreguntas()
-    assertEquals(listOf("pregunta_referencia_source"), Preguntas.general.map { "pregunta_${it.key}_source" }.filter { exists(it) })
+    assertEquals(listOf("pregunta_referencia_source", "pregunta_edad_source"), Preguntas.general.map { "pregunta_${it.key}_source" }.filter { exists(it) })
     rule.onNodeWithTag("pregunta_referencia_source").performScrollTo()
     assertTrue("la fila mide 48 dp o más (%.1f)".format(heightDp("pregunta_referencia_source")), heightDp("pregunta_referencia_source") >= 47.5f)
     assertEquals(Role.Button, rule.onNode(hasTestTag("pregunta_referencia_source")).fetchSemanticsNode().config.getOrNull(SemanticsProperties.Role))
@@ -235,7 +235,7 @@ class PreguntasYReferenciaScreenTest {
     assertNotNull(node("btn_panel_back"))
   }
 
-  // ------------------------------------------------------------------ «En qué se basa Nubi» suma la fila de la referencia
+  // ------------------------------------------------------------------ «En qué se basa Nubilus» suma la fila de la referencia
 
   @Test
   fun en_que_se_basa_nubi_trae_la_fila_de_la_referencia_y_abre_la_hoja_dentro_del_panel() {
@@ -244,12 +244,12 @@ class PreguntasYReferenciaScreenTest {
     assertEquals(Role.Button, rule.onNode(hasTestTag("fuentes_referencia_row")).fetchSemanticsNode().config.getOrNull(SemanticsProperties.Role))
     assertEquals("De dónde sale la referencia del Contrarreloj", rule.onNode(hasTestTag("fuentes_referencia_row")).fetchSemanticsNode().config[SemanticsProperties.ContentDescription].joinToString(". "))
     assertTrue("la fila mide 48 dp o más", heightDp("fuentes_referencia_row") >= 48f)
-    // va entre «Cómo está hecha Nubi» y «Las palabras»
+    // va entre «Cómo está hecho Nubilus» y «Las palabras»
     assertTrue("antes de «Las palabras»", top("fuentes_referencia_row") < top("fuentes_palabras"))
-    assertTrue("y después de «Cómo está hecha Nubi»", top("fuentes_referencia_row") > top("fuentes_mecanismos"))
+    assertTrue("y después de «Cómo está hecho Nubilus»", top("fuentes_referencia_row") > top("fuentes_mecanismos"))
     rule.onNodeWithTag("fuentes_referencia_row").performClick(); rule.waitForIdle()
     assertTrue(exists("referencia_screen")); assertFalse(exists("fuentes_screen"))
     rule.onNodeWithTag("btn_panel_back").performClick(); rule.waitForIdle()
-    assertTrue("Atrás vuelve a «En qué se basa Nubi»", exists("fuentes_screen")); assertFalse(exists("referencia_screen"))
+    assertTrue("Atrás vuelve a «En qué se basa Nubilus»", exists("fuentes_screen")); assertFalse(exists("referencia_screen"))
   }
 }

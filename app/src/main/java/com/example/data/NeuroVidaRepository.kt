@@ -461,7 +461,7 @@ class NeuroVidaRepository(
     _retoChoices.value = _retoChoices.value + (gameId to timed)
     profilePrefs.edit().putBoolean(RetoChoice.key(gameId), timed).apply()
   }
-  // Nubi Plus (Tarea 199, `PlusAccess`): UNA sola fuente local de verdad, en `plus_access` (PASAJERA: no va en el respaldo; quién tiene Plus lo dirá Google Play, Etapa 4). Las builds de depuración empiezan encendidas; el botón «[Debug]» de Ajustes la cambia.
+  // Nubilus Plus (Tarea 199, `PlusAccess`): UNA sola fuente local de verdad, en `plus_access` (PASAJERA: no va en el respaldo; quién tiene Plus lo dirá Google Play, Etapa 4). Las builds de depuración empiezan encendidas; el botón «[Debug]» de Ajustes la cambia.
   private val plusPrefs = context.getSharedPreferences(PlusAccess.PREFS, Context.MODE_PRIVATE)
   private val _plus = MutableStateFlow(PlusAccess.resolve(if (plusPrefs.contains(PlusAccess.KEY)) plusPrefs.getBoolean(PlusAccess.KEY, false) else null, com.example.BuildConfig.DEBUG))
   val plus: StateFlow<Boolean> = _plus.asStateFlow()

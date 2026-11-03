@@ -50,8 +50,8 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * «En qué se basa Nubi» y «Contacto» de Tú (Tarea 185): la pantalla de las fuentes (una losa por juego, por área; tocar abre el DOI; sin navegador lo dice; el encuadre y «Lo que no decimos» con el aviso de salud al final) y la sección de contacto
- * («Escribir a Nubi» sin correo dice «Correo por definir» y no hace nada; con correo abre la app de correo y el correo va en texto plano; el informe de errores y la versión).
+ * «En qué se basa Nubilus» y «Contacto» de Tú (Tarea 185): la pantalla de las fuentes (una losa por juego, por área; tocar abre el DOI; sin navegador lo dice; el encuadre y «Lo que no decimos» con el aviso de salud al final) y la sección de contacto
+ * («Escribir a Nubilus» sin correo dice «Correo por definir» y no hace nada; con correo abre la app de correo y el correo va en texto plano; el informe de errores y la versión).
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -83,7 +83,7 @@ class FuentesYContactoTest {
     rule.waitForIdle()
   }
 
-  // ------------------------------------------------------------------ En qué se basa Nubi
+  // ------------------------------------------------------------------ En qué se basa Nubilus
 
   @Test
   fun las_cuatro_areas_y_los_17_juegos_estan_con_su_fuente_y_se_alcanzan_deslizando() {
@@ -132,7 +132,7 @@ class FuentesYContactoTest {
   @Test
   fun al_final_las_palabras_y_lo_que_no_decimos_con_cuatro_revisiones_y_el_aviso_de_salud() {
     showFuentes()
-    assertEquals("«Cómo se ajusta la dificultad» ya no es una sección aparte: es el primer grupo de «Cómo está hecha Nubi»", 0, rule.onAllNodes(hasTestTag("fuentes_metodo")).fetchSemanticsNodes().size)
+    assertEquals("«Cómo se ajusta la dificultad» ya no es una sección aparte: es el primer grupo de «Cómo está hecho Nubilus»", 0, rule.onAllNodes(hasTestTag("fuentes_metodo")).fetchSemanticsNodes().size)
     rule.onNodeWithText(Fuentes.WORDS_TEXT).performScrollTo().assertIsDisplayed()
     rule.onNodeWithTag("fuentes_no_decimos").performScrollTo().assertIsDisplayed()
     rule.onNodeWithTag("fuentes_no_decir_texto").performScrollTo().assertIsDisplayed()
@@ -147,7 +147,7 @@ class FuentesYContactoTest {
     assertTrue(top("estudio_${FuentesMas.noDecir.last().doi}") < rule.onNodeWithText(HealthNotice.TEXT).fetchSemanticsNode().positionInRoot.y)
   }
 
-  // ------------------------------------------------------------------ Tarea 186: Más estudios, Cómo está hecha Nubi
+  // ------------------------------------------------------------------ Tarea 186: Más estudios, Cómo está hecho Nubilus
 
   private fun top(tag: String): Float = rule.onNodeWithTag(tag).fetchSemanticsNode().positionInRoot.y          // sin recorte: sirve también para lo que está fuera de la ventana
   private fun count(tag: String): Int = rule.onAllNodes(hasTestTag(tag)).fetchSemanticsNodes().size
@@ -314,7 +314,7 @@ class FuentesYContactoTest {
     assertNull(NubiContact.EMAIL)
     var reports = 0
     showContacto(null) { reports++ }
-    rule.onNodeWithText("Escribir a Nubi", useUnmergedTree = true).assertExists()
+    rule.onNodeWithText("Escribir a Nubilus", useUnmergedTree = true).assertExists()
     rule.onNodeWithText("Correo por definir", useUnmergedTree = true).assertExists()
     assertEquals("sin correo no hay correo en texto plano", 0, rule.onAllNodes(hasTestTag("contact_email")).fetchSemanticsNodes().size)
     rule.onNodeWithTag("btn_write_to_nubi").assertIsNotEnabled()
@@ -336,7 +336,7 @@ class FuentesYContactoTest {
     assertEquals(Intent.ACTION_SENDTO, intent.action)
     assertEquals("mailto:", intent.dataString)
     assertEquals(listOf("hola@ejemplo.org"), intent.getStringArrayExtra(Intent.EXTRA_EMAIL)!!.toList())
-    assertEquals("Nubi", intent.getStringExtra(Intent.EXTRA_SUBJECT))
+    assertEquals("Nubilus", intent.getStringExtra(Intent.EXTRA_SUBJECT))
   }
 
   @Test
@@ -347,7 +347,7 @@ class FuentesYContactoTest {
     assertEquals(1, reports)
     rule.onNodeWithTag("error_report_help").assertIsDisplayed()
     rule.onNodeWithTag("version_line").assertIsDisplayed()
-    rule.onNodeWithText("Nubi ${BuildConfig.VERSION_NAME} · sin cuenta, sin internet y sin anuncios", useUnmergedTree = true).assertExists()
+    rule.onNodeWithText("Nubilus ${BuildConfig.VERSION_NAME} · sin cuenta, sin internet y sin${com.example.data.NBSP}anuncios", useUnmergedTree = true).assertExists()
     assertFalse("el contacto no lleva política de privacidad todavía", java.io.File("src/main/java/com/example/ui/screens/Contacto.kt").readText().contains("rivacidad"))
   }
 }

@@ -82,8 +82,9 @@ class TimeTrialMarksTest {
     assertEquals("Esta semana jugaste 3 partidas y la mejor fue de 43 aciertos.", TimeTrialMarks.weekLine(p.thisWeek, p.recordMark))
     assertEquals("sin récord que comparar, con el número", "Esta semana jugaste 3 partidas y la mejor fue de 43 aciertos.", TimeTrialMarks.weekLine(p.thisWeek))
     assertEquals("Esta semana jugaste 3 partidas y la mejor fue tu récord.", TimeTrialMarks.weekLine(TimeTrialMarks.WeekSummary(3, 44), 44))
-    assertEquals("Esta semana jugaste 1 partida y la mejor fue de 1 acierto.", TimeTrialMarks.weekLine(TimeTrialMarks.WeekSummary(1, 1), 7))
-    assertEquals("con una sola, también «tu récord»", "Esta semana jugaste 1 partida y la mejor fue tu récord.", TimeTrialMarks.weekLine(TimeTrialMarks.WeekSummary(1, 31), 31))
+    // Tarea 217 (Fable M3): con UNA sola partida «la mejor» sobra
+    assertEquals("Esta semana jugaste 1 partida y fue de 1 acierto.", TimeTrialMarks.weekLine(TimeTrialMarks.WeekSummary(1, 1), 7))
+    assertEquals("con una sola, «fue tu récord»", "Esta semana jugaste 1 partida y fue tu récord.", TimeTrialMarks.weekLine(TimeTrialMarks.WeekSummary(1, 31), 31))
     assertEquals("la mejor de esta semana nunca pasa del récord: con una marca mayor no es «tu récord»", "Esta semana jugaste 2 partidas y la mejor fue de 30 aciertos.", TimeTrialMarks.weekLine(TimeTrialMarks.WeekSummary(2, 30), 44))
     // Tarea 215b (Fable A3): el lector dice también el juego
     assertEquals("Jugar 2 minutos de Acoplamiento", TimeTrialMarks.playSpoken("Acoplamiento"))
@@ -147,14 +148,14 @@ class TimeTrialMarksTest {
   }
 
   @Test
-  fun `el selector dice el record, cual es el de hoy y cuales piden Nubi Plus`() {
+  fun `el selector dice el record, cual es el de hoy y cuales piden Nubilus Plus`() {
     assertEquals("44 aciertos", TimeTrialMarks.tileValue(44)); assertEquals("sin marca aún", TimeTrialMarks.tileValue(null))
     assertEquals("Tinta o Palabra, récord 44 aciertos, elegido", TimeTrialMarks.tileSpoken("Tinta o Palabra", 44, true))
     assertEquals("Acoplamiento, sin marca aún", TimeTrialMarks.tileSpoken("Acoplamiento", null, false))
-    // Tarea 215: el de hoy lo dice; en gris, «con Nubi Plus» (el candado y el gris no se leen)
+    // Tarea 215: el de hoy lo dice; en gris, «con Nubilus Plus» (el candado y el gris no se leen)
     assertEquals("Tinta o Palabra, récord 44 aciertos, el de hoy, elegido", TimeTrialMarks.tileSpoken("Tinta o Palabra", 44, selected = true, today = true))
-    assertEquals("Rescate relámpago, récord 12 aciertos, con Nubi Plus", TimeTrialMarks.tileSpoken("Rescate relámpago", 12, selected = false, locked = true))
-    assertEquals("Acoplamiento, sin marca aún, con Nubi Plus", TimeTrialMarks.tileSpoken("Acoplamiento", null, selected = false, locked = true))
+    assertEquals("Rescate relámpago, récord 12 aciertos, con Nubilus Plus", TimeTrialMarks.tileSpoken("Rescate relámpago", 12, selected = false, locked = true))
+    assertEquals("Acoplamiento, sin marca aún, con Nubilus Plus", TimeTrialMarks.tileSpoken("Acoplamiento", null, selected = false, locked = true))
     assertEquals("Hoy", TimeTrialMarks.TODAY_TAG)
   }
 

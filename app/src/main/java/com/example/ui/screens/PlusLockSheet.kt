@@ -37,8 +37,8 @@ import com.example.ui.theme.TitleFamily
 internal fun String.glueNamesForLetter(): String = glueNames(LocalDensity.current.fontScale)
 
 /**
- * La hoja corta que abre cualquier cosa en gris de la pestaña «Contrarreloj» SIN Nubi Plus (Tarea 199: la abría la puerta de Avance, que desde la Tarea 215 ya no existe): qué trae Plus, en una lista breve, y UN solo botón, «Cerrar» (antes «Entendido»: en un panel de prueba se leyó como «acepto»). El botón de compra llega con Google Play Billing (Etapa 4, `docs/modelo-negocio.md`); hasta entonces la hoja solo cuenta qué hay detrás. Sin precios ni promesas.
- * [kind] dice con qué se compara la persona (`Comparison.Kind`): con una referencia estimada, la hoja dice lo gratis («Gratis: tu división de la semana. Con Nubi Plus, además:»), las tres líneas de lo que agrega Plus, que la referencia no son personas y la fila «De dónde sale la referencia ›» ([onSource]);
+ * La hoja corta que abre cualquier cosa en gris de la pestaña «Contrarreloj» SIN Nubilus Plus (Tarea 199: la abría la puerta de Avance, que desde la Tarea 215 ya no existe): qué trae Plus, en una lista breve, y UN solo botón, «Cerrar» (antes «Entendido»: en un panel de prueba se leyó como «acepto»). El botón de compra llega con Google Play Billing (Etapa 4, `docs/modelo-negocio.md`); hasta entonces la hoja solo cuenta qué hay detrás. Sin precios ni promesas.
+ * [kind] dice con qué se compara la persona (`Comparison.Kind`): con una referencia estimada, la hoja dice lo gratis («Gratis: tu división de la semana. Con Nubilus Plus, además:»), las tres líneas de lo que agrega Plus, que la referencia no son personas y la fila «De dónde sale la referencia ›» ([onSource]);
  * sin comparación (sin franja de edad o sin tabla), solo habla de «contigo». La hoja no habla de edad (Tarea 216: de 14 a 17 años es igual que de 18 a 29; ya no existe la entrada «De 13 a 17 años se comparan solo contigo»).
  */
 @Composable

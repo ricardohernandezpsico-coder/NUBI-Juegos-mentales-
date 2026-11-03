@@ -51,7 +51,7 @@ import org.robolectric.annotation.GraphicsMode
 import java.util.Calendar
 
 /**
- * La lámina «hoy | propuesta» de la Tarea 199 (`docs/previews/tarea-199.png`): la página «Contrarreloj» de Avance (arriba y abajo a 393 × 873 con letra 1,0; arriba con 1,3 y 2,0; a 360; con una sola marca), Avance con la puerta (con y sin Nubi Plus) y la hoja del candado, y el final del Contrarreloj con «Todas tus marcas ›».
+ * La lámina «hoy | propuesta» de la Tarea 199 (`docs/previews/tarea-199.png`): la página «Contrarreloj» de Avance (arriba y abajo a 393 × 873 con letra 1,0; arriba con 1,3 y 2,0; a 360; con una sola marca), Avance con la puerta (con y sin Nubilus Plus) y la hoja del candado, y el final del Contrarreloj con «Todas tus marcas ›».
  * No corre en las pruebas de siempre: solo al grabar (`T199_PREFIX=prop ./gradlew.bat :app:recordRoborazziDebug --tests "*Tarea199CapturasTest*"`). Los PNG van a `src/test/screenshots/t199/` y `tools/previews/tarea_199.py` arma la hoja. «hoy» (Avance y el final de antes) sale de `Tarea199HoyCapturasTest`, con el código de antes.
  * Datos de la lámina de Fable (§11.3): las diez marcas 31, 35, 39, 36, 44 (el récord, 17 de octubre), 38, 41, 37, 42 y 43 (hoy, miércoles 28).
  */

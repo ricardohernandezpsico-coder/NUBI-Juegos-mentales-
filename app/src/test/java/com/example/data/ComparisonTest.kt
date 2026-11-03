@@ -760,7 +760,9 @@ class ComparisonTest {
     val src = Fake { _, _, _ -> 128 }
     for (range in AgeRange.entries) {
       val o = Comparison.others(src, "stroop", range, 43)!!
-      assertEquals("$range: las seis franjas de 18 a 29 a 75 o más, nunca la de 14 a 17 (sería la de 18 a 29 repetida)", AgeRange.entries.filter { it != AgeRange.R14_17 }.map { it.label.let { l -> if (it == range) "$l (tu franja)" else l } }, o.rows.map { it.label })
+      // Tarea 217 (Fable M1): quien tiene 14 a 17 tampoco ve la de 18 a 29: es SU referencia y repetiría el número de la cifra
+      val expected = AgeRange.entries.filter { it != AgeRange.R14_17 && !(range == AgeRange.R14_17 && it == AgeRange.R18_29) }
+      assertEquals("$range: las franjas de 18 a 29 a 75 o más, nunca la de 14 a 17 (sería la de 18 a 29 repetida) y, de 14 a 17, tampoco la de 18 a 29 (su propia referencia)", expected.map { it.label.let { l -> if (it == range) "$l (tu franja)" else l } }, o.rows.map { it.label })
       assertTrue("$range: ninguna fila dice «14 a 17»", o.rows.none { "14 a 17" in it.label })
       assertFalse("$range: nada que ocultar con 128 personas en cada franja", o.hidden)
     }
@@ -856,6 +858,17 @@ class ComparisonTest {
     assertFalse("4,75 dp justos: separadas", Comparison.barCoversHalf(13, Comparison.Distribution(2000, List(16) { if (it == 7) 2000 else 0 }, 0, 12, 0, binWidth = 5, estimated = true), 80.0 * 4.75))
     // el último tramo («o más») se topa en su centro: la marca y la mitad ahí tapan igual
     assertTrue(Comparison.barCoversHalf(500, radar.copy(p50 = 23), 300.0))
+  }
+
+  @Test
+  fun `de 14 a 17 anos la escalera y la campana nombran la referencia de 18 a 29, que es la tabla que se usa`() {
+    // Tarea 217 (Fable H1): `range.label` decía «referencia estimada para 14 a 17 años» y esa referencia no existe; la pregunta frecuente y la hoja dicen la de 18 a 29
+    val est = Comparison.Distribution(2000, SampleComparison.fit(base, 2000), 31, 39, 47, estimated = true)
+    val r = Comparison.Ranked(39, Comparison.percentile(39, est), Comparison.division(Comparison.percentile(39, est)), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R14_17), est)
+    assertEquals("Peldaños de la referencia estimada para 18 a 29 años; no cambian de semana en semana.", Comparison.ladderNote(r, AgeRange.R14_17))
+    assertEquals("Campana de la referencia estimada para 18 a 29 años. Tu mejor marca de esta semana, 39 aciertos, está marcada.", Comparison.bellSpoken(r, AgeRange.R14_17))
+    assertEquals("las demás franjas dicen la suya", "Peldaños de la referencia estimada para 45 a 54 años; no cambian de semana en semana.", Comparison.ladderNote(r, AgeRange.R45_54))
+    for (range in AgeRange.entries) for (t in listOf(Comparison.ladderNote(r, range), Comparison.bellSpoken(r, range))) assertFalse("$range: ninguna dice «14 a 17 años»", "14 a 17" in t)
   }
 
   @Test

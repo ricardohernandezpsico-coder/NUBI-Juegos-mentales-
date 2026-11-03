@@ -65,6 +65,7 @@ import com.example.data.TimeTrialDay
 import com.example.data.TimeTrialMarks
 import com.example.data.TimeTrialResult
 import com.example.data.TimeTrialStats
+import com.example.data.NBSP
 import com.example.data.glueNumbers
 import com.example.model.AgeRange
 import com.example.model.AppLanguage
@@ -106,7 +107,7 @@ private val HalfLabelGap = 8.dp
 private const val BIG_TEXT_SCALE_CAP = 1.3f
 
 /**
- * La PESTAÑA «Contrarreloj» (Tarea 215, 2-nov; Ricardo decidió las 9 decisiones de `auditoria-fable/idea-pestana-contrarreloj.md` §10 en su opción recomendada). Antes (Tarea 199, rediseñada en la 203 con la dirección D2 de Fable) era una página dentro de Avance, detrás de una puerta y entera para Nubi Plus; ahora es la pestaña de al lado de Hoy
+ * La PESTAÑA «Contrarreloj» (Tarea 215, 2-nov; Ricardo decidió las 9 decisiones de `auditoria-fable/idea-pestana-contrarreloj.md` §10 en su opción recomendada). Antes (Tarea 199, rediseñada en la 203 con la dirección D2 de Fable) era una página dentro de Avance, detrás de una puerta y entera para Nubilus Plus; ahora es la pestaña de al lado de Hoy
  * y se parte en DOS mitades: **arriba lo gratis, a color; debajo lo de Plus** (sin Plus, DOS losas en gris con candado; con Plus, las secciones de siempre, a color y en el mismo orden). Lo que la persona no tendría ni con Plus no se muestra en gris (sin franja de edad o sin tabla del juego no hay losa de «tu lugar»: una promesa que no se cumple es contenido engañoso para Play).
  * Se desliza entera; ya no tiene flecha de volver (es una pestaña). Escala de letra fija: 24 (títulos y la cifra), 18 (Fredoka), 16 y 14 (solo los rótulos de los ejes); el título de la página, 26, es el de toda pestaña con título.
  *
@@ -116,11 +117,11 @@ private const val BIG_TEXT_SCALE_CAP = 1.3f
  * el aviso de siempre sale bajo el selector ([Comparison.Gate]).
  *
  * **Con Plus** vienen debajo, bajo el rótulo «Esta semana, comparado con tu edad», «tu lugar en detalle» ([HeroCard]: la frase «Con 46 aciertos, superas al 5 % de la referencia estimada para tu edad.», [LadderCard]: la escalera de divisiones con sus semanas seguidas, [BellCard], [OthersCard] y «Semana a semana»), y bajo «Tus marcas», «todas tus marcas» (las últimas 10 en [MarksCard],
- * el ritmo en [RhythmCard] y las notas en [NotesCard]); el récord, la mejor de la semana y las partidas ya las dice lo gratis, así que las tres cifras de la Tarea 203 salieron. **Sin Plus** esas dos mitades son [LockedCard]: la imagen crema del kit sin saturación y un 12 % más oscura, el título legible en Rubik 18, el candado, «Con Nubi Plus: tu lugar en detalle.» / «Con Nubi Plus: todas tus marcas.»
+ * el ritmo en [RhythmCard] y las notas en [NotesCard]); el récord, la mejor de la semana y las partidas ya las dice lo gratis, así que las tres cifras de la Tarea 203 salieron. **Sin Plus** esas dos mitades son [LockedCard]: la imagen crema del kit sin saturación y un 12 % más oscura, el título legible en Rubik 18, el candado, «Con Nubilus Plus: tu lugar en detalle.» / «Con Nubilus Plus: todas tus marcas.»
  * en tinta negrita y una silueta decorativa que el lector no lee; toda la losa es un botón que abre la hoja del candado. **Nunca va en gris**: la pestaña, «Jugar», el récord, la división ni «Con qué te comparas ›». El gris tampoco aparece a mitad de una partida ni en el final.
  *
  * Todo a 16 sp o más (14 sp solo los rótulos de los ejes); cada número con su unidad y en frase completa; nada solo por color (el récord lleva moneda con visto y la palabra; tu fila de la escalera, la división en palabras; el gris, el candado y su frase). [results] = TODAS las partidas del Contrarreloj; [selected] = el juego elegido (sin Plus,
- * el de [today]); [today] = el juego del día; [plus] = Nubi Plus ([onLocked] abre la hoja del candado); [onPlay] juega el juego elegido; [now] = el momento de mirar.
+ * el de [today]); [today] = el juego del día; [plus] = Nubilus Plus ([onLocked] abre la hoja del candado); [onPlay] juega el juego elegido; [now] = el momento de mirar.
  */
 @Composable
 internal fun ContrarrelojPage(
@@ -134,7 +135,7 @@ internal fun ContrarrelojPage(
   ageRange: AgeRange? = null,
   /** Abre «De dónde sale la referencia» (Tarea 209): la fila «Con qué te comparas ›». */
   onOpenSource: () -> Unit = {},
-  /** Nubi Plus (Tarea 215): con él, el selector se toca entero y las dos mitades de abajo van a color; sin él, el gris con candado. */
+  /** Nubilus Plus (Tarea 215): con él, el selector se toca entero y las dos mitades de abajo van a color; sin él, el gris con candado. */
   plus: Boolean = true,
   /** El juego del día (`TimeTrialDay.gameFor`): el selector lo marca «Hoy» y, sin Plus, es el único que se toca. null = ninguno marcado. */
   today: String? = null,
@@ -238,7 +239,7 @@ private fun PageHeader(compared: Boolean, modifier: Modifier = Modifier) {
 
 /**
  * Los cuatro juegos en losas: el emblema, el nombre y su récord («44 aciertos» o «sin marca aún»); el ELEGIDO va en lima con el visto sobre su emblema (forma y color, nunca solo color) y el lector de pantalla dice «Tinta o Palabra, récord 44 aciertos, elegido». El de HOY lleva además la palabra «Hoy» (Tarea 215).
- * **Sin Nubi Plus ([plus] falso) los otros tres van en gris con candado** (la misma imagen crema sin saturación, el candado sobre el emblema y «con Nubi Plus» para el lector) y tocarlos abre la hoja ([onLocked]); su récord sigue a la vista, porque es tuyo. Dos filas de dos, parejas (cada fila tiene el alto de su losa más alta);
+ * **Sin Nubilus Plus ([plus] falso) los otros tres van en gris con candado** (la misma imagen crema sin saturación, el candado sobre el emblema y «con Nubilus Plus» para el lector) y tocarlos abre la hoja ([onLocked]); su récord sigue a la vista, porque es tuyo. Dos filas de dos, parejas (cada fila tiene el alto de su losa más alta);
  * si la palabra más larga («Acoplamiento») no cabe entera en media fila a la letra de la persona, UNA columna: una palabra nunca se parte. Cada losa se toca en 72 dp o más (la losa pide 78: 6 dp son su sombra).
  */
 @Composable
@@ -276,7 +277,7 @@ private val TileGap = 10.dp
 private fun GameTile(gameId: String, title: String, record: Int?, selected: Boolean, isToday: Boolean, locked: Boolean, onClick: () -> Unit, modifier: Modifier) {
   ClaySlab(
     color = if (selected) SlabColor.LIME else SlabColor.CREAM, size = SlabSize.SMALL, onClick = onClick, role = if (locked) Role.Button else Role.RadioButton, contentAlignment = Alignment.CenterStart, locked = locked,
-    // `selected` solo cuando el juego NO está en gris: en gris el rol es de botón y el lector diría «no seleccionado» tras «con Nubi Plus» (Tarea 215b, Fable M2)
+    // `selected` solo cuando el juego NO está en gris: en gris el rol es de botón y el lector diría «no seleccionado» tras «con Nubilus Plus» (Tarea 215b, Fable M2)
     modifier = modifier.heightIn(min = 78.dp).semantics(mergeDescendants = true) { if (!locked) this.selected = selected; contentDescription = TimeTrialMarks.tileSpoken(title, record, selected, isToday, locked) }.testTag("contrarreloj_game_$gameId")
   ) {
     Row(Modifier.fillMaxWidth().padding(horizontal = TilePad, vertical = TilePad), verticalAlignment = Alignment.CenterVertically) {
@@ -309,7 +310,9 @@ private fun FreeCard(page: TimeTrialMarks.Page, section: Comparison.Section?, ga
     // para el lector, el botón dice también el juego («Jugar 2 minutos de Acoplamiento»); en la pantalla no cambia nada (Tarea 215b, Fable A3)
     KitButton(TimeTrialMarks.PLAY, onClick = onPlay, color = SlabColor.SUN, modifier = Modifier.semantics { contentDescription = TimeTrialMarks.playSpoken(gameTitle) }.testTag("btn_contrarreloj_play"))
     Spacer(Modifier.height(12.dp))
-    Text(TimeTrialMarks.freeRecordLine(page.recordMark).glueNumbers(), color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.testTag("contrarreloj_free_record"))
+    // el récord va en Fredoka 18 negrita; sin marcas no hay récord, es un estado: va en la letra del cuerpo (16, tinta) y con «este juego» pegado, para que nunca quede «juego.» solo en el segundo renglón (Tarea 217, Opus y Fable H3)
+    if (page.recordMark != null) Text(TimeTrialMarks.freeRecordLine(page.recordMark).glueNumbers(), color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.testTag("contrarreloj_free_record"))
+    else Text(TimeTrialMarks.NO_MARKS_FREE.replace("este juego", "este${NBSP}juego"), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("contrarreloj_free_record"))
     // sin marcas en el juego, UNA línea: la de la semana no se dice (Tarea 215b, Fable A4 c)
     if (page.hasMarks) Text(TimeTrialMarks.weekLine(page.thisWeek, page.recordMark).glueNumbers(), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 4.dp).testTag("contrarreloj_free_week"))
     if (found != null) {
@@ -329,8 +332,8 @@ private fun FreeCard(page: TimeTrialMarks.Page, section: Comparison.Section?, ga
 // ------------------------------------------------------------------ lo de Plus que no se tiene: la losa gris con candado (Tarea 215)
 
 /**
- * Una mitad de lo de Plus VISTA pero no tenida (Fable §3.2): la losa crema del kit sin saturación y un 12 % más oscura ([com.example.ui.components.LockedSlabFilter], sin render nuevo), el [title] legible en tinta (Rubik 18), el candado del kit a 20 dp con [phrase] —«Con Nubi Plus: tu lugar en detalle.»— en tinta negrita de 16 sp
- * y una silueta decorativa ([silhouette]: sin números ni letras; el lector de pantalla no la lee). Toda la losa es un botón que abre la hoja del candado ([onClick]); el lector dice el título y la frase («Comparado con tu edad. Con Nubi Plus: tu lugar en detalle. Botón.»; Tarea 215b, Fable M1: antes solo la frase). Nada se dice solo con el color: lleva el candado y la frase.
+ * Una mitad de lo de Plus VISTA pero no tenida (Fable §3.2): la losa crema del kit sin saturación y un 12 % más oscura ([com.example.ui.components.LockedSlabFilter], sin render nuevo), el [title] legible en tinta (Rubik 18), el candado del kit a 20 dp con [phrase] —«Con Nubilus Plus: tu lugar en detalle.»— en tinta negrita de 16 sp
+ * y una silueta decorativa ([silhouette]: sin números ni letras; el lector de pantalla no la lee). Toda la losa es un botón que abre la hoja del candado ([onClick]); el lector dice el título y la frase («Comparado con tu edad. Con Nubilus Plus: tu lugar en detalle. Botón.»; Tarea 215b, Fable M1: antes solo la frase). Nada se dice solo con el color: lleva el candado y la frase.
  */
 @Composable
 private fun LockedCard(tag: String, title: String, phrase: String, onClick: () -> Unit, silhouette: @Composable () -> Unit) {

@@ -43,7 +43,7 @@ import com.example.ui.theme.Clay
 import com.example.ui.theme.NubiTokens
 
 /**
- * «Preguntas frecuentes», como panel con flecha encima de Tú (como «En qué se basa Nubi»). Desde ahí la pregunta «¿Con qué me compara el Contrarreloj?» abre «De dónde sale la referencia» dentro del mismo panel y Atrás vuelve aquí, con lo que estaba abierto y el deslizado donde estaban.
+ * «Preguntas frecuentes», como panel con flecha encima de Tú (como «En qué se basa Nubilus»). Desde ahí la pregunta «¿Con qué me compara el Contrarreloj?» abre «De dónde sale la referencia» dentro del mismo panel y Atrás vuelve aquí, con lo que estaba abierto y el deslizado donde estaban.
  * Lo abierto vive aquí y no en cada losa para que sobreviva a esa ida y vuelta (y al girar la pantalla).
  */
 @Composable

@@ -9,7 +9,7 @@ import org.junit.Test
 import java.io.File
 
 /**
- * «En qué se basa Nubi» (Tarea 185; `Fuentes`, `NubiContact`): los 17 juegos de la app traen su fuente con un DOI de verdad, la misma cita corta que ya dice «Sobre este juego», una línea en español sin títulos en inglés, y el enlace abre el navegador sin permiso de internet.
+ * «En qué se basa Nubilus» (Tarea 185; `Fuentes`, `NubiContact`): los 17 juegos de la app traen su fuente con un DOI de verdad, la misma cita corta que ya dice «Sobre este juego», una línea en español sin títulos en inglés, y el enlace abre el navegador sin permiso de internet.
  * Los 24 DOI se comprobaron contra doi.org y Crossref el 28-oct (`docs/en-que-se-basa-nubi.md`); aquí se vigila su forma y que no se repitan.
  */
 class FuentesTest {
@@ -30,13 +30,13 @@ class FuentesTest {
     }
   }
 
-  /** Los estudios EXTRA que muestra la pantalla (Tarea 186): los «Más estudios» de cada juego, los grupos de «Cómo está hecha Nubi» (con el método de siempre) y los de «Lo que no decimos» (con Simons 2016). */
+  /** Los estudios EXTRA que muestra la pantalla (Tarea 186): los «Más estudios» de cada juego, los grupos de «Cómo está hecho Nubilus» (con el método de siempre) y los de «Lo que no decimos» (con Simons 2016). */
   private val extras: List<Estudio> = FuentesMas.byGame.values.flatten() + FuentesMas.mechanisms.flatMap { it.studies } + FuentesMas.noDecir
 
   @Test
   fun todos_los_DOI_tienen_forma_de_DOI_y_ninguno_se_repite() {
     val dois = Fuentes.byGame.values.map { it.doi } + extras.map { it.doi }          // todos los DOI que muestra la pantalla
-    assertEquals("17 fuentes principales + 37 «Más estudios» + 32 de «Cómo está hecha Nubi» (3 del método y 29 nuevos) + 4 de «Lo que no decimos»", 90, dois.size)
+    assertEquals("17 fuentes principales + 37 «Más estudios» + 32 de «Cómo está hecho Nubilus» (3 del método y 29 nuevos) + 4 de «Lo que no decimos»", 90, dois.size)
     assertEquals("ningún DOI repetido", dois.size, dois.toSet().size)
     for (d in dois) assertTrue("«$d» no tiene la forma 10.xxxx/…", Regex("""10\.\d{4,9}/\S+""").matches(d))
     assertTrue("la forma canónica del DOI, sin barra doble", dois.none { "//" in it })
@@ -67,7 +67,7 @@ class FuentesTest {
     assertTrue("el archivo dice que Ricardo aprobó las 17 líneas el 28-oct", src.contains("APROBÓ Ricardo el 28-oct"))
   }
 
-  // ------------------------------------------------------------------ Tarea 186: Más estudios, Cómo está hecha Nubi y Lo que no decimos
+  // ------------------------------------------------------------------ Tarea 186: Más estudios, Cómo está hecho Nubilus y Lo que no decimos
 
   @Test
   fun cada_juego_tiene_sus_Mas_estudios_sin_repetir_el_principal() {
@@ -87,7 +87,7 @@ class FuentesTest {
 
   @Test
   fun Como_esta_hecha_Nubi_tiene_sus_diez_grupos_con_su_frase_y_sus_fuentes() {
-    assertEquals("Cómo está hecha Nubi", FuentesMas.MECHANISMS_TITLE)
+    assertEquals("Cómo está hecho Nubilus", FuentesMas.MECHANISMS_TITLE)
     assertEquals(
       listOf("La dificultad se acomoda a ti", "Más tiempo desde los 65", "Partidas cortas, varios días", "Tu meta y tu racha", "Saber cómo te fue", "Tú eliges", "Solo contigo", "Una partida es una partida", "Fácil de ver y de tocar", "Con elementos de juego"),
       FuentesMas.mechanisms.map { it.title }
@@ -95,7 +95,7 @@ class FuentesTest {
     assertEquals(listOf(3, 3, 3, 5, 2, 2, 4, 2, 5, 3), FuentesMas.mechanisms.map { it.studies.size })
     assertEquals("32 en total: los 3 de la T185 (Levitt, Kaernbach y Salthouse) y 29 nuevos", 32, FuentesMas.mechanisms.sumOf { it.studies.size })
     assertEquals("Estudios (3)", FuentesMas.studiesLabel(3))
-    for (m in FuentesMas.mechanisms) assertTrue("«${m.title}» dice en una frase lo que hace Nubi", m.text.length in 30..140 && m.text.endsWith("."))
+    for (m in FuentesMas.mechanisms) assertTrue("«${m.title}» dice en una frase lo que hace Nubilus", m.text.length in 30..140 && m.text.endsWith("."))
     // «Cómo se ajusta la dificultad» se fundió con «La dificultad se acomoda a ti»: el método de siempre (Levitt y Kaernbach) va primero, con Wilson 2019 al final y siempre «en modelos de aprendizaje»
     val dificultad = FuentesMas.mechanisms.first { it.key == "dificultad" }
     assertEquals(Fuentes.method, dificultad.studies.take(2))
@@ -167,12 +167,12 @@ class FuentesTest {
 
   @Test
   fun el_encuadre_no_promete_nada() {
-    assertEquals("Nubi no promete mejorar nada: es un juego.", Fuentes.PROMISE)
-    assertTrue(Fuentes.NO_DECIR_TEXT.contains("no está demostrado") && Fuentes.NO_DECIR_TEXT.contains("Nubi no lo promete"))
+    assertEquals("Nubilus no promete mejorar nada: es un juego.", Fuentes.PROMISE)
+    assertTrue(Fuentes.NO_DECIR_TEXT.contains("no está demostrado") && Fuentes.NO_DECIR_TEXT.contains("Nubilus no lo promete"))
     assertEquals("Simons y otros, 2016", Fuentes.simons.cite)
     // el nombre de la sección es el que eligió Ricardo, no «La ciencia de Nubi»
     val screen = File("src/main/java/com/example/ui/screens/FuentesScreen.kt").readLines().filter { l -> l.trim().let { !it.startsWith("//") && !it.startsWith("*") && !it.startsWith("/*") } }.joinToString("\n")
-    assertTrue(screen.contains("\"En qué se basa Nubi\"") && !screen.contains("La ciencia"))
+    assertTrue(screen.contains("\"En qué se basa Nubilus\"") && !screen.contains("La ciencia"))
   }
 
   @Test
@@ -185,7 +185,7 @@ class FuentesTest {
 
   @Test
   fun el_contacto_no_tiene_correo_todavia_y_la_losa_lo_dice() {
-    assertNull("Ricardo todavía no crea el correo de Nubi", NubiContact.EMAIL)
+    assertNull("Ricardo todavía no crea el correo de Nubilus", NubiContact.EMAIL)
     assertEquals("Correo por definir", NubiContact.secondLine())
     assertFalse(NubiContact.canWrite())
     assertEquals("hola@ejemplo.org", NubiContact.secondLine("hola@ejemplo.org"))

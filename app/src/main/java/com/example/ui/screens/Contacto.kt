@@ -27,7 +27,7 @@ import com.example.viewmodel.NeuroVidaViewModel
 
 /**
  * «Contacto», al final de Tú (Tarea 185; `auditoria-fable/tu-pestana.md` §4): «Si algo falla o quieres contarnos algo».
- * 1. «Escribir a Nubi»: abre la app de correo con el correo de Nubi ya puesto ([NubiContact.EMAIL]). Mientras no haya correo (Ricardo todavía no lo crea), la losa se ve pero dice «Correo por definir» y no hace nada; con correo, el correo también va en texto plano debajo, para copiarlo.
+ * 1. «Escribir a Nubilus»: abre la app de correo con el correo de Nubi ya puesto ([NubiContact.EMAIL]). Mientras no haya correo (Ricardo todavía no lo crea), la losa se ve pero dice «Correo por definir» y no hace nada; con correo, el correo también va en texto plano debajo, para copiarlo.
  * 2. «Enviar informe de errores» (se mudó desde Ajustes: es contacto, no un ajuste): comparte el texto de `diag/ErrorLog.report` por donde la persona quiera. Sin servidores ni cuentas.
  * 3. Una línea plana: «Nubi 1.0 · sin cuenta, sin internet y sin anuncios».
  */
@@ -51,7 +51,8 @@ fun ContactoSection(onSendReport: () -> Unit, modifier: Modifier = Modifier, ema
       color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.testTag("error_report_help")
     )
     OnBoardText(
-      "Nubi ${com.example.BuildConfig.VERSION_NAME} · sin cuenta, sin internet y sin anuncios",
+      // «sin anuncios» pegado: a 393 dp la línea pasa a dos renglones y «anuncios» quedaba solo en el segundo (Tarea 217)
+      "Nubilus ${com.example.BuildConfig.VERSION_NAME} · sin cuenta, sin internet y sin anuncios".replace("sin anuncios", "sin${com.example.data.NBSP}anuncios"),
       color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 6.dp).testTag("version_line")
     )
   }
@@ -70,7 +71,7 @@ private fun writeToNubi(context: Context, email: String) {
 internal fun sendErrorReport(context: Context, viewModel: NeuroVidaViewModel) {
   val send = Intent(Intent.ACTION_SEND)
     .setType("text/plain")
-    .putExtra(Intent.EXTRA_SUBJECT, "Informe de errores de Nubi")
+    .putExtra(Intent.EXTRA_SUBJECT, "Informe de errores de Nubilus")
     .putExtra(Intent.EXTRA_TEXT, com.example.diag.ErrorLog.report(context, viewModel.unclearReport()))
   context.startActivity(Intent.createChooser(send, "Enviar informe").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
 }

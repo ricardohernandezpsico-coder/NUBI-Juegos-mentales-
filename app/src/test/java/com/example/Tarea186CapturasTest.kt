@@ -40,8 +40,8 @@ import org.robolectric.shadows.ShadowTrace
 import java.io.File
 
 /**
- * Las capturas de la lámina de la Tarea 186 («En qué se basa Nubi», ampliada): un juego con «Más estudios» plegado y desplegado, la sección «Cómo está hecha Nubi» al principio y al final, «Lo que no decimos» con las cuatro revisiones (letra 1,0 y 1,3) y las medidas. Después de la aprobación de Opus
- * (28-oct): los grupos de «Cómo está hecha Nubi» van PLEGADOS en «Estudios (N)» (`mecanismos-plegado-*`; los `mecanismos-inicio/final-*` de la lámina son de antes, con los grupos desplegados) y Hoy con la racha en cero (`hoy-racha-cero-*`).
+ * Las capturas de la lámina de la Tarea 186 («En qué se basa Nubilus», ampliada): un juego con «Más estudios» plegado y desplegado, la sección «Cómo está hecho Nubilus» al principio y al final, «Lo que no decimos» con las cuatro revisiones (letra 1,0 y 1,3) y las medidas. Después de la aprobación de Opus
+ * (28-oct): los grupos de «Cómo está hecho Nubilus» van PLEGADOS en «Estudios (N)» (`mecanismos-plegado-*`; los `mecanismos-inicio/final-*` de la lámina son de antes, con los grupos desplegados) y Hoy con la racha en cero (`hoy-racha-cero-*`).
  * Solo corre al grabar capturas; deja los PNG en `src/test/screenshots/tarea-186/propuesta/` y las medidas en `medidas.txt`.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -64,7 +64,7 @@ class Tarea186CapturasTest {
   private var frameH by mutableStateOf(873)
   private var fontScale by mutableStateOf(1f)
 
-  /** El marco de 393 dp con «En qué se basa Nubi» como panel (con las barras del sistema: 24 dp arriba). */
+  /** El marco de 393 dp con «En qué se basa Nubilus» como panel (con las barras del sistema: 24 dp arriba). */
   private fun show(scale: Float = 1f, height: Int = 873) {
     fontScale = scale; frameH = height
     rule.setContent {
@@ -200,13 +200,13 @@ class Tarea186CapturasTest {
       rule.runOnIdle { fontScale = scale }
       settle()
       val s = "%.1f".format(scale).replace('.', ',')
-      measures += "Letra $s: «En qué se basa Nubi» mide ${"%.0f".format(contentLength())} dp de largo con todo plegado; «Cómo está hecha Nubi» (del título a «Las palabras») mide ${"%.0f".format(yOf("fuentes_palabras") - yOf("fuentes_mecanismos"))} dp; «Más estudios» de Constelaciones mide ${"%.0f".format(heightOf("mas_parejas"))} dp de alto"
+      measures += "Letra $s: «En qué se basa Nubilus» mide ${"%.0f".format(contentLength())} dp de largo con todo plegado; «Cómo está hecho Nubilus» (del título a «Las palabras») mide ${"%.0f".format(yOf("fuentes_palabras") - yOf("fuentes_mecanismos"))} dp; «Más estudios» de Constelaciones mide ${"%.0f".format(heightOf("mas_parejas"))} dp de alto"
     }
-    // «Cómo está hecha Nubi» con cada grupo desplegado (Opus pidió plegarlos: así se ve cuánto se evita)
+    // «Cómo está hecho Nubilus» con cada grupo desplegado (Opus pidió plegarlos: así se ve cuánto se evita)
     rule.runOnIdle { fontScale = 1f }
     settle()
     for (m in FuentesMas.mechanisms) { scrollTo("estudios_${m.key}"); rule.onNodeWithTag("estudios_${m.key}").performClick(); settle() }
-    measures += "Letra 1,0: con los 10 grupos de «Cómo está hecha Nubi» desplegados la sección mide ${"%.0f".format(yOf("fuentes_palabras") - yOf("fuentes_mecanismos"))} dp (plegados: ver arriba)"
+    measures += "Letra 1,0: con los 10 grupos de «Cómo está hecho Nubilus» desplegados la sección mide ${"%.0f".format(yOf("fuentes_palabras") - yOf("fuentes_mecanismos"))} dp (plegados: ver arriba)"
     for (m in FuentesMas.mechanisms) { scrollTo("estudios_${m.key}"); rule.onNodeWithTag("estudios_${m.key}").performClick(); settle() }
     // los 17 «Más estudios» desplegados (con letra 1,0 y después 1,3: quedan abiertos)
     rule.runOnIdle { fontScale = 1f }

@@ -68,7 +68,7 @@ internal fun openInBrowser(context: Context, url: String): Boolean = try {
 }
 
 /**
- * «En qué se basa Nubi», como panel con flecha encima de Tú (como Ajustes). Desde la Tarea 209 trae una fila, «De dónde sale la referencia del Contrarreloj ›», que abre esa hoja dentro del mismo panel (Atrás vuelve aquí, como «Licencias y créditos» vuelve a Ajustes) y deja el deslizado donde estaba.
+ * «En qué se basa Nubilus», como panel con flecha encima de Tú (como Ajustes). Desde la Tarea 209 trae una fila, «De dónde sale la referencia del Contrarreloj ›», que abre esa hoja dentro del mismo panel (Atrás vuelve aquí, como «Licencias y créditos» vuelve a Ajustes) y deja el deslizado donde estaba.
  */
 @Composable
 fun FuentesPanel(onClose: () -> Unit, modifier: Modifier = Modifier) {
@@ -80,18 +80,18 @@ fun FuentesPanel(onClose: () -> Unit, modifier: Modifier = Modifier) {
   }
   BackHandler(onBack = onClose)
   Column(modifier = modifier.fillMaxSize()) {
-    PanelHeader("En qué se basa Nubi", onClose)
+    PanelHeader("En qué se basa Nubilus", onClose)
     FuentesScreen(modifier = Modifier.weight(1f), scroll = scroll, onOpenReferencia = { showReferencia = true })
   }
 }
 
 /**
- * «En qué se basa Nubi» (Tarea 185; Fable, `auditoria-fable/tu-pestana.md` §3, y la decisión de Ricardo del 27-oct sobre el nombre: no «La ciencia de Nubi», que sugiere que Nubi está probada). De qué estudio sale la tarea de cada juego: por área, una losa por juego con su emblema,
+ * «En qué se basa Nubilus» (Tarea 185; Fable, `auditoria-fable/tu-pestana.md` §3, y la decisión de Ricardo del 27-oct sobre el nombre: no «La ciencia de Nubi», que sugiere que Nubi está probada). De qué estudio sale la tarea de cada juego: por área, una losa por juego con su emblema,
  * su nombre, UNA línea de «qué tomamos» y «Autor, año · Ver el estudio ›»; tocar la losa abre el estudio en el navegador (`https://doi.org/…`). Después, cómo se ajusta la dificultad (tres estudios), las palabras (que viven en «Licencias y créditos») y «Lo que no decimos», con el aviso
  * de salud. Solo autor y año y nuestra línea en español: ni el título en inglés ni la revista (la guardia de vocabulario prohíbe «cognitiv…» en cualquier texto del código y varios los traen; la página del DOI los trae a un toque). [openLink] devuelve false si no hay navegador.
  *
  * Tarea 186 (28-oct): bajo la losa de cada juego, una fila «Más estudios (N)» PLEGADA que al tocarla despliega, en el mismo lugar, sus estudios extra (cada uno en su fila tocable: «Autor, año», su línea y «Ver el estudio ›»); entre los juegos y «Las palabras», la sección
- * «Cómo está hecha Nubi» (un grupo por decisión de diseño: a la vista, su título y su frase de lo que hace Nubi; las fuentes van plegadas en «Estudios (N)», igual que «Más estudios»: «lo simple primero», Opus, 28-oct; «La dificultad se acomoda a ti» absorbe lo que era «Cómo se ajusta la dificultad»); y «Lo que no decimos» con cuatro revisiones. Los datos están en `FuentesMas`.
+ * «Cómo está hecho Nubilus» (un grupo por decisión de diseño: a la vista, su título y su frase de lo que hace Nubi; las fuentes van plegadas en «Estudios (N)», igual que «Más estudios»: «lo simple primero», Opus, 28-oct; «La dificultad se acomoda a ti» absorbe lo que era «Cómo se ajusta la dificultad»); y «Lo que no decimos» con cuatro revisiones. Los datos están en `FuentesMas`.
  */
 @Composable
 fun FuentesScreen(modifier: Modifier = Modifier, openLink: ((String) -> Boolean)? = null, scroll: ScrollState = rememberScrollState(), onOpenReferencia: (() -> Unit)? = null) {
@@ -119,7 +119,7 @@ fun FuentesScreen(modifier: Modifier = Modifier, openLink: ((String) -> Boolean)
       }
     }
 
-    // Cómo está hecha Nubi: un grupo por decisión de diseño
+    // Cómo está hecho Nubilus: un grupo por decisión de diseño
     SectionTitle(FuentesMas.MECHANISMS_TITLE, "fuentes_mecanismos")
     OnBoardText(FuentesMas.MECHANISMS_TEXT, color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("fuentes_mecanismos_texto"))
     FuentesMas.mechanisms.forEach { MechanismGroup(it, open) }
@@ -190,7 +190,7 @@ private fun ReferenciaRow(onClick: () -> Unit) {
 }
 
 /**
- * La fila de un estudio (Tarea 186): «Autor, año», su línea «qué sustenta» y «Ver el estudio ›»; tocarla abre el DOI en el navegador. Se usa en «Más estudios», en «Cómo está hecha Nubi» y en «Lo que no decimos». TalkBack la lee como una frase y dice qué hace al tocar.
+ * La fila de un estudio (Tarea 186): «Autor, año», su línea «qué sustenta» y «Ver el estudio ›»; tocarla abre el DOI en el navegador. Se usa en «Más estudios», en «Cómo está hecho Nubilus» y en «Lo que no decimos». TalkBack la lee como una frase y dice qué hace al tocar.
  */
 @Composable
 internal fun StudyRow(study: Estudio, open: (String) -> Unit, modifier: Modifier = Modifier) {
@@ -205,7 +205,7 @@ internal fun StudyRow(study: Estudio, open: (String) -> Unit, modifier: Modifier
 }
 
 /**
- * Una fila plegable de estudios (Tarea 186): un botón lila de 48 dp, PLEGADO por defecto, que al tocarlo despliega en el mismo lugar sus estudios, cada uno en su [StudyRow]. Es «Más estudios (N)» bajo la losa de un juego y «Estudios (N)» bajo cada grupo de «Cómo está hecha Nubi». La flecha del botón dice si está abierto;
+ * Una fila plegable de estudios (Tarea 186): un botón lila de 48 dp, PLEGADO por defecto, que al tocarlo despliega en el mismo lugar sus estudios, cada uno en su [StudyRow]. Es «Más estudios (N)» bajo la losa de un juego y «Estudios (N)» bajo cada grupo de «Cómo está hecho Nubilus». La flecha del botón dice si está abierto;
  * el lector de pantalla oye el estado («estudios ocultos» / «estudios visibles»). Lo abierto se recuerda al girar la pantalla. [tag] es la etiqueta del botón (`mas_<juego>` / `estudios_<grupo>`).
  */
 @Composable
@@ -224,7 +224,7 @@ private fun StudiesFold(tag: String, label: String, spoken: String, studies: Lis
   }
 }
 
-/** Un grupo de «Cómo está hecha Nubi»: su título, UNA frase en simple de lo que hace Nubi y debajo «Estudios (N)», plegado, con sus fuentes en el mismo formato de fila (Opus, 28-oct: a la vista solo lo simple). */
+/** Un grupo de «Cómo está hecho Nubilus»: su título, UNA frase en simple de lo que hace Nubi y debajo «Estudios (N)», plegado, con sus fuentes en el mismo formato de fila (Opus, 28-oct: a la vista solo lo simple). */
 @Composable
 private fun MechanismGroup(group: Mecanismo, open: (String) -> Unit) {
   Column(Modifier.fillMaxWidth().testTag("mecanismo_${group.key}"), verticalArrangement = Arrangement.spacedBy(8.dp)) {

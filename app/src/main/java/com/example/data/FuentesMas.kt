@@ -1,14 +1,14 @@
 package com.example.data
 
 /**
- * Un grupo de «Cómo está hecha Nubi» (Tarea 186, 28-oct): una frase en simple de lo que hace la app y debajo los estudios en que se apoya esa decisión.
+ * Un grupo de «Cómo está hecho Nubilus» (Tarea 186, 28-oct): una frase en simple de lo que hace la app y debajo los estudios en que se apoya esa decisión.
  */
 data class Mecanismo(val key: String, val title: String, val text: String, val studies: List<Estudio>)
 
 /**
- * Los estudios EXTRA de «En qué se basa Nubi» (Tarea 186, 28-oct; Ricardo aprobó la propuesta de bibliografía: `docs/bibliografia/` y `docs/en-que-se-basa-nubi.md`):
+ * Los estudios EXTRA de «En qué se basa Nubilus» (Tarea 186, 28-oct; Ricardo aprobó la propuesta de bibliografía: `docs/bibliografia/` y `docs/en-que-se-basa-nubi.md`):
  *  - [byGame]: «Más estudios (N)» bajo la losa de cada juego (el estudio principal sigue en `Fuentes.byGame`);
- *  - [mechanisms]: «Cómo está hecha Nubi», un grupo por decisión de diseño (dificultad, tiempo desde los 65, partidas cortas, meta y racha, cómo te fue, elegir, compararse solo contigo, una partida, ver y tocar, elementos de juego);
+ *  - [mechanisms]: «Cómo está hecho Nubilus», un grupo por decisión de diseño (dificultad, tiempo desde los 65, partidas cortas, meta y racha, cómo te fue, elegir, compararse solo contigo, una partida, ver y tocar, elementos de juego);
  *  - [noDecir]: los estudios de «Lo que no decimos» (Simons 2016 y tres revisiones más).
  * Solo entran las filas que las tablas de origen marcan «sí» (69 de 101; las «solo interno» NO van en la app). Cada DOI se comprobó contra doi.org y Crossref el 28-oct (autor y año coinciden con la cita).
  * Las líneas «qué sustenta» son BORRADORES (de los subagentes, con revisión): las aprueba Ricardo. Solo autor, año, la línea en español y el enlace: nada de títulos ni revistas (`VisibleTextsGuardTest` prohíbe «cognitiv…», y varios los traen).
@@ -16,12 +16,12 @@ data class Mecanismo(val key: String, val title: String, val text: String, val s
 object FuentesMas {
   fun moreLabel(count: Int): String = "Más estudios ($count)"
 
-  /** La fila plegada de cada grupo de «Cómo está hecha Nubi» (Opus, 28-oct: «lo simple primero»; a la vista, el título y la frase). */
+  /** La fila plegada de cada grupo de «Cómo está hecho Nubilus» (Opus, 28-oct: «lo simple primero»; a la vista, el título y la frase). */
   fun studiesLabel(count: Int): String = "Estudios ($count)"
 
   /** El texto de la sección y su título (entre los juegos y «Las palabras»). */
-  const val MECHANISMS_TITLE = "Cómo está hecha Nubi"
-  const val MECHANISMS_TEXT = "Esto es lo que hace Nubi más allá de los juegos, y de dónde sale."
+  const val MECHANISMS_TITLE = "Cómo está hecho Nubilus"
+  const val MECHANISMS_TEXT = "Esto es lo que hace Nubilus más allá de los juegos, y de dónde sale."
 
   /** Los estudios extra de cada juego (id de `GameRegistry`): los que las tablas marcan «sí», sin repetir el principal. */
   val byGame: Map<String, List<Estudio>> = mapOf(
@@ -98,13 +98,13 @@ object FuentesMas {
     )
   )
 
-  /** «Cómo está hecha Nubi»: cada grupo con su frase y sus estudios (que en la pantalla van plegados en «Estudios (N)»). «La dificultad se acomoda a ti» se fusiona con el método de siempre (Levitt y Kaernbach); Salthouse 1996 abre «Más tiempo desde los 65». */
+  /** «Cómo está hecho Nubilus»: cada grupo con su frase y sus estudios (que en la pantalla van plegados en «Estudios (N)»). «La dificultad se acomoda a ti» se fusiona con el método de siempre (Levitt y Kaernbach); Salthouse 1996 abre «Más tiempo desde los 65». */
   val mechanisms: List<Mecanismo> = listOf(
     Mecanismo("dificultad", "La dificultad se acomoda a ti", Fuentes.METHOD_TEXT,
     Fuentes.method + listOf(
       Estudio("Wilson y otros, 2019", "10.1038/s41467-019-12552-4", "En modelos de aprendizaje, el punto más provechoso está cerca de 85 aciertos de cada 100.")
     )),
-    Mecanismo("mas_tiempo", "Más tiempo desde los 65", "Desde los 65, Nubi da más tiempo para ver y responder, y la rapidez pesa menos en el ajuste del nivel.",
+    Mecanismo("mas_tiempo", "Más tiempo desde los 65", "Desde los 65, Nubilus da más tiempo para ver y responder, y la rapidez pesa menos en el ajuste del nivel.",
     listOf(
       Fuentes.salthouse,
       Estudio("Verhaeghen y Salthouse, 1997", "10.1037/0033-2909.122.3.231", "En 91 estudios, la rapidez para responder baja con la edad, y baja más después de los 50 años."),
@@ -146,7 +146,7 @@ object FuentesMas {
       Estudio("Calamia y otros, 2012", "10.1080/13854046.2012.680913", "En unos 1.600 resultados, repetir la misma prueba subió el puntaje por pura práctica, algo que hay que tener en cuenta."),
       Estudio("Hedge y otros, 2018", "10.3758/s13428-017-0935-1", "En tareas clásicas de reacción, el puntaje de una misma persona cambia bastante de una vez a otra.")
     )),
-    Mecanismo("ver_y_tocar", "Fácil de ver y de tocar", "Letra grande, buen contraste, botones grandes, y Nubi respeta que quites las animaciones en Android.",
+    Mecanismo("ver_y_tocar", "Fácil de ver y de tocar", "Letra grande, buen contraste, botones grandes, y Nubilus respeta que quites las animaciones en Android.",
     listOf(
       Estudio("Wildenbos y otros, 2018", "10.1016/j.ijmedinf.2018.03.012", "La vista, el tacto, la memoria y la motivación cambian con la edad y afectan el uso de apps."),
       Estudio("Owsley, 2011", "10.1016/j.visres.2010.10.020", "Con la edad baja la capacidad de distinguir contrastes y de ver con poca luz."),

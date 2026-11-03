@@ -149,7 +149,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   // La guía de Nubi en la primera entrada a Hoy (Tarea 193, `HoyGuide`): dónde están los elementos que ilumina (los publican Hoy y la barra) y en qué paso va (vive en el ViewModel).
   val guideTargets = remember { com.example.ui.components.GuideTargets() }
   val guideStep by viewModel.guideStep.collectAsState()
-  val plus by viewModel.plus.collectAsState()                 // Nubi Plus (Tarea 199): el atajo «Todas tus marcas ›» del final del Contrarreloj, que desde la Tarea 215 abre la pestaña Contrarreloj
+  val plus by viewModel.plus.collectAsState()                 // Nubilus Plus (Tarea 199): el atajo «Todas tus marcas ›» del final del Contrarreloj, que desde la Tarea 215 abre la pestaña Contrarreloj
 
   androidx.compose.runtime.CompositionLocalProvider(com.example.ui.components.LocalGuideTargets provides guideTargets) {
   Box(modifier = Modifier.fillMaxSize()) {
@@ -174,7 +174,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
       Box(modifier = Modifier.fillMaxSize()) {
         // Content based on tab. Mientras hay un juego o un resultado encima no se compone: esas pantallas van
         // sobre el cielo transparente (se vería la pestaña detrás) y no deben dejar pasar toques a ella.
-        // `KeepTabsState` (Tarea 209b): al esconder el pager guarda el deslizado de cada página y lo devuelve al volver (de «De dónde sale la referencia», de «En qué se basa Nubi», de un juego...); sin él, la página volvía arriba.
+        // `KeepTabsState` (Tarea 209b): al esconder el pager guarda el deslizado de cada página y lo devuelve al volver (de «De dónde sale la referencia», de «En qué se basa Nubilus», de un juego...); sin él, la página volvía arriba.
         com.example.ui.components.KeepTabsState(show = activeGame == null && lastResult == null && sessionSummary == null && topPanel == null && allGames == null) {
           // Si la pestaña cambió mientras había un juego o el resumen encima, el pager vuelve a ella sin animar.
           LaunchedEffect(Unit) {
@@ -196,7 +196,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
           }
         }
 
-        // Los Ajustes, «En qué se basa Nubi» y «Preguntas frecuentes», abiertos desde «Tú» (Tarea 158: el perfil es la pestaña «Tú» y los dos botones de arriba a la derecha se fueron; Tarea 185: «En qué se basa Nubi»; Tarea 209: «Preguntas frecuentes»), y «De dónde sale la referencia», desde la página Contrarreloj de Avance y su hoja.
+        // Los Ajustes, «En qué se basa Nubilus» y «Preguntas frecuentes», abiertos desde «Tú» (Tarea 158: el perfil es la pestaña «Tú» y los dos botones de arriba a la derecha se fueron; Tarea 185: «En qué se basa Nubilus»; Tarea 209: «Preguntas frecuentes»), y «De dónde sale la referencia», desde la página Contrarreloj de Avance y su hoja.
         if (activeGame == null && lastResult == null && sessionSummary == null) when (topPanel) {
           com.example.viewmodel.TopPanel.AJUSTES ->
             com.example.ui.screens.SettingsPanel(viewModel = viewModel, onClose = { viewModel.openTopPanel(null) })

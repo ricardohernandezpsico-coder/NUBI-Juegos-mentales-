@@ -158,7 +158,7 @@ class VisibleTextsGuardTest {
   @Test
   fun `el aviso de salud es el texto aprobado, va en Ajustes y en Licencias y su unica excepcion es previene`() {
     assertEquals(
-      "Nubi es un conjunto de juegos para mantener la mente activa. No es un dispositivo médico: no diagnostica, trata, cura ni previene ninguna condición. Ante cualquier duda sobre tu salud, consulta a un profesional.",
+      "Nubilus es un conjunto de juegos para mantener la mente activa. No es un dispositivo médico: no diagnostica, trata, cura ni previene ninguna condición. Ante cualquier duda sobre tu salud, consulta a un profesional.",
       HealthNotice.TEXT
     )
     assertEquals("Aviso de salud", HealthNotice.TITLE)
@@ -357,11 +357,11 @@ class VisibleTextsGuardTest {
   }
 
   /**
-   * La pestaña «Contrarreloj» y todo lo de Nubi Plus (Tarea 215; `auditoria-fable/idea-pestana-contrarreloj.md` §3.2 y decisión 3): lo de Plus que no se tiene va «con Nubi Plus», nunca «bloqueado» ni «desbloquea» («bloqueado» es la palabra de trabajo, no la de la app), y se juega en «partidas», nunca en «intentos».
+   * La pestaña «Contrarreloj» y todo lo de Nubilus Plus (Tarea 215; `auditoria-fable/idea-pestana-contrarreloj.md` §3.2 y decisión 3): lo de Plus que no se tiene va «con Nubilus Plus», nunca «bloqueado» ni «desbloquea» («bloqueado» es la palabra de trabajo, no la de la app), y se juega en «partidas», nunca en «intentos».
    * La guardia mira los archivos de esa pestaña, su hoja y sus textos; NO toca las medallas ni el modo Desafío de la ficha, que ya decían «bloqueada» y «Desbloqueaste» antes (Tareas 151 y 167): aplicarla a toda la app sería otra tarea, con Ricardo.
    */
   @Test
-  fun `la pestana Contrarreloj y Nubi Plus no dicen bloqueado, desbloquea ni intentos`() {
+  fun `la pestana Contrarreloj y Nubilus Plus no dicen bloqueado, desbloquea ni intentos`() {
     val words = listOf("bloquead", "desbloque", "intento")
     val files = listOf(
       "ui/screens/ContrarrelojPage.kt", "ui/screens/ContrarrelojScreen.kt", "ui/screens/PlusLockSheet.kt", "ui/components/NeuroNavBar.kt", "ui/components/HoyGuideOverlay.kt",
@@ -371,10 +371,10 @@ class VisibleTextsGuardTest {
     for (name in files) File("src/main/java/com/example/$name").readLines().forEachIndexed { i, raw ->
       for (text in visibleLiteralsOf(raw)) words.firstOrNull { it in text.lowercase() }?.let { found += "$name:${i + 1} «$text» (por «$it»)" }
     }
-    assertTrue("Textos de la pestaña Contrarreloj o de Nubi Plus con «bloqueado», «desbloquea» o «intentos» (la palabra es «Con Nubi Plus» y «partidas»):\n" + found.joinToString("\n"), found.isEmpty())
+    assertTrue("Textos de la pestaña Contrarreloj o de Nubilus Plus con «bloqueado», «desbloquea» o «intentos» (la palabra es «Con Nubilus Plus» y «partidas»):\n" + found.joinToString("\n"), found.isEmpty())
     // y la guardia atrapa lo que debe
     for (malo in listOf("Contrarreloj bloqueado", "Se desbloquea con Plus", "Te quedan 2 intentos de hoy.", "Bloqueada")) assertTrue("no atrapa «$malo»", words.any { it in malo.lowercase() })
-    for (bueno in listOf("Con Nubi Plus: todas tus marcas.", "Te quedan 2 partidas de hoy.", "Esta semana jugaste 3 partidas y la mejor fue de 41 aciertos.", "Esta semana jugaste 3 partidas y la mejor fue tu récord.", "Todavía no tienes marcas en este juego.", "Jugar 2 minutos de Acoplamiento")) assertTrue("atrapa «$bueno» sin motivo", words.none { it in bueno.lowercase() })
+    for (bueno in listOf("Con Nubilus Plus: todas tus marcas.", "Te quedan 2 partidas de hoy.", "Esta semana jugaste 3 partidas y la mejor fue de 41 aciertos.", "Esta semana jugaste 3 partidas y la mejor fue tu récord.", "Todavía no tienes marcas en este juego.", "Jugar 2 minutos de Acoplamiento")) assertTrue("atrapa «$bueno» sin motivo", words.none { it in bueno.lowercase() })
     // los textos nuevos de la Tarea 215 por su valor
     for (t in listOf(PlusAccess.LOCKED_PLACE, PlusAccess.LOCKED_MARKS, PlusAccess.LOCKED_PLACE_TITLE, PlusAccess.LOCKED_MARKS_TITLE, TimeTrialMarks.PLAY, TimeTrialMarks.SUBTITLE_PLACE, TimeTrialMarks.freeRecordLine(null), TimeTrialMarks.weekLine(TimeTrialMarks.WeekSummary(3, 41)))) {
       assertTrue("«$t»", words.none { it in t.lowercase() })
@@ -382,7 +382,7 @@ class VisibleTextsGuardTest {
   }
 
   /**
-   * Desde los 14 años (Tarea 216; decisión de Ricardo, 2-nov, `auditoria-fable/referencia-14-17.md` §1.4): la franja se llama «14 a 17 años», como las demás. NINGÚN texto de la app dice «menores», «adolescentes» ni «niños», y las líneas nuevas (la edad en «Acerca de Nubi», la de la hoja de la referencia,
+   * Desde los 14 años (Tarea 216; decisión de Ricardo, 2-nov, `auditoria-fable/referencia-14-17.md` §1.4): la franja se llama «14 a 17 años», como las demás. NINGÚN texto de la app dice «menores», «adolescentes» ni «niños», y las líneas nuevas (la edad en «Acerca de Nubilus», la de la hoja de la referencia,
    * la pregunta frecuente y el estudio de Luna) no dicen «velocidad» ni «cognitiv» ni nada de lo que no se dice: «rapidez» y «frenar una respuesta» están bien.
    */
   @Test
@@ -406,7 +406,7 @@ class VisibleTextsGuardTest {
       for (bad in banned + measureWords + listOf("menores", "adolescent", "niños", "robot"))
         assertFalse("«$t» dice «$bad»", bad in low)
     }
-    assertEquals("Nubi es para personas de 14 años o más.", com.example.data.HealthNotice.AGE_LINE)
+    assertEquals("Nubilus es para personas de 14 años o más.", com.example.data.HealthNotice.AGE_LINE)
   }
 
   @Test
@@ -509,7 +509,7 @@ class VisibleTextsGuardTest {
   // ---------------------------------------------------------------------------- Tarea 200: lo que nunca mide a la persona («capacidad», «edad mental», «ranking», «velocidad»)
 
   /**
-   * Las palabras que no se dicen de la persona (Nubi Plus, `auditoria-fable/nubi-plus-comparacion.md` §2.4 y §1.5): nada de «edad mental», «capacidad», «ranking» ni «velocidad» (de procesamiento, ni «tu velocidad»): una marca es el resultado de un juego, no una medida de quien juega.
+   * Las palabras que no se dicen de la persona (Nubilus Plus, `auditoria-fable/nubi-plus-comparacion.md` §2.4 y §1.5): nada de «edad mental», «capacidad», «ranking» ni «velocidad» (de procesamiento, ni «tu velocidad»): una marca es el resultado de un juego, no una medida de quien juega.
    * Va como prueba aparte y NO toca la lista `banned` de arriba (la usan otras pruebas).
    */
   private val measureWords = listOf("capacidad", "edad mental", "ranking", "velocidad")
@@ -602,5 +602,71 @@ class VisibleTextsGuardTest {
     assertEquals("ningún texto con «percentil», ni «Tu percentil semanal» ni «Percentil N» (Tarea 209: Ricardo los quitó el 1-nov)", emptySet<String>(), found)
     assertEquals("la lista de excepciones quedó vacía", emptySet<String>(), percentileTexts)
     assertTrue("y «percentil» sigue en la lista de lo que no se dice", "percentil" in banned)
+  }
+  // ---------------------------------------------------------------- «El nombre de la app» (Tarea 217, 2-nov: la app se llama «Nubilus»; la mascota sigue siendo «Nubi»)
+
+  /** Las frases donde «Nubi» sería la APP (y debe decir «Nubilus»): ninguna puede estar en un texto visible (`auditoria-fable/nombre-app.md` §7.5). La mascota («Nubi sugiere», «Hola, soy Nubi») no está en la lista. */
+  private val oldAppNamePatterns = listOf(
+    "Nubi Plus", "Acerca de Nubi", "En qué se basa Nubi", "Cómo está hecha Nubi", "Quién hace Nubi", "Escribir a Nubi", "Informe de errores de Nubi", "juegos de Nubi",
+    "Nubi no junta", "Nubi no lo envía", "Nubi no promete", "Nubi no lo promete", "Nubi funciona", "Nubi respeta", "Nubi lo respeta", "Nubi da más tiempo",
+    "Nubi es un conjunto", "Nubi es para personas", "Nubi usa trabajo", "hace Nubi ", "en Nubi!", "de Nubi!", "Nubi \$version", "Nubi \${"
+  )
+
+  /** Los textos donde Nubi es la MASCOTA: están en el código y ninguno dice «Nubilus». */
+  private val mascotTexts = listOf("Nubi sugiere", "Hola, soy Nubi", "Nubi te espera mañana para seguir", "Nubi te muestra Hoy", "te la mostró Nubi", "Nubi capta la definición", "Nubi te cuenta cómo te fue", ", Nubi lo sugiere", "después de unos días sin Nubi", "en el cielo de Nubi")
+
+  /** Cada patrón cuenta solo si lo que sigue NO es una letra: «Escribir a Nubi» no es un trozo de «Escribir a Nubilus». */
+  private fun appNameHit(text: String): String? = oldAppNamePatterns.firstOrNull { Regex(Regex.escape(it) + "(?![A-Za-z])").containsMatchIn(text) }
+
+  /** Cada aparición del nombre debe ir escrita exactamente «Nubilus» (o «nubilus» en un dominio o correo): nunca «Núbilus» ni «Nubilús». */
+  private fun misspelledName(text: String): String? = Regex("n[uú]b[ií]l[uú]s", RegexOption.IGNORE_CASE).findAll(text).map { it.value }.firstOrNull { it != "Nubilus" && it != "nubilus" }
+
+  /** Un nombre de producto que termine en «-ina» (el veto de Ricardo del 2-nov: suena a medicamento): «Nubilina», «Nebulina»… */
+  private fun inaName(text: String): String? = Regex("""\b(?:nub|neb|nimb)\w*ina\b""", RegexOption.IGNORE_CASE).find(text)?.value
+
+  private fun allVisibleLiterals(): List<Pair<String, String>> {
+    val out = mutableListOf<Pair<String, String>>()
+    File("src/main/java").walkTopDown().filter { it.extension == "kt" }.forEach { f -> f.readLines().forEachIndexed { i, raw -> for (t in visibleLiteralsOf(raw)) out += "${f.name}:${i + 1}" to t } }
+    return out
+  }
+
+  @Test
+  fun `la app se llama Nubilus en el nombre y en todos los textos donde Nubi era la app`() {
+    val name = Regex("""<string name="app_name">([^<]*)</string>""").find(File("src/main/res/values/strings.xml").readText())!!.groupValues[1]
+    assertEquals("app_name es «Nubilus» (el nombre bajo el ícono y el de Play)", "Nubilus", name)
+    val found = allVisibleLiterals().mapNotNull { (where, text) -> appNameHit(text)?.let { "$where «$text» (por «$it»)" } }
+    assertEquals("ningún texto visible llama «Nubi» a la app (la mascota sí es Nubi):\n" + found.joinToString("\n"), emptyList<String>(), found)
+    assertTrue("y la licencia de las tipografías dice «Nubilus»", File("src/main/res/raw/ofl.txt").readLines().first().contains("Nubilus"))
+    assertTrue("y la ficha de Play también: con el cobro y sin él, la app es «Nubilus»", listOf(true, false).all { com.example.data.Preguntas.playListing(billingOn = it).let { l -> "Nubilus" in l && "Nubi Plus" !in l && !Regex("Nubi(?![a-z])").containsMatchIn(l) } })
+    assertEquals("«Nubilus Plus» es el nombre del plan", "Con Nubilus Plus: todas tus marcas.", PlusAccess.LOCKED_MARKS)
+  }
+
+  @Test
+  fun `la mascota sigue siendo Nubi y nunca se llama Nubilus`() {
+    val literals = allVisibleLiterals()
+    for (m in mascotTexts) assertTrue("«$m» (la mascota) sigue en el código", literals.any { m in it.second })
+    for (bad in listOf("Nubilus sugiere", "soy Nubilus", "Nubilus te ", "cielo de Nubilus", "mostró Nubilus", "Nubilus capta", "sin Nubilus", "Nubilus lo sugiere"))
+      assertTrue("la mascota nunca se llama «Nubilus»: «$bad»", literals.none { bad in it.second })
+    assertTrue("«Nubi sugiere» es la mascota", com.example.data.Suggestion.CHIP == "Nubi sugiere")
+    assertTrue("y su imagen se llama «Nubi» para el lector de pantalla", File("src/main/java/com/example/ui/components/NubiHome.kt").readText().contains("contentDescription = \"Nubi\""))
+  }
+
+  @Test
+  fun `el nombre va siempre escrito Nubilus y ningun nombre de producto termina en ina`() {
+    val misspelled = allVisibleLiterals().mapNotNull { (where, text) -> misspelledName(text)?.let { "$where «$text»: «$it»" } }
+    assertEquals("siempre «Nubilus», sin tilde:\n" + misspelled.joinToString("\n"), emptyList<String>(), misspelled)
+    val ina = allVisibleLiterals().mapNotNull { (where, text) -> inaName(text)?.let { "$where «$text»: «$it»" } }
+    assertEquals("ningún nombre termina en «-ina» (Ricardo, 2-nov):\n" + ina.joinToString("\n"), emptyList<String>(), ina)
+  }
+
+  @Test
+  fun `la guardia del nombre atrapa los textos viejos y deja pasar la mascota y el nombre nuevo`() {
+    for (bad in listOf("Con Nubi Plus: todas tus marcas.", "Acerca de Nubi", "En qué se basa Nubi", "Nubi es para personas de 14 años o más.", "¡Conseguí la medalla \"Volver\" en Nubi!", "Nubi \$version · Android"))
+      assertTrue("atrapa «$bad»", appNameHit(bad) != null)
+    for (good in listOf("Nubi sugiere", "Hola, soy Nubi", "Nubi te espera mañana para seguir", "Con Nubilus Plus: todas tus marcas.", "Nubilus es para personas de 14 años o más.", "Acerca de Nubilus"))
+      assertTrue("deja pasar «$good»", appNameHit(good) == null)
+    assertTrue("atrapa «Núbilus» y «Nubilús»", misspelledName("Acerca de Núbilus") != null && misspelledName("Nubilús Plus") != null)
+    assertTrue("y deja pasar «Nubilus» y el dominio en minúscula", misspelledName("Nubilus Plus") == null && misspelledName("hola@nubilus.app") == null)
+    assertTrue("atrapa «Nubilina» y «Nebulina»", inaName("Nubilina Plus") != null && inaName("Bienvenida a Nebulina") != null && inaName("Nubilus Plus") == null && inaName("la rutina de hoy") == null)
   }
 }

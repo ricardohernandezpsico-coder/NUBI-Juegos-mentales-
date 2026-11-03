@@ -40,7 +40,7 @@ import com.example.ui.theme.AppFamily
 import com.example.ui.theme.NubiTokens
 import com.example.ui.theme.TitleFamily
 
-/** «De dónde sale la referencia», como panel con flecha encima de la pestaña (como «En qué se basa Nubi»). */
+/** «De dónde sale la referencia», como panel con flecha encima de la pestaña (como «En qué se basa Nubilus»). */
 @Composable
 fun ReferenciaPanel(onClose: () -> Unit, modifier: Modifier = Modifier) {
   BackHandler(onBack = onClose)
@@ -51,7 +51,7 @@ fun ReferenciaPanel(onClose: () -> Unit, modifier: Modifier = Modifier) {
 }
 
 /**
- * «De dónde sale la referencia» (Tarea 209; `auditoria-fable/claridad-plus-y-ayuda.md` §1.1.1), con el molde de «En qué se basa Nubi»: un primer párrafo que dice primero «No son otras personas: Nubi no junta datos de nadie» y qué es la referencia, un segundo párrafo (en `OnNightDim`) que dice con honestidad cómo se calcularon los números,
+ * «De dónde sale la referencia» (Tarea 209; `auditoria-fable/claridad-plus-y-ayuda.md` §1.1.1), con el molde de «En qué se basa Nubilus»: un primer párrafo que dice primero «No son otras personas: Nubi no junta datos de nadie» y qué es la referencia, un segundo párrafo (en `OnNightDim`) que dice con honestidad cómo se calcularon los números,
  * y, por grupo, una losa por estudio con «Autor, año · N personas», una línea en español y «Ver el estudio ›» (abre el DOI en el navegador, sin permiso de internet; [StudyRow]). El último grupo no tiene losas, solo una línea. Nunca el número de robots. [openLink] devuelve false si no hay navegador.
  */
 @Composable

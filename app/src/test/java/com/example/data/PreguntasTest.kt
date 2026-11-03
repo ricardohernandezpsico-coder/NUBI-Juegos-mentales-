@@ -9,8 +9,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * «Preguntas frecuentes» y «Quién hace Nubi» (Tarea 209; `auditoria-fable/claridad-plus-y-ayuda.md` §1.3 y §1.4): los textos exactos con los ajustes de Opus, el orden, que las dos del cobro queden apagadas con [Features.BILLING], que ninguna diga una palabra que no se dice
- * y que la IA se nombre solo en la pregunta «¿Quién hace Nubi?», nunca en la sección de Tú.
+ * «Preguntas frecuentes» y «Quién hace Nubilus» (Tarea 209; `auditoria-fable/claridad-plus-y-ayuda.md` §1.3 y §1.4): los textos exactos con los ajustes de Opus, el orden, que las dos del cobro queden apagadas con [Features.BILLING], que ninguna diga una palabra que no se dice
+ * y que la IA se nombre solo en la pregunta «¿Quién hace Nubilus?», nunca en la sección de Tú.
  */
 class PreguntasTest {
   private val all = Preguntas.billing + Preguntas.general
@@ -20,11 +20,11 @@ class PreguntasTest {
     assertEquals(
       listOf(
         "¿Qué pasa si cambio de teléfono?", "¿Cómo funciona la racha?", "¿Con qué me compara el Contrarreloj?",
-        "¿Qué ve alguien de 14 a 17 años?", "¿Quién hace Nubi?", "¿Nubi necesita internet o una cuenta?"
+        "¿Qué ve alguien de 14 a 17 años?", "¿Quién hace Nubilus?", "¿Nubilus necesita internet o una cuenta?"
       ),
       Preguntas.general.map { it.question }
     )
-    assertEquals(listOf("¿Nubi Plus se renueva solo?", "¿Cómo cancelo Nubi Plus?"), Preguntas.billing.map { it.question })
+    assertEquals(listOf("¿Nubilus Plus se renueva solo?", "¿Cómo cancelo Nubilus Plus?"), Preguntas.billing.map { it.question })
     assertEquals("las claves no se repiten", all.size, all.map { it.key }.toSet().size)
   }
 
@@ -34,12 +34,12 @@ class PreguntasTest {
     val p = Preguntas.general.first { it.key == "edad" }
     assertEquals("¿Qué ve alguien de 14 a 17 años?", p.question)
     assertEquals(
-      "Lo mismo que cualquiera: todos los juegos y el Contrarreloj, con la referencia estimada de 18 a 29 años. Nubi es para personas de 14 años o más.",
+      "Lo mismo que cualquiera: todos los juegos y el Contrarreloj, con la referencia estimada de 18 a 29 años. Nubilus es para personas de 14 años o más.",
       p.answer
     )
-    assertTrue("termina con la misma frase que «Acerca de Nubi»", p.answer.endsWith(com.example.data.HealthNotice.AGE_LINE))
-    assertFalse("sin fila de la referencia: no es la pregunta de con qué compara", p.sourceLink)
-    assertTrue("la ficha de Play sigue cabiendo en 2.000 caracteres con las ocho (la respuesta de Fable, con la razón de la rapidez y «no junta datos», pasaba de 2.076)", Preguntas.playListing(billingOn = true).length < 2000)
+    assertTrue("termina con la misma frase que «Acerca de Nubilus»", p.answer.endsWith(com.example.data.HealthNotice.AGE_LINE))
+    assertTrue("lleva la fila «De dónde sale la referencia ›» (Tarea 217, Fable H2: repone la razón que la respuesta corta dejó fuera)", p.sourceLink)
+    assertTrue("la ficha de Play sigue cabiendo en 2.100 caracteres con las ocho (el tope pasó de 2.000 a 2.100 con «Nubilus», Tarea 217; la respuesta de Fable, con la razón de la rapidez y «no junta datos», pasaba de 2.076 antes del renombre)", Preguntas.playListing(billingOn = true).length < 2100)
     for (t in listOf(p.question, p.answer)) for (bad in listOf("menores", "adolescent", "niños", "niñas", "velocidad", "cognitiv", "percentil", "capacidad", "ranking")) assertFalse("«$t» dice «$bad»", bad in t.lowercase())
     assertTrue("y la ficha de Play la hereda", Preguntas.playListing().contains(p.question) && Preguntas.playListing().contains(p.answer))
   }
@@ -60,33 +60,34 @@ class PreguntasTest {
     // Tarea 213 (Fable §4): primero dónde vive el avance y que Nubi no lo envía; después la copia (de Android, en tu cuenta de Google, que Nubi no ve); lo que vuelve, CON LA RACHA; y qué pasa sin la copia
     val a = Preguntas.general.first { it.key == "telefono" }.answer
     assertEquals(
-      "Tu avance vive en tu teléfono: Nubi no lo envía a nadie. Si tienes activada la copia de seguridad de Android, el teléfono guarda una copia en tu cuenta de Google, como hace con tus otras apps; Nubi no la ve. En el teléfono nuevo, entra con la misma cuenta de Google y restaura la copia: vuelven tus partidas, tu avance por juego, tu racha, tus medallas y tu semana. Sin la copia activada, el avance queda solo en este teléfono.",
+      "Tu avance vive en tu teléfono: Nubilus no lo envía a nadie. Si tienes activada la copia de seguridad de Android, el teléfono guarda una copia en tu cuenta de Google, como hace con tus otras apps; Nubilus no la ve. En el teléfono nuevo, entra con la misma cuenta de Google y restaura la copia: vuelven tus partidas, tu avance por juego, tu racha, tus medallas y tu semana. Sin la copia activada, el avance queda solo en este teléfono.",
       a
     )
-    assertTrue("primero dónde vive y que no se envía, y recién después la copia", a.indexOf("Nubi no lo envía a nadie") in 0 until a.indexOf("copia de seguridad de Android"))
-    assertTrue("la copia es de Android y Nubi no la ve", a.contains("como hace con tus otras apps; Nubi no la ve"))
+    assertTrue("primero dónde vive y que no se envía, y recién después la copia", a.indexOf("Nubilus no lo envía a nadie") in 0 until a.indexOf("copia de seguridad de Android"))
+    assertTrue("la copia es de Android y Nubilus no la ve", a.contains("como hace con tus otras apps; Nubilus no la ve"))
     assertTrue("vuelve la racha", a.contains("tu racha"))
     assertTrue("y dice qué pasa sin la copia", a.endsWith("Sin la copia activada, el avance queda solo en este teléfono."))
   }
 
   @Test
-  fun solo_la_pregunta_de_con_que_compara_trae_la_fila_de_donde_sale_la_referencia() {
-    assertEquals(listOf("referencia"), all.filter { it.sourceLink }.map { it.key })
+  fun solo_las_preguntas_de_la_referencia_y_de_14_a_17_traen_la_fila_de_donde_sale_la_referencia() {
+    // Tarea 217 (Fable H2): la de 14 a 17 años también, porque su respuesta corta dejó fuera la razón y la razón está en esa hoja
+    assertEquals(listOf("referencia", "edad"), all.filter { it.sourceLink }.map { it.key })
     val a = Preguntas.general.first { it.key == "referencia" }.answer
     assertEquals(
-      "Con una referencia estimada para tu edad, no con otras personas: Nubi no junta datos de nadie. La referencia sale de estudios por edad y de un programa que jugó el mismo Contrarreloj en un computador. Gratis ves tu división de la semana; con Nubi Plus, además, dónde queda tu marca frente a tu edad y a otras edades.",
+      "Con una referencia estimada para tu edad, no con otras personas: Nubilus no junta datos de nadie. La referencia sale de estudios por edad y de un programa que jugó el mismo Contrarreloj en un computador. Gratis ves tu división de la semana; con Nubilus Plus, además, dónde queda tu marca frente a tu edad y a otras edades.",
       a
     )
   }
 
   @Test
   fun la_IA_se_nombra_solo_en_la_pregunta_de_quien_hace_Nubi_y_la_seccion_de_Tu_es_solo_el_psicologo() {
-    assertEquals("Quién hace Nubi", Preguntas.WHO_TITLE)
+    assertEquals("Quién hace Nubilus", Preguntas.WHO_TITLE)
     assertEquals("Un psicólogo chileno decide cada juego y cada texto.", Preguntas.WHO_LINE)
     val low = Preguntas.WHO_LINE.lowercase()
     for (word in listOf("inteligencia", " ia ", "herramienta", "programó", "ricardo", "hernández", "hernandez")) assertFalse("la sección de Tú no dice «$word»", word in low)
     val who = Preguntas.general.first { it.key == "quien" }.answer
-    assertEquals("Un psicólogo chileno, que decide cada juego y cada texto. Se programó con ayuda de herramientas de inteligencia artificial, que también revisaron errores. Nubi no promete mejorar nada: es un juego.", who)
+    assertEquals("Un psicólogo chileno, que decide cada juego y cada texto. Se programó con ayuda de herramientas de inteligencia artificial, que también revisaron errores. Nubilus no promete mejorar nada: es un juego.", who)
     for (p in all.filter { it.key != "quien" }) assertFalse("«${p.key}» no nombra la IA", "inteligencia artificial" in p.answer.lowercase())
     // lo que no va en ningún lado
     for (p in all) for (bad in listOf("agentes de ia", "simul", "simularon", "diferenciador")) assertFalse("«${p.key}» dice «$bad»", bad in (p.question + p.answer).lowercase())
@@ -104,7 +105,7 @@ class PreguntasTest {
       assertTrue("«${p.key}»: la respuesta es una frase completa", p.answer.endsWith("."))
       assertFalse("sin emojis", Regex("[\\u2600-\\u27BF\\uD83C-\\uDBFF\\uDC00-\\uDFFF]").containsMatchIn(p.question + p.answer))
     }
-    assertEquals("«personas» solo aparece en lo que el diseño escribe: una sola vez (en «no con otras personas»), sin contar la frase de la edad mínima («Nubi es para personas de 14 años o más.», Tarea 216)", 1, all.sumOf { Regex("personas").findAll(it.answer.replace(com.example.data.HealthNotice.AGE_LINE, "")).count() })
+    assertEquals("«personas» solo aparece en lo que el diseño escribe: una sola vez (en «no con otras personas»), sin contar la frase de la edad mínima («Nubilus es para personas de 14 años o más.», Tarea 216)", 1, all.sumOf { Regex("personas").findAll(it.answer.replace(com.example.data.HealthNotice.AGE_LINE, "")).count() })
   }
 
   @Test
@@ -126,9 +127,11 @@ class PreguntasTest {
   }
 
   @Test
-  fun el_texto_corrido_de_la_ficha_de_Play_cabe_en_2000_caracteres_con_las_ocho_y_pone_las_del_cobro_primero() {
+  fun el_texto_corrido_de_la_ficha_de_Play_cabe_en_2100_caracteres_con_las_ocho_y_pone_las_del_cobro_primero() {
     val with = Preguntas.playListing(billingOn = true)
-    assertTrue("%d caracteres con las ocho".format(with.length), with.length < 2000)
+    // Tarea 217 (decisión de Opus, 2-nov): el tope pasó de 2.000 a 2.100. «Nubilus» es 4 letras más largo que «Nubi» y, repetido unas 14 veces en las ocho preguntas, llevó la ficha a 2.015. El 2.000 era solo una meta de Fable para que la ficha «quepa en la
+    // descripción larga»; Google Play admite 4.000, y con 2.100 para las preguntas quedan unos 1.900 para el resto de la ficha. No se recortó ningún texto: la frase del teléfono («…como hace con tus otras apps…») es la que Ricardo aprobó en la Tarea 213 y la que tranquilizó en MiroFish.
+    assertTrue("%d caracteres con las ocho (tope de 2.100: la ficha larga de Play admite 4.000)".format(with.length), with.length < 2100)
     val order = (Preguntas.billing + Preguntas.general).map { with.indexOf(it.question) }
     assertEquals("las ocho, en orden, las del cobro primero", order.sorted(), order)
     assertTrue(order.all { it >= 0 })

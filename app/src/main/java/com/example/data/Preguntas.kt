@@ -18,17 +18,17 @@ object Preguntas {
   data class Pregunta(val key: String, val question: String, val answer: String, val sourceLink: Boolean = false, val subscriptionsButton: Boolean = false)
 
   /**
-   * «Quién hace Nubi», la sección corta de Tú entre los botones y «Contacto» (Tarea 209, decisión de Ricardo, 1-nov): SOLO el psicólogo, sin nombre («un psicólogo chileno») y sin la IA, que se nombra únicamente en la pregunta «¿Quién hace Nubi?» de abajo, como herramienta.
+   * «Quién hace Nubilus», la sección corta de Tú entre los botones y «Contacto» (Tarea 209, decisión de Ricardo, 1-nov): SOLO el psicólogo, sin nombre («un psicólogo chileno») y sin la IA, que se nombra únicamente en la pregunta «¿Quién hace Nubilus?» de abajo, como herramienta.
    * En las simulaciones de MiroFish la IA dicha como herramienta «no molesta, pero tampoco suma» y a quienes tienen 65 o más les baja algo la confianza: en Tú va lo que suma.
    */
-  const val WHO_TITLE = "Quién hace Nubi"
+  const val WHO_TITLE = "Quién hace Nubilus"
   const val WHO_LINE = "Un psicólogo chileno decide cada juego y cada texto."
 
   /** Las seis que van hoy, en este orden (lo que más preguntaron primero, sin las del cobro). */
   val general: List<Pregunta> = listOf(
     Pregunta(
       "telefono", "¿Qué pasa si cambio de teléfono?",
-      "Tu avance vive en tu teléfono: Nubi no lo envía a nadie. Si tienes activada la copia de seguridad de Android, el teléfono guarda una copia en tu cuenta de Google, como hace con tus otras apps; Nubi no la ve. En el teléfono nuevo, entra con la misma cuenta de Google y restaura la copia: vuelven tus partidas, tu avance por juego, tu racha, tus medallas y tu semana. Sin la copia activada, el avance queda solo en este teléfono."
+      "Tu avance vive en tu teléfono: Nubilus no lo envía a nadie. Si tienes activada la copia de seguridad de Android, el teléfono guarda una copia en tu cuenta de Google, como hace con tus otras apps; Nubilus no la ve. En el teléfono nuevo, entra con la misma cuenta de Google y restaura la copia: vuelven tus partidas, tu avance por juego, tu racha, tus medallas y tu semana. Sin la copia activada, el avance queda solo en este teléfono."
     ),
     Pregunta(
       "racha", "¿Cómo funciona la racha?",
@@ -36,29 +36,30 @@ object Preguntas {
     ),
     Pregunta(
       "referencia", "¿Con qué me compara el Contrarreloj?",
-      "Con una referencia estimada para tu edad, no con otras personas: Nubi no junta datos de nadie. La referencia sale de estudios por edad y de un programa que jugó el mismo Contrarreloj en un computador. Gratis ves tu división de la semana; con Nubi Plus, además, dónde queda tu marca frente a tu edad y a otras edades.",
+      "Con una referencia estimada para tu edad, no con otras personas: Nubilus no junta datos de nadie. La referencia sale de estudios por edad y de un programa que jugó el mismo Contrarreloj en un computador. Gratis ves tu división de la semana; con Nubilus Plus, además, dónde queda tu marca frente a tu edad y a otras edades.",
       sourceLink = true
     ),
     Pregunta(
       "edad", "¿Qué ve alguien de 14 a 17 años?",
-      "Lo mismo que cualquiera: todos los juegos y el Contrarreloj, con la referencia estimada de 18 a 29 años. ${HealthNotice.AGE_LINE}"
+      "Lo mismo que cualquiera: todos los juegos y el Contrarreloj, con la referencia estimada de 18 a 29 años. ${HealthNotice.AGE_LINE}",
+      sourceLink = true
     ),
     Pregunta(
-      "quien", "¿Quién hace Nubi?",
-      "Un psicólogo chileno, que decide cada juego y cada texto. Se programó con ayuda de herramientas de inteligencia artificial, que también revisaron errores. Nubi no promete mejorar nada: es un juego."
+      "quien", "¿Quién hace Nubilus?",
+      "Un psicólogo chileno, que decide cada juego y cada texto. Se programó con ayuda de herramientas de inteligencia artificial, que también revisaron errores. Nubilus no promete mejorar nada: es un juego."
     ),
-    Pregunta("internet", "¿Nubi necesita internet o una cuenta?", "No. Nubi funciona sin cuenta, sin internet y sin anuncios.")
+    Pregunta("internet", "¿Nubilus necesita internet o una cuenta?", "No. Nubilus funciona sin cuenta, sin internet y sin anuncios.")
   )
 
   /** Las dos del cobro, redactadas y APAGADAS ([Features.BILLING]); cuando existan, van arriba. */
   val billing: List<Pregunta> = listOf(
     Pregunta(
-      "renueva", "¿Nubi Plus se renueva solo?",
+      "renueva", "¿Nubilus Plus se renueva solo?",
       "El plan mensual y el anual se renuevan solos hasta que los canceles en Google Play. El de pago único se paga una vez y no se renueva. Google Play te manda un correo antes de renovar el plan anual."
     ),
     Pregunta(
-      "cancelar", "¿Cómo cancelo Nubi Plus?",
-      "En Google Play: abre Play Store, toca tu foto, luego Pagos y suscripciones, Suscripciones, Nubi y Cancelar. Sigues con Plus hasta el final del período que ya pagaste. Desinstalar la app no cancela la suscripción.",
+      "cancelar", "¿Cómo cancelo Nubilus Plus?",
+      "En Google Play: abre Play Store, toca tu foto, luego Pagos y suscripciones, Suscripciones, Nubilus y Cancelar. Sigues con Plus hasta el final del período que ya pagaste. Desinstalar la app no cancela la suscripción.",
       subscriptionsButton = true
     )
   )
@@ -76,7 +77,7 @@ object Preguntas {
   const val SUBSCRIPTIONS_URL = "https://play.google.com/store/account/subscriptions"
 
   /**
-   * El enlace a la suscripción de ESTA app: el general con el `package` de Nubi y, cuando exista el producto, su `sku` (todavía por definir: sin él, Play abre la lista de suscripciones). Se abre con un `Intent` de `ACTION_VIEW`, como los DOI de «En qué se basa Nubi»: la app no necesita permiso de internet.
+   * El enlace a la suscripción de ESTA app: el general con el `package` de Nubi y, cuando exista el producto, su `sku` (todavía por definir: sin él, Play abre la lista de suscripciones). Se abre con un `Intent` de `ACTION_VIEW`, como los DOI de «En qué se basa Nubilus»: la app no necesita permiso de internet.
    */
   fun subscriptionsUrl(sku: String? = null): String = "$SUBSCRIPTIONS_URL?" + (if (sku != null) "sku=$sku&" else "") + "package=$PACKAGE"
 

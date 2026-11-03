@@ -65,8 +65,8 @@ import org.robolectric.annotation.GraphicsMode
 import java.util.Calendar
 
 /**
- * La lámina de la Tarea 216 (`docs/previews/tarea-216.png`, `tools/previews/tarea_216.py`): la app es desde los 14 años. La pregunta de edad del Primer vuelo con «14 a 17 años», la pestaña Contrarreloj de una persona de 14 a 17 con su comparación (sin y con Nubi Plus) y «Otras edades» sin fila de 14 a 17, la hoja «De dónde sale la referencia»
- * con la línea nueva y el estudio de Luna, «Preguntas frecuentes» con la respuesta nueva, y «Acerca de Nubi» (Ajustes) con la línea de edad a 393 dp con letra 1,0 y a 360 dp con letra 2,0. No corre en las pruebas de siempre: solo al grabar
+ * La lámina de la Tarea 216 (`docs/previews/tarea-216.png`, `tools/previews/tarea_216.py`): la app es desde los 14 años. La pregunta de edad del Primer vuelo con «14 a 17 años», la pestaña Contrarreloj de una persona de 14 a 17 con su comparación (sin y con Nubilus Plus) y «Otras edades» sin fila de 14 a 17, la hoja «De dónde sale la referencia»
+ * con la línea nueva y el estudio de Luna, «Preguntas frecuentes» con la respuesta nueva, y «Acerca de Nubilus» (Ajustes) con la línea de edad a 393 dp con letra 1,0 y a 360 dp con letra 2,0. No corre en las pruebas de siempre: solo al grabar
  * (`./gradlew.bat :app:recordRoborazziDebug --tests "*Tarea216CapturasTest*"`); los PNG van a `src/test/screenshots/t216/` (fuera de git).
  */
 @RunWith(RobolectricTestRunner::class)
@@ -183,7 +183,7 @@ class Tarea216CapturasTest {
     save("preguntas_393_10")
   }
 
-  // ---------------------------------------------------------------- «Acerca de Nubi» con la línea de la edad mínima
+  // ---------------------------------------------------------------- «Acerca de Nubilus» con la línea de la edad mínima
 
   private fun settings(widthDp: Int, heightDp: Int, scale: Float) {
     val app = ApplicationProvider.getApplicationContext<Application>()

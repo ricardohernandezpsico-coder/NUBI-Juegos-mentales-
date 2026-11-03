@@ -155,8 +155,10 @@ object ShareCard {
 
     // Marca arriba
     val brand = TextStyle(fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 64.sp, color = Color.White)
-    centered(measurer, "Nubi", brand, 130f)
-    sparkle(Offset(w / 2f + 110f, 150f), 22f, Clay.Sun)
+    centered(measurer, "Nubilus", brand, 130f)
+    // el destello queda a la derecha de la palabra, ya medida (con «Nubilus» el de antes pisaba la «s»; Tarea 217)
+    val brandWidth = measurer.measure("Nubilus", brand).size.width
+    sparkle(Offset(w / 2f + brandWidth / 2f + 36f, 150f), 22f, Clay.Sun)
 
     // Escudo sobre rayos del color de la liga
     val shieldW = 470f

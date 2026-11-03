@@ -79,7 +79,7 @@ class ReferenciaFuentesTest {
   @Test
   fun los_dos_parrafos_dicen_lo_que_decidieron_Fable_y_Opus_sin_cifras_ni_interpolacion() {
     assertEquals(
-      "Te comparas con una referencia estimada para tu edad, no con otras personas. Nubi no junta datos de nadie: tus marcas se quedan en tu teléfono.",
+      "Te comparas con una referencia estimada para tu edad, no con otras personas. Nubilus no junta datos de nadie: tus marcas se quedan en tu teléfono.",
       ReferenciaFuentes.INTRO
     )
     assertEquals(
@@ -87,7 +87,7 @@ class ReferenciaFuentesTest {
       ReferenciaFuentes.INTRO_2
     )
     assertEquals(
-      "Los números de cada edad se calcularon a partir de esos estudios; ninguno usó los juegos de Nubi. El ritmo del programa se ajustó con las primeras partidas de quienes probaron Nubi antes de salir.",
+      "Los números de cada edad se calcularon a partir de esos estudios; ninguno usó los juegos de Nubilus. El ritmo del programa se ajustó con las primeras partidas de quienes probaron Nubilus antes de salir.",
       ReferenciaFuentes.ABOUT
     )
     for (t in listOf(ReferenciaFuentes.INTRO, ReferenciaFuentes.INTRO_2, ReferenciaFuentes.ABOUT)) assertFalse("«$t» trae una cifra (ni robots ni cuántos probaron)", t.any { it.isDigit() })

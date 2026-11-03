@@ -55,7 +55,7 @@ fun LicensesContent(modifier: Modifier = Modifier) {
   ) {
     com.example.ui.components.ClayPanel(Modifier.fillMaxWidth().testTag("licenses_panel"), padding = 18.dp) {
     Text(
-      "Nubi usa trabajo de otras personas. Aquí está de quién es y bajo qué licencia.",
+      "Nubilus usa trabajo de otras personas. Aquí está de quién es y bajo qué licencia.",
       color = Body, fontSize = 16.sp, lineHeight = 22.sp
     )
 
@@ -95,7 +95,7 @@ fun LicensesContent(modifier: Modifier = Modifier) {
     OflText()
 
     Section("Hecho con Unity")
-    Para("Los juegos de Nubi están hechos con Unity, de Unity Technologies (unity.com).")
+    Para("Los juegos de Nubilus están hechos con Unity, de Unity Technologies (unity.com).")
 
     Section(com.example.data.HealthNotice.TITLE)
     Para(com.example.data.HealthNotice.TEXT)

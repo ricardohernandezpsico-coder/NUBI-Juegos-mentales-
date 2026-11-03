@@ -1,7 +1,7 @@
 package com.example.data
 
 /**
- * El interruptor de Nubi Plus (Tarea 199; `docs/modelo-negocio.md`: gratis + Nubi Plus). Hoy es UNA sola fuente de verdad LOCAL: una preferencia (`plus_access`, `plus`) que lee el repositorio y expone el ViewModel como `plus`. Nunca un servidor: los juegos viven en el APK y una cuenta solo sincroniza progreso (regla permanente 3).
+ * El interruptor de Nubilus Plus (Tarea 199; `docs/modelo-negocio.md`: gratis + Nubilus Plus). Hoy es UNA sola fuente de verdad LOCAL: una preferencia (`plus_access`, `plus`) que lee el repositorio y expone el ViewModel como `plus`. Nunca un servidor: los juegos viven en el APK y una cuenta solo sincroniza progreso (regla permanente 3).
  *
  * - **Pasajera, NO va en el respaldo** (`BackupRulesTest`): quién tiene Plus lo dirá Google Play al restaurar, no una copia de la preferencia.
  * - **Las builds de depuración empiezan con Plus ENCENDIDO** (lo que se prueba es la página entera) y un botón «[Debug]» de Ajustes lo apaga o lo enciende; la de la tienda, apagado, hasta que haya compra.
@@ -20,26 +20,26 @@ object PlusAccess {
 
   // ------------------------------------------------------------------ lo que dice la hoja del candado (sin Plus)
 
-  const val LOCK_LABEL = "Con Nubi Plus"
+  const val LOCK_LABEL = "Con Nubilus Plus"
 
   // ------------------------------------------------------------------ las dos losas grises de la pestaña Contrarreloj (Tarea 215; `auditoria-fable/idea-pestana-contrarreloj.md` §3.1)
 
-  /** Sin Plus, lo de Plus de la pestaña va en DOS losas grises con candado, cada una con su título legible (los rótulos de sus secciones con Plus, más cortos para caber en una línea) y la frase «Con Nubi Plus: …» en negrita. */
+  /** Sin Plus, lo de Plus de la pestaña va en DOS losas grises con candado, cada una con su título legible (los rótulos de sus secciones con Plus, más cortos para caber en una línea) y la frase «Con Nubilus Plus: …» en negrita. */
   const val LOCKED_PLACE_TITLE = "Comparado con tu edad"
-  const val LOCKED_PLACE = "Con Nubi Plus: tu lugar en detalle."
+  const val LOCKED_PLACE = "Con Nubilus Plus: tu lugar en detalle."
   const val LOCKED_MARKS_TITLE = "Tus marcas"
-  const val LOCKED_MARKS = "Con Nubi Plus: todas tus marcas."
+  const val LOCKED_MARKS = "Con Nubilus Plus: todas tus marcas."
 
   // Tarea 215b (Fable, `auditoria-fable/contrarreloj-t215-auditoria.md` §3.1 A1): desde la 215 la losa crema de la pestaña, 200 dp más arriba de la losa gris que abre la hoja, ya da gratis jugar, el récord, la semana y la división; la hoja dice «Gratis: …» con eso y lo de Plus
   // empieza donde de verdad empieza Plus (el porcentaje y la escalera, otras edades y semana a semana, las últimas 10 marcas y el ritmo). Cuando llegue la tarea 3 se suma, primera de la lista, «Los cuatro Contrarrelojes, cualquier día, con partidas libres.».
-  const val SHEET_TITLE = "Tus marcas del Contrarreloj, con Nubi Plus"
+  const val SHEET_TITLE = "Tus marcas del Contrarreloj, con Nubilus Plus"
   /**
    * La hoja, en TRES líneas (Tarea 203; `auditoria-fable/contrarreloj-rediseno.md` §4). Lo que dice depende de con qué se compara ESTA persona (`Comparison.Kind`, Tarea 205c: NONE si no hay fuente o no tiene franja de edad con que compararse): con la referencia estimada (la de la tienda) la nombra, con personas (datos de muestra de depuración;
    * mañana, personas reales) habla de «personas de tu edad», y sin comparación solo de lo que de verdad hay detrás. Así la hoja nunca promete de más. Las dos primeras constantes son la forma «sin comparación» y la de «personas»; la de la referencia estimada, más abajo, nunca dice «personas».
    */
-  const val SHEET_LEAD = "Gratis: jugar, tu récord y tu semana. Con Nubi Plus, además:"
+  const val SHEET_LEAD = "Gratis: jugar, tu récord y tu semana. Con Nubilus Plus, además:"
   /** Lo gratis primero, y después lo que agrega Plus (Tarea 209): con personas reales (futuro) y con la referencia estimada empiezan igual. */
-  const val SHEET_LEAD_COMPARED = "Gratis: jugar, tu récord y tu división de la semana. Con Nubi Plus, además:"
+  const val SHEET_LEAD_COMPARED = "Gratis: jugar, tu récord y tu división de la semana. Con Nubilus Plus, además:"
   val SHEET_ITEMS: List<String> = listOf(
     "Tus últimas 10 marcas en barras, con la fecha y el paso de tu récord.",
     "Tu ritmo en los 2 minutos, medio minuto por medio minuto.",
@@ -64,7 +64,7 @@ object PlusAccess {
   /**
    * Bajo las líneas, con la referencia estimada (Tarea 209): la razón primero, en 16 sp `InkMuted`, y debajo la fila [Comparison.SOURCE_LINK] que abre «De dónde sale la referencia». La palabra «personas» solo va en este «no son personas».
    */
-  const val SHEET_NOTE_ESTIMATED = "La referencia no son personas: Nubi no junta datos de nadie."
+  const val SHEET_NOTE_ESTIMATED = "La referencia no son personas: Nubilus no junta datos de nadie."
 
   /** La entrada de la hoja: según con qué se compara la persona. */
   fun sheetLead(kind: Comparison.Kind): String = when {

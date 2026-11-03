@@ -56,7 +56,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * La pestaña «Contrarreloj», con la pantalla REAL y su ViewModel (Tarea 215; antes, Tareas 199 y 203, era una puerta y una página dentro de Avance): arriba lo gratis a color (el selector con el de hoy marcado «Hoy», el récord, la semana, la división), debajo lo de Plus; con Nubi Plus
+ * La pestaña «Contrarreloj», con la pantalla REAL y su ViewModel (Tarea 215; antes, Tareas 199 y 203, era una puerta y una página dentro de Avance): arriba lo gratis a color (el selector con el de hoy marcado «Hoy», el récord, la semana, la división), debajo lo de Plus; con Nubilus Plus
  * el selector se toca entero y el juego elegido lo guarda el ViewModel (no se cierra al cambiar de pestaña); sin Plus los otros tres juegos y las dos mitades de Plus van en gris con candado y abren una hoja corta con un solo botón, y aunque el ViewModel tenga otro juego elegido se ve el de hoy; «Jugar · 2 minutos» lanza
  * el juego elegido y el final vuelve a la pestaña; Avance ya no tiene la puerta; Plus arranca encendido en depuración y es una preferencia pasajera; el atajo «Todas tus marcas ›» del final del Contrarreloj existe solo con Plus y abre esta pestaña.
  */
@@ -214,11 +214,11 @@ class ContrarrelojFlowTest {
     val others = TimeTrialDay.GAMES.filter { it != today }
     assertTrue("el de hoy se toca y abre elegido", isSelected("contrarreloj_game_$today"))
     for (o in others) {
-      assertTrue("«${spokenOf("contrarreloj_game_$o")}» dice que es de Nubi Plus", spokenOf("contrarreloj_game_$o").endsWith("con Nubi Plus"))
+      assertTrue("«${spokenOf("contrarreloj_game_$o")}» dice que es de Nubilus Plus", spokenOf("contrarreloj_game_$o").endsWith("con Nubilus Plus"))
       assertTrue("y conserva su récord a la vista: «${textOf("contrarreloj_game_value_$o")}»", textOf("contrarreloj_game_value_$o").isNotEmpty())
     }
-    assertFalse("el de hoy no dice «con Nubi Plus»", spokenOf("contrarreloj_game_$today").contains("Nubi Plus"))
-    // Tarea 215b (Fable M2): un juego en gris no lleva `selected` (rol de botón: el lector diría «no seleccionado» tras «con Nubi Plus»); el de hoy, sí
+    assertFalse("el de hoy no dice «con Nubilus Plus»", spokenOf("contrarreloj_game_$today").contains("Nubilus Plus"))
+    // Tarea 215b (Fable M2): un juego en gris no lleva `selected` (rol de botón: el lector diría «no seleccionado» tras «con Nubilus Plus»); el de hoy, sí
     for (o in others) assertNull("«$o» en gris no declara selected", rule.onNodeWithTag("contrarreloj_game_$o").fetchSemanticsNode().config.getOrNull(SemanticsProperties.Selected))
     assertEquals(true, rule.onNodeWithTag("contrarreloj_game_$today").fetchSemanticsNode().config.getOrNull(SemanticsProperties.Selected))
     assertEquals("el botón de jugar dice también el juego (Fable A3)", "Jugar 2 minutos de ${textOf("contrarreloj_game_name_$today")}", spokenOf("btn_contrarreloj_play"))
@@ -245,7 +245,7 @@ class ContrarrelojFlowTest {
   fun sin_Plus_las_dos_mitades_de_Plus_van_en_gris_con_su_frase_y_abren_la_hoja_con_un_solo_boton() {
     val vm = withData(); vm.setPlus(false); withRange(vm, AgeRange.R45_54)
     show(vm)
-    for ((tag, phrase) in listOf("contrarreloj_locked_place" to "Con Nubi Plus: tu lugar en detalle.", "contrarreloj_locked_marks" to "Con Nubi Plus: todas tus marcas.")) {
+    for ((tag, phrase) in listOf("contrarreloj_locked_place" to "Con Nubilus Plus: tu lugar en detalle.", "contrarreloj_locked_marks" to "Con Nubilus Plus: todas tus marcas.")) {
       assertEquals("el lector dice el título y la frase (Tarea 215b, Fable M1)", "${textOf("${tag}_title")}. $phrase", spokenOf(tag))
       assertEquals("y la frase se ve", phrase, textOf("${tag}_phrase"))
     }
@@ -383,7 +383,7 @@ class ContrarrelojFlowTest {
     val vm = withData(); vm.setPlus(false); withRange(vm, AgeRange.R45_54)
     show(vm)
     rule.onNodeWithTag("contrarreloj_locked_marks").performScrollTo().performClick(); rule.waitForIdle()
-    assertEquals("Gratis: jugar, tu récord y tu división de la semana. Con Nubi Plus, además:", textOf("plus_sheet_lead"))
+    assertEquals("Gratis: jugar, tu récord y tu división de la semana. Con Nubilus Plus, además:", textOf("plus_sheet_lead"))
     assertEquals(PlusAccess.SHEET_NOTE_ESTIMATED, textOf("plus_sheet_note"))
     assertEquals("la razón va antes de la fila y la fila antes de «Cerrar»", true, top("plus_sheet_note") < top("plus_sheet_source") && top("plus_sheet_source") < top("btn_plus_sheet_ok"))
     rule.onNode(androidx.compose.ui.test.hasText("De dónde sale la referencia ›"), useUnmergedTree = true).assertExists()

@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
@@ -273,6 +274,34 @@ class ContrarrelojPageTest {
     assertNull(b["contrarreloj_ladder_need"]); assertNull(b["contrarreloj_ladder_closes"])
   }
 
+  /**
+   * Tarea 217 (Opus y Fable H3): a 393 dp «Todavía no tienes marcas en este juego.» dejaba «juego.» solo en el segundo renglón. Sin marcas no hay récord: la línea va en la letra del cuerpo (16, tinta) y con «este juego» pegado, así que, cuando pase a dos renglones,
+   * el corte nunca deja «juego.» solo. Una composición por prueba.
+   */
+  private fun sinMarcasSinPalabraSola(width: Int, scale: Float) {
+    show(widthDp = width, scale = scale, selected = "radar", results = listOf(r(31, 28)))
+    val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+    rule.onNodeWithTag("contrarreloj_free_record", useUnmergedTree = true).fetchSemanticsNode().config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
+    val layout = results.first()
+    val text = layout.layoutInput.text.text
+    assertEquals("$width dp con letra $scale: es la frase de siempre", "Todavía no tienes marcas en este juego.", text.replace(NBSP, " "))
+    assertEquals("$width dp con letra $scale: en la letra del cuerpo (16), no en la del récord (18 negrita)", 16f, layout.layoutInput.style.fontSize.value, 0.01f)
+    assertTrue("$width dp con letra $scale: sin negrita", (layout.layoutInput.style.fontWeight?.weight ?: 400) < 600)
+    assertTrue("«este juego» va pegado con espacio duro", "este${NBSP}juego." in text)
+    for (line in 0 until layout.lineCount) {
+      val seg = text.substring(layout.getLineStart(line), layout.getLineEnd(line)).trim()
+      assertTrue("$width dp con letra $scale: el renglón ${line + 1} («$seg») no es «juego.» solo", seg != "juego.")
+    }
+    if (width == 393 && scale == 1f) assertEquals("a 393 dp con letra 1,0 cabe en UNA línea", 1, layout.lineCount)
+  }
+
+  @Test fun sin_marcas_no_deja_juego_solo_a_393_con_letra_1_0() = sinMarcasSinPalabraSola(393, 1f)
+  @Test fun sin_marcas_no_deja_juego_solo_a_360_con_letra_1_0() = sinMarcasSinPalabraSola(360, 1f)
+  @Test fun sin_marcas_no_deja_juego_solo_a_393_con_letra_1_3() = sinMarcasSinPalabraSola(393, 1.3f)
+  @Test fun sin_marcas_no_deja_juego_solo_a_360_con_letra_1_3() = sinMarcasSinPalabraSola(360, 1.3f)
+  @Test fun sin_marcas_no_deja_juego_solo_a_393_con_letra_2_0() = sinMarcasSinPalabraSola(393, 2f)
+  @Test fun sin_marcas_no_deja_juego_solo_a_360_con_letra_2_0() = sinMarcasSinPalabraSola(360, 2f)
+
   @Test fun el_boton_Jugar_avisa_y_lo_gratis_nunca_va_en_gris() {
     show(plus = false)
     rule.onNodeWithTag("btn_contrarreloj_play").performClick(); rule.waitForIdle()
@@ -323,7 +352,7 @@ class ContrarrelojPageTest {
     assertEquals("Tu primera marca. Desde la segunda, se dibujan aquí.", textOf("contrarreloj_chart_first"))
     assertEquals(0, b.keys.count { it.startsWith("contrarreloj_barshape_") })
     assertNull("sin dos promedios", b["contrarreloj_averages"])
-    assertEquals("con una sola partida, en singular; y si la mejor ES el récord, sin repetir el número (Tarea 215b, Fable A4 b y M5)", "Esta semana jugaste 1 partida y la mejor fue tu récord.", n("contrarreloj_free_week"))
+    assertEquals("con una sola partida, en singular; y si fue el récord, sin repetir el número y sin «la mejor» (Tarea 215b, Fable A4 b y M5; Tarea 217, Fable M3)", "Esta semana jugaste 1 partida y fue tu récord.", n("contrarreloj_free_week"))
     assertEquals("Tu récord: 31 aciertos.", n("contrarreloj_free_record"))
     assertTrue("la línea del récord sí está: «${n("contrarreloj_record_line")}»", n("contrarreloj_record_line").let { it.startsWith("Tu récord es del ") && it.endsWith("llegaste al paso 4 de 5 de la pista.") })
   }
