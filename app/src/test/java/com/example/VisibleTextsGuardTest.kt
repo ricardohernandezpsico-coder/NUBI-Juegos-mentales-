@@ -613,7 +613,7 @@ class VisibleTextsGuardTest {
   )
 
   /** Los textos donde Nubi es la MASCOTA: están en el código y ninguno dice «Nubilus». */
-  private val mascotTexts = listOf("Nubi sugiere", "Hola, soy Nubi", "Nubi te espera mañana para seguir", "Nubi te muestra Hoy", "te la mostró Nubi", "Nubi capta la definición", "Nubi te cuenta cómo te fue", ", Nubi lo sugiere", "después de unos días sin Nubi", "en el cielo de Nubi")
+  private val mascotTexts = listOf("Nubi sugiere", "Hola, soy Nubi", "Nubi te espera mañana para seguir", "Nubi te muestra Hoy", "te la mostró Nubi", "Nubi capta la definición", ", Nubi lo sugiere", "después de unos días sin Nubi", "en el cielo de Nubi")
 
   /** Cada patrón cuenta solo si lo que sigue NO es una letra: «Escribir a Nubi» no es un trozo de «Escribir a Nubilus». */
   private fun appNameHit(text: String): String? = oldAppNamePatterns.firstOrNull { Regex(Regex.escape(it) + "(?![A-Za-z])").containsMatchIn(text) }
@@ -641,11 +641,35 @@ class VisibleTextsGuardTest {
     assertEquals("«Nubilus Plus» es el nombre del plan", "Con Nubilus Plus: todas tus marcas.", PlusAccess.LOCKED_MARKS)
   }
 
+  /**
+   * La guardia SIN HUECOS (Tarea 217c; `auditoria-fable/t217-auditoria.md` §3): los 24 patrones de [oldAppNamePatterns] solo atrapan frases que ya existen («Nubi guarda tu avance» o «Tu año con Nubi» pasarían). Al revés: todo literal visible de `src/main` que contenga «Nubi» SUELTO (`\bNubi\b`, sin letra detrás) debe contener una de las frases de la mascota ([mascotTexts]);
+   * si no, falla con el archivo y la línea. Así cada texto nuevo con «Nubi» obliga a decidir a propósito: mascota (se suma a la lista) o app (se escribe «Nubilus»). Solo los literales visibles, como el resto de la guardia: ni identificadores ni comentarios. La única excepción de fondo: el `contentDescription` de la imagen de la mascota, que dice solo «Nubi» (NubiHome.kt).
+   */
+  private val looseNubi = Regex("""\bNubi\b(?![A-Za-z])""")
+
+  private fun looseNubiOffenders(literals: List<Pair<String, String>>): List<String> =
+    literals.filter { (where, t) -> looseNubi.containsMatchIn(t) && mascotTexts.none { it in t } && !(t == "Nubi" && where.startsWith("NubiHome.kt")) }.map { (where, t) -> "$where «$t»" }
+
+  @Test
+  fun `todo Nubi suelto en un texto visible es la mascota y, si no, la app se llama Nubilus`() {
+    val offenders = looseNubiOffenders(allVisibleLiterals())
+    assertEquals(
+      "estos textos dicen «Nubi» y no son de la mascota: si Nubi es la APP, se escribe «Nubilus»; si es la MASCOTA, súmalo a mascotTexts:\n" + offenders.joinToString("\n"),
+      emptyList<String>(), offenders
+    )
+    // y la guardia atrapa lo que los 24 patrones no (frases nuevas), con la mascota y el nombre nuevo a salvo
+    for (bad in listOf("Nubi guarda tu avance en tu teléfono", "Tu año con Nubi", "la referencia de Nubi", "Con Nubi tienes todo"))
+      assertTrue("atrapa «$bad»", looseNubiOffenders(listOf("X.kt:1" to bad)).isNotEmpty())
+    for (good in mascotTexts.map { "Texto con $it" } + listOf("Nubilus guarda tu avance", "Tu año con Nubilus", "nubi_ojos_abiertos", "Nubilus Plus"))
+      assertTrue("deja pasar «$good»", looseNubiOffenders(listOf("X.kt:1" to good)).isEmpty())
+    assertTrue("la imagen de la mascota dice solo «Nubi»", looseNubiOffenders(listOf("NubiHome.kt:99" to "Nubi")).isEmpty() && looseNubiOffenders(listOf("Otro.kt:1" to "Nubi")).isNotEmpty())
+  }
+
   @Test
   fun `la mascota sigue siendo Nubi y nunca se llama Nubilus`() {
     val literals = allVisibleLiterals()
     for (m in mascotTexts) assertTrue("«$m» (la mascota) sigue en el código", literals.any { m in it.second })
-    for (bad in listOf("Nubilus sugiere", "soy Nubilus", "Nubilus te ", "cielo de Nubilus", "mostró Nubilus", "Nubilus capta", "sin Nubilus", "Nubilus lo sugiere"))
+    for (bad in listOf("Nubilus sugiere", "soy Nubilus", "Nubilus te espera", "Nubilus te muestra", "cielo de Nubilus", "mostró Nubilus", "Nubilus capta", "sin Nubilus", "Nubilus lo sugiere"))
       assertTrue("la mascota nunca se llama «Nubilus»: «$bad»", literals.none { bad in it.second })
     assertTrue("«Nubi sugiere» es la mascota", com.example.data.Suggestion.CHIP == "Nubi sugiere")
     assertTrue("y su imagen se llama «Nubi» para el lector de pantalla", File("src/main/java/com/example/ui/components/NubiHome.kt").readText().contains("contentDescription = \"Nubi\""))

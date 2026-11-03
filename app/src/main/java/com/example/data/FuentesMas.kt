@@ -124,7 +124,7 @@ object FuentesMas {
       Estudio("Epton y otros, 2017", "10.1037/ccp0000260", "En 141 artículos, ponerse una meta ayudó un poco a cambiar conductas, más si era exigente o compartida."),
       Estudio("Locke y Latham, 2002", "10.1037/0003-066x.57.9.705", "Las metas claras y concretas orientan el esfuerzo mejor que un «haz lo que puedas».")
     )),
-    Mecanismo("como_te_fue", "Saber cómo te fue", "Al terminar cada partida, Nubi te cuenta cómo te fue, sin culpa.",
+    Mecanismo("como_te_fue", "Saber cómo te fue", "Al terminar cada partida, Nubilus te cuenta cómo te fue, sin culpa.",
     listOf(
       Estudio("Wisniewski y otros, 2020", "10.3389/fpsyg.2019.03087", "En 435 estudios escolares, recibir información sobre lo hecho ayudó a aprender, sobre todo si decía algo útil de la tarea."),
       Estudio("Cyr y Anderson, 2015", "10.1037/xlm0000073", "Equivocarse no siempre perjudica: en jóvenes y mayores, algunos errores sirvieron de paso hacia la respuesta.")

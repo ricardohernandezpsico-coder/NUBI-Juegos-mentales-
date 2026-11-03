@@ -161,6 +161,7 @@ class NombreNubilusTest {
   }
 
   @Test fun horas_a_360_con_letra_1_0() = horas(1f)
+  @Test fun horas_a_360_con_letra_1_15() = horas(1.15f)          // un paso real de Android y el último con dos columnas: queda justo bajo el umbral (Tarea 217c; Fable: unos 8 dp de aire)
   @Test fun horas_a_360_con_letra_1_3() = horas(1.3f)
   @Test fun horas_a_360_con_letra_2_0() = horas(2f)
 
