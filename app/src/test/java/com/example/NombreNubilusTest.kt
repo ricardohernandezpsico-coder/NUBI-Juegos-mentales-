@@ -73,12 +73,12 @@ class NombreNubilusTest {
   }
 
   /** Los renglones que terminaron DENTRO de una palabra (entre dos letras, sin espacio ni salto: así corta Android lo que no tiene dónde partir). Los espacios duros pegan. */
-  private fun cutsIn(node: SemanticsNode, out: MutableList<String>) {
+  private fun cutsIn(node: SemanticsNode, out: MutableList<String>, only: (String) -> Boolean = { "Nubilus" in it }) {
     val results = mutableListOf<TextLayoutResult>()
     node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
     val layout = results.firstOrNull()
     // solo los textos que llevan el nombre: lo que ya estaba (las horas del recordatorio, por ejemplo) no es de esta prueba
-    if (layout != null && layout.layoutInput.text.text.contains("Nubilus")) {
+    if (layout != null && only(layout.layoutInput.text.text)) {
       val text = layout.layoutInput.text.text
       for (line in 0 until layout.lineCount - 1) {
         val end = layout.getLineEnd(line)
@@ -88,10 +88,10 @@ class NombreNubilusTest {
         }
       }
     }
-    node.children.forEach { cutsIn(it, out) }
+    node.children.forEach { cutsIn(it, out, only) }
   }
 
-  private fun cuts(): List<String> = mutableListOf<String>().also { cutsIn(rule.onRoot(useUnmergedTree = true).fetchSemanticsNode(), it) }
+  private fun cuts(only: (String) -> Boolean = { "Nubilus" in it }): List<String> = mutableListOf<String>().also { cutsIn(rule.onRoot(useUnmergedTree = true).fetchSemanticsNode(), it, only) }
 
   private fun textNodes(text: String) = rule.onAllNodes(hasText(text, substring = false), useUnmergedTree = true).fetchSemanticsNodes()
 
@@ -146,6 +146,23 @@ class NombreNubilusTest {
   @Test fun ajustes_a_360_con_letra_1_0() = ajustes(1f)
   @Test fun ajustes_a_360_con_letra_1_3() = ajustes(1.3f)
   @Test fun ajustes_a_360_con_letra_2_0() = ajustes(2f)
+
+  // ---------------------------------------------------------------- las horas del recordatorio (hallazgo de esta prueba: a 360 dp con letra grande «atardecer» se partía por dentro)
+
+  private fun horas(scale: Float) {
+    val v = vm()
+    mount(scale) { SettingsScreen(viewModel = v) }
+    val labels = listOf("Mañana", "Tarde", "Al atardecer", "Noche")
+    assertEquals("ninguna hora parte una palabra a ${scale}", emptyList<String>(), cuts { t -> labels.any { it in t } })
+    val manana = rule.onNodeWithTag("btn_time_mañana").fetchSemanticsNode().boundsInRoot
+    val tarde = rule.onNodeWithTag("btn_time_tarde").fetchSemanticsNode().boundsInRoot
+    if (scale <= 1.15f) assertEquals("con letra normal las horas siguen en una cuadrícula de 2 × 2", manana.top, tarde.top, 1f)
+    else assertTrue("con letra grande cada hora va en su fila (${manana.top} contra ${tarde.top})", tarde.top > manana.bottom - 1f)
+  }
+
+  @Test fun horas_a_360_con_letra_1_0() = horas(1f)
+  @Test fun horas_a_360_con_letra_1_3() = horas(1.3f)
+  @Test fun horas_a_360_con_letra_2_0() = horas(2f)
 
   // ---------------------------------------------------------------- Contacto: «Escribir a Nubilus»
 

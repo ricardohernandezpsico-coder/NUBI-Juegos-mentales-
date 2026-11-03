@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
@@ -197,7 +198,9 @@ fun SettingsScreen(
       // Las cuatro horas en una cuadrícula de 2 × 2: la elegida en lima, con su ✓ y quieta. Apagado: se ven a media luz y no se tocan.
       Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.alpha(if (reminderOn) 1f else 0.5f).testTag("reminder_hours")) {
         val times = listOf(Triple("Mañana", 9, 0), Triple("Tarde", 15, 0), Triple("Al atardecer", 19, 0), Triple("Noche", 21, 0))
-        times.chunked(2).forEach { pair -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { pair.forEach { (label, h, m) ->
+        // con letra grande (más de 1,15) cada hora va en su propia fila: en una cuadrícula de 2 × 2 a 360 dp «atardecer» no cabe y se partía por dentro de la palabra (Tarea 217, hallazgo de la prueba del nombre)
+        val columns = if (LocalDensity.current.fontScale > 1.15f) 1 else 2
+        times.chunked(columns).forEach { pair -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) { pair.forEach { (label, h, m) ->
           val isSelected = reminderHour == h && reminderMinute == m
           ClayChoice(
             selected = isSelected,
