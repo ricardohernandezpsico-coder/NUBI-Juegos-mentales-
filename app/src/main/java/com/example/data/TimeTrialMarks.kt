@@ -11,7 +11,7 @@ object TimeTrialMarks {
 
   const val TITLE = "Contrarreloj"
 
-  /** El subtítulo de la pestaña SIN comparación (sin franja de edad, de 13 a 17 años, antes de la tercera partida o sin tabla del juego): lo que se ve es solo tuyo. */
+  /** El subtítulo de la pestaña SIN comparación (sin franja de edad, antes de la tercera partida o sin tabla del juego): lo que se ve es solo tuyo. */
   const val SUBTITLE = "Tus marcas, comparadas solo contigo."
 
   /**

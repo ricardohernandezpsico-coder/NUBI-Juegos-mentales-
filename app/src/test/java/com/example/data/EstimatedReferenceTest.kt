@@ -58,15 +58,51 @@ class EstimatedReferenceTest {
   }
 
   @Test
-  fun `las seis franjas de 18 en adelante vienen con sus 2000 robots y nunca la de 13 a 17`() {
+  fun `las seis franjas de 18 en adelante vienen con sus 2000 robots y la de 14 a 17 no tiene tabla propia`() {
     for (table in reference.loaded) {
       assertEquals("${table.game}: las seis franjas", sixRanges.toSet(), table.ranges.keys)
-      assertFalse(AgeRange.R13_17 in table.ranges.keys)
+      assertFalse(AgeRange.R14_17 in table.ranges.keys)
       for ((range, d) in table.ranges) {
         assertEquals("${table.game} $range", 2000, d.people)
         assertTrue("alcanza de sobra para decir un lugar", d.enough)
         assertTrue("los cuartiles van en orden", d.p25 <= d.p50 && d.p50 <= d.p75)
       }
+    }
+  }
+
+  // ------------------------------------------------------------------ 14 a 17 años: la tabla de 18 a 29 (Tarea 216)
+
+  @Test
+  fun `14 a 17 devuelve la distribucion de 18 a 29 en los cuatro juegos, sin tabla propia y sin tocar las seis`() {
+    assertEquals("la franja compartida es 14 a 17 con la tabla de 18 a 29", AgeRange.R14_17 to AgeRange.R18_29, EstimatedReference.SHARED_RANGE)
+    for (r in AgeRange.entries) assertEquals(if (r == AgeRange.R14_17) AgeRange.R18_29 else r, EstimatedReference.tableRangeOf(r))
+    for (game in TimeTrialDay.GAMES) {
+      val teen = reference.distribution(game, listOf(AgeRange.R14_17), weeksAgo = 0, weeks = 1)
+      val young = reference.distribution(game, listOf(AgeRange.R18_29), weeksAgo = 0, weeks = 1)
+      assertTrue("$game: 14 a 17 alcanza para decir un lugar", teen.enough && teen.estimated)
+      assertEquals("$game: es la MISMA distribución de 18 a 29", young, teen)
+      for (ago in 1..6) assertEquals("$game: también las otras semanas (hace $ago)", young, reference.distribution(game, listOf(AgeRange.R14_17), ago, 1))
+      for (range in sixRanges) assertEquals("$game $range: las seis tablas de siempre no cambian", reference.loaded.single { it.game == game }.ranges.getValue(range), reference.distribution(game, listOf(range), 0, 1))
+    }
+  }
+
+  @Test
+  fun `la cifra, la escalera y la campana de una persona de 14 a 17 son las de 18 a 29, juego por juego, con los cinco peldanos`() {
+    for (game in TimeTrialDay.GAMES) {
+      val shape = shapes.getValue(game)
+      for (mark in listOf(0, 1, 5, 12, 20, 30, 43, 60, 75, 99)) {
+        val teen = Comparison.place(reference, game, AgeRange.R14_17, mark)
+        val young = Comparison.place(reference, game, AgeRange.R18_29, mark)
+        val ranked = (teen as? Comparison.Place.Found)?.ranked ?: continue
+        val other = (young as Comparison.Place.Found).ranked
+        // (la franja que se dice, `ranges`, es la de cada persona; lo demás es lo mismo)
+        assertEquals("$game con $mark: la marca, el percentil, la división y la clase", listOf(other.mark, other.percentile, other.division, other.scope), listOf(ranked.mark, ranked.percentile, ranked.division, ranked.scope))
+        assertEquals("$game con $mark: la misma escalera", Comparison.ladder(other), Comparison.ladder(ranked))
+        assertEquals("$game con $mark: la misma campana", other.distribution, ranked.distribution)
+        assertEquals("$game: ${shape.second} tramos", shape.second, ranked.distribution.bins.size)
+      }
+      val rungs = Comparison.thresholds(reference.distribution(game, listOf(AgeRange.R14_17), 0, 1))
+      assertEquals("$game: los cinco peldaños de la escalera de 14 a 17", Comparison.Division.entries.toList(), rungs.map { it.division })
     }
   }
 
@@ -94,7 +130,7 @@ class EstimatedReferenceTest {
   @Test
   fun `las clases que no son una franja no existen y quedan vacias con la forma del juego`() {
     for ((game, shape) in shapes) {
-      for (ranges in listOf(null, listOf(AgeRange.R30_44, AgeRange.R45_54), listOf(AgeRange.R13_17))) {
+      for (ranges in listOf(null, listOf(AgeRange.R30_44, AgeRange.R45_54), listOf(AgeRange.R14_17, AgeRange.R18_29))) {
         val d = reference.distribution(game, ranges, 0, 1)
         assertEquals("$game $ranges queda sin gente", 0, d.people)
         assertFalse(d.enough)

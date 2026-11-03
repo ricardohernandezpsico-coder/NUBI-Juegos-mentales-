@@ -107,7 +107,7 @@ private const val BIG_TEXT_SCALE_CAP = 1.3f
 
 /**
  * La PESTAÑA «Contrarreloj» (Tarea 215, 2-nov; Ricardo decidió las 9 decisiones de `auditoria-fable/idea-pestana-contrarreloj.md` §10 en su opción recomendada). Antes (Tarea 199, rediseñada en la 203 con la dirección D2 de Fable) era una página dentro de Avance, detrás de una puerta y entera para Nubi Plus; ahora es la pestaña de al lado de Hoy
- * y se parte en DOS mitades: **arriba lo gratis, a color; debajo lo de Plus** (sin Plus, DOS losas en gris con candado; con Plus, las secciones de siempre, a color y en el mismo orden). Lo que la persona no tendría ni con Plus no se muestra en gris (sin franja de edad, de 13 a 17 años o sin tabla del juego no hay losa de «tu lugar»: una promesa que no se cumple es contenido engañoso para Play).
+ * y se parte en DOS mitades: **arriba lo gratis, a color; debajo lo de Plus** (sin Plus, DOS losas en gris con candado; con Plus, las secciones de siempre, a color y en el mismo orden). Lo que la persona no tendría ni con Plus no se muestra en gris (sin franja de edad o sin tabla del juego no hay losa de «tu lugar»: una promesa que no se cumple es contenido engañoso para Play).
  * Se desliza entera; ya no tiene flecha de volver (es una pestaña). Escala de letra fija: 24 (títulos y la cifra), 18 (Fredoka), 16 y 14 (solo los rótulos de los ejes); el título de la página, 26, es el de toda pestaña con título.
  *
  * De arriba abajo: la cabecera sobre el cielo («Contrarreloj» y, solo cuando hay comparación, «El Contrarreloj define tu lugar de la semana.»; sin ella, «Tus marcas, comparadas solo contigo.», con [OnBoardText]); el cielo se DESVANECE en 24 dp hasta el noche plano ([NubiTokens.NightFlat]) y de ahí para abajo todo va en losas sobre ese fondo plano;
@@ -146,9 +146,9 @@ internal fun ContrarrelojPage(
   val page = remember(results, selected, now) { TimeTrialMarks.page(results, selected, now) }
   val records = remember(results) { TimeTrialDay.GAMES.map { it to TimeTrialStats.record(results, it) } }
   val pace = remember(results, selected) { TimeTrialMarks.pace(results, selected) }
-  // La comparación (Tareas 202 y 205): solo si hay de dónde sacarla (`compare`: la referencia estimada del APK, también en la tienda, que cubra este juego) y una franja con la que comparar (la de 13 a 17 años no ve la sección). Sin ella, la página queda como en la Tarea 201.
+  // La comparación (Tareas 202 y 205): solo si hay de dónde sacarla (`compare`: la referencia estimada del APK, también en la tienda, que cubra este juego) y una franja con la que comparar (las siete se comparan, también la de 14 a 17 años con la tabla de 18 a 29: Tarea 216). Sin ella, la página queda como en la Tarea 201.
   // Tarea 207 (decisión de Ricardo, 1-nov): el lugar aparece desde la tercera partida GUARDADA de cada juego; antes, la página queda como «sin comparación» y dice por qué UNA vez. La precedencia vive en `Comparison.gate`:
-  // sin franja de edad, el aviso de dónde elegirla; de 13 a 17 años o sin tabla para el juego, nada; con franja y tabla, [Comparison.Gate.EARLY] (menos de 3 partidas de ESTE juego, de cualquier semana y pista) o [Comparison.Gate.SHOW].
+  // sin franja de edad, el aviso de dónde elegirla; sin tabla para el juego, nada; con franja y tabla, [Comparison.Gate.EARLY] (menos de 3 partidas de ESTE juego, de cualquier semana y pista) o [Comparison.Gate.SHOW].
   val gate = remember(compare, ageRange, results, selected) { Comparison.gate(compare, ageRange, selected, results) }
   val section = remember(compare, gate, ageRange, results, selected, now, lang) {
     val range = compare?.let { Comparison.rangeFor(ageRange, it) }
@@ -179,8 +179,6 @@ internal fun ContrarrelojPage(
         GameSelector(records, selected, today, plus, lang, onSelect, onLocked)
         // Tarea 205b: hay referencia para este juego pero la persona no tiene franja de edad guardada (instaló antes de la Tarea 195): la página no se queda callada, dice dónde elegirla
         if (gate == Comparison.Gate.NEEDS_AGE) Text(Comparison.AGE_HINT, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_age_hint"))
-        // Tarea 209: de 13 a 17 años la página lo DICE en vez de callar (esa franja no se compara, `Features.COMPARE_MINORS`): una línea corrida y sin negrita, donde van los demás avisos
-        if (gate == Comparison.Gate.MINOR) Text(Comparison.MINORS_NOTICE, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_minors_notice"))
         // Tarea 207: con franja y tabla pero menos de tres partidas de este juego, UNA línea corrida y sin negrita donde iría el rótulo de la comparación: las primeras partidas sirven para conocer el juego y no se comparan
         if (gate == Comparison.Gate.EARLY) Text(Comparison.EARLY_NOTICE, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_early_notice"))
 
@@ -212,7 +210,7 @@ internal fun ContrarrelojPage(
           // Tarea 213: el pie de la Tarea 211 (la frase larga y la fila al final) desapareció: la explicación vive en la hoja que abre «Con qué te comparas ›». Solo queda, en depuración, el aviso de los datos de muestra
           if (section != null) SampleFooter(section)
         } else {
-          // sin franja de edad, de 13 a 17 años o sin tabla del juego, Plus no daría «tu lugar»: no se vende en gris (antes de la tercera partida sí: con Plus se vería desde la tercera)
+          // sin franja de edad o sin tabla del juego, Plus no daría «tu lugar»: no se vende en gris (antes de la tercera partida sí: con Plus se vería desde la tercera)
           if (gate == Comparison.Gate.SHOW || gate == Comparison.Gate.EARLY) LockedCard("contrarreloj_locked_place", PlusAccess.LOCKED_PLACE_TITLE, PlusAccess.LOCKED_PLACE, onLocked) { PlaceSilhouette() }
           LockedCard("contrarreloj_locked_marks", PlusAccess.LOCKED_MARKS_TITLE, PlusAccess.LOCKED_MARKS, onLocked) { MarksSilhouette() }
           if (section != null) SampleFooter(section)
@@ -1118,7 +1116,7 @@ private fun WeeksAxis(width: Dp, left: String?) {
 
 /**
  * «Otras edades» (Tarea 203b): la frase de entrada y una fila por franja con «Supera al N %» a la derecha (la propia, en negrita y con «(tu franja)»), SOLO las que llegan a 50 personas; una línea y «Todas las edades» (si llega a 50) y, si alguna falta, UNA línea que cierra:
- * «Las demás edades aparecen cuando lleguen a 50 personas.». Sin ninguna fila la losa no va (la página no la pone). Sin la línea de «13 a 17 años» (quien tiene esa edad no ve la comparación) y sin filas de relleno que dijeran «todavía somos pocos». Sin botón ni hoja aparte: una sola puerta, nada que tocar.
+ * «Las demás edades aparecen cuando lleguen a 50 personas.». Sin ninguna fila la losa no va (la página no la pone). Sin fila de «14 a 17 años» (comparte la tabla de 18 a 29: sería la de 18 a 29 repetida) y sin filas de relleno que dijeran «todavía somos pocos». Sin botón ni hoja aparte: una sola puerta, nada que tocar.
  */
 @Composable
 private fun OthersCard(s: Comparison.Section, o: Comparison.Others) {

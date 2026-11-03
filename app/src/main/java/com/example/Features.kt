@@ -18,12 +18,6 @@ object Features {
   const val COMPARE = false
 
   /**
-   * Que la franja de 13 a 17 años pueda compararse (Tarea 202; `auditoria-fable/nubi-plus-comparacion.md` §1.4 y §3.6): APAGADA hasta que el abogado diga qué consentimiento vale para menores. Apagada, quien tiene de 13 a 17 años NO ve la sección de comparación
-   * y la fila «13 a 17 años» no aparece en «Comparado con otras edades» (la losa dice «De 13 a 17 años no hay comparación por ahora.»).
-   */
-  const val COMPARE_MINORS = false
-
-  /**
    * El cobro de Nubi Plus con Google Play Billing (Tarea 209; `auditoria-fable/claridad-plus-y-ayuda.md` §1.3 y §1.5): APAGADA hasta que exista la tarea del cobro (Etapa 4). Con `false`, «Preguntas frecuentes» no muestra las dos preguntas del cobro («¿Nubi Plus se renueva solo?» y «¿Cómo cancelo Nubi Plus?»,
    * con su botón «Abrir Suscripciones en Google Play»): están redactadas en `Preguntas.billing` y se encienden con esta bandera, arriba de la lista. La hoja de compra, «Tu plan» y la tarjeta de Hoy NO existen todavía.
    */

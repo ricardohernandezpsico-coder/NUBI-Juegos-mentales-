@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -33,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.Comparison
 import com.example.data.ReferenciaFuentes
+import com.example.data.glueNames
 import com.example.ui.components.OnBoardText
 import com.example.ui.theme.AppFamily
 import com.example.ui.theme.NubiTokens
@@ -65,6 +67,7 @@ fun ReferenciaScreen(modifier: Modifier = Modifier, openLink: ((String) -> Boole
     OnBoardText(ReferenciaFuentes.INTRO, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("referencia_intro"))
     OnBoardText(ReferenciaFuentes.INTRO_2, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("referencia_intro_2"))
     OnBoardText(ReferenciaFuentes.ABOUT, color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("referencia_about"))
+    OnBoardText(ReferenciaFuentes.TEEN_LINE.glueNames(LocalDensity.current.fontScale), color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("referencia_teen"))
     if (noBrowser) OnBoardText("No se encontró un navegador para abrir el estudio.", color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.testTag("referencia_no_browser"))
 
     for (group in ReferenciaFuentes.groups) {

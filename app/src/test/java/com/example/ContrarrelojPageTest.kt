@@ -728,11 +728,11 @@ class ContrarrelojPageTest {
     assertEquals("Tu mejor marca de esta semana, frente a las personas que jugaron Tinta o Palabra esta semana:", textOf("contrarreloj_others_lead").replace(NBSP, " "))
     val labels = (0..4).map { n("contrarreloj_others_${it}_label") }
     assertEquals(listOf("18 a 29 años", "30 a 44 años", "45 a 54 años (tu franja)", "55 a 64 años", "65 a 74 años"), labels)
-    assertTrue("ninguna fila de 13 a 17 años ni de 75 o más (tiene 38 personas: no hay fila de relleno)", labels.none { "13 a 17" in it || "75" in it })
+    assertTrue("ninguna fila de 14 a 17 años (comparte la tabla de 18 a 29) ni de 75 o más (tiene 38 personas: no hay fila de relleno)", labels.none { "14 a 17" in it || "75" in it })
     assertEquals("Supera al 63 %", n("contrarreloj_others_2_value"))
     assertEquals("Todas las edades", n("contrarreloj_others_all_label"))
     assertEquals("Las demás edades aparecen cuando lleguen a 50 personas.", textOf("contrarreloj_others_hidden"))
-    assertTrue("ya no hay línea de 13 a 17 años ni «todavía somos pocos» en la losa", allTexts().none { "13 a 17" in it || it == "todavía somos pocos" })
+    assertTrue("no hay fila de 14 a 17 años ni «todavía somos pocos» en la losa", allTexts().none { "14 a 17" in it || it == "todavía somos pocos" })
     val b = boxes()
     assertNull(b["contrarreloj_others_5"])
     assertTrue("una línea entre las franjas y «Todas las edades»", b.getValue("contrarreloj_divider_others").y > b.getValue("contrarreloj_others_4").b && b.getValue("contrarreloj_divider_others").b < b.getValue("contrarreloj_others_all").y)
@@ -793,10 +793,11 @@ class ContrarrelojPageTest {
     assertNotNull("pero las semanas anteriores con marca sí se cuentan (la del 23 de octubre)", b["contrarreloj_percweeks"])
   }
 
-  @Test fun quien_tiene_de_13_a_17_anos_no_ve_la_comparacion_ni_con_datos_de_muestra() {
-    show(compare = manyWorld, ageRange = AgeRange.R13_17)
+  @Test fun quien_tiene_de_14_a_17_anos_ve_la_comparacion_completa_tambien_con_datos_de_muestra() {
+    show(compare = manyWorld, ageRange = AgeRange.R14_17)
     val b = boxes()
-    for (tag in comparePieces) assertNull("de 13 a 17 años no existe «$tag»", b[tag])
+    for (tag in listOf("contrarreloj_section_compare", "contrarreloj_hero", "contrarreloj_ladder", "contrarreloj_bell", "contrarreloj_section_marks")) assertNotNull("de 14 a 17 años existe «$tag» (Tarea 216; «Semana a semana» no: la muestra de depuración trae 41 personas de esa franja por semana)", b[tag])
+    assertEquals("Otras edades: seis filas, ninguna propia ni de 14 a 17", true, b.keys.none { it.startsWith("contrarreloj_others_") && it.endsWith("_label") && "14 a 17" in n(it) })
   }
 
   @Test fun sin_franja_elegida_los_datos_de_muestra_usan_45_a_54() {
@@ -858,10 +859,10 @@ class ContrarrelojPageTest {
     assertEquals("Es el resultado de un juego, comparado solo contigo. No es una medida de capacidad.", textOf("contrarreloj_note"))
   }
 
-  @Test fun de_13_a_17_anos_la_cabecera_y_la_nota_quedan_como_hoy() {
-    show(compare = manyWorld, ageRange = AgeRange.R13_17)
-    assertEquals("Tus marcas, comparadas solo contigo.", textOf("contrarreloj_subtitle"))
-    assertEquals("Es el resultado de un juego, comparado solo contigo. No es una medida de capacidad.", textOf("contrarreloj_note"))
+  @Test fun de_14_a_17_anos_la_cabecera_y_la_nota_son_las_de_cualquiera_con_comparacion() {
+    show(compare = manyWorld, ageRange = AgeRange.R14_17)
+    assertEquals("El Contrarreloj define tu lugar de la semana.", textOf("contrarreloj_subtitle"))
+    assertEquals("Es el resultado de un juego. No es una medida de capacidad.", textOf("contrarreloj_note"))
   }
 
 
@@ -1398,10 +1399,13 @@ class ContrarrelojPageTest {
     assertEquals("subtítulo de siempre, solo contigo", com.example.data.TimeTrialMarks.subtitle(compared = false), textOf("contrarreloj_subtitle"))
   }
 
-  @Test fun de_13_a_17_anos_la_referencia_tampoco_se_muestra() {
-    show(compare = estWorld, ageRange = AgeRange.R13_17)
+  @Test fun de_14_a_17_anos_la_referencia_se_muestra_como_la_de_18_a_29() {
+    show(compare = estWorld, ageRange = AgeRange.R14_17)
+    val young = Comparison.place(estWorld, "stroop", AgeRange.R18_29, 43)
     val b = boxes()
-    assertNull(b["contrarreloj_estimated_notice"]); assertNull(b["contrarreloj_hero"]); assertNull(b["contrarreloj_section_compare"])
+    assertNotNull(b["contrarreloj_hero"]); assertNotNull(b["contrarreloj_section_compare"]); assertNotNull(b["contrarreloj_source_link"])
+    assertEquals("la misma frase que de 18 a 29 años con la misma marca", Comparison.heroSentence((young as Comparison.Place.Found).ranked, AgeRange.R14_17), n("contrarreloj_hero_sentence"))
+    assertEquals(Comparison.divisionPlaceLine(young.ranked.division), n("contrarreloj_hero_place"))
   }
 
   @Test fun el_subtitulo_con_comparacion_es_la_frase_de_Ricardo_y_no_habla_de_capacidad_ni_de_personas() {
@@ -1485,7 +1489,7 @@ class ContrarrelojPageTest {
     assertNull("$name: sin aviso", boxes()["contrarreloj_age_hint"])
   }
 
-  @Test fun el_aviso_de_la_edad_no_sale_de_13_a_17_anos() = assertNoAgeHint("de 13 a 17 años", estWorld, AgeRange.R13_17)
+  @Test fun el_aviso_de_la_edad_no_sale_de_14_a_17_anos() = assertNoAgeHint("de 14 a 17 años", estWorld, AgeRange.R14_17)
   @Test fun el_aviso_de_la_edad_no_sale_con_franja_guardada() = assertNoAgeHint("con franja", estWorld, AgeRange.R45_54)
   @Test fun el_aviso_de_la_edad_no_sale_sin_comparacion() = assertNoAgeHint("sin comparación", null, null)
   @Test fun el_aviso_de_la_edad_no_sale_con_la_muestra_de_depuracion_que_asume_45_a_54() = assertNoAgeHint("con la muestra de depuración", manyWorld, null)
@@ -1606,7 +1610,7 @@ class ContrarrelojPageTest {
     assertEquals("dice la frase una sola vez", 1, everythingSaid().count { it == Comparison.EARLY_NOTICE })
   }
 
-  // ---- la precedencia: sin franja el aviso de edad, de 13 a 17 su línea (Tarea 209), sin tabla nada, la muestra como la referencia
+  // ---- la precedencia: sin franja el aviso de edad, sin tabla nada, la muestra como la referencia; de 14 a 17 años igual que cualquiera (Tarea 216: ya no hay línea de menores)
 
   @Test fun sin_franja_guardada_manda_el_aviso_de_la_edad_aunque_tenga_menos_de_tres_partidas() {
     val s = live(estWorld, null)
@@ -1617,35 +1621,47 @@ class ContrarrelojPageTest {
     }
   }
 
-  @Test fun de_13_a_17_anos_la_pagina_lo_dice_en_una_linea_y_no_sale_ni_la_frase_ni_el_aviso_con_cualquier_numero_de_partidas() {
-    val s = live(estWorld, AgeRange.R13_17)
+  @Test fun de_14_a_17_anos_la_pagina_es_la_de_cualquiera_con_la_frase_de_la_tercera_partida_y_despues_el_lugar_y_nunca_una_linea_de_menores() {
+    val s = live(estWorld, AgeRange.R14_17)
     for (count in 0..3) {
       s.results = gamesOf("stroop", count); rule.waitForIdle()
       val b = boxes()
-      assertEquals("con $count: la línea exacta (Tarea 209)", "De 13 a 17 años, el Contrarreloj muestra solo tus propias marcas.", n("contrarreloj_minors_notice"))
-      assertEquals(Comparison.MINORS_NOTICE, n("contrarreloj_minors_notice"))
-      assertNull("con $count: sin frase de la tercera partida", b["contrarreloj_early_notice"]); assertNull("sin aviso de edad", b["contrarreloj_age_hint"]); assertNull("sin comparación", b["contrarreloj_hero"])
-      assertNull("ni frase de la referencia ni su fila", b["contrarreloj_estimated_notice"]); assertNull(b["contrarreloj_source_link"])
-      assertEquals("y UNA sola vez en toda la pantalla", 1, everythingSaid().count { it == Comparison.MINORS_NOTICE })
+      assertNull("con $count: no existe la línea de menores (Tarea 216)", b["contrarreloj_minors_notice"])
+      assertNull("sin aviso de edad: ya la dijo", b["contrarreloj_age_hint"])
+      if (count < Comparison.PLACE_FROM_GAME) {
+        assertEquals("con $count: la frase de la tercera partida, como de 18 a 29", Comparison.EARLY_NOTICE, n("contrarreloj_early_notice")); assertNull(b["contrarreloj_hero"])
+      } else {
+        assertNull("con $count: ya no hay frase", b["contrarreloj_early_notice"]); assertNotNull("y hay comparación completa", b["contrarreloj_hero"])
+        assertNotNull("con su fila «Con qué te comparas ›»", b["contrarreloj_source_link"])
+      }
+    }
+    assertEquals("ninguna frase dice «solo tus propias marcas» ni «13 a 17»", 0, everythingSaid().count { "solo tus propias marcas" in it || "13 a 17" in it })
+  }
+
+  /** De 14 a 17 años la pestaña queda igual que de 18 a 29 años: con la comparación completa, a 393 y 360 dp con letra 1,0 y 2,0, sin choques y dentro de los márgenes de 16 dp. */
+  private fun assertTeenSameAsYoung(widthDp: Int, scale: Float) {
+    val tags = listOf("contrarreloj_hero_sentence", "contrarreloj_hero_division", "contrarreloj_hero_place", "contrarreloj_ladder_need", "contrarreloj_ladder_closes", "contrarreloj_source_link", "contrarreloj_section_compare")
+    show(widthDp = widthDp, scale = scale, compare = estWorld, ageRange = AgeRange.R14_17, results = ten)
+    val teen = boxes()
+    for (tag in tags) assertNotNull("a $widthDp dp con letra $scale, de 14 a 17 existe «$tag»", teen[tag])
+    assertNull("sin línea de menores", teen["contrarreloj_minors_notice"])
+    for ((tag, b) in teen) if (tag.startsWith("contrarreloj_") && tag !in setOf("contrarreloj_page", "contrarreloj_scroll", "contrarreloj_header")) {
+      assertTrue("a $widthDp dp con letra $scale «$tag» no se sale del margen (x %.1f a %.1f)".format(b.x, b.r), b.x >= 15.5f && b.r <= widthDp - 15.5f)
     }
   }
 
-  private fun assertMinorsNoticeFits(widthDp: Int, scale: Float) {
-    show(widthDp = widthDp, scale = scale, compare = estWorld, ageRange = AgeRange.R13_17, results = gamesOf("stroop", 2))
-    val b = boxes()
-    val notice = b.getValue("contrarreloj_minors_notice")
-    val selectorBottom = games.maxOf { b.getValue("contrarreloj_game_$it").b }
-    val next = b.getValue("contrarreloj_free")
-    assertTrue("a $widthDp dp con letra $scale: bajo el selector a 8 dp o más (%.1f)".format(notice.y - selectorBottom), notice.y - selectorBottom >= 7.5f)
-    assertTrue("y dentro de los márgenes de 16 dp (x %.1f a %.1f)".format(notice.x, notice.r), notice.x >= 15.5f && notice.r <= widthDp - 15.5f)
-    assertTrue("y a 8 dp o más de lo que sigue (%.1f)".format(next.y - notice.b), next.y - notice.b >= 7.5f)
-    assertEquals("el subtítulo sigue diciendo que se compara solo contigo", "Tus marcas, comparadas solo contigo.", n("contrarreloj_subtitle"))
-  }
+  @Test fun de_14_a_17_anos_la_pestana_es_la_de_18_a_29_a_393_con_letra_1_0() = assertTeenSameAsYoung(393, 1f)
+  @Test fun de_14_a_17_anos_la_pestana_es_la_de_18_a_29_a_393_con_letra_2_0() = assertTeenSameAsYoung(393, 2f)
+  @Test fun de_14_a_17_anos_la_pestana_es_la_de_18_a_29_a_360_con_letra_1_0() = assertTeenSameAsYoung(360, 1f)
+  @Test fun de_14_a_17_anos_la_pestana_es_la_de_18_a_29_a_360_con_letra_2_0() = assertTeenSameAsYoung(360, 2f)
 
-  @Test fun la_linea_de_13_a_17_cabe_a_393_con_letra_1_0() = assertMinorsNoticeFits(393, 1f)
-  @Test fun la_linea_de_13_a_17_cabe_a_393_con_letra_2_0() = assertMinorsNoticeFits(393, 2f)
-  @Test fun la_linea_de_13_a_17_cabe_a_360_con_letra_1_0() = assertMinorsNoticeFits(360, 1f)
-  @Test fun la_linea_de_13_a_17_cabe_a_360_con_letra_2_0() = assertMinorsNoticeFits(360, 2f)
+  @Test fun sin_Plus_de_14_a_17_anos_van_las_dos_losas_grises_como_a_los_18() {
+    show(compare = estWorld, ageRange = AgeRange.R14_17, results = ten, plus = false)
+    val b = boxes()
+    assertNotNull("la losa gris de «tu lugar»", b["contrarreloj_locked_place"]); assertNotNull("y la de «todas tus marcas»", b["contrarreloj_locked_marks"])
+    assertNull("sin línea de menores", b["contrarreloj_minors_notice"])
+    assertNotNull("y lo gratis dice la división", b["contrarreloj_hero_division"])
+  }
 
   @Test fun en_un_juego_sin_tabla_no_sale_ni_la_frase_ni_el_aviso() {
     val sinTabla = object : Comparison.Source {

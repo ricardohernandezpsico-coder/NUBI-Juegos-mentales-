@@ -194,7 +194,7 @@ private fun GuestAgeDialog(gameTitle: String, onPick: (com.example.model.AgeRang
     text = {
       Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.verticalScroll(rememberScrollState()).testTag("guest_age_dialog")) {
         Text("¿Qué edad tiene la persona? Con ella se juega la partida y se anota junto a su marca; no se guarda nada.", fontSize = 16.sp)
-        com.example.model.AgeRange.entries.filter { it != com.example.model.AgeRange.R13_17 }.forEach { range ->
+        com.example.model.AgeRange.entries.forEach { range ->
           OutlinedButton(onClick = { onPick(range) }, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("btn_guest_age_${range.name.lowercase()}")) { Text(range.label, fontSize = 16.sp) }
         }
       }

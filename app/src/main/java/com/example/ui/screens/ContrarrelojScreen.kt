@@ -56,9 +56,9 @@ fun ContrarrelojScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modif
     )
   }
   if (sheet) {
-    // Con qué se compara ESTA persona, para la hoja (Tarea 205c): sin franja de edad (o de 13 a 17 años) no hay comparación, así que la hoja no le promete una referencia que nunca verá; de 13 a 17 años lo dice (Tarea 209)
+    // Con qué se compara ESTA persona, para la hoja (Tarea 205c): sin franja de edad no hay comparación, así que la hoja no le promete una referencia que nunca verá
     PlusLockSheet(
-      onDismiss = { sheet = false }, kind = Comparison.kindFor(compare, ageRange), minor = Comparison.isMinorLocked(ageRange),
+      onDismiss = { sheet = false }, kind = Comparison.kindFor(compare, ageRange),
       onSource = { sheet = false; viewModel.openTopPanel(TopPanel.REFERENCIA) }
     )
   }

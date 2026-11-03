@@ -10,6 +10,8 @@ import com.squareup.moshi.Moshi
  * (`AgeReference`, Tarea 204). La tabla va DENTRO del APK (`assets/referencia/<juego>_v<versión de la pista>.json`, unos 1,4 KB cada una): no se pide nada a ningún servidor ni sale ningún dato del teléfono. Es una [Comparison.Source] cuyas [Comparison.Distribution] llevan `estimated = true`: la página
  * siempre dice «referencia estimada» y NUNCA las llama «personas». Por franja hay una sola tabla (la misma todas las semanas: «no cambia de semana en semana»); las clases que no son una franja (todas las edades, las franjas juntas) no existen: devuelve una distribución vacía.
  *
+ * **La franja de 14 a 17 años no tiene tabla propia** (Tarea 216; decisión de Ricardo, 2-nov, `auditoria-fable/referencia-14-17.md` §1): lee la de 18 a 29 ([SHARED_RANGE]), porque a esa edad la rapidez ya está cerca de la adulta (Luna y otros, 2004); la hoja «De dónde sale la referencia» lo dice. No hay Unity ni JSON nuevos.
+ *
  * Es por (juego, versión de la pista): al subir la versión de una pista (`TimeTrialDay.trackVersion`) se genera el archivo nuevo y, mientras no esté, ese juego queda SIN comparación ([covers] = false: la página se ve como la de quien no tiene comparación).
  */
 class EstimatedReference private constructor(private val tables: Map<Pair<String, Int>, Table>) : Comparison.Source {
@@ -27,7 +29,7 @@ class EstimatedReference private constructor(private val tables: Map<Pair<String
 
   override fun distribution(game: String, ranges: List<AgeRange>?, weeksAgo: Int, weeks: Int): Comparison.Distribution {
     val table = tables[game to TimeTrialDay.trackVersion(game)]
-    val range = ranges?.singleOrNull()
+    val range = ranges?.singleOrNull()?.let(::tableRangeOf)
     if (table == null || range == null) return Comparison.Distribution.empty(table?.binWidth ?: Comparison.BIN_WIDTH, table?.ranges?.values?.firstOrNull()?.bins?.size ?: Comparison.BINS)
     return table.ranges[range] ?: Comparison.Distribution.empty(table.binWidth, table.ranges.values.firstOrNull()?.bins?.size ?: Comparison.BINS)
   }
@@ -60,10 +62,18 @@ class EstimatedReference private constructor(private val tables: Map<Pair<String
     /** La carpeta de `assets` con las tablas. */
     const val ASSET_DIR = "referencia"
 
+    /**
+     * La franja de 14 a 17 años (primero) usa la tabla de 18 a 29 (segundo): los robots de 14 a 17 son los de 18 a 29 (decisión de Ricardo, 2-nov; `auditoria-fable/referencia-14-17.md` §1). Una línea en la app y ningún archivo nuevo: Unity y los cuatro JSON no cambian.
+     */
+    val SHARED_RANGE: Pair<AgeRange, AgeRange> = AgeRange.R14_17 to AgeRange.R18_29
+
+    /** La franja cuya tabla se lee para [range]: la misma, salvo 14 a 17, que lee la de 18 a 29. */
+    fun tableRangeOf(range: AgeRange): AgeRange = if (range == SHARED_RANGE.first) SHARED_RANGE.second else range
+
     private val adapter by lazy { Moshi.Builder().build().adapter(FileDto::class.java) }
 
     /**
-     * Lee UN archivo; null si no es una tabla válida (no estimada, un histograma que no suma sus robots, otro número de tramos…): una tabla rota no entra, mejor ninguna comparación que una mentira. Las franjas con un nombre que no es de `AgeRange` (o la de 13 a 17 años, que no se compara) se ignoran.
+     * Lee UN archivo; null si no es una tabla válida (no estimada, un histograma que no suma sus robots, otro número de tramos…): una tabla rota no entra, mejor ninguna comparación que una mentira. Las franjas con un nombre que no es de `AgeRange` se ignoran.
      */
     fun parse(json: String): Table? {
       val dto = try { adapter.fromJson(json) } catch (e: Exception) { null } ?: return null

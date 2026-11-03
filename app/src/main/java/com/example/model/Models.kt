@@ -453,10 +453,10 @@ enum class AgeBand(val label: String) {
 
 /**
  * La franja de edad FINA (Tarea 195, decisión de Ricardo del 30-oct): las siete que eligió el 26-oct para comparar el Contrarreloj con otras personas en la fase 2 (`docs/contrarreloj.md` §8). Se pregunta ya en el Primer vuelo y en Ajustes para no tener que
- * volver a preguntarla después. Vive SOLO en el teléfono (`age_range` en `profile_extra`); de ella sale la banda de tres que usa el DDA ([toBand]), que NO cambia. No hay opción para menores de 13 (política de Play para familias).
+ * volver a preguntarla después. Vive SOLO en el teléfono (`age_range` en `profile_extra`); de ella sale la banda de tres que usa el DDA ([toBand]), que NO cambia. La app es DESDE LOS 14 AÑOS (decisión de Ricardo, 2-nov; Tarea 216): no hay opción para menores de 14, ni pantalla de edad, ni fecha de nacimiento (una barrera solo invita a mentir; en Chile una cuenta de Google propia ya exige 14 años). La primera franja es «14 a 17 años» (hasta la Tarea 215 era «13 a 17»).
  */
 enum class AgeRange(val label: String, private val band: AgeBand) {
-  R13_17("13 a 17 años", AgeBand.UNDER_18),
+  R14_17("14 a 17 años", AgeBand.UNDER_18),
   R18_29("18 a 29 años", AgeBand.ADULT),
   R30_44("30 a 44 años", AgeBand.ADULT),
   R45_54("45 a 54 años", AgeBand.ADULT),
@@ -464,12 +464,12 @@ enum class AgeRange(val label: String, private val band: AgeBand) {
   R65_74("65 a 74 años", AgeBand.SENIOR),
   R75_PLUS("75 años o más", AgeBand.SENIOR);
 
-  /** La banda de tres del DDA, `Skill` y `BaselinePlan` (13-17 = menos de 18; 18-64 = adulto; 65 en adelante = mayor). */
+  /** La banda de tres del DDA, `Skill` y `BaselinePlan` (14-17 = menos de 18; 18-64 = adulto; 65 en adelante = mayor). */
   fun toBand(): AgeBand = band
 
   companion object {
-    /** La franja guardada por nombre; `null` si no hay o ya no existe. */
-    fun fromStored(name: String?): AgeRange? = entries.firstOrNull { it.name == name }
+    /** La franja guardada por nombre; `null` si no hay o ya no existe. «R13_17», el nombre de la primera franja hasta la Tarea 215 (es lo que guardaron los teléfonos de prueba de Ricardo; la app no está publicada), se lee como [R14_17]. */
+    fun fromStored(name: String?): AgeRange? = entries.firstOrNull { it.name == if (name == "R13_17") "R14_17" else name }
   }
 }
 

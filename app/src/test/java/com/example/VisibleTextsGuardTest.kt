@@ -381,6 +381,34 @@ class VisibleTextsGuardTest {
     }
   }
 
+  /**
+   * Desde los 14 años (Tarea 216; decisión de Ricardo, 2-nov, `auditoria-fable/referencia-14-17.md` §1.4): la franja se llama «14 a 17 años», como las demás. NINGÚN texto de la app dice «menores», «adolescentes» ni «niños», y las líneas nuevas (la edad en «Acerca de Nubi», la de la hoja de la referencia,
+   * la pregunta frecuente y el estudio de Luna) no dicen «velocidad» ni «cognitiv» ni nada de lo que no se dice: «rapidez» y «frenar una respuesta» están bien.
+   */
+  @Test
+  fun `ningun texto de la app dice menores, adolescentes ni ninos y las lineas de los 14 anos no usan las palabras que no se dicen`() {
+    val found = mutableListOf<String>()
+    File("src/main/java").walkTopDown().filter { it.extension == "kt" }.forEach { f ->
+      f.readLines().forEachIndexed { i, raw ->
+        for (text in visibleLiteralsOf(raw)) {
+          if (Regex("[a-z0-9_]+").matches(text)) continue
+          val low = text.lowercase()
+          listOf("menores", "adolescent", "niños", "niñas", "niñez").firstOrNull { it in low }?.let { found += "${f.name}:${i + 1} «$text» (por «$it»)" }
+        }
+      }
+    }
+    assertTrue("Textos con «menores», «adolescentes» o «niños» (la franja se llama «14 a 17 años»):\n" + found.joinToString("\n"), found.isEmpty())
+    val teen = com.example.data.Preguntas.general.first { it.key == "edad" }
+    val lines = listOf(com.example.data.HealthNotice.AGE_LINE, com.example.data.ReferenciaFuentes.TEEN_LINE, teen.question, teen.answer) +
+      com.example.data.ReferenciaFuentes.studies.filter { "Luna" in it.cite }.flatMap { listOf(it.cite, it.line) }
+    for (t in lines) {
+      val low = t.lowercase()
+      for (bad in banned + measureWords + listOf("menores", "adolescent", "niños", "robot"))
+        assertFalse("«$t» dice «$bad»", bad in low)
+    }
+    assertEquals("Nubi es para personas de 14 años o más.", com.example.data.HealthNotice.AGE_LINE)
+  }
+
   @Test
   fun `los subtitulos de los juegos hablan como los buenos y no en jerga de laboratorio`() {
     // Tarea 150 (B5.5): «Memoria de trabajo visoespacial», «Control inhibitorio», «rotación mental», «Sentido numérico»… no los entiende un 60+ y rozaban el vocabulario prohibido

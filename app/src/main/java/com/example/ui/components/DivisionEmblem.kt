@@ -26,7 +26,7 @@ import com.example.ui.theme.NubiTokens
  * Va sobre una ventanilla noche ([NubiTokens.NightWindow], esquina de [size] × 0,23): sobre la losa crema las piezas de plasticina tienen un contraste plano de 1,1 a 2,6:1 (la luna y los luceros se sostienen solo por la sombra); sobre la ventanilla, de 6,5 a 18,7:1 para las cinco y comparten silueta. El objeto ocupa el 86 % del lado.
  * Tamaños: [DivisionEmblemHero] en la cifra y [DivisionEmblemLadder] en la escalera; siempre en dp, no escala con la letra. Nada se anima.
  *
- * **Es decorativo** (`contentDescription = null`): la división ya se dice en palabras en la cifra (`Comparison.heroSpoken`), en cada fila de la escalera (`rowSpoken`) y en la fila «Tú», así que lo que lee el lector de pantalla no cambia. Las pruebas lo encuentran con la marca que le pase quien lo usa en [modifier].
+ * **Es decorativo** (`contentDescription = null`): la división ya se dice en palabras en la cifra (la fila de la división de lo gratis, `contrarreloj_hero_division_line`), en cada fila de la escalera (`rowSpoken`) y en la fila «Tú», así que lo que lee el lector de pantalla no cambia. Las pruebas lo encuentran con la marca que le pase quien lo usa en [modifier].
  */
 @Composable
 fun DivisionEmblem(division: Comparison.Division, size: Dp, modifier: Modifier = Modifier) {

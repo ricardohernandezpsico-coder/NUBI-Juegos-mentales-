@@ -194,5 +194,5 @@ class Tarea215CapturasTest {
   @Test fun con_plus_detalle_393_10() { tab(393, 873, true, AgeRange.R45_54); scrollTo("contrarreloj_section_compare", 12); save("ahora_con_plus_detalle_393_10") }
   @Test fun con_plus_marcas_393_10() { tab(393, 873, true, AgeRange.R45_54); scrollTo("contrarreloj_section_marks", 12); save("ahora_con_plus_marcas_393_10") }
   @Test fun sin_franja_393_10() { tab(393, 873, false, null); save("ahora_sin_franja_393_10") }
-  @Test fun menores_393_10() { tab(393, 873, false, AgeRange.R13_17); save("ahora_menores_393_10") }
+  @Test fun menores_393_10() { tab(393, 873, false, AgeRange.R14_17); save("ahora_menores_393_10") }
 }

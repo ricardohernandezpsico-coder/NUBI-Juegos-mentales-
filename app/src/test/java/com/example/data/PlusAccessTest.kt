@@ -24,10 +24,6 @@ class PlusAccessTest {
   @Test
   fun `la hoja del candado son tres lineas y habla como la app`() {
     assertEquals("Con Nubi Plus", PlusAccess.LOCK_LABEL)
-    assertEquals("Con Nubi Plus: además, dónde queda tu marca frente a tu edad y a otras edades.", PlusAccess.LOCK_LABEL_COMPARED)
-    assertEquals("sin comparación, el candado corto", PlusAccess.LOCK_LABEL, PlusAccess.lockLabel(Comparison.Kind.NONE))
-    assertEquals("con la referencia, el largo", PlusAccess.LOCK_LABEL_COMPARED, PlusAccess.lockLabel(Comparison.Kind.ESTIMATED))
-    assertEquals("con personas, también", PlusAccess.LOCK_LABEL_COMPARED, PlusAccess.lockLabel(Comparison.Kind.PEOPLE))
     assertEquals("un solo botón: «Cerrar», no «Entendido» (Tarea 205)", "Cerrar", PlusAccess.SHEET_OK)
     for (kind in Comparison.Kind.entries) {
       val items = PlusAccess.sheetItems(kind)
@@ -57,8 +53,8 @@ class PlusAccessTest {
     assertEquals("lo gratis primero y después lo que agrega Plus", "Gratis: tu división de la semana. Con Nubi Plus, además:", PlusAccess.sheetLead(Comparison.Kind.ESTIMATED))
     assertEquals("con personas (futuro), la misma entrada", "Gratis: tu división de la semana. Con Nubi Plus, además:", PlusAccess.sheetLead(Comparison.Kind.PEOPLE))
     assertEquals("la razón bajo las líneas", "La referencia no son personas: Nubi no junta datos de nadie.", PlusAccess.SHEET_NOTE_ESTIMATED)
-    assertEquals("de 13 a 17 años, la hoja lo dice", "Una página con todas tus marcas. De 13 a 17 años se comparan solo contigo:", PlusAccess.sheetLead(Comparison.Kind.NONE, minor = true))
-    assertEquals("pero con comparación, minor no cambia la entrada", PlusAccess.sheetLead(Comparison.Kind.ESTIMATED), PlusAccess.sheetLead(Comparison.Kind.ESTIMATED, minor = true))
+    // Tarea 216: la hoja no habla de edad; de 14 a 17 años es la de cualquiera (ya no existe la entrada «De 13 a 17 años se comparan solo contigo»)
+    for (kind in Comparison.Kind.entries) assertFalse("la hoja de $kind no nombra ninguna edad", Regex("\\d+ a \\d+ años").containsMatchIn(PlusAccess.sheetLead(kind) + PlusAccess.sheetItems(kind).joinToString(" ")))
     assertTrue("la escalera y las semanas siguen", "escalera" in items[1])
     val all = (listOf(PlusAccess.sheetLead(Comparison.Kind.ESTIMATED)) + items).joinToString(" ").lowercase()
     for (bad in listOf("personas", "luego", "pronto", "cuando haya", "después", "más adelante", "reales", "servidor")) assertFalse("la hoja de la referencia no dice «$bad»", bad in all)

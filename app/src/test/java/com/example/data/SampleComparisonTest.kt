@@ -26,7 +26,8 @@ class SampleComparisonTest {
     assertEquals("En órbita", Comparison.division(63).label)
     val r = Comparison.Ranked(43, 63, Comparison.division(63), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), d)
     assertEquals("Con 43 aciertos, superas al 63 % de las personas de tu edad que jugaron esta semana.", Comparison.heroSentence(r, AgeRange.R45_54))
-    assertEquals("la escalera de esta semana: la división de 43 es En órbita y le faltan 7 aciertos para En la Luna", "Esta semana estás En órbita, la tercera de cinco divisiones. Te faltan 7 aciertos para En la Luna.", Comparison.freeSentence(Comparison.Place.Found(r)))
+    assertEquals("la escalera de esta semana: la división de 43 es En órbita y le faltan 7 aciertos para En la Luna", "Te faltan 7 aciertos para En la Luna.", Comparison.needSentence(Comparison.ladder(r), r))
+    assertEquals("La tercera de cinco divisiones.", Comparison.divisionPlaceLine(r.division))
   }
 
   @Test
@@ -53,15 +54,14 @@ class SampleComparisonTest {
   fun `las clases juntadas suman sus partes`() {
     val parts = listOf(AgeRange.R30_44, AgeRange.R45_54).sumOf { r -> (0 until 4).sumOf { many.distribution("stroop", listOf(r), it).people } }
     assertEquals(parts, many.distribution("stroop", listOf(AgeRange.R30_44, AgeRange.R45_54), 0, 4).people)
-    val all = AgeRange.entries.filter { it != AgeRange.R13_17 }.sumOf { many.distribution("stroop", listOf(it), 0).people }
-    assertEquals("todas las edades no cuenta a los de 13 a 17 años mientras no puedan comparar", all, many.distribution("stroop", null, 0).people)
-    assertFalse(Features.COMPARE_MINORS)
+    val all = AgeRange.entries.sumOf { many.distribution("stroop", listOf(it), 0).people }
+    assertEquals("todas las edades cuenta a las siete franjas, también a la de 14 a 17 (Tarea 216: ya no hay franja que no se compare)", all, many.distribution("stroop", null, 0).people)
   }
 
   @Test
   fun `en el mundo de muchos solo la franja de 75 o mas tiene menos de 50 personas`() {
-    val enough = AgeRange.entries.filter { it != AgeRange.R13_17 }.associateWith { many.distribution("stroop", listOf(it), 0).enough }
-    assertEquals(mapOf(AgeRange.R18_29 to true, AgeRange.R30_44 to true, AgeRange.R45_54 to true, AgeRange.R55_64 to true, AgeRange.R65_74 to true, AgeRange.R75_PLUS to false), enough)
+    val enough = AgeRange.entries.associateWith { many.distribution("stroop", listOf(it), 0).enough }
+    assertEquals(mapOf(AgeRange.R14_17 to false, AgeRange.R18_29 to true, AgeRange.R30_44 to true, AgeRange.R45_54 to true, AgeRange.R55_64 to true, AgeRange.R65_74 to true, AgeRange.R75_PLUS to false), enough)
     assertTrue("y todas las semanas de la franja de 45 a 54 años llegan a 50", (0..6).all { many.distribution("stroop", listOf(AgeRange.R45_54), it).enough })
   }
 

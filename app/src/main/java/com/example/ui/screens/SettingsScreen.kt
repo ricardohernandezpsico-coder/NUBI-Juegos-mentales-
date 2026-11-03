@@ -15,6 +15,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.glueNumbers
 import com.example.model.AgeBand
 import com.example.model.AgeRange
 import com.example.model.AppLanguage
@@ -242,6 +243,8 @@ fun SettingsScreen(
     // ---- 4. Acerca de Nubi: licencias y el aviso de salud (lo exige Google Play; texto aprobado por Ricardo, Tarea 121: sección con título y letra de lectura, no una nota chica; el mismo texto va en «Licencias y créditos»). La política de privacidad todavía no está (queda pendiente en la hoja de ruta).
     ClayPanel(modifier = Modifier.fillMaxWidth().testTag("card_acerca"), verticalSpacing = 14.dp) {
       Text(text = "Acerca de Nubi", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+      // La edad mínima (Tarea 216, decisión de Ricardo, 2-nov): una afirmación en la letra de lectura del panel y en tinta (no apagada), sin ícono ni recuadro; «14 años» no se parte entre renglones
+      Text(text = com.example.data.HealthNotice.AGE_LINE.glueNumbers(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.testTag("about_age_line"))
       ClayButton(text = "Licencias y créditos", onClick = onOpenLicenses, color = Clay.Cream, modifier = Modifier.testTag("btn_licenses"))
       Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("health_notice")) {
         Row(verticalAlignment = Alignment.CenterVertically) {

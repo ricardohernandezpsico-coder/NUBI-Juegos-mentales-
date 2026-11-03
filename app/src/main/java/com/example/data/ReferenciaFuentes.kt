@@ -23,6 +23,11 @@ object ReferenciaFuentes {
   /** El segundo párrafo, en `OnNightDim` (la decisión de Ricardo: es lo honesto; sin cifras). */
   const val ABOUT = "Los números de cada edad se calcularon a partir de esos estudios; ninguno usó los juegos de Nubi. El ritmo del programa se ajustó con las primeras partidas de quienes probaron Nubi antes de salir."
 
+  /**
+   * La línea de 14 a 17 años (Tarea 216; decisión de Ricardo, 2-nov, `auditoria-fable/referencia-14-17.md` §1.4): la franja de 14 a 17 usa la referencia de 18 a 29 y se dice, en `OnNightDim` como [ABOUT], justo después de él. Sin «menores», «adolescentes» ni «niños»: la franja se llama «14 a 17 años», como las demás.
+   */
+  const val TEEN_LINE = "De 14 a 17 años la referencia es la misma que de 18 a 29: a esa edad la rapidez ya está cerca de la adulta."
+
   /** El grupo que no tiene losas: ¿Verdad o disparate? y Acoplamiento salen de los mismos estudios de rapidez. */
   const val SHARED_LINE = "Sus tiempos salen de los mismos estudios de rapidez: la referencia no tiene un estudio propio de cada juego."
 
@@ -37,7 +42,8 @@ object ReferenciaFuentes {
         Estudio("Ratcliff y otros, 2010 · 130 personas en tres grupos de edad", "10.1016/j.cogpsych.2009.09.001", "La edad alarga el tiempo de decidir, no la calidad de lo que se ve."),
         Estudio("Cerella, 1985 · revisión de muchos estudios", "10.1037/0033-2909.98.1.67", "Con la edad todo se hace un poco más lento, y parejo en tareas distintas."),
         Estudio("Myerson y otros, 1990 · revisión", "10.1037/0033-295x.97.4.475", "Un modelo de cuánto se alarga cada paso con la edad."),
-        Estudio("Salthouse, 1996 · revisión", "10.1037/0033-295x.103.3.403", "La rapidez explica buena parte de las diferencias entre edades.")
+        Estudio("Salthouse, 1996 · revisión", "10.1037/0033-295x.103.3.403", "La rapidez explica buena parte de las diferencias entre edades."),
+        Estudio("Luna y otros, 2004 · 245 personas de 8 a 30 años", "10.1111/j.1467-8624.2004.00745.x", "La rapidez llega a su nivel adulto cerca de los 15 años; frenar una respuesta, cerca de los 14.")
       )
     ),
     Group(

@@ -3,7 +3,7 @@ package com.example.data
 import com.example.Features
 
 /**
- * «Preguntas frecuentes» (Tarea 209; `auditoria-fable/claridad-plus-y-ayuda.md` §1.3): respuestas cortas a lo que más se preguntó en las simulaciones de MiroFish (cambio de teléfono, la racha, con qué compara el Contrarreloj, qué ve alguien de 13 a 17 años, quién hace Nubi y si hace falta internet o una cuenta),
+ * «Preguntas frecuentes» (Tarea 209; `auditoria-fable/claridad-plus-y-ayuda.md` §1.3): respuestas cortas a lo que más se preguntó en las simulaciones de MiroFish (cambio de teléfono, la racha, con qué compara el Contrarreloj, qué ve alguien de 14 a 17 años, quién hace Nubi y si hace falta internet o una cuenta),
  * en un panel de Tú con losas plegables (la pregunta a la vista; la respuesta al tocar; nada se abre solo). Cada texto lo cuida la guardia de textos como todos: sin «cerebro», «cognitivo», «entrenamiento», «capacidad», «ranking», «velocidad» ni «percentil», y sin el número de robots.
  *
  * Las dos del cobro ([billing]) están redactadas y APAGADAS detrás de [Features.BILLING]: cuando se enciendan van ARRIBA de la lista, porque son las que más se preguntan. Ajuste de Opus (1-nov) a la primera: la copia de seguridad la hace Android, no Nubi, y «Nubi no envía tus datos a nadie» va justo después, para que no parezca una contradicción.
@@ -40,8 +40,8 @@ object Preguntas {
       sourceLink = true
     ),
     Pregunta(
-      "menores", "¿Qué ve alguien de 13 a 17 años?",
-      "Todos los juegos y el Contrarreloj, igual que cualquiera. Sus marcas del Contrarreloj se comparan solo con las suyas: sin divisiones ni referencia por edad."
+      "edad", "¿Qué ve alguien de 14 a 17 años?",
+      "Lo mismo que cualquiera: todos los juegos y el Contrarreloj, con la referencia de 18 a 29 años. ${HealthNotice.AGE_LINE}"
     ),
     Pregunta(
       "quien", "¿Quién hace Nubi?",

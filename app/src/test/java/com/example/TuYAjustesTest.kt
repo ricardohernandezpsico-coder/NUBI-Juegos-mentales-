@@ -12,7 +12,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasTestTag
@@ -247,6 +251,77 @@ class TuYAjustesTest {
     rule.onNodeWithTag("health_notice").assertExists()
     rule.onNodeWithTag("btn_reset_data").assertExists()
     assertFalse("sin política de privacidad todavía", rule.onAllNodes(hasText("rivacidad", substring = true)).fetchSemanticsNodes().isNotEmpty())
+  }
+
+  // ------------------------------------------------------------------ «Nubi es para personas de 14 años o más.» en «Acerca de Nubi» (Tarea 216, decisión de Ricardo, 2-nov)
+
+  private fun showSettings(widthDp: Int, scale: Float) {
+    val v = vm()
+    rule.mainClock.autoAdvance = true
+    rule.setContent {
+      val base = LocalDensity.current
+      CompositionLocalProvider(LocalDensity provides Density(base.density, scale), LocalReduceMotion provides true, LocalBarInset provides 88.dp) {
+        NeuroVidaTheme { Box(Modifier.width(widthDp.dp).height(3600.dp)) { BoardBackground(); SettingsScreen(viewModel = v) } }
+      }
+    }
+    rule.waitForIdle()
+  }
+
+  private fun layoutOf(node: androidx.compose.ui.test.SemanticsNodeInteraction): TextLayoutResult {
+    val results = mutableListOf<TextLayoutResult>()
+    node.fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+    assertTrue("tiene su diseño de texto", results.isNotEmpty())
+    return results.first()
+  }
+
+  private fun boundsOf(tag: String) = rule.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
+
+  @Test
+  fun acerca_de_Nubi_dice_que_es_para_personas_de_14_anos_o_mas_bajo_el_titulo_y_antes_del_boton_en_una_linea_a_393_con_letra_1_0() {
+    showSettings(393, 1f)
+    rule.onNodeWithTag("about_age_line").performScrollTo()
+    val node = rule.onNodeWithTag("about_age_line")
+    val said = node.fetchSemanticsNode().config.getOrNull(SemanticsProperties.Text)!!.joinToString("") { it.text }
+    assertEquals("Nubi es para personas de 14 años o más.", com.example.data.HealthNotice.AGE_LINE)
+    assertEquals("el texto es el de HealthNotice.AGE_LINE (con «14 años» pegado)", com.example.data.HealthNotice.AGE_LINE, said.replace(com.example.data.NBSP, " "))
+    assertTrue("«14 años» va con espacio duro", said.contains("14${com.example.data.NBSP}años"))
+    val card = boundsOf("card_acerca"); val line = boundsOf("about_age_line"); val button = boundsOf("btn_licenses")
+    val title = rule.onNode(hasText("Acerca de Nubi")).fetchSemanticsNode().boundsInRoot
+    assertTrue("dentro de la losa «Acerca de Nubi»: $line contra $card", line.left >= card.left && line.right <= card.right && line.top >= card.top && line.bottom <= card.bottom)
+    assertTrue("justo debajo del título y antes del botón «Licencias y créditos»", title.bottom <= line.top + 1f && line.bottom <= button.top + 1f)
+    val layout = layoutOf(node)
+    assertEquals("una sola línea a 393 dp con letra 1,0", 1, layout.lineCount)
+    assertTrue("a 16 sp o más, la letra de lectura del panel: ${layout.layoutInput.style.fontSize}", layout.layoutInput.style.fontSize.value >= 16f)
+    val notice = layoutOf(rule.onNode(hasText(com.example.data.HealthNotice.TEXT)))
+    assertTrue("en tinta (onSurface), no en el color apagado del aviso de salud", layout.layoutInput.style.color != notice.layoutInput.style.color)
+    assertEquals("una sola vez en la pantalla", 1, rule.onAllNodes(hasTestTag("about_age_line")).fetchSemanticsNodes().size)
+  }
+
+  @Test
+  fun a_360_dp_con_letra_2_0_la_linea_de_la_edad_pasa_a_dos_renglones_por_palabras_sin_14_suelto_al_final_de_un_renglon() {
+    showSettings(360, 2f)
+    rule.onNodeWithTag("about_age_line").performScrollTo()
+    val layout = layoutOf(rule.onNodeWithTag("about_age_line"))
+    val text = layout.layoutInput.text.text
+    assertTrue("parte en dos renglones o más (${layout.lineCount})", layout.lineCount >= 2)
+    for (i in 0 until layout.lineCount) {
+      val row = text.substring(layout.getLineStart(i), layout.getLineEnd(i)).trimEnd()
+      assertFalse("el renglón ${i + 1} («$row») termina en «14»: «14 años» no se parte", row.endsWith("14"))
+      assertFalse("el renglón ${i + 1} («$row») empieza con «años»", row.startsWith("años"))
+      assertTrue("el renglón ${i + 1} no parte ninguna palabra por dentro: «$row»", row.split(' ', '\u00A0').all { w -> w.isEmpty() || w in text.split(' ', '\u00A0') })
+    }
+    val card = boundsOf("card_acerca"); val line = boundsOf("about_age_line")
+    assertTrue("y queda dentro de la losa", line.left >= card.left && line.right <= card.right)
+  }
+
+  @Test
+  fun la_edad_minima_vive_en_una_sola_constante_y_en_acerca_de_Nubi_y_nunca_en_Tu_ni_en_la_pregunta_de_edad_del_vuelo() {
+    val main = File("src/main/java/com/example")
+    val withLiteral = main.walkTopDown().filter { it.extension == "kt" && it.readText().contains("\"Nubi es para personas de 14 años o más.\"") }.map { it.name }.toList()
+    assertEquals("la frase literal vive solo en HealthNotice (los demás la leen de AGE_LINE)", listOf("HealthNotice.kt"), withLiteral)
+    assertTrue("Ajustes la usa", File("src/main/java/com/example/ui/screens/SettingsScreen.kt").readText().contains("HealthNotice.AGE_LINE"))
+    assertFalse("Tú no (una sola puerta por ajuste)", File("src/main/java/com/example/ui/screens/ProfileScreen.kt").readText().contains("AGE_LINE"))
+    assertFalse("ni la pregunta de edad del Primer vuelo (no es una barrera)", File("src/main/java/com/example/ui/screens/FirstFlightScreen.kt").readText().contains("AGE_LINE"))
   }
 
   @Test

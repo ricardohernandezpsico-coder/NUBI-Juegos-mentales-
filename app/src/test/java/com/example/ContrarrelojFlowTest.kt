@@ -276,13 +276,20 @@ class ContrarrelojFlowTest {
   }
 
   @Test
-  fun sin_Plus_de_13_a_17_anos_queda_en_gris_solo_todas_tus_marcas_y_la_pestana_lo_dice() {
-    val vm = withData(); vm.setPlus(false); withRange(vm, AgeRange.R13_17)
+  fun una_persona_de_14_a_17_anos_ve_lo_mismo_que_una_de_18_a_29_con_las_dos_losas_grises_sin_Plus_y_sin_aviso_de_menores() {
+    // Tarea 216 (decisión de Ricardo, 2-nov): la app es desde los 14 años y la franja de 14 a 17 usa la tabla de 18 a 29; no hay aviso ni Gate.MINOR
+    val vm = withData(); vm.setPlus(false); withRange(vm, AgeRange.R14_17)
+    recordNow(vm)
     show(vm)
-    assertEquals(0, count("contrarreloj_locked_place")); assertEquals(1, count("contrarreloj_locked_marks"))
-    assertEquals(Comparison.MINORS_NOTICE, textOf("contrarreloj_minors_notice"))
-    assertEquals("sin división en lo gratis", 0, count("contrarreloj_hero_division"))
-    assertEquals("y la subtítulo habla solo de ti", "Tus marcas, comparadas solo contigo.", textOf("contrarreloj_subtitle"))
+    assertEquals("las dos losas grises, como cualquiera con franja", 2, count("contrarreloj_locked_place") + count("contrarreloj_locked_marks"))
+    assertEquals("ni una línea de «De 13 a 17 años…» ni de 14 a 17: no hay aviso", 0, count("contrarreloj_minors_notice") + count("contrarreloj_age_hint") + count("contrarreloj_early_notice"))
+    assertTrue("y ningún texto dice «solo tus propias marcas»", (0 until 1).all { rule.onAllNodes(androidx.compose.ui.test.hasText("solo tus propias marcas", substring = true), useUnmergedTree = true).fetchSemanticsNodes().isEmpty() })
+    val today = TimeTrialDay.gameFor(vm.todayKey())
+    val young = Comparison.place(vm.estimatedReference.value!!, today, AgeRange.R18_29, 99) as Comparison.Place.Found
+    assertEquals("la división es la de 18 a 29 con la misma marca", young.ranked.division.label, textOf("contrarreloj_hero_division"))
+    assertEquals("y su lugar entre las cinco", Comparison.divisionPlaceLine(young.ranked.division), textOf("contrarreloj_hero_place"))
+    assertEquals("el subtítulo, con comparación", "El Contrarreloj define tu lugar de la semana.", textOf("contrarreloj_subtitle"))
+    assertEquals("la fila «Con qué te comparas ›» también", 1, count("contrarreloj_source_link"))
   }
 
   // ---------------------------------------------------------------- lo gratis: la división y lo que falta (antes lo daba la puerta de Avance)
@@ -359,13 +366,12 @@ class ContrarrelojFlowTest {
   }
 
   @Test
-  fun la_hoja_del_candado_de_13_a_17_anos_no_le_promete_una_referencia_que_nunca_vera() {
-    val (lead, items) = sheetTexts(AgeRange.R13_17)
-    assertEquals("solo contigo y lo dice (Tarea 209)", PlusAccess.sheetLead(Comparison.Kind.NONE, minor = true), lead)
-    assertEquals("Una página con todas tus marcas. De 13 a 17 años se comparan solo contigo:", lead)
-    assertEquals(PlusAccess.sheetItems(Comparison.Kind.NONE), items)
-    assertFalse("ni una palabra de la referencia", (listOf(lead) + items).any { "referencia" in it })
-    assertEquals("y sin la nota ni la fila de la referencia", 0, count("plus_sheet_note") + count("plus_sheet_source"))
+  fun la_hoja_del_candado_de_14_a_17_anos_es_la_de_cualquiera_con_referencia_y_no_habla_de_edad() {
+    val (lead, items) = sheetTexts(AgeRange.R14_17)
+    assertEquals("Tarea 216: ya no existe la entrada «De 13 a 17 años se comparan solo contigo»", PlusAccess.sheetLead(Comparison.Kind.ESTIMATED), lead)
+    assertEquals(PlusAccess.sheetItems(Comparison.Kind.ESTIMATED), items)
+    assertEquals("con la razón y la fila de la referencia, como cualquiera", 2, count("plus_sheet_note") + count("plus_sheet_source"))
+    assertTrue("ni una edad nombrada en la hoja", (listOf(lead) + items).none { Regex("\\d+ a \\d+ años").containsMatchIn(it) })
   }
 
   @Test

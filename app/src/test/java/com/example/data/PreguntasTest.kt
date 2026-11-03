@@ -20,12 +20,28 @@ class PreguntasTest {
     assertEquals(
       listOf(
         "¿Qué pasa si cambio de teléfono?", "¿Cómo funciona la racha?", "¿Con qué me compara el Contrarreloj?",
-        "¿Qué ve alguien de 13 a 17 años?", "¿Quién hace Nubi?", "¿Nubi necesita internet o una cuenta?"
+        "¿Qué ve alguien de 14 a 17 años?", "¿Quién hace Nubi?", "¿Nubi necesita internet o una cuenta?"
       ),
       Preguntas.general.map { it.question }
     )
     assertEquals(listOf("¿Nubi Plus se renueva solo?", "¿Cómo cancelo Nubi Plus?"), Preguntas.billing.map { it.question })
     assertEquals("las claves no se repiten", all.size, all.map { it.key }.toSet().size)
+  }
+
+  @Test
+  fun la_pregunta_de_14_a_17_anos_dice_lo_mismo_que_cualquiera_con_la_referencia_de_18_a_29_y_termina_con_la_frase_de_la_edad() {
+    // Tarea 216 (decisión de Ricardo, 2-nov): «SÍ a que la pregunta frecuente de esa edad termine con esa misma frase»; antes (Tarea 209) era «¿Qué ve alguien de 13 a 17 años?»
+    val p = Preguntas.general.first { it.key == "edad" }
+    assertEquals("¿Qué ve alguien de 14 a 17 años?", p.question)
+    assertEquals(
+      "Lo mismo que cualquiera: todos los juegos y el Contrarreloj, con la referencia de 18 a 29 años. Nubi es para personas de 14 años o más.",
+      p.answer
+    )
+    assertTrue("termina con la misma frase que «Acerca de Nubi»", p.answer.endsWith(com.example.data.HealthNotice.AGE_LINE))
+    assertFalse("sin fila de la referencia: no es la pregunta de con qué compara", p.sourceLink)
+    assertTrue("la ficha de Play sigue cabiendo en 2.000 caracteres con las ocho (la respuesta de Fable, con la razón de la rapidez y «no junta datos», pasaba de 2.076)", Preguntas.playListing(billingOn = true).length < 2000)
+    for (t in listOf(p.question, p.answer)) for (bad in listOf("menores", "adolescent", "niños", "niñas", "velocidad", "cognitiv", "percentil", "capacidad", "ranking")) assertFalse("«$t» dice «$bad»", bad in t.lowercase())
+    assertTrue("y la ficha de Play la hereda", Preguntas.playListing().contains(p.question) && Preguntas.playListing().contains(p.answer))
   }
 
   @Test
@@ -88,7 +104,7 @@ class PreguntasTest {
       assertTrue("«${p.key}»: la respuesta es una frase completa", p.answer.endsWith("."))
       assertFalse("sin emojis", Regex("[\\u2600-\\u27BF\\uD83C-\\uDBFF\\uDC00-\\uDFFF]").containsMatchIn(p.question + p.answer))
     }
-    assertEquals("«personas» solo aparece en lo que el diseño escribe: una sola vez (en «no con otras personas»)", 1, all.sumOf { Regex("personas").findAll(it.answer).count() })
+    assertEquals("«personas» solo aparece en lo que el diseño escribe: una sola vez (en «no con otras personas»), sin contar la frase de la edad mínima («Nubi es para personas de 14 años o más.», Tarea 216)", 1, all.sumOf { Regex("personas").findAll(it.answer.replace(com.example.data.HealthNotice.AGE_LINE, "")).count() })
   }
 
   @Test

@@ -35,7 +35,7 @@ class SampleComparison(private val world: World) : Comparison.Source {
 
     /** Cuánto se corre la silueta por franja, en tramos de 5 aciertos (+2 = 10 aciertos más). */
     private val RANGE_SHIFT = mapOf(
-      AgeRange.R13_17 to 3, AgeRange.R18_29 to 2, AgeRange.R30_44 to 1, AgeRange.R45_54 to 0, AgeRange.R55_64 to -1, AgeRange.R65_74 to -2, AgeRange.R75_PLUS to -3
+      AgeRange.R14_17 to 3, AgeRange.R18_29 to 2, AgeRange.R30_44 to 1, AgeRange.R45_54 to 0, AgeRange.R55_64 to -1, AgeRange.R65_74 to -2, AgeRange.R75_PLUS to -3
     )
 
     /** Y por juego: cada Contrarreloj tiene su propio rango de marcas (Tinta o Palabra, la de la lámina; Acoplamiento, la más baja). */
@@ -45,17 +45,17 @@ class SampleComparison(private val world: World) : Comparison.Source {
     private val WEEK_SHIFT = intArrayOf(0, 0, -1, 0, 1, 0, -1)
 
     private val MANY_PEOPLE = mapOf(
-      AgeRange.R13_17 to 41, AgeRange.R18_29 to 211, AgeRange.R30_44 to 187, AgeRange.R45_54 to 128, AgeRange.R55_64 to 96, AgeRange.R65_74 to 71, AgeRange.R75_PLUS to 38
+      AgeRange.R14_17 to 41, AgeRange.R18_29 to 211, AgeRange.R30_44 to 187, AgeRange.R45_54 to 128, AgeRange.R55_64 to 96, AgeRange.R65_74 to 71, AgeRange.R75_PLUS to 38
     )
 
     /** El mundo de «pocos» (esta semana): 23 personas de 45 a 54 años; solo la franja de 18 a 29 llega a 50. */
     private val FEW_PEOPLE = mapOf(
-      AgeRange.R13_17 to 8, AgeRange.R18_29 to 70, AgeRange.R30_44 to 4, AgeRange.R45_54 to 23, AgeRange.R55_64 to 14, AgeRange.R65_74 to 9, AgeRange.R75_PLUS to 4
+      AgeRange.R14_17 to 8, AgeRange.R18_29 to 70, AgeRange.R30_44 to 4, AgeRange.R45_54 to 23, AgeRange.R55_64 to 14, AgeRange.R65_74 to 9, AgeRange.R75_PLUS to 4
     )
 
     /** El mundo de «muy pocos» (esta semana): 23 personas de 45 a 54 años y solo 45 en todas las edades, así que «Mientras tanto» tiene que usar las últimas 4 semanas (84 personas). */
     private val VERY_FEW_PEOPLE = mapOf(
-      AgeRange.R13_17 to 2, AgeRange.R18_29 to 12, AgeRange.R30_44 to 3, AgeRange.R45_54 to 23, AgeRange.R55_64 to 4, AgeRange.R65_74 to 2, AgeRange.R75_PLUS to 1
+      AgeRange.R14_17 to 2, AgeRange.R18_29 to 12, AgeRange.R30_44 to 3, AgeRange.R45_54 to 23, AgeRange.R55_64 to 4, AgeRange.R65_74 to 2, AgeRange.R75_PLUS to 1
     )
 
     /** Corre los tramos [k] lugares a la derecha (a la izquierda con k negativo); lo que se sale por un borde se junta en el último tramo de ese lado. */
@@ -107,7 +107,7 @@ class SampleComparison(private val world: World) : Comparison.Source {
   }
 
   override fun distribution(game: String, ranges: List<AgeRange>?, weeksAgo: Int, weeks: Int): Comparison.Distribution {
-    val rs = ranges ?: AgeRange.entries.filter { it != AgeRange.R13_17 || Features.COMPARE_MINORS }
+    val rs = ranges ?: AgeRange.entries
     if (rs.size == 1 && weeks == 1) return single(game, rs[0], weeksAgo)
     val parts = rs.flatMap { r -> (weeksAgo until weeksAgo + weeks).map { single(game, r, it) } }
     val bins = List(Comparison.BINS) { i -> parts.sumOf { it.bins[i] } }

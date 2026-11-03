@@ -49,7 +49,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * «[Debug] Contrarreloj de invitado» pregunta la EDAD antes de jugar (Tarea 205c): las seis franjas de 18 en adelante (nunca 13 a 17), «Cancelar» no lanza nada, y el final de invitado dice la edad elegida para que Ricardo la anote junto a la marca.
+ * «[Debug] Contrarreloj de invitado» pregunta la EDAD antes de jugar (Tarea 205c): las siete franjas, también la de 14 a 17 (Tarea 216; antes, las seis de 18 en adelante), «Cancelar» no lanza nada, y el final de invitado dice la edad elegida para que Ricardo la anote junto a la marca.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -82,14 +82,14 @@ class DebugGuestDialogTest {
   private val ageButtons = SemanticsMatcher("un botón de edad") { it.config.getOrNull(SemanticsProperties.TestTag)?.startsWith("btn_guest_age_r") == true }
 
   @Test
-  fun tocar_un_juego_de_invitado_pregunta_las_seis_edades_de_adulto_y_no_lanza_nada_todavia() {
+  fun tocar_un_juego_de_invitado_pregunta_las_siete_edades_y_no_lanza_nada_todavia() {
     val vm = show()
     rule.onNodeWithTag("btn_debug_guest_radar").performScrollTo().performClick()
     rule.waitForIdle()
     rule.onNodeWithTag("guest_age_dialog").assertIsDisplayed()
     val tags = rule.onAllNodesWithTagStartingWith("btn_guest_age_r")
-    assertEquals("las seis franjas de 18 en adelante", listOf("btn_guest_age_r18_29", "btn_guest_age_r30_44", "btn_guest_age_r45_54", "btn_guest_age_r55_64", "btn_guest_age_r65_74", "btn_guest_age_r75_plus"), tags)
-    assertFalse("nunca la de 13 a 17", tags.any { "r13_17" in it })
+    assertEquals("las siete franjas, la de 14 a 17 primero (la prueba con adolescentes: sus padres lo permiten)", listOf("btn_guest_age_r14_17", "btn_guest_age_r18_29", "btn_guest_age_r30_44", "btn_guest_age_r45_54", "btn_guest_age_r55_64", "btn_guest_age_r65_74", "btn_guest_age_r75_plus"), tags)
+    assertFalse("y ya no queda el nombre viejo", tags.any { "r13_17" in it })
     assertNull("preguntar no lanza la partida", vm.activeGame.value)
   }
 

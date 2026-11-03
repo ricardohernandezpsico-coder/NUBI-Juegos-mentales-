@@ -300,7 +300,7 @@ class FirstFlightFlowTest {
     assertEquals(setOf("secuencia"), s.measured.keys)
     assertNull(s.age)
     // sigue sin pedir otra vez el juego 1 ni el nombre
-    second.flightSetAge(AgeRange.R13_17)
+    second.flightSetAge(AgeRange.R14_17)
     second.flightContinue()
     assertEquals(FlightStep.METAS, second.flight.value!!.step)
   }
@@ -487,7 +487,7 @@ class FirstFlightFlowTest {
   @Test
   fun `elegir una franja en el vuelo guarda las dos cosas, la franja fina y la banda del DDA que sale de ella`() {
     val expected = mapOf(
-      AgeRange.R13_17 to AgeBand.UNDER_18, AgeRange.R18_29 to AgeBand.ADULT, AgeRange.R30_44 to AgeBand.ADULT, AgeRange.R45_54 to AgeBand.ADULT,
+      AgeRange.R14_17 to AgeBand.UNDER_18, AgeRange.R18_29 to AgeBand.ADULT, AgeRange.R30_44 to AgeBand.ADULT, AgeRange.R45_54 to AgeBand.ADULT,
       AgeRange.R55_64 to AgeBand.ADULT, AgeRange.R65_74 to AgeBand.SENIOR, AgeRange.R75_PLUS to AgeBand.SENIOR
     )
     val vm = newViewModel()

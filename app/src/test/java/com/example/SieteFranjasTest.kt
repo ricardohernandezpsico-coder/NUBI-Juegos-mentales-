@@ -51,7 +51,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Las siete franjas de edad en el Primer vuelo y en Ajustes (Tarea 195, decisión de Ricardo del 30-oct): 13 a 17 · 18 a 29 · 30 a 44 · 45 a 54 · 55 a 64 · 65 a 74 · 75 o más, cada número con su unidad y sin opción para menores de 13.
+ * Las siete franjas de edad en el Primer vuelo y en Ajustes (Tarea 195, decisión de Ricardo del 30-oct): 14 a 17 · 18 a 29 · 30 a 44 · 45 a 54 · 55 a 64 · 65 a 74 · 75 o más, cada número con su unidad y sin opción para menores de 13.
  * El vuelo pregunta lo mismo de siempre («¿En qué rango de edad estás?», con su línea de ayuda) y Ajustes muestra la misma lista; quien ya tenía solo la banda de tres de antes no ve ninguna marcada hasta que elija. La franja vive solo en el teléfono.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -66,7 +66,7 @@ class SieteFranjasTest {
   @Before fun setUp() { app = ApplicationProvider.getApplicationContext(); TestSupport.resetDatabase(); TestSupport.fastFrames() }
   @After fun tearDown() { TestSupport.release(*viewModels.toTypedArray()); viewModels.clear(); TestSupport.resetDatabase() }
 
-  private val labels = listOf("13 a 17 años", "18 a 29 años", "30 a 44 años", "45 a 54 años", "55 a 64 años", "65 a 74 años", "75 años o más")
+  private val labels = listOf("14 a 17 años", "18 a 29 años", "30 a 44 años", "45 a 54 años", "55 a 64 años", "65 a 74 años", "75 años o más")
   private val hint = "Cambia el ritmo y el tamaño de los juegos, no lo difícil: eso lo decide cómo juegas."
 
   private fun exists(tag: String) = rule.onAllNodes(hasTestTag(tag)).fetchSemanticsNodes().isNotEmpty()
@@ -95,7 +95,7 @@ class SieteFranjasTest {
       assertTrue("falta «$label»", rule.onAllNodes(androidx.compose.ui.test.hasText(label)).fetchSemanticsNodes().isNotEmpty())
       assertFalse("${range.name}: ninguna está marcada todavía", selected("flight_opt_${range.name}"))
     }
-    assertEquals("siete opciones, ni una más", 7, rule.onAllNodes(androidx.compose.ui.test.hasTestTag("flight_opt_R13_17") or androidx.compose.ui.test.hasTestTag("flight_opt_R18_29") or androidx.compose.ui.test.hasTestTag("flight_opt_R30_44") or androidx.compose.ui.test.hasTestTag("flight_opt_R45_54") or androidx.compose.ui.test.hasTestTag("flight_opt_R55_64") or androidx.compose.ui.test.hasTestTag("flight_opt_R65_74") or androidx.compose.ui.test.hasTestTag("flight_opt_R75_PLUS")).fetchSemanticsNodes().size)
+    assertEquals("siete opciones, ni una más", 7, rule.onAllNodes(androidx.compose.ui.test.hasTestTag("flight_opt_R14_17") or androidx.compose.ui.test.hasTestTag("flight_opt_R18_29") or androidx.compose.ui.test.hasTestTag("flight_opt_R30_44") or androidx.compose.ui.test.hasTestTag("flight_opt_R45_54") or androidx.compose.ui.test.hasTestTag("flight_opt_R55_64") or androidx.compose.ui.test.hasTestTag("flight_opt_R65_74") or androidx.compose.ui.test.hasTestTag("flight_opt_R75_PLUS")).fetchSemanticsNodes().size)
     assertEquals("la línea de ayuda de siempre se queda", 1, rule.onAllNodes(androidx.compose.ui.test.hasText(hint)).fetchSemanticsNodes().size)
     assertTrue("sin respuesta, Continuar está atenuado (no responde)", rule.onNodeWithTag("btn_flight_next").fetchSemanticsNode().config.contains(SemanticsProperties.Disabled))
     for (old in listOf("Menos de 18", "18 a 64", "65 o más")) assertEquals("«$old» (las tres de antes) ya no se ofrece en el vuelo", 0, rule.onAllNodes(androidx.compose.ui.test.hasText(old)).fetchSemanticsNodes().size)
@@ -120,7 +120,7 @@ class SieteFranjasTest {
   @Test
   fun con_letra_1_0_la_pagina_de_la_edad_cabe_sin_deslizar_con_la_ayuda_entera_y_Continuar_a_la_vista() {
     agePage(393, 873, 1f, chosen = null)
-    val first = rule.onNodeWithTag("flight_opt_R13_17").getUnclippedBoundsInRoot()
+    val first = rule.onNodeWithTag("flight_opt_R14_17").getUnclippedBoundsInRoot()
     val last = rule.onNodeWithTag("flight_opt_R75_PLUS").getUnclippedBoundsInRoot()
     val sub = rule.onNodeWithText(hint).getUnclippedBoundsInRoot()
     val button = rule.onNodeWithTag("btn_flight_next").getUnclippedBoundsInRoot()
@@ -235,9 +235,9 @@ class SieteFranjasTest {
     TestSupport.awaitUntil { v.ageRange.value == AgeRange.R75_PLUS }
     assertEquals(AgeBand.SENIOR, v.userSettings.value.ageBand)
     // y a la de menores de 18
-    rule.onNodeWithTag(chip(AgeRange.R13_17)).performScrollTo().performClick()
-    TestSupport.awaitUntil { v.ageRange.value == AgeRange.R13_17 && v.userSettings.value.ageBand == AgeBand.UNDER_18 }
-    assertEquals("R13_17", prefs().getString("age_range", null))
+    rule.onNodeWithTag(chip(AgeRange.R14_17)).performScrollTo().performClick()
+    TestSupport.awaitUntil { v.ageRange.value == AgeRange.R14_17 && v.userSettings.value.ageBand == AgeBand.UNDER_18 }
+    assertEquals("R14_17", prefs().getString("age_range", null))
   }
 
   @Test

@@ -110,7 +110,7 @@ class Tarea209CapturasTest {
   }
 
   @Test fun b_menores_393_10() {
-    shot("b") { ContrarrelojPage(results = results, selected = "stroop", onSelect = {}, now = now, compare = estWorld, ageRange = AgeRange.R13_17) }
+    shot("b") { ContrarrelojPage(results = results, selected = "stroop", onSelect = {}, now = now, compare = estWorld, ageRange = AgeRange.R14_17) }
     save("menores_393_10")
   }
 

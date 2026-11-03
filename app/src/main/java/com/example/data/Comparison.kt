@@ -8,7 +8,7 @@ import kotlin.math.min
  * Tu lugar entre personas de tu edad (Tarea 202; `auditoria-fable/nubi-plus-comparacion.md` §1, §4 y §11, opción B), LÓGICA PURA: el percentil desde el histograma SIN suavizar, la frase «superas al N %», la división con nombre, las reglas de «pocos», el percentil semana a semana,
  * «otras edades» y la forma de la campana; desde la Tarea 203, la cifra protagonista, la escalera de divisiones con su primer acierto, «te faltan», la racha de semanas y la frase gratis. No sabe de pantallas ni de dónde salen las marcas de las otras personas: las pide a una [Source] (desde la Tarea 205, la REFERENCIA ESTIMADA que lee `EstimatedReference` de los JSON del APK, también en la tienda, y en depuración, con un mundo de muestra, los datos de `SampleComparison`; el día que haya servidor, sus documentos semanales con personas reales, que mandan sobre la referencia en cada franja que llegue a [MIN_PEOPLE]).
  *
- * Lo que NO hace, a propósito: nunca habla de «capacidad», «edad mental», «ranking» ni «velocidad»; no hay lista de nombres ni «los 10 mejores»; la franja de 13 a 17 años queda fuera mientras [Features.COMPARE_MINORS] sea false; nunca presenta una referencia estimada como personas (con ella dice siempre «referencia estimada», jamás «personas» ni cuenta robots) ni inventa lugar con personas reales que son pocas (una clase con menos de [MIN_PEOPLE] se dice «todavía somos pocos»).
+ * Lo que NO hace, a propósito: nunca habla de «capacidad», «edad mental», «ranking» ni «velocidad»; no hay lista de nombres ni «los 10 mejores»; las siete franjas se comparan (14 a 17 con la tabla de 18 a 29, Tarea 216); nunca presenta una referencia estimada como personas (con ella dice siempre «referencia estimada», jamás «personas» ni cuenta robots) ni inventa lugar con personas reales que son pocas (una clase con menos de [MIN_PEOPLE] se dice «todavía somos pocos»).
  */
 object Comparison {
   /** Personas que hacen falta en una clase de referencia (franja, juego y semana) para decir un lugar (§4). */
@@ -71,27 +71,20 @@ object Comparison {
   /**
    * Qué hace la comparación de un juego con una persona, la PRECEDENCIA en un solo lugar (la pestaña Contrarreloj la lee; la puerta de Avance, que la leía, se fue en la Tarea 215):
    * [NONE] no hay nada que decir (sin fuente o sin tabla para ese juego); [NEEDS_AGE] hay con qué comparar pero falta la franja de edad (la página dice dónde elegirla, [AGE_HINT]);
-   * [MINOR] la franja guardada es la de 13 a 17 años y [Features.COMPARE_MINORS] está apagada (Tarea 209: antes era [NONE] y la página callaba; ahora dice [MINORS_NOTICE]);
    * [EARLY] hay franja y tabla pero el juego tiene menos de [PLACE_FROM_GAME] partidas guardadas (la página dice [EARLY_NOTICE] y no muestra ningún lugar); [SHOW] todo como siempre.
    */
-  enum class Gate { NONE, NEEDS_AGE, MINOR, EARLY, SHOW }
+  enum class Gate { NONE, NEEDS_AGE, EARLY, SHOW }
 
   fun gate(source: Source?, stored: AgeRange?, game: String, results: List<TimeTrialResult>): Gate {
     if (source == null || !source.covers(game)) return Gate.NONE
-    if (rangeFor(stored, source) == null) return if (stored == null) Gate.NEEDS_AGE else Gate.MINOR        // sin franja guardada, el aviso de edad; de 13 a 17 años (la única franja que rangeFor deja fuera), el aviso de que solo ve lo suyo
+    if (rangeFor(stored, source) == null) return Gate.NEEDS_AGE        // sin franja guardada, el aviso de edad (las siete franjas se comparan igual, también la de 14 a 17 con la tabla de 18 a 29: Tarea 216; antes, de 13 a 17 había un `Gate.MINOR`)
     return if (placeUnlocked(results, game)) Gate.SHOW else Gate.EARLY
   }
 
-  /** Lo que dice la página de quien tiene de 13 a 17 años ([Gate.MINOR]): UNA línea de 16 sp, sin negrita, donde van el aviso de edad y el de la tercera partida. */
-  const val MINORS_NOTICE = "De 13 a 17 años, el Contrarreloj muestra solo tus propias marcas."
-
   /**
-   * Con qué se compara ESTA persona en la puerta de Avance y en su hoja (Tarea 209: antes lo calculaba `ProgressScreen` por su cuenta): la comparación de la fuente si la hay y la persona tiene una franja con la que compararse; si no (sin fuente, sin franja o de 13 a 17 años), [Kind.NONE].
+   * Con qué se compara ESTA persona en la puerta de Avance y en su hoja (Tarea 209: antes lo calculaba `ProgressScreen` por su cuenta): la comparación de la fuente si la hay y la persona tiene una franja con la que compararse; si no (sin fuente o sin franja), [Kind.NONE].
    */
   fun kindFor(source: Source?, stored: AgeRange?): Kind = if (source != null && rangeFor(stored, source) != null) kindOf(source) else Kind.NONE
-
-  /** true si la persona guardó la franja de 13 a 17 años y esa franja no se compara ([Features.COMPARE_MINORS] apagada): la hoja del candado y la página lo dicen en vez de callar. */
-  fun isMinorLocked(stored: AgeRange?): Boolean = stored == AgeRange.R13_17 && !Features.COMPARE_MINORS
 
   // ---- la REFERENCIA ESTIMADA (Tarea 205; `auditoria-fable/referencia-estimada.md` §4 y las decisiones de Opus del 1-nov): siempre dicha; en cada losa solo «referencia estimada»; nunca se llama «personas»
   const val ESTIMATED_BELL_CAPTION = "La línea marca la mitad de la referencia estimada."
@@ -228,13 +221,9 @@ object Comparison {
   private fun realSource(): Source? = if (Features.COMPARE) null else null
 
   /**
-   * La franja con que se compara una persona: la suya; si no la eligió, en las builds de depuración con datos de muestra la de 45 a 54 años (para poder ver la sección) y en cualquier otra, ninguna (sin franja no hay con quién compararla). Con de 13 a 17 años, ninguna mientras [Features.COMPARE_MINORS] sea false:
-   * esa persona no ve la sección (§1.4 y §3.6).
+   * La franja con que se compara una persona: la suya; si no la eligió, en las builds de depuración con datos de muestra la de 45 a 54 años (para poder ver la sección) y en cualquier otra, ninguna (sin franja no hay con quién compararla). Las siete franjas se comparan (Tarea 216, 2-nov: la app es desde los 14 años y la de 14 a 17 usa la tabla de 18 a 29, [EstimatedReference.SHARED_RANGE]).
    */
-  fun rangeFor(stored: AgeRange?, sample: Boolean): AgeRange? {
-    val range = stored ?: if (sample) AgeRange.R45_54 else null
-    return range?.takeIf { it != AgeRange.R13_17 || Features.COMPARE_MINORS }
-  }
+  fun rangeFor(stored: AgeRange?, sample: Boolean): AgeRange? = stored ?: if (sample) AgeRange.R45_54 else null
 
   /** Lo mismo, para la fuente que hay en esta build: con datos de muestra ([SampleComparison]) sin franja elegida se usa la de 45 a 54 años (así ninguna pantalla nombra la muestra). */
   fun rangeFor(stored: AgeRange?, source: Source): AgeRange? = rangeFor(stored, sample = source is SampleComparison)
@@ -294,24 +283,23 @@ object Comparison {
   // ------------------------------------------------------------------ las franjas vecinas
 
   private val GROUPS: List<List<AgeRange>> = listOf(
-    listOf(AgeRange.R13_17, AgeRange.R18_29),
+    listOf(AgeRange.R14_17, AgeRange.R18_29),
     listOf(AgeRange.R30_44, AgeRange.R45_54),
     listOf(AgeRange.R55_64, AgeRange.R65_74),
     listOf(AgeRange.R65_74, AgeRange.R75_PLUS)
   )
 
   /**
-   * Las franjas con que se junta la de [range] cuando todavía somos pocos (§4, paso 3: 13 a 29 · 30 a 54 · 55 a 74 · 65 o más): la primera pareja que la trae, sin la de 13 a 17 mientras [Features.COMPARE_MINORS] sea false. Si queda sola (18 a 29 sin menores), null: no hay franja vecina con quien juntarla.
+   * Las franjas con que se junta la de [range] cuando todavía somos pocos (§4, paso 3: 14 a 29 · 30 a 54 · 55 a 74 · 65 o más): la primera pareja que la trae. Solo con personas reales (fase 2): con la referencia estimada nunca se juntan.
    */
-  fun neighborGroup(range: AgeRange): List<AgeRange>? =
-    GROUPS.first { range in it }.filter { it != AgeRange.R13_17 || Features.COMPARE_MINORS }.takeIf { it.size > 1 }
+  fun neighborGroup(range: AgeRange): List<AgeRange> = GROUPS.first { range in it }
 
-  /** «30 a 54 años», «55 a 74 años», «65 años o más» o «13 a 29 años». */
+  /** «30 a 54 años», «55 a 74 años», «65 años o más» o «14 a 29 años». */
   fun groupLabel(group: List<AgeRange>): String = when (group.last()) {
     AgeRange.R75_PLUS -> "65 años o más"
     AgeRange.R45_54 -> "30 a 54 años"
     AgeRange.R65_74 -> "55 a 74 años"
-    else -> "13 a 29 años"
+    else -> "14 a 29 años"
   }
 
   // ------------------------------------------------------------------ tu lugar esta semana
@@ -347,7 +335,7 @@ object Comparison {
     val own = source.distribution(game, listOf(range), 0)
     if (own.enough) return Place.Found(ranked(Scope.OWN_WEEK, listOf(range), own))
     source.distribution(game, listOf(range), 0, RECENT_WEEKS).takeIf { it.enough }?.let { return Place.Found(ranked(Scope.OWN_4_WEEKS, listOf(range), it)) }
-    neighborGroup(range)?.let { group -> source.distribution(game, group, 0, RECENT_WEEKS).takeIf { it.enough }?.let { return Place.Found(ranked(Scope.NEIGHBORS_4_WEEKS, group, it)) } }
+    neighborGroup(range).let { group -> source.distribution(game, group, 0, RECENT_WEEKS).takeIf { it.enough }?.let { return Place.Found(ranked(Scope.NEIGHBORS_4_WEEKS, group, it)) } }
     val allWeek = source.distribution(game, null, 0).takeIf { it.enough }?.let { ranked(Scope.ALL_WEEK, null, it) }
     val meanwhile = allWeek ?: source.distribution(game, null, 0, RECENT_WEEKS).takeIf { it.enough }?.let { ranked(Scope.ALL_4_WEEKS, null, it) }
     return Place.Few(own.people, meanwhile)
@@ -375,7 +363,7 @@ object Comparison {
    * La cifra de la página, en UNA sola frase (Tarea 213; decisión de Ricardo, 2-nov: «breve y claro; si explicas mucho se complica»; reemplaza a «63 de cada 100» con su frase de abajo, que seis de cada treinta y cinco personajes de MiroFish leían al revés): «Con 46 aciertos, superas al 5 % de la referencia estimada para tu edad.»
    * El número es el mismo percentil de siempre (los tramos SIN suavizar, hacia abajo, con tope 99). La referencia siempre se dice «estimada» (regla del 1-nov). Con 0 %, sin culpa y sin número: «Con 3 aciertos, todavía no superas ninguna marca de la referencia estimada para tu edad.»
    * Con PERSONAS reales (el futuro con servidor; hoy solo los datos de muestra), la misma frase sobre ellas y con la clase que se usó: «Con 46 aciertos, superas al 5 % de las personas de tu edad que jugaron esta semana.» (con las 4 semanas o las franjas juntas lo dice). La página la pega con espacios duros ([glueNumbers]: «5 %» no se parte);
-   * aquí queda con espacios normales, que es lo que lee el lector de pantalla ([heroSpoken]). Una sola frase y un solo estilo: la división y su lugar van debajo, sin cambio.
+   * aquí queda con espacios normales, que es lo que lee el lector de pantalla. Una sola frase y un solo estilo: la división y su lugar van debajo, sin cambio.
    */
   fun heroSentence(r: Ranked, range: AgeRange): String {
     val hits = TimeTrialDay.hitsText(r.mark)
@@ -384,12 +372,6 @@ object Comparison {
     val people = peopleOf(r, range)
     return if (p > 0) "Con $hits, superas al $p % de $people." else "Con $hits, todavía no superas a ninguna de $people."
   }
-
-  /**
-   * Lo que lee el lector de pantalla de la tarjeta de la cifra, de corrido: la frase y después la división y su lugar: «Con 46 aciertos, superas al 5 % de la referencia estimada para tu edad. En la plataforma. La primera de cinco divisiones.»
-   * (Tarea 209: ya no dice «percentil», que Ricardo quitó de todo texto el 1-nov; el lugar de la división ocupa su sitio.)
-   */
-  fun heroSpoken(r: Ranked, range: AgeRange): String = "${heroSentence(r, range)} ${r.division.label}. ${divisionPlaceLine(r.division)}"
 
   /** Un peldaño de la escalera: la división y el PRIMER acierto con que se llega a ella. */
   data class Rung(val division: Division, val from: Int)
@@ -462,25 +444,6 @@ object Comparison {
     n == 1 -> "Esta semana empiezas una racha ${Division.ORBIT.label} o más arriba."
     else -> null
   }
-
-  /**
-   * LO GRATIS (Ricardo, 31-oct): la división, su lugar entre las cinco (Tarea 209) y la meta, sin la frase de la cifra («superas al N %»), sin escalera y sin otras edades: «Esta semana estás En órbita, la tercera de cinco divisiones de la referencia estimada para tu edad. Te faltan 7 aciertos para En la Luna.»
-   * (en la más alta: «Esta semana estás Entre estrellas, la quinta y más alta de las cinco divisiones de la referencia estimada para tu edad.»; con personas, lo mismo sin «de la referencia estimada para tu edad»). Solo con un lugar dicho ([Place.Found]); con «pocos» o sin marca no hay nada que decir.
-   */
-  fun freeSentence(place: Place): String? {
-    val r = (place as? Place.Found)?.ranked ?: return null
-    val l = ladder(r)
-    val where = divisionPlace(r.division) + if (r.estimated) " de la referencia estimada para tu edad" else ""
-    if (l.next == null || l.missing == null) return "Esta semana estás ${r.division.label}, $where."
-    return "Esta semana estás ${r.division.label}, $where. ${needSentence(l, r)}"
-  }
-
-  /**
-   * La frase gratis de la puerta de Avance: la de [freeSentence] con el lugar de esta semana de la persona en [game] (null sin lugar dicho). Desde la Tarea 207 la puerta CALLA mientras [game] tenga menos de [PLACE_FROM_GAME] partidas guardadas (decisión de Opus, 1-nov: como sin franja de edad;
-   * para quien no tiene Plus, la frase de la página prometería un lugar que no ve): la explicación vive en la página, que es donde está el lugar.
-   */
-  fun freeSentenceFor(source: Source, game: String, range: AgeRange, results: List<TimeTrialResult>, now: Long): String? =
-    if (!source.covers(game) || !placeUnlocked(results, game)) null else freeSentence(place(source, game, range, bestOfWeek(TimeTrialDay.ofGame(results, game), now, 0)))
 
   /** El rótulo izquierdo del eje de las semanas: «hace 3 semanas» (la más vieja con punto); null si la más vieja es esta (no hay de qué separar). */
   fun weeksAxisLeft(points: List<WeekPoint>): String? {
@@ -582,7 +545,7 @@ object Comparison {
   data class Others(val rows: List<OtherRow>, val all: OtherRow?, val hidden: Boolean)
 
   /**
-   * La marca de esta semana contra cada franja (hasta 6 mientras [Features.COMPARE_MINORS] sea false, sin la de 13 a 17) y contra todas las edades, esta semana: solo las clases con 50 personas o más tienen fila, con su «Supera al N %» (Tarea 203b: ya no hay filas de «todavía somos pocos»,
+   * La marca de esta semana contra cada franja (las seis de 18 a 29 a 75 o más; la de 14 a 17 no lleva fila: comparte la tabla de 18 a 29 y sería la de 18 a 29 repetida) y contra todas las edades, esta semana: solo las clases con 50 personas o más tienen fila, con su «Supera al N %» (Tarea 203b: ya no hay filas de «todavía somos pocos»,
    * que en los primeros meses serían casi todas); la propia lleva «(tu franja)». [Others.hidden] avisa que falta alguna y null = no hay ninguna fila que mostrar (la losa no va).
    */
   fun others(source: Source, game: String, range: AgeRange, mark: Int): Others? {
@@ -592,7 +555,7 @@ object Comparison {
       if (d.enough && d.estimated) anyEstimated = true
       return if (d.enough) OtherRow(if (own) "$label (tu franja)" else label, percentile(mark, d), own, if (d.estimated) 0 else d.people) else null
     }
-    val ages = AgeRange.entries.filter { it != AgeRange.R13_17 || Features.COMPARE_MINORS }
+    val ages = AgeRange.entries.filter { it != AgeRange.R14_17 }          // 14 a 17 comparte la tabla de 18 a 29: no lleva fila
     val rows = ages.mapNotNull { row(it.label, listOf(it), it == range) }
     val all = row("Todas las edades", null, false)
     if (rows.isEmpty() && all == null) return null
