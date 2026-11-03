@@ -2,6 +2,7 @@ package com.example
 
 import com.example.data.HealthNotice
 import com.example.data.PlusAccess
+import com.example.data.TimeTrialDay
 import com.example.data.TimeTrialMarks
 import com.example.model.AppLanguage
 import com.example.model.WeeklyChallengeRegistry
@@ -365,7 +366,9 @@ class VisibleTextsGuardTest {
     val words = listOf("bloquead", "desbloque", "intento")
     val files = listOf(
       "ui/screens/ContrarrelojPage.kt", "ui/screens/ContrarrelojScreen.kt", "ui/screens/PlusLockSheet.kt", "ui/components/NeuroNavBar.kt", "ui/components/HoyGuideOverlay.kt",
-      "data/TimeTrialMarks.kt", "data/TimeTrialDay.kt", "data/TimeTrialStats.kt", "data/PlusAccess.kt", "data/Comparison.kt", "data/HoyGuide.kt"
+      "data/TimeTrialMarks.kt", "data/TimeTrialDay.kt", "data/TimeTrialStats.kt", "data/PlusAccess.kt", "data/Comparison.kt", "data/HoyGuide.kt",
+      // Tarea 218 (la regla de partidas): la fila gris, Hoy sin partidas y el final del Contrarreloj dicen «partidas» y «Con Nubilus Plus», nunca «bloqueado» ni «intentos»
+      "ui/components/LockedRow.kt", "ui/screens/HomeScreen.kt", "games/TimeTrialResultScreen.kt"
     )
     val found = mutableListOf<String>()
     for (name in files) File("src/main/java/com/example/$name").readLines().forEachIndexed { i, raw ->
@@ -376,7 +379,9 @@ class VisibleTextsGuardTest {
     for (malo in listOf("Contrarreloj bloqueado", "Se desbloquea con Plus", "Te quedan 2 intentos de hoy.", "Bloqueada")) assertTrue("no atrapa «$malo»", words.any { it in malo.lowercase() })
     for (bueno in listOf("Con Nubilus Plus: todas tus marcas.", "Te quedan 2 partidas de hoy.", "Esta semana jugaste 3 partidas y la mejor fue de 41 aciertos.", "Esta semana jugaste 3 partidas y la mejor fue tu récord.", "Todavía no tienes marcas en este juego.", "Jugar 2 minutos de Acoplamiento")) assertTrue("atrapa «$bueno» sin motivo", words.none { it in bueno.lowercase() })
     // los textos nuevos de la Tarea 215 por su valor
-    for (t in listOf(PlusAccess.LOCKED_PLACE, PlusAccess.LOCKED_MARKS, PlusAccess.LOCKED_PLACE_TITLE, PlusAccess.LOCKED_MARKS_TITLE, TimeTrialMarks.PLAY, TimeTrialMarks.SUBTITLE_PLACE, TimeTrialMarks.freeRecordLine(null), TimeTrialMarks.weekLine(TimeTrialMarks.WeekSummary(3, 41)))) {
+    for (t in listOf(PlusAccess.LOCKED_PLACE, PlusAccess.LOCKED_MARKS, PlusAccess.LOCKED_PLACE_TITLE, PlusAccess.LOCKED_MARKS_TITLE, TimeTrialMarks.PLAY, TimeTrialMarks.SUBTITLE_PLACE, TimeTrialMarks.freeRecordLine(null), TimeTrialMarks.weekLine(TimeTrialMarks.WeekSummary(3, 41)),
+      // los de la Tarea 218
+      TimeTrialDay.gamesLeftLine(2), TimeTrialDay.gamesLeftLine(1), TimeTrialDay.NO_GAMES_LEFT, TimeTrialDay.tomorrowLine("Tinta o Palabra"), TimeTrialDay.TOMORROW_FINAL, PlusAccess.LOCKED_GAMES, PlusAccess.SHEET_FOUR_GAMES, PlusAccess.SHEET_LEAD, PlusAccess.SHEET_LEAD_COMPARED)) {
       assertTrue("«$t»", words.none { it in t.lowercase() })
     }
   }

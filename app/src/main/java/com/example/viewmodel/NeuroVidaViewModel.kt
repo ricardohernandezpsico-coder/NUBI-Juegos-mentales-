@@ -492,12 +492,13 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   /**
    * «Contrarreloj de hoy» (Tarea 177; `docs/contrarreloj.md`): el juego de la fecha (el mismo para todas las personas: rotación fija sobre los cuatro de la primera tanda) en «La escalera de 2 minutos»: 120 s, la pista fija del día, sin dificultad adaptativa. NO es la ruta (no la avanza) y se
-   * puede repetir sin límite; gratis; no cuenta para el futuro tope de partidas libres (`TimeTrialDay.COUNTS_FOR_FREE_CAP`). Al terminar vuelve a donde se vino (Hoy; «Todos los juegos» si se lanzó desde la ficha; la pestaña «Contrarreloj» si [fromTab], Tarea 215). [gameId] lo piden «Otra vez» (el mismo juego, con una pista nueva, aunque el día haya
+   * puede repetir mientras queden partidas (Tarea 218: sin Nubilus Plus solo el de HOY y [com.example.data.TimeTrialDay.FREE_GAMES_PER_DAY] al día, con las tres puertas —Hoy, la ficha y la pestaña— contando igual; con Plus, los cuatro y sin tope: [canPlayTimeTrial]). Al terminar vuelve a donde se vino (Hoy; «Todos los juegos» si se lanzó desde la ficha; la pestaña «Contrarreloj» si [fromTab], Tarea 215). [gameId] lo piden «Otra vez» (el mismo juego, con una pista nueva, aunque el día haya
    * cambiado mientras se jugaba) y el botón «Contrarreloj» de la ficha (Tarea 181: CUALQUIERA de los cuatro juegos, con la fecha y la versión de la pista de ese juego, como Hoy; se guarda igual y, si es el juego del día, Hoy lo ve como jugado o con marca nueva porque su estado sale de la tabla).
    */
   fun startTimeTrial(gameId: String? = null, day: String? = null, fromTab: Boolean = false) {
     val d = day ?: repository.todayKey()
     val g = gameId ?: com.example.data.TimeTrialDay.gameFor(d)
+    if (!canPlayTimeTrial(g)) return                      // nunca se lanza una partida sin partidas (la pantalla ya no la ofrece; esto es el seguro)
     rememberOrigin(if (fromTab) ORIGIN_CONTRARRELOJ else ORIGIN_HOY, g)
     launchGame(g, timeTrialDay = d)
   }
@@ -506,10 +507,17 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
    * «Otra vez» del final del Contrarreloj: el mismo juego con una pista nueva (Tarea 210), y al terminar vuelve a donde se vino la primera vez (Hoy, o la pestaña «Contrarreloj», Tarea 215): el origen que ya estaba anotado para este juego se conserva en vez de pasar siempre a Hoy.
    */
   fun timeTrialAgain(gameId: String, day: String) {
+    if (!canPlayTimeTrial(gameId)) return
     val origin = if (focusPrefs.getString("origin_game", null) == gameId) focusPrefs.getString("origin", null) else null
     rememberOrigin(origin ?: ORIGIN_HOY, gameId)
     launchGame(gameId, timeTrialDay = day)
   }
+
+  /**
+   * ¿Se puede lanzar ahora el Contrarreloj de [gameId]? (Tarea 218) Con Nubilus Plus, siempre; sin él, solo el juego del día y mientras queden sus partidas de hoy, contadas de lo GUARDADO (`time_trial_results`: una partida cuenta cuando se guarda, nunca al empezar).
+   * El invitado de depuración no pasa por aquí: no guarda nada y no gasta partidas.
+   */
+  fun canPlayTimeTrial(gameId: String): Boolean = com.example.data.TimeTrialDay.canPlay(plus.value, gameId, repository.todayKey(), timeTrialResults.value)
 
   /**
    * «[Debug] Contrarreloj de invitado» (Tarea 205): juega el Contrarreloj de HOY de [gameId] como el de siempre (cada partida con su propia pista), pero al final solo muestra la marca (`GuestTrialScreen`) y NO guarda nada: ni la partida, ni el récord, ni la racha, ni las farolas, ni lo «ya visto» de Unity (igual que «Jugar como la primera vez»).
@@ -779,15 +787,26 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       _pausedGameId.value = value?.first?.gameDef?.id
     }
 
+  /**
+   * Una partida del Contrarreloj en pausa vale SOLO su día (Tarea 218, `idea-pestana-contrarreloj.md` §5): al día siguiente se descarta, sin aviso (no había nada guardado), para que Hoy no ofrezca «Seguir tu partida» de un Contrarreloj que ya no es el de hoy.
+   * Se mira al arrancar, al retomar y con el reloj de Hoy (cada 30 s). Las partidas de siempre en pausa no caducan.
+   */
+  fun dropStalePause() {
+    val day = pausedGame?.first?.timeTrialDay ?: return
+    if (day != repository.todayKey()) pausedGame = null
+  }
+
   init {
     // Lo que quedó en disco si Android cerró la app durante un juego: el recorrido del inicio en curso (ya cargado en
     // [_flight]) y un resultado que llegó mientras tanto (se muestra ahora, con su pantalla de resultado y el flujo donde iba).
+    dropStalePause()
     _pausedGameId.value = pausedGame?.first?.gameDef?.id
     processPendingResult()
   }
 
   /** Retoma la partida en pausa (botón "Seguir partida" de Hoy). */
   fun resumePausedGame() {
+    dropStalePause()
     val (session, _) = pausedGame ?: return
     launchGame(session.gameDef.id, isDailyFlow = session.isDailyFlow, timeTrialDay = session.timeTrialDay)
   }

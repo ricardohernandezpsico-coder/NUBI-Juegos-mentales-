@@ -3,6 +3,8 @@ package com.example.ui.screens
 import com.example.ui.components.ClaySlab
 import com.example.ui.components.Glyph
 import com.example.ui.components.KitGlyph
+import com.example.data.PlusAccess
+import com.example.data.glueGames
 import com.example.ui.components.SlabColor
 import com.example.ui.components.SlabSize
 import androidx.compose.animation.AnimatedVisibility
@@ -99,12 +101,28 @@ data class GameCardData(
 
 /**
  * El botón «Contrarreloj» de la ficha (Tarea 181; solo en Tinta o Palabra, ¿Verdad o disparate?, Rescate relámpago y Acoplamiento): su segunda línea («Tu récord: 41 aciertos.» o «2 minutos»), lo que dice el lector de pantalla y su color (lila o crema: nunca sol, el sol es de «Jugar»).
+ * Desde la Tarea 218 (la regla de partidas) hay tres formas sin Nubilus Plus: con partidas, la segunda línea dice «Te quedan 2 partidas de hoy.»; en un juego que NO es el de hoy, el botón va [locked] (gris con candado, «Con Nubilus Plus» en su segunda línea) y abre la hoja del candado; y sin partidas
+ * el botón no sale y queda la línea [noGamesLine] («Hoy ya jugaste tus 3 partidas.»).
  */
-internal data class SheetTimeTrial(val secondLine: String, val spoken: String, val color: SlabColor = SlabColor.LILAC)
+internal data class SheetTimeTrial(val secondLine: String, val spoken: String, val color: SlabColor = SlabColor.LILAC, val locked: Boolean = false, val noGamesLine: String? = null)
 
-/** El botón de la ficha de [gameId] con lo guardado: [record] = el récord de ese juego con la pista vigente (null = nunca jugó), [dateKey] = hoy (para decir «de hoy» solo si es el juego del día). Null si el juego no tiene Contrarreloj. */
-internal fun sheetTimeTrialOf(gameId: String, title: String, record: Int?, dateKey: String, color: SlabColor = SlabColor.LILAC): SheetTimeTrial? =
-  if (!TimeTrialDay.supports(gameId)) null else SheetTimeTrial(TimeTrialDay.sheetSecondLine(record), TimeTrialDay.sheetDescription(gameId, dateKey, title, record), color)
+/**
+ * El botón de la ficha de [gameId] con lo guardado: [record] = el récord de ese juego con la pista vigente (null = nunca jugó), [dateKey] = hoy (para decir «de hoy» solo si es el juego del día). Null si el juego no tiene Contrarreloj.
+ * [plus] = Nubilus Plus (con él, las fichas quedan como siempre); [results] = TODAS las partidas del Contrarreloj (de ahí salen las partidas que quedan de hoy).
+ */
+internal fun sheetTimeTrialOf(
+  gameId: String, title: String, record: Int?, dateKey: String, color: SlabColor = SlabColor.LILAC,
+  plus: Boolean = true, results: List<com.example.data.TimeTrialResult> = emptyList()
+): SheetTimeTrial? {
+  if (!TimeTrialDay.supports(gameId)) return null
+  val normal = TimeTrialDay.sheetDescription(gameId, dateKey, title, record)
+  if (plus) return SheetTimeTrial(TimeTrialDay.sheetSecondLine(record), normal, color)
+  if (!TimeTrialDay.isOfDay(gameId, dateKey)) return SheetTimeTrial(PlusAccess.LOCK_LABEL, "${TimeTrialDay.BUTTON_LABEL}, $title, con Nubilus Plus", SlabColor.CREAM, locked = true)
+  val left = TimeTrialDay.gamesLeft(results, dateKey, gameId)
+  if (left == 0) return SheetTimeTrial("", TimeTrialDay.NO_GAMES_LEFT, color, noGamesLine = TimeTrialDay.NO_GAMES_LEFT)
+  // la segunda línea va con «2 partidas de hoy» pegado (Tarea 218): con letra grande «hoy.» no queda solo; el lector dice la frase normal
+  return SheetTimeTrial(TimeTrialDay.gamesLeftLine(left).glueGames(), normal + ", " + TimeTrialDay.gamesLeftLine(left).trimEnd('.'), color)
+}
 
 /**
  * La ficha de [game] con sus datos ya leídos del ViewModel: la usan Hoy (la piedrita de «Tu ruta de hoy» y las filas de la lámina de un lugar) y Avance (las filas del detalle de un área), igual que Juegos. Tocar el nombre de un juego abre SIEMPRE esta ficha;
@@ -116,6 +134,8 @@ internal fun GameSheetHost(game: GameDefinition, viewModel: NeuroVidaViewModel, 
   val progressLog by viewModel.progressLog.collectAsState()
   val skill by viewModel.skill.collectAsState()
   val timeTrialResults by viewModel.timeTrialResults.collectAsState()
+  val plus by viewModel.plus.collectAsState()
+  var lockSheet by remember { mutableStateOf(false) }
   val lang = LocalAppLanguage.current
   val now = remember(game.id) { System.currentTimeMillis() }
   // Los puntos del juego salen de los de su área, para que la ficha y la página del área digan lo mismo (el redondeo se reparte entre los juegos del área)
@@ -131,9 +151,12 @@ internal fun GameSheetHost(game: GameDefinition, viewModel: NeuroVidaViewModel, 
     onDismiss = onDismiss,
     onPlay = onPlay,
     onTutorial = onTutorial,
-    timeTrial = sheetTimeTrialOf(game.id, title, TimeTrialStats.record(timeTrialResults, game.id), viewModel.todayKey()),
-    onTimeTrial = onTimeTrial
+    timeTrial = sheetTimeTrialOf(game.id, title, TimeTrialStats.record(timeTrialResults, game.id), viewModel.todayKey(), plus = plus, results = timeTrialResults),
+    // el botón en gris (un juego que no es el de hoy, sin Plus) no lanza nada: abre la hoja del candado (Tarea 218)
+    onTimeTrial = { if (viewModel.canPlayTimeTrial(game.id)) onTimeTrial() else lockSheet = true }
   )
+  // la hoja del candado desde la ficha: sin la fila «De dónde sale la referencia ›» (abriría un panel DETRÁS de la ventana de la ficha)
+  if (lockSheet) LockSheetHost(viewModel, onDismiss = { lockSheet = false }, withSource = false)
 }
 
 /** Arma los datos de un juego: su nombre y sus puntos. */
@@ -379,11 +402,14 @@ internal fun GameSheetContent(
         }
 
         // «Contrarreloj» (Tarea 181): solo en los cuatro juegos que lo tienen, a todo el ancho BAJO la fila de arriba, con el mismo reloj de plasticina de Hoy (42 dp). Su segunda línea dice el récord de ESE juego o «2 minutos». No es el sol: el único sol de la ficha es «Jugar».
-        if (timeTrial != null) {
+        if (timeTrial != null && timeTrial.noGamesLine != null) {
+          // sin partidas hoy (Tarea 218): el botón no sale y queda la línea, en tinta y negrita, sobre la crema de la ficha
+          Text(timeTrial.noGamesLine.glueGames(), color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().padding(top = 12.dp).semantics { contentDescription = timeTrial.spoken }.testTag("sheet_timetrial_none"))
+        } else if (timeTrial != null) {
           KitButton(
-            text = TimeTrialDay.BUTTON_LABEL, onClick = onTimeTrial, color = timeTrial.color, leading = { ClayClockIcon() }, fontSize = 18.sp, minHeight = 64.dp,
-            secondLine = timeTrial.secondLine, secondLineSize = 16.sp,
-            modifier = Modifier.padding(top = 8.dp).semantics(mergeDescendants = true) { contentDescription = timeTrial.spoken }.testTag("sheet_timetrial")
+            text = TimeTrialDay.BUTTON_LABEL, onClick = onTimeTrial, color = timeTrial.color, leading = { if (timeTrial.locked) KitGlyph(Glyph.LOCK, size = 28.dp) else ClayClockIcon() }, fontSize = 18.sp, minHeight = 64.dp,
+            secondLine = timeTrial.secondLine, secondLineSize = 16.sp, locked = timeTrial.locked,
+            modifier = Modifier.padding(top = 8.dp).semantics(mergeDescendants = true) { contentDescription = timeTrial.spoken }.testTag(if (timeTrial.locked) "sheet_timetrial_locked" else "sheet_timetrial")
           )
         }
 

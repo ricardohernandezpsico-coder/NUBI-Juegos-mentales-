@@ -12,6 +12,11 @@ private val DE_THEN_YEAR = Regex("""\bde (?=(?:19|20)\d{2}\b)""")
 
 fun String.glueNumbers(): String = replace(DIGIT_THEN_WORD, "$1$NBSP").replace(DIGIT_THEN_PERCENT, "$1$NBSP").replace(DE_THEN_YEAR, "de$NBSP")
 
+/**
+ * La regla de partidas (Tarea 218): «Te quedan 2 partidas de hoy.» y «Hoy ya jugaste tus 3 partidas.» no dejan «hoy.» ni «partidas.» solas en el segundo renglón con letra grande: la cifra con su unidad ([glueNumbers]) y «de hoy» pegados. Solo para lo que SE VE.
+ */
+fun String.glueGames(): String = glueNumbers().replace(" de hoy", "${NBSP}de${NBSP}hoy")
+
 /** Los nombres de las divisiones de la página «Contrarreloj» (Tarea 203b): «En la Luna» no se parte entre «En la» y «Luna». */
 private val DIVISION_NAMES = listOf("En la plataforma", "En la Luna", "Entre estrellas", "En órbita")
 // el espacio entre la cifra y su unidad puede venir ya duro ([glueNumbers] corre antes): se acepta cualquiera de los dos

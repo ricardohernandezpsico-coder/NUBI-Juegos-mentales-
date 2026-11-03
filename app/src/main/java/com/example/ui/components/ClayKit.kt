@@ -377,9 +377,11 @@ internal fun KitButton(
   /** Un dibujo propio a la izquierda del texto (con [glyph] nulo): el emblema del juego que sigue en el final de partida. */
   leading: (@Composable () -> Unit)? = null,
   /** Centra el contenido a lo alto de la losa: cuando quien llama la estira (dos botones de una fila con el alto del más alto, «Desafío de hoy» y «Todos los juegos» de Hoy, Tarea 167). */
-  centerContent: Boolean = false
+  centerContent: Boolean = false,
+  /** El botón «de Nubilus Plus que no tienes» (Tarea 218): la misma losa en gris ([LockedSlabFilter]); quien lo usa pone el candado ([leading]) y «Con Nubilus Plus» en la segunda línea. */
+  locked: Boolean = false
 ) {
-  ClaySlab(color, if (wide) modifier.fillMaxWidth() else modifier, onClick = onClick, forcePressed = forcePressed, onClickLabel = onClickLabel, contentAlignment = if (centerContent) Alignment.Center else Alignment.TopStart) {
+  ClaySlab(color, if (wide) modifier.fillMaxWidth() else modifier, onClick = onClick, forcePressed = forcePressed, onClickLabel = onClickLabel, contentAlignment = if (centerContent) Alignment.Center else Alignment.TopStart, locked = locked) {
     Row(
       (if (wide) Modifier.fillMaxWidth() else Modifier).heightIn(min = minHeight).padding(horizontal = if (wide) 12.dp else 20.dp, vertical = if (minHeight < 56.dp) 4.dp else 8.dp),
       horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically

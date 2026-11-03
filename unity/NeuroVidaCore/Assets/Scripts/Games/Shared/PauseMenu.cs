@@ -26,7 +26,13 @@ namespace NeuroVida.Games.Shared
         public const string SubtitleText = "Tu partida te espera", ConfirmText = "¿Empezar de nuevo esta partida?";
 
         /// <summary>La marca de versión (Tarea 190: antes vivía en la cuenta regresiva y salía también en la app publicada). Se muestra SOLO en las builds de depuración de la app (<c>debug_build</c> de la config) y SOLO en la pausa, abajo del panel. <b>Cambiarla con cada cambio visible de Unity:</b> el export de Unity está fuera de git y, si no se reexporta, Gradle empaqueta el viejo sin avisar.</summary>
-        public const string StyleStamp = "pista 1-nov";
+        public const string StyleStamp = "pista 2-nov";
+
+        /// <summary>
+        /// ¿Se ofrece «Reiniciar» en esta pausa? (Tarea 218, la regla de partidas del Contrarreloj; <c>auditoria-fable/idea-pestana-contrarreloj.md</c> §5.) <b>En el Contrarreloj, NO:</b> «Reiniciar» arma una pista nueva sin guardar nada, y con 3 partidas gratis al día cada reinicio sería una partida de más. La pausa ofrece solo «Continuar»
+        /// (y «Cómo se juega» si lo hay) y «Salir». Lo fija <c>GameEntryPoint</c> con cada partida (<c>!time_trial</c>) y se lee cada vez que se abre el menú.
+        /// </summary>
+        public static bool OffersRestart = true;
 
         /// <summary>El texto de la marca que se dibuja ahora (null = ninguna: release). Lo fija <c>GameEntryPoint</c> con cada partida.</summary>
         public static string DebugStamp;
@@ -173,13 +179,15 @@ namespace NeuroVida.Games.Shared
         private void Relayout(bool withHowTo)
         {
             _withHowTo = withHowTo;
-            float h = withHowTo ? 1130f : 940f;
+            // 940 con tres botones (Continuar, Reiniciar, Salir); cada botón de más o de menos suma o resta 190 («Cómo se juega» y, en el Contrarreloj, sin «Reiniciar»)
+            int buttons = 2 + (OffersRestart ? 1 : 0) + (withHowTo ? 1 : 0);
+            float h = 940f + (buttons - 3) * 190f;
             _panel.sizeDelta = new Vector2(820f, h);
             float top = h * 0.5f;
             PlaceCentered(_title, new Vector2(0f, top - 140f), new Vector2(760f, 150f));
             PlaceCentered(_subtitle, new Vector2(0f, top - 255f), new Vector2(760f, 70f));
             float y = top - 415f;
-            foreach (var btn in new[] { _btnContinue, _btnRestart, _btnHowTo, _btnExit }) btn.gameObject.SetActive(!_confirming && (btn != _btnHowTo || withHowTo));
+            foreach (var btn in new[] { _btnContinue, _btnRestart, _btnHowTo, _btnExit }) btn.gameObject.SetActive(!_confirming && (btn != _btnHowTo || withHowTo) && (btn != _btnRestart || OffersRestart));
             _btnYes.gameObject.SetActive(_confirming);
             _btnNo.gameObject.SetActive(_confirming);
             if (_confirming)
@@ -190,6 +198,7 @@ namespace NeuroVida.Games.Shared
             }
             foreach (var btn in withHowTo ? new[] { _btnContinue, _btnRestart, _btnHowTo, _btnExit } : new[] { _btnContinue, _btnRestart, _btnExit })
             {
+                if (btn == _btnRestart && !OffersRestart) continue;                  // sin «Reiniciar» (Contrarreloj): los demás se acomodan sin hueco
                 PlaceCentered(btn, new Vector2(0f, y), new Vector2(640f, 150f)); // ~50 dp de alto: mayor que el mínimo de 48 dp
                 y -= 190f;
             }

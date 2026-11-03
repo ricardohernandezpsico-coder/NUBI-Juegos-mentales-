@@ -83,7 +83,7 @@ class ContrarrelojFlowTest {
   }
 
   /** Dos juegos jugados de siempre (para que Avance tenga áreas y «Tus mejores marcas») y diez marcas del Contrarreloj del juego de HOY (44 es el récord) más una de otro juego. */
-  private fun withData(history: Boolean = true): NeuroVidaViewModel {
+  private fun withData(history: Boolean = true, playedToday: Int = 10): NeuroVidaViewModel {
     val repo = (app as NeuroVidaApplication).repository
     val real = System.currentTimeMillis()
     var n = 0
@@ -104,7 +104,8 @@ class ContrarrelojFlowTest {
     val other = TimeTrialDay.GAMES.first { it != today }
     runBlocking {
       listOf(31, 35, 39, 36, 44, 38, 41, 37, 42, 43).forEachIndexed { i, m ->
-        repo.recordTimeTrial(TimeTrialResult(id = "flow-$i", gameId = today, day = vm.todayKey(), trackVersion = TimeTrialDay.trackVersion(today), hits = m + 2, errors = 2, level = 4, seconds = 120, timestamp = real - (10 - i) * day))
+        // [playedToday] = cuántas de las diez cuentan como de HOY (las últimas); las demás llevan su día de antes (Tarea 218: sin Plus, hoy se juegan 3 partidas y la cuenta sale del día guardado)
+        repo.recordTimeTrial(TimeTrialResult(id = "flow-$i", gameId = today, day = if (i >= 10 - playedToday) vm.todayKey() else repo.dateKeyOf(real - (10 - i) * day), trackVersion = TimeTrialDay.trackVersion(today), hits = m + 2, errors = 2, level = 4, seconds = 120, timestamp = real - (10 - i) * day))
       }
       repo.recordTimeTrial(TimeTrialResult(id = "flow-other", gameId = other, day = vm.todayKey(), trackVersion = TimeTrialDay.trackVersion(other), hits = 29, errors = 2, level = 3, seconds = 120, timestamp = real - day))
     }
@@ -208,7 +209,7 @@ class ContrarrelojFlowTest {
 
   @Test
   fun sin_Plus_los_otros_tres_juegos_van_en_gris_con_su_record_y_abren_la_hoja_sin_elegirse() {
-    val vm = withData(); vm.setPlus(false)
+    val vm = withData(playedToday = 1); vm.setPlus(false)
     show(vm)
     val today = TimeTrialDay.gameFor(vm.todayKey())
     val others = TimeTrialDay.GAMES.filter { it != today }
@@ -260,8 +261,8 @@ class ContrarrelojFlowTest {
     assertEquals(PlusAccess.SHEET_TITLE, textOf("plus_sheet_title"))
     // la referencia estimada (de fábrica en depuración y en la tienda) llega a la hoja: habla de la referencia estimada, nunca de personas, y trae TRES líneas
     assertEquals(PlusAccess.sheetLead(Comparison.Kind.ESTIMATED), textOf("plus_sheet_lead"))
-    assertEquals("tres líneas de lo que trae", 3, (0 until 12).count { count("plus_sheet_item_$it") > 0 })
-    assertEquals(PlusAccess.sheetItems(Comparison.Kind.ESTIMATED), (0 until 3).map { textOf("plus_sheet_item_$it") })
+    assertEquals("cuatro líneas de lo que trae (Tarea 218: la primera, las partidas libres)", 4, (0 until 12).count { count("plus_sheet_item_$it") > 0 })
+    assertEquals(PlusAccess.sheetItems(Comparison.Kind.ESTIMATED), (0 until 4).map { textOf("plus_sheet_item_$it") })
     assertEquals("Cerrar", rule.onNodeWithTag("btn_plus_sheet_ok").fetchSemanticsNode().config.getOrNull(SemanticsProperties.Text)?.joinToString("") { it.text })
     rule.onNodeWithTag("btn_plus_sheet_ok").performClick(); rule.waitForIdle()
     assertEquals("la hoja se cierra", 0, count("plus_sheet"))
@@ -359,7 +360,7 @@ class ContrarrelojFlowTest {
     show(vm)
     rule.onNodeWithTag("contrarreloj_locked_marks").performScrollTo().performClick(); rule.waitForIdle()
     rule.onNodeWithTag("plus_sheet").assertIsDisplayed()
-    return textOf("plus_sheet_lead") to (0 until 3).map { textOf("plus_sheet_item_$it") }
+    return textOf("plus_sheet_lead") to (0 until 4).map { textOf("plus_sheet_item_$it") }
   }
 
   @Test
@@ -383,7 +384,7 @@ class ContrarrelojFlowTest {
     val vm = withData(); vm.setPlus(false); withRange(vm, AgeRange.R45_54)
     show(vm)
     rule.onNodeWithTag("contrarreloj_locked_marks").performScrollTo().performClick(); rule.waitForIdle()
-    assertEquals("Gratis: jugar, tu récord y tu división de la semana. Con Nubilus Plus, además:", textOf("plus_sheet_lead"))
+    assertEquals("Gratis: el Contrarreloj de cada día, con 3 partidas, tu récord y tu división de la semana. Con Nubilus Plus, además:", textOf("plus_sheet_lead"))
     assertEquals(PlusAccess.SHEET_NOTE_ESTIMATED, textOf("plus_sheet_note"))
     assertEquals("la razón va antes de la fila y la fila antes de «Cerrar»", true, top("plus_sheet_note") < top("plus_sheet_source") && top("plus_sheet_source") < top("btn_plus_sheet_ok"))
     rule.onNode(androidx.compose.ui.test.hasText("De dónde sale la referencia ›"), useUnmergedTree = true).assertExists()
@@ -426,7 +427,7 @@ class ContrarrelojFlowTest {
 
   @Test
   fun Jugar_lanza_el_juego_de_hoy_con_su_pista_y_al_cerrar_el_final_se_vuelve_a_la_pestana() {
-    val vm = withData(); vm.setPlus(false)
+    val vm = withData(playedToday = 1); vm.setPlus(false)
     show(vm)
     val today = TimeTrialDay.gameFor(vm.todayKey())
     rule.onNodeWithTag("btn_contrarreloj_play").performClick(); rule.waitForIdle()

@@ -174,6 +174,36 @@ namespace NeuroVida.Games.Tests
             Assert.IsFalse(pause.IsShown);
         }
 
+        [Test]
+        public void En_el_Contrarreloj_la_pausa_ofrece_solo_Continuar_y_Salir_y_en_una_partida_de_siempre_tambien_Reiniciar()
+        {
+            // Tarea 218: «Reiniciar» arma una pista nueva sin guardar nada; con 3 partidas gratis al día sería una partida de más cada vez
+            Assert.IsTrue(PauseMenu.OffersRestart, "por omisión (una partida de siempre) la pausa ofrece «Reiniciar»");
+            var normal = PauseMenu.Create(NewArea(), () => { }, () => { }, () => { });
+            _made.Add(normal.gameObject);
+            normal.Show();
+            Assert.IsNotNull(normal.transform.Find("Panel/Btn_Reiniciar"));
+            Assert.IsTrue(normal.transform.Find("Panel/Btn_Reiniciar").gameObject.activeSelf, "una partida de siempre: «Reiniciar» a la vista");
+            PauseMenu.OffersRestart = false;
+            try
+            {
+                var pause = PauseMenu.Create(NewArea(), () => { }, () => { }, () => { });
+                _made.Add(pause.gameObject);
+                pause.Show();
+                var names = new System.Collections.Generic.List<string>();
+                foreach (var kv in pause.VisibleButtons()) names.Add(kv.Key);
+                CollectionAssert.AreEqual(new[] { "Btn_Continuar", "Btn_Salir" }, names, "el Contrarreloj: solo «Continuar» y «Salir»");
+                Assert.IsFalse(pause.transform.Find("Panel/Btn_Reiniciar").gameObject.activeSelf);
+                var panel = (RectTransform)pause.transform.Find("Panel");
+                Assert.AreEqual(750f, panel.sizeDelta.y, 0.01f, "el panel se achica 190 unidades: 940 con tres botones, 750 con dos");
+                var cont = (RectTransform)pause.transform.Find("Panel/Btn_Continuar");
+                var exit = (RectTransform)pause.transform.Find("Panel/Btn_Salir");
+                Assert.AreEqual(190f, cont.anchoredPosition.y - exit.anchoredPosition.y, 0.01f, "sin hueco entre los dos botones que quedan");
+                Assert.Less(Mathf.Abs(exit.anchoredPosition.y - exit.rect.height * 0.5f), panel.sizeDelta.y * 0.5f, "los dos caben dentro del panel");
+            }
+            finally { PauseMenu.OffersRestart = true; }
+        }
+
         // ------------------------------------------------------------------ los controles del tutorial
 
         [Test]

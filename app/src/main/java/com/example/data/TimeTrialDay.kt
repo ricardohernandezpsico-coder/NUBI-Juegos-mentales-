@@ -33,7 +33,7 @@ data class TimeTrialResult(
  * El Contrarreloj de hoy, fase 1: local, sin servidor (Tarea 177, 26-oct; `docs/contrarreloj.md`; diseño de Fable en `auditoria-fable/contrarreloj.md`, mecánica A «La escalera de 2 minutos», elegida por Ricardo). Un juego al día, EL MISMO PARA TODAS LAS PERSONAS (rotación fija de la fecha, como Wordle), en
  * una pista de 2 minutos de forma fija (sube un paso cada N aciertos) con su propia semilla en cada partida (la del día + un número de la partida, Tarea 210); la marca es «N aciertos en 2 minutos», contando los aciertos MENOS los errores (Tarea 178), y se compara solo con tu récord, tus últimas 5 partidas y la mejor de la semana. Reemplaza al «Desafío de hoy» de la Tarea 167 (`DailyChallenge`, retirado). Lógica pura con pruebas (`TimeTrialDayTest`).
  *
- * Es gratis y se repite sin límite; no cuenta para el futuro tope de partidas libres ([COUNTS_FOR_FREE_CAP]). Desde la Tarea 181 (fase 1b) los cuatro juegos también lo tienen en su ficha («Contrarreloj», con su propia pista): gratis y sin tope, sin ningún candado (todavía no hay cobro). No compara con otras personas (`Features.COMPARE` sigue apagado).
+ * Desde la Tarea 218 (3 de la pestaña, 2-nov) tiene una REGLA DE PARTIDAS: sin Nubilus Plus solo se juega el Contrarreloj de HOY, con [FREE_GAMES_PER_DAY] partidas al día (cuentan las tres puertas: Hoy, la ficha y la pestaña); con Plus, los cuatro, cualquier día y sin tope. La cuenta se DERIVA de lo guardado ([playedToday]: las partidas de ese juego con el día de hoy en `time_trial_results`), así que una partida cuenta cuando se GUARDA y nunca al empezar. Desde la Tarea 181 (fase 1b) los cuatro juegos tienen su Contrarreloj en la ficha, con su propia pista. No compara con otras personas (`Features.COMPARE` sigue apagado).
  * El estado del día se DERIVA de lo guardado ([stateOf]): no hay preferencia pasajera.
  */
 object TimeTrialDay {
@@ -41,8 +41,25 @@ object TimeTrialDay {
   const val SECONDS = 120
   const val MINUTES_TEXT = "2 minutos"
 
-  /** El Contrarreloj de hoy NO cuenta para el futuro tope de partidas libres del día (Plus, `docs/modelo-negocio.md`); hoy no hay tope y esto no se lee: queda dicho para quien lo construya. */
-  const val COUNTS_FOR_FREE_CAP = false
+  /**
+   * Las partidas del Contrarreloj de HOY que se juegan gratis cada día (Tarea 218; decisión de Ricardo: «3 partidas al día»). Es UN solo número que recordar: el tope de partidas libres del plan gratis (`docs/modelo-negocio.md`) también es 3. Con Nubilus Plus no hay tope.
+   */
+  const val FREE_GAMES_PER_DAY = 3
+
+  /** Cuántas partidas de [gameId] se guardaron con el día [dateKey] (de cualquier versión de la pista): lo único que gasta partidas, porque una partida cuenta cuando se GUARDA (una llamada o «Salir» no gastan nada). Sin tabla ni preferencia nueva. */
+  fun playedToday(results: List<TimeTrialResult>, dateKey: String, gameId: String): Int = results.count { it.gameId == gameId && it.day == dateKey }
+
+  /** Las partidas gratis que quedan hoy de [gameId] (0 si ya se jugaron todas). */
+  fun gamesLeft(results: List<TimeTrialResult>, dateKey: String, gameId: String): Int = (FREE_GAMES_PER_DAY - playedToday(results, dateKey, gameId)).coerceAtLeast(0)
+
+  /**
+   * ¿Se puede lanzar el Contrarreloj de [gameId] ahora? Con Nubilus Plus ([plus]), siempre; sin él, solo el juego del día ([dateKey]) y mientras queden partidas. La pantalla ya no ofrece lo que esto niega, y el ViewModel lo vuelve a mirar al lanzar (nunca se lanza una partida sin partidas).
+   */
+  fun canPlay(plus: Boolean, gameId: String, dateKey: String, results: List<TimeTrialResult>): Boolean =
+    plus || (isOfDay(gameId, dateKey) && gamesLeft(results, dateKey, gameId) > 0)
+
+  /** El día siguiente de [dateKey] («yyyy-MM-dd»): el juego de mañana, para decir «Mañana: Tinta o Palabra.». */
+  fun nextDay(dateKey: String): String = java.time.LocalDate.parse(dateKey).plusDays(1).toString()
 
   /**
    * La pista de un juego, como la define Unity (`Games/Shared/TimeTrial.cs`; `TimeTrialUnityTest` compara las dos tablas): su VERSIÓN (si cambia, el récord empieza de nuevo), cada cuántos aciertos sube un paso y cuántos pasos tiene.
@@ -145,6 +162,20 @@ object TimeTrialDay {
 
   /** La segunda línea del botón de la ficha (Tarea 181): «Tu récord: 41 aciertos.» si hay récord de la pista vigente de ESE juego; si no, «2 minutos». */
   fun sheetSecondLine(record: Int?): String = if (record != null) recordLine(record) else MINUTES_TEXT
+
+  // ------------------------------------------------------------------ la regla de partidas, dicha (Tarea 218)
+
+  /** «Te quedan 2 partidas de hoy.» (o «Te queda 1 partida de hoy.»): lo que dicen la ficha del juego de hoy y la pestaña sin Plus mientras quedan partidas. La palabra es «partidas», nunca «intentos». */
+  fun gamesLeftLine(left: Int): String = if (left == 1) "Te queda 1 partida de hoy." else "Te quedan $left partidas de hoy."
+
+  /** «Hoy ya jugaste tus 3 partidas.»: lo mismo en Hoy, la ficha y la pestaña cuando se acabaron. */
+  const val NO_GAMES_LEFT = "Hoy ya jugaste tus $FREE_GAMES_PER_DAY partidas."
+
+  /** «Hoy ya jugaste tus 3 partidas. Mañana: Tinta o Palabra.»: Hoy sin partidas, en texto sobre el cielo. [title] = el juego del Contrarreloj de mañana. */
+  fun tomorrowLine(title: String): String = "$NO_GAMES_LEFT Mañana: $title" + (if (title.endsWith("?")) "" else ".")          // «¿Verdad o disparate?» ya cierra con su signo: sin punto de más
+
+  /** El final del Contrarreloj sin partidas: en lugar de «Otra vez». */
+  const val TOMORROW_FINAL = "Mañana hay otro Contrarreloj."
 
   /** Lo que dice el lector de pantalla del botón de la ficha: el nombre del modo (con «de hoy» solo si es el juego del día), el juego, los 2 minutos y el récord. */
   fun sheetDescription(gameId: String, dateKey: String, title: String, record: Int?): String = buildString {

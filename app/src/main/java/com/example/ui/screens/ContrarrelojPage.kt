@@ -66,6 +66,7 @@ import com.example.data.TimeTrialMarks
 import com.example.data.TimeTrialResult
 import com.example.data.TimeTrialStats
 import com.example.data.NBSP
+import com.example.data.glueGames
 import com.example.data.glueNumbers
 import com.example.model.AgeRange
 import com.example.model.AppLanguage
@@ -79,6 +80,7 @@ import com.example.ui.components.GameEmblem
 import com.example.ui.components.Glyph
 import com.example.ui.components.KitButton
 import com.example.ui.components.KitGlyph
+import com.example.ui.components.LockedRow
 import com.example.ui.components.OnBoardText
 import com.example.ui.components.SlabColor
 import com.example.ui.components.SlabSize
@@ -141,6 +143,8 @@ internal fun ContrarrelojPage(
   today: String? = null,
   /** «Jugar · 2 minutos»: juega el juego elegido (sin Plus, siempre el de hoy). */
   onPlay: () -> Unit = {},
+  /** Las partidas gratis que quedan hoy del juego de hoy (Tarea 218, la regla de partidas): null = sin tope (con Plus). Con partidas, «Te quedan 2 partidas de hoy.» bajo «Jugar»; en 0, «Hoy ya jugaste tus 3 partidas.» en lugar de «Jugar» y, bajo la losa gratis, UNA fila gris con candado. */
+  gamesLeft: Int? = null,
   /** Tocar algo en gris abre la hoja del candado. */
   onLocked: () -> Unit = {}
 ) {
@@ -184,7 +188,9 @@ internal fun ContrarrelojPage(
         if (gate == Comparison.Gate.EARLY) Text(Comparison.EARLY_NOTICE, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_early_notice"))
 
         // ---- LO GRATIS: nunca en gris
-        FreeCard(page, section, GameRegistry.getById(selected)?.let { getGameTitle(it.id, lang, it.title) } ?: selected, onPlay)
+        FreeCard(page, section, GameRegistry.getById(selected)?.let { getGameTitle(it.id, lang, it.title) } ?: selected, gamesLeft, onPlay)
+        // sin partidas (Tarea 218, decisión 7 de Ricardo): UNA fila gris con candado bajo la losa gratis, que abre la hoja
+        if (gamesLeft == 0) LockedRow(PlusAccess.LOCKED_GAMES, onLocked, tag = "contrarreloj_locked_games")
         if (section != null) {
           // sin lugar que decir (sin marca esta semana, «Todavía somos pocos») va su losa; la fila «Con qué te comparas ›» queda DEBAJO de lo gratis, antes de lo de Plus (Tarea 213: debajo de la losa de la cifra)
           if (section.place !is Comparison.Place.Found) PlaceCard(section)
@@ -304,11 +310,18 @@ private fun GameTile(gameId: String, title: String, record: Int?, selected: Bool
  * «Te faltan 7 aciertos para En la Luna.» con su barra y «La semana cierra el domingo.» (antes lo daba la puerta de Avance, y la barra y el domingo eran de la escalera). Sin comparación queda solo lo de tus marcas. El lector de pantalla lee cada grupo por separado: el botón, el récord y la semana, y la división con su lugar.
  */
 @Composable
-private fun FreeCard(page: TimeTrialMarks.Page, section: Comparison.Section?, gameTitle: String, onPlay: () -> Unit) {
+private fun FreeCard(page: TimeTrialMarks.Page, section: Comparison.Section?, gameTitle: String, gamesLeft: Int?, onPlay: () -> Unit) {
   val found = (section?.place as? Comparison.Place.Found)?.ranked
   InfoCard("contrarreloj_free", null) {
-    // para el lector, el botón dice también el juego («Jugar 2 minutos de Acoplamiento»); en la pantalla no cambia nada (Tarea 215b, Fable A3)
-    KitButton(TimeTrialMarks.PLAY, onClick = onPlay, color = SlabColor.SUN, modifier = Modifier.semantics { contentDescription = TimeTrialMarks.playSpoken(gameTitle) }.testTag("btn_contrarreloj_play"))
+    if (gamesLeft == 0) {
+      // sin partidas hoy (Tarea 218): en lugar de «Jugar», la frase; mañana se renueva sola
+      Text(TimeTrialDay.NO_GAMES_LEFT.glueGames(), color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_no_games"))
+    } else {
+      // para el lector, el botón dice también el juego («Jugar 2 minutos de Acoplamiento»); en la pantalla no cambia nada (Tarea 215b, Fable A3)
+      KitButton(TimeTrialMarks.PLAY, onClick = onPlay, color = SlabColor.SUN, modifier = Modifier.semantics { contentDescription = TimeTrialMarks.playSpoken(gameTitle) }.testTag("btn_contrarreloj_play"))
+      // sin Plus, cuántas partidas quedan hoy (Tarea 218: «Te quedan 2 partidas de hoy.»), dentro de la losa gratis, bajo el botón
+      if (gamesLeft != null) Text(TimeTrialDay.gamesLeftLine(gamesLeft).glueGames(), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("contrarreloj_games_left"))
+    }
     Spacer(Modifier.height(12.dp))
     // el récord va en Fredoka 18 negrita; sin marcas no hay récord, es un estado: va en la letra del cuerpo (16, tinta) y con «este juego» pegado, para que nunca quede «juego.» solo en el segundo renglón (Tarea 217, Opus y Fable H3)
     if (page.recordMark != null) Text(TimeTrialMarks.freeRecordLine(page.recordMark).glueNumbers(), color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.testTag("contrarreloj_free_record"))

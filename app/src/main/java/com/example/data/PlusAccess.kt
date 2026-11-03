@@ -37,15 +37,23 @@ object PlusAccess {
    * La hoja, en TRES líneas (Tarea 203; `auditoria-fable/contrarreloj-rediseno.md` §4). Lo que dice depende de con qué se compara ESTA persona (`Comparison.Kind`, Tarea 205c: NONE si no hay fuente o no tiene franja de edad con que compararse): con la referencia estimada (la de la tienda) la nombra, con personas (datos de muestra de depuración;
    * mañana, personas reales) habla de «personas de tu edad», y sin comparación solo de lo que de verdad hay detrás. Así la hoja nunca promete de más. Las dos primeras constantes son la forma «sin comparación» y la de «personas»; la de la referencia estimada, más abajo, nunca dice «personas».
    */
-  const val SHEET_LEAD = "Gratis: jugar, tu récord y tu semana. Con Nubilus Plus, además:"
+  const val SHEET_LEAD = "Gratis: el Contrarreloj de cada día, con ${TimeTrialDay.FREE_GAMES_PER_DAY} partidas, tu récord y tu semana. Con Nubilus Plus, además:"
   /** Lo gratis primero, y después lo que agrega Plus (Tarea 209): con personas reales (futuro) y con la referencia estimada empiezan igual. */
-  const val SHEET_LEAD_COMPARED = "Gratis: jugar, tu récord y tu división de la semana. Con Nubilus Plus, además:"
+  const val SHEET_LEAD_COMPARED = "Gratis: el Contrarreloj de cada día, con ${TimeTrialDay.FREE_GAMES_PER_DAY} partidas, tu récord y tu división de la semana. Con Nubilus Plus, además:"
+
+  /** La primera línea de lo que agrega Plus desde la Tarea 218 (la regla de partidas): los otros tres juegos y partidas sin tope. */
+  const val SHEET_FOUR_GAMES = "Los cuatro Contrarrelojes, cualquier día, con partidas libres."
+
+  /** La fila gris que sigue al «Hoy ya jugaste tus 3 partidas.» de Hoy y de la pestaña (decisión 7 de Ricardo): UNA fila con candado que abre la hoja. */
+  const val LOCKED_GAMES = "Con Nubilus Plus: partidas libres y los cuatro Contrarrelojes."
   val SHEET_ITEMS: List<String> = listOf(
+    SHEET_FOUR_GAMES,
     "Tus últimas 10 marcas en barras, con la fecha y el paso de tu récord.",
     "Tu ritmo en los 2 minutos, medio minuto por medio minuto.",
     "Tu récord de las pistas anteriores."
   )
   val SHEET_ITEMS_COMPARED: List<String> = listOf(
+    SHEET_FOUR_GAMES,
     "Tu lugar entre personas de tu edad: qué porcentaje de ellas superas y en qué división estás.",
     "La escalera de divisiones con su primer acierto, y tus semanas seguidas arriba de la mitad.",
     "Tus marcas: el récord, las últimas 10 y tu ritmo en los 2 minutos."
@@ -56,6 +64,7 @@ object PlusAccess {
    */
   const val SHEET_LEAD_ESTIMATED = SHEET_LEAD_COMPARED
   val SHEET_ITEMS_ESTIMATED: List<String> = listOf(
+    SHEET_FOUR_GAMES,
     "Qué porcentaje de la referencia estimada para tu edad superas, y la escalera de las cinco divisiones.",
     "Tu lugar en otras edades y semana a semana, con tus semanas seguidas arriba de la mitad.",
     "Todas tus marcas: las últimas 10 en barras, tu ritmo en los 2 minutos y el récord de las pistas anteriores."

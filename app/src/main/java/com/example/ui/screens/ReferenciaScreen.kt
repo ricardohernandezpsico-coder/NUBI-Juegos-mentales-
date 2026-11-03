@@ -66,6 +66,7 @@ fun ReferenciaScreen(modifier: Modifier = Modifier, openLink: ((String) -> Boole
     Spacer(Modifier.height(4.dp))
     OnBoardText(ReferenciaFuentes.INTRO, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("referencia_intro"))
     OnBoardText(ReferenciaFuentes.INTRO_2, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("referencia_intro_2"))
+    OnBoardText(ReferenciaFuentes.GAMES, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("referencia_games"))
     OnBoardText(ReferenciaFuentes.ABOUT, color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("referencia_about"))
     OnBoardText(ReferenciaFuentes.TEEN_LINE.glueNames(LocalDensity.current.fontScale), color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("referencia_teen"))
     if (noBrowser) OnBoardText("No se encontró un navegador para abrir el estudio.", color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.testTag("referencia_no_browser"))

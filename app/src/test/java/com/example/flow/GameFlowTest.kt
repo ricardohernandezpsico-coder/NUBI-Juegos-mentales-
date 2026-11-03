@@ -346,6 +346,110 @@ class GameFlowTest {
     assertTrue("ni suma una partida de siempre al historial", vm.gameHistory.value.isEmpty())
   }
 
+  // ---- La regla de partidas del Contrarreloj (Tarea 218; `auditoria-fable/idea-pestana-contrarreloj.md` §4 y §5)
+
+  private fun playTrial(vm: NeuroVidaViewModel, id: String, hits: Int, launch: String) {
+    vm.startTimeTrial(id)
+    vm.onUnityLaunched(launch)
+    vm.onUnityResult(timeTrialResult(id, hits), launch)
+  }
+
+  @Test
+  fun `sin Plus se lanzan 3 partidas del juego de hoy y la cuarta no se lanza, con ninguna de las tres puertas`() {
+    val vm = newViewModel()
+    vm.setPlus(false)
+    val id = com.example.data.TimeTrialDay.gameFor(vm.todayKey())
+    assertTrue("con las tres partidas libres se puede", vm.canPlayTimeTrial(id))
+    for (i in 1..3) {
+      playTrial(vm, id, 30 + i, "RP$i")
+      TestSupport.awaitUntil(message = "La partida $i no se guardó") { vm.timeTrialResults.value.size == i }
+      Thread.sleep(5)
+      vm.closeGameOrResult()
+    }
+    assertFalse("guardadas las tres, ya no se puede", vm.canPlayTimeTrial(id))
+    vm.startTimeTrial()                                                   // la puerta de Hoy
+    assertNull("Hoy no lanza una partida sin partidas", vm.activeGame.value)
+    vm.startTimeTrial(id)                                                 // la ficha
+    assertNull("la ficha tampoco", vm.activeGame.value)
+    vm.startTimeTrial(id, fromTab = true)                                 // la pestaña
+    assertNull("ni la pestaña", vm.activeGame.value)
+    vm.timeTrialAgain(id, vm.todayKey())                                  // «Otra vez» del final
+    assertNull("ni «Otra vez»", vm.activeGame.value)
+    // con Nubilus Plus no hay tope
+    vm.setPlus(true)
+    assertTrue(vm.canPlayTimeTrial(id))
+    vm.startTimeTrial(id)
+    assertEquals("con Plus se lanza", id, vm.activeGame.value?.gameDef?.id)
+  }
+
+  @Test
+  fun `sin Plus solo el Contrarreloj de hoy y con Plus los cuatro`() {
+    val vm = newViewModel()
+    vm.setPlus(false)
+    val today = com.example.data.TimeTrialDay.gameFor(vm.todayKey())
+    val others = com.example.data.TimeTrialDay.GAMES.filter { it != today }
+    for (o in others) {
+      assertFalse("«$o» sin Plus no se puede", vm.canPlayTimeTrial(o))
+      vm.startTimeTrial(o)
+      assertNull("«$o» sin Plus no se lanza (el botón de su ficha va en gris)", vm.activeGame.value)
+    }
+    vm.setPlus(true)
+    for (o in others) assertTrue("«$o» con Plus sí", vm.canPlayTimeTrial(o))
+    vm.startTimeTrial(others.first())
+    assertEquals(others.first(), vm.activeGame.value?.gameDef?.id)
+  }
+
+  @Test
+  fun `una partida cuenta cuando se guarda, nunca al empezar ni al salir de la pausa`() {
+    val vm = newViewModel()
+    vm.setPlus(false)
+    val id = com.example.data.TimeTrialDay.gameFor(vm.todayKey())
+    for (i in 1..4) {                                                     // cuatro partidas empezadas y dejadas en pausa: no gastan nada
+      vm.startTimeTrial(id)
+      assertEquals("la partida $i se lanza", id, vm.activeGame.value?.gameDef?.id)
+      vm.onUnityLaunched("PA$i")
+      vm.onReturnedFromGame("PA$i", null, paused = true)
+    }
+    assertEquals("nada guardado: nada gastado", 3, com.example.data.TimeTrialDay.gamesLeft(vm.timeTrialResults.value, vm.todayKey(), id))
+    assertTrue(vm.canPlayTimeTrial(id))
+    // «Salir» sin pausa (la partida se abandona): tampoco gasta nada
+    vm.resumePausedGame()
+    vm.onUnityLaunched("PA9")
+    vm.onReturnedFromGame("PA9", null, paused = false)
+    assertEquals(3, com.example.data.TimeTrialDay.gamesLeft(vm.timeTrialResults.value, vm.todayKey(), id))
+    playTrial(vm, id, 33, "PA10")
+    TestSupport.awaitUntil(message = "La partida no se guardó") { vm.timeTrialResults.value.size == 1 }
+    assertEquals("recién al guardarse queda una menos", 2, com.example.data.TimeTrialDay.gamesLeft(vm.timeTrialResults.value, vm.todayKey(), id))
+  }
+
+  @Test
+  fun `una partida del Contrarreloj en pausa de otro dia se descarta al arrancar sin aviso y la de hoy se conserva`() {
+    fun pause(day: String) {
+      app.getSharedPreferences("paused_game", android.content.Context.MODE_PRIVATE).edit().clear()
+        .putString("gameId", "stroop").putString("launchId", "OLD").putInt("level", 2).putBoolean("timed", true).putBoolean("daily", false).putInt("intensity", 0).putString("mode", "A_TU_MEDIDA").putString("ttDay", day).apply()
+    }
+    pause("2000-01-01")
+    val stale = newViewModel()
+    assertNull("Hoy no ofrece «Seguir tu partida» de un Contrarreloj que ya no es el de hoy", stale.pausedGameId.value)
+    assertNull("y la pausa vieja se borró del disco", app.getSharedPreferences("paused_game", android.content.Context.MODE_PRIVATE).getString("gameId", null))
+    pause(stale.todayKey())
+    val fresh = newViewModel()
+    assertEquals("la de hoy se conserva", "stroop", fresh.pausedGameId.value)
+    // una partida de siempre en pausa no caduca
+    app.getSharedPreferences("paused_game", android.content.Context.MODE_PRIVATE).edit().clear().putString("gameId", "radar").putString("launchId", "OLD2").putInt("level", 1).putBoolean("timed", false).putBoolean("daily", false).putInt("intensity", 0).putString("mode", "A_TU_MEDIDA").putString("ttDay", "").apply()
+    assertEquals("una partida de siempre en pausa no caduca", "radar", newViewModel().pausedGameId.value)
+  }
+
+  @Test
+  fun `el invitado de depuracion no gasta partidas`() {
+    val vm = newViewModel()
+    vm.setPlus(false)
+    val id = com.example.data.TimeTrialDay.gameFor(vm.todayKey())
+    repeat(3) { vm.startGuestTimeTrial(id, com.example.model.AgeRange.R45_54); vm.closeGameOrResult() }
+    assertEquals("el invitado no guarda nada y no gasta", 3, com.example.data.TimeTrialDay.gamesLeft(vm.timeTrialResults.value, vm.todayKey(), id))
+    assertTrue(vm.canPlayTimeTrial(id))
+  }
+
   @Test
   fun `una partida de Contrarreloj en pausa se retoma como Contrarreloj y una de siempre no la reemplaza`() {
     val vm = newViewModel()

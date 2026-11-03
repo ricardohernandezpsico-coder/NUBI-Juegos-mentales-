@@ -57,9 +57,12 @@ import com.example.ui.components.guideTarget
 import com.example.ui.components.KitButton
 import com.example.ui.components.KitGlyph
 import com.example.ui.components.NubiClay
+import com.example.ui.components.LockedRow
 import com.example.ui.components.OnBoardText
 import com.example.ui.components.SlabColor
 import com.example.ui.components.SlabSize
+import com.example.data.PlusAccess
+import com.example.data.glueGames
 import com.example.ui.i18n.LocalAppLanguage
 import com.example.ui.i18n.getGameTitle
 import com.example.ui.theme.Clay
@@ -87,6 +90,8 @@ fun HomeScreen(
   val settings by viewModel.userSettings.collectAsState()
   val skill by viewModel.skill.collectAsState()
   val timeTrialResults by viewModel.timeTrialResults.collectAsState()
+  val plus by viewModel.plus.collectAsState()
+  var lockSheet by remember { mutableStateOf(false) }
   val activity by viewModel.activityTimestamps.collectAsState()          // cuándo se jugó: las partidas de siempre Y el Contrarreloj (cuenta como día jugado, no como puntos)
   // Reloj de Hoy (la fecha, la semana y la racha): cada 30 s.
   var clock by remember { mutableStateOf(System.currentTimeMillis()) }
@@ -94,6 +99,7 @@ fun HomeScreen(
     while (true) {
       kotlinx.coroutines.delay(30_000L)
       clock = System.currentTimeMillis()
+      viewModel.dropStalePause()                    // una partida del Contrarreloj en pausa vale solo su día (Tarea 218)
     }
   }
   val lang = LocalAppLanguage.current
@@ -118,7 +124,7 @@ fun HomeScreen(
     flightDay = dailySession.isFlightDay,
     hasBaseline = baseline != null,
     baselineInvite = com.example.data.BaselinePlan.showHomeInvite(baseline != null, history.size, history.minOfOrNull { it.timestamp }, clock),
-    timeTrial = timeTrialOf(timeTrialResults, viewModel.todayKey(), lang)
+    timeTrial = timeTrialOf(timeTrialResults, viewModel.todayKey(), lang, plus)
   )
   HomeContent(
     ui = ui,
@@ -127,8 +133,10 @@ fun HomeScreen(
     onResume = { viewModel.resumePausedGame() },
     onBaseline = { viewModel.startBaseline() },
     onTimeTrial = { viewModel.startTimeTrial() },
+    onLocked = { lockSheet = true },
     modifier = modifier
   )
+  if (lockSheet) LockSheetHost(viewModel, onDismiss = { lockSheet = false })
 }
 
 // ------------------------------------------------------------------ Hoy con una sola tarjeta
@@ -174,16 +182,26 @@ internal const val MAX_STOPS = 4
 /**
  * El Contrarreloj de hoy tal como lo muestra Hoy: el juego del día (con su nombre visible), cómo va (pendiente, jugado sin marca nueva —«otra vez»— o con marca nueva), la mejor marca de HOY y el récord de la persona en ese juego (los dos null si no hay).
  */
-internal data class HomeTimeTrial(val gameId: String, val title: String, val state: TimeTrialState, val todayHits: Int? = null, val record: Int? = null)
+internal data class HomeTimeTrial(
+  val gameId: String, val title: String, val state: TimeTrialState, val todayHits: Int? = null, val record: Int? = null,
+  /** Las partidas gratis que quedan hoy (Tarea 218, la regla de partidas): null = sin tope (con Nubilus Plus); 0 = «Hoy ya jugaste tus 3 partidas.». */
+  val gamesLeft: Int? = null,
+  /** El juego del Contrarreloj de mañana, para decir «Mañana: Tinta o Palabra.» cuando no quedan partidas. */
+  val tomorrowTitle: String? = null
+)
 
 /** El Contrarreloj de hoy con lo guardado: el juego sale de la FECHA ([TimeTrialDay.gameFor]); el estado, de las partidas de hoy ([TimeTrialDay.stateOf]); el récord, de todas las de ese juego con la pista de hoy ([TimeTrialStats.record]). */
-internal fun timeTrialOf(results: List<com.example.data.TimeTrialResult>, dateKey: String, lang: com.example.model.AppLanguage): HomeTimeTrial? {
+internal fun timeTrialOf(results: List<com.example.data.TimeTrialResult>, dateKey: String, lang: com.example.model.AppLanguage, plus: Boolean = true): HomeTimeTrial? {
   val gameId = TimeTrialDay.gameFor(dateKey)
   val def = GameRegistry.getById(gameId) ?: return null
   val state = TimeTrialDay.stateOf(results, dateKey, gameId)
+  // la regla de partidas (Tarea 218): sin Plus quedan [FREE_GAMES_PER_DAY] menos las de hoy; sin ninguna, Hoy dice el juego de mañana
+  val left = if (plus) null else TimeTrialDay.gamesLeft(results, dateKey, gameId)
+  val tomorrow = if (left == 0) GameRegistry.getById(TimeTrialDay.gameFor(TimeTrialDay.nextDay(dateKey)))?.let { getGameTitle(it.id, lang, it.title) } else null
   return HomeTimeTrial(
     gameId = gameId, title = getGameTitle(gameId, lang, def.title), state = state,
-    todayHits = TimeTrialDay.ofGame(results, gameId).filter { it.day == dateKey }.maxOfOrNull { it.mark }, record = TimeTrialStats.record(results, gameId)
+    todayHits = TimeTrialDay.ofGame(results, gameId).filter { it.day == dateKey }.maxOfOrNull { it.mark }, record = TimeTrialStats.record(results, gameId),
+    gamesLeft = left, tomorrowTitle = tomorrow
   )
 }
 
@@ -232,6 +250,8 @@ internal fun HomeContent(
   onBaseline: () -> Unit,
   /** «Contrarreloj de hoy»: lanza el juego de la fecha en «La escalera de 2 minutos» (Tarea 177). */
   onTimeTrial: () -> Unit = {},
+  /** La fila gris con candado de Hoy sin partidas (Tarea 218): abre la hoja del candado. */
+  onLocked: () -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   // La barra de pestañas es una capa fija (`LocalBarInset`, Tarea 123): Hoy deja esa franja abajo.
@@ -253,7 +273,7 @@ internal fun HomeContent(
       com.example.ui.components.HoyWeek(ui.lamps, ui.streak, ui.streakNote, streakText = ui.streakText)
       Spacer(Modifier.height(10.dp))
       if (ui.stops.isNotEmpty() || ui.pausedTitle != null) HoyCard(ui, onPlay = onPlay, onResume = onResume, modifier = Modifier.padding(horizontal = 16.dp))
-      HoyBelow(ui, onAllGames = onAllGames, onTimeTrial = onTimeTrial, onBaseline = onBaseline)
+      HoyBelow(ui, onAllGames = onAllGames, onTimeTrial = onTimeTrial, onLocked = onLocked, onBaseline = onBaseline)
     }
   }
 }
@@ -500,7 +520,7 @@ private fun AllGamesButton(onAllGames: () -> Unit, modifier: Modifier = Modifier
  * Y, si todavía no hizo la evaluación, la invitación a hacerla.
  */
 @Composable
-private fun HoyBelow(ui: HomeUi, onAllGames: () -> Unit, onTimeTrial: () -> Unit, onBaseline: () -> Unit) {
+private fun HoyBelow(ui: HomeUi, onAllGames: () -> Unit, onTimeTrial: () -> Unit, onLocked: () -> Unit, onBaseline: () -> Unit) {
   val pending = ui.stops.count { it.state != StopState.DONE }
   val routeDone = ui.stops.isNotEmpty() && pending == 0 && ui.pausedTitle == null
   val t = ui.timeTrial
@@ -509,6 +529,16 @@ private fun HoyBelow(ui: HomeUi, onAllGames: () -> Unit, onTimeTrial: () -> Unit
     if (t != null) OnBoardText(MODES_TITLE, color = Clay.Cream, fontFamily = com.example.ui.theme.TitleFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().padding(top = 6.dp).testTag("home_modes_title"))
     when {
       t == null -> AllGamesButton(onAllGames, modifier = Modifier.padding(top = 6.dp))
+      // sin partidas (Tarea 218): el botón «Contrarreloj» y el «Otra vez» NUNCA lanzan una partida sin partidas; en su lugar, la frase sobre el cielo (sin recuadro nuevo) y UNA fila gris con candado (decisión 7). El recuadro de la marca nueva puede quedar arriba
+      t.gamesLeft == 0 -> {
+        if (t.state == TimeTrialState.MARCA_NUEVA) TimeTrialDoneNote(t)
+        OnBoardText(
+          (t.tomorrowTitle?.let { TimeTrialDay.tomorrowLine(it) } ?: TimeTrialDay.NO_GAMES_LEFT).glueGames(), color = HoyCream, fontSize = 17.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp,
+          modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("home_timetrial_none")
+        )
+        LockedRow(PlusAccess.LOCKED_GAMES, onLocked, modifier = Modifier.padding(top = 8.dp), tag = "home_locked_games")
+        AllGamesButton(onAllGames, modifier = Modifier.padding(top = 6.dp))
+      }
       t.state == TimeTrialState.MARCA_NUEVA -> {
         TimeTrialDoneNote(t)
         TimeTrialButton(t, sun = false, again = true, onClick = onTimeTrial, modifier = Modifier.padding(top = 6.dp))

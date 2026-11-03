@@ -20,6 +20,9 @@ object ReferenciaFuentes {
   /** El segundo párrafo: qué es la referencia (el párrafo de antes de la Tarea 213 sin su primera frase, que ahora es el primer párrafo). */
   const val INTRO_2 = "La referencia se arma con estudios publicados que midieron cómo cambian con la edad la rapidez y la exactitud en tareas parecidas, y con un programa que jugó el mismo Contrarreloj en un computador con esos números. Cada estudio dice cuántas personas tuvo."
 
+  /** Cuántas veces jugó el programa (Tarea 218; decisión 5 a de Ricardo, `idea-pestana-contrarreloj.md` §6.4): la referencia queda en 3 partidas por semana y se dice, así nadie cree que jugar más cambia lo que se compara. El 3 es `partidas_por_semana` de los JSON de la referencia (una prueba lo comprueba). */
+  const val GAMES = "El programa jugó cada Contrarreloj 3 veces por semana y quedó su mejor marca."
+
   /** El segundo párrafo, en `OnNightDim` (la decisión de Ricardo: es lo honesto; sin cifras). */
   const val ABOUT = "Los números de cada edad se calcularon a partir de esos estudios; ninguno usó los juegos de Nubilus. El ritmo del programa se ajustó con las primeras partidas de quienes probaron Nubilus antes de salir."
 

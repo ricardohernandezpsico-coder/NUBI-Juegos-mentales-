@@ -204,6 +204,8 @@ class PreguntasYReferenciaScreenTest {
     mount { ReferenciaScreen(openLink = { url -> opened += url; true }) }
     assertEquals(ReferenciaFuentes.INTRO, textOf("referencia_intro"))
     assertEquals("el segundo párrafo (Tarea 213: el de antes, sin su primera frase)", ReferenciaFuentes.INTRO_2, textOf("referencia_intro_2"))
+    assertEquals("justo después, cuántas veces jugó el programa (Tarea 218: decisión 5 a)", "El programa jugó cada Contrarreloj 3 veces por semana y quedó su mejor marca.", textOf("referencia_games"))
+    assertTrue("entre el segundo párrafo y «Los números…»", top("referencia_intro_2") < top("referencia_games") && top("referencia_games") < top("referencia_about"))
     assertEquals(ReferenciaFuentes.ABOUT, textOf("referencia_about"))
     assertEquals("la línea de 14 a 17 años va justo después (Tarea 216)", ReferenciaFuentes.TEEN_LINE, textOf("referencia_teen").replace(com.example.data.NBSP, " "))
     assertTrue("y antes de los grupos", top("referencia_about") < top("referencia_teen") && top("referencia_teen") < top("referencia_grupo_rapidez"))
@@ -218,7 +220,7 @@ class PreguntasYReferenciaScreenTest {
     mount(widthDp, scale) { ReferenciaScreen(openLink = { true }) }
     val label = "a $widthDp dp con letra $scale"
     assertNoWordSplit(label)
-    for (tag in listOf("referencia_intro", "referencia_intro_2", "referencia_about", "referencia_teen") + ReferenciaFuentes.studies.map { "estudio_${it.doi}" })
+    for (tag in listOf("referencia_intro", "referencia_intro_2", "referencia_games", "referencia_about", "referencia_teen") + ReferenciaFuentes.studies.map { "estudio_${it.doi}" })
       assertTrue("$label: «$tag» se sale del margen de 20 dp (x %.1f a %.1f)".format(left(tag), right(tag)), left(tag) >= 19.5f && right(tag) <= widthDp - 19.5f)
     for (e in ReferenciaFuentes.studies) assertTrue("$label: la losa de ${e.cite} mide 48 dp o más", heightDp("estudio_${e.doi}") >= 48f)
   }

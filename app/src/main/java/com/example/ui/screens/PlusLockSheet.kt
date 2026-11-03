@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
@@ -44,6 +47,22 @@ internal fun String.glueNamesForLetter(): String = glueNames(LocalDensity.curren
 @Composable
 internal fun PlusLockSheet(onDismiss: () -> Unit, kind: com.example.data.Comparison.Kind = com.example.data.Comparison.Kind.NONE, onSource: (() -> Unit)? = null) {
   Dialog(onDismissRequest = onDismiss) { PlusLockSheetContent(onDismiss, kind, onSource) }
+}
+
+/**
+ * La hoja del candado con lo que necesita de la app (Tarea 218: la abren la pestaña, Hoy y la ficha del juego): con qué se compara ESTA persona (`Comparison.kindFor`: sin franja de edad no hay comparación, así que la hoja no le promete una referencia que nunca verá; Tarea 205c) y, con [withSource],
+ * la fila «De dónde sale la referencia ›», que cierra la hoja y abre ese panel. La ficha del juego la pide SIN esa fila: el panel se abriría detrás de la ventana de la ficha.
+ */
+@Composable
+internal fun LockSheetHost(viewModel: com.example.viewmodel.NeuroVidaViewModel, onDismiss: () -> Unit, withSource: Boolean = true) {
+  val compareWorld by viewModel.compareWorld.collectAsState()
+  val estimatedReference by viewModel.estimatedReference.collectAsState()
+  val ageRange by viewModel.ageRange.collectAsState()
+  val compare = remember(compareWorld, estimatedReference) { com.example.data.Comparison.sourceFor(com.example.BuildConfig.DEBUG, compareWorld, estimatedReference) }
+  PlusLockSheet(
+    onDismiss = onDismiss, kind = com.example.data.Comparison.kindFor(compare, ageRange),
+    onSource = if (withSource) ({ onDismiss(); viewModel.openTopPanel(com.example.viewmodel.TopPanel.REFERENCIA) }) else null
+  )
 }
 
 /**

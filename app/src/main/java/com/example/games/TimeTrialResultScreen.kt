@@ -109,7 +109,9 @@ fun TimeTrialResultScreen(
   soundEnabled: Boolean = true,
   /** Nubilus Plus (Tarea 199, `PlusAccess`): con Plus y [onAllMarks], bajo «La mejor de esta semana» va la losa chica «Todas tus marcas ›», que abre la pestaña «Contrarreloj» con este juego elegido. Sin Plus el final queda como siempre. */
   plus: Boolean = false,
-  onAllMarks: (() -> Unit)? = null
+  onAllMarks: (() -> Unit)? = null,
+  /** ¿Quedan partidas para jugar otra? (Tarea 218, la regla de partidas: sin Nubilus Plus, 3 al día del juego de hoy.) Sin partidas, «Otra vez» no sale y en su lugar va «Mañana hay otro Contrarreloj.»; nada gris en el final (regla de `idea-pestana-contrarreloj.md` §7). */
+  canAgain: Boolean = true
 ) {
   val gameDef = GameRegistry.getById(outcome.result.gameId)
   val lang = com.example.ui.i18n.LocalAppLanguage.current
@@ -154,7 +156,11 @@ fun TimeTrialResultScreen(
       AllMarksShortcut(onAllMarks, Modifier.align(Alignment.End))
     }
     Spacer(Modifier.height(24.dp))
-    ClayButton(text = TimeTrialStats.AGAIN, onClick = onAgain, glyph = Glyph.CLOCK, modifier = Modifier.testTag("btn_timetrial_again"))
+    if (canAgain) ClayButton(text = TimeTrialStats.AGAIN, onClick = onAgain, glyph = Glyph.CLOCK, modifier = Modifier.testTag("btn_timetrial_again"))
+    else OnBoardText(
+      text = TimeTrialDay.TOMORROW_FINAL, color = Clay.Cream, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp, lineHeight = 24.sp, textAlign = TextAlign.Center,
+      modifier = Modifier.fillMaxWidth().testTag("timetrial_tomorrow")
+    )
     Spacer(Modifier.height(14.dp))
     ClayButton(text = TimeTrialStats.DONE, onClick = onDone, color = Clay.Cream, glyph = Glyph.CHECK, modifier = Modifier.testTag("btn_timetrial_done"))
     DetailSection {

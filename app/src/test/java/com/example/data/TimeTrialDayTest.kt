@@ -215,9 +215,64 @@ class TimeTrialDayTest {
     for (t in texts) for (banned in listOf("Reto", "reto ", "Desafío", "Con reloj", "nivel", "Nivel", "racha")) assertFalse("«$t» no debe decir «$banned»", t.contains(banned))
   }
 
+  // ------------------------------------------------------------------ la regla de partidas (Tarea 218; `auditoria-fable/idea-pestana-contrarreloj.md` §4 y §5)
+
   @Test
-  fun `el Contrarreloj no cuenta para el futuro tope de partidas libres`() {
-    assertFalse(TimeTrialDay.COUNTS_FOR_FREE_CAP)
+  fun `sin Plus se juegan 3 partidas al dia del juego de hoy y el numero es uno solo`() {
+    assertEquals(3, TimeTrialDay.FREE_GAMES_PER_DAY)
+    val today = "2026-10-26"                                                   // Tinta o Palabra
+    val played = { n: Int -> (1..n).map { r("stroop", 30 + it, 100L * it) } }
+    for ((n, left) in listOf(0 to 3, 1 to 2, 2 to 1, 3 to 0, 4 to 0)) {
+      assertEquals("$n jugadas hoy", n, TimeTrialDay.playedToday(played(n), today, "stroop"))
+      assertEquals("$n jugadas hoy: quedan $left", left, TimeTrialDay.gamesLeft(played(n), today, "stroop"))
+      assertEquals("$n jugadas: sin Plus se puede jugar solo si quedan", left > 0, TimeTrialDay.canPlay(plus = false, "stroop", today, played(n)))
+      assertTrue("con Plus siempre, también sin partidas", TimeTrialDay.canPlay(plus = true, "stroop", today, played(n)))
+    }
+  }
+
+  @Test
+  fun `sin Plus solo el juego de hoy y con Plus los cuatro`() {
+    val today = "2026-10-26"                                                   // hoy toca Tinta o Palabra
+    for (g in TimeTrialDay.GAMES) {
+      assertEquals("$g sin Plus: solo si es el de hoy", g == "stroop", TimeTrialDay.canPlay(plus = false, g, today, emptyList()))
+      assertTrue("$g con Plus: siempre", TimeTrialDay.canPlay(plus = true, g, today, emptyList()))
+    }
+    assertFalse("un juego que no tiene Contrarreloj nunca es «de hoy»", TimeTrialDay.canPlay(plus = false, "calculo", today, emptyList()))
+  }
+
+  @Test
+  fun `la cuenta sale de lo guardado de ese juego y de ese dia, no de otros`() {
+    val today = "2026-10-26"
+    val results = listOf(
+      r("stroop", 40, 1, d = today), r("stroop", 41, 2, d = today),
+      r("stroop", 50, 3, d = "2026-10-25"),                                    // ayer: no gasta las de hoy
+      r("disparate", 30, 4, d = today),                                        // otro juego: tampoco
+      r("stroop", 20, 5, d = today, version = 1)                               // de una pista vieja: cuenta, jugó la partida
+    )
+    assertEquals(3, TimeTrialDay.playedToday(results, today, "stroop"))
+    assertEquals(0, TimeTrialDay.gamesLeft(results, today, "stroop"))
+    assertEquals("ayer fue una sola partida", 1, TimeTrialDay.playedToday(results, "2026-10-25", "stroop"))
+    assertEquals("de otro juego no se mezcla", 1, TimeTrialDay.playedToday(results, today, "disparate"))
+    assertEquals("mañana se renueva solo", 3, TimeTrialDay.gamesLeft(results, "2026-10-27", "stroop"))
+  }
+
+  @Test
+  fun `las frases de la regla de partidas dicen partidas, nunca intentos ni bloqueado`() {
+    assertEquals("Te quedan 2 partidas de hoy.", TimeTrialDay.gamesLeftLine(2))
+    assertEquals("Te queda 1 partida de hoy.", TimeTrialDay.gamesLeftLine(1))
+    assertEquals("Hoy ya jugaste tus 3 partidas.", TimeTrialDay.NO_GAMES_LEFT)
+    assertEquals("Hoy ya jugaste tus 3 partidas. Mañana: Rescate relámpago.", TimeTrialDay.tomorrowLine("Rescate relámpago"))
+    assertEquals("un nombre que ya cierra con «?» no lleva punto detrás", "Hoy ya jugaste tus 3 partidas. Mañana: ¿Verdad o disparate?", TimeTrialDay.tomorrowLine("¿Verdad o disparate?"))
+    assertEquals("Mañana hay otro Contrarreloj.", TimeTrialDay.TOMORROW_FINAL)
+    for (t in listOf(TimeTrialDay.gamesLeftLine(3), TimeTrialDay.gamesLeftLine(1), TimeTrialDay.NO_GAMES_LEFT, TimeTrialDay.tomorrowLine("X"), TimeTrialDay.TOMORROW_FINAL))
+      for (banned in listOf("intento", "Intento", "bloquead", "desbloque", "racha", "Reto", "Desafío")) assertFalse("«$t» no debe decir «$banned»", t.contains(banned))
+  }
+
+  @Test
+  fun `el dia de mañana para decir el juego que viene`() {
+    assertEquals("2026-10-27", TimeTrialDay.nextDay("2026-10-26"))
+    assertEquals("cruza el fin de mes y de año", "2027-01-01", TimeTrialDay.nextDay("2026-12-31"))
+    assertEquals("disparate", TimeTrialDay.gameFor(TimeTrialDay.nextDay("2026-10-26")))
   }
 
   // ------------------------------------------------------------------ el Contrarreloj en la ficha (Tarea 181): «de hoy» solo si es el juego del día, y la segunda línea del botón

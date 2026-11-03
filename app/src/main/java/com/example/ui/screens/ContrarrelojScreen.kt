@@ -21,7 +21,7 @@ import com.example.viewmodel.TopPanel
  * La pestaña «Contrarreloj» (Tarea 215): reúne lo que la página necesita del ViewModel y la dibuja ([ContrarrelojPage]); la hoja del candado ([PlusLockSheet]) vive aquí, porque la abre cualquier cosa en gris de la pestaña. Antes la página era un hijo de `ProgressScreen` (Tareas 199 y 203).
  *
  * - **El juego elegido** lo guarda el ViewModel (`contrarrelojGame`; null = el de hoy) y no se cierra al cambiar de pestaña. **Sin Nubilus Plus se muestra siempre el de hoy**, aunque el ViewModel guarde otro (el interruptor de depuración, o un Plus que venció): los otros tres se ven en gris.
- * - **«Jugar · 2 minutos»** lanza el juego elegido con la pista de hoy (`startTimeTrial(..., fromTab = true)`): al terminar, el final vuelve aquí y no a Hoy. La cuenta de partidas gratis llega con la Tarea 3 de la pestaña; hoy no hay tope.
+ * - **«Jugar · 2 minutos»** lanza el juego elegido con la pista de hoy (`startTimeTrial(..., fromTab = true)`): al terminar, el final vuelve aquí y no a Hoy. Sin Plus, la regla de partidas (Tarea 218): 3 al día del juego de hoy, contadas de lo guardado; con partidas, «Te quedan N partidas de hoy.» bajo «Jugar»; sin ellas, «Hoy ya jugaste tus 3 partidas.» en lugar de «Jugar» y una fila gris con candado bajo la losa gratis.
  * - **El día de hoy** se vuelve a pedir cada 30 s (el mismo reloj de Hoy): a medianoche el juego marcado «Hoy» cambia solo.
  * - La comparación disponible en ESTA build es la REFERENCIA ESTIMADA del APK (Tarea 205; también en la tienda) o, en depuración, los datos de muestra que elija «[Debug] Comparación»; null si no hay con qué comparar (la referencia la carga el ViewModel fuera del hilo principal: null un instante al arrancar).
  */
@@ -41,7 +41,10 @@ fun ContrarrelojScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modif
       clock = System.currentTimeMillis()
     }
   }
-  val today = remember(clock) { TimeTrialDay.gameFor(viewModel.todayKey()) }
+  val dayKey = remember(clock) { viewModel.todayKey() }
+  val today = remember(dayKey) { TimeTrialDay.gameFor(dayKey) }
+  // Tarea 218: sin Plus, las partidas de hoy que quedan del juego de hoy, de lo GUARDADO; con Plus, sin tope (null)
+  val gamesLeft = if (plus) null else TimeTrialDay.gamesLeft(results, dayKey, today)
   val selected = if (plus) chosen ?: today else today
   val now = remember(results, clock) { System.currentTimeMillis() }
   val compare = remember(compareWorld, estimatedReference) { Comparison.sourceFor(com.example.BuildConfig.DEBUG, compareWorld, estimatedReference) }
@@ -52,14 +55,10 @@ fun ContrarrelojScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modif
       onOpenSource = { viewModel.openTopPanel(TopPanel.REFERENCIA) },
       plus = plus, today = today,
       onPlay = { viewModel.startTimeTrial(selected, fromTab = true) },
+      gamesLeft = gamesLeft,
       onLocked = { sheet = true }
     )
   }
-  if (sheet) {
-    // Con qué se compara ESTA persona, para la hoja (Tarea 205c): sin franja de edad no hay comparación, así que la hoja no le promete una referencia que nunca verá
-    PlusLockSheet(
-      onDismiss = { sheet = false }, kind = Comparison.kindFor(compare, ageRange),
-      onSource = { sheet = false; viewModel.openTopPanel(TopPanel.REFERENCIA) }
-    )
-  }
+  // Con qué se compara ESTA persona, para la hoja (Tarea 205c): sin franja de edad no hay comparación, así que la hoja no le promete una referencia que nunca verá (`LockSheetHost`, que también usan Hoy y la ficha)
+  if (sheet) LockSheetHost(viewModel, onDismiss = { sheet = false })
 }

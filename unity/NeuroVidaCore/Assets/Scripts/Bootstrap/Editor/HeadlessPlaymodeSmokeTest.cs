@@ -758,6 +758,12 @@ namespace NeuroVida.Bridge.EditorTools
                     if (menu == null || !menu.IsShown) { PauseFail("la pausa no quedó visible"); _pauseStage = 9; return true; }
                     var es = UnityEngine.EventSystems.EventSystem.current;
                     if (es == null) { PauseFail("no hay EventSystem: ningún botón de la pausa responde"); _pauseStage = 9; return true; }
+                    // Tarea 218 (la regla de partidas): la pausa del Contrarreloj NO ofrece «Reiniciar» (cada reinicio sería una partida gratis de más); la de una partida de siempre, sí
+                    bool restartShown = false;
+                    foreach (var kv in menu.VisibleButtons()) if (kv.Key == "Btn_Reiniciar") restartShown = true;
+                    bool timeTrialRun = _current.Name.StartsWith("Contrarreloj");
+                    if (timeTrialRun && restartShown) { PauseFail("la pausa del Contrarreloj ofrece «Reiniciar»"); _pauseStage = 9; return true; }
+                    if (!timeTrialRun && !restartShown) { PauseFail("la pausa de una partida de siempre no ofrece «Reiniciar»"); _pauseStage = 9; return true; }
                     UnityEngine.GameObject continueButton = null;
                     foreach (var kv in menu.VisibleButtons())
                     {

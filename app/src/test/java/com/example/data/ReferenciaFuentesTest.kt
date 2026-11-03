@@ -97,8 +97,20 @@ class ReferenciaFuentesTest {
   }
 
   @Test
+  fun la_hoja_dice_cuantas_veces_jugo_el_programa_y_ese_3_es_el_de_las_tablas() {
+    // Tarea 218 (decisión 5 a de Ricardo, `idea-pestana-contrarreloj.md` §6.4): la referencia queda en 3 partidas por semana y se dice
+    assertEquals("El programa jugó cada Contrarreloj 3 veces por semana y quedó su mejor marca.", ReferenciaFuentes.GAMES)
+    assertEquals("la única cifra de la frase es ese 3", "3", ReferenciaFuentes.GAMES.filter { it.isDigit() })
+    val dir = java.io.File("src/main/assets/referencia")
+    val tables = dir.listFiles { f -> f.extension == "json" }.orEmpty()
+    assertEquals("las cuatro tablas", 4, tables.size)
+    for (f in tables) assertTrue("${f.name} se armó con 3 partidas por semana (si cambia, cambia la frase)", Regex(""""partidas_por_semana"\s*:\s*3\b""").containsMatchIn(f.readText()))
+    assertFalse("sin «robots» ni «personas»: el programa", listOf("robot", "persona").any { it in ReferenciaFuentes.GAMES.lowercase() })
+  }
+
+  @Test
   fun nunca_se_dice_el_numero_de_robots_ni_una_promesa_de_pasar_a_personas_ni_una_palabra_que_no_va() {
-    val everything = listOf(ReferenciaFuentes.TITLE, ReferenciaFuentes.FUENTES_ROW, ReferenciaFuentes.INTRO, ReferenciaFuentes.INTRO_2, ReferenciaFuentes.ABOUT, ReferenciaFuentes.TEEN_LINE, ReferenciaFuentes.SHARED_LINE) +
+    val everything = listOf(ReferenciaFuentes.TITLE, ReferenciaFuentes.FUENTES_ROW, ReferenciaFuentes.INTRO, ReferenciaFuentes.INTRO_2, ReferenciaFuentes.GAMES, ReferenciaFuentes.ABOUT, ReferenciaFuentes.TEEN_LINE, ReferenciaFuentes.SHARED_LINE) +
       ReferenciaFuentes.groups.map { it.title } + ReferenciaFuentes.studies.flatMap { listOf(it.cite, it.line) }
     for (t in everything) {
       val low = t.lowercase()
