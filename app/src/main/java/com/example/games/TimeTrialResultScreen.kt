@@ -111,7 +111,9 @@ fun TimeTrialResultScreen(
   plus: Boolean = false,
   onAllMarks: (() -> Unit)? = null,
   /** ¿Quedan partidas para jugar otra? (Tarea 218, la regla de partidas: sin Nubilus Plus, 3 al día del juego de hoy.) Sin partidas, «Otra vez» no sale y en su lugar va «Mañana hay otro Contrarreloj.»; nada gris en el final (regla de `idea-pestana-contrarreloj.md` §7). */
-  canAgain: Boolean = true
+  canAgain: Boolean = true,
+  /** Lo que va en lugar de «Otra vez» cuando no quedan partidas: «Mañana hay otro Contrarreloj.», o «Hoy hay otro Contrarreloj.» si la partida es de ayer y ya pasó la medianoche ([TimeTrialDay.noMoreLine]). */
+  noMoreLine: String = TimeTrialDay.TOMORROW_FINAL
 ) {
   val gameDef = GameRegistry.getById(outcome.result.gameId)
   val lang = com.example.ui.i18n.LocalAppLanguage.current
@@ -158,7 +160,7 @@ fun TimeTrialResultScreen(
     Spacer(Modifier.height(24.dp))
     if (canAgain) ClayButton(text = TimeTrialStats.AGAIN, onClick = onAgain, glyph = Glyph.CLOCK, modifier = Modifier.testTag("btn_timetrial_again"))
     else OnBoardText(
-      text = TimeTrialDay.TOMORROW_FINAL, color = Clay.Cream, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp, lineHeight = 24.sp, textAlign = TextAlign.Center,
+      text = noMoreLine, color = Clay.Cream, fontFamily = AppFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp, lineHeight = 24.sp, textAlign = TextAlign.Center,
       modifier = Modifier.fillMaxWidth().testTag("timetrial_tomorrow")
     )
     Spacer(Modifier.height(14.dp))

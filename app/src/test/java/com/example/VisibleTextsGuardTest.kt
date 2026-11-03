@@ -381,7 +381,7 @@ class VisibleTextsGuardTest {
     // los textos nuevos de la Tarea 215 por su valor
     for (t in listOf(PlusAccess.LOCKED_PLACE, PlusAccess.LOCKED_MARKS, PlusAccess.LOCKED_PLACE_TITLE, PlusAccess.LOCKED_MARKS_TITLE, TimeTrialMarks.PLAY, TimeTrialMarks.SUBTITLE_PLACE, TimeTrialMarks.freeRecordLine(null), TimeTrialMarks.weekLine(TimeTrialMarks.WeekSummary(3, 41)),
       // los de la Tarea 218
-      TimeTrialDay.gamesLeftLine(2), TimeTrialDay.gamesLeftLine(1), TimeTrialDay.NO_GAMES_LEFT, TimeTrialDay.tomorrowLine("Tinta o Palabra"), TimeTrialDay.TOMORROW_FINAL, PlusAccess.LOCKED_GAMES, PlusAccess.SHEET_FOUR_GAMES, PlusAccess.SHEET_LEAD, PlusAccess.SHEET_LEAD_COMPARED)) {
+      TimeTrialDay.gamesLeftLine(2), TimeTrialDay.gamesLeftLine(1), TimeTrialDay.NO_GAMES_LEFT, TimeTrialDay.tomorrowLine("Tinta o Palabra"), TimeTrialDay.TOMORROW_FINAL, TimeTrialDay.TODAY_FINAL, PlusAccess.LOCKED_GAMES, PlusAccess.SHEET_FOUR_GAMES, PlusAccess.SHEET_LEAD, PlusAccess.SHEET_LEAD_COMPARED)) {
       assertTrue("«$t»", words.none { it in t.lowercase() })
     }
   }
@@ -443,7 +443,6 @@ class VisibleTextsGuardTest {
     val t = com.example.ui.screens.HomeTimeTrial("stroop", "Tinta o Palabra", com.example.data.TimeTrialState.PENDIENTE, record = 41)
     assertEquals("Contrarreloj de hoy", com.example.ui.screens.TIME_TRIAL_LABEL)
     assertEquals("Contrarreloj", com.example.ui.screens.TIME_TRIAL_BUTTON_LABEL)
-    assertEquals("Modos de juego", com.example.ui.screens.MODES_TITLE)
     assertEquals("Hoy: Tinta o Palabra", com.example.ui.screens.timeTrialSecondLine(t))
     val played = t.copy(state = com.example.data.TimeTrialState.JUGADO, todayHits = 38)
     assertEquals("el botón dice lo mismo ya jugado: lo jugado va en el lector de pantalla y el récord en su línea", "Hoy: Tinta o Palabra", com.example.ui.screens.timeTrialSecondLine(played))
@@ -456,7 +455,7 @@ class VisibleTextsGuardTest {
     val ui = com.example.ui.screens.HomeUi(name = "R", now = 0L, tier = com.example.model.RankTier.fromRating(0), streak = 0, weeklyGoal = 4, lamps = com.example.data.Week.Lamps(List(7) { false }, 6), stops = stops, pausedTitle = null, flightDay = false, hasBaseline = true)
     assertEquals("3 de 3 · ruta completa", com.example.ui.screens.routeMeta(ui))
     val phrases = listOf(
-      com.example.ui.screens.TIME_TRIAL_LABEL, com.example.ui.screens.TIME_TRIAL_BUTTON_LABEL, com.example.ui.screens.MODES_TITLE, com.example.ui.screens.TIME_TRIAL_AGAIN, com.example.ui.screens.ROUTE_TOMORROW, com.example.data.TimeTrialDay.recordLine(41), com.example.data.TimeTrialDay.newMarkLine(43, "Tinta o Palabra"),
+      com.example.ui.screens.TIME_TRIAL_LABEL, com.example.ui.screens.TIME_TRIAL_BUTTON_LABEL, com.example.ui.screens.TIME_TRIAL_AGAIN, com.example.ui.screens.ROUTE_TOMORROW, com.example.data.TimeTrialDay.recordLine(41), com.example.data.TimeTrialDay.newMarkLine(43, "Tinta o Palabra"),
       com.example.data.TimeTrialStats.SEAL, com.example.data.TimeTrialStats.UNIT, com.example.data.TimeTrialStats.RULE, com.example.data.TimeTrialStats.scoreLine(com.example.data.TimeTrialResult(gameId = "stroop", day = "2026-10-26", trackVersion = 2, hits = 38, errors = 4, level = 3)), com.example.data.TimeTrialStats.FIRST_PHRASE, com.example.data.TimeTrialStats.NOTE, com.example.data.TimeTrialStats.LAST_TITLE, com.example.ui.screens.routeMeta(ui)
     )
     for (p in phrases) {

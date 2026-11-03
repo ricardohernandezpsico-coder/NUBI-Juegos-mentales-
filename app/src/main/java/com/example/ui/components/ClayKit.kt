@@ -266,8 +266,8 @@ internal fun KitGlyph(glyph: Glyph, modifier: Modifier = Modifier, size: Dp = 24
 }
 
 /**
- * El reloj de plasticina del botón «Contrarreloj» (Tarea 180; `kit_i_reloj_clay`, de Blender: aro de tinta, cara crema, dos manecillas y la corona): un objeto de ~42 dp, no un glifo de churro. Se ve igual sobre lila, sol y crema (el aro es de tinta). Es decorativo: el botón ya dice qué hace.
- * [size] es el alto del cuerpo del reloj; se dibuja de la misma imagen (3 px por dp), así que más grande que ~44 dp se ampliaría.
+ * El reloj de plasticina del botón «Contrarreloj» (Tarea 180; `kit_i_reloj_clay`, de Blender: aro de tinta, cara crema, dos manecillas y la corona): un objeto de plasticina, no un glifo de churro. Se ve igual sobre celeste, crema y lila (el aro es de tinta). Es decorativo: el botón ya dice qué hace.
+ * [size] es el alto del cuerpo del reloj: 42 dp en la ficha del juego y 56 dp en la losa de Hoy (Tarea 219). Desde la Tarea 219 la imagen se renderiza a 4/3 de su tamaño anterior (cuerpo de ~57 dp, 216 px a 3 px por dp, `RELOJ_K` en `tools/isla/isla.py`) para no ampliarla en Hoy; en la ficha se reduce.
  */
 @Composable
 internal fun ClayClockIcon(modifier: Modifier = Modifier, size: Dp = 42.dp) {

@@ -100,18 +100,18 @@ data class GameCardData(
 )
 
 /**
- * El botón «Contrarreloj» de la ficha (Tarea 181; solo en Tinta o Palabra, ¿Verdad o disparate?, Rescate relámpago y Acoplamiento): su segunda línea («Tu récord: 41 aciertos.» o «2 minutos»), lo que dice el lector de pantalla y su color (lila o crema: nunca sol, el sol es de «Jugar»).
+ * El botón «Contrarreloj» de la ficha (Tarea 181; solo en Tinta o Palabra, ¿Verdad o disparate?, Rescate relámpago y Acoplamiento): su segunda línea («Tu récord: 41 aciertos.» o «2 minutos»), lo que dice el lector de pantalla y su color (desde la Tarea 219, CELESTE —el color propio del Contrarreloj—; gris con candado en un juego que no se puede jugar; nunca sol: el sol es de «Jugar», el lila es del Desafío y la crema, de opciones e información).
  * Desde la Tarea 218 (la regla de partidas) hay tres formas sin Nubilus Plus: con partidas, la segunda línea dice «Te quedan 2 partidas de hoy.»; en un juego que NO es el de hoy, el botón va [locked] (gris con candado, «Con Nubilus Plus» en su segunda línea) y abre la hoja del candado; y sin partidas
  * el botón no sale y queda la línea [noGamesLine] («Hoy ya jugaste tus 3 partidas.»).
  */
-internal data class SheetTimeTrial(val secondLine: String, val spoken: String, val color: SlabColor = SlabColor.LILAC, val locked: Boolean = false, val noGamesLine: String? = null)
+internal data class SheetTimeTrial(val secondLine: String, val spoken: String, val color: SlabColor = SlabColor.SKY, val locked: Boolean = false, val noGamesLine: String? = null)
 
 /**
  * El botón de la ficha de [gameId] con lo guardado: [record] = el récord de ese juego con la pista vigente (null = nunca jugó), [dateKey] = hoy (para decir «de hoy» solo si es el juego del día). Null si el juego no tiene Contrarreloj.
  * [plus] = Nubilus Plus (con él, las fichas quedan como siempre); [results] = TODAS las partidas del Contrarreloj (de ahí salen las partidas que quedan de hoy).
  */
 internal fun sheetTimeTrialOf(
-  gameId: String, title: String, record: Int?, dateKey: String, color: SlabColor = SlabColor.LILAC,
+  gameId: String, title: String, record: Int?, dateKey: String, color: SlabColor = SlabColor.SKY,
   plus: Boolean = true, results: List<com.example.data.TimeTrialResult> = emptyList()
 ): SheetTimeTrial? {
   if (!TimeTrialDay.supports(gameId)) return null

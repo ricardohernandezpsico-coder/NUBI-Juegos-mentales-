@@ -128,8 +128,8 @@ class LecturaScreenshotTest {
   }
 
   @Test fun tarjeta_10() = hoy("tarjeta_10", 1f)
-  @Test fun paso1_10() = hoy("paso1_10", 1f, GuideStep.CONTRARRELOJ)
-  @Test fun paso1_13() = hoy("paso1_13", 1.3f, GuideStep.CONTRARRELOJ)
+  @Test fun paso1_10() = hoy("paso1_10", 1f, GuideStep.TODOS)
+  @Test fun paso1_13() = hoy("paso1_13", 1.3f, GuideStep.TODOS)
 
   /** La medalla única del vuelo («Medalla nueva» y «Primer paso»: las dos letras amarillas de la celebración). */
   @Test

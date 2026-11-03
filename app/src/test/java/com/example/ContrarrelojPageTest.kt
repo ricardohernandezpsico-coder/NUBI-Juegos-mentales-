@@ -546,7 +546,7 @@ class ContrarrelojPageTest {
     assertTrue("el aviso de los datos de muestra, en OnNight de 16 sp", Regex("""Text\(Comparison\.SAMPLE_NOTICE\.glueNumbers\(\)\.glueNamesForLetter\(\), color = NubiTokens\.OnNight, fontSize = 16\.sp""").containsMatchIn(page))
     assertTrue("y la fila «Con qué te comparas ›» sale de Comparison y va en SunOnNight", page.contains("label = Comparison.COMPARE_LINK") && page.contains("NubiTokens.SunOnNight, \"contrarreloj_source_link\""))
     assertFalse("la frase larga de la Tarea 211 ya no está en la página", page.contains("estimatedNotice") || page.contains("ReferenceFooter"))
-    assertTrue("el recuadro de «Todavía somos pocos» usa el lila de «Marca nueva» (TimeTrialDoneFill), sin copiar el literal", page.contains("background(TimeTrialDoneFill)") && !Regex("0x[Ff][Ff][Dd]9[Cc][Ee][Ff][Ff]").containsMatchIn(page))
+    assertTrue("el recuadro de «Todavía somos pocos» usa el lila que tenía «Marca nueva» (TimeTrialLilacFill), sin copiar el literal", page.contains("background(TimeTrialLilacFill)") && !Regex("0x[Ff][Ff][Dd]9[Cc][Ee][Ff][Ff]").containsMatchIn(page))
   }
 
   // ---- la cifra protagonista
@@ -1030,7 +1030,7 @@ class ContrarrelojPageTest {
 
   @Test fun los_textos_de_la_comparacion_pasan_4_5_a_1_sobre_su_fondo() {
     val cream = Color(0xFFFFEAD1)
-    val fill = com.example.ui.screens.TimeTrialDoneFill
+    val fill = com.example.ui.screens.TimeTrialLilacFill
     assertEquals(0xD9CEFF, fill.toArgb() and 0xFFFFFF)
     assertTrue("la tinta sobre el lila de «Todavía somos pocos»: %.1f".format(contrast(Clay.Ink, fill)), contrast(Clay.Ink, fill) >= 4.5)
     assertTrue("la tinta apagada (el percentil, las notas) sobre la crema de la losa (#FFEAD1): %.1f".format(contrast(Clay.InkMuted, cream)), contrast(Clay.InkMuted, cream) >= 4.5)

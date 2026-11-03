@@ -266,10 +266,10 @@ class ReglaDePartidasTest {
   @Test fun Hoy_sin_partidas_no_tiene_el_boton_Contrarreloj_y_dice_el_juego_de_manana_con_la_fila_gris() {
     mountHome(homeUi(stroopSinPartidas))
     assertEquals("ni el botón «Contrarreloj» ni «Otra vez»: nunca lanzan una partida sin partidas", 0, count("btn_timetrial"))
-    assertEquals("Hoy ya jugaste tus 3 partidas. Mañana: ¿Verdad o disparate?", textOf("home_timetrial_none"))
+    assertEquals("Hoy ya jugaste tus 3 partidas. Mañana: ¿Verdad o disparate?", textOf("home_timetrial_tomorrow"))
     assertEquals(PlusAccess.LOCKED_GAMES, textOf("home_locked_games_phrase"))
     assertEquals("UNA sola fila gris", 1, count("home_locked_games"))
-    assertTrue("en orden: la frase, la fila gris y «Todos los juegos»", top("home_timetrial_none") < top("home_locked_games") && top("home_locked_games") < top("btn_all_games"))
+    assertTrue("en orden (Tarea 219: Hoy reordenada): «Todos los juegos», el recuadro de la frase y la fila gris", top("btn_all_games") < top("home_timetrial_none") && top("home_timetrial_none") < top("home_locked_games"))
     assertEquals("«Todos los juegos» sigue", 1, count("btn_all_games"))
     rule.onNodeWithTag("home_locked_games").performScrollTo().performClick(); rule.waitForIdle()
     assertEquals("la fila abre la hoja", 1, lockedTaps)
@@ -278,9 +278,12 @@ class ReglaDePartidasTest {
 
   @Test fun Hoy_con_marca_nueva_y_sin_partidas_deja_el_recuadro_arriba_y_no_ofrece_Otra_vez() {
     mountHome(homeUi(stroopSinPartidas.copy(state = TimeTrialState.MARCA_NUEVA, todayHits = 43, record = 43)))
-    assertEquals("el recuadro de la marca nueva queda", 1, count("home_timetrial_done"))
+    assertEquals("UN solo recuadro (Tarea 219): la marca nueva va dentro del de «sin partidas»", 1, count("home_timetrial_none"))
+    assertEquals("y no hay otro aparte", 0, count("home_timetrial_done"))
     assertEquals("sin «Otra vez»", 0, count("btn_timetrial"))
-    assertTrue("el recuadro va arriba de la frase", top("home_timetrial_done") < top("home_timetrial_none"))
+    assertEquals("Marca nueva: 43 aciertos en Tinta o Palabra.", textOf("home_timetrial_mark"))
+    fun topUnmerged(tag: String) = rule.onNode(hasTestTag(tag), useUnmergedTree = true).fetchSemanticsNode().positionInRoot.y
+    assertTrue("la marca va arriba de la frase", topUnmerged("home_timetrial_mark") < topUnmerged("home_timetrial_tomorrow"))
   }
 
   @Test fun Hoy_con_partidas_queda_como_siempre() {
@@ -303,10 +306,10 @@ class ReglaDePartidasTest {
   /** La cabida de Hoy sin partidas (Opus: «a 393 × 873 y 360 × 780, con 1,0 y 1,3»): el contenido más bajo, sin recortar, contra el borde de la barra (163 dp del fondo); ninguna palabra se parte. */
   private fun hoyCabe(width: Int, height: Int, scale: Float, ui: HomeUi = homeUi(stroopSinPartidas)) {
     mountHome(ui, width, height, scale)
-    val last = rule.onNodeWithTag("btn_all_games").fetchSemanticsNode()
-    val bottomDp = (last.layoutInfo.coordinates.positionInRoot().y + last.layoutInfo.height) / rule.density.density
+    val end = rule.onNodeWithTag("home_end").fetchSemanticsNode()
+    val bottomDp = end.positionInRoot.y / rule.density.density - 6f             // lo último es la fila gris, una losa: sus 6 dp de sombra no cuentan
     val limit = height - 163f
-    println("MEDIDA Hoy sin partidas $width x $height letra $scale: «Todos los juegos» termina en ${"%.1f".format(bottomDp)} dp; la barra empieza en ${"%.0f".format(limit)} dp (${if (bottomDp <= limit) "cabe" else "se pasa ${"%.1f".format(bottomDp - limit)} dp: Hoy se desliza"})")
+    println("MEDIDA Hoy sin partidas $width x $height letra $scale: la fila gris termina en ${"%.1f".format(bottomDp)} dp; la barra empieza en ${"%.0f".format(limit)} dp (${if (bottomDp <= limit) "cabe" else "se pasa ${"%.1f".format(bottomDp - limit)} dp: Hoy se desliza"})")
     val cuts = mutableListOf<String>()
     fun walk(n: SemanticsNode) {
       val rs = mutableListOf<TextLayoutResult>(); n.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(rs)
@@ -315,7 +318,7 @@ class ReglaDePartidasTest {
     }
     walk(rule.onRoot(useUnmergedTree = true).fetchSemanticsNode())
     assertEquals("ninguna palabra partida en Hoy sin partidas a $width dp con letra $scale", emptyList<String>(), cuts)
-    assertTrue("«Todos los juegos» queda más abajo que la fila gris", top("btn_all_games") > bottom("home_locked_games") - 1f)
+    assertTrue("«Todos los juegos» queda más arriba que el recuadro y la fila gris (Tarea 219)", bottom("btn_all_games") <= top("home_timetrial_none") + 1f && bottom("home_timetrial_none") <= top("home_locked_games") + 1f)
   }
 
   @Test fun Hoy_sin_partidas_a_393_x_873_con_letra_1_0() = hoyCabe(393, 873, 1f)
@@ -356,5 +359,64 @@ class ReglaDePartidasTest {
   @Test fun el_atajo_Todas_tus_marcas_del_final_sigue_solo_con_Plus_aunque_no_queden_partidas() {
     mountFinal(canAgain = false, plus = true)
     assertEquals("con Plus el atajo está; sin partidas, «Otra vez» no", listOf(1, 0), listOf(count("btn_timetrial_all_marks"), count("btn_timetrial_again")))
+  }
+
+  // ---------------------------------------------------------------- el final, como lo compone MainActivity (Tarea 219, auditoría de Fable §3.2 y §3.3)
+
+  /** Compone el final como `MainActivity`: `canAgain` y la línea de «sin partidas» salen de [TimeTrialDay.canAgainAfter] y [TimeTrialDay.noMoreLine] con la lista [saved] que ya tiene el flujo de Room (puede no traer todavía la partida [just]). */
+  private fun mountFinalLikeApp(saved: List<TimeTrialResult>, just: TimeTrialResult, plus: Boolean = false, todayKey: String = today) {
+    val outcome = TimeTrialStats.outcome(saved.filter { it.id != just.id } + just, just, 3_000)
+    val canAgain = TimeTrialDay.canAgainAfter(plus, just, todayKey, saved)
+    val noMore = TimeTrialDay.noMoreLine(just.day, todayKey)
+    rule.setContent {
+      CompositionLocalProvider(LocalReduceMotion provides true) {
+        NeuroVidaTheme { Box(Modifier.width(393.dp).height(1200.dp)) { TimeTrialResultScreen(outcome = outcome, onAgain = { plays++ }, onDone = {}, soundEnabled = false, plus = plus, onAllMarks = if (plus) ({}) else null, canAgain = canAgain, noMoreLine = noMore) } }
+      }
+    }
+    rule.waitForIdle()
+  }
+
+  private fun justPlayed(game: String = "stroop", day: String = today) = TimeTrialResult(id = "just", gameId = game, day = day, trackVersion = TimeTrialDay.trackVersion(game), hits = 33, errors = 1, level = 3, seconds = 120, timestamp = 9_000)
+
+  /** El final de la TERCERA partida con la lista vieja (dos guardadas: Room todavía no emitió): se compone UNA vez y no ofrece «Otra vez» ni un instante. */
+  @Test fun el_final_de_la_tercera_partida_no_ofrece_Otra_vez_aunque_la_lista_guardada_todavia_no_la_traiga() {
+    val just = justPlayed()
+    assertFalse("con la lista vieja (2 guardadas) ya no quedan partidas: la recién terminada cuenta", TimeTrialDay.canAgainAfter(false, just, today, played(2)))
+    assertEquals("y con la lista nueva (la trae) da lo mismo: sin parpadeo", TimeTrialDay.canAgainAfter(false, just, today, played(2)), TimeTrialDay.canAgainAfter(false, just, today, played(2) + just))
+    mountFinalLikeApp(played(2), just)
+    assertEquals("ni un cuadro con «Otra vez»", 0, count("btn_timetrial_again"))
+    assertEquals("Mañana hay otro Contrarreloj.", textOf("timetrial_tomorrow"))
+  }
+
+  @Test fun el_final_de_la_segunda_partida_con_la_lista_vieja_si_ofrece_Otra_vez_y_la_recien_terminada_no_se_cuenta_dos_veces() {
+    val just = justPlayed()
+    assertTrue("1 guardada + la recién terminada = 2: queda una", TimeTrialDay.canAgainAfter(false, just, today, played(1)))
+    assertTrue("si la lista YA trae la recién terminada no se cuenta dos veces (2 guardadas, una es ella)", TimeTrialDay.canAgainAfter(false, just, today, played(1) + just))
+    mountFinalLikeApp(played(1), just)
+    assertEquals(1, count("btn_timetrial_again")); assertEquals(0, count("timetrial_tomorrow"))
+  }
+
+  @Test fun con_Plus_el_final_siempre_ofrece_Otra_vez() {
+    assertTrue(TimeTrialDay.canAgainAfter(true, justPlayed(), today, played(5)))
+  }
+
+  /** Medianoche: una partida lanzada a las 23:58 (con la pista de AYER) y vista a las 00:01 no dice «Mañana hay otro Contrarreloj.»: lo de hoy ya está disponible. */
+  @Test fun el_final_de_una_partida_de_ayer_visto_despues_de_medianoche_dice_Hoy_hay_otro_Contrarreloj() {
+    val yesterday = "2026-10-25"
+    val game = TimeTrialDay.gameFor(yesterday)
+    assertTrue("ayer el Contrarreloj no era el de hoy", game != TimeTrialDay.gameFor(today))
+    val just = justPlayed(game = game, day = yesterday)
+    assertEquals("Hoy hay otro Contrarreloj.", TimeTrialDay.noMoreLine(just.day, today))
+    assertEquals("Mañana hay otro Contrarreloj.", TimeTrialDay.noMoreLine(today, today))
+    mountFinalLikeApp(emptyList(), just, todayKey = today)
+    assertEquals(0, count("btn_timetrial_again"))
+    assertEquals("Hoy hay otro Contrarreloj.", textOf("timetrial_tomorrow"))
+    assertTrue("y nunca dice «Mañana»", !textOf("timetrial_tomorrow").contains("Mañana"))
+  }
+
+  @Test fun con_Plus_el_final_de_una_partida_de_ayer_conserva_Otra_vez() {
+    val yesterday = "2026-10-25"
+    mountFinalLikeApp(emptyList(), justPlayed(game = TimeTrialDay.gameFor(yesterday), day = yesterday), plus = true)
+    assertEquals(1, count("btn_timetrial_again")); assertEquals(0, count("timetrial_tomorrow"))
   }
 }

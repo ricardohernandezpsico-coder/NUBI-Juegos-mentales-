@@ -2,11 +2,11 @@ package com.example.data
 
 import com.example.model.GameRegistry
 
-/** Los tres pasos de la guía de Nubi en la primera entrada a Hoy, en orden (Tarea 193; `auditoria-fable/guia-primer-ingreso.md` §3). */
-enum class GuideStep { CONTRARRELOJ, TODOS, BARRA }
+/** Los tres pasos de la guía de Nubi en la primera entrada a Hoy, en orden (Tarea 193; `auditoria-fable/guia-primer-ingreso.md` §3). Desde la Tarea 219 siguen la pantalla de arriba abajo: «Todos los juegos», el Contrarreloj (debajo de él) y la barra. */
+enum class GuideStep { TODOS, CONTRARRELOJ, BARRA }
 
 /**
- * La guía de la primera entrada a Hoy (Tarea 193, propuesta A de Fable, 30-oct): el día del Primer vuelo, Nubi señala TRES cosas que la pantalla no explica sola, con el mismo velo, hueco y globo de los tutoriales de los juegos: el Contrarreloj, «Todos los juegos» y la barra de abajo (Contrarreloj, Avance y Tú).
+ * La guía de la primera entrada a Hoy (Tarea 193, propuesta A de Fable, 30-oct): el día del Primer vuelo, Nubi señala TRES cosas que la pantalla no explica sola, con el mismo velo, hueco y globo de los tutoriales de los juegos: «Todos los juegos», el Contrarreloj y la barra de abajo (Contrarreloj, Avance y Tú). Desde la Tarea 219 (Hoy reordenada: ruta, «Todos los juegos», Contrarreloj) el orden es ese, el de la pantalla de arriba abajo; el blanco del paso del Contrarreloj es el BLOQUE entero (la losa o, sin partidas, el recuadro con la fila gris).
  * Lógica pura: qué se dice, cuándo sale y qué sigue. La pantalla (`ui/components/HoyGuideOverlay`) y el ViewModel (`guideStep`) la usan; ver `docs/guia-primer-ingreso.md`.
  *
  * Reglas de los textos (`GlobosDeNubiTest`): 2 frases y 100 letras como máximo, UNA idea, el número con su unidad y lo iluminado con la palabra que se lee en pantalla. No hablan del sol ni de «ahora»: valen en cualquier día.
@@ -44,8 +44,8 @@ object HoyGuide {
 
   /** Lo que dice TalkBack al entrar a cada paso (§3.2): el nombre y el lugar de lo iluminado, porque quien no ve el hueco necesita saber qué se señala. */
   fun spoken(step: GuideStep, startingPoint: Boolean = true): String = when (step) {
-    GuideStep.CONTRARRELOJ -> "Nubi te muestra Hoy. ${counter(step)}. El botón Contrarreloj, bajo tu ruta. ${text(step, startingPoint)}"
-    GuideStep.TODOS -> "${counter(step)}. El botón Todos los juegos, debajo del Contrarreloj. ${text(step, startingPoint)}"
+    GuideStep.TODOS -> "Nubi te muestra Hoy. ${counter(step)}. El botón Todos los juegos, debajo de tu ruta. ${text(step, startingPoint)}"
+    GuideStep.CONTRARRELOJ -> "${counter(step)}. El Contrarreloj, debajo de Todos los juegos. ${text(step, startingPoint)}"
     GuideStep.BARRA -> "${counter(step)}. Las pestañas Contrarreloj, Avance y Tú, en la barra de abajo. ${text(step, startingPoint)}"
   }
 

@@ -266,8 +266,9 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
               soundEnabled = userSettings.soundEnabled,
               plus = plus,
               onAllMarks = { viewModel.openContrarrelojFromFinal(timeTrial.result.gameId) },
-              // sin partidas, «Otra vez» no sale (Tarea 218): la cuenta sale de lo guardado, que ya incluye esta partida
-              canAgain = com.example.data.TimeTrialDay.canPlay(plus, timeTrial.result.gameId, viewModel.todayKey(), timeTrialResultsNow)
+              // sin partidas, «Otra vez» no sale (Tarea 218): la cuenta sale de lo guardado MÁS esta partida (Room puede traer la lista un instante después y «Otra vez» parpadearía: Tarea 219)
+              canAgain = com.example.data.TimeTrialDay.canAgainAfter(plus, timeTrial.result, viewModel.todayKey(), timeTrialResultsNow),
+              noMoreLine = com.example.data.TimeTrialDay.noMoreLine(timeTrial.result.day, viewModel.todayKey())
             )
             return@let
           }

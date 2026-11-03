@@ -463,6 +463,8 @@ Fable, `auditoria-fable/avisos-y-botones-premium.md` §3 (opción A, que eligió
 
 ## Hoy: Modos de juego (Tarea 180, 26-oct)
 
+> **Reemplazado en la Tarea 219 (3-nov): Hoy reordenada.** El título «Modos de juego» salió; el orden es saludo · semana · tarjeta · «Todos los juegos» (56 dp, 18 sp, casillas de 36 dp) · el Contrarreloj en una losa celeste de 80 dp (`SlabColor.SKY`, reloj a 56 dp), que pasa a crema («Otra vez») cuando ya se jugó; el sol vive solo en la ruta; el recuadro plano de la marca nueva y el de «Hoy ya jugaste tus 3 partidas…» van en celeste claro `#A5E4F7` (en UN solo recuadro si pasan las dos cosas) y la fila gris con candado sigue gris. Lo de abajo es historia de la Tarea 180; lo que manda está en `docs/contrarreloj.md` §29.
+
 Lo que hay bajo la tarjeta de la ruta pasó de «dos botones en una fila» a una sección con título (`MODES_TITLE` = «Modos de juego», Rubik Bold 18 sp en crema, `home_modes_title`) y DOS botones a todo el ancho, uno bajo el otro (`HoyBelow`):
 
 - **«Contrarreloj»** (`TimeTrialButton`, SIEMPRE a todo el ancho): el reloj de plasticina (`ClayClockIcon`, `kit_i_reloj_clay`, de Blender: aro de tinta, cara crema, manecillas y corona; se lee igual sobre lila, sol y crema; cuerpo de 38 × 42 dp, se dibuja a 42 dp) a la izquierda, el nombre del modo (`TimeTrialDay.BUTTON_LABEL`, UNA palabra que nunca se parte) y, debajo, solo «Hoy: Tinta o Palabra» (`TimeTrialDay.secondLine`; los minutos, lo jugado hoy y el récord ya no van en el botón: el lector de pantalla los dice). **Lila** mientras la ruta sigue (o hay partida en pausa), **sol** con la ruta completa y por jugar, **crema** ya jugado; un solo sol a la vez (`sunOf`). «Tu récord: N aciertos.» sigue como línea plana bajo el botón con la ruta completa.

@@ -73,7 +73,7 @@ class GameSheetContrarrelojTest {
   private val others = GameRegistry.allGames.map { it.id }.filter { it !in four }
 
   /** Lo que se pone en la ficha: el juego, su récord (null = ninguno), el tamaño del marco (el alto es el que dejan las barras del sistema en 393 × 873), la letra y el color del botón. [nonce] reinicia lo recordado (lo desplegado, lo elegido). */
-  private data class Cfg(val gameId: String, val record: Int? = null, val width: Int = 393, val height: Int = 873 - 72, val fontScale: Float = 1f, val timed: Boolean = true, val color: SlabColor = SlabColor.LILAC, val nonce: Int = 0)
+  private data class Cfg(val gameId: String, val record: Int? = null, val width: Int = 393, val height: Int = 873 - 72, val fontScale: Float = 1f, val timed: Boolean = true, val color: SlabColor = SlabColor.SKY, val nonce: Int = 0)
 
   private var cfg by mutableStateOf(Cfg("stroop"))
   private var plays = 0
@@ -213,17 +213,19 @@ class GameSheetContrarrelojTest {
   }
 
   @Test
-  fun el_boton_nunca_es_sol_y_va_en_lila_o_en_crema() {
+  fun el_boton_nunca_es_sol_ni_lila_y_va_en_celeste_o_en_crema() {
     val tt = sheetTimeTrialOf("stroop", "Tinta o Palabra", null, today)
     assertNotNull(tt)
-    assertEquals("por defecto, el lila del Contrarreloj de Hoy", SlabColor.LILAC, tt!!.color)
+    assertEquals("por defecto, el celeste del Contrarreloj (Tarea 219; el lila es del Desafío)", SlabColor.SKY, tt!!.color)
     assertNotEquals("el único sol de la ficha es «Jugar»", SlabColor.SUN, tt.color)
+    assertNotEquals("el lila es del Desafío", SlabColor.LILAC, tt.color)
     assertNull("un juego sin Contrarreloj no tiene botón", sheetTimeTrialOf("freno", "Freno de Emergencia", null, today))
     assertNull(sheetTimeTrialOf("correo", "Correo Estelar", 3, today))
     assertEquals(SheetTimeTrial("2 minutos", "Contrarreloj de hoy, Tinta o Palabra, 2 minutos", SlabColor.CREAM), sheetTimeTrialOf("stroop", "Tinta o Palabra", null, today, SlabColor.CREAM))
     val source = java.io.File("src/main/java/com/example/ui/screens/GameSheet.kt").readText()
     val button = source.substring(source.indexOf("text = TimeTrialDay.BUTTON_LABEL"), source.indexOf("// Las dos secciones solo se componen"))
     assertFalse("el botón no usa SlabColor.SUN", button.contains("SlabColor.SUN"))
+    assertFalse("ni SlabColor.LILAC (el lila es del Desafío)", button.contains("SlabColor.LILAC"))
     assertTrue("lleva el reloj de plasticina", button.contains("ClayClockIcon()"))
   }
 

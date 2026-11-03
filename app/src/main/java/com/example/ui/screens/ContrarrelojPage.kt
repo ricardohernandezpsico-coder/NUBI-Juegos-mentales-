@@ -900,11 +900,11 @@ private fun SampleFooter(s: Comparison.Section) {
 }
 
 /**
- * El recuadro plano de la frase principal: el MISMO lila claro de «Marca nueva» en Hoy (`TimeTrialDoneFill`, `#D9CEFF`, Tarea 169), esquina y relleno de 12 dp, sin borde ni sombra, no tocable; la letra, seminegrita de 16 sp en tinta (11,9:1 sobre el lila). La etiqueta de prueba cubre el recuadro entero.
+ * El recuadro plano de la frase principal: el lila claro que tenía «Marca nueva» en Hoy (`TimeTrialLilacFill`, `#D9CEFF`, Tarea 169; Hoy pasó al celeste claro en la Tarea 219 y la página conserva el lila), esquina y relleno de 12 dp, sin borde ni sombra, no tocable; la letra, seminegrita de 16 sp en tinta (11,9:1 sobre el lila). La etiqueta de prueba cubre el recuadro entero.
  */
 @Composable
 private fun FlatNote(text: String, tag: String) {
-  Text(text.glueNumbers().glueNamesForLetter(), color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag(tag).clip(RoundedCornerShape(12.dp)).background(TimeTrialDoneFill).padding(12.dp))
+  Text(text.glueNumbers().glueNamesForLetter(), color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag(tag).clip(RoundedCornerShape(12.dp)).background(TimeTrialLilacFill).padding(12.dp))
 }
 
 /**

@@ -177,6 +177,19 @@ object TimeTrialDay {
   /** El final del Contrarreloj sin partidas: en lugar de «Otra vez». */
   const val TOMORROW_FINAL = "Mañana hay otro Contrarreloj."
 
+  /** El final de una partida de AYER (lanzada antes de medianoche) que se abre después de las 12: lo de hoy ya está disponible, así que no dice «Mañana…» (Tarea 219, auditoría de Fable §3.3). */
+  const val TODAY_FINAL = "Hoy hay otro Contrarreloj."
+
+  /** Lo que dice el final cuando no se puede jugar otra: «Mañana hay otro Contrarreloj.», salvo que la partida [justDay] no sea de [today] (pasó la medianoche): «Hoy hay otro Contrarreloj.». */
+  fun noMoreLine(justDay: String, today: String): String = if (justDay == today) TOMORROW_FINAL else TODAY_FINAL
+
+  /**
+   * ¿Se puede jugar OTRA desde el final de la partida [just]? Cuenta la partida recién terminada aunque la lista guardada ([saved], el flujo de Room, que vuelve a emitir en segundo plano tras la transacción) todavía no la traiga: sin esto, al terminar la tercera «Otra vez»
+   * aparecía un instante y lo cambiaba «Mañana hay otro Contrarreloj.» (Tarea 219, auditoría de Fable §3.2). Se descarta de [saved] por id para no contarla dos veces cuando la lista ya la trae.
+   */
+  fun canAgainAfter(plus: Boolean, just: TimeTrialResult, today: String, saved: List<TimeTrialResult>): Boolean =
+    canPlay(plus, just.gameId, today, saved.filter { it.id != just.id } + just)
+
   /** Lo que dice el lector de pantalla del botón de la ficha: el nombre del modo (con «de hoy» solo si es el juego del día), el juego, los 2 minutos y el récord. */
   fun sheetDescription(gameId: String, dateKey: String, title: String, record: Int?): String = buildString {
     append(nameFor(gameId, dateKey)).append(", ").append(title).append(", ").append(MINUTES_TEXT)

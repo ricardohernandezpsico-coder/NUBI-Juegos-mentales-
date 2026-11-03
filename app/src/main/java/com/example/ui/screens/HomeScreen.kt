@@ -416,21 +416,16 @@ internal fun captionLine(ui: HomeUi): String? = when {
   else -> null
 }
 
-/** Quién tiene el SOL de Hoy (Tarea 167: «un solo sol a la vez»). */
-internal enum class Sun { ROUTE, TIME_TRIAL, NONE }
+/** Quién tiene el SOL de Hoy (Tarea 167: «un solo sol a la vez»). Desde la Tarea 219 el sol vive SOLO en la ruta: el Contrarreloj tiene su color propio, el celeste. */
+internal enum class Sun { ROUTE, NONE }
 
 /**
- * El sol está en la acción del momento: la RUTA mientras sigue (o hay una partida en pausa que seguir), el CONTRARRELOJ con la ruta completa y todavía sin jugar hoy, y NADIE cuando el día está hecho (marca nueva) o el Contrarreloj ya se jugó sin marca nueva (crema, «otra vez»).
- * Nunca dos a la vez. Robolectric no deja leer píxeles (`captureToImage` se cuelga): esta función es la que decide el color del botón (`TimeTrialButton`) y la que vigilan las pruebas.
+ * El sol está en la ruta mientras sigue (o hay una partida en pausa que seguir) y en NADIE cuando la ruta está completa: la tarjeta se cierra sola y la losa celeste del Contrarreloj, por su tamaño y su color, es lo que sigue; ya NO pasa a ser sol (Tarea 219, forma B de `idea-pestana-contrarreloj.md` §2.2).
+ * Nunca dos a la vez. Robolectric no deja leer píxeles (`captureToImage` se cuelga): esta función es la que decide el color y la que vigilan las pruebas.
  */
 internal fun sunOf(ui: HomeUi): Sun {
   val pending = ui.stops.count { it.state != StopState.DONE }
-  val routeDone = ui.stops.isNotEmpty() && pending == 0 && ui.pausedTitle == null
-  return when {
-    ui.pausedTitle != null || pending > 0 -> Sun.ROUTE
-    routeDone && ui.timeTrial?.state == TimeTrialState.PENDIENTE -> Sun.TIME_TRIAL
-    else -> Sun.NONE
-  }
+  return if (ui.pausedTitle != null || pending > 0) Sun.ROUTE else Sun.NONE
 }
 
 /** Lo que Hoy dice cuando el día está hecho con la ruta completa y sin Contrarreloj (no pasa: el juego del día siempre existe), y lo que dice la parte de abajo de la tarjeta. */
@@ -442,82 +437,148 @@ internal val TIME_TRIAL_LABEL = TimeTrialDay.LABEL
 /** El rótulo del botón (Tarea 180): solo el nombre del modo, una palabra que nunca se parte; el juego de hoy va en su segunda línea. Una palabra por concepto: nunca «Reto», «Desafío» ni «Con reloj». */
 internal val TIME_TRIAL_BUTTON_LABEL = TimeTrialDay.BUTTON_LABEL
 
-/** El título de la sección de abajo (Tarea 180): lo que hay bajo la tarjeta son los MODOS de jugar: el Contrarreloj de hoy y todos los juegos. */
-internal const val MODES_TITLE = "Modos de juego"
-
-/** «Otra vez»: el botón crema que reemplaza al del Contrarreloj cuando hoy hay marca nueva. */
+/** «Otra vez»: la losa crema que reemplaza a la celeste del Contrarreloj cuando hoy ya se jugó (con o sin marca nueva) y quedan partidas. */
 internal const val TIME_TRIAL_AGAIN = TimeTrialStats.AGAIN
 
-/** Lo que dice el lector de pantalla del botón: todo junto (los minutos, lo jugado hoy y el récord que ya no están a la vista). */
-internal fun timeTrialDescription(t: HomeTimeTrial): String = TimeTrialDay.description(t.title, t.state, t.todayHits, t.record)
+/** El reloj de plasticina de la losa del Contrarreloj (Tarea 219: 56 dp, antes 42): mide el CUERPO del reloj; el dibujo trae sus márgenes. */
+internal val TimeTrialClockSize = 56.dp
 
-/** La segunda línea del botón (Tarea 180): «Hoy: Tinta o Palabra», siempre (lo demás ya no se dice en el botón). */
+/** Lo que dice el lector de pantalla de la losa: todo junto (los minutos, lo jugado hoy, el récord y las partidas que quedan, que ya no están a la vista en la losa). */
+internal fun timeTrialDescription(t: HomeTimeTrial): String =
+  TimeTrialDay.description(t.title, t.state, t.todayHits, t.record) + (t.gamesLeft?.takeIf { it > 0 }?.let { ", " + TimeTrialDay.gamesLeftLine(it).trimEnd('.').replaceFirstChar { c -> c.lowercase() } } ?: "")
+
+/** La segunda línea de la losa (Tarea 180): «Hoy: Tinta o Palabra», siempre (lo demás ya no se dice en la losa). */
 internal fun timeTrialSecondLine(t: HomeTimeTrial): String = TimeTrialDay.secondLine(t.title)
 
 /**
- * El botón del Contrarreloj de hoy (Tareas 167, 177 y 180): la losa del kit, SIEMPRE a todo el ancho, con el reloj de plasticina (~42 dp) a la izquierda, el nombre del modo y, debajo, «Hoy: Tinta o Palabra». Lila mientras la ruta sigue (el color de los botones secundarios del kit: el sol es de la ruta); sol con la ruta completa
- * y el Contrarreloj por jugar (el sol pasa a la acción del momento); crema si ya se jugó, o con marca nueva ([again]: dice «Otra vez»). Siempre justo debajo del título de la sección: cambia de color pero no se mueve de lugar.
+ * La línea de estado bajo la losa del Contrarreloj, en texto sobre el cielo (Tarea 219; `idea-pestana-contrarreloj.md` §2.2): sin Nubilus Plus, «Te quedan 3 partidas de hoy.» y, si ya se jugó hoy, también «Tu récord: 41 aciertos.»; con Plus, «Tu récord: 41 aciertos.» (sin partidas de las que hablar).
+ * Sin Plus y sin jugar hoy NO dice el récord (la cuenta de partidas es lo que importa antes de jugar). Null si no hay nada que decir (con Plus y sin ninguna marca, o sin partidas: ahí manda el recuadro).
+ */
+internal fun timeTrialStatusLine(t: HomeTimeTrial): String? {
+  val left = t.gamesLeft
+  val record = t.record
+  val parts = buildList {
+    if (left != null && left > 0) add(TimeTrialDay.gamesLeftLine(left))
+    if (record != null && (left == null || t.state != TimeTrialState.PENDIENTE)) add(TimeTrialDay.recordLine(record))
+  }
+  return parts.joinToString(" ").takeIf { it.isNotEmpty() }
+}
+
+/** El color de la losa del Contrarreloj: CELESTE mientras falta jugarlo (el color propio del modo) y CREMA («Otra vez») cuando hoy ya se jugó. Nunca sol ni lila (el lila es del Desafío). Robolectric no lee píxeles: las pruebas miran esta función. */
+internal fun timeTrialSlabColor(again: Boolean): SlabColor = if (again) SlabColor.CREAM else SlabColor.SKY
+
+/**
+ * La losa del Contrarreloj de hoy (Tarea 219, forma B de `idea-pestana-contrarreloj.md` §2.2; antes un botón lila de 64 dp): la losa CELESTE del kit (`SlabColor.SKY`, el color propio del Contrarreloj) a todo el ancho, de 80 dp, con el reloj de plasticina a 56 dp a la izquierda, «Contrarreloj» a 20 sp y, debajo, «Hoy: Tinta o Palabra».
+ * Cuando hoy ya se jugó ([again]: con o sin marca nueva) pasa a CREMA y dice «Otra vez» (el celeste es de lo que falta por jugar). Nunca es sol: el único sol de Hoy es el de la ruta.
  */
 @Composable
-private fun TimeTrialButton(t: HomeTimeTrial, sun: Boolean, again: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-  val color = when { sun -> SlabColor.SUN; again || t.state == TimeTrialState.JUGADO -> SlabColor.CREAM; else -> SlabColor.LILAC }
+private fun TimeTrialSlab(t: HomeTimeTrial, again: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+  val spoken = timeTrialDescription(t)                                       // la losa entera: el modo, el juego, los 2 minutos, lo jugado hoy («otra vez»), el récord y las partidas que quedan
   KitButton(
-    text = if (again) TIME_TRIAL_AGAIN else TIME_TRIAL_BUTTON_LABEL, onClick = onClick, color = color, leading = { ClayClockIcon() }, fontSize = 18.sp, minHeight = 64.dp,
+    text = if (again) TIME_TRIAL_AGAIN else TIME_TRIAL_BUTTON_LABEL, onClick = onClick, color = timeTrialSlabColor(again),
+    leading = { ClayClockIcon(size = TimeTrialClockSize) }, fontSize = 20.sp, minHeight = 80.dp,
     secondLine = timeTrialSecondLine(t), secondLineSize = 16.sp,
-    modifier = modifier.semantics(mergeDescendants = true) { contentDescription = if (again) "$TIME_TRIAL_AGAIN, $TIME_TRIAL_LABEL, ${t.title}" else timeTrialDescription(t) }.testTag("btn_timetrial").guideTarget(GuideTarget.TIME_TRIAL)
+    modifier = modifier.semantics(mergeDescendants = true) { contentDescription = spoken }.testTag("btn_timetrial")
   )
 }
 
-/** El tono claro y suave del LILA del Contrarreloj (el `#B8A4FF` del kit mezclado con blanco): el botón lila «se convierte» en su placa cuando hoy hay marca nueva. Con él, la tinta mide 11,8:1 y `InkMuted` 5,4:1 (`HoyTarjetaTest` los mide). */
-internal val TimeTrialDoneFill = Color(0xFFD9CEFF)
+/**
+ * El tono claro del CELESTE del Contrarreloj (Tarea 219; el `#4CC9F0` del kit mezclado con la mitad de blanco): el recuadro plano de «Marca nueva» y el de «Hoy ya jugaste tus 3 partidas.». Con él, la tinta (`#1A1240`) mide 12,5:1 y `InkMuted` más de 4,5:1 (`HoyTarjetaTest` los mide).
+ * Antes era el lila claro (`#D9CEFF`): el lila queda para el Desafío.
+ */
+internal val TimeTrialDoneFill = Color(0xFFA5E4F7)
 
-/** El radio de las esquinas del recuadro de la marca nueva: el de los botones y las tarjetas del kit (22 dp). */
+/** El lila claro `#D9CEFF` que tuvo el recuadro de «Marca nueva» hasta la Tarea 219: lo conserva la frase enmarcada de la página «Contrarreloj» (Tarea 203; Ricardo la aprobó así). Si algún día la página se pasa al celeste claro, es una decisión aparte. */
+internal val TimeTrialLilacFill = Color(0xFFD9CEFF)
+
+/** El radio de las esquinas de los recuadros planos de Hoy: el de los botones y las tarjetas del kit (22 dp). */
 internal val TimeTrialDoneRadius = 22.dp
 
+/** Una línea de un recuadro plano de Hoy: su texto, su etiqueta de prueba (se ve en el árbol sin fusionar) y si lleva el visto o pega «3 partidas» y «de hoy». */
+private class NoteLine(val text: String, val tag: String, val check: Boolean = false, val glue: Boolean = false)
+
 /**
- * Hoy hay marca nueva (Tarea 169 en el Desafío; Tarea 177 aquí): un recuadro PLANO —sin borde tinta grueso, sin sombra dura, sin losa: no es un botón, no se toca y no tiene sol— con el LILA del Contrarreloj en un tono claro, en el mismo lugar y al mismo ancho que tenía el botón, con el radio del kit y el
- * alto que le da el contenido. Adentro, el visto (la moneda lima) y «Marca nueva: 43 aciertos en Tinta o Palabra.» en tinta, en UNA línea de texto (con «Mañana hay ruta y Contrarreloj nuevos.» no cabía con letra 1,3). Sin reloj, para no cargarlo.
+ * Un recuadro PLANO (sin borde tinta grueso, sin sombra dura, sin losa: no es un botón, no se toca y no tiene sol) en celeste claro, al ancho de la pantalla y con el radio del kit. Dos usos: hoy hay marca nueva («Marca nueva: 43 aciertos en Tinta o Palabra.», con el visto, la moneda lima; Tarea 169 en el Desafío,
+ * Tarea 177 aquí, en lila hasta la 219) y no quedan partidas («Hoy ya jugaste tus 3 partidas. Mañana: ¿Verdad o disparate?», sin visto; Tarea 219: antes era texto suelto sobre el cielo). Si pasan las dos cosas a la vez, van en UN solo recuadro, la marca arriba y, tras una línea fina, lo de mañana (decisión de Opus, 3-nov).
+ * El texto va en tinta; con `glue`, «3 partidas» y «de hoy» pegados; una línea sin visto junto a otra con visto se alinea con su texto. El lector dice todas las líneas de un tirón.
  */
 @Composable
-private fun TimeTrialDoneNote(t: HomeTimeTrial) {
-  val line = TimeTrialDay.newMarkLine(t.todayHits ?: t.record ?: 0, t.title)
-  Row(
-    Modifier
-      .fillMaxWidth().padding(top = 6.dp)
-      .semantics(mergeDescendants = true) { contentDescription = line }
-      .testTag("home_timetrial_done")
+private fun TimeTrialNote(tag: String, lines: List<NoteLine>, modifier: Modifier = Modifier) {
+  val scale = LocalDensity.current.fontScale.coerceIn(1f, 1.6f)
+  val anyCheck = lines.any { it.check }
+  Column(
+    modifier
+      .fillMaxWidth()
+      .semantics(mergeDescendants = true) { contentDescription = lines.joinToString(" ") { it.text } }
+      .testTag(tag)
       .clip(RoundedCornerShape(TimeTrialDoneRadius)).background(TimeTrialDoneFill)
-      .padding(horizontal = 14.dp, vertical = 12.dp),
-    verticalAlignment = Alignment.CenterVertically
+      .padding(horizontal = 14.dp, vertical = 12.dp)
   ) {
-    StopMark(StopState.DONE)
-    Spacer(Modifier.width(10.dp))
-    Text(line, color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp, modifier = Modifier.weight(1f))
+    lines.forEachIndexed { i, line ->
+      if (i > 0) Box(Modifier.fillMaxWidth().padding(vertical = 8.dp).height(1.dp).background(Clay.Ink.copy(alpha = 0.14f)))
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        if (line.check) {
+          StopMark(StopState.DONE)
+          Spacer(Modifier.width(10.dp))
+        } else if (anyCheck) Spacer(Modifier.width(24.dp * scale + 10.dp))
+        Text(if (line.glue) line.text.glueGames() else line.text, color = Clay.Ink, fontSize = 17.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp, modifier = Modifier.weight(1f).testTag(line.tag))
+      }
+    }
   }
 }
 
-/** «Tu récord: 41 aciertos.»: una línea PLANA (texto suelto sobre el cielo, no un recuadro) bajo el botón ancho. */
+/** La línea de estado bajo la losa del Contrarreloj, en texto suelto sobre el cielo y centrado; «3 partidas» y «de hoy» pegados. */
 @Composable
-private fun TimeTrialRecordLine(record: Int) {
-  OnBoardText(TimeTrialDay.recordLine(record), color = HoySoft, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.fillMaxWidth().padding(top = 2.dp).testTag("home_timetrial_record"), textAlign = TextAlign.Center)
+private fun TimeTrialStatus(line: String) {
+  OnBoardText(line.glueGames(), color = HoySoft, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().padding(top = 4.dp).testTag("home_timetrial_line"), textAlign = TextAlign.Center)
 }
 
-/** «Todos los juegos» (Tarea 180): una losa crema a todo el ancho con las cuatro casillas de los colores de las áreas (2 × 2). */
+/**
+ * «Todos los juegos» (Tarea 180; Tarea 219: más grande): la losa crema a todo el ancho de 56 dp (antes 48), con la letra a 18 sp (antes 17) y las cuatro casillas de los colores de las áreas (2 × 2) a 36 dp (antes 28). Nada más: se reconoce por las casillas y el nombre.
+ */
 @Composable
 private fun AllGamesButton(onAllGames: () -> Unit, modifier: Modifier = Modifier) {
   KitButton(
-    text = ALL_GAMES_LABEL, onClick = onAllGames, color = SlabColor.CREAM, fontSize = 17.sp, minHeight = 48.dp,
-    leading = { AreaSquares(size = 28.dp) },
+    text = ALL_GAMES_LABEL, onClick = onAllGames, color = SlabColor.CREAM, fontSize = 18.sp, minHeight = 56.dp,
+    leading = { AreaSquares(size = 36.dp) },
     modifier = modifier.testTag("btn_all_games").guideTarget(GuideTarget.ALL_GAMES)
   )
 }
 
 /**
- * Bajo la tarjeta (Tareas 167, 177 y 180, «un solo sol a la vez»): la sección «Modos de juego» (su título en Rubik) con DOS botones a todo el ancho, uno bajo el otro: el Contrarreloj de hoy (con su reloj de plasticina) y «Todos los juegos» (con las cuatro casillas de las áreas).
- *  - La ruta sigue (o hay una partida en pausa): «Contrarreloj» en LILA («Hoy: Tinta o Palabra»); el sol está en la tarjeta. Jugado sin marca nueva, en crema.
- *  - La ruta completa: el Contrarreloj en SOL y, debajo, en texto plano, «Tu récord: 41 aciertos.»; el sol pasa a la acción del momento. Jugado sin marca nueva, en crema (y su récord).
- *  - Hoy hay marca nueva: un recuadro plano en lila claro (`TimeTrialDoneNote`) con el visto y «Marca nueva: 43 aciertos en Tinta o Palabra.», sin tocar y SIN sol (el día está hecho); debajo, el botón crema «Otra vez» (con el mismo reloj) y «Todos los juegos».
- * Y, si todavía no hizo la evaluación, la invitación a hacerla.
+ * El Contrarreloj de hoy bajo «Todos los juegos» (Tarea 219; `auditoria-fable/idea-pestana-contrarreloj.md` §2.2, forma B), con los estados de siempre —sin Nubilus Plus / con Plus—:
+ *  - **Sin jugar** (la ruta a medias o completa): la losa CELESTE, «Te quedan 3 partidas de hoy.» / «Tu récord: 41 aciertos.» bajo ella, en texto sobre el cielo.
+ *  - **Jugado, quedan partidas:** la losa CREMA «Otra vez» con «Hoy: <juego>»; «Te quedan 2 partidas de hoy. Tu récord: 41 aciertos.» / «Tu récord: 41 aciertos.».
+ *  - **Marca nueva hoy:** el recuadro plano en celeste claro con el visto («Marca nueva: 43 aciertos en Tinta o Palabra.») y, debajo, «Otra vez» (si quedan partidas; con Plus, siempre).
+ *  - **Sin partidas** (sin Plus): sin losa; el recuadro plano celeste claro «Hoy ya jugaste tus 3 partidas. Mañana: <juego>.» (con la marca nueva, UN solo recuadro: la marca arriba y, tras una línea fina, lo de mañana) y, debajo, UNA fila gris con candado que abre la hoja (Tarea 218).
+ */
+@Composable
+private fun TimeTrialBlock(t: HomeTimeTrial, onTimeTrial: () -> Unit, onLocked: () -> Unit) {
+  val newMark = t.state == TimeTrialState.MARCA_NUEVA
+  val markLine = NoteLine(TimeTrialDay.newMarkLine(t.todayHits ?: t.record ?: 0, t.title), tag = "home_timetrial_mark", check = true)
+  val gap = Modifier.padding(top = 8.dp)
+  // La guía de Nubi (Tarea 193) ilumina el BLOQUE entero, no un botón: la losa y su línea o, sin partidas, el recuadro y la fila gris (la losa no existe; Tarea 219, pedido de Opus tras la auditoría de la 218)
+  Column(Modifier.fillMaxWidth().padding(top = 8.dp).guideTarget(GuideTarget.TIME_TRIAL).testTag("home_timetrial_block")) {
+    when {
+      t.gamesLeft == 0 -> {
+        val tomorrow = NoteLine(t.tomorrowTitle?.let { TimeTrialDay.tomorrowLine(it) } ?: TimeTrialDay.NO_GAMES_LEFT, tag = "home_timetrial_tomorrow", glue = true)
+        TimeTrialNote("home_timetrial_none", if (newMark) listOf(markLine, tomorrow) else listOf(tomorrow))
+        LockedRow(PlusAccess.LOCKED_GAMES, onLocked, modifier = gap, tag = "home_locked_games")
+      }
+      newMark -> {
+        TimeTrialNote("home_timetrial_done", listOf(markLine))
+        TimeTrialSlab(t, again = true, onClick = onTimeTrial, modifier = gap)
+      }
+      else -> {
+        TimeTrialSlab(t, again = t.state == TimeTrialState.JUGADO, onClick = onTimeTrial)
+        timeTrialStatusLine(t)?.let { TimeTrialStatus(it) }
+      }
+    }
+  }
+}
+
+/**
+ * Bajo la tarjeta (Tareas 167, 177, 180 y 219; «un solo sol a la vez», que ahora vive SOLO en la ruta): «Todos los juegos» (crema, 56 dp) y, debajo, el Contrarreloj de hoy ([TimeTrialBlock]) en su color propio, el celeste. Ya no hay título «Modos de juego». Y, si todavía no hizo la evaluación, la invitación a hacerla.
  */
 @Composable
 private fun HoyBelow(ui: HomeUi, onAllGames: () -> Unit, onTimeTrial: () -> Unit, onLocked: () -> Unit, onBaseline: () -> Unit) {
@@ -526,30 +587,8 @@ private fun HoyBelow(ui: HomeUi, onAllGames: () -> Unit, onTimeTrial: () -> Unit
   val t = ui.timeTrial
   Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 4.dp)) {
     if (t == null && routeDone && !ui.flightDay) OnBoardText(ROUTE_TOMORROW, color = HoyCream, fontSize = 17.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp, modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("home_route_tomorrow"), textAlign = TextAlign.Center)
-    if (t != null) OnBoardText(MODES_TITLE, color = Clay.Cream, fontFamily = com.example.ui.theme.TitleFamily, fontWeight = FontWeight.Bold, fontSize = 18.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().padding(top = 6.dp).testTag("home_modes_title"))
-    when {
-      t == null -> AllGamesButton(onAllGames, modifier = Modifier.padding(top = 6.dp))
-      // sin partidas (Tarea 218): el botón «Contrarreloj» y el «Otra vez» NUNCA lanzan una partida sin partidas; en su lugar, la frase sobre el cielo (sin recuadro nuevo) y UNA fila gris con candado (decisión 7). El recuadro de la marca nueva puede quedar arriba
-      t.gamesLeft == 0 -> {
-        if (t.state == TimeTrialState.MARCA_NUEVA) TimeTrialDoneNote(t)
-        OnBoardText(
-          (t.tomorrowTitle?.let { TimeTrialDay.tomorrowLine(it) } ?: TimeTrialDay.NO_GAMES_LEFT).glueGames(), color = HoyCream, fontSize = 17.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp,
-          modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("home_timetrial_none")
-        )
-        LockedRow(PlusAccess.LOCKED_GAMES, onLocked, modifier = Modifier.padding(top = 8.dp), tag = "home_locked_games")
-        AllGamesButton(onAllGames, modifier = Modifier.padding(top = 6.dp))
-      }
-      t.state == TimeTrialState.MARCA_NUEVA -> {
-        TimeTrialDoneNote(t)
-        TimeTrialButton(t, sun = false, again = true, onClick = onTimeTrial, modifier = Modifier.padding(top = 6.dp))
-        AllGamesButton(onAllGames, modifier = Modifier.padding(top = 6.dp))
-      }
-      else -> {
-        TimeTrialButton(t, sun = sunOf(ui) == Sun.TIME_TRIAL, again = false, onClick = onTimeTrial, modifier = Modifier.padding(top = 6.dp))
-        if (routeDone) t.record?.let { TimeTrialRecordLine(it) }
-        AllGamesButton(onAllGames, modifier = Modifier.padding(top = if (routeDone && t.record != null) 4.dp else 6.dp))
-      }
-    }
+    AllGamesButton(onAllGames, modifier = Modifier.padding(top = 8.dp))
+    if (t != null) TimeTrialBlock(t, onTimeTrial, onLocked)
     if (ui.baselineInvite) {
       // El enlace sigue siendo un enlace pero en crema tenue (`OnNightDim`) con su chevrón, para que no compita con el sol de la ruta o del Desafío
       Row(
@@ -576,5 +615,6 @@ private fun HoyBelow(ui: HomeUi, onAllGames: () -> Unit, onTimeTrial: () -> Unit
         }
       }
     }
+    Spacer(Modifier.testTag("home_end"))                         // marca (sin tamaño) donde termina lo último de Hoy: las pruebas miden con ella cuánto se pasa de la barra
   }
 }

@@ -506,18 +506,18 @@
   },
   "reloj_clay": {
    "imagen_px": [
-    162,
-    162
+    216,
+    216
    ],
    "margenes_dp": {
-    "izq": 7.33,
+    "izq": 9.67,
     "arr": 3.0,
-    "der": 9.0,
-    "abajo": 8.67
+    "der": 12.0,
+    "abajo": 11.67
    },
    "cuerpo_dp": {
-    "ancho": 37.67,
-    "alto": 42.33
+    "ancho": 50.33,
+    "alto": 57.33
    }
   }
  }

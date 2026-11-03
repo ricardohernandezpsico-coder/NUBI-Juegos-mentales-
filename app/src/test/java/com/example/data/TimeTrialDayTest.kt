@@ -264,7 +264,8 @@ class TimeTrialDayTest {
     assertEquals("Hoy ya jugaste tus 3 partidas. Mañana: Rescate relámpago.", TimeTrialDay.tomorrowLine("Rescate relámpago"))
     assertEquals("un nombre que ya cierra con «?» no lleva punto detrás", "Hoy ya jugaste tus 3 partidas. Mañana: ¿Verdad o disparate?", TimeTrialDay.tomorrowLine("¿Verdad o disparate?"))
     assertEquals("Mañana hay otro Contrarreloj.", TimeTrialDay.TOMORROW_FINAL)
-    for (t in listOf(TimeTrialDay.gamesLeftLine(3), TimeTrialDay.gamesLeftLine(1), TimeTrialDay.NO_GAMES_LEFT, TimeTrialDay.tomorrowLine("X"), TimeTrialDay.TOMORROW_FINAL))
+    assertEquals("Hoy hay otro Contrarreloj.", TimeTrialDay.TODAY_FINAL)
+    for (t in listOf(TimeTrialDay.gamesLeftLine(3), TimeTrialDay.gamesLeftLine(1), TimeTrialDay.NO_GAMES_LEFT, TimeTrialDay.tomorrowLine("X"), TimeTrialDay.TOMORROW_FINAL, TimeTrialDay.TODAY_FINAL))
       for (banned in listOf("intento", "Intento", "bloquead", "desbloque", "racha", "Reto", "Desafío")) assertFalse("«$t» no debe decir «$banned»", t.contains(banned))
   }
 

@@ -96,7 +96,7 @@ class ClayKitTest {
     assertEquals("cada ícono del kit tiene su pieza en el JSON (los de la Tarea 91 reemplazan a los de Material de los paneles) y, aparte, el reloj de plasticina del Contrarreloj (Tarea 180: no es un glifo de churro)", Glyph.values().map { it.key }.toSet() + "reloj_clay", spec.pieces.keys)
     assertEquals(setOf("jugar", "volver", "visto", "izq", "der", "compartir", "candado", "engranaje", "globo", "altavoz", "vibracion", "reloj", "sin_reloj", "escudo", "info", "campana", "persona", "arriba", "abajo", "cometa", "reloj_clay"), spec.pieces.keys)
     val clay = spec.piece("reloj_clay")
-    assertTrue("el reloj de plasticina mide entre 40 y 44 dp de alto (${clay.bodyHeight} dp)", clay.bodyHeight in 40f..44f)
+    assertTrue("el reloj de plasticina mide entre 54 y 60 dp de alto (${clay.bodyHeight} dp; Tarea 219: se renderiza a 4/3 para mostrarse a 56 dp en Hoy sin ampliarlo)", clay.bodyHeight in 54f..60f)
   }
 
   @Test
