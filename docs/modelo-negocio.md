@@ -1,5 +1,7 @@
 # Modelo de negocio y enganche: base Duolingo
 
+> **Nombre (2-nov):** la app se llama **Nubilus** («Nubilus – Juegos mentales» en la ficha de Play) y el plan pagado **«Nubilus Plus»**; la mascota sigue siendo Nubi. Abajo, donde dice «Nubi» como personaje (avisos, «Tu año con Nubi»), es la mascota (`auditoria-fable/nombre-app.md`).
+
 **Estado:** idea en estudio, NO implementar hasta que Ricardo lo pida. Escrito el 14-oct-2026 a partir de la conversación de Ricardo con Opus y de la segunda opinión de Fable ([`auditoria-fable/negocio-duolingo.md`], fuera del repo). Ricardo lo retomará con más investigación.
 
 ## Decisiones de Ricardo (14-oct)
@@ -12,7 +14,7 @@
   - las competencias de Apple Watch;
   - las **licencias institucionales, al 100 %**, porque empujarían a lo clínico;
   - la **publicidad**;
-  - los conceptos inventados («archipiélago», «temporadas», «Nubi Plus» como paquete).
+  - los conceptos inventados («archipiélago», «temporadas», «Nubilus Plus» como paquete).
 - **Sí:**
   - gratis con un plan pagado;
   - prueba gratis;
@@ -60,7 +62,7 @@
   - decoraciones extra;
   - el plan familiar.
 - **Nunca se bloquea la ruta del día.**
-- **Nubi Plus, hoy (Tarea 199, 31-oct):** existe el INTERRUPTOR local (`data/PlusAccess.kt`, preferencia pasajera `plus_access`; las builds de depuración empiezan encendidas y un botón «[Debug]» lo cambia) y lo único que cuelga de él es la **página «Contrarreloj» de Avance entera** (todas tus marcas, comparadas solo contigo) con su atajo «Todas tus marcas ›» en el final del Contrarreloj. Sin Plus, la puerta de Avance dice el récord de hoy, lleva el candado «Con Nubi Plus» y abre una hoja que cuenta qué trae; jugar el Contrarreloj, el récord de Hoy y el final de siempre siguen gratis. **Falta el botón de compra** (Google Play Billing, Etapa 4, con el abogado): la hoja del candado todavía no vende nada ni dice precios.
+- **Nubilus Plus, hoy (Tarea 199, 31-oct):** existe el INTERRUPTOR local (`data/PlusAccess.kt`, preferencia pasajera `plus_access`; las builds de depuración empiezan encendidas y un botón «[Debug]» lo cambia) y lo único que cuelga de él es la **página «Contrarreloj» de Avance entera** (todas tus marcas, comparadas solo contigo) con su atajo «Todas tus marcas ›» en el final del Contrarreloj. Sin Plus, la puerta de Avance dice el récord de hoy, lleva el candado «Con Nubilus Plus» y abre una hoja que cuenta qué trae; jugar el Contrarreloj, el récord de Hoy y el final de siempre siguen gratis. **Falta el botón de compra** (Google Play Billing, Etapa 4, con el abogado): la hoja del candado todavía no vende nada ni dice precios.
 - Cómo se activa: lo pagado se activa dentro de la app con Google Play, **nunca desde un servidor**, por la regla permanente 3. Lo revisa el abogado.
 
 ## Planes y embudo

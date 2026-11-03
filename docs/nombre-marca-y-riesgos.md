@@ -1,6 +1,6 @@
 # Nombre, ícono y riesgos legales (28-sep)
 
-> **Decisión (29-sep): Nubi** ("Nubi – Brain Games", mercado global). Hoja del personaje: `docs/previews/nubi-personaje.png`.
+> **Decisión vigente (2-nov): Nubilus** («Nubilus – Juegos mentales»; la mascota sigue siendo Nubi): ver la sección «Nubilus (2-nov)» al final. Lo de abajo, hasta «Nubilus», es historia: **la decisión del 29-sep fue Nubi** ("Nubi – Brain Games", mercado global). Hoja del personaje: `docs/previews/nubi-personaje.png`.
 
 Pedido de Ricardo: definir el nombre y el ícono de la app "considerando temas legales, marcas registradas, etc.",
 y revisar lo que decía una conversación con Gemini sobre BrainHQ y sus ejercicios.
@@ -432,3 +432,13 @@ Ricardo las aprobó el 9-oct y las confirmó en el chat de implementación. Cada
    **Estado hoy: Rescate relámpago lo cumple desde la Tarea 62 (9-oct).** Se rehízo como «qué cápsulas viste» (`docs/diseno-rescate.md`): se elige QUÉ cápsulas se vieron en un tablero de orden fijo por tipo y nunca se toca un lugar; las posiciones del radar son continuas y al azar (sin lugares fijos, cuadrícula ni anillos que ubiquen); el radio de la zona es fijo en los 12 niveles (solo cambian cuántas, cuánto dura el destello y las rocas); ninguna medida ni telemetría lleva lugares. Lo vigilan pruebas de Unity (`TheZoneOfTheFlashNeverGrowsWithTheLevel`, `ThePositionsAreContinuous_NotOnAFixedGridOrOnRings`, `TheBoardHasAFixedOrder_ThatNeverDependsOnTheRound`, `TheTelemetryCarriesWhatWasMeasured_AndNoPlacesAtAll`). Lo de equivalentes de Nike sigue en la lista del abogado.
 3. **Sistema: los juegos viven en el APK.** Una futura cuenta o nube solo sincroniza progreso: nunca entrega ni desbloquea juegos, ni controla su acceso desde un servidor. Tampoco habrá una red social dentro de un mapa. Patente de Posit: US 9,308,445, hasta 2034.
    **Cualquier función en línea que toque el acceso a juegos pasa antes por el abogado.** Hoy se cumple: todos los juegos van en el APK y nada en línea decide qué se puede jugar.
+
+## Nubilus (2-nov)
+
+El 2-nov Ricardo renombró la app **«Nubilus»** («Nubilus – Juegos mentales», plan «Nubilus Plus»); la mascota sigue siendo **Nubi**. Estudio, búsquedas (INAPI, OMPI, Play, dominios) y lo que queda para el abogado: [`auditoria-fable/nombre-app.md`](../../auditoria-fable/nombre-app.md) (fuera del repo, en `Proyectos/auditoria-fable/`). Lo esencial:
+
+- Libre en INAPI y sin apps con ese nombre en Google Play. Se descartaron «Nebulus» y «Nubila» (§1 y §2 de ese documento).
+- **Abogado:** registrar «Nubilus» en Chile en las clases 9 y 41 (la 9 acotada a «aplicación de juegos descargable», por «nubia» de ZTE en clase 9) y, como opción, «Nubi». En México hay una solicitud de NUBILUS en clase 9 en trámite desde 2013: solo importa si Nubilus va a México.
+- **Dominio:** Ricardo compró **nubilus.app** el 2-nov; nubilus.cl está tomado hasta junio de 2027; correo público previsto `hola@nubilus.app` y la política en `nubilus.app/privacidad`.
+- **Veto de Ricardo:** ningún nombre con «-ina» ni que suene a medicamento.
+- **Hecho en la Tarea 217** (`docs/contrarreloj.md` §27): `app_name` y los textos donde Nubi es la app; NO cambian la mascota, el ícono, Unity, el `applicationId` (`com.nubibraingames.app`) ni los identificadores. La guardia vive en `VisibleTextsGuardTest` (bloque «El nombre de la app»).
