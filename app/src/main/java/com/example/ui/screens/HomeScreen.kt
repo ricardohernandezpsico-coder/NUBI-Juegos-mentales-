@@ -549,7 +549,7 @@ private fun AllGamesButton(onAllGames: () -> Unit, modifier: Modifier = Modifier
  * El Contrarreloj de hoy bajo «Todos los juegos» (Tarea 219; `auditoria-fable/idea-pestana-contrarreloj.md` §2.2, forma B), con los estados de siempre —sin Nubilus Plus / con Plus—:
  *  - **Sin jugar** (la ruta a medias o completa): la losa CELESTE, «Te quedan 3 partidas de hoy.» / «Tu récord: 41 aciertos.» bajo ella, en texto sobre el cielo.
  *  - **Jugado, quedan partidas:** la losa CREMA «Otra vez» con «Hoy: <juego>»; «Te quedan 2 partidas de hoy. Tu récord: 41 aciertos.» / «Tu récord: 41 aciertos.».
- *  - **Marca nueva hoy:** el recuadro plano en celeste claro con el visto («Marca nueva: 43 aciertos en Tinta o Palabra.») y, debajo, «Otra vez» (si quedan partidas; con Plus, siempre).
+ *  - **Marca nueva hoy:** el recuadro plano en celeste claro con el visto («Marca nueva: 43 aciertos en Tinta o Palabra.») y, debajo, «Otra vez» (si quedan partidas; con Plus, siempre) y, sin Plus, «Te quedan 2 partidas de hoy.» (sin el récord: ya está en el recuadro).
  *  - **Sin partidas** (sin Plus): sin losa; el recuadro plano celeste claro «Hoy ya jugaste tus 3 partidas. Mañana: <juego>.» (con la marca nueva, UN solo recuadro: la marca arriba y, tras una línea fina, lo de mañana) y, debajo, UNA fila gris con candado que abre la hoja (Tarea 218).
  */
 @Composable
@@ -568,6 +568,8 @@ private fun TimeTrialBlock(t: HomeTimeTrial, onTimeTrial: () -> Unit, onLocked: 
       newMark -> {
         TimeTrialNote("home_timetrial_done", listOf(markLine))
         TimeTrialSlab(t, again = true, onClick = onTimeTrial, modifier = gap)
+        // sin Plus: las partidas que quedan, como en «jugado» pero SIN el récord (ya está en el recuadro). Con Plus no hay línea (Tarea 219b, auditoría de Fable de la 219 §3)
+        t.gamesLeft?.takeIf { it > 0 }?.let { TimeTrialStatus(TimeTrialDay.gamesLeftLine(it)) }
       }
       else -> {
         TimeTrialSlab(t, again = t.state == TimeTrialState.JUGADO, onClick = onTimeTrial)

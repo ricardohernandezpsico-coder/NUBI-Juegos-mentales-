@@ -204,7 +204,7 @@ class HoyTarjetaTest {
    */
   private val scrollsAt393 = mapOf(
     1f to mapOf("marca nueva con la ruta a medias" to 12f),
-    1.3f to mapOf("primera hora" to 18f, "a mitad de ruta" to 18f, "marca nueva con la ruta a medias" to 64f, "partida en pausa" to 81f, "sin Plus, ruta a medias" to 18f, "sin partidas" to 12f, "sin partidas con marca nueva" to 106f, "sin partidas, ruta a medias" to 84f)
+    1.3f to mapOf("primera hora" to 18f, "a mitad de ruta" to 18f, "marca nueva con la ruta a medias" to 64f, "partida en pausa" to 81f, "sin Plus, ruta a medias" to 18f, "sin Plus, marca nueva" to 30f, "sin partidas" to 12f, "sin partidas con marca nueva" to 106f, "sin partidas, ruta a medias" to 84f)
   )
 
   /**
@@ -301,7 +301,7 @@ class HoyTarjetaTest {
    */
 private val scrollsAt360 = mapOf(
     "primera hora" to 100f, "a mitad de ruta" to 100f, "ruta completa" to 28f, "Contrarreloj jugado" to 28f, "marca nueva" to 71f, "marca nueva con la ruta a medias" to 143f, "partida en pausa" to 151f,
-    "sin Plus, ruta a medias" to 100f, "sin Plus, ruta completa" to 28f, "sin Plus, jugado" to 50f, "sin Plus, marca nueva" to 71f, "sin partidas" to 51f, "sin partidas con marca nueva" to 111f, "sin partidas, ruta a medias" to 123f
+    "sin Plus, ruta a medias" to 100f, "sin Plus, ruta completa" to 28f, "sin Plus, jugado" to 50f, "sin Plus, marca nueva" to 103f, "sin partidas" to 51f, "sin partidas con marca nueva" to 111f, "sin partidas, ruta a medias" to 123f
   )
 
   @Test
@@ -824,6 +824,25 @@ private val scrollsAt360 = mapOf(
     composeTestRule.onNodeWithTag("btn_timetrial").performClick()
     assertEquals("«Otra vez» lanza el Contrarreloj de nuevo", 1, trialed)
     composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-tarjeta-contrarreloj-marca-nueva.png")
+  }
+
+  /** Tarea 219b (auditoría de Fable de la 219, §3): sin Plus, con marca nueva y partidas que quedan, bajo «Otra vez» va «Te quedan N partidas de hoy.» (como en «jugado» pero SIN el récord, que ya está en el recuadro). Con Plus no hay línea; sin partidas tampoco (ya es un solo recuadro). */
+  @Test
+  fun sin_Plus_con_marca_nueva_y_partidas_bajo_Otra_vez_va_Te_quedan_N_partidas_sin_el_record_y_con_Plus_no_hay_linea() {
+    show(ui(completed = 3, timeTrial = sinPlusMarca))
+    assertEquals("Te quedan 2 partidas de hoy.", textOf("home_timetrial_line"))
+    assertFalse("sin el récord: ya está en el recuadro", textOf("home_timetrial_line").contains("récord"))
+    composeTestRule.onNodeWithTag("home_timetrial_line").assertHasNoClickAction()
+    val note = unclipped("home_timetrial_done"); val again = unclipped("btn_timetrial"); val line = unclipped("home_timetrial_line")
+    assertTrue("el recuadro, «Otra vez» y la línea van en ese orden ($note / $again / $line)", note.bottom <= again.top + 1f && again.bottom <= line.top + 1f)
+    assertEquals("el lector dice las partidas como en «jugado»", "Contrarreloj de hoy, Tinta o Palabra, 2 minutos, hoy 43 aciertos, otra vez, tu récord 43 aciertos, te quedan 2 partidas de hoy", spokenOf("btn_timetrial"))
+    show(ui(completed = 3, timeTrial = sinPlusMarca.copy(gamesLeft = 1)))
+    assertEquals("en singular", "Te queda 1 partida de hoy.", textOf("home_timetrial_line"))
+    show(ui(completed = 3, timeTrial = stroopMarca))
+    assertFalse("con Plus no hay línea", exists("home_timetrial_line"))
+    show(ui(completed = 3, timeTrial = sinPartidasMarca))
+    assertFalse("sin partidas tampoco: ya es un solo recuadro", exists("home_timetrial_line"))
+    for (fs in listOf(1f, 1.3f, 2f)) { show(ui(completed = 3, timeTrial = sinPlusMarca), fontScale = fs); assertNoWordSplit() }
   }
 
   @Test

@@ -123,6 +123,11 @@ class Tarea219CapturasTest {
   @Test fun hoy_sin_partidas_393_10() = home(jugado.copy(gamesLeft = 0, tomorrowTitle = verdad), 3, "hoy_sin_partidas_393_10")
   @Test fun hoy_marca_nueva_sin_partidas_393_10() = home(marca.copy(gamesLeft = 0, tomorrowTitle = verdad), 3, "hoy_marca_nueva_sin_partidas_393_10")
 
+  // sin Plus con marca nueva y partidas que quedan (Tarea 219b: bajo «Otra vez», «Te quedan 2 partidas de hoy.»)
+  @Test fun hoy_sin_plus_marca_nueva_393_10() = home(marca.copy(gamesLeft = 2), 3, "hoy_sin_plus_marca_nueva_393_10")
+  @Test fun hoy_sin_plus_marca_nueva_393_13() = home(marca.copy(gamesLeft = 2), 3, "hoy_sin_plus_marca_nueva_393_13", scale = 1.3f)
+  @Test fun hoy_sin_plus_marca_nueva_360_10() = home(marca.copy(gamesLeft = 2), 3, "hoy_sin_plus_marca_nueva_360_10", 360, 780)
+
   // con letra 1,3 y a 360 dp
   @Test fun hoy_ruta_a_medias_393_13() = home(stroop, 1, "hoy_ruta_a_medias_393_13", scale = 1.3f)
   @Test fun hoy_ruta_a_medias_360_10() = home(stroop, 1, "hoy_ruta_a_medias_360_10", 360, 780)
