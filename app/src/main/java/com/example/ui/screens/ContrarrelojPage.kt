@@ -111,7 +111,7 @@ private const val BIG_TEXT_SCALE_CAP = 1.3f
  * Se desliza entera; ya no tiene flecha de volver (es una pestaña). Escala de letra fija: 24 (títulos y la cifra), 18 (Fredoka), 16 y 14 (solo los rótulos de los ejes); el título de la página, 26, es el de toda pestaña con título.
  *
  * De arriba abajo: la cabecera sobre el cielo («Contrarreloj» y, solo cuando hay comparación, «El Contrarreloj define tu lugar de la semana.»; sin ella, «Tus marcas, comparadas solo contigo.», con [OnBoardText]); el cielo se DESVANECE en 24 dp hasta el noche plano ([NubiTokens.NightFlat]) y de ahí para abajo todo va en losas sobre ese fondo plano;
- * el selector de los cuatro juegos ([GameSelector]: el de hoy marcado «Hoy»; sin Plus, los otros tres en gris con candado —tocarlos abre la hoja— y con su récord siempre a la vista); **LO GRATIS en UNA losa crema** ([FreeCard]: «Jugar · 2 minutos», «Tu récord: 44 aciertos.», «Esta semana jugaste 3 partidas; la mejor, 41 aciertos.», y con comparación la división con su emblema y su lugar entre las cinco,
+ * el selector de los cuatro juegos ([GameSelector]: el de hoy marcado «Hoy»; sin Plus, los otros tres en gris con candado —tocarlos abre la hoja— y con su récord siempre a la vista); **LO GRATIS en UNA losa crema** ([FreeCard]: «Jugar · 2 minutos», «Tu récord: 44 aciertos.», «Esta semana jugaste 3 partidas y la mejor fue de 41 aciertos.» (o «…y la mejor fue tu récord.»; sin marcas en el juego, UNA línea: «Todavía no tienes marcas en este juego.»), y con comparación la división con su emblema y su lugar entre las cinco,
  * «Te faltan 7 aciertos para En la Luna.» con su barra y «La semana cierra el domingo.»; antes era lo que daba la puerta de Avance) y la fila «Con qué te comparas ›» ([CompareLink], solo con la referencia estimada: es la honestidad de la referencia, no un dato de pago). Sin franja de edad, de 13 a 17 años o antes de la tercera partida (Tarea 207) lo gratis no dice la división y
  * el aviso de siempre sale bajo el selector ([Comparison.Gate]).
  *
@@ -183,7 +183,7 @@ internal fun ContrarrelojPage(
         if (gate == Comparison.Gate.EARLY) Text(Comparison.EARLY_NOTICE, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_early_notice"))
 
         // ---- LO GRATIS: nunca en gris
-        FreeCard(page, section, onPlay)
+        FreeCard(page, section, GameRegistry.getById(selected)?.let { getGameTitle(it.id, lang, it.title) } ?: selected, onPlay)
         if (section != null) {
           // sin lugar que decir (sin marca esta semana, «Todavía somos pocos») va su losa; la fila «Con qué te comparas ›» queda DEBAJO de lo gratis, antes de lo de Plus (Tarea 213: debajo de la losa de la cifra)
           if (section.place !is Comparison.Place.Found) PlaceCard(section)
@@ -202,10 +202,11 @@ internal fun ContrarrelojPage(
             SectionLabel(Comparison.SECTION_MARKS, "contrarreloj_section_marks")
           }
           // «todas tus marcas»: las últimas 10 y el ritmo; al final, las notas
+          // (sin marcas en el juego no hay losa vacía: lo gratis ya dijo «Todavía no tienes marcas en este juego.»; Tarea 215b, Fable A4 c)
           if (page.hasMarks) {
             MarksCard(page, now)
             RhythmCard(pace)
-          } else EmptyCard()
+          }
           NotesCard(page, compared = section != null)
           // Tarea 213: el pie de la Tarea 211 (la frase larga y la fila al final) desapareció: la explicación vive en la hoja que abre «Con qué te comparas ›». Solo queda, en depuración, el aviso de los datos de muestra
           if (section != null) SampleFooter(section)
@@ -275,7 +276,8 @@ private val TileGap = 10.dp
 private fun GameTile(gameId: String, title: String, record: Int?, selected: Boolean, isToday: Boolean, locked: Boolean, onClick: () -> Unit, modifier: Modifier) {
   ClaySlab(
     color = if (selected) SlabColor.LIME else SlabColor.CREAM, size = SlabSize.SMALL, onClick = onClick, role = if (locked) Role.Button else Role.RadioButton, contentAlignment = Alignment.CenterStart, locked = locked,
-    modifier = modifier.heightIn(min = 78.dp).semantics(mergeDescendants = true) { this.selected = selected; contentDescription = TimeTrialMarks.tileSpoken(title, record, selected, isToday, locked) }.testTag("contrarreloj_game_$gameId")
+    // `selected` solo cuando el juego NO está en gris: en gris el rol es de botón y el lector diría «no seleccionado» tras «con Nubi Plus» (Tarea 215b, Fable M2)
+    modifier = modifier.heightIn(min = 78.dp).semantics(mergeDescendants = true) { if (!locked) this.selected = selected; contentDescription = TimeTrialMarks.tileSpoken(title, record, selected, isToday, locked) }.testTag("contrarreloj_game_$gameId")
   ) {
     Row(Modifier.fillMaxWidth().padding(horizontal = TilePad, vertical = TilePad), verticalAlignment = Alignment.CenterVertically) {
       GameEmblem(gameId, TileEmblem, Modifier.testTag("contrarreloj_game_emblem_$gameId"), done = selected, locked = locked)
@@ -297,17 +299,19 @@ private fun GameTile(gameId: String, title: String, record: Int?, selected: Bool
 // ------------------------------------------------------------------ lo gratis (Tarea 215)
 
 /**
- * LO GRATIS, en UNA losa crema: «Jugar · 2 minutos» (sol; juega el juego elegido), «Tu récord: 44 aciertos.» (Fredoka 18), «Esta semana jugaste 3 partidas; la mejor, 41 aciertos.» y, con una comparación que decir ([Comparison.Place.Found]), una línea fina y la división con su emblema y su lugar entre las cinco ([DivisionLine]),
+ * LO GRATIS, en UNA losa crema: «Jugar · 2 minutos» (sol; juega el juego elegido), «Tu récord: 44 aciertos.» (Fredoka 18), «Esta semana jugaste 3 partidas y la mejor fue de 41 aciertos.» (o «…y la mejor fue tu récord.»; sin marcas en el juego, UNA línea: «Todavía no tienes marcas en este juego.») y, con una comparación que decir ([Comparison.Place.Found]), una línea fina y la división con su emblema y su lugar entre las cinco ([DivisionLine]),
  * «Te faltan 7 aciertos para En la Luna.» con su barra y «La semana cierra el domingo.» (antes lo daba la puerta de Avance, y la barra y el domingo eran de la escalera). Sin comparación queda solo lo de tus marcas. El lector de pantalla lee cada grupo por separado: el botón, el récord y la semana, y la división con su lugar.
  */
 @Composable
-private fun FreeCard(page: TimeTrialMarks.Page, section: Comparison.Section?, onPlay: () -> Unit) {
+private fun FreeCard(page: TimeTrialMarks.Page, section: Comparison.Section?, gameTitle: String, onPlay: () -> Unit) {
   val found = (section?.place as? Comparison.Place.Found)?.ranked
   InfoCard("contrarreloj_free", null) {
-    KitButton(TimeTrialMarks.PLAY, onClick = onPlay, color = SlabColor.SUN, modifier = Modifier.testTag("btn_contrarreloj_play"))
+    // para el lector, el botón dice también el juego («Jugar 2 minutos de Acoplamiento»); en la pantalla no cambia nada (Tarea 215b, Fable A3)
+    KitButton(TimeTrialMarks.PLAY, onClick = onPlay, color = SlabColor.SUN, modifier = Modifier.semantics { contentDescription = TimeTrialMarks.playSpoken(gameTitle) }.testTag("btn_contrarreloj_play"))
     Spacer(Modifier.height(12.dp))
     Text(TimeTrialMarks.freeRecordLine(page.recordMark).glueNumbers(), color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.testTag("contrarreloj_free_record"))
-    Text(TimeTrialMarks.weekLine(page.thisWeek).glueNumbers(), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 4.dp).testTag("contrarreloj_free_week"))
+    // sin marcas en el juego, UNA línea: la de la semana no se dice (Tarea 215b, Fable A4 c)
+    if (page.hasMarks) Text(TimeTrialMarks.weekLine(page.thisWeek, page.recordMark).glueNumbers(), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 4.dp).testTag("contrarreloj_free_week"))
     if (found != null) {
       val ladder = remember(found) { Comparison.ladder(found) }
       ClayDivider("contrarreloj_divider_free")
@@ -326,12 +330,12 @@ private fun FreeCard(page: TimeTrialMarks.Page, section: Comparison.Section?, on
 
 /**
  * Una mitad de lo de Plus VISTA pero no tenida (Fable §3.2): la losa crema del kit sin saturación y un 12 % más oscura ([com.example.ui.components.LockedSlabFilter], sin render nuevo), el [title] legible en tinta (Rubik 18), el candado del kit a 20 dp con [phrase] —«Con Nubi Plus: tu lugar en detalle.»— en tinta negrita de 16 sp
- * y una silueta decorativa ([silhouette]: sin números ni letras; el lector de pantalla no la lee). Toda la losa es un botón que abre la hoja del candado ([onClick]); el lector dice «Con Nubi Plus: tu lugar en detalle. Botón.». Nada se dice solo con el color: lleva el candado y la frase.
+ * y una silueta decorativa ([silhouette]: sin números ni letras; el lector de pantalla no la lee). Toda la losa es un botón que abre la hoja del candado ([onClick]); el lector dice el título y la frase («Comparado con tu edad. Con Nubi Plus: tu lugar en detalle. Botón.»; Tarea 215b, Fable M1: antes solo la frase). Nada se dice solo con el color: lleva el candado y la frase.
  */
 @Composable
 private fun LockedCard(tag: String, title: String, phrase: String, onClick: () -> Unit, silhouette: @Composable () -> Unit) {
   ClaySlab(
-    SlabColor.CREAM, Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = phrase }.testTag(tag), size = SlabSize.LARGE, onClick = onClick, locked = true
+    SlabColor.CREAM, Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = "$title. $phrase" }.testTag(tag), size = SlabSize.LARGE, onClick = onClick, locked = true
   ) {
     Column(Modifier.fillMaxWidth().padding(16.dp)) {
       Text(title, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 24.sp, modifier = Modifier.testTag("${tag}_title"))
@@ -530,14 +534,6 @@ private fun BellCard(r: Comparison.Ranked, range: AgeRange) {
 @Composable
 private fun MarksCard(page: TimeTrialMarks.Page, now: Long) {
   InfoCard("contrarreloj_marks", null) { MarksChart(page, now) }
-}
-
-/** Sin marcas en el juego: una frase que dice qué falta (y nada más: ni cifras ni gráficos). */
-@Composable
-private fun EmptyCard() {
-  InfoCard("contrarreloj_empty", null) {
-    Text("Todavía no tienes marcas en este juego. Cuando juegues su Contrarreloj, aquí aparece tu récord.", color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("contrarreloj_record_empty"))
-  }
 }
 
 /**

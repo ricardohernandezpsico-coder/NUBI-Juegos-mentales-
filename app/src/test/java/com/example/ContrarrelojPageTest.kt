@@ -254,8 +254,9 @@ class ContrarrelojPageTest {
   @Test fun lo_gratis_dice_el_record_y_la_semana_en_frases_completas_y_las_tres_cifras_de_la_Tarea_203_ya_no_estan() {
     show()
     assertEquals("Tu récord: 44 aciertos.", n("contrarreloj_free_record"))
-    assertEquals("Esta semana jugaste 3 partidas; la mejor, 43 aciertos.", n("contrarreloj_free_week"))
+    assertEquals("Esta semana jugaste 3 partidas y la mejor fue de 43 aciertos.", n("contrarreloj_free_week"))
     assertEquals("Jugar · 2 minutos", mergedText("btn_contrarreloj_play"))
+    assertEquals("para el lector, el botón dice también el juego (Tarea 215b, Fable A3)", "Jugar 2 minutos de Tinta o Palabra", rule.onNodeWithTag("btn_contrarreloj_play").fetchSemanticsNode().config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString("").orEmpty())
     val b = boxes()
     assertNull("las tres cifras salieron: el récord y la semana ya los dice lo gratis", b["contrarreloj_stats"])
     assertEquals(0, b.keys.count { it.startsWith("contrarreloj_stat_") || it.startsWith("contrarreloj_stats_") })
@@ -322,15 +323,17 @@ class ContrarrelojPageTest {
     assertEquals("Tu primera marca. Desde la segunda, se dibujan aquí.", textOf("contrarreloj_chart_first"))
     assertEquals(0, b.keys.count { it.startsWith("contrarreloj_barshape_") })
     assertNull("sin dos promedios", b["contrarreloj_averages"])
-    assertEquals("con una sola partida, en singular", "Esta semana jugaste 1 partida; la mejor, 31 aciertos.", n("contrarreloj_free_week"))
+    assertEquals("con una sola partida, en singular; y si la mejor ES el récord, sin repetir el número (Tarea 215b, Fable A4 b y M5)", "Esta semana jugaste 1 partida y la mejor fue tu récord.", n("contrarreloj_free_week"))
     assertEquals("Tu récord: 31 aciertos.", n("contrarreloj_free_record"))
     assertTrue("la línea del récord sí está: «${n("contrarreloj_record_line")}»", n("contrarreloj_record_line").let { it.startsWith("Tu récord es del ") && it.endsWith("llegaste al paso 4 de 5 de la pista.") })
   }
 
   @Test fun un_juego_sin_marcas_dice_que_falta_y_no_muestra_cifras_ni_ritmo() {
     show(selected = "radar", results = listOf(r(31, 28)))
-    assertEquals("Todavía no tienes marcas en este juego. Cuando juegues su Contrarreloj, aquí aparece tu récord.", textOf("contrarreloj_record_empty"))
+    // Tarea 215b (Fable A4 c): sin marcas, lo gratis dice UNA línea; ni la de la semana ni la losa vacía de antes
+    assertEquals("Todavía no tienes marcas en este juego.", n("contrarreloj_free_record"))
     val b = boxes()
+    assertNull(b["contrarreloj_free_week"]); assertNull(b["contrarreloj_empty"]); assertNull(b["contrarreloj_record_empty"])
     assertNull(b["contrarreloj_stats"]); assertNull(b["contrarreloj_marks"])
     assertNull("sin marcas en el juego no hay losa de ritmo", b["contrarreloj_rhythm"])
     assertNotNull("la nota de siempre sigue al pie", b["contrarreloj_note"])
@@ -483,7 +486,7 @@ class ContrarrelojPageTest {
     val b = boxes()
     for (tag in comparePieces) assertNull("sin comparación no existe «$tag»", b[tag])
     assertNotNull("y lo de siempre sigue", b["contrarreloj_rhythm"])
-    assertEquals("lo gratis dice la semana sin depender de otras personas", "Esta semana jugaste 3 partidas; la mejor, 43 aciertos.", n("contrarreloj_free_week"))
+    assertEquals("lo gratis dice la semana sin depender de otras personas", "Esta semana jugaste 3 partidas y la mejor fue de 43 aciertos.", n("contrarreloj_free_week"))
   }
 
   @Test fun con_datos_de_muestra_la_comparacion_va_primero_y_tus_marcas_al_final_con_su_rotulo() {
@@ -717,7 +720,7 @@ class ContrarrelojPageTest {
 
   @Test fun la_semana_de_lo_gratis_con_comparacion_sigue_siendo_de_la_persona_y_no_de_otras() {
     show(compare = manyWorld, ageRange = AgeRange.R45_54)
-    assertEquals("Esta semana jugaste 3 partidas; la mejor, 43 aciertos.", n("contrarreloj_free_week"))
+    assertEquals("Esta semana jugaste 3 partidas y la mejor fue de 43 aciertos.", n("contrarreloj_free_week"))
     assertEquals("Tu récord: 44 aciertos.", n("contrarreloj_free_record"))
     assertTrue("«3 de 4» ya no sale: la frase de semana a semana lo dice una vez", allTexts().none { "semanas arriba de la mitad" in it })
   }
@@ -781,7 +784,7 @@ class ContrarrelojPageTest {
     assertEquals("de las franjas solo llega a 50 la de 18 a 29 años (70 personas); las demás no tienen fila y la línea que cierra lo dice", listOf("18 a 29 años"), (0..5).mapNotNull { i -> b["contrarreloj_others_${i}_label"]?.let { n("contrarreloj_others_${i}_label") } })
     assertEquals("Las demás edades aparecen cuando lleguen a 50 personas.", textOf("contrarreloj_others_hidden"))
     assertEquals("la fila de todas las edades sí llega a 50", "Todas las edades", n("contrarreloj_others_all_label"))
-    assertEquals("sin semanas con 50 personas lo gratis dice igual las partidas de la persona", "Esta semana jugaste 3 partidas; la mejor, 43 aciertos.", n("contrarreloj_free_week"))
+    assertEquals("sin semanas con 50 personas lo gratis dice igual las partidas de la persona", "Esta semana jugaste 3 partidas y la mejor fue de 43 aciertos.", n("contrarreloj_free_week"))
     assertTrue("y al final de la página siguen «Tus marcas»", b.getValue("contrarreloj_section_marks").y > b.getValue("contrarreloj_others").b)
   }
 
@@ -1573,7 +1576,8 @@ class ContrarrelojPageTest {
     show(compare = estWorld, ageRange = AgeRange.R45_54, results = emptyList())
     val b = boxes()
     assertEquals(Comparison.EARLY_NOTICE, n("contrarreloj_early_notice"))
-    assertNotNull("y la página vacía de siempre", b["contrarreloj_empty"])
+    assertEquals("y lo gratis dice una sola línea, sin la losa vacía de antes (Tarea 215b)", "Todavía no tienes marcas en este juego.", n("contrarreloj_free_record"))
+    assertNull(b["contrarreloj_empty"]); assertNull(b["contrarreloj_free_week"])
     for (tag in placePieces) assertNull("«$tag»", b[tag])
   }
 
@@ -1797,7 +1801,8 @@ class ContrarrelojPageTest {
     // la pista de Rescate es la 3 (la marca cuenta por cápsula): lo guardado con la regla de rondas no se mezcla con lo nuevo
     show(compare = estWorld, ageRange = AgeRange.R45_54, selected = "radar", results = listOf(r(12, 20, game = "radar", version = 2)))
     val b = boxes()
-    assertNotNull("Rescate arranca sin marcas", b["contrarreloj_empty"])
+    assertEquals("Rescate arranca sin marcas: una sola línea, sin losa vacía", "Todavía no tienes marcas en este juego.", n("contrarreloj_free_record"))
+    assertNull(b["contrarreloj_empty"])
     assertNull("ni marcas ni ritmo de la pista vieja", b["contrarreloj_marks"])
     assertEquals("Tu récord de la pista 2: 12 aciertos. Las marcas de otra pista no se comparan.", n("contrarreloj_older_text"))
     assertEquals("la partida vieja cuenta como una guardada: falta para la tercera", Comparison.EARLY_NOTICE, n("contrarreloj_early_notice"))

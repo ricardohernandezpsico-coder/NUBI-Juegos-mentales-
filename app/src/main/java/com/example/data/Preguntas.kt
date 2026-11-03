@@ -41,7 +41,7 @@ object Preguntas {
     ),
     Pregunta(
       "edad", "¿Qué ve alguien de 14 a 17 años?",
-      "Lo mismo que cualquiera: todos los juegos y el Contrarreloj, con la referencia de 18 a 29 años. ${HealthNotice.AGE_LINE}"
+      "Lo mismo que cualquiera: todos los juegos y el Contrarreloj, con la referencia estimada de 18 a 29 años. ${HealthNotice.AGE_LINE}"
     ),
     Pregunta(
       "quien", "¿Quién hace Nubi?",

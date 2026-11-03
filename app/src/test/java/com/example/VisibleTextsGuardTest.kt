@@ -374,7 +374,7 @@ class VisibleTextsGuardTest {
     assertTrue("Textos de la pestaña Contrarreloj o de Nubi Plus con «bloqueado», «desbloquea» o «intentos» (la palabra es «Con Nubi Plus» y «partidas»):\n" + found.joinToString("\n"), found.isEmpty())
     // y la guardia atrapa lo que debe
     for (malo in listOf("Contrarreloj bloqueado", "Se desbloquea con Plus", "Te quedan 2 intentos de hoy.", "Bloqueada")) assertTrue("no atrapa «$malo»", words.any { it in malo.lowercase() })
-    for (bueno in listOf("Con Nubi Plus: todas tus marcas.", "Te quedan 2 partidas de hoy.", "Esta semana jugaste 3 partidas; la mejor, 41 aciertos.")) assertTrue("atrapa «$bueno» sin motivo", words.none { it in bueno.lowercase() })
+    for (bueno in listOf("Con Nubi Plus: todas tus marcas.", "Te quedan 2 partidas de hoy.", "Esta semana jugaste 3 partidas y la mejor fue de 41 aciertos.", "Esta semana jugaste 3 partidas y la mejor fue tu récord.", "Todavía no tienes marcas en este juego.", "Jugar 2 minutos de Acoplamiento")) assertTrue("atrapa «$bueno» sin motivo", words.none { it in bueno.lowercase() })
     // los textos nuevos de la Tarea 215 por su valor
     for (t in listOf(PlusAccess.LOCKED_PLACE, PlusAccess.LOCKED_MARKS, PlusAccess.LOCKED_PLACE_TITLE, PlusAccess.LOCKED_MARKS_TITLE, TimeTrialMarks.PLAY, TimeTrialMarks.SUBTITLE_PLACE, TimeTrialMarks.freeRecordLine(null), TimeTrialMarks.weekLine(TimeTrialMarks.WeekSummary(3, 41)))) {
       assertTrue("«$t»", words.none { it in t.lowercase() })

@@ -218,6 +218,10 @@ class ContrarrelojFlowTest {
       assertTrue("y conserva su récord a la vista: «${textOf("contrarreloj_game_value_$o")}»", textOf("contrarreloj_game_value_$o").isNotEmpty())
     }
     assertFalse("el de hoy no dice «con Nubi Plus»", spokenOf("contrarreloj_game_$today").contains("Nubi Plus"))
+    // Tarea 215b (Fable M2): un juego en gris no lleva `selected` (rol de botón: el lector diría «no seleccionado» tras «con Nubi Plus»); el de hoy, sí
+    for (o in others) assertNull("«$o» en gris no declara selected", rule.onNodeWithTag("contrarreloj_game_$o").fetchSemanticsNode().config.getOrNull(SemanticsProperties.Selected))
+    assertEquals(true, rule.onNodeWithTag("contrarreloj_game_$today").fetchSemanticsNode().config.getOrNull(SemanticsProperties.Selected))
+    assertEquals("el botón de jugar dice también el juego (Fable A3)", "Jugar 2 minutos de ${textOf("contrarreloj_game_name_$today")}", spokenOf("btn_contrarreloj_play"))
     assertEquals("el récord de otro juego (29 aciertos con 2 errores) sigue a la vista", "27 aciertos", textOf("contrarreloj_game_value_${others.first { vm.timeTrialResults.value.any { r -> r.gameId == it } }}"))
     rule.onNodeWithTag("contrarreloj_game_${others.first()}").performClick(); rule.waitForIdle()
     assertNull("tocar uno en gris no lo elige", vm.contrarrelojGame.value)
@@ -242,7 +246,7 @@ class ContrarrelojFlowTest {
     val vm = withData(); vm.setPlus(false); withRange(vm, AgeRange.R45_54)
     show(vm)
     for ((tag, phrase) in listOf("contrarreloj_locked_place" to "Con Nubi Plus: tu lugar en detalle.", "contrarreloj_locked_marks" to "Con Nubi Plus: todas tus marcas.")) {
-      assertEquals("el lector dice la frase", phrase, spokenOf(tag))
+      assertEquals("el lector dice el título y la frase (Tarea 215b, Fable M1)", "${textOf("${tag}_title")}. $phrase", spokenOf(tag))
       assertEquals("y la frase se ve", phrase, textOf("${tag}_phrase"))
     }
     assertEquals(PlusAccess.LOCKED_PLACE_TITLE, textOf("contrarreloj_locked_place_title")); assertEquals(PlusAccess.LOCKED_MARKS_TITLE, textOf("contrarreloj_locked_marks_title"))
@@ -379,7 +383,7 @@ class ContrarrelojFlowTest {
     val vm = withData(); vm.setPlus(false); withRange(vm, AgeRange.R45_54)
     show(vm)
     rule.onNodeWithTag("contrarreloj_locked_marks").performScrollTo().performClick(); rule.waitForIdle()
-    assertEquals("Gratis: tu división de la semana. Con Nubi Plus, además:", textOf("plus_sheet_lead"))
+    assertEquals("Gratis: jugar, tu récord y tu división de la semana. Con Nubi Plus, además:", textOf("plus_sheet_lead"))
     assertEquals(PlusAccess.SHEET_NOTE_ESTIMATED, textOf("plus_sheet_note"))
     assertEquals("la razón va antes de la fila y la fila antes de «Cerrar»", true, top("plus_sheet_note") < top("plus_sheet_source") && top("plus_sheet_source") < top("btn_plus_sheet_ok"))
     rule.onNode(androidx.compose.ui.test.hasText("De dónde sale la referencia ›"), useUnmergedTree = true).assertExists()

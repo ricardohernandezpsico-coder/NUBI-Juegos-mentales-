@@ -202,7 +202,7 @@ private fun LastGames(marks: List<Int>, weekLine: String?) {
   }
 }
 
-/** «Todas tus marcas ›» (Tarea 199, solo con Nubi Plus): una losa chica crema, a la derecha bajo «La mejor de esta semana», que abre la MISMA pestaña «Contrarreloj» de Avance (no es otra puerta: es esa vista desde donde acaba de nacer la marca). Toca 48 dp de alto como mínimo (la losa suma 6 dp de sombra abajo, que no se tocan: `heightIn(54)`). */
+/** «Todas tus marcas ›» (Tarea 199, solo con Nubi Plus): una losa chica crema, a la derecha bajo «La mejor de esta semana», que abre la MISMA pestaña «Contrarreloj» (la de al lado de Hoy) (no es otra puerta: es esa vista desde donde acaba de nacer la marca). Toca 48 dp de alto como mínimo (la losa suma 6 dp de sombra abajo, que no se tocan: `heightIn(54)`). */
 @Composable
 private fun AllMarksShortcut(onClick: () -> Unit, modifier: Modifier = Modifier) {
   ClaySlab(

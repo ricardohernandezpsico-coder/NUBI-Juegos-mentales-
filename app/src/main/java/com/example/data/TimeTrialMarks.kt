@@ -30,16 +30,24 @@ object TimeTrialMarks {
   /** La pastilla del selector que marca el juego del día. */
   const val TODAY_TAG = "Hoy"
 
-  /** «Tu récord: 44 aciertos.» de lo gratis; sin marca en el juego, qué falta. */
-  fun freeRecordLine(record: Int?): String = record?.let { TimeTrialDay.recordLine(it) } ?: "Todavía no tienes récord en este juego."
+  /** Sin marcas en el juego, lo gratis dice UNA línea y nada más (Tarea 215b, Fable A4 c): ni «récord» ni la semana, que serían tres negaciones seguidas. */
+  const val NO_MARKS_FREE = "Todavía no tienes marcas en este juego."
+
+  /** «Tu récord: 44 aciertos.» de lo gratis; sin marca en el juego, [NO_MARKS_FREE]. */
+  fun freeRecordLine(record: Int?): String = record?.let { TimeTrialDay.recordLine(it) } ?: NO_MARKS_FREE
+
+  /** Lo que lee el lector de pantalla del botón «Jugar · 2 minutos» (Tarea 215b, Fable A3): dice también el juego, que en la pantalla solo lo dice la losa lima del selector. «Jugar 2 minutos de Acoplamiento». */
+  fun playSpoken(gameTitle: String): String = "Jugar ${TimeTrialDay.MINUTES_TEXT} de $gameTitle"
 
   /**
-   * «Esta semana jugaste 3 partidas; la mejor, 41 aciertos.» (lo gratis, Tarea 215; reemplaza a la cifra «partidas esta semana» de la Tarea 203): las partidas de esta semana de la pista de hoy y su mejor marca. Con una sola, «Esta semana jugaste 1 partida; la mejor, 41 aciertos.»;
+   * «Esta semana jugaste 3 partidas y la mejor fue de 41 aciertos.» (lo gratis, Tarea 215; reemplaza a la cifra «partidas esta semana» de la Tarea 203; Tarea 215b, Fable M5: con «y … fue», que se lee de corrido, en vez de «; la mejor, …»): las partidas de esta semana de la pista de hoy y su mejor marca.
+   * Si esa mejor marca ES el récord ([record]), el número no se repite (ya lo dicen la losa del selector y «Tu récord: 64 aciertos.»; Fable A4 b): «Esta semana jugaste 3 partidas y la mejor fue tu récord.». Con una sola, «Esta semana jugaste 1 partida y la mejor fue de 41 aciertos.» o «…y la mejor fue tu récord.»;
    * sin ninguna, «Esta semana todavía no jugaste.».
    */
-  fun weekLine(week: WeekSummary): String {
+  fun weekLine(week: WeekSummary, record: Int? = null): String {
     val best = week.best ?: return "Esta semana todavía no jugaste."
-    return "Esta semana jugaste ${if (week.games == 1) "1 partida" else "${week.games} partidas"}; la mejor, ${TimeTrialDay.hitsText(best)}."
+    val played = if (week.games == 1) "1 partida" else "${week.games} partidas"
+    return if (best == record) "Esta semana jugaste $played y la mejor fue tu récord." else "Esta semana jugaste $played y la mejor fue de ${TimeTrialDay.hitsText(best)}."
   }
   const val OLDER_NOTE = "Las marcas de otra pista no se comparan."
 

@@ -82,7 +82,7 @@ object Comparison {
   }
 
   /**
-   * Con qué se compara ESTA persona en la puerta de Avance y en su hoja (Tarea 209: antes lo calculaba `ProgressScreen` por su cuenta): la comparación de la fuente si la hay y la persona tiene una franja con la que compararse; si no (sin fuente o sin franja), [Kind.NONE].
+   * Con qué se compara ESTA persona en la pestaña Contrarreloj y en la hoja del candado (Tarea 209: antes lo calculaba `ProgressScreen` por su cuenta, para la puerta de Avance, que se fue en la Tarea 215): la comparación de la fuente si la hay y la persona tiene una franja con la que compararse; si no (sin fuente o sin franja), [Kind.NONE].
    */
   fun kindFor(source: Source?, stored: AgeRange?): Kind = if (source != null && rangeFor(stored, source) != null) kindOf(source) else Kind.NONE
 

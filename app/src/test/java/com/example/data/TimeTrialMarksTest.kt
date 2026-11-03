@@ -75,13 +75,22 @@ class TimeTrialMarksTest {
     val p = TimeTrialMarks.page(ten, "stroop", now)
     assertEquals("Tu récord: 44 aciertos.", TimeTrialMarks.freeRecordLine(p.recordMark))
     assertEquals("Tu récord: 1 acierto.", TimeTrialMarks.freeRecordLine(1))
-    assertEquals("Todavía no tienes récord en este juego.", TimeTrialMarks.freeRecordLine(null))
-    assertEquals("Esta semana jugaste 3 partidas; la mejor, 43 aciertos.", TimeTrialMarks.weekLine(p.thisWeek))
-    assertEquals("Esta semana jugaste 1 partida; la mejor, 1 acierto.", TimeTrialMarks.weekLine(TimeTrialMarks.WeekSummary(1, 1)))
+    // Tarea 215b (Fable A4 c): sin marcas en el juego, UNA línea; ni «récord» ni la semana
+    assertEquals("Todavía no tienes marcas en este juego.", TimeTrialMarks.freeRecordLine(null))
+    assertEquals(TimeTrialMarks.NO_MARKS_FREE, TimeTrialMarks.freeRecordLine(null))
+    // Tarea 215b (Fable M5 y A4 b): «y la mejor fue de N aciertos» y, si la mejor ES el récord, «y la mejor fue tu récord» sin número
+    assertEquals("Esta semana jugaste 3 partidas y la mejor fue de 43 aciertos.", TimeTrialMarks.weekLine(p.thisWeek, p.recordMark))
+    assertEquals("sin récord que comparar, con el número", "Esta semana jugaste 3 partidas y la mejor fue de 43 aciertos.", TimeTrialMarks.weekLine(p.thisWeek))
+    assertEquals("Esta semana jugaste 3 partidas y la mejor fue tu récord.", TimeTrialMarks.weekLine(TimeTrialMarks.WeekSummary(3, 44), 44))
+    assertEquals("Esta semana jugaste 1 partida y la mejor fue de 1 acierto.", TimeTrialMarks.weekLine(TimeTrialMarks.WeekSummary(1, 1), 7))
+    assertEquals("con una sola, también «tu récord»", "Esta semana jugaste 1 partida y la mejor fue tu récord.", TimeTrialMarks.weekLine(TimeTrialMarks.WeekSummary(1, 31), 31))
+    assertEquals("la mejor de esta semana nunca pasa del récord: con una marca mayor no es «tu récord»", "Esta semana jugaste 2 partidas y la mejor fue de 30 aciertos.", TimeTrialMarks.weekLine(TimeTrialMarks.WeekSummary(2, 30), 44))
+    // Tarea 215b (Fable A3): el lector dice también el juego
+    assertEquals("Jugar 2 minutos de Acoplamiento", TimeTrialMarks.playSpoken("Acoplamiento"))
     assertEquals("Esta semana todavía no jugaste.", TimeTrialMarks.weekLine(TimeTrialMarks.WeekSummary(0, null)))
     assertEquals("sin partida esta semana (los días siguientes)", "Esta semana todavía no jugaste.", TimeTrialMarks.weekLine(TimeTrialMarks.page(ten, "stroop", at(30, 9) + 3 * 86_400_000L).thisWeek))
     assertEquals("Jugar · 2 minutos", TimeTrialMarks.PLAY)
-    for (t in listOf(TimeTrialMarks.freeRecordLine(44), TimeTrialMarks.weekLine(p.thisWeek), TimeTrialMarks.PLAY, TimeTrialMarks.SUBTITLE_PLACE, TimeTrialMarks.SUBTITLE))
+    for (t in listOf(TimeTrialMarks.freeRecordLine(44), TimeTrialMarks.weekLine(p.thisWeek), TimeTrialMarks.weekLine(p.thisWeek, p.recordMark), TimeTrialMarks.NO_MARKS_FREE, TimeTrialMarks.playSpoken("Acoplamiento"), TimeTrialMarks.PLAY, TimeTrialMarks.SUBTITLE_PLACE, TimeTrialMarks.SUBTITLE))
       for (banned in listOf("intento", "bloquead", "desbloque", "percentil", "Percentil")) assertFalse("«$t» no debe decir «$banned»", t.contains(banned))
   }
 

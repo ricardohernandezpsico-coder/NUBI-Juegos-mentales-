@@ -30,16 +30,18 @@ object PlusAccess {
   const val LOCKED_MARKS_TITLE = "Tus marcas"
   const val LOCKED_MARKS = "Con Nubi Plus: todas tus marcas."
 
+  // Tarea 215b (Fable, `auditoria-fable/contrarreloj-t215-auditoria.md` §3.1 A1): desde la 215 la losa crema de la pestaña, 200 dp más arriba de la losa gris que abre la hoja, ya da gratis jugar, el récord, la semana y la división; la hoja dice «Gratis: …» con eso y lo de Plus
+  // empieza donde de verdad empieza Plus (el porcentaje y la escalera, otras edades y semana a semana, las últimas 10 marcas y el ritmo). Cuando llegue la tarea 3 se suma, primera de la lista, «Los cuatro Contrarrelojes, cualquier día, con partidas libres.».
   const val SHEET_TITLE = "Tus marcas del Contrarreloj, con Nubi Plus"
   /**
    * La hoja, en TRES líneas (Tarea 203; `auditoria-fable/contrarreloj-rediseno.md` §4). Lo que dice depende de con qué se compara ESTA persona (`Comparison.Kind`, Tarea 205c: NONE si no hay fuente o no tiene franja de edad con que compararse): con la referencia estimada (la de la tienda) la nombra, con personas (datos de muestra de depuración;
    * mañana, personas reales) habla de «personas de tu edad», y sin comparación solo de lo que de verdad hay detrás. Así la hoja nunca promete de más. Las dos primeras constantes son la forma «sin comparación» y la de «personas»; la de la referencia estimada, más abajo, nunca dice «personas».
    */
-  const val SHEET_LEAD = "Una página con todas tus marcas, comparadas solo contigo:"
+  const val SHEET_LEAD = "Gratis: jugar, tu récord y tu semana. Con Nubi Plus, además:"
   /** Lo gratis primero, y después lo que agrega Plus (Tarea 209): con personas reales (futuro) y con la referencia estimada empiezan igual. */
-  const val SHEET_LEAD_COMPARED = "Gratis: tu división de la semana. Con Nubi Plus, además:"
+  const val SHEET_LEAD_COMPARED = "Gratis: jugar, tu récord y tu división de la semana. Con Nubi Plus, además:"
   val SHEET_ITEMS: List<String> = listOf(
-    "Tu récord, tu mejor marca de esta semana y tus últimas 10 marcas, en barras.",
+    "Tus últimas 10 marcas en barras, con la fecha y el paso de tu récord.",
     "Tu ritmo en los 2 minutos, medio minuto por medio minuto.",
     "Tu récord de las pistas anteriores."
   )
@@ -54,9 +56,9 @@ object PlusAccess {
    */
   const val SHEET_LEAD_ESTIMATED = SHEET_LEAD_COMPARED
   val SHEET_ITEMS_ESTIMATED: List<String> = listOf(
-    "Tu lugar en una referencia estimada para tu edad: qué porcentaje de ella superas y en qué división estás.",
-    "La escalera de las cinco divisiones, con su primer acierto, y tus semanas seguidas arriba de la mitad.",
-    "Todas tus marcas: el récord, las últimas 10 y tu ritmo en los 2 minutos."
+    "Qué porcentaje de la referencia estimada para tu edad superas, y la escalera de las cinco divisiones.",
+    "Tu lugar en otras edades y semana a semana, con tus semanas seguidas arriba de la mitad.",
+    "Todas tus marcas: las últimas 10 en barras, tu ritmo en los 2 minutos y el récord de las pistas anteriores."
   )
 
   /**

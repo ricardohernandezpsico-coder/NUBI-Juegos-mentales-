@@ -34,7 +34,7 @@ class PreguntasTest {
     val p = Preguntas.general.first { it.key == "edad" }
     assertEquals("¿Qué ve alguien de 14 a 17 años?", p.question)
     assertEquals(
-      "Lo mismo que cualquiera: todos los juegos y el Contrarreloj, con la referencia de 18 a 29 años. Nubi es para personas de 14 años o más.",
+      "Lo mismo que cualquiera: todos los juegos y el Contrarreloj, con la referencia estimada de 18 a 29 años. Nubi es para personas de 14 años o más.",
       p.answer
     )
     assertTrue("termina con la misma frase que «Acerca de Nubi»", p.answer.endsWith(com.example.data.HealthNotice.AGE_LINE))
