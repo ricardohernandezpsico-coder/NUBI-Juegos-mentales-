@@ -65,6 +65,7 @@ Parámetros por juego:
 | En la punta de la lengua (id `anagramas`, 3-oct) | 5 | 0.40 | edad | no |
 | Constelaciones (id `parejas`, 7-oct: [diseno-constelaciones.md](diseno-constelaciones.md) §4) | 18 (6 grupos de 3 etapas) | 0.20 | edad | no (mirar con calma no se penaliza) |
 | Rastro de luz (id `secuencia`) | 16 | 0.25 adultos · 0.17 mayores · 0.22 menores de 18 (ver §6) | edad | no |
+| Satélites (id `satelites`; Tarea 232, 4-nov: antes 1,0 para todos) | 12 | 0.25 adultos · 0.17 mayores · 0.22 menores de 18 (el molde de Rastro: el tope de bajada no se activa; ver `docs/techo-dificultad.md` §2 y `docs/alargar-dificultad.md`) | edad | no |
 
 ## 4. Verificación
 

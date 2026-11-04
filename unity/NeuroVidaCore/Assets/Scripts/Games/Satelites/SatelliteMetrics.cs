@@ -7,8 +7,11 @@ namespace NeuroVida.Games.Satelites
     public static class SatelliteMetrics
     {
         /// <summary>Un ensayo por ronda (acierto = todos los k); sin tiempo de reacción: el tiempo es el de la tarea, no una medida.</summary>
-        public static AdaptiveDifficulty CreateEngine(SequenceConfigDetails config) =>
-            new AdaptiveDifficulty(SatelliteContract.MaxLevel, DdaUserProfileConfig.ParseAgeBand(config.age_band), StartRating(config), SatelliteContract.StepUp, useReaction: false);
+        public static AdaptiveDifficulty CreateEngine(SequenceConfigDetails config)
+        {
+            var age = DdaUserProfileConfig.ParseAgeBand(config.age_band);
+            return new AdaptiveDifficulty(SatelliteContract.MaxLevel, age, StartRating(config), SatelliteContract.StepUp(age), useReaction: false);
+        }
 
         public static float StartRating(SequenceConfigDetails config) =>
             config.sat_stage > 0 ? Math.Max(1f, Math.Min(SatelliteContract.MaxLevel, config.sat_stage)) : AdaptiveDifficulty.StartRating(config, SatelliteContract.MaxLevel);

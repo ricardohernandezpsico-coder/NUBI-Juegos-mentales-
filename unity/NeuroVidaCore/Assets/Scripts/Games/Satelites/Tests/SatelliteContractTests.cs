@@ -300,18 +300,48 @@ namespace NeuroVida.Games.Satelites.Tests
         // ------------------------------------------------------------------ motor común y telemetría
 
         [Test]
-        public void TheCommonEngine_APerfectRoundClimbsALevel_AndAFailureDropsAtMostOne()
+        public void TheCommonEngine_APerfectRoundClimbsTheStepOfTheAge_AndAFailureDropsAtMostOne()
         {
+            // Tarea 232: el paso es el de Rastro por edad (antes 1,0: una ronda perfecta subía un nivel entero).
+            foreach (var (band, age, step) in new[] { ("ADULT", AgeBand.Adult, 0.25f), ("SENIOR", AgeBand.Senior, 0.17f * 0.85f), ("UNDER_18", AgeBand.Under18, 0.22f * 1.1f) })
+            {
+                var dda = SatelliteMetrics.CreateEngine(new SequenceConfigDetails { level = 1, age_band = band });
+                for (int i = 0; i < 7; i++) dda.Register(true);                  // los seis primeros ensayos pesan 1,5 (calibración) y el 6.º suma el bono de las seis seguidas
+                float before = dda.Rating;
+                dda.Register(true);
+                Assert.AreEqual(step, dda.Rating - before, 1e-4f, band + ": una ronda perfecta, después de la calibración, sube el paso de su edad");
+                before = dda.Rating;
+                dda.Register(false);
+                Assert.GreaterOrEqual(dda.Rating, before - 1.0001f, band + ": un error baja como mucho un nivel");
+                Assert.Less(dda.Rating, before);
+            }
+        }
+
+        [Test]
+        public void StepUp_NeverHitsTheDropCap_SoTheTargetIsReached()
+        {
+            // El motor baja paso·p/(1−p) por error (tope 1,0) y multiplica el paso por 0,85 en mayores y 1,1 en menores de 18; si el tope se activa, el equilibrio queda por debajo del objetivo. Es la misma regla de Rastro de luz.
+            foreach (var (age, mult) in new[] { (AgeBand.Adult, 1f), (AgeBand.Senior, 0.85f), (AgeBand.Under18, 1.1f) })
+            {
+                float p = AdaptiveDifficulty.TargetFor(age);
+                float drop = SatelliteContract.StepUp(age) * mult * p / (1f - p);
+                Assert.LessOrEqual(drop, 1.0001f, $"{age}: baja {drop:0.000} por error y el tope es 1");
+                Assert.GreaterOrEqual(drop, 0.78f, $"{age}: el paso quedó demasiado chico ({drop:0.000})");
+            }
+            Assert.AreEqual(0.25f, SatelliteContract.StepUp(AgeBand.Adult), 1e-6f);
+            Assert.AreEqual(0.17f, SatelliteContract.StepUp(AgeBand.Senior), 1e-6f);
+            Assert.AreEqual(0.22f, SatelliteContract.StepUp(AgeBand.Under18), 1e-6f);
+        }
+
+        [Test]
+        public void ThePerfectPerson_NeedsSeveralGamesToReachTheTopLevel()
+        {
+            // Tarea 232: con 1,0 una persona que acierta todas las rondas llegaba al nivel 12 en 8 rondas (una partida de Precisión). Ahora parte del nivel 1 y tarda varias partidas de 8 rondas (guardando entre una y otra como la app: 60 % la partida, 40 % lo anterior).
             var config = new SequenceConfigDetails { level = 1, age_band = "ADULT" };
             var dda = SatelliteMetrics.CreateEngine(config);
-            for (int i = 0; i < 6; i++) dda.Register(true);                  // los seis primeros ensayos pesan 1,5 (calibración)
-            float before = dda.Rating;
-            dda.Register(true);
-            Assert.AreEqual(1f, dda.Rating - before, 1e-4f, "una ronda perfecta, después de la calibración, sube un nivel entero");
-            before = dda.Rating;
-            dda.Register(false);
-            Assert.GreaterOrEqual(dda.Rating, before - 1.0001f, "un error baja como mucho un nivel");
-            Assert.Less(dda.Rating, before);
+            for (int i = 0; i < 8; i++) dda.Register(true);
+            Assert.Less(dda.Rating, SatelliteContract.MaxLevel, "una sola partida perfecta ya no recorre la escalera entera");
+            Assert.Less(dda.Level, 6, "y una partida perfecta deja a un adulto en la mitad de abajo");
         }
 
         [Test]

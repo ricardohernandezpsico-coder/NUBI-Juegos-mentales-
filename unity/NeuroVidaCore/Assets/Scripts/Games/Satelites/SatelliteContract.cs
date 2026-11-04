@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using NeuroVida.Contracts;
 
 namespace NeuroVida.Games.Satelites
 {
@@ -56,10 +57,16 @@ namespace NeuroVida.Games.Satelites
         public const float FastSpeedFactor = 1.25f, FastTrackFactor = 0.8f;
 
         /// <summary>
-        /// Paso del DDA común: un ensayo por ronda (acierto = todos los k). Con 1,0 una ronda perfecta sube cerca de un nivel y una fallada baja hasta uno (el motor limita la bajada a un nivel por error), como en el boceto aprobado.
-        /// Sin tiempo de reacción: el tiempo es el de la tarea, no una medida.
+        /// Pasos de subida del motor común por edad (Tarea 232, 4-nov-2026; antes un solo 1,0 desde el boceto del 9-oct: una ronda perfecta subía un nivel entero y el tope de bajada, 1,0 por error, siempre mandaba, así que la razón 4:1 de Kaernbach no actuaba y
+        /// la escalera de 12 niveles se recorría en 8 rondas perfectas: <c>docs/techo-dificultad.md</c> §2). Ahora el molde de Rastro de luz (<c>RastroContract.StepUp</c>): un ensayo por ronda (acierto = todos los k), sin tiempo de reacción (el tiempo es el de la tarea, no una medida).
+        /// El motor multiplica el paso por 0,85 en mayores y 1,1 en menores de 18 y baja <c>paso · p / (1 − p)</c> por error con tope MaxDropPerError = 1: para que ese tope no se active (y el objetivo se cumpla) el paso efectivo tiene que ser ≤ (1 − p) / p.
+        /// Adultos 0,25 × 4 = 1,0; mayores 0,17 × 0,85 × 5,67 = 0,82; menores de 18 0,22 × 1,1 × 4 = 0,97. Con la simulación de <c>docs/techo-dificultad.md</c>, una persona que acierta el 95 % de las rondas toca el nivel 12 en la partida 7 (adultos) y en la 13 (mayores), en vez de en la 1.
         /// </summary>
-        public const float StepUp = 1.0f;
+        public const float StepUpAdult = 0.25f;
+        public const float StepUpSenior = 0.17f;
+        public const float StepUpUnder18 = 0.22f;
+
+        public static float StepUp(AgeBand age) => age == AgeBand.Senior ? StepUpSenior : age == AgeBand.Under18 ? StepUpUnder18 : StepUpAdult;
 
         // ------------------------------------------------------------------ los 12 niveles
 
