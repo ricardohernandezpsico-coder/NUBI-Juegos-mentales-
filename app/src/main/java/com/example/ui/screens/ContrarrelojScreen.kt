@@ -56,7 +56,8 @@ fun ContrarrelojScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modif
       plus = plus, today = today,
       onPlay = { viewModel.startTimeTrial(selected, fromTab = true) },
       gamesLeft = gamesLeft,
-      onLocked = { sheet = true }
+      onLocked = { sheet = true },
+      tuButton = { m -> com.example.ui.components.TuHeaderButton(viewModel, m) }          // el botón «Tú» en la cabecera de la página (Tarea 225b)
     )
   }
   // Con qué se compara ESTA persona, para la hoja (Tarea 205c): sin franja de edad no hay comparación, así que la hoja no le promete una referencia que nunca verá (`LockSheetHost`, que también usan Hoy y la ficha)

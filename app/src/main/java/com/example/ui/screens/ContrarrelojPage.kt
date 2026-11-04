@@ -146,7 +146,9 @@ internal fun ContrarrelojPage(
   /** Las partidas gratis que quedan hoy del juego de hoy (Tarea 218, la regla de partidas): null = sin tope (con Plus). Con partidas, «Te quedan 2 partidas de hoy.» bajo «Jugar»; en 0, «Hoy ya jugaste tus 3 partidas.» en lugar de «Jugar» y, bajo la losa gratis, UNA fila gris con candado. */
   gamesLeft: Int? = null,
   /** Tocar algo en gris abre la hoja del candado. */
-  onLocked: () -> Unit = {}
+  onLocked: () -> Unit = {},
+  /** El botón «Tú» de la cabecera (Tarea 225b): se va con la página; vacío en las pruebas y capturas sueltas. */
+  tuButton: @Composable (Modifier) -> Unit = {}
 ) {
   val page = remember(results, selected, now) { TimeTrialMarks.page(results, selected, now) }
   val records = remember(results) { TimeTrialDay.GAMES.map { it to TimeTrialStats.record(results, it) } }
@@ -178,7 +180,7 @@ internal fun ContrarrelojPage(
     }
   ) {
     Column(Modifier.fillMaxSize().verticalScroll(scroll).testTag("contrarreloj_scroll")) {
-      PageHeader(compared = section != null, Modifier.onSizeChanged { headerPx = it.height })
+      PageHeader(compared = section != null, tuButton, Modifier.onSizeChanged { headerPx = it.height })
       Spacer(Modifier.height(FadeHeight))
       Column(Modifier.padding(horizontal = PageMargin).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(CardGap)) {
         GameSelector(records, selected, today, plus, lang, onSelect, onLocked)
@@ -232,12 +234,17 @@ internal fun ContrarrelojPage(
 
 /** «Contrarreloj» (Rubik, con tope de letra 1,3) y su subtítulo, que parte la línea por palabras. Sin flecha de volver: es una pestaña (Tarea 215). Todo con [OnBoardText]: el cielo tiene luceros. [compared] = hay comparación: «El Contrarreloj define tu lugar de la semana.». */
 @Composable
-private fun PageHeader(compared: Boolean, modifier: Modifier = Modifier) {
-  Column(modifier.fillMaxWidth().padding(start = 20.dp, end = PageMargin, top = 8.dp).testTag("contrarreloj_header")) {
-    CapScale(BIG_TEXT_SCALE_CAP) {
-      OnBoardText(TimeTrialMarks.TITLE, color = NubiTokens.OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 32.sp, modifier = Modifier.fillMaxWidth().padding(end = com.example.ui.components.TU_BUTTON_TOUCH).semantics { heading() }.testTag("contrarreloj_title"))
+private fun PageHeader(compared: Boolean, tuButton: @Composable (Modifier) -> Unit, modifier: Modifier = Modifier) {
+  Column(modifier.fillMaxWidth().testTag("contrarreloj_header")) {
+    // La fila del título (Tarea 225b): 48 dp con el botón «Tú» adentro a la derecha; el subtítulo empieza 8 dp más abajo (a 56 dp: antes a 44, y su primera línea pasaba bajo el botón)
+    com.example.ui.components.TuHeaderRow(tuButton) {
+      Box(Modifier.align(Alignment.CenterStart).padding(start = 20.dp, end = com.example.ui.components.TU_BUTTON_RESERVE)) {
+        CapScale(BIG_TEXT_SCALE_CAP) {
+          OnBoardText(TimeTrialMarks.TITLE, color = NubiTokens.OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 32.sp, modifier = Modifier.fillMaxWidth().semantics { heading() }.testTag("contrarreloj_title"))
+        }
+      }
     }
-    OnBoardText(TimeTrialMarks.subtitle(compared), color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().padding(top = 4.dp).testTag("contrarreloj_subtitle"))
+    OnBoardText(TimeTrialMarks.subtitle(compared), color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = PageMargin).testTag("contrarreloj_subtitle"))
   }
 }
 

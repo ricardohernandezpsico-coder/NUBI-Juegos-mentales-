@@ -98,6 +98,7 @@ fun AllGamesScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier)
     onArea = { viewModel.setAllGamesArea(it) },
     onGame = { id -> GameRegistry.getById(id)?.let { sheetFor = it } },
     reveal = reveal, onRevealed = { viewModel.consumeJuegosReveal() },
+    tuButton = { m -> com.example.ui.components.TuHeaderButton(viewModel, m) },          // el botón «Tú» en la fila del título (Tarea 225b)
     modifier = modifier
   )
 
@@ -126,15 +127,18 @@ internal fun AllGamesContent(
   onGame: (String) -> Unit,
   modifier: Modifier = Modifier,
   reveal: String? = null,
-  onRevealed: () -> Unit = {}
+  onRevealed: () -> Unit = {},
+  /** El botón «Tú» de la fila del título (Tarea 225b); vacío en las pruebas y capturas sueltas. */
+  tuButton: @Composable (Modifier) -> Unit = {}
 ) {
   val focusManager = LocalFocusManager.current
   val sections = remember(places, area, query) { allGamesSections(places, area, query) }
   val flat = remember(sections) { sections.flatMap { (place, rows) -> listOf<Any>(AllGamesHeader(place, rows.size)) + rows.map { AllGamesRow(place, it) } } }
 
   Column(modifier.fillMaxSize().padding(bottom = LocalBarInset.current)) {         // la franja de la barra de pestañas queda libre
-    Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = com.example.ui.components.TU_BUTTON_RESERVE, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {         // (a la derecha queda libre el lugar del botón «Tú», Tarea 225)
-      OnBoardText(AllGamesTitle, color = NubiTokens.OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, modifier = Modifier.weight(1f).semantics { heading() }.testTag("all_games_title"))
+    // La fila del título (Tarea 225b): 48 dp, el botón «Tú» adentro a la derecha y 8 dp de aire antes del buscador (la sombra del botón termina a los 48 dp: el buscador empieza a 56 dp, con la Tarea 225 empezaba a 46 y la «R» lo tocaba)
+    com.example.ui.components.TuHeaderRow(tuButton) {
+      OnBoardText(AllGamesTitle, color = NubiTokens.OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, modifier = Modifier.align(Alignment.CenterStart).padding(start = 20.dp, end = com.example.ui.components.TU_BUTTON_RESERVE).semantics { heading() }.testTag("all_games_title"))
     }
     // El buscador y los chips quedan fijos arriba; con letra muy grande (> 1,3) ocupan casi la mitad de la pantalla y se deslizan con la lista
     val scrollControls = LocalDensity.current.fontScale > 1.3f

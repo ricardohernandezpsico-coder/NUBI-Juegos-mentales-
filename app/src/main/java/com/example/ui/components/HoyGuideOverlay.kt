@@ -109,7 +109,7 @@ internal fun HoyGuideHost(viewModel: NeuroVidaViewModel, targets: GuideTargets, 
 
 /**
  * La guía de Nubi sobre Hoy, un paso (Tarea 193; `auditoria-fable/guia-primer-ingreso.md` §3.3 y §3.4): un velo sobre TODA la pantalla (también la barra) con un hueco y su aro lima sobre el elemento real, y el globo de Nubi con el texto del paso, «Paso 1 de 3» y el chip lila «Seguir ›» (en el último,
- * «Listo»); arriba a la derecha, «Saltar la guía» en crema. Sin sol (el único sol de Hoy es el de la ruta), sin dedo, sin sonido.
+ * «Listo»); arriba a la izquierda (Tarea 225b), «Saltar la guía» en crema. Sin sol (el único sol de Hoy es el de la ruta), sin dedo, sin sonido.
  *
  * - **Tocar lo iluminado = Seguir** y NO abre nada (lanzar el Contrarreloj desde adentro de una guía sería empezar una partida de 2 minutos sin pedirla). **Tocar el velo no hace nada** (con 65+ un toque accidental fuera no debe cerrarla) y tampoco se puede deslizar nada de abajo. **Atrás = saltar.**
  * - El hueco se mueve al elemento nuevo en [NubiMotion.TAB_MS] y el texto cambia con un fundido de [NubiMotion.STATE_MS]; con «quitar animaciones», de golpe.
@@ -124,7 +124,12 @@ internal fun HoyGuideOverlay(step: GuideStep, targets: GuideTargets, onNext: () 
   BackHandler(onBack = onSkip)
   // El elemento se trae SIEMPRE a la vista, entero y sobre la barra (Hoy se desliza con letra 1,3 el día del vuelo y con 2,0), y recién cuando terminó de deslizar se dibuja el hueco: mientras tanto queda el del paso anterior.
   var settledStep by remember { mutableStateOf<GuideStep?>(null) }
-  LaunchedEffect(step) { targets.bringIntoView(target); settledStep = step }
+  // El paso 3 ilumina también el botón «Tú» (Tarea 225b), que va en la fila del logotipo, arriba de Hoy: antes se sube Hoy hasta arriba para que se vea entero junto con la barra.
+  LaunchedEffect(step) {
+    if (step == GuideStep.BARRA) targets.bringIntoView(GuideTarget.TU_BUTTON)
+    targets.bringIntoView(target)
+    settledStep = step
+  }
   // Aparece con un fundido de 200 ms (de golpe con «quitar animaciones»).
   val appear = remember { Animatable(if (reduce) 1f else 0f) }
   LaunchedEffect(Unit) { if (!reduce) appear.animateTo(1f, tween(NubiMotion.STATE_MS)) }
@@ -146,6 +151,11 @@ internal fun HoyGuideOverlay(step: GuideStep, targets: GuideTargets, onNext: () 
   val hole = liveHole ?: lastHole
   val animatedHole by animateRectAsState(hole ?: Rect.Zero, if (reduce) snap() else tween(NubiMotion.TAB_MS, easing = NubiMotion.Emphasized), label = "hueco")
   val shownHole = if (hole == null) null else animatedHole
+  // El hueco del botón «Tú» (Tarea 225b, solo en el paso de la barra): un círculo del tamaño del botón más el mismo aire de 8 dp, con su aro lima; no se anima (el botón no se mueve cuando Hoy ya está arriba).
+  val tuHole = targets.rects[GuideTarget.TU_BUTTON]?.takeIf { settledStep == step && step == GuideStep.BARRA }?.let { r ->
+    val half = maxOf(r.width, r.height) / 2f + pad
+    Rect(r.center.x - half, r.center.y - half, r.center.x + half, r.center.y + half)
+  }
 
   val topInset = WindowInsets.safeDrawing.getTop(density)
   val skipBand = with(density) { (8.dp + 48.dp + 8.dp).toPx() }
@@ -168,8 +178,11 @@ internal fun HoyGuideOverlay(step: GuideStep, targets: GuideTargets, onNext: () 
         addRect(whole)
         if (shownHole != null) addRoundRect(RoundRect(shownHole, radius))
       }
+      val tuRadius = tuHole?.let { CornerRadius(it.width / 2f) }
+      if (tuHole != null && tuRadius != null) path.addRoundRect(RoundRect(tuHole, tuRadius))
       drawPath(path, GuideVeil)
       if (shownHole != null) drawRoundRect(Clay.Lime, topLeft = shownHole.topLeft, size = Size(shownHole.width, shownHole.height), cornerRadius = radius, style = Stroke(GuideRingWidth.toPx()))
+      if (tuHole != null && tuRadius != null) drawRoundRect(Clay.Lime, topLeft = tuHole.topLeft, size = Size(tuHole.width, tuHole.height), cornerRadius = tuRadius, style = Stroke(GuideRingWidth.toPx()))
     }
     // Tocar lo iluminado = «Seguir»: un toque sobre el hueco, sin abrir nada.
     if (shownHole != null) {
@@ -182,15 +195,26 @@ internal fun HoyGuideOverlay(step: GuideStep, targets: GuideTargets, onNext: () 
           .pointerInput(Unit) { detectTapGestures { onNextNow() } }
       )
     }
-    // El globo de Nubi, siempre FUERA del hueco y debajo de «Saltar la guía».
-    GuideAnchored(hole = shownHole, topLimit = topInset + skipBand.toInt(), gap = gap, modifier = Modifier.fillMaxSize()) {
+    // Lo mismo con el botón «Tú» iluminado (Tarea 225b): tocarlo es «Seguir» (aquí, «Listo») y NO abre Tú.
+    if (tuHole != null) {
+      val onNextNow by rememberUpdatedState(onNext)
+      Box(
+        Modifier
+          .offset { IntOffset(tuHole.left.toInt(), tuHole.top.toInt()) }
+          .size(with(density) { tuHole.width.toDp() }, with(density) { tuHole.height.toDp() })
+          .testTag("guide_hole_tu")
+          .pointerInput(Unit) { detectTapGestures { onNextNow() } }
+      )
+    }
+    // El globo de Nubi, siempre FUERA de los huecos y debajo de «Saltar la guía» (y del hueco del botón «Tú», que va arriba).
+    GuideAnchored(hole = shownHole, topLimit = maxOf(topInset + skipBand.toInt(), (tuHole?.bottom ?: 0f).toInt() + gap.toInt()), gap = gap, modifier = Modifier.fillMaxSize()) {
       Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.Bottom) {
         NubiClay(if (bigText) NubiSize.S else NubiSize.M, Modifier.testTag("guide_nubi").clearAndSetSemantics { })
         Box(Modifier.weight(1f).padding(start = 4.dp)) { GuideGlobe(step, onNext, startingPoint) }
       }
     }
-    // «Saltar la guía»: arriba a la derecha, en los tres pasos.
-    Box(Modifier.align(Alignment.TopEnd).windowInsetsPadding(WindowInsets.safeDrawing).padding(top = 8.dp, end = 12.dp)) {
+    // «Saltar la guía»: arriba a la IZQUIERDA, en los tres pasos (Tarea 225b: antes a la derecha, justo sobre el botón «Tú», que ahora es un blanco del paso 3; a la izquierda queda sobre el logotipo, que la guía nunca ilumina).
+    Box(Modifier.align(Alignment.TopStart).windowInsetsPadding(WindowInsets.safeDrawing).padding(top = 8.dp, start = 12.dp)) {
       KitButton(
         text = HoyGuide.SKIP_LABEL, onClick = onSkip, color = SlabColor.CREAM, wide = false, minHeight = 48.dp, fontSize = 16.sp,
         modifier = Modifier.semantics { traversalIndex = 2f }.testTag("btn_guide_skip")

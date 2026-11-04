@@ -111,8 +111,8 @@ class NubilusLogoTest {
   }
 
   @Test
-  fun mide_4_dp_de_aire_40_de_caja_y_4_hasta_el_saludo_y_baja_Hoy_20_dp() {
-    assertEquals(4f, HOY_LOGO_TOP.value, 0f); assertEquals(40f, HOY_LOGO_BOX.value, 0f); assertEquals(4f, HOY_GREETING_TOP.value, 0f)           // Tarea 225: antes 6 + 40 + 2; la suma sigue siendo 48
+  fun la_fila_del_logotipo_mide_48_dp_con_40_de_caja_y_baja_Hoy_20_dp() {
+    assertEquals(48f, com.example.ui.screens.HOY_HEADER.value, 0f); assertEquals(4f, HOY_LOGO_TOP.value, 0f); assertEquals(40f, HOY_LOGO_BOX.value, 0f); assertEquals(0f, HOY_GREETING_TOP.value, 0f)           // Tarea 225b: la fila del logotipo mide 48 (4 + 40 + 4) y el saludo va pegado; antes 6 + 40 + 2, y en la 225 4 + 40 + 4 hasta el saludo
     assertEquals("Hoy baja lo que mide el logotipo menos los 28 dp de aire de antes", 20f, HOY_LOGO_SHIFT.value, 0f)
     show()
     val scrollTop = top("home_scroll")

@@ -90,7 +90,10 @@ fun ProgressScreen(
       )
       return@Column
     }
-    Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = com.example.ui.components.TU_BUTTON_RESERVE, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) { OnBoardText("Avance", color = OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, modifier = Modifier.testTag("avance_title")) }
+    // La fila del título (Tarea 225b): 48 dp con el botón «Tú» adentro; el 8 dp de aire que sigue es el de la lista (la primera línea, las llamitas de la semana, empieza a 56 dp: la sombra del botón termina a los 48)
+    com.example.ui.components.TuHeaderRow({ m -> com.example.ui.components.TuHeaderButton(viewModel, m) }, bottomGap = 0.dp) {
+      OnBoardText("Avance", color = OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, modifier = Modifier.align(Alignment.CenterStart).padding(start = 20.dp, end = com.example.ui.components.TU_BUTTON_RESERVE).testTag("avance_title"))
+    }
     LazyColumn(
       state = listState,
       modifier = Modifier

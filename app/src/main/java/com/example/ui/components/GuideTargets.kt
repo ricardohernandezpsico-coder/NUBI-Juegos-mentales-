@@ -16,7 +16,7 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 
 /** Los tres lugares que la guía de Nubi en Hoy puede iluminar (Tarea 193, `HoyGuide`): el bloque del Contrarreloj de Hoy, la columna Juegos de la barra (Tarea 220; antes la losa «Todos los juegos» de Hoy) y las tres columnas de la derecha de la barra. */
-enum class GuideTarget { TIME_TRIAL, JUEGOS, TAB_BAR }
+enum class GuideTarget { TIME_TRIAL, JUEGOS, TAB_BAR, TU_BUTTON }
 
 /**
  * Dónde están, en coordenadas de la raíz de Compose, los elementos reales que la guía ilumina. Cada elemento se publica solo (`Modifier.guideTarget`) y se mide en cada cambio de tamaño o de lugar (letra del sistema, el enlace del punto de partida, deslizar Hoy);

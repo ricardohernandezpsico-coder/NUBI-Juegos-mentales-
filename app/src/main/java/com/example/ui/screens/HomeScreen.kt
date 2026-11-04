@@ -138,6 +138,7 @@ fun HomeScreen(
     onBaseline = { viewModel.startBaseline() },
     onTimeTrial = { viewModel.startTimeTrial() },
     onLocked = { lockSheet = true },
+    tuButton = { m -> com.example.ui.components.TuHeaderButton(viewModel, m.guideTarget(GuideTarget.TU_BUTTON)) },       // el botón «Tú» va en la fila del logotipo y la guía lo ilumina en su paso 3 (Tarea 225b)
     modifier = modifier
   )
   if (lockSheet) LockSheetHost(viewModel, onDismiss = { lockSheet = false })
@@ -182,13 +183,15 @@ internal data class HomeUi(
 internal enum class StopState { DONE, NEXT, LATER }
 
 /**
- * Lo que ocupa el logotipo arriba de Hoy (Tarea 223): 6 dp de aire, 40 dp de caja del logotipo y 2 dp hasta el saludo; desde la Tarea 225, 4 dp de aire arriba y 4 dp hasta el saludo (la caja del logotipo y el botón «Tú» de arriba a la derecha comparten la línea: el centro del
- * logotipo queda a 24 dp, el del botón; el saludo sigue empezando 48 dp bajo la barra). Antes el saludo empezaba 28 dp bajo la barra: todo Hoy baja [HOY_LOGO_SHIFT].
+ * Lo que ocupa el logotipo arriba de Hoy (Tarea 223): 6 dp de aire, 40 dp de caja del logotipo y 2 dp hasta el saludo; desde la Tarea 225b es una FILA de 48 dp ([HOY_HEADER], la cabecera de las pestañas) con el logotipo a la izquierda, centrado en su caja de 40 dp
+ * (4 dp de aire arriba y abajo: [HOY_LOGO_TOP]), y el botón «Tú» a la derecha, también centrado a 24 dp, DENTRO de la fila: se va hacia arriba con Hoy y nunca queda sobre la tarjeta. El saludo sigue empezando 48 dp bajo la barra ([HOY_GREETING_TOP] = 0).
+ * Antes de la Tarea 223 el saludo empezaba 28 dp bajo la barra: todo Hoy baja [HOY_LOGO_SHIFT].
  */
-internal val HOY_LOGO_TOP = 4.dp
+internal val HOY_HEADER = com.example.ui.components.TU_HEADER_HEIGHT
 internal val HOY_LOGO_BOX = 40.dp
-internal val HOY_GREETING_TOP = 4.dp
-internal val HOY_LOGO_SHIFT = HOY_LOGO_TOP + HOY_LOGO_BOX + HOY_GREETING_TOP - 28.dp
+internal val HOY_LOGO_TOP = (HOY_HEADER - HOY_LOGO_BOX) / 2
+internal val HOY_GREETING_TOP = 0.dp
+internal val HOY_LOGO_SHIFT = HOY_HEADER + HOY_GREETING_TOP - 28.dp
 
 /** El espacio bajo la última fila cuando la tarjeta no tiene botón y solo dice una línea (Tarea 194). */
 internal val CAPTION_ONLY_GAP = 6.dp
@@ -267,6 +270,8 @@ internal fun HomeContent(
   onTimeTrial: () -> Unit = {},
   /** La fila gris con candado de Hoy sin partidas (Tarea 218): abre la hoja del candado. */
   onLocked: () -> Unit = {},
+  /** El botón «Tú» de la fila del logotipo (Tarea 225b): recibe su lugar (arriba a la derecha). Vacío en las pruebas y capturas sueltas: la fila mide igual. */
+  tuButton: @Composable (Modifier) -> Unit = {},
   modifier: Modifier = Modifier
 ) {
   // La barra de pestañas es una capa fija (`LocalBarInset`, Tarea 123): Hoy deja esa franja abajo.
@@ -275,8 +280,10 @@ internal fun HomeContent(
     // Hoy se desliza con UN estado propio: «Tus últimas partidas» (Tarea 221) tiene su propia lista por dentro y `hoyFirstConnection` decide quién se mueve primero (hacia arriba el dedo, Hoy; hacia abajo, la lista)
     val scrollState = rememberScrollState()
     Column(Modifier.fillMaxSize().padding(bottom = barInset).nestedScroll(remember(scrollState) { hoyFirstConnection(scrollState) }).verticalScroll(scrollState).testTag("home_scroll")) {
-      // El logotipo «Nubilus» (Tarea 223, L1): arriba a la izquierda, SOLO en Hoy; 6 dp de aire, 40 dp de caja y 2 dp hasta el saludo (antes el saludo empezaba 28 dp bajo la barra: Hoy baja 20 dp). Marca, no texto: no crece con la letra del sistema.
-      Box(Modifier.padding(start = 20.dp, top = HOY_LOGO_TOP).height(HOY_LOGO_BOX), contentAlignment = Alignment.CenterStart) { com.example.ui.components.NubilusLogo(fill = HoyCream) }
+      // El logotipo «Nubilus» (Tarea 223, L1) y el botón «Tú» (Tarea 225b): UNA fila de 48 dp arriba, SOLO en Hoy; el logotipo en su caja de 40 dp centrada, el botón a la derecha, los dos con el centro a 24 dp; la fila se va con Hoy (antes el saludo empezaba 28 dp bajo la barra: Hoy baja 20 dp). Marca, no texto: no crece con la letra del sistema.
+      com.example.ui.components.TuHeaderRow(tuButton, bottomGap = 0.dp, modifier = Modifier.testTag("home_header")) {
+        Box(Modifier.align(Alignment.CenterStart).padding(start = 20.dp).height(HOY_LOGO_BOX), contentAlignment = Alignment.CenterStart) { com.example.ui.components.NubilusLogo(fill = HoyCream) }
+      }
       // Saludo. Todo el texto va a la IZQUIERDA, en la zona del fondo sin luceros (`ZONAS_HOY` en `tools/isla/isla.py`; la vigila `BoardBackgroundContrastTest`).
       Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = HOY_GREETING_TOP), verticalAlignment = Alignment.CenterVertically) {
         OnBoardText(

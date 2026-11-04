@@ -169,7 +169,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
         com.example.ui.components.LocalHapticsEnabled provides userSettings.hapticsEnabled      // «Vibración y respuesta háptica» de Ajustes: el tic del kit (KitHaptics)
       ) {
       Box(modifier = Modifier.fillMaxSize()) {
-        // Las pestañas, el botón «Tú» y Tú mismo comparten el fundido de entrada y salida de Tú (Tarea 225).
+        // Las pestañas (con su botón «Tú») y Tú mismo comparten el fundido de entrada y salida de Tú (Tarea 225).
         Box(Modifier.fillMaxSize().graphicsLayer { val s = tuFade.contentScale; alpha = tuFade.contentAlpha; scaleX = s; scaleY = s }) {
         // Content based on tab. Mientras hay un juego o un resultado encima no se compone: esas pantallas van
         // sobre el cielo transparente (se vería la pestaña detrás) y no deben dejar pasar toques a ella.
@@ -185,8 +185,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
             }
           }
         }
-        // «Tú» (Tarea 225): el botón redondo de arriba a la derecha, UNO solo para las cuatro pestañas (siempre en el mismo lugar), y Tú a pantalla completa, sin la barra: su «‹» y Atrás vuelven a la pestaña de donde se abrió.
-        if (barVisible) com.example.ui.components.TuButton(name = userSettings.name, onClick = { viewModel.openTu() }, modifier = Modifier.align(androidx.compose.ui.Alignment.TopEnd).padding(end = com.example.ui.components.TU_BUTTON_END))
+        // «Tú» (Tarea 225): Tú a pantalla completa, sin la barra: su «‹» y Atrás vuelven a la pestaña de donde se abrió. El botón redondo que lo abre ya no flota aquí (Tarea 225b): vive en la cabecera de cada pestaña (`TuHeaderRow`) y se va con la página.
         if (tuShown) com.example.ui.components.KeepTabsState(show = activeGame == null && lastResult == null && sessionSummary == null && topPanel == null) {
           androidx.compose.runtime.CompositionLocalProvider(com.example.ui.components.LocalBarInset provides 0.dp) {
             TuScreen(viewModel = viewModel, onBack = { viewModel.closeTu() })

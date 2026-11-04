@@ -43,7 +43,7 @@ object HoyGuide {
   /** Lo que el lector de pantalla dice del chip principal (sin la flecha, que leería «comilla angular»). */
   fun chipSpoken(step: GuideStep): String = if (next(step) == null) "Listo" else "Seguir"
 
-  /** «Saltar la guía»: el chip crema de arriba a la derecha, en los tres pasos. */
+  /** «Saltar la guía»: el chip crema de arriba a la IZQUIERDA (Tarea 225b; antes a la derecha, sobre el botón «Tú»), en los tres pasos. */
   const val SKIP_LABEL = "Saltar la guía"
 
   /** Lo que dice TalkBack al entrar a cada paso (§3.2): el nombre y el lugar de lo iluminado, porque quien no ve el hueco necesita saber qué se señala. */

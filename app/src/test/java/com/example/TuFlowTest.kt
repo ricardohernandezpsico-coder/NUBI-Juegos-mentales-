@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
@@ -15,6 +16,8 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
@@ -94,6 +97,25 @@ class TuFlowTest {
   private fun exists(tag: String) = rule.onAllNodes(hasTestTag(tag), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty()
   private fun pressBack() { rule.runOnUiThread { rule.activity.onBackPressedDispatcher.onBackPressed() }; rule.waitForIdle() }
   private fun bounds(tag: String) = rule.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+  // El botón «Tú» vive en la cabecera de cada pestaña (Tarea 225b): se busca en el árbol UNIDO, donde las páginas escondidas de `TabHost` no tienen semántica; así es siempre el de la pestaña a la vista.
+  private fun button() = rule.onNodeWithTag("tu_button")
+  private fun buttonBounds() = button().fetchSemanticsNode().boundsInRoot
+  private fun existsMerged(tag: String) = rule.onAllNodes(hasTestTag(tag)).fetchSemanticsNodes().isNotEmpty()
+  private val cfg = androidx.compose.runtime.mutableStateOf(Triple(393, 873, 1f))
+  /** Como [show], pero con el tamaño y la letra en un estado: se cambian sin volver a componer la app (una prueba solo puede llamar `setContent` una vez). */
+  private fun showConfigurable(vm: NeuroVidaViewModel) {
+    rule.setContent {
+      val base = LocalDensity.current
+      val (w, h, scale) = cfg.value
+      NeuroVidaTheme {
+        CompositionLocalProvider(LocalReduceMotion provides true, LocalDensity provides Density(base.density, scale)) {
+          Box(Modifier.width(w.dp).height(h.dp)) { NeuroVidaApp(viewModel = vm) }
+        }
+      }
+    }
+    rule.waitForIdle()
+  }
+  private fun configure(w: Int, h: Int, scale: Float) { rule.runOnIdle { cfg.value = Triple(w, h, scale) }; rule.waitForIdle() }
   private fun goTo(vm: NeuroVidaViewModel, tab: AppTab) { rule.runOnUiThread { vm.setTab(tab) }; rule.waitForIdle() }
 
   @Test
@@ -110,9 +132,9 @@ class TuFlowTest {
     val rects = mutableMapOf<AppTab, androidx.compose.ui.geometry.Rect>()
     for (tab in AppTab.entries) {
       goTo(vm, tab)
-      rule.onNodeWithTag("tu_button", useUnmergedTree = true).assertIsDisplayed()
-      assertEquals("UN solo botón Tú en ${tab.name}", 1, rule.onAllNodes(hasTestTag("tu_button"), useUnmergedTree = true).fetchSemanticsNodes().size)
-      val node = rule.onNodeWithTag("tu_button", useUnmergedTree = true).fetchSemanticsNode()
+      button().assertIsDisplayed()
+      assertEquals("UN solo botón Tú en ${tab.name}", 1, rule.onAllNodes(hasTestTag("tu_button")).fetchSemanticsNodes().size)
+      val node = button().fetchSemanticsNode()
       assertEquals("lo lee el lector como botón con su frase", listOf(TU_BUTTON_LABEL), node.config[SemanticsProperties.ContentDescription])
       assertEquals(Role.Button, node.config[SemanticsProperties.Role])
       rects[tab] = node.boundsInRoot
@@ -133,13 +155,13 @@ class TuFlowTest {
   fun el_boton_lleva_la_inicial_del_nombre_y_sin_nombre_la_persona_de_la_barra_de_antes() {
     val vm = viewModel("ricardo")
     show(vm)
-    rule.onNodeWithTag("tu_button", useUnmergedTree = true).assertIsDisplayed()
+    button().assertIsDisplayed()
     val withName = rule.onAllNodes(androidx.compose.ui.test.hasText("R"), useUnmergedTree = true).fetchSemanticsNodes()
-    assertTrue("la inicial «R» está dentro del botón", withName.any { n -> val b = n.boundsInRoot; val btn = bounds("tu_button"); b.center.x in btn.left..btn.right && b.center.y in btn.top..btn.bottom })
+    assertTrue("la inicial «R» está dentro del botón", withName.any { n -> val b = n.boundsInRoot; val btn = buttonBounds(); b.center.x in btn.left..btn.right && b.center.y in btn.top..btn.bottom })
     rule.runOnUiThread { vm.setName("") }; rule.waitForIdle()
     TestSupport.awaitUntil(10_000) { vm.userSettings.value.name.isBlank() }
     rule.waitForIdle()
-    val btn = bounds("tu_button")
+    val btn = buttonBounds()
     assertTrue("sin nombre no hay letra dentro del botón", rule.onAllNodes(androidx.compose.ui.test.hasText("R"), useUnmergedTree = true).fetchSemanticsNodes().none { n -> n.boundsInRoot.center.x in btn.left..btn.right && n.boundsInRoot.center.y in btn.top..btn.bottom })
   }
 
@@ -149,11 +171,11 @@ class TuFlowTest {
     show(vm)
     goTo(vm, AppTab.PROGRESO)
     assertTrue("la barra está", exists("bottom_nav_bar"))
-    rule.onNodeWithTag("tu_button", useUnmergedTree = true).performClick(); rule.waitForIdle()
+    button().performClick(); rule.waitForIdle()
     assertTrue("Tú está abierto en el ViewModel", vm.tuOpen.value)
     assertTrue("Tú se ve (su título y su Nubi)", exists("tu_title") && exists("tu_nubi"))
     assertFalse("a pantalla completa, SIN la barra", exists("bottom_nav_bar"))
-    assertFalse("y sin el botón Tú (ya estás en Tú)", exists("tu_button"))
+    assertFalse("y sin el botón Tú (ya estás en Tú)", existsMerged("tu_button"))
     rule.onNodeWithTag("tu_back", useUnmergedTree = true).assertIsDisplayed()
     val back = rule.onNodeWithTag("tu_back", useUnmergedTree = true).fetchSemanticsNode()
     assertEquals("el «‹» se llama Volver", listOf(VOLVER_LABEL), back.config[SemanticsProperties.ContentDescription])
@@ -163,7 +185,7 @@ class TuFlowTest {
     pressBack()
     assertFalse("Atrás cierra Tú", vm.tuOpen.value)
     assertFalse(exists("tu_title"))
-    assertTrue("y vuelve la barra y la pestaña de donde se abrió", exists("bottom_nav_bar") && exists("tu_button"))
+    assertTrue("y vuelve la barra y la pestaña de donde se abrió", exists("bottom_nav_bar") && existsMerged("tu_button"))
     assertEquals("en la misma pestaña (Avance)", AppTab.PROGRESO, vm.currentTab.value)
     assertTrue("con su contenido (el título «Avance»)", exists("avance_week") || rule.onAllNodes(androidx.compose.ui.test.hasText("Avance"), useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty())
   }
@@ -172,7 +194,7 @@ class TuFlowTest {
   fun la_flecha_Volver_hace_lo_mismo_que_Atras() {
     val vm = viewModel()
     show(vm)
-    rule.onNodeWithTag("tu_button", useUnmergedTree = true).performClick(); rule.waitForIdle()
+    button().performClick(); rule.waitForIdle()
     assertTrue(vm.tuOpen.value)
     rule.onNodeWithTag("tu_back", useUnmergedTree = true).performClick(); rule.waitForIdle()
     assertFalse(vm.tuOpen.value)
@@ -184,7 +206,7 @@ class TuFlowTest {
   fun lo_que_se_abre_desde_Tu_vuelve_a_Tu_y_lo_que_se_abre_desde_una_pestana_vuelve_a_ella() {
     val vm = viewModel()
     show(vm)
-    rule.onNodeWithTag("tu_button", useUnmergedTree = true).performClick(); rule.waitForIdle()
+    button().performClick(); rule.waitForIdle()
     for (panel in listOf(TopPanel.AJUSTES, TopPanel.FUENTES, TopPanel.PREGUNTAS, TopPanel.REFERENCIA)) {
       rule.runOnUiThread { vm.openTopPanel(panel) }; rule.waitForIdle()
       assertFalse("$panel: el panel va encima de Tú", exists("tu_title"))
@@ -209,10 +231,79 @@ class TuFlowTest {
     val titles = listOf(AppTab.JUEGOS to "all_games_title", AppTab.CONTRARRELOJ to "contrarreloj_title", AppTab.PROGRESO to "avance_title")
     for ((tab, tag) in titles) {
       goTo(vm, tab)
-      val button = bounds("tu_button"); val title = bounds(tag)
+      val button = buttonBounds(); val title = bounds(tag)
       assertTrue("$tab: el título termina (${title.right}) antes de donde empieza el botón (${button.left}) o queda arriba/abajo de él", title.right <= button.left + 1f || title.bottom <= button.top + 1f || title.top >= button.bottom - 1f)
     }
     goTo(vm, AppTab.HOY)
-    assertTrue("Hoy: el logotipo queda a la izquierda del botón", bounds("home_logo").right <= bounds("tu_button").left + 1f)
+    assertTrue("Hoy: el logotipo queda a la izquierda del botón", bounds("home_logo").right <= buttonBounds().left + 1f)
+  }
+
+  // ---------------------------------------------------------------- Tarea 225b: el botón es parte de la cabecera de cada pestaña
+
+  @Test
+  fun en_Hoy_el_boton_se_va_hacia_arriba_con_la_pagina_y_nunca_queda_sobre_la_tarjeta() {
+    val vm = viewModel()
+    show(vm, 393, 520)                                                    // una pantalla baja, para que Hoy se deslice
+    val d = rule.density.density
+    val offsetOf = { rule.onNodeWithTag("home_scroll").fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].value() }
+    val maxOf = { rule.onNodeWithTag("home_scroll").fetchSemanticsNode().config[SemanticsProperties.VerticalScrollAxisRange].maxValue() }
+    assertTrue("Hoy se desliza al menos 200 dp en esta pantalla (${maxOf() / d} dp)", maxOf() >= 200f * d)
+    // `boundsInRoot` recorta lo que sale de la pantalla: para seguir al botón por arriba se usa su posición sin recortar
+    fun buttonRect(): androidx.compose.ui.geometry.Rect { val n = button().fetchSemanticsNode(); return androidx.compose.ui.geometry.Rect(n.positionInRoot, androidx.compose.ui.geometry.Size(n.size.width.toFloat(), n.size.height.toFloat())) }
+    val top0 = buttonRect().top
+    assertEquals("sin deslizar, el centro del botón está a 24 dp del borde de arriba", 24f, buttonBounds().center.y / d, 0.8f)
+    for (target in listOf(0f, 60f, 120f, 200f)) {
+      val delta = target * d - offsetOf()
+      rule.onNodeWithTag("home_scroll").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.ScrollBy) { it(0f, delta) }
+      rule.waitForIdle()
+      val scrolled = offsetOf()
+      val b = buttonRect()
+      assertEquals("con Hoy deslizada ${scrolled / d} dp, el botón subió lo mismo (va en la fila del logotipo)", top0 - scrolled, b.top, 1.5f)
+      assertFalse("el botón $b nunca queda sobre la tarjeta de la ruta ${bounds("home_card")}", b.overlaps(bounds("home_card")))
+      if (scrolled >= 60f * d) assertTrue("deslizada ${scrolled / d} dp el botón ya salió por arriba (su borde de abajo queda en ${b.bottom / d} dp)", b.bottom <= 0f)
+    }
+  }
+
+  @Test
+  fun lo_que_va_debajo_del_boton_queda_a_8_dp_o_mas_de_su_sombra_en_Juegos_Contrarreloj_y_Avance_con_las_seis_configuraciones() {
+    val vm = viewModel()
+    showConfigurable(vm)
+    val d = rule.density.density
+    val below = listOf(AppTab.JUEGOS to "all_games_search", AppTab.CONTRARRELOJ to "contrarreloj_subtitle", AppTab.PROGRESO to "avance_week")
+    val report = StringBuilder()
+    for ((w, h) in listOf(393 to 873, 360 to 780)) for (scale in listOf(1f, 1.3f, 2f)) {
+      configure(w, h, scale)
+      for ((tab, tag) in below) {
+        goTo(vm, tab)
+        // (cambiar la letra en caliente deja la lista de Juegos donde estaba: con letra grande el buscador es su primer elemento y quedaría scrolleado; en el teléfono la Activity se recrea y empieza arriba)
+        if (tab == AppTab.JUEGOS) rule.onNodeWithTag("all_games_list").performScrollToIndex(0)
+        rule.waitForIdle()
+        val b = buttonBounds()
+        // la posición sin recortar (`boundsInRoot` da 0 a lo que la lista de Juegos todavía no recortó o no pintó): así el aire es el de verdad, nunca un cero que pase por casualidad
+        val nn = rule.onNodeWithTag(tag, useUnmergedTree = true).fetchSemanticsNode()
+        assertTrue("$w dp, letra $scale, $tab: «$tag» tiene tamaño (${nn.size})", nn.size.height > 0 && nn.size.width > 0)
+        val air = (nn.positionInRoot.y - b.bottom) / d
+        report.append("$w dp · letra $scale · $tab: ${"%.1f".format(air)} dp de aire bajo el botón\n")
+        assertTrue("$w dp, letra $scale, $tab: «$tag» empieza a ${"%.1f".format(air)} dp de la sombra del botón (pide 8 dp o más)", air >= 7.9f)
+        assertEquals("$w dp, letra $scale, $tab: el botón sigue a 24 dp del borde de arriba, margen 16 dp", 24f, b.center.y / d, 0.8f)
+        assertEquals("$w dp, letra $scale, $tab: y con 16 dp de margen a la derecha", w - 16f, b.right / d, 0.6f)
+      }
+    }
+    println(report)
+  }
+
+  @Test
+  fun en_Hoy_el_saludo_empieza_pegado_a_la_fila_del_logotipo_y_el_boton_no_lo_toca_con_letra_2_0_a_360_dp() {
+    val vm = viewModel()
+    showConfigurable(vm)
+    val d = rule.density.density
+    for (scale in listOf(1f, 1.3f, 2f)) {
+      configure(360, 780, scale)
+      goTo(vm, AppTab.HOY)
+      val b = buttonBounds(); val greeting = bounds("home_greeting")
+      assertTrue("letra $scale: el saludo $greeting no pasa bajo el botón $b", greeting.top >= b.bottom - 1f || greeting.right <= b.left + 1f)
+      assertTrue("letra $scale: el logotipo queda a la izquierda del botón", bounds("home_logo").right <= b.left + 1f)
+      assertEquals("letra $scale: el saludo sigue empezando 48 dp bajo el borde de arriba de Hoy", 48f, (greeting.top - bounds("home_scroll").top) / d, 0.8f)
+    }
   }
 }

@@ -31,6 +31,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -51,6 +52,7 @@ import com.example.ui.components.HoyGuideOverlay
 import com.example.ui.components.LocalGuideTargets
 import com.example.ui.components.LocalReduceMotion
 import com.example.ui.components.NeuroNavBar
+import com.example.ui.components.guideTarget
 import com.example.ui.components.hiddenUntil
 import com.example.ui.screens.HomeContent
 import com.example.ui.screens.HomeTimeTrial
@@ -118,6 +120,7 @@ class HoyGuideOverlayTest {
   )
 
   private var trialed = 0
+  private var tuTaps = 0
   private var selectedTab: AppTab? = null
   private val targets = GuideTargets()
   private var step by mutableStateOf<GuideStep?>(null)
@@ -138,6 +141,7 @@ class HoyGuideOverlayTest {
             Box(Modifier.fillMaxSize().hiddenUntil(step == null)) {
               HomeContent(
                 ui = ui, onPlay = {}, onResume = {}, onBaseline = {}, onTimeTrial = { trialed++ },
+                tuButton = { m -> com.example.ui.components.TuButton(name = "Ana", onClick = { tuTaps++ }, modifier = m.guideTarget(GuideTarget.TU_BUTTON)) },          // el botón «Tú» de la fila del logotipo (Tarea 225b)
                 modifier = Modifier.padding(top = 24.dp, bottom = 95.dp)
               )
               Box(Modifier.align(Alignment.BottomCenter)) { NeuroNavBar(current = AppTab.HOY, onSelect = { selectedTab = it }) }
@@ -333,6 +337,15 @@ class HoyGuideOverlayTest {
     assertFalse("$label ${s.name}: Nubi $nubi cruza el hueco $hole", nubi.overlaps(hole))
     assertFalse("$label ${s.name}: el globo $globe tapa «Saltar la guía» $skip", globe.overlaps(skip))
     assertFalse("$label ${s.name}: el hueco $hole tapa «Saltar la guía» $skip", hole.overlaps(skip))
+    // el paso 3 ilumina también el botón «Tú» (Tarea 225b): ni el globo, ni Nubi, ni «Saltar la guía» lo cruzan
+    if (s == GuideStep.BARRA) {
+      assertTrue("$label ${s.name}: el hueco del botón Tú existe", exists("guide_hole_tu"))
+      val tu = bounds("guide_hole_tu")
+      assertFalse("$label ${s.name}: el globo $globe cruza el hueco del botón Tú $tu", globe.overlaps(tu))
+      assertFalse("$label ${s.name}: Nubi $nubi cruza el hueco del botón Tú $tu", nubi.overlaps(tu))
+      assertFalse("$label ${s.name}: «Saltar la guía» $skip tapa el hueco del botón Tú $tu", skip.overlaps(tu))
+      assertFalse("$label ${s.name}: el chip «Listo» ${bounds("btn_guide_next")} cruza el hueco del botón Tú $tu", bounds("btn_guide_next").overlaps(tu))
+    }
   }
 
   @Test
@@ -384,6 +397,83 @@ class HoyGuideOverlayTest {
   fun a_360_dp_de_ancho_con_letra_1_3_tambien_cabe() {
     show(fontScale = 1.3f, widthDp = 360, heightDp = 780); start()
     for (s in HoyGuide.steps) assertGlobeClearOfHole(s, 360, 780, "360 × 780 letra 1,3")
+  }
+
+  // ---------------------------------------------------------------- Tarea 225b: el paso 3 ilumina también el botón «Tú» y «Saltar la guía» va a la izquierda
+
+  @Test
+  fun el_paso_3_ilumina_tambien_el_boton_Tu_con_un_hueco_redondo_y_los_pasos_1_y_2_no() {
+    show(); start()
+    assertFalse("paso 1: no hay hueco del botón Tú", exists("guide_hole_tu"))
+    composeTestRule.runOnUiThread { step = GuideStep.JUEGOS }; composeTestRule.waitForIdle()
+    assertFalse("paso 2: tampoco", exists("guide_hole_tu"))
+    composeTestRule.runOnUiThread { step = GuideStep.BARRA }; composeTestRule.waitForIdle()
+    val d = composeTestRule.density.density
+    val real = targets.rects.getValue(GuideTarget.TU_BUTTON)
+    val hole = bounds("guide_hole_tu")
+    assertEquals("redondo: el ancho es el alto", hole.width, hole.height, 1.5f)
+    assertEquals("el botón de 48 dp más 8 dp de aire por lado = 64 dp", 64f, hole.width / d, 1f)
+    assertEquals("centrado en el botón real (a lo ancho)", real.center.x, hole.center.x, 1.5f)
+    assertEquals("centrado en el botón real (a lo alto)", real.center.y, hole.center.y, 1.5f)
+    assertTrue("y sigue iluminada la barra (Contrarreloj y Avance)", exists("guide_hole"))
+  }
+
+  @Test
+  fun tocar_el_boton_Tu_iluminado_es_Listo_y_no_abre_Tu() {
+    show(); start()
+    composeTestRule.runOnUiThread { step = GuideStep.BARRA }; composeTestRule.waitForIdle()
+    val real = targets.rects.getValue(GuideTarget.TU_BUTTON)
+    composeTestRule.onRoot().performTouchInput { click(Offset(real.center.x, real.center.y)) }      // un toque en el botón REAL, que está bajo el hueco
+    composeTestRule.waitForIdle()
+    assertNull("el toque sobre el botón iluminado hace lo mismo que «Listo»: cierra la guía", step)
+    assertTrue("y la marca como vista", seen)
+    assertEquals("y NO abrió Tú", 0, tuTaps)
+  }
+
+  @Test
+  fun antes_del_paso_3_el_boton_Tu_se_trae_a_la_vista_aunque_Hoy_este_deslizada() {
+    show(widthDp = 393, heightDp = 520)
+    val d = composeTestRule.density.density
+    composeTestRule.onNodeWithTag("home_scroll").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.ScrollBy) { it(0f, 300f * d) }
+    composeTestRule.waitForIdle()
+    val slidTop = composeTestRule.onNodeWithTag("tu_button").fetchSemanticsNode().positionInRoot.y           // sin recortar: `boundsInRoot` da 0 a lo que sale de la pantalla
+    assertTrue("Hoy deslizada: el botón quedó arriba, fuera de la pantalla (top $slidTop)", slidTop < 0f)
+    composeTestRule.runOnUiThread { step = GuideStep.BARRA }; composeTestRule.waitForIdle()
+    val real = targets.rects.getValue(GuideTarget.TU_BUTTON)
+    assertTrue("la guía sube Hoy: el botón $real se ve entero", real.top >= 0f && real.bottom <= 520f * d)
+    val hole = bounds("guide_hole_tu")
+    assertTrue("y su hueco $hole cae sobre la pantalla", hole.top >= 0f)
+  }
+
+  /** «Saltar la guía» queda arriba a la IZQUIERDA (sobre el logotipo, que la guía nunca ilumina) y no toca ningún blanco ni el hueco del botón «Tú». */
+  private fun assertSkipOnTheLeft(widthDp: Int, heightDp: Int, fontScale: Float, label: String) {
+    show(fontScale = fontScale, widthDp = widthDp, heightDp = heightDp); start()
+    val d = composeTestRule.density.density
+    for (s in HoyGuide.steps) {
+      composeTestRule.runOnUiThread { step = s }; composeTestRule.waitForIdle()
+      val skip = bounds("btn_guide_skip")
+      assertTrue("$label ${s.name}: «Saltar la guía» $skip va en la mitad de la izquierda", skip.left < widthDp * d / 2f && skip.left / d < 24f)
+      assertTrue("$label ${s.name}: y arriba", skip.top / d < 16f)
+      if (s == GuideStep.BARRA) {
+        val tu = bounds("guide_hole_tu")
+        assertTrue("$label: «Saltar la guía» termina en ${skip.right / d} dp, antes del hueco del botón Tú (empieza en ${tu.left / d} dp)", skip.right <= tu.left)
+      }
+      assertFalse("$label ${s.name}: «Saltar la guía» tapa el hueco ${holeOf(s)}", skip.overlaps(holeOf(s)))
+    }
+  }
+
+  @Test fun saltar_la_guia_va_arriba_a_la_izquierda_a_393_dp_con_letra_1_0() = assertSkipOnTheLeft(393, 873, 1f, "393 × 873 letra 1,0")
+  @Test fun saltar_la_guia_va_arriba_a_la_izquierda_a_360_dp_con_letra_1_3() = assertSkipOnTheLeft(360, 780, 1.3f, "360 × 780 letra 1,3")
+  @Test fun saltar_la_guia_va_arriba_a_la_izquierda_a_360_dp_con_letra_2_0() = assertSkipOnTheLeft(360, 780, 2f, "360 × 780 letra 2,0")
+
+  @Test
+  fun a_360_dp_con_letra_2_0_el_paso_3_deja_a_la_vista_los_dos_huecos_y_el_globo_no_tapa_nada() {
+    show(fontScale = 2f, widthDp = 360, heightDp = 780); start()
+    assertGlobeClearOfHole(GuideStep.BARRA, 360, 780, "360 × 780 letra 2,0")
+    val d = composeTestRule.density.density
+    val tu = bounds("guide_hole_tu"); val bar = bounds("guide_hole")
+    assertTrue("el hueco del botón Tú $tu queda dentro de la pantalla", tu.left >= 0f && tu.right <= 360f * d && tu.top >= 0f)
+    assertTrue("y el de la barra $bar también", bar.bottom <= 780f * d + 1f)
   }
 
   // ---------------------------------------------------------------- el código
