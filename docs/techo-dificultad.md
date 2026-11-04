@@ -1,6 +1,6 @@
 # Techo de la dificultad (informe del 4-nov-2026)
 
-Pedido de Opus: tres de las cinco personas que probaron la app juegan otros juegos cerca de una hora al día y dijeron que los dejan porque «se vuelven muy fáciles». ¿Pasa lo mismo en Nubilus? Este informe es solo análisis: no cambia nada de la app ni de Unity. La simulación está en [`tools/techo_dificultad.py`](../tools/techo_dificultad.py) (Python, 25 s; con `--json` deja los números crudos).
+Pedido de Opus: tres de las cinco personas que probaron la app juegan otros juegos cerca de una hora al día y dijeron que los dejan porque «se vuelven muy fáciles». ¿Pasa lo mismo en Nubilus? Este informe es solo análisis: no cambia nada de la app ni de Unity. La simulación está en [`tools/techo_dificultad.py`](../tools/techo_dificultad.py) (Python, 25 s; con `--json` deja los números crudos). La sección 8 (la liga de la semana con 10 divisiones) se calcula con [`tools/techo_contrarreloj_liga.py`](../tools/techo_contrarreloj_liga.py).
 
 ## 0. En pocas líneas
 
@@ -130,7 +130,88 @@ Los puntos de un juego salen de `Skill.progress = rating_guardado + desfase_de_e
 
 **Antes de implementar nada**, lo que falta saber y no sale de una simulación: (1) cuánto aciertan DE VERDAD las 3 personas que se aburren en el último nivel de cada juego (la bitácora `progress_log` y el historial lo dicen: ver cuántas partidas llevan al techo y qué porcentaje aciertan ahí); (2) si «se vuelve fácil» es por el techo de la escalera, o por la falta de novedad (la sensación de repetir lo mismo): las dos cosas parecen iguales en una entrevista y se arreglan distinto; (3) el factor edad: con 65 años o más el techo llega 1 a 3 partidas más tarde, así que para esa persona el problema aparece más tarde.
 
-## 8. Límites de este análisis
+## 8. La liga de la semana: ¿alcanza la pista para separar bien arriba?
+
+Ricardo decidió que la liga de la semana tendrá **10 divisiones**, con líneas cada 10 % del «superas al N %» promedio de la semana (0, 10, 20 … 90). Esta sección dice, por juego del Contrarreloj y por franja de edad, **a qué marca corresponde cada línea** (con la regla exacta de la app: `Comparison.percentile` y `firstMarkReaching`, sobre los tramos sin suavizar, hacia abajo y con tope 99, y la referencia estimada de `app/src/main/assets/referencia/*.json`), **a qué paso de la pista llega esa marca** y **cuánto tiempo se queda la persona en el último paso**. Se calcula con [`tools/techo_contrarreloj_liga.py`](../tools/techo_contrarreloj_liga.py) (aciertos = marca + 2 errores; el segundo del último paso es proporcional: cota inferior, ver §4; en Rescate la marca son cápsulas y se usan 2,7 por ronda).
+
+### 8.1 Conclusiones
+
+1. **Las 10 divisiones caben**: las nueve líneas de 10 a 90 caen en **marcas distintas en los 4 juegos y las 6 franjas** (no queda ninguna división vacía), y el 99 % cae dentro de la pista (Tinta 93, Disparate 55, Acoplamiento 34 y Rescate 39 en 18 a 29 años, contra el borde de 100, 80, 40 y 48).
+2. **Lo que separa arriba es rapidez y no errar, no el paso de la escalera.** En **Tinta o Palabra** la línea del 10 % de las franjas de 18 a 64 años ya está en el último paso (el 5.º, a los 32 aciertos): desde el 10 % hasta el 99 % la dificultad es la misma y la persona se queda en el paso 5 entre 71 y 80 segundos de los 120 en las líneas del 80 al 99 % (18 a 29 años). En **¿Verdad o disparate?** y **Acoplamiento** el 80, el 90 y el 99 % ya están en el paso 12 de 12: llegan a él entre el segundo 69 y el 91 de los 120 en 18 a 54 años y se quedan pegados entre 29 y 51 segundos (el 99 % de 18 a 29 años: segundo 69 y 73, y 51 y 47 segundos en el último paso). **Rescate relámpago NO se pega nunca**: aun el 99 % llega solo al paso 5 o 6 de 12.
+3. **Las líneas de 80 y 90 % quedan muy juntas en Acoplamiento y Rescate**: entre una y otra hay **1 a 2 aciertos** (18 a 29 años: Acoplamiento 30 y 31; Rescate 33 y 35 cápsulas). Un solo error o una sola cápsula cambia la división de la persona, y en la regla de la marca un error cuesta 2 (el que no se suma y el que se resta). Tinta separa bien (80→90 = 4 a 6 aciertos; 90→99 = 11 a 14) y Disparate bastante bien (2 a 4 y 5 a 9).
+4. **Las franjas de más edad se pegan más tarde, pero se pegan**: en 65 a 74 años, el 80 % llega al último paso de Disparate en el segundo 99 y al de Acoplamiento en el 106; en 75 o más, en el 110 y el 115 (quedan 10 y 5 segundos): ahí casi no hay «pegado», pero tampoco hay lugar para ir más arriba.
+
+### 8.2 Qué implica para la liga (solo análisis, sin tocar nada)
+
+- **Tinta o Palabra y ¿Verdad o disparate? separan bien arriba por marca**; Acoplamiento y Rescate separan **mal** el 80 y el 90 %: las dos líneas distan 1 a 2 aciertos, lo que el ruido de una partida mueve solo. Conviene que la liga use **el promedio de varios juegos y de la semana** (como dice la regla de Ricardo) y no la marca de un solo juego, y que la línea de una persona no cambie de división por una sola partida (una regla de «sube al promediar 3 partidas» o un margen de histéresis de ±1 acierto en esos dos juegos).
+- **Pegado al último paso arriba = menos sensación de avance.** Para alguien del 80 % o más en Tinta, Disparate o Acoplamiento, los últimos 40 a 70 segundos de la partida son siempre el mismo paso; una escalera más larga (§6) podría separar más (un paso más difícil probablemente enlentece a los muy buenos, pero eso solo se sabe midiéndolo), y antes hay que anclar los puntos antes (§6.2) y **versionar la pista del Contrarreloj** (`TimeTrial.Track.Version`): cambiar la escalera del Contrarreloj reinicia los récords y la referencia estimada hay que recalcularla (`bash tools/verificar-todo.sh --referencia`).
+- **Una pregunta de definición para la spec**: la referencia es la **mejor marca de 3 partidas por semana** de cada robot. Si el «superas al N % promedio de la semana» promedia el percentil de TODAS las partidas de la persona (no su mejor), queda subestimado frente a esa referencia (se compara un promedio contra una mejor-de-3): una persona que juega 3 veces y saca 70, 60 y 50 compara su 60 de promedio contra los mejores de 3 de los robots. Mejor: el promedio de los percentiles de la MEJOR marca de la semana de cada juego que jugó (así se compara una mejor-de-N contra una mejor-de-3), o decir en la liga «tu mejor de la semana».
+
+### 8.3 Las tablas
+
+Marca (aciertos menos errores; en Rescate, cápsulas) con la que se alcanza cada línea, por franja de edad. «Paso» es el paso de la pista de esa marca (aciertos = marca + 2). «Último paso (s)» es el segundo en que se llega al último paso y, entre paréntesis, cuántos segundos quedan ahí: «no llega» si la marca no alcanza el último paso. Las franjas son las 6 de la referencia; 14 a 17 años usa la de 18 a 29.
+
+#### Tinta o Palabra — 5 pasos, el último a los 32 aciertos (uno cada 8); tramos de a 5, borde de la pista en 100
+
+| Franja | 10 % | 20 % | 30 % | 40 % | 50 % | 60 % | 70 % | 80 % | 90 % | 99 % | paso en 80 % · 90 % · 99 % | último paso (s) en 80 % · 90 % · 99 % |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 18-29 | 55 | 59 | 62 | 65 | 68 | 70 | 73 | 76 | 82 | 93 | 5 de 5 · 5 de 5 · 5 de 5 | 49 (quedan 71) · 46 (quedan 74) · 40 (quedan 80) |
+| 30-44 | 53 | 57 | 60 | 63 | 65 | 68 | 70 | 74 | 78 | 90 | 5 de 5 · 5 de 5 · 5 de 5 | 51 (quedan 69) · 48 (quedan 72) · 42 (quedan 78) |
+| 45-54 | 50 | 54 | 56 | 59 | 61 | 64 | 67 | 70 | 75 | 87 | 5 de 5 · 5 de 5 · 5 de 5 | 53 (quedan 67) · 50 (quedan 70) · 43 (quedan 77) |
+| 55-64 | 44 | 48 | 51 | 54 | 56 | 59 | 62 | 65 | 70 | 82 | 5 de 5 · 5 de 5 · 5 de 5 | 57 (quedan 63) · 53 (quedan 67) · 46 (quedan 74) |
+| 65-74 | 37 | 41 | 43 | 46 | 48 | 51 | 54 | 57 | 61 | 73 | 5 de 5 · 5 de 5 · 5 de 5 | 65 (quedan 55) · 61 (quedan 59) · 51 (quedan 69) |
+| 75+ | 31 | 34 | 37 | 40 | 42 | 44 | 47 | 50 | 55 | 69 | 5 de 5 · 5 de 5 · 5 de 5 | 74 (quedan 46) · 67 (quedan 53) · 54 (quedan 66) |
+
+Separación en aciertos entre líneas: 18-29: 80→90 = 6, 90→99 = 11 · 30-44: 80→90 = 4, 90→99 = 12 · 45-54: 80→90 = 5, 90→99 = 12 · 55-64: 80→90 = 5, 90→99 = 12 · 65-74: 80→90 = 4, 90→99 = 12 · 75+: 80→90 = 5, 90→99 = 14
+
+Franjas con dos líneas de 10 a 90 en la MISMA marca: ninguna
+
+#### ¿Verdad o disparate? — 12 pasos, el último a los 33 aciertos (uno cada 3); tramos de a 5, borde de la pista en 80
+
+| Franja | 10 % | 20 % | 30 % | 40 % | 50 % | 60 % | 70 % | 80 % | 90 % | 99 % | paso en 80 % · 90 % · 99 % | último paso (s) en 80 % · 90 % · 99 % |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 18-29 | 35 | 37 | 39 | 41 | 42 | 44 | 45 | 47 | 50 | 55 | 12 de 12 · 12 de 12 · 12 de 12 | 81 (quedan 39) · 76 (quedan 44) · 69 (quedan 51) |
+| 30-44 | 32 | 36 | 37 | 39 | 40 | 42 | 44 | 45 | 49 | 55 | 12 de 12 · 12 de 12 · 12 de 12 | 84 (quedan 36) · 78 (quedan 42) · 69 (quedan 51) |
+| 45-54 | 31 | 33 | 35 | 37 | 39 | 40 | 42 | 44 | 47 | 53 | 12 de 12 · 12 de 12 · 12 de 12 | 86 (quedan 34) · 81 (quedan 39) · 72 (quedan 48) |
+| 55-64 | 28 | 31 | 33 | 34 | 36 | 38 | 39 | 42 | 44 | 51 | 12 de 12 · 12 de 12 · 12 de 12 | 90 (quedan 30) · 86 (quedan 34) · 75 (quedan 45) |
+| 65-74 | 23 | 26 | 28 | 30 | 32 | 34 | 35 | 38 | 40 | 49 | 12 de 12 · 12 de 12 · 12 de 12 | 99 (quedan 21) · 94 (quedan 26) · 78 (quedan 42) |
+| 75+ | 20 | 22 | 25 | 26 | 28 | 29 | 31 | 34 | 37 | 45 | 12 de 12 · 12 de 12 · 12 de 12 | 110 (quedan 10) · 102 (quedan 18) · 84 (quedan 36) |
+
+Separación en aciertos entre líneas: 18-29: 80→90 = 3, 90→99 = 5 · 30-44: 80→90 = 4, 90→99 = 6 · 45-54: 80→90 = 3, 90→99 = 6 · 55-64: 80→90 = 2, 90→99 = 7 · 65-74: 80→90 = 2, 90→99 = 9 · 75+: 80→90 = 3, 90→99 = 8
+
+Franjas con dos líneas de 10 a 90 en la MISMA marca: ninguna
+
+#### Acoplamiento — 12 pasos, el último a los 22 aciertos (uno cada 2); tramos de a 2, borde de la pista en 40
+
+| Franja | 10 % | 20 % | 30 % | 40 % | 50 % | 60 % | 70 % | 80 % | 90 % | 99 % | paso en 80 % · 90 % · 99 % | último paso (s) en 80 % · 90 % · 99 % |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 18-29 | 21 | 23 | 24 | 25 | 26 | 27 | 28 | 30 | 31 | 34 | 12 de 12 · 12 de 12 · 12 de 12 | 82 (quedan 38) · 80 (quedan 40) · 73 (quedan 47) |
+| 30-44 | 20 | 22 | 23 | 24 | 25 | 26 | 28 | 29 | 31 | 33 | 12 de 12 · 12 de 12 · 12 de 12 | 85 (quedan 35) · 80 (quedan 40) · 75 (quedan 45) |
+| 45-54 | 18 | 20 | 21 | 22 | 23 | 25 | 26 | 27 | 29 | 32 | 12 de 12 · 12 de 12 · 12 de 12 | 91 (quedan 29) · 85 (quedan 35) · 78 (quedan 42) |
+| 55-64 | 16 | 18 | 19 | 21 | 22 | 23 | 24 | 26 | 28 | 32 | 12 de 12 · 12 de 12 · 12 de 12 | 94 (quedan 26) · 88 (quedan 32) · 78 (quedan 42) |
+| 65-74 | 13 | 15 | 17 | 18 | 19 | 20 | 22 | 23 | 25 | 30 | 12 de 12 · 12 de 12 · 12 de 12 | 106 (quedan 14) · 98 (quedan 22) · 82 (quedan 38) |
+| 75+ | 9 | 11 | 13 | 15 | 16 | 18 | 19 | 21 | 23 | 29 | 12 de 12 · 12 de 12 · 12 de 12 | 115 (quedan 5) · 106 (quedan 14) · 85 (quedan 35) |
+
+Separación en aciertos entre líneas: 18-29: 80→90 = 1, 90→99 = 3 · 30-44: 80→90 = 2, 90→99 = 2 · 45-54: 80→90 = 2, 90→99 = 3 · 55-64: 80→90 = 2, 90→99 = 4 · 65-74: 80→90 = 2, 90→99 = 5 · 75+: 80→90 = 2, 90→99 = 6
+
+Franjas con dos líneas de 10 a 90 en la MISMA marca: ninguna
+
+#### Rescate relámpago — 12 pasos, el último a los 33 rondas (uno cada 3); tramos de a 3, borde de la pista en 48
+
+| Franja | 10 % | 20 % | 30 % | 40 % | 50 % | 60 % | 70 % | 80 % | 90 % | 99 % | paso en 80 % · 90 % · 99 % | último paso (s) en 80 % · 90 % · 99 % |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 18-29 | 23 | 25 | 27 | 28 | 29 | 30 | 31 | 33 | 35 | 39 | 5 de 12 · 5 de 12 · 6 de 12 | no llega · no llega · no llega |
+| 30-44 | 23 | 25 | 26 | 27 | 28 | 29 | 30 | 32 | 33 | 38 | 5 de 12 · 5 de 12 · 5 de 12 | no llega · no llega · no llega |
+| 45-54 | 22 | 23 | 25 | 26 | 27 | 28 | 29 | 31 | 33 | 38 | 5 de 12 · 5 de 12 · 5 de 12 | no llega · no llega · no llega |
+| 55-64 | 20 | 22 | 23 | 25 | 26 | 27 | 28 | 30 | 32 | 36 | 4 de 12 · 5 de 12 · 5 de 12 | no llega · no llega · no llega |
+| 65-74 | 17 | 19 | 21 | 22 | 24 | 25 | 26 | 28 | 30 | 35 | 4 de 12 · 4 de 12 · 5 de 12 | no llega · no llega · no llega |
+| 75+ | 14 | 16 | 18 | 20 | 21 | 22 | 24 | 25 | 27 | 33 | 4 de 12 · 4 de 12 · 5 de 12 | no llega · no llega · no llega |
+
+Separación en aciertos entre líneas: 18-29: 80→90 = 2, 90→99 = 4 · 30-44: 80→90 = 1, 90→99 = 5 · 45-54: 80→90 = 2, 90→99 = 5 · 55-64: 80→90 = 2, 90→99 = 4 · 65-74: 80→90 = 2, 90→99 = 5 · 75+: 80→90 = 2, 90→99 = 6
+
+Franjas con dos líneas de 10 a 90 en la MISMA marca: ninguna
+
+## 9. Límites de este análisis
 
 - El ensayo de cada juego es el que le entrega al motor; en Constelaciones, Correo y Piloto el número por partida es una estimación (marcada arriba), y el resultado cambia poco con ±30 % (se mueve 1 partida).
 - Una persona real no acierta el mismo 95 % en todos los niveles: en los juegos de capacidad (Rastro, Constelaciones, Bodega, Satélites) el motor la equilibra antes. Ese caso se acerca al 90 % de la tabla de sensibilidad, que tampoco es realista arriba.
