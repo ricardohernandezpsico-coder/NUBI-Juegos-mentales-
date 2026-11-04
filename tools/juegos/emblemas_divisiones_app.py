@@ -2,6 +2,8 @@
 """Lleva a la app los cinco emblemas de las divisiones del Contrarreloj (Tarea 212): toma las maestras de Blender (`emblema_a1..a5.png`, 440 px, lienzo cuadrado de 2 unidades) que dejó
 `emblemas_divisiones.py`, les quita la bruma del «shadow catcher», las reduce con Lanczos y el alfa premultiplicado y las guarda como WebP en `app/src/main/res/drawable-nodpi/division_*.webp`
 (`ui/components/DivisionEmblem.kt` las dibuja).
+Los cinco de la liga de 10 divisiones (c1..c5: nubes, Marte, asteroides, Júpiter y galaxia, Tarea 228) viven por ahora en `tools/juegos/emblemas_liga/`, FUERA de `res/drawable-nodpi/`: nadie los usa todavía y `NubiAssetsTest` no deja arte sin uso en el APK
+(Tarea 232b). La Tarea 229 los devuelve a `res/drawable-nodpi/` (moviéndolos o volviendo a correr este script, que los escribe ahí) cuando Ricardo apruebe los emblemas; si pide cambios, se rehacen en esa carpeta.
 
 Tamaño: 3 px por dp, como el kit (`kit_i_reloj_clay`). El objeto ocupa el 86 % de una ventanilla de 52 dp en la cifra (45 dp: 135 px) y de 28 dp en la escalera (24 dp: 72 px, de la misma imagen).
 

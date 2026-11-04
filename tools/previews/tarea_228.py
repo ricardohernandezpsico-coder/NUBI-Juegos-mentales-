@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Lámina de la Tarea 228 (4-nov-2026): los 10 emblemas de las divisiones de la liga de la semana (`docs/liga-de-la-semana.md` §1 y §1.1), de abajo arriba, cada uno en su ventanilla noche `#100F3A` de 52 dp (la cifra) y de 28 dp (la escalera), a 3 px por dp (el tamaño de las imágenes
 de la app), y los cinco pares que se podrían confundir a 28 dp.
-Los emblemas salen de `app/src/main/res/drawable-nodpi/division_*.webp` (las maestras de Blender: `tools/juegos/emblemas_divisiones.py` y `emblemas_divisiones_app.py`). La ventanilla se dibuja como la de la app (`ui/components/DivisionEmblem.kt`): esquina de lado × 0,23 y la imagen al 86 %.
+Los emblemas salen de `app/src/main/res/drawable-nodpi/division_*.webp` o, los cinco nuevos mientras la Tarea 229 no los cablee, de `tools/juegos/emblemas_liga/` (las maestras de Blender: `tools/juegos/emblemas_divisiones.py` y `emblemas_divisiones_app.py`). La ventanilla se dibuja como la de la app (`ui/components/DivisionEmblem.kt`): esquina de lado × 0,23 y la imagen al 86 %.
 Uso:  python -I tools/previews/tarea_228.py      → docs/previews/tarea-228.png
 """
 import os, sys
@@ -10,6 +10,7 @@ from PIL import Image, ImageDraw, ImageFont
 sys.stdout.reconfigure(encoding='utf-8')
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.abspath(os.path.join(HERE, '..', '..'))
 RES = os.path.join(ROOT, 'app', 'src', 'main', 'res', 'drawable-nodpi')
+LIGA = os.path.join(ROOT, 'tools', 'juegos', 'emblemas_liga')    # los cinco nuevos esperan acá, fuera del APK, hasta que la Tarea 229 los cablee (Tarea 232b)
 FONTS = os.path.join(ROOT, 'app', 'src', 'main', 'res', 'font')
 OUT = os.path.join(ROOT, 'docs', 'previews', 'tarea-228.png')
 NAVY, SUN, DIM, WHITE, LINE, NIGHT = (20, 18, 63), (255, 203, 69), (200, 196, 235), (240, 244, 255), (90, 86, 160), (16, 15, 58)
@@ -28,7 +29,11 @@ PARES = [('En Marte', 'marte', 'En órbita', 'orbita', 'terracota oscura con cas
 def font(px, bold=True): return ImageFont.truetype(os.path.join(FONTS, 'fredoka.ttf' if bold else 'nunito_regular.ttf'), int(px))
 
 
-def emblema(archivo): return Image.open(os.path.join(RES, 'division_%s.webp' % archivo)).convert('RGBA')
+def emblema(archivo):
+    for carpeta in (RES, LIGA):
+        ruta = os.path.join(carpeta, 'division_%s.webp' % archivo)
+        if os.path.exists(ruta): return Image.open(ruta).convert('RGBA')
+    raise FileNotFoundError('division_%s.webp no está en res/drawable-nodpi ni en tools/juegos/emblemas_liga' % archivo)
 
 
 def ventanilla(archivo, dp):
