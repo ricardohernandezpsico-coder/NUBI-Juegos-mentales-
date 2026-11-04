@@ -24,8 +24,10 @@ def opt(n, d):
 RENDER = os.path.abspath(opt('--render', os.path.join(AQUI, 'out', 'divisiones')))
 PX = int(opt('--px', '135'))
 DESTINO = os.path.join(REPO, 'app', 'src', 'main', 'res', 'drawable-nodpi')
-# a1..a5 = de la división más baja a la más alta (Comparison.Division: PLATFORM, TAKEOFF, ORBIT, MOON, STARS)
-NOMBRES = {'a1': 'division_plataforma', 'a2': 'division_despegando', 'a3': 'division_orbita', 'a4': 'division_luna', 'a5': 'division_estrellas'}
+# a1..a5 = las cinco divisiones de la Tarea 212 (Comparison.Division: PLATFORM, TAKEOFF, ORBIT, MOON, STARS); c1..c5 = las cinco nuevas de la liga de 10 divisiones (Tarea 228)
+NOMBRES = {'a1': 'division_plataforma', 'a2': 'division_despegando', 'a3': 'division_orbita', 'a4': 'division_luna', 'a5': 'division_estrellas',
+           # los cinco lugares de más de la liga de 10 divisiones (Tarea 228; `docs/liga-de-la-semana.md` §1.1): nubes, Marte, asteroides, Júpiter y otra galaxia
+           'c1': 'division_nubes', 'c2': 'division_marte', 'c3': 'division_asteroides', 'c4': 'division_jupiter', 'c5': 'division_galaxia'}
 
 
 def limpia_bruma(im):
