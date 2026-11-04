@@ -90,7 +90,7 @@ $B -b -P tools/isla/isla.py -- --engine CYCLES --samples 112 --width 3800 --solo
 python -I tools/isla/nubi_reposo.py tools/isla/out/t134/capa-nubi.png tools/isla/out/n148/isla-descansa/capa-nubi-frente.png tools/isla/out/n148/hola/capa-nubi-frente.png tools/isla/out/n148/descansa/capa-nubi-frente.png app/src/main/res
 ```
 
-**La gota de la racha (Tarea 148, P4).** `kit_avance.py` trae `llama_encendida` y `llama_apagada` (32 dp; una GOTA de plasticina con la punta arriba, la forma aprobada de `docs/simbolos-neutros.md`; la encendida, sol con una gota clara por dentro; la apagada, crema lisa) para reemplazar al ícono `Whatshot` de Material en Hoy, Avance, el Perfil y el resumen de la ruta: `isla.py --kit --kit-solo avance --pieza llama_`, y `kit_avance_app.py` las lleva a `kit_llama_on` y `kit_llama_off` (ver su `MAPA`).
+**La gota de la racha (Tarea 148, P4; la app ya NO la usa desde la Tarea 223: la racha y los días de la semana son la llamita, dibujada en código en `ui/components/Llamita.kt`, y `kit_llama_*` y las piezas `llama_on`/`llama_off` de `kit_avance.json` se borraron de la app; el render y su script quedan solo como historia).** `kit_avance.py` trae `llama_encendida` y `llama_apagada` (32 dp; una GOTA de plasticina con la punta arriba, la forma aprobada de `docs/simbolos-neutros.md`; la encendida, sol con una gota clara por dentro; la apagada, crema lisa) para reemplazar al ícono `Whatshot` de Material en Hoy, Avance, el Perfil y el resumen de la ruta: `isla.py --kit --kit-solo avance --pieza llama_`, y `kit_avance_app.py` las lleva a `kit_llama_on` y `kit_llama_off` (ver su `MAPA`).
 
 ```
 BLENDER=/ruta/a/blender

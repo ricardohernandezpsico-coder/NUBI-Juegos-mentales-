@@ -91,6 +91,7 @@ fun HomeScreen(
   val skill by viewModel.skill.collectAsState()
   val timeTrialResults by viewModel.timeTrialResults.collectAsState()
   val plus by viewModel.plus.collectAsState()
+  val startupStage by viewModel.startupStage.collectAsState()
   var lockSheet by remember { mutableStateOf(false) }
   val activity by viewModel.activityTimestamps.collectAsState()          // cuándo se jugó: las partidas de siempre Y el Contrarreloj (cuenta como día jugado, no como puntos)
   // Reloj de Hoy (la fecha, la semana y la racha): cada 30 s.
@@ -127,7 +128,8 @@ fun HomeScreen(
     hasBaseline = baseline != null,
     baselineInvite = com.example.data.BaselinePlan.showHomeInvite(baseline != null, history.size, history.minOfOrNull { it.timestamp }, clock),
     timeTrial = timeTrialOf(timeTrialResults, viewModel.todayKey(), lang, plus),
-    history = historyList
+    history = historyList,
+    startupDone = startupStage == com.example.viewmodel.StartupStage.READY
   )
   HomeContent(
     ui = ui,
@@ -170,12 +172,20 @@ internal data class HomeUi(
   /** El Contrarreloj de hoy (Tarea 177): el juego de la fecha (el mismo para todas las personas) y cómo va; null solo si el juego del día no está en el catálogo (no pasa). */
   val timeTrial: HomeTimeTrial? = null,
   /** «Tus últimas partidas» (Tarea 221): las últimas partidas, las más recientes primero (`historyRows`); vacía = Hoy no dibuja la tarjeta. */
-  val history: List<com.example.data.HistoryRow> = emptyList()
+  val history: List<com.example.data.HistoryRow> = emptyList(),
+  /** El arranque terminó (los datos de Hoy ya están al día): hasta entonces la llama de hoy no puede «destellar», porque la semana sale vacía un instante (Tarea 223, `rememberTodayGlint`). */
+  val startupDone: Boolean = true
 ) {
   val completed: Int get() = stops.count { it.state == StopState.DONE }
 }
 
 internal enum class StopState { DONE, NEXT, LATER }
+
+/** Lo que ocupa el logotipo arriba de Hoy (Tarea 223): 6 dp de aire, 40 dp de caja del logotipo y 2 dp hasta el saludo. Antes el saludo empezaba 28 dp bajo la barra: todo Hoy baja [HOY_LOGO_SHIFT]. */
+internal val HOY_LOGO_TOP = 6.dp
+internal val HOY_LOGO_BOX = 40.dp
+internal val HOY_GREETING_TOP = 2.dp
+internal val HOY_LOGO_SHIFT = HOY_LOGO_TOP + HOY_LOGO_BOX + HOY_GREETING_TOP - 28.dp
 
 /** El espacio bajo la última fila cuando la tarjeta no tiene botón y solo dice una línea (Tarea 194). */
 internal val CAPTION_ONLY_GAP = 6.dp
@@ -262,8 +272,10 @@ internal fun HomeContent(
     // Hoy se desliza con UN estado propio: «Tus últimas partidas» (Tarea 221) tiene su propia lista por dentro y `hoyFirstConnection` decide quién se mueve primero (hacia arriba el dedo, Hoy; hacia abajo, la lista)
     val scrollState = rememberScrollState()
     Column(Modifier.fillMaxSize().padding(bottom = barInset).nestedScroll(remember(scrollState) { hoyFirstConnection(scrollState) }).verticalScroll(scrollState).testTag("home_scroll")) {
-      // Saludo. Todo el texto va a la IZQUIERDA y desde 28 dp bajo la barra: la zona del fondo sin luceros (`ZONAS_HOY` en `tools/isla/isla.py`; la vigila `HoyIslaScreenshotTest`).
-      Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 28.dp), verticalAlignment = Alignment.CenterVertically) {
+      // El logotipo «Nubilus» (Tarea 223, L1): arriba a la izquierda, SOLO en Hoy; 6 dp de aire, 40 dp de caja y 2 dp hasta el saludo (antes el saludo empezaba 28 dp bajo la barra: Hoy baja 20 dp). Marca, no texto: no crece con la letra del sistema.
+      Box(Modifier.padding(start = 20.dp, top = HOY_LOGO_TOP).height(HOY_LOGO_BOX), contentAlignment = Alignment.CenterStart) { com.example.ui.components.NubilusLogo(fill = HoyCream) }
+      // Saludo. Todo el texto va a la IZQUIERDA, en la zona del fondo sin luceros (`ZONAS_HOY` en `tools/isla/isla.py`; la vigila `BoardBackgroundContrastTest`).
+      Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = HOY_GREETING_TOP), verticalAlignment = Alignment.CenterVertically) {
         OnBoardText(
           if (ui.name.isBlank()) greetingWord(ui.now) else "${greetingWord(ui.now)}, ${ui.name.trim()}",
           color = HoyCream, fontSize = 22.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, lineHeight = 27.sp, modifier = Modifier.weight(1f).testTag("home_greeting")
@@ -274,7 +286,7 @@ internal fun HomeContent(
         "${dateText(ui.now)} · ${Week.caption(ui.lamps.daysPlayed, ui.weeklyGoal)}",
         color = HoySoft, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 2.dp).testTag("home_date")
       )
-      com.example.ui.components.HoyWeek(ui.lamps, ui.streak, ui.streakNote, streakText = ui.streakText)
+      com.example.ui.components.HoyWeek(ui.lamps, ui.streak, ui.streakNote, streakText = ui.streakText, glintVisible = ui.startupDone)
       Spacer(Modifier.height(10.dp))
       if (ui.stops.isNotEmpty() || ui.pausedTitle != null) HoyCard(ui, onPlay = onPlay, onResume = onResume, modifier = Modifier.padding(horizontal = 16.dp))
       HoyBelow(ui, onTimeTrial = onTimeTrial, onLocked = onLocked, onBaseline = onBaseline)

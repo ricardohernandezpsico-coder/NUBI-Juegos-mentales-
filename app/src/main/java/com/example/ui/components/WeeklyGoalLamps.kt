@@ -69,7 +69,7 @@ fun WeeklyGoalLamps(goal: Int, onGoal: (Int) -> Unit, modifier: Modifier = Modif
   }
 }
 
-private const val LAMP_DP = 32                                                   // la farola: 32 dp de alto (28 antes), dentro de la caja de 46
+private const val LAMP_DP = 40                                                   // la llamita: caja de 40 dp (la llama encendida mide 32, como la farola de antes), dentro de la caja de 46
 
 @Composable
 private fun GoalLamp(k: Int, on: Boolean, selected: Boolean, box: Dp, reduce: Boolean, onTap: () -> Unit) {
@@ -100,8 +100,8 @@ private fun GoalLamp(k: Int, on: Boolean, selected: Boolean, box: Dp, reduce: Bo
         },
       contentAlignment = Alignment.Center
     ) {
-      FarolaImage(on = false, height = LAMP_DP.dp)                           // la apagada, siempre debajo; la encendida se funde encima
-      FarolaImage(on = true, height = LAMP_DP.dp, modifier = Modifier.alpha(glow))
+      Llamita(lit = false, box = LAMP_DP.dp, onCream = true)                  // la apagada, siempre debajo; la encendida se funde encima (la losa de Ajustes es crema)
+      Llamita(lit = true, box = LAMP_DP.dp, onCream = true, halo = false, modifier = Modifier.alpha(glow))   // sin halo propio: ya tiene el halo sol de las encendidas (más fuerte en la elegida)
     }
     Spacer(Modifier.height(2.dp))
     Box(Modifier.background(if (selected) Clay.Sun else Color.Transparent, RoundedCornerShape(10.dp)).padding(horizontal = 8.dp, vertical = 1.dp)) {    // la elegida, por forma: su número en un chip sol con tinta

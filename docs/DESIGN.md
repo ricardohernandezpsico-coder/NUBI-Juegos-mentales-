@@ -78,7 +78,7 @@ La plasticina es de Blender (`tools/isla/`, la misma luz y material en toda la a
 | Presionada: el contenido baja | `kit.json losas.md.presionada.texto_baja_dp` | 2 dp | respuesta al dedo |
 | Disco (cerrar, atrás, íconos) | `kit.json discos.cerrar.cuerpo_dp.ancho` | 48 dp | el toque mínimo, en un objeto |
 
-Otras medidas que no vienen de `kit.json`: botón principal ≥ 56 dp de alto; **todo lo tocable ≥ 48 dp** (en Unity, 48 dp = 144 unidades; también en la práctica de los tutoriales; guardia `ScanTouchTargets` y `TouchTargetTests`); la farola de Ajustes mide 32 dp en una caja de 46 dp con el toque mínimo de Material.
+Otras medidas que no vienen de `kit.json`: botón principal ≥ 56 dp de alto; **todo lo tocable ≥ 48 dp** (en Unity, 48 dp = 144 unidades; también en la práctica de los tutoriales; guardia `ScanTouchTargets` y `TouchTargetTests`); la llamita de Ajustes mide 40 dp de caja (la llama encendida, 32) dentro de una de 46 dp con el toque mínimo de Material.
 
 ## 5 · Movimiento
 
@@ -89,10 +89,10 @@ Una sola escala (`NubiMotion`): rápido para lo que responde al dedo, medio para
 | Al apretar | `NubiMotion.PRESS_MS` | 80 ms | losas y discos del kit |
 | Al soltar | `NubiMotion.RELEASE_MS` | 140 ms | losas y discos del kit (más lento que al apretar) |
 | Estado, rápido | `NubiMotion.STATE_FAST_MS` | 150 ms | losa de la barra, interruptor |
-| Estado | `NubiMotion.STATE_MS` | 200 ms | velo de la lámina, farola que se enciende |
+| Estado | `NubiMotion.STATE_MS` | 200 ms | velo de la lámina, llamita de la meta que se enciende |
 | Pestaña | `NubiMotion.TAB_MS` | 300 ms | pasar de una pestaña a otra, pasos del Primer vuelo |
 | Lámina | `NubiMotion.SHEET_MS` | 400 ms | la lámina de un lugar, sin espera |
-| Celebrar | `NubiMotion.CELEBRATE_MS` | 600 ms | pulso de farola |
+| Celebrar | `NubiMotion.CELEBRATE_MS` | 600 ms | pulso de la llamita de la meta y destello de la llama de hoy en Hoy (Tarea 223) |
 | Celebrar, largo | `NubiMotion.CELEBRATE_LONG_MS` | 900 ms | el saltito de Nubi al completar la ruta |
 | Movimiento reducido | `NubiMotion.REDUCED_FADE_MS` | 150 ms | el fundido que reemplaza a todo movimiento de lugar |
 
@@ -139,9 +139,9 @@ App (Compose, `ui/components/` y `ui/theme/`):
 - **La barra de cinco y la pestaña Juegos** (Tarea 220, 3-nov; lo anterior del `NeuroNavBar` queda como historia): las pestañas son **Hoy · Juegos · Contrarreloj · Avance · Tú** (Juegos con el ícono de las cuatro casillas, `NavIcon.CASILLAS`). Cada columna mide el rótulo en negrita + 12 dp (mínimo 48 dp) y el sobrante se reparte parejo; **el tope de la letra de los rótulos es el mayor de 1,3 · 1,2 · 1,1 · 1,0 con que quepan los cinco** (nunca por debajo de 1,0; a 360 dp con letra 1,3 queda en 1,1). La página Juegos (`AllGamesScreen`) es una página como Avance y Tú: título «Juegos» de 26 sp (Rubik Bold, `heading()`), sin X ni Atrás propio, la franja de la barra libre abajo (`LocalBarInset`), buscador, chips de área y las 17 filas. **«Todos los juegos» ya no es un nombre de pantalla** (una palabra por concepto: la pestaña dice «Juegos», la página dice «Juegos»).
 - **«Tus últimas partidas»** (Tarea 221, `ui/screens/HoyHistory.kt`): la losa crema de Hoy con el historial (título de 18 sp Rubik Bold con `heading()`, una línea fina de tinta al 12 % debajo y las filas como las de la ruta: emblema de 36 dp, nombre de 17 sp en negrita y «cuándo · modo · marca» a 16 sp en tinta suave, toda en minúscula salvo los nombres propios y sin marca en Freno). No se toca. Su alto se mide en filas (tres y media; la cuarta cortada por la mitad es la señal de «hay más») y se desliza por dentro con el mismo gesto que Hoy («hacia abajo, Hoy primero; hacia arriba, la lista primero»). Sin partidas no hay tarjeta.
 - `ClayPill`: pastilla chica que solo informa (rachas, etiquetas); no se toca.
-- `ClaySwitch` y `ClayTextField`: los controles de Ajustes; `WeeklyGoalLamps`: la meta semanal en 7 farolas con su número, la elegida en un chip sol.
+- `ClaySwitch` y `ClayTextField`: los controles de Ajustes; `WeeklyGoalLamps`: la meta semanal en 7 llamitas con su número, la elegida en un chip sol.
 - `NubiBubble` y `NubiClay`: el globo de Nubi (losa crema con cola) y Nubi 3D de frente; Nubi comenta, no manda; **un globo dice como mucho DOS frases y no repite lo que la pantalla ya dice** (`GlobosDeNubiTest`). **Tres tamaños, no más** (Tarea 147, P3; `NubiSize`): S = 72 dp (resumen de la ruta, tira de la lámina), M = 120 dp (cabeceras de Juegos y de la ventana de un área, Avance vacío, perfil) y L = 200 dp (el Primer vuelo y la bienvenida). **UN solo globo** (`NubiBubble(text, tailLeft, title)`): el título solo sale cuando Nubi habla sin estar al lado de lo que comenta. Cuando el globo no cabe (letra 1,3 en pantalla chica) Nubi se queda callado junto a la línea de avance, sin globo. **Nubi está viva** (Tarea 148): en reposo flota (±6 dp cada 4,5 s) y parpadea (120 ms, cada 4 a 7 s, doble cada cinco) con la imagen «descansa»; es decorativo e igual en toda partida (nada reacciona al desempeño), se apaga mientras salta o mira un lugar y con «quitar animaciones» queda quieta y con los ojos abiertos; su sombra es UNA, la de la isla (`NubiIdle.kt`; en Unity `NubiFigure`, y en los tutoriales Nubi mide 120 dp como máximo y 60 dp como mínimo).
-- `FarolaImage` y `WeekLampRendered`: la farola del kit, encendida o apagada (la semana de Hoy y de Avance).
+- `Llamita` (Tarea 223, dibujada en código) y `WeekLampRendered`: la llamita encendida o apagada, UN símbolo para los días jugados y para la racha (la semana de Hoy y de Avance, el resumen del día, la meta de Ajustes y el cuadro de la racha de Tú); `FarolaImage` (la farola del kit) queda solo en el Primer vuelo, donde marca estaciones. `NubilusLogo`: el logotipo «Nubilus» de arriba de Hoy (solo ahí).
 - `ClayPanel`: la losa grande crema para la lectura larga y las tarjetas de Ajustes (letra en tinta; Licencias y créditos y el aviso de salud van sobre una).
 - El final de partida «B» (Tarea 146, `ui/components/MeaningfulResult.kt`): la cifra y su unidad, la frase de avance, «¿Por qué importa?» y el detalle van SUELTOS sobre el cielo con `OnBoardText`, alineados a la izquierda: cuerpo de 17 sp Nunito Regular `OnNight` con interlineado de 24 sp (`DetailText`), títulos de 18 sp en sol (`DetailTitle`), «Fuente» y nota en `OnNightDim`; el único recuadro es el truco (lima). `ClayButton(leading = …)` pone un dibujo propio (el emblema del juego que sigue) en lugar del glifo.
 - `KitBar`: el canal y el churro de las barras de avance (sin la «bolita» de antes, P6: el churro termina en su punta; lo de esta semana es un tramo más claro —alfa 0,5—, y si bajó, una punta punteada); `FamilyMedal`: las medallas de conducta, también la de la celebración y la de la tarjeta de compartir (la vectorial solo queda para «Medallas anteriores»); `GameEmblem`: el emblema de un juego; `PedestalImage` y los edificios: los lugares de la isla; `Island`: la isla de Hoy y, al cerrar el Primer vuelo, la que se verá mañana.
@@ -153,7 +153,7 @@ Unity (`Games/Shared/`): `PlasticSlab` y `PlasticTouch` (la losa y su estado pre
 
 - **Contraste** ≥ 4,5:1 en todo texto (§2 trae los medidos); nada solo por color (forma o texto).
 - **Toque** ≥ 48 dp, con la separación suficiente entre objetos; los botones principales, ≥ 56 dp.
-- **Lector de pantalla:** cada pieza tiene su descripción; los grupos se leen como grupo («3 de 4 días de tu meta», «4 días por semana» en la farola elegida); los botones de radio llevan `Role.RadioButton`.
+- **Lector de pantalla:** cada pieza tiene su descripción; los grupos se leen como grupo («3 de 4 días de tu meta», «4 días por semana» en la llamita elegida); los botones de radio llevan `Role.RadioButton`.
 - **Letra grande:** se prueba con la letra del sistema al 130 % y al 200 %, también a 360 dp de ancho (`AvanceJuegosLetraGrandeTest`, `WeeklyGoalLampsTest`).
 - **Reducir movimiento:** «quitar animaciones» deja cada cosa en su estado final (§5).
 - **Los juegos** no dependen del color para jugar (forma, lugar o texto; nunca solo color). La pregunta «¿Te cuesta distinguir algunos colores?» ya no está en Ajustes ni en el Primer vuelo (Tarea 152, B5.1: SOLO se guardaba y no cambiaba nada en los juegos, y se leía como una función rota); la preferencia `color_vision` sigue guardada por si algún juego la usa algún día, y entonces se vuelve a preguntar.

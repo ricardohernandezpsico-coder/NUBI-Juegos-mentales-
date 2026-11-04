@@ -1,20 +1,16 @@
 package com.example.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -23,10 +19,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.Week
-import com.example.ui.theme.Clay
 import com.example.ui.theme.NubiTokens
 
-/** La caja de cada farola de la semana en Hoy: 36 dp (la farola del kit dibuja 28 dentro, como en Avance, y deja sitio al aro de «hoy»). */
+/** La caja de cada marca de la semana en Hoy: 36 dp (la llamita encendida mide 29 dp dentro y deja sitio al aro de «hoy»; hasta la Tarea 222, la farola del kit dibujaba 28). */
 val HOY_LAMP_BOX = 36.dp
 
 /**
@@ -35,19 +30,21 @@ val HOY_LAMP_BOX = 36.dp
  */
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
-fun HoyWeek(lamps: Week.Lamps, streak: Int, streakNote: String? = null, lampSize: Dp = HOY_LAMP_BOX, modifier: Modifier = Modifier, streakText: String? = null) {
+fun HoyWeek(lamps: Week.Lamps, streak: Int, streakNote: String? = null, lampSize: Dp = HOY_LAMP_BOX, modifier: Modifier = Modifier, streakText: String? = null, glintVisible: Boolean? = null) {
+  // El destello de la llama de hoy (Tarea 223): solo en Hoy (el resumen del día no pasa [glintVisible]); `glintVisible` = si Hoy está a la vista y con sus datos al día
+  val todayGlint = if (glintVisible != null) rememberTodayGlint(todayLit = lamps.played.getOrNull(lamps.todayIndex) == true, visible = glintVisible) else null
   Column(modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 4.dp, bottom = 2.dp)) {
     // Las farolas a 28 dp, como en Avance, Ajustes y el Primer vuelo (Tarea 147, P7: antes 22-24 y la fila se veía más chica que todo lo demás); si «7 días» no cabe al lado, baja en vez de apretarlas
     androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
       val spoken = Week.lampsSpoken(lamps.daysPlayed)
       Row(Modifier.testTag("home_week").semantics { contentDescription = spoken }) {
-        // las farolas del kit (Tarea 143, ítem 11: antes Hoy dibujaba discos y Avance, Ajustes y el Primer vuelo farolas); el aro lima de «hoy» se queda
-        lamps.played.forEachIndexed { i, on -> WeekLampRendered(on = on, today = i == lamps.todayIndex, size = lampSize) }
+        // las llamitas (Tarea 223; hasta la Tarea 222, las farolas del kit); el aro lima de «hoy» se queda, y solo la llama de hoy destella
+        lamps.played.forEachIndexed { i, on -> WeekLampRendered(on = on, today = i == lamps.todayIndex, size = lampSize, glint = if (i == lamps.todayIndex && todayGlint != null) ({ todayGlint.value }) else null) }
       }
       // un solo sol en Hoy (P7): la racha va en crema (OnNight), no en sol; el sol queda para el botón grande y la piedrita «Sigue»
       Row(Modifier.heightIn(min = HOY_LAMP_BOX), verticalAlignment = Alignment.CenterVertically) {
-        KitLlama(lit = streak > 0, size = 16.dp)
-        Spacer(Modifier.width(6.dp))
+        Llamita(lit = streak > 0, box = STREAK_LAMP_BOX)                                      // la MISMA llamita de la semana, más chica: un símbolo por concepto (Tarea 223; antes la gota del kit a 16 dp)
+        Spacer(Modifier.width(2.dp))
         OnBoardText(
           streakText ?: if (streak == 1) "1 día" else "$streak días", color = NubiTokens.OnNight, fontSize = 16.sp, fontWeight = FontWeight.Bold,
           modifier = Modifier.testTag("streak_pill")
@@ -60,13 +57,14 @@ fun HoyWeek(lamps: Week.Lamps, streak: Int, streakNote: String? = null, lampSize
   }
 }
 
+/** La caja de la llamita de la racha, junto a «N días» (24 dp: la llama encendida mide 19 dp). */
+val STREAK_LAMP_BOX = 24.dp
+
 /**
- * Una farola de «Tu semana» de Avance (Tarea 125): la del kit (la de la isla y del ícono de Avance), apagada o encendida, de 28 dp de alto; «hoy» es un aro lima de 2,5 dp dibujado acá (forma, no solo color). La caja mide 36 dp para el aro.
+ * Una marca de la semana de Hoy, del resumen del día y de «Tu semana» de Avance (Tarea 125; desde la Tarea 223 es una [Llamita], antes la farola del kit): encendida (día jugado) o apagada; «hoy» es un aro lima de 2,5 dp (forma, no solo color).
+ * La caja mide [size] (36 dp en Hoy). [glint] es el avance del destello de la llama de hoy (solo Hoy; ver [rememberTodayGlint]).
  */
 @Composable
-fun WeekLampRendered(on: Boolean, today: Boolean, modifier: Modifier = Modifier, size: Dp = 36.dp) {
-  Box(
-    modifier.size(size).drawBehind { if (today) drawCircle(Clay.Lime, this.size.minDimension / 2f - 1.5.dp.toPx(), center, style = Stroke(2.5.dp.toPx())) },
-    contentAlignment = Alignment.Center
-  ) { FarolaImage(on, size * 28f / 36f) }
+fun WeekLampRendered(on: Boolean, today: Boolean, modifier: Modifier = Modifier, size: Dp = 36.dp, glint: (() -> Float)? = null) {
+  Llamita(lit = on, modifier = modifier, box = size, today = today, glint = glint ?: { 1f })
 }

@@ -202,6 +202,7 @@ class HoyHistoryTest {
   /** La acción principal de Hoy (la ruta; con la ruta completa, lo primero del bloque del Contrarreloj) sigue ENTERA a la vista: la tarjeta va después de todo y no cambia nada de arriba. */
   private fun assertMainActionVisible(u: HomeUi, heightDp: Int, label: String) {
     val vp = viewportBottom(heightDp)
+    val below = mainActionBelowBar[label] ?: 0f
     val pending = u.stops.any { it.state != com.example.ui.screens.StopState.DONE }
     val (tag, needed) = when {
       u.pausedTitle != null -> "btn_resume_paused" to bottomDp("btn_resume_paused")
@@ -210,25 +211,38 @@ class HoyHistoryTest {
       exists("home_timetrial_done") -> "home_timetrial_done" to topDp("home_timetrial_done") + 40f
       else -> "home_timetrial_none" to topDp("home_timetrial_none") + 40f
     }
-    assertTrue("$label: la acción principal «$tag» necesita llegar a %.0f dp y la barra empieza en %.0f dp".format(needed, vp), needed <= vp + 1f)
+    assertTrue("$label: la acción principal «$tag» necesita llegar a %.0f dp y la barra empieza en %.0f dp (se tolera %.0f)".format(needed, vp, below), needed <= vp + below + 1f)
+    if (below > 0f) assertTrue("$label: con «$tag» bajo la barra, el recuadro «Marca nueva» (lo primero del bloque del Contrarreloj) tiene que verse ENTERO: termina en %.0f dp y la barra empieza en %.0f".format(bottomDp("home_timetrial_done"), vp), exists("home_timetrial_done") && bottomDp("home_timetrial_done") <= vp + 1f)
   }
+
+  /**
+   * Tarea 223 (3-nov; decisión de Opus con Ricardo): con el logotipo, Hoy baja 20 dp y, con letra 1,0 a 360 × 780, «Otra vez» del estado «marca nueva» queda 20 dp bajo el borde de arriba de la barra (se alcanza deslizando). La regla de CLAUDE.md es «lo primero del
+   * bloque del Contrarreloj», y eso es el recuadro «Marca nueva», que sigue ENTERO a la vista (la prueba lo exige). Etiqueta del estado → dp que se tolera. A 393 × 873 con 1,0 y 1,3 no hay excepción.
+   */
+  private val mainActionBelowBar = mapOf("marca nueva · 360 × 780 · letra 1.0" to 20f, "sin Plus, marca nueva · 360 × 780 · letra 1.0" to 20f)
 
   @Test
   fun la_accion_principal_sigue_a_la_vista_en_todos_los_estados_a_393_con_1_0_y_1_3_y_a_360_con_1_0() {
+    val failures = mutableListOf<String>()
     for ((w, h, fs) in listOf(Triple(393, 873, 1f), Triple(393, 873, 1.3f), Triple(360, 780, 1f))) for ((name, u) in states) {
       show(u, w, h, fs)
-      assertMainActionVisible(u, h, "$name · $w × $h · letra $fs")
+      try { assertMainActionVisible(u, h, "$name · $w × $h · letra $fs") } catch (e: AssertionError) { failures += e.message.orEmpty() }
     }
+    assertTrue("la acción principal no se ve entera en: $failures", failures.isEmpty())
   }
 
   @Test
-  fun el_titulo_de_la_tarjeta_asoma_sin_deslizar_a_393_con_1_0_en_los_14_estados_y_con_1_3_cuando_la_ruta_esta_completa() {
+  fun el_titulo_de_la_tarjeta_asoma_sin_deslizar_a_393_con_1_0_en_13_de_los_14_estados_salvo_marca_nueva_con_la_ruta_a_medias_y_con_1_3_cuando_la_ruta_esta_completa() {
     val vp = viewportBottom(873)
     for ((name, u) in states) {
       show(u, 393, 873, 1f)
       val bottom = bottomDp("home_history_title")
       println("MEDIDA título 393 con 1,0 · $name: termina en %.0f dp de %.0f (%s)".format(bottom, vp, if (bottom <= vp) "asoma" else "bajo la barra"))
-      assertTrue("$name con letra 1,0: el título termina en %.0f dp y la barra empieza en %.0f".format(bottom, vp), bottom <= vp + 1f)
+      if (name == TITLE_HIDDEN_STATE) {
+        // Tarea 223 (decisión de Ricardo): con el logotipo (+20 dp) el título de este estado ya no asoma sin deslizar: termina en 722 dp y la barra empieza en 710 (antes 702)
+        assertEquals("$name: el título termina en 722 dp (la barra empieza en %.0f)".format(vp), TITLE_HIDDEN_BOTTOM, bottom, 1f)
+        assertTrue("$name: bajo la barra, como se aceptó", bottom > vp)
+      } else assertTrue("$name con letra 1,0: el título termina en %.0f dp y la barra empieza en %.0f".format(bottom, vp), bottom <= vp + 1f)
     }
     for (name in listOf("ruta completa", "jugado", "marca nueva")) {
       show(states.first { it.first == name }.second, 393, 873, 1.3f)
@@ -236,6 +250,10 @@ class HoyHistoryTest {
     }
     for ((name, u) in states) { show(u, 360, 780, 1f); println("MEDIDA título 360 con 1,0 · $name: termina en %.0f dp de %.0f".format(bottomDp("home_history_title"), viewportBottom(780))) }
   }
+
+  /** El único de los 14 estados donde, con el logotipo de la Tarea 223, el título de «Tus últimas partidas» no asoma sin deslizar a 393 × 873 con letra 1,0 (termina en 722 dp; la barra empieza en 710). */
+  private val TITLE_HIDDEN_STATE = "marca nueva con la ruta a medias"
+  private val TITLE_HIDDEN_BOTTOM = 722f
 
   /** Cuánto hay que deslizar Hoy para ver la tarjeta entera (dp): el borde de abajo de la tarjeta (sin su sombra de 6 dp) contra donde empieza la barra. */
   private fun overBar(heightDp: Int) = bottomDp("home_history") - 6f - viewportBottom(heightDp)

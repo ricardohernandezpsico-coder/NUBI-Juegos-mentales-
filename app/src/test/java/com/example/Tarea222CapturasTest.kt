@@ -59,7 +59,6 @@ import com.example.data.Week
 import com.example.model.AppLanguage
 import com.example.model.RankTier
 import com.example.ui.components.BoardBackground
-import com.example.ui.components.KitLlama
 import com.example.ui.components.LocalBarInset
 import com.example.ui.components.LocalReduceMotion
 import com.example.ui.components.NeuroNavBar
@@ -98,6 +97,7 @@ import kotlin.math.sin
  * - **El logotipo**: «Nubilus» en Fredoka Bold (~30 dp; no crece con la letra: es un logotipo), relleno crema, contorno grueso de tinta y sombra dura; L1 solo las letras, L2 con una estrellita amarilla en el punto de la «i».
  * - **Frames de Hoy**: la propuesta es el Hoy de verdad con lo de arriba reemplazado (el logotipo sobre el saludo, la semana con las marcas nuevas) y todo lo demás empujado hacia abajo lo que mide el logotipo; la lámina los arma empalmando esos dos trozos (`tools/previews/tarea_222.py`).
  *
+ * **Desde la Tarea 223** la gota del kit (`KitLlama`) ya no existe: la variante B se dibuja con la llama también junto a «3 días» (la lámina `docs/previews/tarea-222.png` se conserva como estaba) y la llamita real vive en `ui/components/Llamita.kt`.
  * No corre en las pruebas de siempre: solo al grabar (`./gradlew.bat :app:recordRoborazziDebug --tests "*Tarea222CapturasTest*"`); deja las capturas y los datos de empalme en `app/src/test/screenshots/t222/` (fuera de git).
  */
 @RunWith(RobolectricTestRunner::class)
@@ -233,7 +233,7 @@ class Tarea222CapturasTest {
           lamps.played.forEachIndexed { i, on -> if (marks == Marks.LLAMITAS) Flame(on, i == lamps.todayIndex) else Sun(on, i == lamps.todayIndex) }
         }
         Row(Modifier.heightIn(min = 36.dp), verticalAlignment = Alignment.CenterVertically) {
-          if (marks == Marks.LLAMITAS) Flame(lit = streak > 0, today = false, box = 24.dp) else KitLlama(lit = streak > 0, size = 16.dp)
+          Flame(lit = streak > 0, today = false, box = 24.dp)
           Spacer(Modifier.width(if (marks == Marks.LLAMITAS) 2.dp else 6.dp))
           OnBoardText(if (streak == 1) "1 día" else "$streak días", color = NubiTokens.OnNight, fontSize = 16.sp, fontWeight = FontWeight.Bold, modifier = Modifier.testTag("proto_streak"))
         }
@@ -411,7 +411,7 @@ class Tarea222CapturasTest {
   @Test fun zoom_marcas_B() = zoom("marcas_B", 224, 58) {
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
       Sun(lit = true, today = false); Sun(lit = false, today = false); Sun(lit = true, today = true)
-      Spacer(Modifier.width(4.dp)); KitLlama(lit = true, size = 16.dp)
+      Spacer(Modifier.width(4.dp)); Flame(lit = true, today = false, box = 24.dp)
       OnBoardText("3 días", color = NubiTokens.OnNight, fontSize = 16.sp, fontWeight = FontWeight.Bold)
     }
   }

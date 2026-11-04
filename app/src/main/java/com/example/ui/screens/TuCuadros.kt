@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -34,7 +35,7 @@ import com.example.ui.components.AreaSquares
 import com.example.ui.components.FamilyMedal
 import com.example.ui.components.Glyph
 import com.example.ui.components.KitGlyph
-import com.example.ui.components.KitLlama
+import com.example.ui.components.Llamita
 import com.example.ui.theme.Clay
 
 /** El crema del cuerpo de las losas del kit (la de las medallas, #FFEBD2), liso: `Clay.Cream` es solo la clave blanca que `ClayCard` traduce a la losa de arcilla, y aquí no hay losa. */
@@ -43,12 +44,15 @@ private val FlatCream = androidx.compose.ui.graphics.Color(0xFFFFEBD2)
 /** Lo que mide el ícono de cada cuadro (dp): el del kit, arriba al centro. */
 private val ICON_SIZE = 40.dp
 
+/** La caja de la llamita del cuadro de la racha, en veces el ícono (48 dp en 40): la llama encendida mide 38 dp y la apagada 25, sobre la losa crema. */
+private const val LLAMITA_K = 1.2f
+
 /** El ícono de plasticina de un cuadro: solo piezas del kit que la persona ya ve (la gota de la racha de Hoy, el «jugar» de las partidas, la medalla de Constancia y las cuatro casillas de las áreas de «Todos los juegos»). Decorativo: el cuadro lo dice con palabras. */
 @Composable
 private fun TileIcon(key: String, size: Dp, streakLit: Boolean, medal: FamilyMedalState?) {
   Box(Modifier.testTag("tu_icono_$key")) {
     when (key) {
-      "racha" -> KitLlama(lit = streakLit, size = size)
+      "racha" -> Box(Modifier.size(size), contentAlignment = Alignment.Center) { Llamita(lit = streakLit, box = size * LLAMITA_K, onCream = true, modifier = Modifier.requiredSize(size * LLAMITA_K)) }    // la MISMA llamita de Hoy (Tarea 223); la caja del ícono no crece: los cuatro cuadros siguen del mismo alto
       "partidas" -> KitGlyph(Glyph.PLAY, size = size)
       "medallas" -> if (medal != null) FamilyMedal(medal, size) else Spacer(Modifier.size(size))
       else -> AreaSquares(size = size * 0.9f)

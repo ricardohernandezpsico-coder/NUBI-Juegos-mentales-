@@ -201,8 +201,8 @@ class HoyTarjetaTest {
    * La regla de siempre: la acción principal ([mainActionTag]) se ve entera sin deslizar y lo demás se alcanza deslizando.
    */
   private val scrollsAt393 = mapOf(
-    1f to emptyMap<String, Float>(),                                                                                           // Tarea 220: sin «Todos los juegos» (70 dp: 56 + 6 de sombra + 8 de aire) todos caben con letra 1,0
-    1.3f to mapOf("partida en pausa" to 11f, "sin partidas con marca nueva" to 36f, "sin partidas, ruta a medias" to 14f)
+    1f to emptyMap<String, Float>(),                                                                                           // Tarea 220: sin «Todos los juegos» (70 dp: 56 + 6 de sombra + 8 de aire) todos caben con letra 1,0 (también con el logotipo de la Tarea 223: sobran 39 dp en el peor estado)
+    1.3f to mapOf("marca nueva con la ruta a medias" to 14f, "partida en pausa" to 31f, "sin partidas con marca nueva" to 56f, "sin partidas, ruta a medias" to 33f)   // Tarea 223: el logotipo bajó Hoy 20 dp (antes: pausa 11, sin partidas con marca nueva 36, sin partidas con la ruta a medias 14 y marca nueva con la ruta a medias cabía)
   )
 
   /**
@@ -297,9 +297,9 @@ class HoyTarjetaTest {
    * A 360 × 780 (el teléfono más chico que se mira) Hoy NO cabe entero en dos de los ocho estados del día (la partida en pausa y la marca nueva con la ruta a medias): se pasa de la barra y se desliza. Cuánto se mide (dp; Tarea 177, con la posición SIN recortar: `boundsInRoot` recorta y antes «termina justo en el borde» no probaba nada) y cuánto se tolera. La ruta completa y el Contrarreloj jugado (los de todos los días) caben desde que se apretó el ritmo vertical de Hoy 16 dp.
    * Lo que no está aquí tiene que caber. A 393 × 873 todos caben con letra 1,0 y 1,3.
    */
-private val scrollsAt360 = mapOf(
-    "primera hora" to 30f, "a mitad de ruta" to 30f, "marca nueva" to 1f, "marca nueva con la ruta a medias" to 73f, "partida en pausa" to 81f,
-    "sin Plus, ruta a medias" to 30f, "sin Plus, marca nueva" to 33f, "sin partidas con marca nueva" to 41f, "sin partidas, ruta a medias" to 53f
+private val scrollsAt360 = mapOf(                                                                                                  // Tarea 223: +20 dp en todos con el logotipo (antes 30 · 30 · 1 · 73 · 81 · 30 · 33 · 41 · 53)
+    "primera hora" to 50f, "a mitad de ruta" to 50f, "marca nueva" to 20f, "marca nueva con la ruta a medias" to 92f, "partida en pausa" to 101f,
+    "sin Plus, ruta a medias" to 50f, "sin Plus, marca nueva" to 53f, "sin partidas con marca nueva" to 60f, "sin partidas, ruta a medias" to 73f
   )
 
   @Test
