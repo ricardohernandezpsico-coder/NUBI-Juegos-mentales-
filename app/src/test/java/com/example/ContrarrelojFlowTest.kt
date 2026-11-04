@@ -246,7 +246,7 @@ class ContrarrelojFlowTest {
   fun sin_Plus_las_dos_mitades_de_Plus_van_en_gris_con_su_frase_y_abren_la_hoja_con_un_solo_boton() {
     val vm = withData(); vm.setPlus(false); withRange(vm, AgeRange.R45_54)
     show(vm)
-    for ((tag, phrase) in listOf("contrarreloj_locked_place" to "Con Nubilus Plus: tu lugar en detalle.", "contrarreloj_locked_marks" to "Con Nubilus Plus: todas tus marcas.")) {
+    for ((tag, phrase) in listOf("contrarreloj_locked_place" to PlusAccess.LOCKED_PLACE, "contrarreloj_locked_marks" to PlusAccess.LOCKED_MARKS)) {
       assertEquals("el lector dice el título y la frase (Tarea 215b, Fable M1)", "${textOf("${tag}_title")}. $phrase", spokenOf(tag))
       assertEquals("y la frase se ve", phrase, textOf("${tag}_phrase"))
     }
@@ -289,45 +289,43 @@ class ContrarrelojFlowTest {
     assertEquals("las dos losas grises, como cualquiera con franja", 2, count("contrarreloj_locked_place") + count("contrarreloj_locked_marks"))
     assertEquals("ni una línea de «De 13 a 17 años…» ni de 14 a 17: no hay aviso", 0, count("contrarreloj_minors_notice") + count("contrarreloj_age_hint") + count("contrarreloj_early_notice"))
     assertTrue("y ningún texto dice «solo tus propias marcas»", (0 until 1).all { rule.onAllNodes(androidx.compose.ui.test.hasText("solo tus propias marcas", substring = true), useUnmergedTree = true).fetchSemanticsNodes().isEmpty() })
-    val today = TimeTrialDay.gameFor(vm.todayKey())
-    val young = Comparison.place(vm.estimatedReference.value!!, today, AgeRange.R18_29, 99) as Comparison.Place.Found
-    assertEquals("la división es la de 18 a 29 con la misma marca", young.ranked.division.label, textOf("contrarreloj_hero_division"))
-    assertEquals("y su lugar entre las cinco", Comparison.divisionPlaceLine(young.ranked.division), textOf("contrarreloj_hero_place"))
-    assertEquals("el subtítulo, con comparación", "El Contrarreloj define tu lugar de la semana.", textOf("contrarreloj_subtitle"))
+    assertEquals("la liga de la semana es la de cualquiera: la losa, la escalera de las diez divisiones y la fila de la referencia (Tarea 229)", 3, count("contrarreloj_league") + count("contrarreloj_league_ladder") + count("contrarreloj_source_link"))
+    assertTrue("y el porcentaje sale de la tabla de 18 a 29", count("contrarreloj_league_percent") == 1 && textOf("contrarreloj_league_average").endsWith("de la referencia estimada para tu edad."))
+    assertEquals("el subtítulo, con comparación", "El Contrarreloj define tu división de la semana.", textOf("contrarreloj_subtitle"))
     assertEquals("la fila «Con qué te comparas ›» también", 1, count("contrarreloj_source_link"))
   }
 
   // ---------------------------------------------------------------- lo gratis: la división y lo que falta (antes lo daba la puerta de Avance)
 
   @Test
-  fun sin_Plus_lo_gratis_dice_la_division_su_lugar_y_lo_que_falta_cuando_hay_una_marca_esta_semana() {
+  fun sin_Plus_la_liga_es_gratis_y_dice_la_division_el_porcentaje_y_como_va_la_semana_cuando_hay_una_marca() {
     val vm = withData(); vm.setPlus(false); withRange(vm, AgeRange.R45_54)
     recordNow(vm)
     show(vm)
     assertEquals("101 aciertos con 2 errores son 99 de marca", "Tu récord: 99 aciertos.", textOf("contrarreloj_free_record"))
-    assertEquals("la división", Comparison.Division.STARS.label, textOf("contrarreloj_hero_division"))
-    assertEquals("su lugar entre las cinco", Comparison.divisionPlaceLine(Comparison.Division.STARS), textOf("contrarreloj_hero_place"))
-    assertEquals("y, en la más alta, no falta nada", "Estás en la división más alta de tu franja esta semana.", textOf("contrarreloj_ladder_need"))
-    assertEquals("La semana cierra el domingo.", textOf("contrarreloj_ladder_closes"))
-    assertEquals("el subtítulo, con comparación", "El Contrarreloj define tu lugar de la semana.", textOf("contrarreloj_subtitle"))
-    assertEquals("la fila «Con qué te comparas ›» queda bajo lo gratis", 1, count("contrarreloj_source_link"))
+    assertEquals("la división de la liga: todos parten En la plataforma", Comparison.Division.PLATFORM.label, textOf("contrarreloj_league_division"))
+    assertEquals("Tu división: la primera de diez.", textOf("contrarreloj_league_rank"))
+    assertEquals("hay porcentaje de la semana, gratis", 1, count("contrarreloj_league_percent"))
+    assertTrue("y la frase del lunes dice cómo va", textOf("contrarreloj_league_monday").startsWith("Si la semana terminara hoy, el lunes subirías a Despegando.") || textOf("contrarreloj_league_monday").startsWith("Si la semana terminara hoy, te quedarías"))
+    assertTrue("la semana cierra el domingo, con los días que quedan", textOf("contrarreloj_league_closes").startsWith("La semana cierra "))
+    assertEquals("el subtítulo, con comparación", "El Contrarreloj define tu división de la semana.", textOf("contrarreloj_subtitle"))
+    assertEquals("la fila «Con qué te comparas ›» queda bajo la liga", 1, count("contrarreloj_source_link"))
     assertTrue("y antes de lo de Plus en gris", top("contrarreloj_source_link") < top("contrarreloj_locked_place"))
-    assertTrue("la división va dentro de la losa gratis: después del récord", top("contrarreloj_free_record") < top("contrarreloj_hero_division") && top("contrarreloj_hero_division") < top("contrarreloj_ladder_need"))
+    assertTrue("la losa de la liga, la fila, la escalera y los cuatro cuadros van antes que lo gratis de jugar", top("contrarreloj_league") < top("contrarreloj_source_link") && top("contrarreloj_source_link") < top("contrarreloj_league_ladder") && top("contrarreloj_league_ladder") < top("contrarreloj_selector") && top("contrarreloj_selector") < top("contrarreloj_free"))
+    assertEquals("lo gratis de jugar ya no lleva la división ni «Te faltan» (Tarea 229)", 0, count("contrarreloj_hero_division") + count("contrarreloj_ladder_need") + count("contrarreloj_ladder_closes"))
   }
 
   @Test
-  fun con_Plus_lo_gratis_y_lo_de_Plus_no_se_repiten_la_division_y_lo_que_falta_viven_una_sola_vez() {
+  fun con_Plus_la_liga_y_lo_de_Plus_no_se_repiten_la_division_vive_una_sola_vez() {
     val vm = withData(); vm.setPlus(true); withRange(vm, AgeRange.R45_54)
     recordNow(vm)
     show(vm)
-    assertEquals("la división, una sola vez", 1, count("contrarreloj_hero_division"))
-    assertEquals("lo que falta, una sola vez", 1, count("contrarreloj_ladder_need"))
-    assertEquals("«La semana cierra el domingo.», una sola vez", 1, count("contrarreloj_ladder_closes"))
-    assertEquals("y debajo vienen las secciones de Plus, a color: la frase del porcentaje y la escalera", 2, count("contrarreloj_hero_sentence") + count("contrarreloj_ladder"))
-    assertTrue("la frase del porcentaje va después de lo gratis", top("contrarreloj_ladder_closes") < top("contrarreloj_hero_sentence"))
-    assertTrue("y la escalera después de la frase", top("contrarreloj_hero_sentence") < top("contrarreloj_ladder"))
+    assertEquals("la división, una sola vez", 1, count("contrarreloj_league_division"))
+    assertEquals("«La semana cierra el domingo.», una sola vez", 1, count("contrarreloj_league_closes"))
+    assertEquals("y debajo vienen las secciones de Plus, a color: la frase del porcentaje del juego", 1, count("contrarreloj_hero_sentence"))
+    assertTrue("la frase de Plus va después de lo gratis", top("contrarreloj_league_closes") < top("contrarreloj_hero_sentence"))
     assertEquals("las tres cifras de la Tarea 203 salieron: el récord y la semana ya los dice lo gratis", 0, count("contrarreloj_stats"))
-    assertTrue("«todas tus marcas» después de la comparación", top("contrarreloj_ladder") < top("contrarreloj_marks"))
+    assertTrue("«todas tus marcas» después de la comparación", top("contrarreloj_hero_sentence") < top("contrarreloj_marks"))
   }
 
   @Test
@@ -336,19 +334,20 @@ class ContrarrelojFlowTest {
     recordNow(vm)
     assertNull("sin franja guardada (quien solo tenía la banda vieja)", vm.ageRange.value)
     show(vm)
-    assertEquals("la referencia estimada es por franja: sin ella no hay división", 0, count("contrarreloj_hero_division"))
+    assertEquals("la referencia estimada es por franja: sin ella no hay liga (Tarea 229)", 0, count("contrarreloj_league") + count("contrarreloj_league_ladder"))
     assertEquals("la página dice dónde elegirla", Comparison.AGE_HINT, textOf("contrarreloj_age_hint"))
     assertEquals("sigue diciendo el récord (es tuyo)", 1, count("contrarreloj_free_record"))
   }
 
   @Test
-  fun sin_una_marca_esta_semana_lo_gratis_no_inventa_la_division() {
+  fun sin_una_marca_esta_semana_la_liga_no_inventa_un_porcentaje() {
     val vm = withData(); vm.setPlus(false); withRange(vm, AgeRange.R45_54)
     // withData(): las marcas están en los 10 días anteriores; si la de hace un día cae en la semana anterior (los lunes), no hay marca de esta semana
     show(vm)
-    val n = count("contrarreloj_hero_division")
-    assertTrue("la división es una sola, o no hay", n <= 1)
-    if (n == 0) assertTrue("sin marca esta semana, la losa de «Tu lugar esta semana» dice qué hacer", count("contrarreloj_place") == 1 || count("contrarreloj_place_nomark") == 1)
+    assertEquals("la losa de la liga está siempre, con la división", 1, count("contrarreloj_league_division"))
+    val n = count("contrarreloj_league_percent")
+    assertTrue("el porcentaje es uno solo, o no hay", n <= 1)
+    if (n == 0) assertTrue("sin porcentaje, la frase de la liga dice qué hacer", textOf("contrarreloj_league_monday").let { it.startsWith("Tu primera semana") || it.startsWith("Todavía no") })
   }
 
   // ---------------------------------------------------------------- la hoja del candado
@@ -384,7 +383,7 @@ class ContrarrelojFlowTest {
     val vm = withData(); vm.setPlus(false); withRange(vm, AgeRange.R45_54)
     show(vm)
     rule.onNodeWithTag("contrarreloj_locked_marks").performScrollTo().performClick(); rule.waitForIdle()
-    assertEquals("Gratis: el Contrarreloj de cada día, con 3 partidas, tu récord y tu división de la semana. Con Nubilus Plus, además:", textOf("plus_sheet_lead"))
+    assertEquals("Gratis: el Contrarreloj de cada día, con 3 partidas, tu récord y tu división de la semana, con tu porcentaje en cada juego. Con Nubilus Plus, además:", textOf("plus_sheet_lead"))
     assertEquals(PlusAccess.SHEET_NOTE_ESTIMATED, textOf("plus_sheet_note"))
     assertEquals("la razón va antes de la fila y la fila antes de «Cerrar»", true, top("plus_sheet_note") < top("plus_sheet_source") && top("plus_sheet_source") < top("btn_plus_sheet_ok"))
     rule.onNode(androidx.compose.ui.test.hasText("De dónde sale la referencia ›"), useUnmergedTree = true).assertExists()
@@ -548,19 +547,21 @@ class ContrarrelojFlowTest {
   }
 
   @Test
-  fun sin_Plus_lo_gratis_calla_la_division_con_menos_de_tres_partidas_y_habla_desde_la_tercera() {
+  fun sin_Plus_la_liga_no_cuenta_un_juego_con_menos_de_tres_partidas_y_cuenta_desde_la_tercera() {
     val vm = withGames(2, plus = false)
     val repo = (app as NeuroVidaApplication).repository
     show(vm)
-    assertEquals("con dos partidas lo gratis calla la división, como sin franja de edad", 0, count("contrarreloj_hero_division"))
+    assertEquals("con dos partidas la liga sigue ahí, sin porcentaje (el juego todavía no cuenta)", 1, count("contrarreloj_league_division"))
+    assertEquals(0, count("contrarreloj_league_percent"))
+    assertEquals("y el cuadro del juego lo dice", "Cuenta desde tu tercera partida", textOf("contrarreloj_game_percent_${TimeTrialDay.gameFor(vm.todayKey())}").replace(com.example.data.NBSP, " "))
     assertEquals("pero dice el récord y por qué", 1, count("contrarreloj_free_record"))
     assertEquals(Comparison.EARLY_NOTICE, textOf("contrarreloj_early_notice"))
     assertEquals("antes de la tercera las losas grises SÍ van: con Plus se vería desde la tercera", 2, count("contrarreloj_locked_place") + count("contrarreloj_locked_marks"))
     recordToday(vm, repo, 2)
     TestSupport.awaitUntil(30_000) { vm.timeTrialResults.value.size >= 3 }
     rule.waitForIdle()
-    assertEquals("con la tercera, la división de siempre", 1, count("contrarreloj_hero_division"))
-    assertEquals(Comparison.Division.STARS.label, textOf("contrarreloj_hero_division"))
+    assertEquals("con la tercera, el juego cuenta y la liga tiene su porcentaje", 1, count("contrarreloj_league_percent"))
+    assertTrue("y el cuadro del juego dice cuánto supera", textOf("contrarreloj_game_percent_${TimeTrialDay.gameFor(vm.todayKey())}").startsWith("Superas al "))
   }
 
   @Test

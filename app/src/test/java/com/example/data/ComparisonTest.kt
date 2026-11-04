@@ -88,12 +88,6 @@ class ComparisonTest {
 
   // ------------------------------------------------------------------ la división
 
-  @Test
-  fun `las cinco divisiones con nombre cambian en 25, 50, 75 y 90`() {
-    val expect = mapOf(0 to "En la plataforma", 24 to "En la plataforma", 25 to "Despegando", 49 to "Despegando", 50 to "En órbita", 63 to "En órbita", 74 to "En órbita", 75 to "En la Luna", 89 to "En la Luna", 90 to "Entre estrellas", 99 to "Entre estrellas")
-    for ((p, name) in expect) assertEquals("percentil $p", name, Comparison.division(p).label)
-  }
-
   // ------------------------------------------------------------------ las franjas vecinas
 
   @Test
@@ -121,7 +115,6 @@ class ComparisonTest {
     val r = (place as Comparison.Place.Found).ranked
     assertEquals(Comparison.Scope.OWN_WEEK, r.scope)
     assertEquals(63, r.percentile)
-    assertEquals(Comparison.Division.ORBIT, r.division)
     assertEquals("solo se pidió la franja esta semana", 1, src.asked.size)
   }
 
@@ -179,8 +172,8 @@ class ComparisonTest {
   @Test
   fun `las dos versiones de Mientras tanto dicen de que semanas son`() {
     val d = shaped(212)
-    val week = Comparison.Ranked(43, 53, Comparison.division(53), Comparison.Scope.ALL_WEEK, null, d)
-    val four = Comparison.Ranked(43, 53, Comparison.division(53), Comparison.Scope.ALL_4_WEEKS, null, d)
+    val week = Comparison.Ranked(43, 53, Comparison.Scope.ALL_WEEK, null, d)
+    val four = Comparison.Ranked(43, 53, Comparison.Scope.ALL_4_WEEKS, null, d)
     assertEquals("Mientras tanto, comparada con todas las edades de esta semana, tu mejor marca, 43 aciertos, supera al 53 % de las personas.", Comparison.meanwhileSentence(week))
     assertEquals("Mientras tanto, comparada con todas las edades de las últimas 4 semanas, tu mejor marca de esta semana, 43 aciertos, supera al 53 % de las personas.", Comparison.meanwhileSentence(four))
     assertEquals("Con 43 aciertos, superas al 53 % de las personas de todas las edades que jugaron esta semana.", Comparison.heroSentence(week, AgeRange.R45_54))
@@ -210,14 +203,13 @@ class ComparisonTest {
 
   private fun ranked(scope: Comparison.Scope, people: Int = 128, ranges: List<AgeRange>? = listOf(AgeRange.R45_54), mark: Int = 43): Comparison.Ranked {
     val d = shaped(people)
-    return Comparison.Ranked(mark, Comparison.percentile(mark, d), Comparison.division(Comparison.percentile(mark, d)), scope, ranges, d)
+    return Comparison.Ranked(mark, Comparison.percentile(mark, d), scope, ranges, d)
   }
 
   @Test
-  fun `la cifra es UNA frase con los aciertos y a cuanta gente supera, y debajo van la division y su lugar`() {
+  fun `la cifra es UNA frase con los aciertos y a cuanta gente supera`() {
     val r = ranked(Comparison.Scope.OWN_WEEK)
     assertEquals("Con 43 aciertos, superas al 63 % de las personas de tu edad que jugaron esta semana.", Comparison.heroSentence(r, AgeRange.R45_54))
-    assertEquals("La tercera de cinco divisiones.", Comparison.divisionPlaceLine(r.division))
     assertFalse("Tarea 209: «percentil» ya no se dice", Comparison.heroSentence(r, AgeRange.R45_54).lowercase().contains("percentil"))
     assertFalse("Tarea 213: ya no hay «de cada 100» ni «quedan detrás»", Comparison.heroSentence(r, AgeRange.R45_54).let { "de cada 100" in it || "detrás" in it })
     assertNull("la clase normal no necesita aclarar nada más", Comparison.scopeLine(r))
@@ -226,11 +218,11 @@ class ComparisonTest {
   @Test
   fun `con la referencia estimada la cifra dice referencia estimada para tu edad, en singular y con 0 sin culpa`() {
     val d = Comparison.Distribution(2000, SampleComparison.fit(base, 2000), 31, 39, 47, estimated = true)
-    fun r(mark: Int) = Comparison.Ranked(mark, Comparison.percentile(mark, d), Comparison.division(Comparison.percentile(mark, d)), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), d)
+    fun r(mark: Int) = Comparison.Ranked(mark, Comparison.percentile(mark, d), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), d)
     val r43 = r(43)
     assertTrue("hay algo que superar", r43.percentile > 0)
     assertEquals("Con 43 aciertos, superas al ${r43.percentile} % de la referencia estimada para tu edad.", Comparison.heroSentence(r43, AgeRange.R45_54))
-    assertEquals("con 0 %, sin número y sin culpa", "Con 3 aciertos, todavía no superas ninguna marca de la referencia estimada para tu edad.", Comparison.heroSentence(Comparison.Ranked(3, 0, Comparison.Division.PLATFORM, Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), d), AgeRange.R45_54))
+    assertEquals("con 0 %, sin número y sin culpa", "Con 3 aciertos, todavía no superas ninguna marca de la referencia estimada para tu edad.", Comparison.heroSentence(Comparison.Ranked(3, 0, Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), d), AgeRange.R45_54))
     assertTrue("en singular: «Con 1 acierto»", Comparison.heroSentence(r(1), AgeRange.R45_54).startsWith("Con 1 acierto, "))
     assertEquals("0 aciertos", 0, Comparison.percentile(0, d))
   }
@@ -260,7 +252,7 @@ class ComparisonTest {
     val r = ranked(Comparison.Scope.OWN_WEEK, mark = 0)
     assertEquals("Con 0 aciertos, todavía no superas a ninguna de las personas de tu edad que jugaron esta semana.", Comparison.heroSentence(r, AgeRange.R75_PLUS))
     assertEquals("Con 90 aciertos, superas al 99 % de las personas de tu edad que jugaron esta semana.", Comparison.heroSentence(ranked(Comparison.Scope.OWN_WEEK, mark = 90), AgeRange.R75_PLUS))
-    assertEquals("En la plataforma", r.division.label)
+    assertEquals("el 0 % está en la primera división de la liga", Comparison.Division.PLATFORM, Comparison.division(r.percentile))
   }
 
   // ------------------------------------------------------------------ el percentil de las últimas 7 semanas
@@ -385,22 +377,6 @@ class ComparisonTest {
    * Las tablas REALES del APK tienen que dar los cinco peldaños en las seis franjas de los cuatro juegos; Rescate relámpago entra desde la Tarea 208 (la marca por cápsula separa a las personas y vuelve a dar los cinco peldaños; antes tenía cuatro en 18 a 54 años). Si una escala futura vuelve a perderlo, falla AQUÍ y no en una lámina.
    */
   @Test
-  fun `las tablas del APK dan los cinco peldaños en las seis franjas de los cuatro juegos`() {
-    val reference = realReference
-    val all = Comparison.Division.entries
-    for (game in listOf("stroop", "disparate", "radar", "acoplamiento")) {
-      val table = reference.loaded.single { it.game == game }
-      assertEquals("$game: las seis franjas de 18 en adelante", 6, table.ranges.size)
-      for ((range, d) in table.ranges) {
-        val rungs = Comparison.thresholds(d)
-        assertEquals("$game $range: los cinco peldaños, de abajo hacia arriba (hoy ${rungs.map { it.division.label }})", all, rungs.map { it.division })
-        assertTrue("$game $range: cada peldaño cae dentro de la pista", rungs.all { it.from < d.topMark })
-        assertTrue("$game $range: el último tramo junta el 5 % o menos (hoy ${100 * d.bins.last() / d.people} %), así que el percentil 90 se alcanza con margen", d.bins.last() * 20 <= d.people)
-      }
-    }
-  }
-
-  @Test
   fun `la fuente compuesta usa la real con 50 personas o mas y la estimada si no`() {
     fun d(n: Int, estimated: Boolean) = Comparison.Distribution(n, List(16) { if (it == 3) n else 0 }, 15, 15, 15, estimated = estimated)
     val est = object : Comparison.Source { override fun distribution(game: String, ranges: List<AgeRange>?, weeksAgo: Int, weeks: Int) = d(2000, true) }
@@ -470,13 +446,9 @@ class ComparisonTest {
     val lines = mutableListOf<String>()
     for (people in listOf(50, 128, 300)) for (mark in listOf(0, 7, 43, 90)) for (scope in Comparison.Scope.entries) for (range in AgeRange.entries) {
       val r = ranked(scope, people = people, mark = mark, ranges = if (scope == Comparison.Scope.ALL_4_WEEKS) null else listOf(range))
-      val l = Comparison.ladder(r)
-      lines += listOf(
-        Comparison.heroSentence(r, range), Comparison.divisionPlaceLine(r.division),
-        Comparison.needSentence(l, r), Comparison.ladderNote(r, range), Comparison.meanwhileSentence(r), Comparison.bellSpoken(r)
-      )
+      lines += listOf(Comparison.heroSentence(r, range), Comparison.meanwhileSentence(r), Comparison.bellSpoken(r))
     }
-    for (n in 0..9) Comparison.streakSentence(n)?.let { lines += it }
+    for (n in 0..9) for (est in listOf(true, false)) Comparison.streakSentence(n, est)?.let { lines += it }
     for (n in listOf(0, 1, 23, 49)) lines += Comparison.fewSentence(Comparison.Place.Few(n, null), AgeRange.R45_54, "Tinta o Palabra")
     for (k in 1..7) for (p in 0..100 step 25) lines += Comparison.weeksSentence(List(k) { Comparison.WeekPoint(it, 20, p) })!!
     for (line in lines) {
@@ -492,12 +464,8 @@ class ComparisonTest {
     val lines = mutableListOf<String>()
     val d = Comparison.Distribution(2000, SampleComparison.fit(base, 2000), 31, 39, 47, estimated = true)
     for (mark in listOf(0, 7, 43, 90)) for (range in AgeRange.entries) {
-      val r = Comparison.Ranked(mark, Comparison.percentile(mark, d), Comparison.division(Comparison.percentile(mark, d)), Comparison.Scope.OWN_WEEK, listOf(range), d)
-      val l = Comparison.ladder(r)
-      lines += listOf(
-        Comparison.heroSentence(r, range), Comparison.divisionPlaceLine(r.division),
-        Comparison.needSentence(l, r), Comparison.ladderNote(r, range), Comparison.bellSpoken(r), Comparison.bellSpoken(r, range)
-      )
+      val r = Comparison.Ranked(mark, Comparison.percentile(mark, d), Comparison.Scope.OWN_WEEK, listOf(range), d)
+      lines += listOf(Comparison.heroSentence(r, range), Comparison.bellSpoken(r), Comparison.bellSpoken(r, range))
     }
     lines += listOf(Comparison.ESTIMATED_BELL_CAPTION, Comparison.WEEKS_ESTIMATED_NOTE, Comparison.noMarkSentence("Tinta o Palabra", estimated = true))
     for (k in 1..7) lines += Comparison.weeksSpoken(List(k) { Comparison.WeekPoint(it, 20, 50) }, estimated = true)
@@ -521,7 +489,7 @@ class ComparisonTest {
     assertEquals("la hoja y la pregunta siguen con su fila de siempre", "De dónde sale la referencia ›", Comparison.SOURCE_LINK)
     val d = Comparison.Distribution(2000, SampleComparison.fit(base, 2000), 31, 39, 47, estimated = true)
     for (mark in listOf(0, 1, 7, 43, 90)) for (range in AgeRange.entries) {
-      val r = Comparison.Ranked(mark, Comparison.percentile(mark, d), Comparison.division(Comparison.percentile(mark, d)), Comparison.Scope.OWN_WEEK, listOf(range), d)
+      val r = Comparison.Ranked(mark, Comparison.percentile(mark, d), Comparison.Scope.OWN_WEEK, listOf(range), d)
       val s = Comparison.heroSentence(r, range)
       val low = s.lowercase()
       assertTrue("«$s» dice referencia estimada para tu edad (la regla del 1-nov: siempre «estimada»)", "referencia estimada para tu edad" in low)
@@ -532,111 +500,6 @@ class ComparisonTest {
   }
 
   // ------------------------------------------------------------------ la escalera de divisiones (Tarea 203)
-
-  @Test
-  fun `los peldanos salen de los tramos sin suavizar con el primer acierto de cada division`() {
-    val up = Comparison.thresholds(shaped(128))
-    assertEquals(
-      listOf(
-        Comparison.Division.PLATFORM to 0, Comparison.Division.TAKEOFF to 31, Comparison.Division.ORBIT to 39,
-        Comparison.Division.MOON to 50, Comparison.Division.STARS to 60
-      ),
-      up.map { it.division to it.from }
-    )
-    // cada peldaño es el PRIMER acierto que llega al percentil de su división, y el anterior no llega
-    for (rung in up.drop(1)) {
-      assertTrue("${rung.division} desde ${rung.from} llega", Comparison.percentile(rung.from, shaped(128)) >= rung.division.from)
-      assertTrue("${rung.division} un acierto antes no llega", Comparison.percentile(rung.from - 1, shaped(128)) < rung.division.from)
-    }
-  }
-
-  @Test
-  fun `la division de cada marca coincide con el peldaño donde la escalera la pone`() {
-    val d = shaped(128)
-    for (mark in 0..79) {
-      val r = Comparison.Ranked(mark, Comparison.percentile(mark, d), Comparison.division(Comparison.percentile(mark, d)), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), d)
-      val l = Comparison.ladder(r)
-      val current = l.current
-      assertNotNull("la marca $mark está en un peldaño", current)
-      assertTrue("la marca $mark está en su peldaño o arriba de él", mark >= current!!.from)
-      assertTrue("y por debajo del siguiente", l.next == null || mark < l.next.from)
-    }
-  }
-
-  @Test
-  fun `te faltan cuenta los aciertos hasta el primer acierto de la division siguiente`() {
-    val r = ranked(Comparison.Scope.OWN_WEEK)
-    val l = Comparison.ladder(r)
-    assertEquals(Comparison.Division.ORBIT, l.current!!.division)
-    assertEquals(Comparison.Division.MOON, l.next!!.division)
-    assertEquals(7, l.missing)
-    assertEquals("4 de los 11 aciertos del tramo", 4f / 11f, l.progress!!, 1e-6f)
-    assertEquals("Te faltan 7 aciertos para En la Luna.", Comparison.needSentence(l, r))
-    assertEquals(listOf("Entre estrellas", "En la Luna", "En órbita", "Despegando", "En la plataforma"), l.rungs.map { it.division.label })
-    assertEquals("desde 39 aciertos", Comparison.rungText(l.current!!, l.rungs[l.rungs.indexOf(l.current) - 1]))
-    assertEquals("Tú · 43 aciertos", Comparison.youRow(r))
-  }
-
-  @Test
-  fun `te falta uno se dice en singular y el primer acierto de la division no deja decir cero`() {
-    val d = shaped(128)
-    val r = Comparison.Ranked(49, Comparison.percentile(49, d), Comparison.division(Comparison.percentile(49, d)), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), d)
-    val l = Comparison.ladder(r)
-    assertEquals(1, l.missing)
-    assertEquals("Te falta 1 acierto para En la Luna.", Comparison.needSentence(l, r))
-    // justo en el primer acierto de una division, falta lo que hay hasta la siguiente (nunca 0)
-    val atEdge = Comparison.Ranked(50, Comparison.percentile(50, d), Comparison.division(Comparison.percentile(50, d)), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), d)
-    assertEquals(Comparison.Division.MOON, atEdge.division)
-    assertEquals(10, Comparison.ladder(atEdge).missing)
-  }
-
-  @Test
-  fun `en la division mas alta no falta nada y la escalera lo dice sin cifra de te faltan`() {
-    val d = shaped(128)
-    val r = Comparison.Ranked(70, Comparison.percentile(70, d), Comparison.division(Comparison.percentile(70, d)), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), d)
-    assertEquals(Comparison.Division.STARS, r.division)
-    val l = Comparison.ladder(r)
-    assertNull(l.next)
-    assertNull(l.missing)
-    assertNull(l.progress)
-    assertEquals("Estás en la división más alta de tu franja esta semana.", Comparison.needSentence(l, r))
-    assertEquals("Estás en la división más alta de tu franja.", Comparison.needSentence(l, r.copy(scope = Comparison.Scope.OWN_4_WEEKS)))
-    assertEquals("con personas, la más alta dice su lugar entre las cinco", "La quinta y más alta de las cinco divisiones.", Comparison.divisionPlaceLine(r.division))
-  }
-
-  @Test
-  fun `una franja donde casi todos hicieron lo mismo deja menos peldaños y nunca uno vacio`() {
-    val top = dist(List(15) { 0 } + listOf(10))              // todas las personas hicieron 75 o más: nadie queda debajo de ninguna marca
-    assertEquals("solo la plataforma: a ninguna otra se llega", listOf(Comparison.Division.PLATFORM), Comparison.thresholds(top).map { it.division })
-    val low = dist(listOf(100) + List(15) { 0 })             // todas hicieron de 0 a 4
-    val rungs = Comparison.thresholds(low)
-    assertEquals(listOf(0, 2, 3, 4, 5), rungs.map { it.from })
-    assertTrue("los primeros aciertos suben de a uno como mínimo", rungs.zipWithNext().all { (a, b) -> a.from < b.from })
-    val lone = Comparison.ladder(Comparison.Ranked(90, 0, Comparison.Division.PLATFORM, Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), top))
-    assertNull("con una sola división no hay siguiente", lone.next)
-  }
-
-  @Test
-  fun `la nota de la escalera cuenta las personas una sola vez sin repetir la franja ni el juego de la cifra`() {
-    assertEquals("Con las 128 personas de tu franja que jugaron esta semana.", Comparison.ladderNote(ranked(Comparison.Scope.OWN_WEEK), AgeRange.R45_54))
-    assertEquals("con las 4 semanas, que lo diga", "Con las 128 personas de tu franja que jugaron en las últimas 4 semanas.", Comparison.ladderNote(ranked(Comparison.Scope.OWN_4_WEEKS), AgeRange.R45_54))
-    assertEquals("Con las 128 personas de 30 a 54 años que jugaron en las últimas 4 semanas.", Comparison.ladderNote(ranked(Comparison.Scope.NEIGHBORS_4_WEEKS, ranges = listOf(AgeRange.R30_44, AgeRange.R45_54)), AgeRange.R45_54))
-    assertEquals("Con las 128 personas de todas las edades que jugaron en las últimas 4 semanas.", Comparison.ladderNote(ranked(Comparison.Scope.ALL_4_WEEKS, ranges = null), AgeRange.R45_54))
-    assertEquals("La escalera de tu franja", Comparison.LADDER_TITLE)
-  }
-
-  @Test
-  fun `la fila de abajo dice hasta donde llega en vez de desde 0`() {
-    val r = ranked(Comparison.Scope.OWN_WEEK)
-    val l = Comparison.ladder(r)
-    assertEquals(listOf(Comparison.Division.STARS, Comparison.Division.MOON, Comparison.Division.ORBIT, Comparison.Division.TAKEOFF, Comparison.Division.PLATFORM), l.rungs.map { it.division })
-    assertEquals("hasta 30 aciertos", Comparison.rungText(l.rungs.last(), l.rungs[l.rungs.size - 2]))
-    assertEquals("desde 31 aciertos", Comparison.rungText(l.rungs[3], l.rungs[2]))
-    assertEquals("desde 60 aciertos", Comparison.rungText(l.rungs[0], null))
-    assertEquals("sin división de arriba queda «desde 0»", "desde 0 aciertos", Comparison.rungText(l.rungs.last(), null))
-    val low = Comparison.thresholds(dist(listOf(100) + List(15) { 0 }))
-    assertEquals("con una escalera comprimida, hasta el primer acierto de la siguiente menos uno (2 - 1)", "hasta 1 acierto", Comparison.rungText(low.first(), low[1]))
-  }
 
   // ------------------------------------------------------------------ las semanas seguidas arriba de la mitad (Tarea 203)
 
@@ -660,9 +523,10 @@ class ComparisonTest {
 
   @Test
   fun `la frase de las semanas seguidas calla cuando no hay y nunca habla de perder`() {
-    assertEquals("Llevas 3 semanas seguidas En órbita o más arriba.", Comparison.streakSentence(3))
-    assertEquals("Llevas 7 semanas seguidas En órbita o más arriba.", Comparison.streakSentence(7))
-    assertEquals("Esta semana empiezas una racha En órbita o más arriba.", Comparison.streakSentence(1))
+    assertEquals("Llevas 3 semanas seguidas en la mitad de arriba de la referencia estimada.", Comparison.streakSentence(3))
+    assertEquals("Llevas 7 semanas seguidas en la mitad de arriba de la referencia estimada.", Comparison.streakSentence(7))
+    assertEquals("Esta semana empiezas una racha en la mitad de arriba de la referencia estimada.", Comparison.streakSentence(1))
+    assertEquals("con personas reales (futuro) dice las personas", "Llevas 2 semanas seguidas en la mitad de arriba de las personas de tu edad.", Comparison.streakSentence(2, estimated = false))
     assertNull("cuando se corta, la página calla", Comparison.streakSentence(0))
     for (n in 0..7) Comparison.streakSentence(n)?.let { s -> for (bad in listOf("perdiste", "perdió", "cortó", "rompiste", "volver a")) assertFalse("«$s» dice «$bad»", bad in s.lowercase()) }
   }
@@ -729,19 +593,6 @@ class ComparisonTest {
     assertEquals("muestra, sin franja, con 3", Comparison.Gate.SHOW, Comparison.gate(sample, null, "stroop", saved("stroop", 3)))
     assertEquals("muestra, de 14 a 17 años: se muestra como cualquiera", Comparison.Gate.SHOW, Comparison.gate(sample, AgeRange.R14_17, "stroop", saved("stroop", 3)))
     assertEquals("y solo hay cuatro estados, sin MINOR", listOf("NONE", "NEEDS_AGE", "EARLY", "SHOW"), Comparison.Gate.entries.map { it.name })
-  }
-
-  @Test
-  fun `el lugar de cada division entre las cinco se dice con palabras, en minuscula y en la cifra con mayuscula`() {
-    assertEquals(
-      listOf("la primera de cinco divisiones", "la segunda de cinco divisiones", "la tercera de cinco divisiones", "la cuarta de cinco divisiones", "la quinta y más alta de las cinco divisiones"),
-      Comparison.Division.entries.map { Comparison.divisionPlace(it) }
-    )
-    assertEquals(
-      listOf("La primera de cinco divisiones.", "La segunda de cinco divisiones.", "La tercera de cinco divisiones.", "La cuarta de cinco divisiones.", "La quinta y más alta de las cinco divisiones."),
-      Comparison.Division.entries.map { Comparison.divisionPlaceLine(it) }
-    )
-    for (d in Comparison.Division.entries) assertFalse("«percentil» no se dice", Comparison.divisionPlace(d).contains("percentil"))
   }
 
   @Test
@@ -832,10 +683,11 @@ class ComparisonTest {
   }
 
   @Test
-  fun `los cinco peldaños y el eje salen de la misma tabla, el rotulo omitido nunca cambia la escalera`() {
-    // omitir un rótulo del eje es solo dibujo: la escalera y la mitad no dependen de él
+  fun `la mitad y los cuartiles salen de los tramos sin suavizar, el rotulo omitido del eje no los cambia`() {
+    // omitir un rótulo del eje es solo dibujo: la mitad no depende de él (Tarea 229: antes también la escalera en aciertos de cada juego, que salió)
     val d = realReference.distribution("stroop", listOf(AgeRange.R30_44), 0, 1)
-    assertEquals(listOf(0, 58, 65, 72, 78), Comparison.thresholds(d).map { it.from })
+    assertEquals(Comparison.firstMarkReaching(50, d), Comparison.markAtPercentile(50, d))
+    assertEquals(65, Comparison.markAtPercentile(50, d))
   }
 
   // ------------------------------------------------------------------ la barra «Tú» sobre la raya de la mitad (Tarea 205b)
@@ -861,14 +713,13 @@ class ComparisonTest {
   }
 
   @Test
-  fun `de 14 a 17 anos la escalera y la campana nombran la referencia de 18 a 29, que es la tabla que se usa`() {
+  fun `de 14 a 17 anos la campana nombra la referencia de 18 a 29, que es la tabla que se usa`() {
     // Tarea 217 (Fable H1): `range.label` decía «referencia estimada para 14 a 17 años» y esa referencia no existe; la pregunta frecuente y la hoja dicen la de 18 a 29
     val est = Comparison.Distribution(2000, SampleComparison.fit(base, 2000), 31, 39, 47, estimated = true)
-    val r = Comparison.Ranked(39, Comparison.percentile(39, est), Comparison.division(Comparison.percentile(39, est)), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R14_17), est)
-    assertEquals("Peldaños de la referencia estimada para 18 a 29 años; no cambian de semana en semana.", Comparison.ladderNote(r, AgeRange.R14_17))
+    val r = Comparison.Ranked(39, Comparison.percentile(39, est), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R14_17), est)
     assertEquals("Campana de la referencia estimada para 18 a 29 años. Tu mejor marca de esta semana, 39 aciertos, está marcada.", Comparison.bellSpoken(r, AgeRange.R14_17))
-    assertEquals("las demás franjas dicen la suya", "Peldaños de la referencia estimada para 45 a 54 años; no cambian de semana en semana.", Comparison.ladderNote(r, AgeRange.R45_54))
-    for (range in AgeRange.entries) for (t in listOf(Comparison.ladderNote(r, range), Comparison.bellSpoken(r, range))) assertFalse("$range: ninguna dice «14 a 17 años»", "14 a 17" in t)
+    assertEquals("las demás franjas dicen la suya", "Campana de la referencia estimada para 45 a 54 años. Tu mejor marca de esta semana, 39 aciertos, está marcada.", Comparison.bellSpoken(r, AgeRange.R45_54))
+    for (range in AgeRange.entries) assertFalse("$range: no dice «14 a 17 años»", "14 a 17" in Comparison.bellSpoken(r, range))
   }
 
   @Test
@@ -878,10 +729,10 @@ class ComparisonTest {
     assertEquals("Tu marca está en la mitad de la referencia estimada.", Comparison.bellCaption(estimated = true, onHalf = true))
     assertEquals("Tu marca está en la mitad de las personas.", Comparison.bellCaption(estimated = false, onHalf = true))
     val est = Comparison.Distribution(2000, SampleComparison.fit(base, 2000), 31, 39, 47, estimated = true)
-    val r = Comparison.Ranked(39, Comparison.percentile(39, est), Comparison.division(Comparison.percentile(39, est)), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), est)
+    val r = Comparison.Ranked(39, Comparison.percentile(39, est), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), est)
     assertEquals("Campana de la referencia estimada para 45 a 54 años. Tu mejor marca de esta semana, 39 aciertos, está marcada.", Comparison.bellSpoken(r, AgeRange.R45_54))
     assertEquals("Campana de la referencia estimada para 45 a 54 años. Tu mejor marca de esta semana, 39 aciertos, está en la mitad.", Comparison.bellSpoken(r, AgeRange.R45_54, onHalf = true))
-    val real = Comparison.Ranked(43, 63, Comparison.Division.ORBIT, Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), shaped(128))
+    val real = Comparison.Ranked(43, 63, Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), shaped(128))
     assertTrue(Comparison.bellSpoken(real, onHalf = true).endsWith("43 aciertos, está en la mitad."))
     for (text in listOf(Comparison.BELL_ON_HALF_ESTIMATED, Comparison.BELL_ON_HALF_PEOPLE)) { assertTrue(text.endsWith(".")); assertFalse("la frase de la mitad no habla de una raya", "línea" in text.lowercase() || "raya" in text.lowercase()) }
     assertFalse("con la referencia no se dice «personas»", "personas" in Comparison.BELL_ON_HALF_ESTIMATED)

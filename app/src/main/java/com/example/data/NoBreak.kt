@@ -18,7 +18,7 @@ fun String.glueNumbers(): String = replace(DIGIT_THEN_WORD, "$1$NBSP").replace(D
 fun String.glueGames(): String = glueNumbers().replace(" de hoy", "${NBSP}de${NBSP}hoy")
 
 /** Los nombres de las divisiones de la página «Contrarreloj» (Tarea 203b): «En la Luna» no se parte entre «En la» y «Luna». */
-private val DIVISION_NAMES = listOf("En la plataforma", "En la Luna", "Entre estrellas", "En órbita")
+private val DIVISION_NAMES = listOf("En la plataforma", "Sobre las nubes", "En la Luna", "En Marte", "Entre asteroides", "En Júpiter", "Entre estrellas", "En otra galaxia", "En órbita")
 // el espacio entre la cifra y su unidad puede venir ya duro ([glueNumbers] corre antes): se acepta cualquiera de los dos
 private val AGE_RANGE = Regex("""\b(\d{2})[ \u00A0]a[ \u00A0](\d{2})[ \u00A0]años\b""")
 private val AGE_OR_MORE = Regex("""\b(\d{2})[ \u00A0]años[ \u00A0]o[ \u00A0]más\b""")

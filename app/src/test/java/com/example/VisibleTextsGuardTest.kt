@@ -305,13 +305,22 @@ class VisibleTextsGuardTest {
    * nunca se dice: lo que se ve sale de `MeasurePhrases`). Y dos cifras con «%» cuyo «de qué» va pegado: la cifra grande de un final B (`FinalModels.kt`; su `unit` empieza con «de …», lo vigila `FinalModelsTest`) y el valor de cada barra del vocabulario
    * (`GameResultScreen.kt`; la frase de arriba dice «el porcentaje de palabras de ese grupo que reconociste») y, desde la Tarea 213, el «Supera al N %» de cada fila de «Otras edades» (`Comparison.kt`; la frase de entrada dice contra qué); y el patrón `(\d) (?=%)` de `NoBreak.kt` (una expresión regular, no un texto).
    */
+  private val LEAGUE_PERCENT_TEXTS = setOf(
+    "\$percent %", "Para subir a \${it.label}, te falta llegar al \${it.from} %.", "Si la semana terminara hoy, bajarías a \${live.target.label}. Para quedarte, te falta llegar al \${d.from} %.",
+    "Superas al \${g.percent} %", "Esta semana: con el \${to.from} %, te quedas \${Comparison.placeIn(to)}.", "Esta semana: con el \${up.from} % subes a \${up.label}.",
+    "Esta semana: con el \${up.from} % subes a \${up.label}; con el \${to.from} %, te quedas \${Comparison.placeIn(to)}.", "\${target.label}: \${target.from} %", "desde el \${div.from} %"
+  )
+
   private fun looseException(file: File, text: String): Boolean {
     val path = file.path.replace('\\', '/')
     val big = path.endsWith("games/FinalModels.kt") && text.trim() in setOf("\$it %", "\${it.roundToInt()} %")
     val bar = path.endsWith("games/GameResultScreen.kt") && text.trim() == "\$percent %"
     val others = path.endsWith("data/Comparison.kt") && text.trim() == "Supera al \$p %"            // Tarea 213: cada fila de «Otras edades»; el «de qué» lo dice la frase de entrada («Tu mejor marca de esta semana, frente a la referencia estimada de cada edad:»)
     val glue = path.endsWith("data/NoBreak.kt") && text.trim() == "(\\d) (?=%)"                       // Tarea 213: el patrón que pega la cifra con su «%» (glueNumbers); es una expresión regular, no un texto
-    return path.endsWith("ui/screens/DebugTools.kt") || path.endsWith("data/StarMeasures.kt") || big || bar || others || glue
+    // Tarea 229 (la liga de la semana, textos EXACTOS de `docs/liga-de-la-semana.md` §5): el «%» es siempre el de la semana, y su «de qué» lo dice la frase de la losa de la liga («En promedio, esta semana superas al 51 % de la referencia estimada para tu edad.»);
+    // cada literal de esta lista es uno de los textos de la spec (la cifra grande, las líneas de la barra y de la escalera, el cuadro de cada juego y las frases del lunes). Cualquier otro «%» de esos archivos sigue sin pasar.
+    val league = (path.endsWith("data/League.kt") || path.endsWith("ui/screens/ContrarrelojPage.kt")) && text.trim() in LEAGUE_PERCENT_TEXTS
+    return path.endsWith("ui/screens/DebugTools.kt") || path.endsWith("data/StarMeasures.kt") || big || bar || others || glue || league
   }
 
   @Test

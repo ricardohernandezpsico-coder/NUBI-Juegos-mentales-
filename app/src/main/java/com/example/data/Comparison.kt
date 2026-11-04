@@ -33,7 +33,6 @@ object Comparison {
   /** Antes «Tu percentil semanal» (Tarea 209, decisión de Ricardo, 1-nov): «percentil» salió de todo texto visible; los mismos números (el lugar de cada semana) y la raya «la mitad». Primero se llamó «Tu lugar cada semana», pero quedaba casi igual a [PLACE_TITLE] en la misma página (la losa de «sin marca esta semana» y las semanas pasadas); Ricardo eligió «Semana a semana» (Tarea 209b, 1-nov; una línea a 393 y 360 dp con letra 1,0, regla de la Tarea 203b). */
   const val WEEKS_TITLE = "Semana a semana"
   const val OTHERS_TITLE = "Otras edades"
-  const val LADDER_TITLE = "La escalera de tu franja"
   /** Cierra «Otras edades» cuando alguna franja (o todas las edades) todavía no llega a 50 personas: no se muestran filas vacías. */
   const val OTHERS_HIDDEN = "Las demás edades aparecen cuando lleguen a 50 personas."
   /** El rótulo de la raya de 50 en «Semana a semana» (14 sp, como los ejes). */
@@ -45,7 +44,6 @@ object Comparison {
   const val MERGED_LINE = "Juntamos dos franjas porque todavía somos pocos."
   const val FEW_TITLE = "Todavía somos pocos"
   const val FEW_BAR_GOAL = MIN_PEOPLE
-  const val CLOSES = "La semana cierra el domingo."
   const val BELL_TITLE = "La campana de tu edad"
   /** Sin franja de edad guardada (Tarea 205b): la página dice dónde elegirla. Es la ruta real: Tú › «Más ajustes» › «Juego» › «Rango de edad». */
   const val AGE_HINT = "Para compararte con una referencia estimada para tu edad, elige tu edad en Tú › Más ajustes › Juego › Rango de edad."
@@ -254,31 +252,49 @@ object Comparison {
    */
   fun markAtPercentile(p: Int, d: Distribution): Int = firstMarkReaching(p, d) ?: d.lastStart
 
-  /** Las cinco divisiones con nombre de la fase 2 (`docs/contrarreloj.md` §8): por tramos fijos del percentil. Van DESPUÉS del número y nunca en su lugar. */
+  /**
+   * Las DIEZ divisiones de la liga de la semana (Tarea 229; `docs/liga-de-la-semana.md` §1; decisión de Ricardo del 4-nov: una sola división por persona, que sale del Contrarreloj de la semana; antes eran cinco y de cada juego). [from] es la línea del % de la semana: el promedio de lo que la mejor marca de cada juego supera de la referencia estimada (`League`).
+   * Los nombres se escriben siempre completos («En la Luna», nunca «Luna») y varios ya traen su preposición («En órbita», «Entre estrellas», «Sobre las nubes»): para armar «te quedarías …» usa [placeIn].
+   */
   enum class Division(val label: String, val from: Int) {
     PLATFORM("En la plataforma", 0),
-    TAKEOFF("Despegando", 25),
-    ORBIT("En órbita", 50),
-    MOON("En la Luna", 75),
-    STARS("Entre estrellas", 90)
+    TAKEOFF("Despegando", 10),
+    CLOUDS("Sobre las nubes", 20),
+    ORBIT("En órbita", 30),
+    MOON("En la Luna", 40),
+    MARS("En Marte", 50),
+    ASTEROIDS("Entre asteroides", 60),
+    JUPITER("En Júpiter", 70),
+    STARS("Entre estrellas", 80),
+    GALAXY("En otra galaxia", 90);
+
+    /** La de arriba (null en la más alta). */
+    val up: Division? get() = entries.getOrNull(ordinal + 1)
+
+    /** La de abajo (null en la plataforma, de donde no se baja). */
+    val down: Division? get() = entries.getOrNull(ordinal - 1)
   }
 
-  fun division(percentile: Int): Division = Division.entries.last { percentile >= it.from }
+  /** La división de la liga de un % de la semana: la más alta cuya línea el % alcanza. */
+  fun division(percent: Int): Division = Division.entries.last { percent >= it.from }
+
+  /** El nombre con su preposición lista para seguir a «te quedarías»: «en Despegando», pero «En la Luna», «Entre estrellas» y «Sobre las nubes» tal cual (nunca «en En la Luna»). */
+  fun placeIn(d: Division): String = if (d.label.startsWith("En ") || d.label.startsWith("Entre ") || d.label.startsWith("Sobre ")) d.label else "en ${d.label}"
+
+  private val ORDINALS = listOf("primera", "segunda", "tercera", "cuarta", "quinta", "sexta", "séptima", "octava", "novena", "décima")
 
   /**
-   * El lugar de una división entre las cinco, dicho en palabras (Tarea 209; `auditoria-fable/claridad-plus-y-ayuda.md` §1.1 y §1.2): «la primera de cinco divisiones», «la segunda…», «la tercera…», «la cuarta…» y, la más alta, «la quinta y más alta de las cinco divisiones».
-   * Va en minúscula, para seguir al nombre en una frase («Esta semana estás En órbita, la tercera de cinco divisiones…»); la cifra de la página lo dice solo y con mayúscula ([divisionPlaceLine]).
+   * El lugar de una división entre las diez, dicho en palabras (Tarea 209, ahora «de diez»): «la primera de diez divisiones», «la segunda…», … «la novena de diez divisiones» y, la más alta, «la décima y más alta de las diez divisiones».
+   * Va en minúscula, para seguir al nombre en una frase; la línea suelta lo dice con mayúscula ([divisionPlaceLine]).
    */
-  fun divisionPlace(d: Division): String = when (d) {
-    Division.PLATFORM -> "la primera de cinco divisiones"
-    Division.TAKEOFF -> "la segunda de cinco divisiones"
-    Division.ORBIT -> "la tercera de cinco divisiones"
-    Division.MOON -> "la cuarta de cinco divisiones"
-    Division.STARS -> "la quinta y más alta de las cinco divisiones"
-  }
+  fun divisionPlace(d: Division): String =
+    if (d.up == null) "la ${ORDINALS[d.ordinal]} y más alta de las diez divisiones" else "la ${ORDINALS[d.ordinal]} de diez divisiones"
 
-  /** El lugar de la división bajo su nombre en la tarjeta de la cifra, en 16 sp: «La tercera de cinco divisiones.» (reemplaza a «Percentil 63»; también lo lee el lector de pantalla). */
+  /** El lugar de la división como frase suelta: «La tercera de diez divisiones.». */
   fun divisionPlaceLine(d: Division): String = divisionPlace(d).replaceFirstChar { it.uppercase() } + "."
+
+  /** Lo que sigue a «Tu división:» en la losa de la liga: «la segunda de diez.» (la más alta, «la décima y más alta.»). */
+  fun divisionRank(d: Division): String = if (d.up == null) "la ${ORDINALS[d.ordinal]} y más alta." else "la ${ORDINALS[d.ordinal]} de diez."
 
   // ------------------------------------------------------------------ las franjas vecinas
 
@@ -307,8 +323,8 @@ object Comparison {
   /** Con quiénes se compara una marca: la franja esta semana (lo normal), la franja las últimas 4 semanas, las franjas vecinas las últimas 4 semanas, todas las edades ESTA semana o todas las edades las últimas 4 semanas (estas dos, solo en «Mientras tanto»). */
   enum class Scope { OWN_WEEK, OWN_4_WEEKS, NEIGHBORS_4_WEEKS, ALL_WEEK, ALL_4_WEEKS }
 
-  /** Un lugar dicho: la [mark] de esta semana contra [distribution] (de [ranges], null = todas las edades), con su [percentile] y su [division]. */
-  data class Ranked(val mark: Int, val percentile: Int, val division: Division, val scope: Scope, val ranges: List<AgeRange>?, val distribution: Distribution) {
+  /** Un lugar dicho: la [mark] de esta semana contra [distribution] (de [ranges], null = todas las edades), con su [percentile]. (Desde la Tarea 229 la división ya no es de un juego: es la de la liga de la semana, `League`.) */
+  data class Ranked(val mark: Int, val percentile: Int, val scope: Scope, val ranges: List<AgeRange>?, val distribution: Distribution) {
     /** true si la clase de referencia es la ESTIMADA (robots): los textos dicen «referencia estimada», nunca «personas». */
     val estimated: Boolean get() = distribution.estimated
   }
@@ -331,7 +347,7 @@ object Comparison {
    */
   fun place(source: Source, game: String, range: AgeRange, mark: Int?): Place {
     if (mark == null) return Place.NoMark
-    fun ranked(scope: Scope, ranges: List<AgeRange>?, d: Distribution) = Ranked(mark, percentile(mark, d), division(percentile(mark, d)), scope, ranges, d)
+    fun ranked(scope: Scope, ranges: List<AgeRange>?, d: Distribution) = Ranked(mark, percentile(mark, d), scope, ranges, d)
     val own = source.distribution(game, listOf(range), 0)
     if (own.enough) return Place.Found(ranked(Scope.OWN_WEEK, listOf(range), own))
     source.distribution(game, listOf(range), 0, RECENT_WEEKS).takeIf { it.enough }?.let { return Place.Found(ranked(Scope.OWN_4_WEEKS, listOf(range), it)) }
@@ -373,77 +389,30 @@ object Comparison {
     return if (p > 0) "Con $hits, superas al $p % de $people." else "Con $hits, todavía no superas a ninguna de $people."
   }
 
-  /** Un peldaño de la escalera: la división y el PRIMER acierto con que se llega a ella. */
-  data class Rung(val division: Division, val from: Int)
+  /** La mitad de la referencia: el umbral de las semanas seguidas (Tarea 229: antes «En órbita o más arriba», el umbral de una división por juego; el 50 es el mismo y ya no usa el nombre de ninguna). */
+  const val HALF_LINE = 50
 
   /**
-   * Los peldaños de la escalera de [d], de abajo hacia arriba: el primer acierto con que el percentil de la marca llega a 25, 50, 75 y 90 (la misma regla de [percentile], contando sobre los tramos SIN suavizar; así la escalera y la división de la persona nunca se contradicen), y la plataforma desde 0.
-   * Una división a la que no se llega (el percentil no alcanza ni con 75 aciertos o más) o que queda vacía (su primer acierto es el de la siguiente) no tiene peldaño.
-   */
-  fun thresholds(d: Distribution): List<Rung> {
-    val all = Division.entries.mapNotNull { div -> (if (div == Division.PLATFORM) 0 else firstMarkReaching(div.from, d))?.let { Rung(div, it) } }
-    return all.filterIndexed { i, rung -> i == all.lastIndex || rung.from < all[i + 1].from }
-  }
-
-  /**
-   * La escalera de una marca: los [rungs] de ARRIBA hacia abajo, el peldaño de la persona ([current]), el siguiente ([next], null en la división más alta), cuántos aciertos le faltan ([missing], siempre 1 o más) y qué parte del tramo entre los dos lleva recorrida ([progress], de 0 a 1; null en la más alta).
-   */
-  data class Ladder(val rungs: List<Rung>, val current: Rung?, val next: Rung?, val missing: Int?, val progress: Float?)
-
-  fun ladder(r: Ranked): Ladder {
-    val up = thresholds(r.distribution)
-    val current = up.firstOrNull { it.division == r.division }
-    val next = current?.let { up.getOrNull(up.indexOf(it) + 1) }
-    val missing = next?.let { (it.from - r.mark).coerceAtLeast(1) }
-    val progress = if (current != null && next != null) ((r.mark - current.from).toFloat() / (next.from - current.from)).coerceIn(0f, 1f) else null
-    return Ladder(up.asReversed(), current, next, missing, progress)
-  }
-
-  /**
-   * Lo que dice cada fila de la escalera: «desde 39 aciertos» (el primer acierto de la división). La de abajo, En la plataforma, empieza en 0 y «desde 0 aciertos» no dice nada: dice hasta dónde llega, «hasta 30 aciertos» (el primer acierto de la división de [above], la de arriba, menos uno; Tarea 203b).
-   * Sin división de arriba (la escalera tiene un solo peldaño) queda «desde 0 aciertos».
-   */
-  fun rungText(rung: Rung, above: Rung?): String =
-    if (rung.division == Division.PLATFORM && above != null) "hasta ${TimeTrialDay.hitsText(above.from - 1)}" else "desde ${TimeTrialDay.hitsText(rung.from)}"
-
-  /** «Tú · 43 aciertos»: la fila de la persona, en lima. */
-  fun youRow(r: Ranked): String = "Tú · ${TimeTrialDay.hitsText(r.mark)}"
-
-  /** «Te faltan 7 aciertos para En la Luna.» («Te falta 1 acierto…»); en la división más alta, «Estás en la división más alta de tu franja esta semana.». */
-  fun needSentence(l: Ladder, r: Ranked): String {
-    val next = l.next
-    val missing = l.missing
-    if (next == null || missing == null) return if (r.scope == Scope.OWN_WEEK) "Estás en la división más alta de tu franja esta semana." else "Estás en la división más alta de tu franja."
-    return "${if (missing == 1) "Te falta" else "Te faltan"} ${TimeTrialDay.hitsText(missing)} para ${next.division.label}."
-  }
-
-  /**
-   * «Con las 128 personas de tu franja que jugaron esta semana.» (la clase de la escalera, dicha una sola vez; la franja exacta y el juego ya están en la cifra de arriba). Con las 4 semanas lo dice: «…que jugaron en las últimas 4 semanas.»;
-   * con las franjas juntas o todas las edades dice cuáles («Con las 240 personas de 30 a 54 años que jugaron en las últimas 4 semanas.»).
-   */
-  fun ladderNote(r: Ranked, range: AgeRange): String {
-    // la franja que se nombra es la de la TABLA: de 14 a 17 años es la de 18 a 29, igual que en la pregunta frecuente y en la hoja (Tarea 217, Fable H1)
-    if (r.estimated) return "Peldaños de la referencia estimada para ${EstimatedReference.tableRangeOf(range).label}; no cambian de semana en semana."
-    val whenText = if (r.scope == Scope.OWN_WEEK || r.scope == Scope.ALL_WEEK) "esta semana" else "en las últimas $RECENT_WEEKS semanas"
-    val who = if (r.scope == Scope.OWN_WEEK || r.scope == Scope.OWN_4_WEEKS) "de tu franja" else whoText(r, range)
-    return "Con las ${r.distribution.people} personas $who que jugaron $whenText."
-  }
-
-  /**
-   * Las semanas seguidas, hasta esta, con percentil 50 o más («En órbita o más arriba», el umbral fijo de la división En órbita). Una semana sin marca propia o sin 50 personas en la franja no tiene punto y corta la cuenta: no se sabe cómo fue.
+   * Las semanas seguidas, hasta esta, con percentil 50 o más (la mitad de arriba de la referencia). Una semana sin marca propia o sin 50 personas en la franja no tiene punto y corta la cuenta: no se sabe cómo fue.
    */
   fun streak(points: List<WeekPoint>): Int {
-    val above = points.filter { it.percentile >= Division.ORBIT.from }.map { it.weeksAgo }.toSet()
+    val above = points.filter { it.percentile >= HALF_LINE }.map { it.weeksAgo }.toSet()
     var n = 0
     while (n in above) n++
     return n
   }
 
-  /** «Llevas 3 semanas seguidas En órbita o más arriba.»; con una sola, «Esta semana empiezas una racha En órbita o más arriba.»; sin racha no dice nada (nunca «perdiste»: cuando se corta, la página calla). */
-  fun streakSentence(n: Int): String? = when {
-    n >= 2 -> "Llevas $n semanas seguidas ${Division.ORBIT.label} o más arriba."
-    n == 1 -> "Esta semana empiezas una racha ${Division.ORBIT.label} o más arriba."
-    else -> null
+  /**
+   * «Llevas 3 semanas seguidas en la mitad de arriba de la referencia estimada.» (Tarea 229; antes «…En órbita o más arriba»); con una sola, «Esta semana empiezas una racha en la mitad de arriba de la referencia estimada.»; sin racha no dice nada (nunca «perdiste»: cuando se corta, la página calla).
+   * Con personas reales (futuro): «…en la mitad de arriba de las personas de tu edad.».
+   */
+  fun streakSentence(n: Int, estimated: Boolean = true): String? {
+    val where = if (estimated) "en la mitad de arriba de la referencia estimada" else "en la mitad de arriba de las personas de tu edad"
+    return when {
+      n >= 2 -> "Llevas $n semanas seguidas $where."
+      n == 1 -> "Esta semana empiezas una racha $where."
+      else -> null
+    }
   }
 
   /** El rótulo izquierdo del eje de las semanas: «hace 3 semanas» (la más vieja con punto); null si la más vieja es esta (no hay de qué separar). */

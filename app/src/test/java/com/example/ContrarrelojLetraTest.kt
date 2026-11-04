@@ -103,27 +103,32 @@ class ContrarrelojLetraTest {
     var width by mutableIntStateOf(393)
     var scale by mutableFloatStateOf(1f)
     var results by mutableStateOf(listOf<TimeTrialResult>())
+    var league by mutableStateOf(com.example.data.League.State())
     rule.setContent {
       val base = LocalDensity.current
       CompositionLocalProvider(LocalDensity provides Density(base.density, scale), LocalReduceMotion provides true) {
         NeuroVidaTheme {
           Box(Modifier.width(width.dp).height(873.dp)) {
             BoardBackground()
-            ContrarrelojPage(results = results, selected = "stroop", onSelect = {}, now = now, lang = com.example.model.AppLanguage.SPANISH, compare = estimated, ageRange = AgeRange.R45_54)
+            ContrarrelojPage(results = results, selected = "stroop", onSelect = {}, now = now, lang = com.example.model.AppLanguage.SPANISH, compare = estimated, ageRange = AgeRange.R45_54, league = league)
           }
         }
       }
     }
     val problems = mutableListOf<String>()
     var checked = 0
-    for (mark in listOf(36, 46, 58, 70)) for (w in listOf(393, 360)) for (s in listOf(1f, 1.3f, 2f)) {
+    // Tarea 229: la liga con los nombres de división más largos (el de la plataforma, el de las nubes, el de los asteroides y el de otra galaxia), cada uno con la frase del lunes que le toca
+    val divisions = listOf(com.example.data.Comparison.Division.PLATFORM, com.example.data.Comparison.Division.CLOUDS, com.example.data.Comparison.Division.ASTEROIDS, com.example.data.Comparison.Division.GALAXY)
+    for (d in divisions) for (mark in listOf(36, 70)) for (w in listOf(393, 360)) for (s in listOf(1f, 1.3f, 2f)) {
+      league = if (d == com.example.data.Comparison.Division.PLATFORM) com.example.data.League.State(startWeek = com.example.data.Week.weekStart(now))
+        else com.example.data.League.State(startWeek = com.example.data.Week.weekStart(now, 3), weeks = listOf(com.example.data.League.Closed(com.example.data.Week.weekStart(now, 1), d.from + 5, d.down ?: d, d)))
       results = listOf(r(1, 20), r(1, 21), r(mark)); width = w; scale = s       // desde la tercera partida guardada del juego se dice el lugar (Tarea 207): dos anteriores flojas y la de la prueba
       rule.waitForIdle()
-      if (mark < 63) assertTrue("con la marca $mark la escalera dice «Te faltan N aciertos»: ${textOf("contrarreloj_ladder_need")}", "Te falta" in textOf("contrarreloj_ladder_need"))
-      cutsOnScreen().forEach { problems += "marca $mark a $w dp con letra $s: $it" }
+      assertTrue("la losa de la liga dice cómo va la semana: ${textOf("contrarreloj_league_monday")}", textOf("contrarreloj_league_monday").isNotEmpty())
+      cutsOnScreen().forEach { problems += "${d.label}, marca $mark a $w dp con letra $s: $it" }
       checked += 1
     }
-    assertEquals(4 * 6, checked)
+    assertEquals(4 * 2 * 6, checked)
     assertTrue("palabras cortadas por dentro:\n" + problems.joinToString("\n"), problems.isEmpty())
   }
 

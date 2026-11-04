@@ -27,10 +27,12 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.data.Comparison
+import com.example.data.League
 import com.example.data.NBSP
 import com.example.data.SampleComparison
 import com.example.data.TimeTrialResult
 import com.example.data.TimeTrialStats
+import com.example.data.Week
 import com.example.data.TimeTrialTrials
 import com.example.model.AgeRange
 import com.example.ui.components.BoardBackground
@@ -100,7 +102,11 @@ class ContrarrelojPageTest {
   private var playCalls = 0
   private var lockedCalls = 0
 
-  private fun show(widthDp: Int = 393, scale: Float = 1f, results: List<TimeTrialResult> = ten + others, selected: String = "stroop", compare: Comparison.Source? = null, ageRange: AgeRange? = null, plus: Boolean = true, today: String? = "stroop") {
+  /** La liga de la semana con la persona en la división [d] (Tarea 229): sin semanas cerradas si es la primera, con una cerrada que la dejó ahí si no. */
+  private fun leagueIn(d: Comparison.Division) = if (d == Comparison.Division.PLATFORM) League.State(startWeek = Week.weekStart(now))
+    else League.State(startWeek = Week.weekStart(now, 3), weeks = listOf(League.Closed(Week.weekStart(now, 1), d.from + 5, d.down ?: d, d)))
+
+  private fun show(widthDp: Int = 393, scale: Float = 1f, results: List<TimeTrialResult> = ten + others, selected: String = "stroop", compare: Comparison.Source? = null, ageRange: AgeRange? = null, plus: Boolean = true, today: String? = "stroop", league: League.State = League.State()) {
     rule.setContent {
       val base = LocalDensity.current
       density = base.density
@@ -108,7 +114,7 @@ class ContrarrelojPageTest {
         NeuroVidaTheme {
           Box(Modifier.width(widthDp.dp).height(873.dp)) {
             BoardBackground()
-            ContrarrelojPage(results = results, selected = selected, onSelect = { selectedCalls += it }, now = now, lang = com.example.model.AppLanguage.SPANISH, compare = compare, ageRange = ageRange, onOpenSource = { sourceCalls += 1 }, plus = plus, today = today, onPlay = { playCalls += 1 }, onLocked = { lockedCalls += 1 })
+            ContrarrelojPage(results = results, selected = selected, onSelect = { selectedCalls += it }, now = now, lang = com.example.model.AppLanguage.SPANISH, compare = compare, ageRange = ageRange, onOpenSource = { sourceCalls += 1 }, plus = plus, league = league, today = today, onPlay = { playCalls += 1 }, onLocked = { lockedCalls += 1 })
           }
         }
       }
@@ -227,13 +233,12 @@ class ContrarrelojPageTest {
     assertEquals("Tus últimas 5 marcas", textOf("contrarreloj_chart_title"))
   }
 
-  @Test fun con_letra_1_3_siguen_las_diez_barras_y_el_selector_pasa_a_una_columna() {
+  @Test fun con_letra_1_3_siguen_las_diez_barras_y_los_cuadros_siguen_en_dos_columnas() {
     show(scale = 1.3f)
     val b = boxes()
     assertEquals(10, b.keys.count { it.startsWith("contrarreloj_barshape_") })
     val x = games.map { b.getValue("contrarreloj_game_$it").x }
-    assertTrue("una columna: las cuatro losas parten del mismo borde", x.all { Math.abs(it - x[0]) < 0.5f })
-    assertTrue("y una bajo otra", games.zipWithNext().all { (a, c) -> b.getValue("contrarreloj_game_$c").y > b.getValue("contrarreloj_game_$a").b })
+    assertEquals("dos columnas: la primera y la tercera parten del mismo borde, la segunda y la cuarta del otro", 2, x.map { Math.round(it) }.toSet().size)
   }
 
   @Test fun con_letra_1_0_el_selector_son_dos_filas_parejas_de_dos() {
@@ -367,7 +372,7 @@ class ContrarrelojPageTest {
     assertNull("sin marcas en el juego no hay losa de ritmo", b["contrarreloj_rhythm"])
     assertNotNull("la nota de siempre sigue al pie", b["contrarreloj_note"])
     assertNull("y la regla de la marca no, porque no hay marca", b["contrarreloj_rule"])
-    assertEquals("sin marca aún", textOf("contrarreloj_game_value_radar"))
+    assertEquals("el cuadro del juego dice que no hubo partidas esta semana (Tarea 229)", "Sin partidas esta semana", textOf("contrarreloj_game_value_radar").replace(NBSP, " "))
   }
 
   // ---------------------------------------------------------------- orden, líneas, ventanilla noche y «Tu ritmo»
@@ -524,7 +529,7 @@ class ContrarrelojPageTest {
     assertEquals("Esta semana, comparado con tu edad", textOf("contrarreloj_section_compare"))
     assertEquals("Tus marcas", textOf("contrarreloj_section_marks"))
     assertEquals("Estos son datos de muestra: solo se ven en la versión de prueba.", textOf("contrarreloj_sample_notice"))
-    val order = listOf("contrarreloj_game_radar", "contrarreloj_free", "contrarreloj_section_compare", "contrarreloj_hero", "contrarreloj_ladder", "contrarreloj_bell", "contrarreloj_others", "contrarreloj_percweeks", "contrarreloj_section_marks", "contrarreloj_marks", "contrarreloj_rhythm", "contrarreloj_notes", "contrarreloj_sample_notice")
+    val order = listOf("contrarreloj_league", "contrarreloj_league_ladder", "contrarreloj_selector", "contrarreloj_free", "contrarreloj_section_compare", "contrarreloj_hero", "contrarreloj_bell", "contrarreloj_others", "contrarreloj_percweeks", "contrarreloj_section_marks", "contrarreloj_marks", "contrarreloj_rhythm", "contrarreloj_notes", "contrarreloj_sample_notice")
     for ((a, c) in order.zipWithNext()) assertTrue("«$a» va antes que «$c»", b.getValue(a).b <= b.getValue(c).y + 0.5f)
     assertEquals("24 dp de aire sobre el primer rótulo: 16 de entre losas y 8 propios", 24f, b.getValue("contrarreloj_section_compare").y - b.getValue("contrarreloj_free").b, 1.5f)
     assertEquals("y sobre el segundo", 24f, b.getValue("contrarreloj_section_marks").y - b.getValue("contrarreloj_percweeks").b, 1.5f)
@@ -561,27 +566,18 @@ class ContrarrelojPageTest {
     assertNull("ya no hay «de cada 100»: ni cifra suelta ni frase de abajo", b["contrarreloj_hero_figure"] ?: b["contrarreloj_hero_caption"])
   }
 
-  @Test fun la_cifra_es_una_frase_con_los_aciertos_y_el_porcentaje_y_la_division_y_su_lugar_viven_en_lo_gratis() {
-    show(compare = manyWorld, ageRange = AgeRange.R45_54)
+  @Test fun la_cifra_es_una_frase_con_los_aciertos_y_el_porcentaje_y_la_division_vive_en_la_losa_de_la_liga() {
+    show(compare = manyWorld, ageRange = AgeRange.R45_54, league = leagueIn(Comparison.Division.ORBIT))
     assertEquals("Con 43 aciertos, superas al 63 % de las personas de tu edad que jugaron esta semana.", n("contrarreloj_hero_sentence"))
     assertTrue("«63 %» y «43 aciertos» van con espacio duro: no se parten", textOf("contrarreloj_hero_sentence").let { it.contains("63${NBSP}%") && it.contains("43${NBSP}aciertos") })
-    assertEquals("En órbita", n("contrarreloj_hero_division"))
-    assertEquals("La tercera de cinco divisiones.", n("contrarreloj_hero_place"))
-    assertEquals("el lector de pantalla: la frase de Plus, sola (la división la dice lo gratis)", "Con 43 aciertos, superas al 63 % de las personas de tu edad que jugaron esta semana.", descriptionOf("contrarreloj_hero"))
-    assertEquals("y lo gratis dice la división y su lugar", "En órbita. La tercera de cinco divisiones.", descriptionOf("contrarreloj_hero_division_line"))
+    assertEquals("el lector de pantalla: la frase de Plus, sola", "Con 43 aciertos, superas al 63 % de las personas de tu edad que jugaron esta semana.", descriptionOf("contrarreloj_hero"))
+    assertEquals("la división y su lugar los dice la losa de la liga (Tarea 229), una sola vez", "En órbita. Tu división: la cuarta de diez.", descriptionOf("contrarreloj_league_division_line"))
     assertFalse("Tarea 209: «percentil» ya no se dice ni se ve", descriptionOf("contrarreloj_hero").lowercase().contains("percentil"))
     val b = boxes()
     assertNull("la clase normal no dice «Juntamos dos franjas»", b["contrarreloj_hero_scope"])
-    val sentence = b.getValue("contrarreloj_hero_sentence"); val div = b.getValue("contrarreloj_hero_division"); val place = b.getValue("contrarreloj_hero_place")
-    assertNull("ya no hay cifra suelta ni frase de abajo", b["contrarreloj_hero_figure"]); assertNull(b["contrarreloj_hero_caption"])
-    assertNull("ya no hay «Percentil 63» a la derecha", b["contrarreloj_hero_percentile"])
-    assertTrue("de arriba abajo: la división (con su emblema) y su lugar, en lo gratis, y después la frase de Plus", div.b <= place.y && place.b <= sentence.y)
-    assertTrue("la división es de la losa gratis", div.y >= b.getValue("contrarreloj_free").y && place.b <= b.getValue("contrarreloj_free").b)
-    assertEquals("el lugar va justo bajo la división, a 4 dp, alineado a la izquierda", 4f, place.y - div.b, 1.5f)
-    assertEquals(div.x, place.x, 0.5f)
-    assertEquals("la frase es la primera pieza de la losa, a 16 dp del borde de arriba", b.getValue("contrarreloj_hero").y + 16f, sentence.y, 1.5f)
-    assertEquals("la tarjeta llena el ancho de la losa y no tiene título", 393f - 32f, b.getValue("contrarreloj_hero").w, 1f)
-    assertNull(b["contrarreloj_hero_title"])
+    for (gone in listOf("contrarreloj_hero_division", "contrarreloj_hero_place", "contrarreloj_hero_figure", "contrarreloj_hero_caption", "contrarreloj_hero_percentile", "contrarreloj_hero_title")) assertNull("«$gone» ya no existe", b[gone])
+    assertEquals("la frase es la primera pieza de la losa, a 16 dp del borde de arriba", b.getValue("contrarreloj_hero").y + 16f, b.getValue("contrarreloj_hero_sentence").y, 1.5f)
+    assertEquals("la tarjeta llena el ancho de la losa", 393f - 32f, b.getValue("contrarreloj_hero").w, 1f)
   }
 
   @Test fun con_la_referencia_estimada_la_frase_de_la_cifra_dice_referencia_estimada_para_tu_edad_y_nunca_personas() {
@@ -603,63 +599,66 @@ class ContrarrelojPageTest {
     // 75 o más: 38 personas esta semana → sus 4 semanas
     show(compare = manyWorld, ageRange = AgeRange.R75_PLUS)
     assertTrue("«${n("contrarreloj_hero_sentence")}»", n("contrarreloj_hero_sentence").let { it.startsWith("Con 43 aciertos, superas al ") && it.endsWith(" % de las personas de tu edad que jugaron en las últimas 4 semanas.") })
-    assertEquals("el título es el mismo; la nota de abajo dice la clase", "La escalera de tu franja", textOf("contrarreloj_ladder_title"))
-    assertTrue("«${n("contrarreloj_ladder_note")}»", n("contrarreloj_ladder_note").let { it.startsWith("Con las ") && it.endsWith("personas de tu franja que jugaron en las últimas 4 semanas.") })
     assertNull("la clase de 4 semanas de la propia franja no necesita decir que se juntaron franjas", boxes()["contrarreloj_hero_scope"])
   }
 
   // ---- la escalera
 
-  @Test fun la_escalera_son_cinco_divisiones_de_arriba_abajo_cada_una_con_su_primer_acierto_y_tu_fila_en_lima() {
-    show(compare = manyWorld, ageRange = AgeRange.R45_54)
-    assertEquals("La escalera de tu franja", textOf("contrarreloj_ladder_title"))
-    assertEquals("Entre estrellas", n("contrarreloj_ladder_row_0_label")); assertEquals("desde 60 aciertos", n("contrarreloj_ladder_row_0_value"))
-    assertEquals("En la Luna", n("contrarreloj_ladder_row_1_label")); assertEquals("desde 50 aciertos", n("contrarreloj_ladder_row_1_value"))
-    assertEquals("En órbita", n("contrarreloj_ladder_you_name")); assertEquals("Tú · 43 aciertos", n("contrarreloj_ladder_you_value"))
-    assertEquals("Despegando", n("contrarreloj_ladder_row_3_label")); assertEquals("desde 31 aciertos", n("contrarreloj_ladder_row_3_value"))
-    assertEquals("En la plataforma", n("contrarreloj_ladder_row_4_label")); assertEquals("de 0 a 30: llega hasta 30 aciertos", "hasta 30 aciertos", n("contrarreloj_ladder_row_4_value"))
-    assertEquals("la fila tuya no se dice solo por el color: lleva la división y «Tú»", "En órbita, Tú · 43 aciertos", descriptionOf("contrarreloj_ladder_you").replace(NBSP, " "))
-    assertEquals("la de otra división se lee con su primer acierto", "Entre estrellas, desde 60 aciertos", descriptionOf("contrarreloj_ladder_row_0").replace(NBSP, " "))
+  @Test fun la_escalera_son_diez_divisiones_de_arriba_abajo_cada_una_con_su_linea_y_tu_fila_en_lima() {
+    show(compare = manyWorld, ageRange = AgeRange.R45_54, league = leagueIn(Comparison.Division.ORBIT))
+    assertEquals("Las diez divisiones", textOf("contrarreloj_league_ladder_title"))
+    assertEquals("En otra galaxia", n("contrarreloj_league_row_GALAXY_label")); assertEquals("desde el 90 %", n("contrarreloj_league_row_GALAXY_value").replace(NBSP, " "))
+    assertEquals("En la Luna", n("contrarreloj_league_row_MOON_label")); assertEquals("desde el 40 %", n("contrarreloj_league_row_MOON_value").replace(NBSP, " "))
+    assertEquals("En órbita", n("contrarreloj_league_you_name")); assertEquals("Tú", n("contrarreloj_league_you_value"))
+    assertEquals("Despegando", n("contrarreloj_league_row_TAKEOFF_label")); assertEquals("desde el 10 %", n("contrarreloj_league_row_TAKEOFF_value").replace(NBSP, " "))
+    assertEquals("En la plataforma", n("contrarreloj_league_row_PLATFORM_label")); assertEquals("la de abajo parte del 0 %", "desde el 0 %", n("contrarreloj_league_row_PLATFORM_value").replace(NBSP, " "))
+    assertEquals("la fila tuya no se dice solo por el color: lleva la división y «Tú»", "En órbita, Tú", descriptionOf("contrarreloj_league_you").replace(NBSP, " "))
+    assertEquals("la de otra división se lee con su línea", "En otra galaxia, desde el 90 %", descriptionOf("contrarreloj_league_row_GALAXY").replace(NBSP, " "))
     val b = boxes()
-    val order = listOf("contrarreloj_ladder_row_0", "contrarreloj_ladder_row_1", "contrarreloj_ladder_you", "contrarreloj_ladder_row_3", "contrarreloj_ladder_row_4")
+    val order = Comparison.Division.entries.asReversed().map { if (it == Comparison.Division.ORBIT) "contrarreloj_league_you" else "contrarreloj_league_row_${it.name}" }
     for ((a, c) in order.zipWithNext()) assertTrue("«$a» va antes que «$c»", b.getValue(a).b <= b.getValue(c).y + 0.5f)
-    val card = b.getValue("contrarreloj_ladder"); val you = b.getValue("contrarreloj_ladder_you")
+    val card = b.getValue("contrarreloj_league_ladder"); val you = b.getValue("contrarreloj_league_you")
     assertEquals("la fila tuya llena el ancho útil de la losa (relleno de 16 dp)", card.w - 32f, you.w, 1f)
-    assertTrue("y mide 40 dp o más de alto (una línea de 24 dp y 10 dp de relleno arriba y abajo)", you.h >= 39.5f)
+    assertTrue("y mide 40 dp o más de alto", you.h >= 39.5f)
   }
 
-  @Test fun lo_que_falta_su_barra_y_el_domingo_viven_en_lo_gratis_y_la_escalera_sigue_con_las_semanas_seguidas() {
-    show(compare = manyWorld, ageRange = AgeRange.R45_54)
-    assertEquals("Te faltan 7 aciertos para En la Luna.", n("contrarreloj_ladder_need"))
-    assertEquals("La semana cierra el domingo.", n("contrarreloj_ladder_closes"))
-    assertEquals("Llevas 3 semanas seguidas En órbita o más arriba.", n("contrarreloj_ladder_streak"))
-    assertEquals("Con las 128 personas de tu franja que jugaron esta semana.", n("contrarreloj_ladder_note"))
+  @Test fun la_losa_de_la_liga_dice_la_division_el_porcentaje_la_barra_y_el_domingo() {
+    show(compare = manyWorld, ageRange = AgeRange.R45_54, league = leagueIn(Comparison.Division.ORBIT))
+    assertEquals("En órbita", n("contrarreloj_league_division"))
+    assertEquals("Tu división: la cuarta de diez.", n("contrarreloj_league_rank"))
+    assertEquals("Tu semana", n("contrarreloj_league_week_label"))
+    assertEquals("63 %", n("contrarreloj_league_percent").replace(NBSP, " "))
+    assertEquals("En promedio, esta semana superas al 63 % de las personas de tu edad.", n("contrarreloj_league_average").replace(NBSP, " "))
+    assertEquals("Si la semana terminara hoy, el lunes subirías a En la Luna.", n("contrarreloj_league_monday").replace(NBSP, " "))
+    assertEquals("el 28 de octubre de 2026 es miércoles: quedan cuatro días", "La semana cierra el domingo. Quedan 4 días.", n("contrarreloj_league_closes").replace(NBSP, " "))
+    assertEquals("la línea de la división de arriba, con su nombre y su línea", "En la Luna: 40 %", n("contrarreloj_league_tick_label").replace(NBSP, " "))
+    assertEquals("Llevas 3 semanas seguidas en la mitad de arriba de las personas de tu edad.", n("contrarreloj_ladder_streak"))
     val b = boxes()
-    val free = listOf("contrarreloj_hero_division", "contrarreloj_hero_place", "contrarreloj_divider_free", "contrarreloj_ladder_need", "contrarreloj_ladder_bar", "contrarreloj_ladder_closes")
-    // (la línea fina de lo gratis va ANTES de la división)
-    val order = listOf("contrarreloj_divider_free", "contrarreloj_hero_division", "contrarreloj_hero_place", "contrarreloj_ladder_need", "contrarreloj_ladder_bar", "contrarreloj_ladder_closes")
+    val order = listOf("contrarreloj_league_division_line", "contrarreloj_divider_league", "contrarreloj_league_week_label", "contrarreloj_league_percent", "contrarreloj_league_average", "contrarreloj_league_bar", "contrarreloj_league_tick_label", "contrarreloj_league_monday", "contrarreloj_league_closes")
     for ((a, c) in order.zipWithNext()) assertTrue("«$a» va antes que «$c»", b.getValue(a).b <= b.getValue(c).y + 0.5f)
-    for (t in free) assertTrue("«$t» es de la losa gratis", b.getValue(t).y >= b.getValue("contrarreloj_free").y && b.getValue(t).b <= b.getValue("contrarreloj_free").b)
-    val order2 = listOf("contrarreloj_ladder_row_4", "contrarreloj_divider_ladder", "contrarreloj_ladder_streak", "contrarreloj_ladder_note")
-    for ((a, c) in order2.zipWithNext()) assertTrue("«$a» va antes que «$c»", b.getValue(a).b <= b.getValue(c).y + 0.5f)
-    for (t in listOf("contrarreloj_ladder_streak", "contrarreloj_ladder_note", "contrarreloj_divider_ladder")) assertTrue("«$t» es de la escalera", b.getValue(t).y >= b.getValue("contrarreloj_ladder").y)
-    assertNull("la escalera ya no repite lo que falta ni el domingo: viven una sola vez", b.keys.firstOrNull { it == "contrarreloj_ladder_need" && b.getValue(it).y >= b.getValue("contrarreloj_ladder").y })
-    val bar = b.getValue("contrarreloj_ladder_bar"); val fill = b.getValue("contrarreloj_ladder_bar_fill")
+    for (t in order) assertTrue("«$t» es de la losa de la liga", b.getValue(t).y >= b.getValue("contrarreloj_league").y && b.getValue(t).b <= b.getValue("contrarreloj_league").b)
+    val bar = b.getValue("contrarreloj_league_bar"); val fill = b.getValue("contrarreloj_league_bar_fill")
     assertEquals("la barra mide 16 dp", 16f, bar.h, 0.6f)
-    assertEquals("va llena en 4 de los 11 aciertos del tramo de En órbita a En la Luna", 4f / 11f, fill.w / bar.w, 0.02f)
-    assertEquals("la barra llena el ancho útil de la losa gratis", b.getValue("contrarreloj_free").w - 32f, bar.w, 1f)
-    assertEquals("la línea de separación mide 1 dp", 1f, b.getValue("contrarreloj_divider_ladder").h, 0.1f)
+    assertEquals("va llena hasta el 63 % de 0 a 100", 0.63f, fill.w / bar.w, 0.02f)
+    assertEquals("la barra llena el ancho útil de la losa", b.getValue("contrarreloj_league").w - 32f, bar.w, 1f)
+    val tick = b.getValue("contrarreloj_league_tick")
+    assertEquals("la marca está en el 40 % de la barra", bar.x + bar.w * 0.4f, tick.x + tick.w / 2, 1.5f)
+    assertTrue("y cuelga bajo la barra, sin pisarla", tick.y >= bar.b - 0.5f)
+    assertTrue("el rótulo de la marca queda dentro de la barra de lado a lado", b.getValue("contrarreloj_league_tick_label").x >= bar.x - 0.5f && b.getValue("contrarreloj_league_tick_label").r <= bar.r + 0.5f)
+    assertEquals("la losa de la liga mide lo que su contenido: ni 'Te faltan' ni 'La semana cierra' están en la losa gratis", 0, b.keys.count { it == "contrarreloj_ladder_need" || it == "contrarreloj_ladder_closes" })
   }
 
-  @Test fun en_la_division_mas_alta_no_falta_nada_y_no_hay_barra() {
-    show(compare = manyWorld, ageRange = AgeRange.R45_54, results = withEarly("stroop", listOf(r(70, 28))))
-    assertEquals("Estás en la división más alta de tu franja esta semana.", n("contrarreloj_ladder_need"))
-    assertEquals("Entre estrellas", n("contrarreloj_ladder_you_name")); assertEquals("Tú · 70 aciertos", n("contrarreloj_ladder_you_value"))
+  @Test fun en_la_mas_alta_la_losa_dice_que_se_queda_y_la_barra_marca_la_linea_del_90() {
+    val p = Comparison.percentile(95, manyWorld.distribution("stroop", listOf(AgeRange.R45_54), 0))
+    assertTrue("la muestra deja 95 aciertos en el 90 % o más ($p)", p >= 90)
+    show(compare = manyWorld, ageRange = AgeRange.R45_54, results = withEarly("stroop", listOf(r(95, 28))), league = leagueIn(Comparison.Division.GALAXY))
+    assertEquals("En otra galaxia", n("contrarreloj_league_division"))
+    assertEquals("Tu división: la décima y más alta.", n("contrarreloj_league_rank"))
+    assertEquals("Si la semana terminara hoy, te quedarías En otra galaxia, la división más alta.", n("contrarreloj_league_monday").replace(NBSP, " "))
+    assertEquals("En otra galaxia: 90 %", n("contrarreloj_league_tick_label").replace(NBSP, " "))
     val b = boxes()
-    assertNull("sin siguiente división no hay barra", b["contrarreloj_ladder_bar"])
-    assertTrue("tú vas en la fila de arriba", b.getValue("contrarreloj_ladder_you").y < b.getValue("contrarreloj_ladder_row_1").y)
-    assertEquals("quedan cuatro divisiones más, sin «Entre estrellas»", 4, b.keys.count { Regex("contrarreloj_ladder_row_\\d").matches(it) })
-    assertEquals("La semana cierra el domingo.", n("contrarreloj_ladder_closes"))
+    assertTrue("tú vas en la fila de arriba de la escalera", b.getValue("contrarreloj_league_you").y < b.getValue("contrarreloj_league_row_STARS").y)
+    assertEquals("quedan nueve divisiones más", 9, b.keys.count { Regex("contrarreloj_league_row_[A-Z]+").matches(it) })
   }
 
   @Test fun la_pagina_no_dice_nada_de_semanas_seguidas_cuando_la_cuenta_es_cero() {
@@ -677,7 +676,7 @@ class ContrarrelojPageTest {
     assertEquals("La línea marca la mitad de las personas.", textOf("contrarreloj_bell_caption"))
     assertTrue("la frase de la campana no repite ningún número de la escalera", textOf("contrarreloj_bell_caption").none { it.isDigit() })
     val b = boxes()
-    assertTrue("la campana va tras la escalera, en su propia losa, y su frase debajo de la ventanilla", b.getValue("contrarreloj_bell").y >= b.getValue("contrarreloj_ladder").b + 15.5f && b.getValue("contrarreloj_bell_caption").y >= b.getValue("contrarreloj_bell_window").b)
+    assertTrue("la campana va tras la cifra, en su propia losa, y su frase debajo de la ventanilla", b.getValue("contrarreloj_bell").y >= b.getValue("contrarreloj_hero").b + 15.5f && b.getValue("contrarreloj_bell_caption").y >= b.getValue("contrarreloj_bell_window").b)
   }
 
   @Test fun la_campana_dibuja_tu_barra_sol_hasta_la_curva_con_la_moneda_y_la_palabra_encima_y_la_linea_de_la_mitad() {
@@ -775,12 +774,12 @@ class ContrarrelojPageTest {
 
   /** Con letra de 1,3 o menos (Tarea 203b) las franjas, los nombres de división y «Te faltan N aciertos» van pegados con espacios duros. */
   private fun assertGluedNames(scale: Float) {
-    show(compare = manyWorld, ageRange = AgeRange.R45_54, scale = scale)
+    show(compare = manyWorld, ageRange = AgeRange.R45_54, scale = scale, league = leagueIn(Comparison.Division.ORBIT))
     assertTrue("la franja entera en la fila propia de «Otras edades»", textOf("contrarreloj_others_2_label").contains("45${NBSP}a${NBSP}54${NBSP}años"))
-    assertTrue("y «Te faltan 7 aciertos» con «En la Luna» enteros", textOf("contrarreloj_ladder_need").let { it.contains("Te${NBSP}faltan${NBSP}7${NBSP}aciertos") && it.contains("En${NBSP}la${NBSP}Luna") })
-    assertTrue("los nombres de las filas de la escalera", textOf("contrarreloj_ladder_row_1_label").contains("En${NBSP}la${NBSP}Luna") && textOf("contrarreloj_ladder_you_name").contains("En${NBSP}órbita"))
+    assertTrue("«En la Luna» entero en la frase del lunes y «63 %» con su cifra", textOf("contrarreloj_league_monday").let { it.contains("En${NBSP}la${NBSP}Luna") })
+    assertTrue("los nombres de las filas de la escalera", textOf("contrarreloj_league_row_MOON_label").contains("En${NBSP}la${NBSP}Luna") && textOf("contrarreloj_league_you_name").contains("En${NBSP}órbita"))
     assertTrue("y las franjas de otras edades", textOf("contrarreloj_others_0_label").contains("18${NBSP}a${NBSP}29${NBSP}años"))
-    assertEquals("pero lo que lee el lector de pantalla queda con espacios normales", "En órbita, Tú · 43 aciertos", descriptionOf("contrarreloj_ladder_you"))
+    assertEquals("pero lo que lee el lector de pantalla queda con espacios normales", "En órbita, Tú", descriptionOf("contrarreloj_league_you"))
     assertTrue("la descripción de la cifra no lleva espacios duros", !descriptionOf("contrarreloj_hero").contains(NBSP))
   }
 
@@ -788,16 +787,15 @@ class ContrarrelojPageTest {
   @Test fun las_franjas_y_las_divisiones_no_se_parten_con_espacios_duros_con_letra_1_3() = assertGluedNames(1.3f)
 
   /** Con letra mayor a 1,3 (Tarea 205c) los nombres de división y «Te faltan» NO se pegan (pegados no caben en el renglón y Android los corta por letras); «7 aciertos» y la franja de edad sí quedan juntos. */
-  @Test fun con_letra_2_0_los_nombres_de_division_y_Te_faltan_parten_entre_palabras_pero_la_cifra_con_su_unidad_y_la_franja_siguen_juntas() {
-    show(compare = manyWorld, ageRange = AgeRange.R45_54, scale = 2f)
+  @Test fun con_letra_2_0_los_nombres_de_division_parten_entre_palabras_pero_la_cifra_con_su_unidad_y_la_franja_siguen_juntas() {
+    show(compare = manyWorld, ageRange = AgeRange.R45_54, scale = 2f, league = leagueIn(Comparison.Division.ORBIT))
     assertTrue("la franja entera sigue pegada en la fila propia de «Otras edades»", textOf("contrarreloj_others_2_label").contains("45${NBSP}a${NBSP}54${NBSP}años"))
-    val need = textOf("contrarreloj_ladder_need")
-    assertTrue("«7 aciertos» no se separa: $need", need.contains("7${NBSP}aciertos"))
-    assertFalse("«Te faltan» parte entre palabras: $need", need.contains("Te${NBSP}faltan") || need.contains("faltan${NBSP}7"))
-    assertFalse("y «En la Luna» también: $need", need.contains("En${NBSP}la") || need.contains("la${NBSP}Luna"))
-    assertFalse("los nombres de las filas de la escalera tampoco", textOf("contrarreloj_ladder_row_1_label").contains(NBSP) || textOf("contrarreloj_ladder_you_name").contains("En${NBSP}órbita"))
+    val monday = textOf("contrarreloj_league_monday")
+    assertFalse("«En la Luna» parte entre palabras: $monday", monday.contains("En${NBSP}la") || monday.contains("la${NBSP}Luna"))
+    assertTrue("«63 %» y «43 aciertos» siguen juntos", textOf("contrarreloj_league_average").contains("63${NBSP}%"))
+    assertFalse("los nombres de las filas de la escalera tampoco", textOf("contrarreloj_league_row_MOON_label").contains(NBSP) || textOf("contrarreloj_league_you_name").contains("En${NBSP}órbita"))
     assertTrue("las franjas de otras edades siguen pegadas", textOf("contrarreloj_others_0_label").contains("18${NBSP}a${NBSP}29${NBSP}años"))
-    assertEquals("lo que lee el lector de pantalla queda igual", "En órbita, Tú · 43 aciertos", descriptionOf("contrarreloj_ladder_you"))
+    assertEquals("lo que lee el lector de pantalla queda igual", "En órbita, Tú", descriptionOf("contrarreloj_league_you"))
   }
 
   @Test fun en_el_mundo_de_pocos_no_hay_cifra_ni_escalera_ni_te_faltan_y_dice_la_cuenta_real() {
@@ -828,7 +826,7 @@ class ContrarrelojPageTest {
   @Test fun quien_tiene_de_14_a_17_anos_ve_la_comparacion_completa_tambien_con_datos_de_muestra() {
     show(compare = manyWorld, ageRange = AgeRange.R14_17)
     val b = boxes()
-    for (tag in listOf("contrarreloj_section_compare", "contrarreloj_hero", "contrarreloj_ladder", "contrarreloj_bell", "contrarreloj_section_marks")) assertNotNull("de 14 a 17 años existe «$tag» (Tarea 216; «Semana a semana» no: la muestra de depuración trae 41 personas de esa franja por semana)", b[tag])
+    for (tag in listOf("contrarreloj_league", "contrarreloj_league_ladder", "contrarreloj_section_compare", "contrarreloj_hero", "contrarreloj_bell", "contrarreloj_section_marks")) assertNotNull("de 14 a 17 años existe «$tag» (Tarea 216; «Semana a semana» no: la muestra de depuración trae 41 personas de esa franja por semana)", b[tag])
     assertEquals("Otras edades: seis filas, ninguna propia ni de 14 a 17", true, b.keys.none { it.startsWith("contrarreloj_others_") && it.endsWith("_label") && "14 a 17" in n(it) })
   }
 
@@ -873,7 +871,7 @@ class ContrarrelojPageTest {
 
   @Test fun con_la_comparacion_el_subtitulo_y_la_nota_ya_no_dicen_solo_contigo() {
     show(compare = manyWorld, ageRange = AgeRange.R45_54)
-    assertEquals("El Contrarreloj define tu lugar de la semana.", textOf("contrarreloj_subtitle"))
+    assertEquals("El Contrarreloj define tu división de la semana.", textOf("contrarreloj_subtitle"))
     assertEquals("Es el resultado de un juego. No es una medida de capacidad.", textOf("contrarreloj_note"))
     val saysOnlyYou = allTexts().filter { "solo contigo" in it.lowercase() }
     assertTrue("con la comparación ningún texto visible ni leído dice «solo contigo»: $saysOnlyYou", saysOnlyYou.isEmpty())
@@ -881,7 +879,7 @@ class ContrarrelojPageTest {
 
   @Test fun con_la_comparacion_en_pocos_tampoco_dice_solo_contigo() {
     show(compare = fewWorld, ageRange = AgeRange.R45_54)
-    assertEquals("El Contrarreloj define tu lugar de la semana.", textOf("contrarreloj_subtitle"))
+    assertEquals("El Contrarreloj define tu división de la semana.", textOf("contrarreloj_subtitle"))
     assertTrue(allTexts().none { "solo contigo" in it.lowercase() })
   }
 
@@ -893,14 +891,14 @@ class ContrarrelojPageTest {
 
   @Test fun de_14_a_17_anos_la_cabecera_y_la_nota_son_las_de_cualquiera_con_comparacion() {
     show(compare = manyWorld, ageRange = AgeRange.R14_17)
-    assertEquals("El Contrarreloj define tu lugar de la semana.", textOf("contrarreloj_subtitle"))
+    assertEquals("El Contrarreloj define tu división de la semana.", textOf("contrarreloj_subtitle"))
     assertEquals("Es el resultado de un juego. No es una medida de capacidad.", textOf("contrarreloj_note"))
   }
 
 
   // ---------------------------------------------------------------- Tarea 203b: títulos de una línea, rótulo sin raya suelta, negrita y siete semanas
 
-  private val titleTags = listOf("contrarreloj_ladder_title", "contrarreloj_bell_title", "contrarreloj_others_title", "contrarreloj_percweeks_title", "contrarreloj_chart_title", "contrarreloj_rhythm_title")
+  private val titleTags = listOf("contrarreloj_league_ladder_title", "contrarreloj_bell_title", "contrarreloj_others_title", "contrarreloj_percweeks_title", "contrarreloj_chart_title", "contrarreloj_rhythm_title")
 
   private fun assertTitlesInOneLine(widthDp: Int) {
     show(widthDp = widthDp, compare = manyWorld, ageRange = AgeRange.R45_54)
@@ -931,12 +929,12 @@ class ContrarrelojPageTest {
 
   @Test fun en_el_texto_corrido_solo_van_en_negrita_te_faltan_y_la_fila_lima() {
     val page = src("ui/screens/ContrarrelojPage.kt")
-    for (tag in listOf("contrarreloj_percweeks_sentence", "contrarreloj_rhythm_sentence", "contrarreloj_ladder_closes", "contrarreloj_ladder_streak", "contrarreloj_ladder_note", "contrarreloj_bell_caption", "contrarreloj_others_lead", "contrarreloj_others_hidden")) {
+    for (tag in listOf("contrarreloj_percweeks_sentence", "contrarreloj_rhythm_sentence", "contrarreloj_league_closes", "contrarreloj_ladder_streak", "contrarreloj_bell_caption", "contrarreloj_others_lead", "contrarreloj_others_hidden")) {
       val line = page.lines().first { "testTag(\"$tag\")" in it }
       assertFalse("«$tag» va en peso normal", "FontWeight.Bold" in line || "FontWeight.SemiBold" in line)
     }
-    assertTrue("«Te faltan…» sí va en negrita", page.lines().first { "testTag(\"contrarreloj_ladder_need\")" in it }.contains("FontWeight.Bold"))
-    assertTrue("y la fila lima también", page.lines().filter { "contrarreloj_ladder_you_" in it && "Text(" in it }.all { "FontWeight.Bold" in it })
+    assertTrue("la frase del lunes de la losa de la liga va en seminegrita (Tarea 229: ya no hay «Te faltan…»)", page.lines().first { "testTag(\"contrarreloj_league_monday\")" in it }.contains("FontWeight.SemiBold"))
+    assertTrue("y la fila lima también", page.lines().filter { "contrarreloj_league_you_" in it && "Text(" in it }.all { "FontWeight.Bold" in it })
   }
 
   @Test fun con_siete_semanas_a_360_con_letra_2_0_las_cifras_no_se_tocan() {
@@ -1021,11 +1019,11 @@ class ContrarrelojPageTest {
   @Test fun el_alto_de_la_pagina_con_la_comparacion_a_360_con_letra_1_0() { println(compareHeight(360, 1f)) }
   @Test fun el_alto_de_la_pagina_con_pocos_a_393_con_letra_1_0() { println(compareHeight(393, 1f, fewWorld)) }
 
-  @Test fun a_393_con_letra_1_0_lo_gratis_con_su_division_cabe_en_la_primera_pantalla() {
-    show(compare = manyWorld, ageRange = AgeRange.R45_54)
+  @Test fun a_393_con_letra_1_0_la_losa_de_la_liga_cabe_en_la_primera_pantalla() {
+    show(compare = manyWorld, ageRange = AgeRange.R45_54, league = leagueIn(Comparison.Division.ORBIT))
     val b = boxes()
-    assertTrue("lo gratis (con la división) termina en %.0f dp, dentro de los 873 dp de la primera pantalla".format(b.getValue("contrarreloj_free").b), b.getValue("contrarreloj_free").b <= 873f)
-    println("T215 con comparación a 393 con letra 1,0: lo gratis termina en %.0f dp, la frase de Plus en %.0f dp y la escalera en %.0f dp".format(b.getValue("contrarreloj_free").b, b.getValue("contrarreloj_hero").b, b.getValue("contrarreloj_ladder").b))
+    assertTrue("la losa de la liga (con el porcentaje, la barra y la frase del lunes) termina en %.0f dp, dentro de los 873 dp de la primera pantalla".format(b.getValue("contrarreloj_league").b), b.getValue("contrarreloj_league").b <= 873f)
+    println("T229 con comparación a 393 con letra 1,0: la liga termina en %.0f dp, la escalera en %.0f dp, los cuatro cuadros en %.0f dp y lo gratis en %.0f dp".format(b.getValue("contrarreloj_league").b, b.getValue("contrarreloj_league_ladder").b, b.getValue("contrarreloj_selector").b, b.getValue("contrarreloj_free").b))
   }
 
   @Test fun los_textos_de_la_comparacion_pasan_4_5_a_1_sobre_su_fondo() {
@@ -1054,8 +1052,8 @@ class ContrarrelojPageTest {
   @Test fun el_lector_de_pantalla_dice_las_barras_el_selector_y_las_cifras() {
     show()
     assertEquals("Tus últimas 10 marcas: 31, 35, 39, 36, 44 aciertos, tu récord, 38, 41, 37, 42 y 43 aciertos, la de hoy.", descriptionOf("contrarreloj_bars"))
-    assertEquals("Tinta o Palabra, récord 44 aciertos, el de hoy, elegido", descriptionOf("contrarreloj_game_stroop"))
-    assertEquals("¿Verdad o disparate?, récord 31 aciertos", descriptionOf("contrarreloj_game_disparate"))
+    assertEquals("el cuadro dice el juego, que es el de hoy, su mejor marca de la semana y que está elegido (Tarea 229)", "Tinta o Palabra, hoy, 43 aciertos, elegido", descriptionOf("contrarreloj_game_stroop"))
+    assertEquals("¿Verdad o disparate?, Sin partidas esta semana", descriptionOf("contrarreloj_game_disparate"))
     assertEquals("Tu récord: 44 aciertos.", n("contrarreloj_free_record"))
     assertEquals("la barra y las cifras sueltas no se leen por separado", 1, rule.onAllNodes(hasTestTag("contrarreloj_bars")).fetchSemanticsNodes().size)
     assertTrue("elegido se anuncia como seleccionado", rule.onNodeWithTag("contrarreloj_game_stroop").fetchSemanticsNode().config.getOrNull(SemanticsProperties.Selected) == true)
@@ -1096,7 +1094,7 @@ class ContrarrelojPageTest {
     assertTrue("el título de la página, en Rubik", Regex("""OnBoardText\(TimeTrialMarks\.TITLE[^\n]*""").find(page)!!.value.contains("TitleFamily"))
     // la escala de tamaños: 24 (títulos y, desde la Tarea 213, la frase de la cifra: ya no hay cifra de 40), 18 (Fredoka), 16 y 14 (solo los rótulos de los ejes); el título de la página (26) es el de toda página de Avance
     val sizes = Regex("""fontSize = (\d+(?:\.\d+)?)\.sp""").findAll(page).map { it.groupValues[1] }.toSet()
-    assertEquals("la página usa solo estos tamaños", setOf("14", "16", "18", "24", "26"), sizes)
+    assertEquals("la página usa solo estos tamaños (Tarea 229: el 40 es el porcentaje de la liga, la única excepción)", setOf("14", "16", "18", "24", "26", "40"), sizes)
     // letra: solo los rótulos del eje bajan de 16 sp
     val small = Regex("""fontSize = (\d+(?:\.\d+)?)\.sp""").findAll(page).filter { it.groupValues[1].toFloat() < 16f }.map { it.groupValues[1] }.toList()
     assertTrue("solo el rótulo del eje (los dos textos y su medida), a 14 sp", small.isNotEmpty() && small.all { it == "14" })
@@ -1136,7 +1134,7 @@ class ContrarrelojPageTest {
     return out.map { it.replace(NBSP, " ") }
   }
 
-  @Test fun con_la_referencia_estimada_la_pagina_no_trae_la_frase_larga_ni_pie_y_la_fila_va_bajo_lo_gratis_antes_del_detalle_de_Plus() {
+  @Test fun con_la_referencia_estimada_la_pagina_no_trae_la_frase_larga_ni_pie_y_la_fila_va_bajo_la_liga_antes_de_la_escalera() {
     show(compare = estWorld, ageRange = AgeRange.R45_54)
     val b = boxes()
     assertEquals("Esta semana, comparado con tu edad", n("contrarreloj_section_compare"))
@@ -1146,30 +1144,32 @@ class ContrarrelojPageTest {
     val said = everythingSaid()
     assertEquals("«No son otras personas…» no se dice en la página (vive en la hoja)", 0, said.count { it.startsWith("No son otras personas:") })
     assertEquals("ni «De dónde sale la referencia ›» (la fila de la página dice otra cosa)", 0, said.count { it.startsWith("De dónde sale la referencia") })
-    val free = b.getValue("contrarreloj_free"); val hero = b.getValue("contrarreloj_hero"); val link = b.getValue("contrarreloj_source_link"); val ladder = b.getValue("contrarreloj_ladder"); val notes = b.getValue("contrarreloj_notes")
+    val league = b.getValue("contrarreloj_league"); val hero = b.getValue("contrarreloj_hero"); val link = b.getValue("contrarreloj_source_link"); val ladder = b.getValue("contrarreloj_league_ladder"); val notes = b.getValue("contrarreloj_notes")
     assertEquals("una sola fila", 1, b.keys.count { it == "contrarreloj_source_link" })
-    assertEquals("a 16 dp bajo la losa gratis (Tarea 215: antes, bajo la losa de la cifra)", 16f, link.y - free.b, 1.5f)
-    assertEquals("y a 24 dp sobre el rótulo de la comparación (16 de entre losas y 8 propios)", 24f, b.getValue("contrarreloj_section_compare").y - link.b, 1.5f)
+    assertEquals("a 16 dp bajo la losa de la liga (Tarea 229: antes, bajo la losa gratis)", 16f, link.y - league.b, 1.5f)
+    assertEquals("y a 16 dp sobre la escalera de las diez divisiones", 16f, ladder.y - link.b, 1.5f)
     assertEquals("la última pieza de la página son las notas: no hay pie", b.values.maxOf { it.b }, notes.b, 0.5f)
     assertEquals("el rótulo de la comparación queda solo sobre la frase de Plus, a 16 dp", 16f, hero.y - b.getValue("contrarreloj_section_compare").b, 1.5f)
-    // el lector de pantalla: lo gratis, la fila y después la frase de Plus y la escalera, y la fila dice «Con qué te comparas, botón»
+    // el lector de pantalla: la losa de la liga, la fila, la escalera y después la frase de Plus; la fila dice «Con qué te comparas, botón»
     val iHero = said.indexOfFirst { it.startsWith("Con ") && "superas al" in it }; val iLink = said.indexOfFirst { it == "Con qué te comparas" }
-    val iLadder = said.indexOfFirst { it == Comparison.LADDER_TITLE }
+    val iLadder = said.indexOfFirst { it == League.LADDER_TITLE }
     assertTrue("el lector encuentra la fila, la frase de Plus y la escalera (frase $iHero, fila $iLink, escalera $iLadder)", iHero >= 0 && iLink >= 0 && iLadder >= 0)
-    assertTrue("y los dice en ese orden", iLink < iHero && iHero < iLadder)
+    assertTrue("y los dice en ese orden", iLink < iLadder && iLadder < iHero)
     assertEquals("Con qué te comparas", descriptionOf("contrarreloj_source_link"))
-    assertTrue("la escalera va después de la frase", hero.b < ladder.y)
+    assertTrue("la escalera va antes que la frase de Plus", ladder.b < hero.y)
   }
 
-  @Test fun sin_marca_esta_semana_la_fila_Con_que_te_comparas_va_bajo_Tu_lugar_esta_semana() {
-    show(compare = estWorld, ageRange = AgeRange.R45_54, results = List(3) { r(1, 20 + it) })          // tres partidas, ninguna de esta semana
+  @Test fun sin_marca_esta_semana_la_fila_Con_que_te_comparas_sigue_bajo_la_liga_y_Tu_lugar_esta_semana_dice_que_hacer() {
+    show(compare = estWorld, ageRange = AgeRange.R45_54, results = List(3) { r(1, 20 + it) }, league = leagueIn(Comparison.Division.TAKEOFF))          // tres partidas, ninguna de esta semana
     val b = boxes()
     assertEquals("Tu lugar esta semana", textOf("contrarreloj_place_title"))
     assertNull("sin cifra", b["contrarreloj_hero"])
-    val link = b.getValue("contrarreloj_source_link"); val place = b.getValue("contrarreloj_place")
-    assertEquals("la fila va bajo la losa de «Tu lugar esta semana», a 16 dp", 16f, link.y - place.b, 1.5f)
+    val link = b.getValue("contrarreloj_source_link"); val league = b.getValue("contrarreloj_league")
+    assertEquals("la fila va bajo la losa de la liga, a 16 dp", 16f, link.y - league.b, 1.5f)
     assertEquals("una sola vez", 1, b.keys.count { it == "contrarreloj_source_link" })
     assertEquals("Con qué te comparas", descriptionOf("contrarreloj_source_link"))
+    assertEquals("sin partidas esta semana, la liga lo dice (y no hay porcentaje ni barra)", "Todavía no juegas esta semana. Con cualquiera de los cuatro juegos puedes quedarte en Despegando o subir.", n("contrarreloj_league_monday").replace(NBSP, " "))
+    assertNull(b["contrarreloj_league_percent"]); assertNull(b["contrarreloj_league_bar"])
   }
 
   // ---------------------------------------------------------------- Tarea 212: los emblemas de las cinco divisiones (D3)
@@ -1177,12 +1177,12 @@ class ContrarrelojPageTest {
   /** Una persona En la plataforma (la división más baja: su nombre es el más largo de las cinco): tres partidas flojas y una marca de 3 esta semana. */
   private val platformResults = List(3) { r(1, 20 + it) } + r(3, 27)
 
-  @Test fun la_cifra_lleva_el_emblema_de_su_division_de_52_dp_a_la_izquierda_del_nombre_y_del_lugar() {
-    show(compare = manyWorld, ageRange = AgeRange.R45_54)
+  @Test fun la_losa_de_la_liga_lleva_el_emblema_de_su_division_de_52_dp_a_la_izquierda_del_nombre_y_del_lugar() {
+    show(compare = manyWorld, ageRange = AgeRange.R45_54, league = leagueIn(Comparison.Division.ORBIT))
     val b = boxes()
-    val e = b.getValue("contrarreloj_hero_emblem_ORBIT"); val name = b.getValue("contrarreloj_hero_division"); val place = b.getValue("contrarreloj_hero_place")
+    val e = b.getValue("contrarreloj_league_emblem_ORBIT"); val name = b.getValue("contrarreloj_league_division"); val place = b.getValue("contrarreloj_league_rank")
     assertEquals("el emblema de En órbita mide 52 dp", 52f, e.w, 0.6f); assertEquals(52f, e.h, 0.6f)
-    assertEquals("hay UNO solo en la cifra, el de su división", 1, b.keys.count { it.startsWith("contrarreloj_hero_emblem_") })
+    assertEquals("hay UNO solo en la losa, el de su división", 1, b.keys.count { it.startsWith("contrarreloj_league_emblem_") })
     assertEquals("12 dp de aire entre el emblema y el texto", 12f, name.x - e.r, 1f)
     assertEquals("el lugar queda a la misma altura que el nombre", name.x, place.x, 0.6f)
     assertEquals("arriba, a la altura de la primera línea", name.y, e.y, 1f)
@@ -1190,67 +1190,79 @@ class ContrarrelojPageTest {
     assertEquals("el bloque de la división mide 52 dp con letra 1,0 (el emblema)", 52f, maxOf(e.b, place.b) - e.y, 1.5f)
   }
 
-  @Test fun la_escalera_trae_los_cinco_emblemas_de_28_dp_en_orden_y_las_filas_no_crecen() {
-    show(compare = manyWorld, ageRange = AgeRange.R45_54)
+  @Test fun la_escalera_trae_los_diez_emblemas_de_28_dp_en_orden_y_las_filas_no_crecen() {
+    show(compare = manyWorld, ageRange = AgeRange.R45_54, league = leagueIn(Comparison.Division.ORBIT))
     val b = boxes()
-    val tags = listOf("contrarreloj_ladder_emblem_0", "contrarreloj_ladder_emblem_1", "contrarreloj_ladder_you_emblem", "contrarreloj_ladder_emblem_3", "contrarreloj_ladder_emblem_4")
+    val divs = Comparison.Division.entries.asReversed()
+    val tags = divs.map { if (it == Comparison.Division.ORBIT) "contrarreloj_league_you_emblem" else "contrarreloj_league_row_emblem_${it.name}" }
     for (t in tags) { assertEquals("«$t» mide 28 dp", 28f, b.getValue(t).w, 0.6f); assertEquals(28f, b.getValue(t).h, 0.6f) }
     for ((a, c) in tags.zipWithNext()) assertTrue("«$a» va arriba de «$c»", b.getValue(a).b <= b.getValue(c).y + 0.5f)
     // a la izquierda de su nombre, con 10 dp de aire
-    for ((emblem, label) in listOf(tags[0] to "contrarreloj_ladder_row_0_label", tags[1] to "contrarreloj_ladder_row_1_label", tags[2] to "contrarreloj_ladder_you_name", tags[3] to "contrarreloj_ladder_row_3_label", tags[4] to "contrarreloj_ladder_row_4_label"))
+    for ((d, emblem) in divs.zip(tags)) {
+      val label = if (d == Comparison.Division.ORBIT) "contrarreloj_league_you_name" else "contrarreloj_league_row_${d.name}_label"
       assertEquals("«$label» queda 10 dp a la derecha de su emblema", 10f, b.getValue(label).x - b.getValue(emblem).r, 1f)
-    // las filas no crecen: cada fila apagada sigue ocupando 41 dp de punta a punta (40 de fila y la raya de 1 dp) y la lima mide 44 dp con 4 de aire arriba y abajo (52)
-    assertEquals("de la fila 0 a la 1: 41 dp", 41f, b.getValue("contrarreloj_ladder_row_1").y - b.getValue("contrarreloj_ladder_row_0").y, 1.5f)
-    assertEquals("la fila lima mide 44 dp (52 con su aire)", 44f, b.getValue("contrarreloj_ladder_you").h, 1.5f)
-    assertEquals("de la fila lima a la fila 3: 44 de recuadro, 4 de aire, la raya de 1 y los 6 de arriba de la fila apagada (55 dp)", 55f, b.getValue("contrarreloj_ladder_row_3").y - b.getValue("contrarreloj_ladder_you").y, 1.5f)
-    assertTrue("el emblema de la fila lima queda dentro del recuadro, a 12 dp del borde", b.getValue("contrarreloj_ladder_you_emblem").x >= b.getValue("contrarreloj_ladder_you").x + 11.5f)
-  }
-
-  @Test fun cada_division_trae_su_propio_emblema_con_su_orden_de_la_escalera() {
-    for ((tag, game) in listOf("contrarreloj_hero_emblem_PLATFORM" to platformResults)) {
-      show(compare = manyWorld, ageRange = AgeRange.R45_54, results = game + others)
-      assertNotNull("En la plataforma: el emblema de la cifra es el de su división (no el de En órbita)", boxes()[tag])
-      assertEquals("y solo uno", 1, boxes().keys.count { it.startsWith("contrarreloj_hero_emblem_") })
-      assertEquals("la escalera dice En la plataforma en la fila lima", "En la plataforma", n("contrarreloj_ladder_you_name"))
     }
+    // las filas no crecen: cada fila apagada sigue ocupando 41 dp de punta a punta (40 de fila y la raya de 1 dp) y la lima mide 44 dp con 4 de aire arriba y abajo (52)
+    assertEquals("de la fila 0 a la 1: 41 dp", 41f, b.getValue("contrarreloj_league_row_STARS").y - b.getValue("contrarreloj_league_row_GALAXY").y, 1.5f)
+    assertEquals("la fila lima mide 44 dp (52 con su aire)", 44f, b.getValue("contrarreloj_league_you").h, 1.5f)
+    assertEquals("de la fila lima a la siguiente: 44 de recuadro, 4 de aire, la raya de 1 y los 6 de arriba de la fila apagada (55 dp)", 55f, b.getValue("contrarreloj_league_row_CLOUDS").y - b.getValue("contrarreloj_league_you").y, 1.5f)
+    assertTrue("el emblema de la fila lima queda dentro del recuadro, a 12 dp del borde", b.getValue("contrarreloj_league_you_emblem").x >= b.getValue("contrarreloj_league_you").x + 11.5f)
   }
 
-  @Test fun con_el_emblema_la_fila_lima_de_En_la_plataforma_se_apila_a_393_y_nada_se_encima() {
-    show(compare = manyWorld, ageRange = AgeRange.R45_54, results = platformResults + others)
+  private fun assertOwnEmblem(d: Comparison.Division) {
+    show(compare = manyWorld, ageRange = AgeRange.R45_54, league = leagueIn(d))
     val b = boxes()
-    val you = b.getValue("contrarreloj_ladder_you"); val e = b.getValue("contrarreloj_ladder_you_emblem"); val name = b.getValue("contrarreloj_ladder_you_name"); val value = b.getValue("contrarreloj_ladder_you_value")
-    assertEquals("En la plataforma: el nombre más largo no cabe en una línea con el emblema y la marca: se apila (+28 dp)", 72f, you.h, 4f)
-    assertTrue("la marca va debajo del nombre y del emblema (%.1f)".format(value.y - name.b), value.y >= name.b - 0.5f && value.y >= e.b - 0.5f)
-    assertTrue("y a la derecha", value.r >= you.r - 12.5f - 1f)
+    assertNotNull("${d.label}: el emblema de la losa es el de su división", b["contrarreloj_league_emblem_${d.name}"])
+    assertEquals("y solo uno", 1, b.keys.count { it.startsWith("contrarreloj_league_emblem_") })
+    assertEquals("la escalera dice ${d.label} en la fila lima", d.label, n("contrarreloj_league_you_name"))
+    assertEquals("y nueve filas más, cada una con el suyo", 9, b.keys.count { it.startsWith("contrarreloj_league_row_emblem_") })
+  }
+
+  @Test fun el_emblema_de_En_la_plataforma_es_el_suyo() = assertOwnEmblem(Comparison.Division.PLATFORM)
+  @Test fun el_emblema_de_Despegando_es_el_suyo() = assertOwnEmblem(Comparison.Division.TAKEOFF)
+  @Test fun el_emblema_de_Sobre_las_nubes_es_el_suyo() = assertOwnEmblem(Comparison.Division.CLOUDS)
+  @Test fun el_emblema_de_En_orbita_es_el_suyo() = assertOwnEmblem(Comparison.Division.ORBIT)
+  @Test fun el_emblema_de_En_la_Luna_es_el_suyo() = assertOwnEmblem(Comparison.Division.MOON)
+  @Test fun el_emblema_de_En_Marte_es_el_suyo() = assertOwnEmblem(Comparison.Division.MARS)
+  @Test fun el_emblema_de_Entre_asteroides_es_el_suyo() = assertOwnEmblem(Comparison.Division.ASTEROIDS)
+  @Test fun el_emblema_de_En_Jupiter_es_el_suyo() = assertOwnEmblem(Comparison.Division.JUPITER)
+  @Test fun el_emblema_de_Entre_estrellas_es_el_suyo() = assertOwnEmblem(Comparison.Division.STARS)
+  @Test fun el_emblema_de_En_otra_galaxia_es_el_suyo() = assertOwnEmblem(Comparison.Division.GALAXY)
+
+  @Test fun con_el_emblema_la_fila_lima_de_la_plataforma_cabe_a_393_y_nada_se_encima() {
+    show(compare = manyWorld, ageRange = AgeRange.R45_54, results = platformResults + others, league = leagueIn(Comparison.Division.PLATFORM))
+    val b = boxes()
+    val you = b.getValue("contrarreloj_league_you"); val e = b.getValue("contrarreloj_league_you_emblem"); val name = b.getValue("contrarreloj_league_you_name"); val value = b.getValue("contrarreloj_league_you_value")
+    assertTrue("con «Tú» solo, el nombre más largo cabe en una línea con el emblema (no se apila): alto %.1f".format(you.h), you.h <= 52f)
+    assertTrue("«Tú» va a la derecha del nombre", value.x >= name.r - 0.5f)
     assertTrue("el nombre a 10 dp del emblema, sin tocarlo", name.x - e.r >= 9f)
     assertTrue("nada sale del recuadro lima", e.x >= you.x + 11.5f && name.r <= you.r - 11.5f && value.r <= you.r - 11.5f)
   }
 
-  @Test fun el_lector_de_pantalla_dice_lo_mismo_que_antes_y_no_nombra_los_emblemas() {
-    show(compare = manyWorld, ageRange = AgeRange.R45_54)
+  @Test fun el_lector_de_pantalla_dice_la_liga_una_sola_vez_y_no_nombra_los_emblemas() {
+    show(compare = manyWorld, ageRange = AgeRange.R45_54, league = leagueIn(Comparison.Division.ORBIT))
     val said = everythingSaid()
-    assertEquals("la fila lima: la división y «Tú»", "En órbita, Tú · 43 aciertos", descriptionOf("contrarreloj_ladder_you").replace(NBSP, " "))
-    assertEquals("las demás, su primer acierto", "Entre estrellas, desde 60 aciertos", descriptionOf("contrarreloj_ladder_row_0").replace(NBSP, " "))
-    assertEquals("En la Luna, desde 50 aciertos", descriptionOf("contrarreloj_ladder_row_1").replace(NBSP, " "))
-    assertEquals("la división se dice una sola vez, con su lugar (en lo gratis)", 1, said.count { it == "En órbita. La tercera de cinco divisiones." })
+    assertEquals("la fila lima: la división y «Tú»", "En órbita, Tú", descriptionOf("contrarreloj_league_you").replace(NBSP, " "))
+    assertEquals("las demás, su línea", "En otra galaxia, desde el 90 %", descriptionOf("contrarreloj_league_row_GALAXY").replace(NBSP, " "))
+    assertEquals("En la Luna, desde el 40 %", descriptionOf("contrarreloj_league_row_MOON").replace(NBSP, " "))
+    assertEquals("la división se dice con su lugar en la losa de la liga", 1, said.count { it == "En órbita. Tu división: la cuarta de diez." })
     assertTrue("y la frase de Plus aparte, sin la división", said.any { it.startsWith("Con 43 aciertos, superas al") && !it.contains("En órbita") })
-    assertEquals("la frase de Plus no repite la división en ninguno de los nodos que la dicen", 0, said.count { it.startsWith("Con 43 aciertos, superas al") && it.contains("En órbita") })
-    val hero = said.first { it == "En órbita. La tercera de cinco divisiones." }
+    val hero = said.first { it == "En órbita. Tu división: la cuarta de diez." }
     assertTrue("sin nada de «emblema», «imagen» ni «icono»: $hero", listOf("emblema", "imagen", "icono", "ícono").none { hero.lowercase().contains(it) })
     assertTrue("ningún nodo dice «emblema»", said.none { it.lowercase().contains("emblema") })
-    for (tag in listOf("contrarreloj_hero_emblem_ORBIT", "contrarreloj_ladder_emblem_0", "contrarreloj_ladder_you_emblem")) {
+    for (tag in listOf("contrarreloj_league_emblem_ORBIT", "contrarreloj_league_row_emblem_GALAXY", "contrarreloj_league_you_emblem")) {
       val node = rule.onNode(hasTestTag(tag), useUnmergedTree = true).fetchSemanticsNode()
       assertNull("«$tag» no tiene descripción: es decorativo", node.config.getOrNull(SemanticsProperties.ContentDescription))
     }
   }
 
-  private fun assertEmblemsFit(widthDp: Int, scale: Float, results: List<TimeTrialResult> = ten + others, label: String) {
-    show(widthDp, scale, compare = manyWorld, ageRange = AgeRange.R45_54, results = results)
+  private fun assertEmblemsFit(widthDp: Int, scale: Float, results: List<TimeTrialResult> = ten + others, label: String, division: Comparison.Division = Comparison.Division.ORBIT) {
+    show(widthDp, scale, compare = manyWorld, ageRange = AgeRange.R45_54, results = results, league = leagueIn(division))
     val b = boxes()
-    val hero = b.keys.single { it.startsWith("contrarreloj_hero_emblem_") }
+    val hero = b.keys.single { it.startsWith("contrarreloj_league_emblem_") }
     assertEquals("$label: el de la cifra sigue en 52 dp con la letra a $scale (no escala)", 52f, b.getValue(hero).w, 0.6f)
-    val ladder = b.keys.filter { Regex("contrarreloj_ladder_(you_)?emblem(_\\d)?").matches(it) }
-    assertEquals("$label: los cinco de la escalera", 5, ladder.size)
+    val ladder = b.keys.filter { Regex("contrarreloj_league_(you_|row_)emblem(_[A-Z]+)?").matches(it) }
+    assertEquals("$label: los diez de la escalera", 10, ladder.size)
     for (t in ladder) assertEquals("$label: «$t» sigue en 28 dp con la letra a $scale", 28f, b.getValue(t).w, 0.6f)
     val problems = mutableListOf<String>()
     fun near(tag: String, others: List<String>, card: String) {
@@ -1258,11 +1270,11 @@ class ContrarrelojPageTest {
       if (e.x < c.x + 15.5f || e.r > c.r - 15.5f) problems += "«$tag» no deja los 16 dp de relleno de «$card» (x %.1f a %.1f; losa %.1f a %.1f)".format(e.x, e.r, c.x, c.r)
       for (o in others) b[o]?.let { p -> val s = gap(e, p); if (s < 3.5f) problems += "«$tag» y «$o» a %.1f dp".format(s) }
     }
-    near(hero, listOf("contrarreloj_free_record", "contrarreloj_free_week", "contrarreloj_hero_division", "contrarreloj_hero_place", "contrarreloj_ladder_need"), "contrarreloj_free")
-    for (t in ladder) near(t, listOf("contrarreloj_ladder_title", "contrarreloj_ladder_need", "contrarreloj_ladder_closes") + (0..4).flatMap { listOf("contrarreloj_ladder_row_${it}_label", "contrarreloj_ladder_row_${it}_value") } + listOf("contrarreloj_ladder_you_name", "contrarreloj_ladder_you_value"), "contrarreloj_ladder")
+    near(hero, listOf("contrarreloj_league_division", "contrarreloj_league_rank", "contrarreloj_league_percent", "contrarreloj_league_average", "contrarreloj_league_monday"), "contrarreloj_league")
+    for (t in ladder) near(t, listOf("contrarreloj_league_ladder_title") + Comparison.Division.entries.flatMap { listOf("contrarreloj_league_row_${it.name}_label", "contrarreloj_league_row_${it.name}_value") } + listOf("contrarreloj_league_you_name", "contrarreloj_league_you_value"), "contrarreloj_league_ladder")
     for (i in ladder.indices) for (j in i + 1 until ladder.size) { val s = gap(b.getValue(ladder[i]), b.getValue(ladder[j])); if (s < 3.5f) problems += "los emblemas «${ladder[i]}» y «${ladder[j]}» a %.1f dp".format(s) }
     // ninguna palabra de la cifra ni de la escalera se parte: los textos parten por palabras (lo vigila ContrarrelojLetraTest); aquí, que el nombre de la fila lima no salga del recuadro
-    b["contrarreloj_ladder_you"]?.let { y -> b["contrarreloj_ladder_you_name"]?.let { n -> if (n.r > y.r - 11.5f || n.x < y.x + 11.5f) problems += "el nombre de la fila lima se sale del recuadro" } }
+    b["contrarreloj_league_you"]?.let { y -> b["contrarreloj_league_you_name"]?.let { n -> if (n.r > y.r - 11.5f || n.x < y.x + 11.5f) problems += "el nombre de la fila lima se sale del recuadro" } }
     assertTrue("$label a $widthDp dp con letra $scale:\n" + problems.joinToString("\n"), problems.isEmpty())
   }
 
@@ -1272,10 +1284,10 @@ class ContrarrelojPageTest {
   @Test fun los_emblemas_caben_a_360_con_letra_1_0() = assertEmblemsFit(360, 1f, label = "En órbita")
   @Test fun los_emblemas_caben_a_360_con_letra_1_3() = assertEmblemsFit(360, 1.3f, label = "En órbita")
   @Test fun los_emblemas_caben_a_360_con_letra_2_0() = assertEmblemsFit(360, 2f, label = "En órbita")
-  @Test fun los_emblemas_caben_a_393_con_letra_1_0_en_la_plataforma() = assertEmblemsFit(393, 1f, platformResults + others, "En la plataforma")
-  @Test fun los_emblemas_caben_a_393_con_letra_2_0_en_la_plataforma() = assertEmblemsFit(393, 2f, platformResults + others, "En la plataforma")
-  @Test fun los_emblemas_caben_a_360_con_letra_1_0_en_la_plataforma() = assertEmblemsFit(360, 1f, platformResults + others, "En la plataforma")
-  @Test fun los_emblemas_caben_a_360_con_letra_2_0_en_la_plataforma() = assertEmblemsFit(360, 2f, platformResults + others, "En la plataforma")
+  @Test fun los_emblemas_caben_a_393_con_letra_1_0_en_la_plataforma() = assertEmblemsFit(393, 1f, platformResults + others, "En la plataforma", Comparison.Division.PLATFORM)
+  @Test fun los_emblemas_caben_a_393_con_letra_2_0_en_la_plataforma() = assertEmblemsFit(393, 2f, platformResults + others, "En la plataforma", Comparison.Division.PLATFORM)
+  @Test fun los_emblemas_caben_a_360_con_letra_1_0_en_la_plataforma() = assertEmblemsFit(360, 1f, platformResults + others, "En la plataforma", Comparison.Division.PLATFORM)
+  @Test fun los_emblemas_caben_a_360_con_letra_2_0_en_la_plataforma() = assertEmblemsFit(360, 2f, platformResults + others, "En la plataforma", Comparison.Division.PLATFORM)
 
   @Test fun los_cinco_emblemas_son_recursos_distintos_y_decorativos_en_el_codigo() {
     val files = (1..5).map { i -> listOf("plataforma", "despegando", "orbita", "luna", "estrellas")[i - 1] }.map { java.io.File("src/main/res/drawable-nodpi/division_$it.webp") }
@@ -1319,8 +1331,8 @@ class ContrarrelojPageTest {
     val link = b.getValue("contrarreloj_source_link")
     assertTrue("a $widthDp dp con letra $scale: la fila mide 48 dp o más (%.1f)".format(link.h), link.h >= 47.5f)
     assertTrue("y entre los márgenes de 16 dp (x %.1f a %.1f)".format(link.x, link.r), link.x >= 15.5f && link.r <= widthDp - 15.5f)
-    assertTrue("y a 15 dp o más de la losa gratis, que va antes (%.1f)".format(link.y - b.getValue("contrarreloj_free").b), link.y - b.getValue("contrarreloj_free").b >= 15f)
-    assertTrue("y a 15 dp o más del rótulo de la comparación, que va después (%.1f)".format(b.getValue("contrarreloj_section_compare").y - link.b), b.getValue("contrarreloj_section_compare").y - link.b >= 15f)
+    assertTrue("y a 15 dp o más de la losa de la liga, que va antes (%.1f)".format(link.y - b.getValue("contrarreloj_league").b), link.y - b.getValue("contrarreloj_league").b >= 15f)
+    assertTrue("y a 15 dp o más de la escalera de las diez divisiones, que va después (%.1f)".format(b.getValue("contrarreloj_league_ladder").y - link.b), b.getValue("contrarreloj_league_ladder").y - link.b >= 15f)
     assertTrue("«Con qué te comparas ›» cabe en una línea o parte por palabras (alto %.1f dp)".format(link.h), link.h <= 100f)
   }
 
@@ -1357,7 +1369,7 @@ class ContrarrelojPageTest {
     assertTrue("la campana, en su frase", said.any { it == Comparison.ESTIMATED_BELL_CAPTION })
     assertTrue("«Otras edades», en su encabezado", said.any { it == "Tu mejor marca de esta semana, frente a la referencia estimada de cada edad:" })
     assertTrue("las semanas, en su nota", said.any { it == Comparison.WEEKS_ESTIMATED_NOTE })
-    assertTrue("y el lugar de la división, no un percentil: «${n("contrarreloj_hero_place")}»", n("contrarreloj_hero_place") in Comparison.Division.entries.map { Comparison.divisionPlaceLine(it) })
+    assertTrue("y la losa de la liga, en su frase: «${n("contrarreloj_league_average")}»", n("contrarreloj_league_average").endsWith("de la referencia estimada para tu edad.") && said.any { it == n("contrarreloj_league_average") })
   }
 
   @Test fun con_la_referencia_estimada_no_hay_todas_las_edades_ni_la_linea_de_las_demas_edades() {
@@ -1415,7 +1427,7 @@ class ContrarrelojPageTest {
     }
     val you = b.getValue("contrarreloj_bell_you_bar")
     assertEquals("$game: la barra «Tú» en el centro del tramo de la marca $mark", (area.w * Comparison.markX(mark, d.topMark) / d.topMark).toFloat(), you.x + you.w / 2 - area.x, 1.5f)
-    assertTrue("$game: tiene su escalera", b.containsKey("contrarreloj_ladder_you") && b.keys.any { it.startsWith("contrarreloj_ladder_row_") })
+    assertTrue("$game: tiene la escalera de las diez divisiones", b.containsKey("contrarreloj_league_you") && b.keys.count { it.startsWith("contrarreloj_league_row_") && it.endsWith("_label").not() && it.endsWith("_value").not() && !it.startsWith("contrarreloj_league_row_emblem_") } >= 9)
   }
 
   @Test fun el_eje_y_la_barra_de_Tinta_o_Palabra_son_de_5_en_5_hasta_75() = assertBellOfGame("stroop", ten, 43)
@@ -1429,6 +1441,7 @@ class ContrarrelojPageTest {
     val b = boxes()
     assertNull(b["contrarreloj_section_compare"]); assertNull(b["contrarreloj_estimated_notice"]); assertNull(b["contrarreloj_hero"]); assertNull(b["contrarreloj_section_marks"])
     assertEquals("subtítulo de siempre, solo contigo", com.example.data.TimeTrialMarks.subtitle(compared = false), textOf("contrarreloj_subtitle"))
+    assertNull("y sin referencia no hay liga (Tarea 229)", b["contrarreloj_league"]); assertNull(b["contrarreloj_league_ladder"])
   }
 
   @Test fun de_14_a_17_anos_la_referencia_se_muestra_como_la_de_18_a_29() {
@@ -1437,12 +1450,11 @@ class ContrarrelojPageTest {
     val b = boxes()
     assertNotNull(b["contrarreloj_hero"]); assertNotNull(b["contrarreloj_section_compare"]); assertNotNull(b["contrarreloj_source_link"])
     assertEquals("la misma frase que de 18 a 29 años con la misma marca", Comparison.heroSentence((young as Comparison.Place.Found).ranked, AgeRange.R14_17), n("contrarreloj_hero_sentence"))
-    assertEquals(Comparison.divisionPlaceLine(young.ranked.division), n("contrarreloj_hero_place"))
   }
 
   @Test fun el_subtitulo_con_comparacion_es_la_frase_de_Ricardo_y_no_habla_de_capacidad_ni_de_personas() {
     show(compare = estWorld, ageRange = AgeRange.R45_54)
-    assertEquals("El Contrarreloj define tu lugar de la semana.", textOf("contrarreloj_subtitle"))
+    assertEquals("El Contrarreloj define tu división de la semana.", textOf("contrarreloj_subtitle"))
     assertEquals("con comparación, la frase de Ricardo (Tarea 215)", com.example.data.TimeTrialMarks.subtitle(compared = true), textOf("contrarreloj_subtitle"))
     val sub = textOf("contrarreloj_subtitle").lowercase()
     assertTrue("ni «personas» ni «capacidad»", "personas" !in sub && "capacidad" !in sub)
@@ -1579,7 +1591,7 @@ class ContrarrelojPageTest {
   private fun gamesOf(game: String, n: Int, last: Int = 40): List<TimeTrialResult> = List(n) { i -> if (i == n - 1) r(last, 27, game = game) else r(20 + i, 15 + i, game = game) }
 
   /** Todo lo de la comparación que NO puede estar con menos de tres partidas. */
-  private val placePieces = listOf("contrarreloj_section_compare", "contrarreloj_section_marks", "contrarreloj_source_link", "contrarreloj_hero", "contrarreloj_ladder", "contrarreloj_bell", "contrarreloj_others", "contrarreloj_percweeks", "contrarreloj_place")
+  private val placePieces = listOf("contrarreloj_section_compare", "contrarreloj_section_marks", "contrarreloj_hero", "contrarreloj_bell", "contrarreloj_others", "contrarreloj_percweeks", "contrarreloj_place")
 
   @Test fun con_una_o_dos_partidas_no_hay_lugar_y_la_frase_va_una_vez_bajo_el_selector_en_una_linea_corrida_sin_negrita() {
     val s = live(estWorld, AgeRange.R45_54)
@@ -1591,11 +1603,11 @@ class ContrarrelojPageTest {
       for (tag in placePieces) assertNull("con $count partida(s) no existe «$tag»", b.keys.firstOrNull { it == tag || it.startsWith(tag + "_") })
       assertNull("sin franja no hay aviso de edad: aquí sí hay franja", b["contrarreloj_age_hint"])
       assertEquals("la frase se dice UNA sola vez en toda la pantalla", 1, everythingSaid().count { it == Comparison.EARLY_NOTICE })
+      assertNotNull("la liga (Tarea 229) sí está: sin porcentaje, con su frase", b["contrarreloj_league"]); assertNull(b["contrarreloj_league_percent"])
       val selectorBottom = games.maxOf { b.getValue("contrarreloj_game_$it").b }
       assertTrue("va bajo el selector, a 8 dp o más (%.1f)".format(b.getValue("contrarreloj_early_notice").y - selectorBottom), b.getValue("contrarreloj_early_notice").y - selectorBottom >= 7.5f)
       assertTrue("y antes de lo gratis", b.getValue("contrarreloj_early_notice").b <= b.getValue("contrarreloj_free").y - 7.5f)
-      assertEquals("la cabecera dice que se compara solo contigo", com.example.data.TimeTrialMarks.SUBTITLE, n("contrarreloj_subtitle"))
-      assertTrue("y la nota también", n("contrarreloj_note").contains("comparado solo contigo"))
+      assertEquals("la cabecera dice que hay comparación: la liga cuenta desde la tercera partida de cada juego", com.example.data.TimeTrialMarks.SUBTITLE_PLACE, n("contrarreloj_subtitle"))
     }
     val line = Regex("""Text\(Comparison\.EARLY_NOTICE[^\n]*""").find(src("ui/screens/ContrarrelojPage.kt"))!!.value
     assertFalse("es una frase corrida: sin negrita", "fontWeight" in line)
@@ -1606,6 +1618,7 @@ class ContrarrelojPageTest {
     val b = boxes()
     assertEquals(Comparison.EARLY_NOTICE, n("contrarreloj_early_notice"))
     assertEquals("y lo gratis dice una sola línea, sin la losa vacía de antes (Tarea 215b)", "Todavía no tienes marcas en este juego.", n("contrarreloj_free_record"))
+    assertEquals("la liga dice que es la primera semana", "Tu primera semana: todos parten En la plataforma.", n("contrarreloj_league_monday").replace(NBSP, " "))
     assertNull(b["contrarreloj_empty"]); assertNull(b["contrarreloj_free_week"])
     for (tag in placePieces) assertNull("«$tag»", b[tag])
   }
@@ -1616,7 +1629,7 @@ class ContrarrelojPageTest {
       s.results = gamesOf("stroop", count); rule.waitForIdle()
       val b = boxes()
       assertNull("con $count partidas ya no hay frase", b["contrarreloj_early_notice"])
-      assertEquals("y hay lugar: la cifra, la escalera y la campana", 3, listOf("contrarreloj_hero", "contrarreloj_ladder", "contrarreloj_bell").count { b.containsKey(it) })
+      assertEquals("y hay lugar: la cifra y la campana", 2, listOf("contrarreloj_hero", "contrarreloj_bell").count { b.containsKey(it) })
       assertNotNull(b["contrarreloj_section_compare"])
       assertEquals(0, everythingSaid().count { it == Comparison.EARLY_NOTICE })
     }
@@ -1638,7 +1651,8 @@ class ContrarrelojPageTest {
   @Test fun el_lector_de_pantalla_no_dice_ningun_lugar_con_menos_de_tres_partidas() {
     show(compare = estWorld, ageRange = AgeRange.R45_54, results = gamesOf("stroop", 2))
     val said = everythingSaid().joinToString(" | ")
-    for (word in listOf("de cada 100", "Percentil", "percentil", "En órbita", "En la plataforma", "Despegando", "En la Luna", "Entre estrellas", "Te faltan", "Campana", "referencia estimada", "personas", "robot", "Peldaños", "Otras edades"))
+    // (Tarea 229: la liga SÍ habla con 2 partidas —división, «Tu primera semana» y las diez divisiones—; lo que no puede decir es el lugar de este juego)
+    for (word in listOf("de cada 100", "Percentil", "percentil", "Te faltan", "Campana", "personas", "robot", "Peldaños", "Otras edades", "superas al"))
       assertFalse("el lector no dice «$word» con 2 partidas: $said", word in said)
     assertEquals("dice la frase una sola vez", 1, everythingSaid().count { it == Comparison.EARLY_NOTICE })
   }
@@ -1673,7 +1687,7 @@ class ContrarrelojPageTest {
 
   /** De 14 a 17 años la pestaña queda igual que de 18 a 29 años: con la comparación completa, a 393 y 360 dp con letra 1,0 y 2,0, sin choques y dentro de los márgenes de 16 dp. */
   private fun assertTeenSameAsYoung(widthDp: Int, scale: Float) {
-    val tags = listOf("contrarreloj_hero_sentence", "contrarreloj_hero_division", "contrarreloj_hero_place", "contrarreloj_ladder_need", "contrarreloj_ladder_closes", "contrarreloj_source_link", "contrarreloj_section_compare")
+    val tags = listOf("contrarreloj_hero_sentence", "contrarreloj_league_division", "contrarreloj_league_rank", "contrarreloj_league_monday", "contrarreloj_league_closes", "contrarreloj_source_link", "contrarreloj_section_compare")
     show(widthDp = widthDp, scale = scale, compare = estWorld, ageRange = AgeRange.R14_17, results = ten)
     val teen = boxes()
     for (tag in tags) assertNotNull("a $widthDp dp con letra $scale, de 14 a 17 existe «$tag»", teen[tag])
@@ -1693,7 +1707,7 @@ class ContrarrelojPageTest {
     val b = boxes()
     assertNotNull("la losa gris de «tu lugar»", b["contrarreloj_locked_place"]); assertNotNull("y la de «todas tus marcas»", b["contrarreloj_locked_marks"])
     assertNull("sin línea de menores", b["contrarreloj_minors_notice"])
-    assertNotNull("y lo gratis dice la división", b["contrarreloj_hero_division"])
+    assertNotNull("y lo gratis dice la división", b["contrarreloj_league_division"])
   }
 
   @Test fun en_un_juego_sin_tabla_no_sale_ni_la_frase_ni_el_aviso() {
@@ -1811,15 +1825,14 @@ class ContrarrelojPageTest {
 
   // ---------------------------------------------------------------- Tarea 208: Rescate relámpago cuenta por cápsula (tramos de a 3, 0 a 47)
 
-  @Test fun en_Rescate_la_escalera_tiene_los_cinco_peldanos_en_las_seis_franjas_y_la_campana_llega_a_45() {
+  @Test fun en_Rescate_la_campana_llega_a_45_en_las_seis_franjas() {
     val s = live(estWorld, AgeRange.R18_29)
     s.selected = "radar"
     for (range in listOf(AgeRange.R18_29, AgeRange.R30_44, AgeRange.R45_54, AgeRange.R55_64, AgeRange.R65_74, AgeRange.R75_PLUS)) {
       val d = estWorld.distribution("radar", listOf(range), 0, 1)
       s.range = range; s.results = gamesOf("radar", 3, d.p50); rule.waitForIdle()
       val b = boxes()
-      val rows = b.keys.count { Regex("contrarreloj_ladder_row_\\d").matches(it) } + (if (b.containsKey("contrarreloj_ladder_you")) 1 else 0)
-      assertEquals("$range: cinco divisiones en la escalera de Rescate", 5, rows)
+      assertEquals("$range: la losa de la liga y la escalera de las diez divisiones no dependen del juego elegido", 10, b.keys.count { Regex("contrarreloj_league_row_[A-Z]+").matches(it) } + (if (b.containsKey("contrarreloj_league_you")) 1 else 0))
       assertEquals("$range: la campana de Rescate va de 0 a 47 (último tramo «45 o más»)", 48, d.topMark)
       assertEquals("$range: el eje termina en «45 o más»", listOf(0, 15, 30, 45), Comparison.axisTicks(d))
       assertTrue("$range: la raya de la mitad y la barra «Tú» están (la marca es la mitad: la barra la tapa y la frase lo dice)", b.containsKey("contrarreloj_bell_you_bar"))

@@ -37,6 +37,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -114,7 +115,14 @@ fun TuScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier, onBac
 
   val avg = if (ranks.isEmpty()) 0 else ranks.sumOf { it.rating } / ranks.size
   val tier = RankTier.fromRating(avg)
-  val index = overallIndex(levels)
+  // La división de la liga de la semana (Tarea 229; reemplaza a «Etapa general»): sin franja de edad o sin referencia no hay liga y la fila no se muestra
+  val league by viewModel.league.collectAsState()
+  val ageRange by viewModel.ageRange.collectAsState()
+  val compareWorld by viewModel.compareWorld.collectAsState()
+  val estimatedReference by viewModel.estimatedReference.collectAsState()
+  val hasLeague = remember(compareWorld, estimatedReference, ageRange) {
+    com.example.data.League.available(com.example.data.Comparison.sourceFor(com.example.BuildConfig.DEBUG, compareWorld, estimatedReference), ageRange)
+  }
   val medalCount = medals.sumOf { it.level }                    // los niveles ganados en las tres familias: el mismo número de «Tus medallas» (Tarea 145; antes «Mejor», el puntaje más alto, que no dice mejor en qué con 17 juegos de escalas distintas)
   val tiles = remember(streak, achStats, history.size, medalCount, history.minOfOrNull { it.timestamp }) {
     com.example.data.TuStats.tiles(
@@ -176,13 +184,17 @@ fun TuScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier, onBac
           }
           LaunchedEffect(Unit) { runCatching { nameFocus.requestFocus() } }                    // el teclado se abre solo
         }
-        index?.let {
-          com.example.ui.components.OnBoardText(
-            text = "Etapa general: ${levelWord(it / 100f)}",                 // (ítem 17) «etapa», como en la lámina, el detalle y el resultado; antes «nivel hábil»
-            color = com.example.ui.theme.NubiTokens.OnNightDim,
-            fontSize = 16.sp,
-            modifier = Modifier.testTag("profile_stage")
-          )
+        if (hasLeague) {
+          Row(Modifier.padding(top = 2.dp).testTag("profile_division_row"), verticalAlignment = Alignment.CenterVertically) {
+            com.example.ui.components.DivisionEmblem(league.division, com.example.ui.components.DivisionEmblemSmall, Modifier.clearAndSetSemantics { testTag = "profile_division_emblem" })
+            Spacer(Modifier.width(8.dp))
+            com.example.ui.components.OnBoardText(
+              text = com.example.data.League.tuLine(league.division).glueNamesForLetter(),            // «Tu división: Despegando»
+              color = com.example.ui.theme.NubiTokens.OnNightDim,
+              fontSize = 16.sp,
+              modifier = Modifier.weight(1f, fill = false).testTag("profile_stage")
+            )
+          }
         }
       }
     }

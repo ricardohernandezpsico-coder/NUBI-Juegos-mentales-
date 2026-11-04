@@ -977,6 +977,27 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   /** Elige otro juego en el selector de la pestaña «Contrarreloj». */
   fun selectContrarrelojGame(gameId: String) { _contrarrelojGame.value = gameId }
 
+  // ---- la liga de la semana (Tarea 229, `League`)
+
+  /** La liga: las semanas cerradas y la semana en que empezó. La división de ahora es `league.division`. */
+  val league: StateFlow<com.example.data.League.State> = repository.league
+
+  /** Con qué se compara ESTA persona ahora: la referencia estimada del APK (o los datos de muestra en depuración), la misma fuente que dibuja la pestaña. Null un instante al arrancar. */
+  fun leagueSource(): com.example.data.Comparison.Source? = com.example.data.Comparison.sourceFor(com.example.BuildConfig.DEBUG, compareWorld.value, estimatedReference.value)
+
+  /** Empieza la liga y cierra las semanas pendientes: al abrir la app, al volver a primer plano y con el reloj de Hoy (idempotente). */
+  fun closeLeagueWeeks() {
+    viewModelScope.launch { repository.closeLeagueWeeks(leagueSource(), repository.ageRange.value) }
+  }
+
+  /** La hoja del lunes de esa semana ya se vio. */
+  fun dismissLeagueSheet(weekStart: Long) = repository.markLeagueSheetSeen(weekStart)
+
+  init {
+    // La referencia carga fuera del hilo principal y la franja se puede elegir después: cada vez que cambia lo que hay para comparar, se vuelve a mirar si hay semanas por cerrar.
+    viewModelScope.launch { kotlinx.coroutines.flow.combine(estimatedReference, repository.ageRange, compareWorld) { _, _, _ -> }.collect { closeLeagueWeeks() } }
+  }
+
   /**
    * «Todas tus marcas ›» del final del Contrarreloj (solo con Plus): deja el final y va a la pestaña «Contrarreloj» con el juego que se acaba de jugar elegido (Tarea 215: antes abría la página dentro de Avance). No es otra puerta: es la misma vista desde donde nació la marca.
    */

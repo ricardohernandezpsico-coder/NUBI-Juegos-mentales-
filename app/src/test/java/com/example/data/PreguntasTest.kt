@@ -75,7 +75,7 @@ class PreguntasTest {
     assertEquals(listOf("referencia", "edad"), all.filter { it.sourceLink }.map { it.key })
     val a = Preguntas.general.first { it.key == "referencia" }.answer
     assertEquals(
-      "Con una referencia estimada para tu edad, no con otras personas: Nubilus no junta datos de nadie. La referencia sale de estudios por edad y de un programa que jugó el mismo Contrarreloj en un computador. Gratis ves tu división de la semana; con Nubilus Plus, además, dónde queda tu marca frente a tu edad y a otras edades.",
+      "Con una referencia estimada para tu edad, no con otras personas: Nubilus no junta datos de nadie. La referencia sale de estudios por edad y de un programa que jugó el mismo Contrarreloj en un computador. Gratis ves tu división de la semana y tu porcentaje en cada juego; con Nubilus Plus, además, la campana de tu edad, otras edades y semana a semana.",
       a
     )
   }

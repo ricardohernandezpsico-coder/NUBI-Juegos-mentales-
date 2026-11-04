@@ -185,7 +185,7 @@ class TimeTrialStatsTest {
     assertEquals("con la comparación en la página (Tarea 202b) ya no es «solo contigo»", "Es el resultado de un juego. No es una medida de capacidad.", TimeTrialStats.NOTE_COMPARED)
     assertEquals(TimeTrialStats.NOTE, TimeTrialStats.note(compared = false)); assertEquals(TimeTrialStats.NOTE_COMPARED, TimeTrialStats.note(compared = true))
     assertEquals("Tus marcas, comparadas solo contigo.", com.example.data.TimeTrialMarks.subtitle(compared = false))
-    assertEquals("con comparación (Tarea 215) la cabecera cuenta para qué sirve el Contrarreloj", "El Contrarreloj define tu lugar de la semana.", com.example.data.TimeTrialMarks.subtitle(compared = true))
+    assertEquals("con comparación (Tarea 215) la cabecera cuenta para qué sirve el Contrarreloj", "El Contrarreloj define tu división de la semana.", com.example.data.TimeTrialMarks.subtitle(compared = true))
     for (t in listOf(TimeTrialStats.SEAL, TimeTrialStats.UNIT, TimeTrialStats.RULE, TimeTrialStats.NOTE, TimeTrialStats.FIRST_PHRASE, TimeTrialStats.scoreLine(r(38, 26, errors = 4))))
       for (banned in listOf("percentil", "Percentil", "nivel", "Nivel", "cerebro", "cognitiv", "entrenamiento")) assertFalse("«$t» no debe decir «$banned»", t.contains(banned))
   }

@@ -741,6 +741,36 @@ class NeuroVidaRepository(
     .map { list -> list.map { it.toDomain() } }
     .stateInMarkingLoad(LOAD_TIME_TRIAL, emptyList())
 
+  // La LIGA DE LA SEMANA (Tarea 229, `League`; `docs/liga-de-la-semana.md` §4): las semanas cerradas, la semana en que empezó la liga y la hoja del lunes ya vista, en `league_weeks` (texto plano; va en el respaldo y «Borrar datos» lo limpia). Una semana cerrada NUNCA se recalcula.
+  private val leaguePrefsWeeks = context.getSharedPreferences(League.PREFS, Context.MODE_PRIVATE)
+  private val _league = MutableStateFlow(League.decode(leaguePrefsWeeks.getString(League.KEY, null)))
+  val league: StateFlow<League.State> = _league.asStateFlow()
+  private val leagueLock = kotlinx.coroutines.sync.Mutex()
+
+  private fun saveLeague(next: League.State) {
+    if (next == _league.value) return
+    leaguePrefsWeeks.edit().putString(League.KEY, League.encode(next)).apply()
+    _league.value = next
+  }
+
+  /**
+   * Empieza la liga si es la primera vez (la semana de hoy ya cuenta, y nada de antes) y cierra, en orden, todas las semanas pendientes: al abrir la app, al volver a primer plano y con el reloj de Hoy. [source] y [ageRange] son con lo que se compara a esta persona (la referencia estimada y su franja):
+   * sin ellos no hay liga y las semanas esperan (cuando haya franja y referencia, se cierran con lo que se jugó). Las partidas se leen de la base (no del flujo, que nace vacío): una semana cerrada con la lista sin cargar quedaría «sin %» para siempre.
+   */
+  suspend fun closeLeagueWeeks(source: Comparison.Source?, ageRange: AgeRange?, now: Long = System.currentTimeMillis()) = withContext(Dispatchers.IO) {
+    leagueLock.withLock {
+      var state = League.begin(_league.value, now)
+      if (League.available(source, ageRange)) {
+        val results = timeTrialResultDao.getAllSync().map { it.toDomain() }
+        state = League.close(state, now) { _, ago -> League.closedPercent(source, ageRange, results, now, ago) }
+      }
+      saveLeague(state)
+    }
+  }
+
+  /** La hoja del lunes de la semana [weekStart] ya se vio: no vuelve a salir. */
+  fun markLeagueSheetSeen(weekStart: Long) = saveLeague(League.seen(_league.value, weekStart))
+
   /** El día de hoy como «yyyy-MM-dd» (hora local): la clave del Contrarreloj de hoy. */
   fun todayKey(): String = getTodayDateKey()
 
@@ -1216,6 +1246,9 @@ class NeuroVidaRepository(
     _correoRecord.value = 0
     satelitesPrefs.edit().clear().apply()
     _satelitesRecord.value = 0
+    leaguePrefsWeeks.edit().clear().apply()                            // y la liga de la semana (Tarea 229): vuelve a empezar, todos En la plataforma, la semana de hoy
+    _league.value = League.State()
+    saveLeague(League.begin(League.State(), System.currentTimeMillis()))
     rescatePrefs.edit().clear().apply()
     _rescateRecord.value = 0
     _rescateTotals.value = Rescate.Totals()

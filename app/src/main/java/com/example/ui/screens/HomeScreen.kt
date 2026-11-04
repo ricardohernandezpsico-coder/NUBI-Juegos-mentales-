@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -41,7 +43,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.Comparison
 import com.example.data.IslaLugar
+import com.example.data.League
 import com.example.data.Streak
 import com.example.data.TimeTrialDay
 import com.example.data.TimeTrialState
@@ -50,6 +54,8 @@ import com.example.data.Week
 import com.example.model.GameRegistry
 import com.example.model.RankTier
 import com.example.ui.components.ClayClockIcon
+import com.example.ui.components.DivisionEmblem
+import com.example.ui.components.DivisionEmblemSmall
 import com.example.ui.components.GameEmblem
 import com.example.ui.components.Glyph
 import com.example.ui.components.GuideTarget
@@ -101,6 +107,7 @@ fun HomeScreen(
       kotlinx.coroutines.delay(30_000L)
       clock = System.currentTimeMillis()
       viewModel.dropStalePause()                    // una partida del Contrarreloj en pausa vale solo su día (Tarea 218)
+      viewModel.closeLeagueWeeks()                  // y la semana de la liga se cierra sola a la medianoche del domingo (Tarea 229)
     }
   }
   val lang = LocalAppLanguage.current
@@ -113,6 +120,15 @@ fun HomeScreen(
   val bestStreak = remember(activity, clock) { if (streakInfo.current > 0) 0 else Streak.longest(activity.map(Streak::dayOf)) }
   val measures by viewModel.starMeasures.collectAsState()
   val historyList = remember(history, timeTrialResults, measures, clock, lang) { com.example.data.historyRows(history, timeTrialResults, measures, clock, lang) }
+  // La liga de la semana (Tarea 229): con qué se compara esta persona es lo mismo que en la pestaña; sin franja de edad o sin referencia no hay liga ni línea
+  val league by viewModel.league.collectAsState()
+  val ageRange by viewModel.ageRange.collectAsState()
+  val compareWorld by viewModel.compareWorld.collectAsState()
+  val estimatedReference by viewModel.estimatedReference.collectAsState()
+  val leagueLive = remember(league, ageRange, compareWorld, estimatedReference, timeTrialResults, clock) {
+    val source = Comparison.sourceFor(com.example.BuildConfig.DEBUG, compareWorld, estimatedReference)
+    if (League.available(source, ageRange)) League.live(league, League.weekGames(source, ageRange, timeTrialResults, clock)) else null
+  }
   val ui = HomeUi(
     name = settings.name,
     now = clock,
@@ -128,6 +144,7 @@ fun HomeScreen(
     hasBaseline = baseline != null,
     baselineInvite = com.example.data.BaselinePlan.showHomeInvite(baseline != null, history.size, history.minOfOrNull { it.timestamp }, clock),
     timeTrial = timeTrialOf(timeTrialResults, viewModel.todayKey(), lang, plus),
+    league = leagueLive,
     history = historyList,
     onScreen = startupStage == com.example.viewmodel.StartupStage.READY && com.example.ui.components.LocalTabActive.current
   )
@@ -172,6 +189,8 @@ internal data class HomeUi(
   val baselineInvite: Boolean = !hasBaseline,
   /** El Contrarreloj de hoy (Tarea 177): el juego de la fecha (el mismo para todas las personas) y cómo va; null solo si el juego del día no está en el catálogo (no pasa). */
   val timeTrial: HomeTimeTrial? = null,
+  /** La liga de la semana (Tarea 229): la división de ahora y cómo va la semana, para la línea bajo la losa del Contrarreloj; null = sin liga (sin franja de edad o sin referencia): no hay línea. */
+  val league: League.Live? = null,
   /** «Tus últimas partidas» (Tarea 221): las últimas partidas, las más recientes primero (`historyRows`); vacía = Hoy no dibuja la tarjeta. */
   val history: List<com.example.data.HistoryRow> = emptyList(),
   /** Hoy está a la vista y el arranque terminó (los datos ya están al día): hasta entonces la llama de hoy no puede «destellar», porque la semana sale vacía un instante, ni destellar con Hoy escondida en otra pestaña (Tareas 223 y 224, `rememberTodayGlint`). */
@@ -473,20 +492,6 @@ internal fun timeTrialDescription(t: HomeTimeTrial): String =
 /** La segunda línea de la losa (Tarea 180): «Hoy: Tinta o Palabra», siempre (lo demás ya no se dice en la losa). */
 internal fun timeTrialSecondLine(t: HomeTimeTrial): String = TimeTrialDay.secondLine(t.title)
 
-/**
- * La línea de estado bajo la losa del Contrarreloj, en texto sobre el cielo (Tarea 219; `idea-pestana-contrarreloj.md` §2.2): sin Nubilus Plus, «Te quedan 3 partidas de hoy.» y, si ya se jugó hoy, también «Tu récord: 41 aciertos.»; con Plus, «Tu récord: 41 aciertos.» (sin partidas de las que hablar).
- * Sin Plus y sin jugar hoy NO dice el récord (la cuenta de partidas es lo que importa antes de jugar). Null si no hay nada que decir (con Plus y sin ninguna marca, o sin partidas: ahí manda el recuadro).
- */
-internal fun timeTrialStatusLine(t: HomeTimeTrial): String? {
-  val left = t.gamesLeft
-  val record = t.record
-  val parts = buildList {
-    if (left != null && left > 0) add(TimeTrialDay.gamesLeftLine(left))
-    if (record != null && (left == null || t.state != TimeTrialState.PENDIENTE)) add(TimeTrialDay.recordLine(record))
-  }
-  return parts.joinToString(" ").takeIf { it.isNotEmpty() }
-}
-
 /** El color de la losa del Contrarreloj: CELESTE mientras falta jugarlo (el color propio del modo) y CREMA («Otra vez») cuando hoy ya se jugó. Nunca sol ni lila (el lila es del Desafío). Robolectric no lee píxeles: las pruebas miran esta función. */
 internal fun timeTrialSlabColor(again: Boolean): SlabColor = if (again) SlabColor.CREAM else SlabColor.SKY
 
@@ -550,10 +555,18 @@ private fun TimeTrialNote(tag: String, lines: List<NoteLine>, modifier: Modifier
   }
 }
 
-/** La línea de estado bajo la losa del Contrarreloj, en texto suelto sobre el cielo y centrado; «3 partidas» y «de hoy» pegados. */
+/**
+ * La línea de la LIGA bajo la losa del Contrarreloj (Tarea 229; `docs/liga-de-la-semana.md` §5.2): el emblema de la división a 24 dp y, a su lado, «Despegando · vas para subir a Sobre las nubes», en texto suelto sobre el cielo y centrado (reemplaza a «Te quedan N partidas de hoy. Tu récord: …», que quedó
+ * en la pestaña y en la ficha). Sin franja de edad o sin referencia no hay liga y la línea no sale. El lector de pantalla lee la línea entera, sin el emblema (decorativo).
+ */
 @Composable
-private fun TimeTrialStatus(line: String) {
-  OnBoardText(line.glueGames(), color = HoySoft, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().padding(top = 4.dp).testTag("home_timetrial_line"), textAlign = TextAlign.Center)
+private fun LeagueLine(live: League.Live) {
+  val line = League.hoyLine(live)
+  Row(Modifier.fillMaxWidth().padding(top = 6.dp).testTag("home_timetrial_league"), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+    DivisionEmblem(live.division, DivisionEmblemSmall, Modifier.clearAndSetSemantics { testTag = "home_league_emblem" })
+    Spacer(Modifier.width(8.dp))
+    OnBoardText(line.glueNamesForLetter(), color = HoySoft, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.weight(1f, fill = false).testTag("home_timetrial_line"), textAlign = TextAlign.Start)
+  }
 }
 
 /**
@@ -564,7 +577,7 @@ private fun TimeTrialStatus(line: String) {
  *  - **Sin partidas** (sin Plus): sin losa; el recuadro plano celeste claro «Hoy ya jugaste tus 3 partidas. Mañana: <juego>.» (con la marca nueva, UN solo recuadro: la marca arriba y, tras una línea fina, lo de mañana) y, debajo, UNA fila gris con candado que abre la hoja (Tarea 218).
  */
 @Composable
-private fun TimeTrialBlock(t: HomeTimeTrial, onTimeTrial: () -> Unit, onLocked: () -> Unit) {
+private fun TimeTrialBlock(t: HomeTimeTrial, league: League.Live?, onTimeTrial: () -> Unit, onLocked: () -> Unit) {
   val newMark = t.state == TimeTrialState.MARCA_NUEVA
   val markLine = NoteLine(TimeTrialDay.newMarkLine(t.todayHits ?: t.record ?: 0, t.title), tag = "home_timetrial_mark", check = true)
   val gap = Modifier.padding(top = 8.dp)
@@ -579,14 +592,11 @@ private fun TimeTrialBlock(t: HomeTimeTrial, onTimeTrial: () -> Unit, onLocked: 
       newMark -> {
         TimeTrialNote("home_timetrial_done", listOf(markLine))
         TimeTrialSlab(t, again = true, onClick = onTimeTrial, modifier = gap)
-        // sin Plus: las partidas que quedan, como en «jugado» pero SIN el récord (ya está en el recuadro). Con Plus no hay línea (Tarea 219b, auditoría de Fable de la 219 §3)
-        t.gamesLeft?.takeIf { it > 0 }?.let { TimeTrialStatus(TimeTrialDay.gamesLeftLine(it)) }
       }
-      else -> {
-        TimeTrialSlab(t, again = t.state == TimeTrialState.JUGADO, onClick = onTimeTrial)
-        timeTrialStatusLine(t)?.let { TimeTrialStatus(it) }
-      }
+      else -> TimeTrialSlab(t, again = t.state == TimeTrialState.JUGADO, onClick = onTimeTrial)
     }
+    // la liga de la semana (Tarea 229): «Te quedan N partidas» y el récord ya no se dicen aquí (quedan en la pestaña y en la ficha); sin liga, sin línea
+    league?.let { LeagueLine(it) }
   }
 }
 
@@ -601,7 +611,7 @@ private fun HoyBelow(ui: HomeUi, onTimeTrial: () -> Unit, onLocked: () -> Unit, 
   val t = ui.timeTrial
   Column(Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 4.dp)) {
     if (t == null && routeDone && !ui.flightDay) OnBoardText(ROUTE_TOMORROW, color = HoyCream, fontSize = 17.sp, fontWeight = FontWeight.Bold, lineHeight = 21.sp, modifier = Modifier.fillMaxWidth().padding(top = 8.dp).testTag("home_route_tomorrow"), textAlign = TextAlign.Center)
-    if (t != null) TimeTrialBlock(t, onTimeTrial, onLocked)
+    if (t != null) TimeTrialBlock(t, ui.league, onTimeTrial, onLocked)
     if (ui.baselineInvite) {
       // El enlace sigue siendo un enlace pero en crema tenue (`OnNightDim`) con su chevrón, para que no compita con el sol de la ruta o del Desafío
       Row(

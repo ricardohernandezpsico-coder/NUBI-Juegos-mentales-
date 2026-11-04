@@ -249,3 +249,16 @@ Aparece **una vez por semana cerrada**, la primera vez que se abre la app despu�
 - Tú.
 
 Hay que revisarlas buscando choques: emblema con texto, «51 %» con el rótulo, la barra con su rótulo.
+
+---
+
+## 8. Cómo quedó (T229, 4-nov)
+
+Hecho en la Tarea 229; el detalle está en [`docs/contrarreloj.md`](contrarreloj.md) §33. Donde la spec no calzaba con el código o dejaba un hueco, se decidió así:
+
+- **Hoy, sin partidas gratis.** La línea de la liga se dibuja en TODOS los estados del bloque del Contrarreloj, también cuando no quedan partidas (bajo el recuadro y la fila gris, que no tienen losa celeste que la preceda).
+- **`FreeCard` conserva «Esta semana jugaste N partidas y la mejor fue…»:** la spec no la nombra entre lo que sale.
+- **La barra de la losa** rotula la línea con el nombre y el %: «Sobre las nubes · 20 %» (con solo el nombre, una marca en una barra de 0 a 100 no dice dónde está).
+- **Semana sin % o primera semana sin partidas:** no hay cifra grande ni barra (no hay nada que medir); quedan la división y la frase. Si jugó pero ningún juego cuenta todavía (les faltan partidas para la tercera) la frase no dice «Todavía no juegas»: dice «Todavía no cuenta ningún juego esta semana: cada uno cuenta desde tu tercera partida.».
+- **Las semanas seguidas** viven en «Semana a semana» (antes en la escalera en aciertos, que salió).
+- **«Etapa general»** de Tú se reemplazó entera; `overallIndex` y `levelWord` quedan para la T230.

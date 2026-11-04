@@ -108,6 +108,13 @@ class BackupRulesTest {
   }
 
   @Test
+  fun `la liga de la semana se respalda (las semanas cerradas son progreso y no se recalculan)`() {
+    for (text in listOf(xml("backup_rules.xml"), cloudSection(xml("data_extraction_rules.xml")), transferSection(xml("data_extraction_rules.xml")))) {
+      assertTrue(includes(text, "sharedpref").contains("league_weeks.xml"))
+    }
+  }
+
+  @Test
   fun `el record de capsulas de Rescate relampago se respalda (es progreso)`() {
     for (text in listOf(xml("backup_rules.xml"), cloudSection(xml("data_extraction_rules.xml")), transferSection(xml("data_extraction_rules.xml")))) {
       assertTrue(includes(text, "sharedpref").contains("rescate_record.xml"))

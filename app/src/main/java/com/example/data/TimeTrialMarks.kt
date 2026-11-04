@@ -18,7 +18,7 @@ object TimeTrialMarks {
    * El subtítulo CON comparación (Tarea 215, frase de Ricardo): lo gratis de la pestaña ya dice la división de la semana, así que la cabecera lo cuenta en una frase corta, sin decir con qué se compara (eso lo dice «Con qué te comparas ›»).
    * Reemplaza a «Tus marcas, comparadas contigo y con una referencia estimada para tu edad.» (Tarea 205) y a su versión con personas.
    */
-  const val SUBTITLE_PLACE = "El Contrarreloj define tu lugar de la semana."
+  const val SUBTITLE_PLACE = "El Contrarreloj define tu división de la semana."
 
   fun subtitle(compared: Boolean): String = if (compared) SUBTITLE_PLACE else SUBTITLE
   const val FIRST_MARK = "Tu primera marca. Desde la segunda, se dibujan aquí."

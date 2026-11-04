@@ -177,8 +177,8 @@ class Tarea205CapturasTest {
     // (el juego del día cambia con la fecha real y la muestra corre la silueta por juego: por eso la marca se calcula con la escalera de ESE juego)
     val today = TimeTrialDay.gameFor(model.todayKey())
     // el peldaño de arriba de la escalera de ESE juego (en Rescate relámpago «En la Luna» no tiene peldaño propio: el percentil 75 y el 90 se alcanzan con el mismo acierto)
-    val topRung = Comparison.thresholds(estWorld.distribution(today, listOf(AgeRange.R45_54), 0)).last()
-    val doorMark = (topRung.from - 7).coerceAtLeast(0)
+    val topFrom = Comparison.firstMarkReaching(90, estWorld.distribution(today, listOf(AgeRange.R45_54), 0)) ?: 0          // (Tarea 229: el percentil 90 que fue el peldaño de arriba)
+    val doorMark = (topFrom - 7).coerceAtLeast(0)
     runBlocking {
       listOf(31, 35, 39, 36, 44, 38, 41, 37, 42).forEachIndexed { i, m ->
         repo.recordTimeTrial(TimeTrialResult(id = "avance-$i", gameId = today, day = model.todayKey(), trackVersion = TimeTrialDay.trackVersion(today), hits = m + 2, errors = 2, level = 4, seconds = 120, timestamp = real - (17 - i) * day))

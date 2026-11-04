@@ -170,7 +170,7 @@ class Tarea203bCapturasTest {
     // las marcas del juego de HOY (el de la puerta): las de antes, de la semana pasada hacia atrás (44 es el récord), y UNA de este momento sembrada para que la puerta diga la misma meta que la página de Tinta o Palabra: «Te faltan 7 aciertos para En la Luna.»
     // (el juego del día cambia con la fecha real y la muestra corre la silueta por juego: por eso la marca se calcula con la escalera de ESE juego)
     val today = TimeTrialDay.gameFor(model.todayKey())
-    val moon = Comparison.thresholds(SampleComparison(few = false).distribution(today, listOf(AgeRange.R45_54), 0)).first { it.division == Comparison.Division.MOON }.from
+    val moon = Comparison.firstMarkReaching(75, SampleComparison(few = false).distribution(today, listOf(AgeRange.R45_54), 0)) ?: 0          // (Tarea 229: el percentil 75 que fue «En la Luna»)
     val doorMark = moon - 7
     runBlocking {
       listOf(31, 35, 39, 36, 44, 38, 41, 37, 42).forEachIndexed { i, m ->

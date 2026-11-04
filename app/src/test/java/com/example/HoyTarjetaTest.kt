@@ -32,6 +32,8 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.data.NBSP
 import com.example.data.PlusAccess
+import com.example.data.Comparison
+import com.example.data.League
 import com.example.data.TimeTrialState
 import com.example.data.Week
 import com.example.model.AppLanguage
@@ -90,12 +92,17 @@ class HoyTarjetaTest {
   private val sinPartidasMarca = stroopMarca.copy(gamesLeft = 0, tomorrowTitle = "¿Verdad o disparate?")
 
   private fun ui(
-    completed: Int = 1, ids: List<String> = listOf("bodega", "calculo", "intrusa"), paused: String? = null, flightDay: Boolean = false, hasBaseline: Boolean = true, name: String = "Ricardo", at: Long = now, timeTrial: HomeTimeTrial? = null
+    completed: Int = 1, ids: List<String> = listOf("bodega", "calculo", "intrusa"), paused: String? = null, flightDay: Boolean = false, hasBaseline: Boolean = true, name: String = "Ricardo", at: Long = now, timeTrial: HomeTimeTrial? = null, league: League.Live? = null
   ) =
     HomeUi(
       name = name, now = at, tier = RankTier.fromRating(0), streak = 3, weeklyGoal = 4, lamps = lamps,
-      stops = homeStops(ids, completed, AppLanguage.SPANISH), pausedTitle = paused, flightDay = flightDay, hasBaseline = hasBaseline, timeTrial = timeTrial
+      stops = homeStops(ids, completed, AppLanguage.SPANISH), pausedTitle = paused, flightDay = flightDay, hasBaseline = hasBaseline, timeTrial = timeTrial, league = league
     )
+
+  /** La liga de la semana (Tarea 229) en la división [d] y cómo va: la línea de Hoy bajo la losa del Contrarreloj. */
+  private fun liga(d: Comparison.Division = Comparison.Division.TAKEOFF, course: League.Course = League.Course.UP, target: Comparison.Division = d.up ?: d) =
+    League.Live(d, if (course == League.Course.NONE) null else d.from + 5, course, target, firstWeek = d == Comparison.Division.PLATFORM)
+  private val subiendo = liga()
 
   private var played = 0
   private var resumed = 0
@@ -743,45 +750,51 @@ private val scrollsAt360 = mapOf(                                               
   // ---- Los estados del Contrarreloj de hoy (sin Nubilus Plus / con Plus)
 
   @Test
-  fun sin_jugar_la_losa_es_celeste_y_bajo_ella_el_record_con_Plus_o_las_partidas_sin_Plus_en_texto_sobre_el_cielo() {
-    show(ui(completed = 3, timeTrial = stroop))
-    assertEquals("con Plus: el récord", "Tu récord: 41 aciertos.", textOf("home_timetrial_line"))
+  fun sin_jugar_la_losa_es_celeste_y_bajo_ella_va_la_liga_con_su_emblema_y_ya_no_el_record_ni_las_partidas() {
+    show(ui(completed = 3, timeTrial = stroop, league = subiendo))
+    assertEquals("la línea de la liga (Tarea 229)", "Despegando · vas para subir a Sobre las nubes", textOf("home_timetrial_line").replace(NBSP, " "))
     val c = bounds("btn_timetrial"); val line = bounds("home_timetrial_line")
     assertTrue("la línea va DEBAJO de la losa ($line / $c) y es texto plano", line.top >= c.bottom - 8f)
     composeTestRule.onNodeWithTag("home_timetrial_line").assertHasNoClickAction()
+    assertTrue("con el emblema de la división a 24 dp, a la izquierda del texto", exists("home_league_emblem") && dp(unclipped("home_league_emblem").width) in 23.5f..24.5f && unclipped("home_league_emblem").right <= unclipped("home_timetrial_line").left + 1f)
     assertFalse("sin Plus-nada: no hay recuadro ni fila gris", exists("home_timetrial_done") || exists("home_timetrial_none") || exists("home_locked_games"))
-    show(ui(completed = 3, timeTrial = sinPlus))
-    assertEquals("sin Plus y sin jugar: las partidas, NO el récord", "Te quedan 3 partidas de hoy.", textOf("home_timetrial_line"))
-    show(ui(completed = 3, timeTrial = sinPlus.copy(gamesLeft = 1)))
-    assertEquals("Te queda 1 partida de hoy.", textOf("home_timetrial_line"))
-    show(ui(completed = 3, timeTrial = stroop.copy(record = null)))
-    assertFalse("la primera vez no hay récord y la línea no se dibuja", exists("home_timetrial_line"))
     composeTestRule.onAllNodes(hasText("Tu récord", substring = true)).assertCountEquals(0)
+    composeTestRule.onAllNodes(hasText("partidas de hoy", substring = true)).assertCountEquals(0)
+    show(ui(completed = 3, timeTrial = sinPlus, league = liga(course = League.Course.STAY)))
+    assertEquals("sin Plus tampoco dice las partidas: viven en la pestaña y en la ficha", "Despegando · vas para quedarte", textOf("home_timetrial_line").replace(NBSP, " "))
+    show(ui(completed = 3, timeTrial = stroop, league = liga(course = League.Course.DOWN, target = Comparison.Division.PLATFORM)))
+    assertEquals("Despegando · juega para quedarte", textOf("home_timetrial_line").replace(NBSP, " "))
+    show(ui(completed = 3, timeTrial = stroop, league = liga(Comparison.Division.PLATFORM, League.Course.NONE)))
+    assertEquals("En la plataforma · juega para subir", textOf("home_timetrial_line").replace(NBSP, " "))
+    show(ui(completed = 3, timeTrial = stroop, league = liga(Comparison.Division.GALAXY, League.Course.TOP)))
+    assertEquals("En otra galaxia · vas para quedarte", textOf("home_timetrial_line").replace(NBSP, " "))
+    show(ui(completed = 3, timeTrial = stroop))
+    assertFalse("sin franja de edad o sin referencia no hay liga y no hay línea", exists("home_timetrial_line") || exists("home_league_emblem"))
   }
 
   @Test
   fun mientras_la_ruta_sigue_la_losa_y_su_linea_van_igual_bajo_la_tarjeta_y_la_ruta_tiene_el_sol() {
-    show(ui(completed = 1, timeTrial = stroop))
-    assertEquals("Tu récord: 41 aciertos.", textOf("home_timetrial_line"))
+    show(ui(completed = 1, timeTrial = stroop, league = subiendo))
+    assertEquals("Despegando · vas para subir a Sobre las nubes", textOf("home_timetrial_line").replace(NBSP, " "))
     assertTrue(unclipped("btn_timetrial").top >= unclipped("home_card").bottom - 1f)
-    assertEquals(Sun.ROUTE, sunOf(ui(completed = 1, timeTrial = stroop)))
+    assertEquals(Sun.ROUTE, sunOf(ui(completed = 1, timeTrial = stroop, league = subiendo)))
   }
 
   @Test
-  fun jugado_con_partidas_la_losa_pasa_a_crema_Otra_vez_con_Hoy_el_juego_y_la_linea_dice_partidas_y_record() {
-    val u = ui(completed = 3, timeTrial = stroopJugado)
+  fun jugado_con_partidas_la_losa_pasa_a_crema_Otra_vez_con_Hoy_el_juego_y_la_linea_es_la_de_la_liga() {
+    val u = ui(completed = 3, timeTrial = stroopJugado, league = subiendo)
     show(u)
     composeTestRule.onNodeWithText("Otra vez", useUnmergedTree = true).assertExists()
     composeTestRule.onNodeWithText("Hoy: Tinta o Palabra", useUnmergedTree = true).assertExists()
     composeTestRule.onAllNodes(hasText("Contrarreloj"), useUnmergedTree = true).assertCountEquals(0)          // «Otra vez» reemplaza al rótulo; el lector aún dice «Contrarreloj de hoy»
-    assertEquals("con Plus: el récord", "Tu récord: 41 aciertos.", textOf("home_timetrial_line"))
+    assertEquals("la línea de la liga", "Despegando · vas para subir a Sobre las nubes", textOf("home_timetrial_line").replace(NBSP, " "))
     assertEquals(Sun.NONE, sunOf(u))
     val src = java.io.File("src/main/java/com/example/ui/screens/HomeScreen.kt").readText().replace("\r\n", "\n")
     assertTrue("«Otra vez» sale cuando el estado es JUGADO", src.contains("TimeTrialSlab(t, again = t.state == TimeTrialState.JUGADO"))
     composeTestRule.onNodeWithTag("btn_timetrial").performClick()
     assertEquals("se puede repetir", 1, trialed)
-    show(ui(completed = 3, timeTrial = sinPlusJugado))
-    assertEquals("sin Plus: las partidas y el récord, juntos", "Te quedan 2 partidas de hoy. Tu récord: 41 aciertos.", textOf("home_timetrial_line"))
+    show(ui(completed = 3, timeTrial = sinPlusJugado, league = subiendo))
+    assertEquals("sin Plus la línea es la misma: las partidas que quedan ya no se dicen en Hoy", "Despegando · vas para subir a Sobre las nubes", textOf("home_timetrial_line").replace(NBSP, " "))
     composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/hoy-tarjeta-contrarreloj-jugado.png")
   }
 
@@ -812,21 +825,19 @@ private val scrollsAt360 = mapOf(                                               
 
   /** Tarea 219b (auditoría de Fable de la 219, §3): sin Plus, con marca nueva y partidas que quedan, bajo «Otra vez» va «Te quedan N partidas de hoy.» (como en «jugado» pero SIN el récord, que ya está en el recuadro). Con Plus no hay línea; sin partidas tampoco (ya es un solo recuadro). */
   @Test
-  fun sin_Plus_con_marca_nueva_y_partidas_bajo_Otra_vez_va_Te_quedan_N_partidas_sin_el_record_y_con_Plus_no_hay_linea() {
-    show(ui(completed = 3, timeTrial = sinPlusMarca))
-    assertEquals("Te quedan 2 partidas de hoy.", textOf("home_timetrial_line"))
-    assertFalse("sin el récord: ya está en el recuadro", textOf("home_timetrial_line").contains("récord"))
+  fun con_marca_nueva_bajo_Otra_vez_va_la_linea_de_la_liga_y_ya_no_las_partidas_que_quedan() {
+    show(ui(completed = 3, timeTrial = sinPlusMarca, league = subiendo))
+    assertEquals("Despegando · vas para subir a Sobre las nubes", textOf("home_timetrial_line").replace(NBSP, " "))
     composeTestRule.onNodeWithTag("home_timetrial_line").assertHasNoClickAction()
     val note = unclipped("home_timetrial_done"); val again = unclipped("btn_timetrial"); val line = unclipped("home_timetrial_line")
     assertTrue("el recuadro, «Otra vez» y la línea van en ese orden ($note / $again / $line)", note.bottom <= again.top + 1f && again.bottom <= line.top + 1f)
-    assertEquals("el lector dice las partidas como en «jugado»", "Contrarreloj de hoy, Tinta o Palabra, 2 minutos, hoy 43 aciertos, otra vez, tu récord 43 aciertos, te quedan 2 partidas de hoy", spokenOf("btn_timetrial"))
-    show(ui(completed = 3, timeTrial = sinPlusMarca.copy(gamesLeft = 1)))
-    assertEquals("en singular", "Te queda 1 partida de hoy.", textOf("home_timetrial_line"))
+    assertEquals("el lector dice las partidas en la losa, como en «jugado»", "Contrarreloj de hoy, Tinta o Palabra, 2 minutos, hoy 43 aciertos, otra vez, tu récord 43 aciertos, te quedan 2 partidas de hoy", spokenOf("btn_timetrial"))
+    composeTestRule.onAllNodes(hasText("partidas de hoy", substring = true)).assertCountEquals(0)
     show(ui(completed = 3, timeTrial = stroopMarca))
-    assertFalse("con Plus no hay línea", exists("home_timetrial_line"))
-    show(ui(completed = 3, timeTrial = sinPartidasMarca))
-    assertFalse("sin partidas tampoco: ya es un solo recuadro", exists("home_timetrial_line"))
-    for (fs in listOf(1f, 1.3f, 2f)) { show(ui(completed = 3, timeTrial = sinPlusMarca), fontScale = fs); assertNoWordSplit() }
+    assertFalse("sin liga (sin franja o sin referencia) no hay línea", exists("home_timetrial_line"))
+    show(ui(completed = 3, timeTrial = sinPartidasMarca, league = subiendo))
+    assertEquals("sin partidas, la línea de la liga va después del recuadro y de la fila gris", "Despegando · vas para subir a Sobre las nubes", textOf("home_timetrial_line").replace(NBSP, " "))
+    for (fs in listOf(1f, 1.3f, 2f)) { show(ui(completed = 3, timeTrial = sinPlusMarca, league = subiendo), fontScale = fs); assertNoWordSplit() }
   }
 
   @Test
@@ -1009,7 +1020,7 @@ private val scrollsAt360 = mapOf(                                               
     composeTestRule.onNodeWithTag("btn_home_baseline").assertExists()
     composeTestRule.onNodeWithText("Encuentra tu punto de partida").assertExists()
     assertTrue(unclipped("btn_home_baseline").top >= unclipped("home_card").bottom - 1f)
-    show(ui(hasBaseline = false, timeTrial = stroop))
+    show(ui(hasBaseline = false, timeTrial = stroop, league = subiendo))
     assertTrue("con el Contrarreloj, la invitación va debajo de él", unclipped("btn_home_baseline").top >= unclipped("home_timetrial_line").bottom - 1f)
   }
 

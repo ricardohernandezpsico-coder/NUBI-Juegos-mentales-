@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.Comparison
+import com.example.data.League
 import com.example.data.PlusAccess
 import com.example.data.TimeTrialDay
 import com.example.data.TimeTrialMarks
@@ -76,6 +77,7 @@ import com.example.ui.components.ClaySlab
 import com.example.ui.components.DivisionEmblem
 import com.example.ui.components.DivisionEmblemHero
 import com.example.ui.components.DivisionEmblemLadder
+import androidx.compose.ui.layout.layout
 import com.example.ui.components.GameEmblem
 import com.example.ui.components.Glyph
 import com.example.ui.components.KitButton
@@ -113,7 +115,7 @@ private const val BIG_TEXT_SCALE_CAP = 1.3f
  * y se parte en DOS mitades: **arriba lo gratis, a color; debajo lo de Plus** (sin Plus, DOS losas en gris con candado; con Plus, las secciones de siempre, a color y en el mismo orden). Lo que la persona no tendría ni con Plus no se muestra en gris (sin franja de edad o sin tabla del juego no hay losa de «tu lugar»: una promesa que no se cumple es contenido engañoso para Play).
  * Se desliza entera; ya no tiene flecha de volver (es una pestaña). Escala de letra fija: 24 (títulos y la cifra), 18 (Fredoka), 16 y 14 (solo los rótulos de los ejes); el título de la página, 26, es el de toda pestaña con título.
  *
- * De arriba abajo: la cabecera sobre el cielo («Contrarreloj» y, solo cuando hay comparación, «El Contrarreloj define tu lugar de la semana.»; sin ella, «Tus marcas, comparadas solo contigo.», con [OnBoardText]); el cielo se DESVANECE en 24 dp hasta el noche plano ([NubiTokens.NightFlat]) y de ahí para abajo todo va en losas sobre ese fondo plano;
+ * De arriba abajo: la cabecera sobre el cielo («Contrarreloj» y, solo cuando hay comparación, «El Contrarreloj define tu división de la semana.»; sin ella, «Tus marcas, comparadas solo contigo.», con [OnBoardText]); el cielo se DESVANECE en 24 dp hasta el noche plano ([NubiTokens.NightFlat]) y de ahí para abajo todo va en losas sobre ese fondo plano;
  * el selector de los cuatro juegos ([GameSelector]: el de hoy marcado «Hoy»; sin Plus, los otros tres en gris con candado —tocarlos abre la hoja— y con su récord siempre a la vista); **LO GRATIS en UNA losa crema** ([FreeCard]: «Jugar · 2 minutos», «Tu récord: 44 aciertos.», «Esta semana jugaste 3 partidas y la mejor fue de 41 aciertos.» (o «…y la mejor fue tu récord.»; sin marcas en el juego, UNA línea: «Todavía no tienes marcas en este juego.»), y con comparación la división con su emblema y su lugar entre las cinco,
  * «Te faltan 7 aciertos para En la Luna.» con su barra y «La semana cierra el domingo.»; antes era lo que daba la puerta de Avance) y la fila «Con qué te comparas ›» ([CompareLink], solo con la referencia estimada: es la honestidad de la referencia, no un dato de pago). Sin franja de edad, de 13 a 17 años o antes de la tercera partida (Tarea 207) lo gratis no dice la división y
  * el aviso de siempre sale bajo el selector ([Comparison.Gate]).
@@ -148,10 +150,15 @@ internal fun ContrarrelojPage(
   /** Tocar algo en gris abre la hoja del candado. */
   onLocked: () -> Unit = {},
   /** El botón «Tú» de la cabecera (Tarea 225b): se va con la página; vacío en las pruebas y capturas sueltas. */
-  tuButton: @Composable (Modifier) -> Unit = {}
+  tuButton: @Composable (Modifier) -> Unit = {},
+  /** La liga de la semana (Tarea 229, `League`): las semanas cerradas y la semana en que empezó; de ahí sale la división de ahora. Vacía en las pruebas sueltas (todos En la plataforma). */
+  league: League.State = League.State()
 ) {
   val page = remember(results, selected, now) { TimeTrialMarks.page(results, selected, now) }
-  val records = remember(results) { TimeTrialDay.GAMES.map { it to TimeTrialStats.record(results, it) } }
+  // La LIGA (Tarea 229): hay liga cuando hay con qué comparar y una franja de edad; los cuatro juegos de la semana, su % y cómo va la semana salen de lo mismo que la cifra de abajo (`Comparison`).
+  val hasLeague = League.available(compare, ageRange)
+  val weekGames = remember(compare, ageRange, results, now) { League.weekGames(compare, ageRange, results, now) }
+  val live = remember(league, weekGames) { League.live(league, weekGames) }
   val pace = remember(results, selected) { TimeTrialMarks.pace(results, selected) }
   // La comparación (Tareas 202 y 205): solo si hay de dónde sacarla (`compare`: la referencia estimada del APK, también en la tienda, que cubra este juego) y una franja con la que comparar (las siete se comparan, también la de 14 a 17 años con la tabla de 18 a 29: Tarea 216). Sin ella, la página queda como en la Tarea 201.
   // Tarea 207 (decisión de Ricardo, 1-nov): el lugar aparece desde la tercera partida GUARDADA de cada juego; antes, la página queda como «sin comparación» y dice por qué UNA vez. La precedencia vive en `Comparison.gate`:
@@ -180,23 +187,28 @@ internal fun ContrarrelojPage(
     }
   ) {
     Column(Modifier.fillMaxSize().verticalScroll(scroll).testTag("contrarreloj_scroll")) {
-      PageHeader(compared = section != null, tuButton, Modifier.onSizeChanged { headerPx = it.height })
+      PageHeader(compared = hasLeague, tuButton, Modifier.onSizeChanged { headerPx = it.height })
       Spacer(Modifier.height(FadeHeight))
       Column(Modifier.padding(horizontal = PageMargin).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(CardGap)) {
-        GameSelector(records, selected, today, plus, lang, onSelect, onLocked)
+        // ---- LA LIGA, GRATIS (Tarea 229): la losa de la liga, «Con qué te comparas ›» y la escalera de las diez divisiones; sin franja de edad o sin referencia no hay liga
+        if (hasLeague) {
+          LeagueCard(live, Comparison.kindOf(compare) != Comparison.Kind.PEOPLE, now)
+          if (Comparison.kindOf(compare) == Comparison.Kind.ESTIMATED) CompareLink(onOpenSource)
+          LeagueLadder(live.division)
+        }
+        LeagueGames(weekGames, selected, today, plus, lang, onSelect, onLocked)
         // Tarea 205b: hay referencia para este juego pero la persona no tiene franja de edad guardada (instaló antes de la Tarea 195): la página no se queda callada, dice dónde elegirla
         if (gate == Comparison.Gate.NEEDS_AGE) Text(Comparison.AGE_HINT, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_age_hint"))
         // Tarea 207: con franja y tabla pero menos de tres partidas de este juego, UNA línea corrida y sin negrita donde iría el rótulo de la comparación: las primeras partidas sirven para conocer el juego y no se comparan
         if (gate == Comparison.Gate.EARLY) Text(Comparison.EARLY_NOTICE, color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_early_notice"))
 
         // ---- LO GRATIS: nunca en gris
-        FreeCard(page, section, GameRegistry.getById(selected)?.let { getGameTitle(it.id, lang, it.title) } ?: selected, gamesLeft, onPlay)
+        FreeCard(page, GameRegistry.getById(selected)?.let { getGameTitle(it.id, lang, it.title) } ?: selected, gamesLeft, onPlay)
         // sin partidas (Tarea 218, decisión 7 de Ricardo): UNA fila gris con candado bajo la losa gratis, que abre la hoja
         if (gamesLeft == 0) LockedRow(PlusAccess.LOCKED_GAMES, onLocked, tag = "contrarreloj_locked_games")
         if (section != null) {
-          // sin lugar que decir (sin marca esta semana, «Todavía somos pocos») va su losa; la fila «Con qué te comparas ›» queda DEBAJO de lo gratis, antes de lo de Plus (Tarea 213: debajo de la losa de la cifra)
+          // sin lugar que decir (sin marca esta semana, «Todavía somos pocos») va su losa; la fila «Con qué te comparas ›» subió bajo la losa de la liga (Tarea 229)
           if (section.place !is Comparison.Place.Found) PlaceCard(section)
-          CompareLink(section, onOpenSource)
         }
 
         // ---- LO DE PLUS: a color con Plus; sin Plus, dos losas en gris con candado
@@ -205,7 +217,7 @@ internal fun ContrarrelojPage(
           val detail = section != null && (section.place is Comparison.Place.Found || section.others != null || section.weeks.isNotEmpty())
           if (section != null && detail) {
             CompareHeader()
-            (section.place as? Comparison.Place.Found)?.let { HeroCard(it.ranked, section); LadderCard(it.ranked, section); BellCard(it.ranked, section.range) }
+            (section.place as? Comparison.Place.Found)?.let { HeroCard(it.ranked, section); BellCard(it.ranked, section.range) }
             section.others?.let { OthersCard(section, it) }
             if (section.weeks.isNotEmpty()) PercentileWeeksCard(section.weeks, section.estimated)
             SectionLabel(Comparison.SECTION_MARKS, "contrarreloj_section_marks")
@@ -232,7 +244,7 @@ internal fun ContrarrelojPage(
 
 // ------------------------------------------------------------------ la cabecera, sobre el cielo
 
-/** «Contrarreloj» (Rubik, con tope de letra 1,3) y su subtítulo, que parte la línea por palabras. Sin flecha de volver: es una pestaña (Tarea 215). Todo con [OnBoardText]: el cielo tiene luceros. [compared] = hay comparación: «El Contrarreloj define tu lugar de la semana.». */
+/** «Contrarreloj» (Rubik, con tope de letra 1,3) y su subtítulo, que parte la línea por palabras. Sin flecha de volver: es una pestaña (Tarea 215). Todo con [OnBoardText]: el cielo tiene luceros. [compared] = hay comparación: «El Contrarreloj define tu división de la semana.». */
 @Composable
 private fun PageHeader(compared: Boolean, tuButton: @Composable (Modifier) -> Unit, modifier: Modifier = Modifier) {
   Column(modifier.fillMaxWidth().testTag("contrarreloj_header")) {
@@ -248,64 +260,197 @@ private fun PageHeader(compared: Boolean, tuButton: @Composable (Modifier) -> Un
   }
 }
 
-// ------------------------------------------------------------------ el selector de los cuatro juegos
+// ------------------------------------------------------------------ la liga de la semana (Tarea 229; `docs/liga-de-la-semana.md` §5.1)
 
 /**
- * Los cuatro juegos en losas: el emblema, el nombre y su récord («44 aciertos» o «sin marca aún»); el ELEGIDO va en lima con el visto sobre su emblema (forma y color, nunca solo color) y el lector de pantalla dice «Tinta o Palabra, récord 44 aciertos, elegido». El de HOY lleva además la palabra «Hoy» (Tarea 215).
- * **Sin Nubilus Plus ([plus] falso) los otros tres van en gris con candado** (la misma imagen crema sin saturación, el candado sobre el emblema y «con Nubilus Plus» para el lector) y tocarlos abre la hoja ([onLocked]); su récord sigue a la vista, porque es tuyo. Dos filas de dos, parejas (cada fila tiene el alto de su losa más alta);
- * si la palabra más larga («Acoplamiento») no cabe entera en media fila a la letra de la persona, UNA columna: una palabra nunca se parte. Cada losa se toca en 72 dp o más (la losa pide 78: 6 dp son su sombra).
+ * La LOSA DE LA LIGA (arriba de la pestaña, GRATIS; crema como la losa de la cifra): el emblema de la división en su ventanilla de 52 dp, su nombre y «Tu división: la segunda de diez.»; «Tu semana» con el % GRANDE (Rubik 40, tope de escala 1,3: la única excepción a la escala de letra de la página) y «En promedio, esta semana superas al 51 % de la referencia estimada para tu edad.»;
+ * la barra de 0 a 100 con la marca de la persona y, bajo ella, la línea de la división de arriba con su nombre; la frase de cómo terminaría la semana si cerrara hoy ([League.mondaySentence]) y «La semana cierra el domingo. Quedan N días.». Sin % (nada jugado que cuente) no hay cifra ni barra: queda la división y lo que hacer.
+ * Nada depende solo del color: la división va en palabras, el % en cifras y la línea de la barra lleva su nombre. [estimated] = se compara con la referencia estimada (la de la tienda); con personas de muestra, la frase lo dice.
  */
 @Composable
-private fun GameSelector(records: List<Pair<String, Int?>>, selected: String, today: String?, plus: Boolean, lang: AppLanguage, onSelect: (String) -> Unit, onLocked: () -> Unit) {
-  val measurer = rememberTextMeasurer()
-  val base = androidx.compose.material3.LocalTextStyle.current
-  val density = LocalDensity.current
-  val titles = records.map { (id, _) -> GameRegistry.getById(id)?.let { getGameTitle(it.id, lang, it.title) } ?: id }
-  BoxWithConstraints(Modifier.fillMaxWidth().testTag("contrarreloj_selector")) {
-    val gapPx = with(density) { 8.dp.roundToPx() }
-    val textRoomPx = (constraints.maxWidth - gapPx) / 2 - with(density) { (TilePad * 2 + TileEmblem + TileGap).roundToPx() }
-    val nameStyle = base.merge(TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily))
-    val wordsFit = titles.all { t -> t.split(' ').all { w -> measurer.measure(w, nameStyle, softWrap = false, maxLines = 1).size.width <= textRoomPx } }
-    val valuesFit = records.all { (_, r) -> measurer.measure(TimeTrialMarks.tileValue(r), base.merge(TextStyle(fontSize = 16.sp)), softWrap = false, maxLines = 1).size.width <= textRoomPx }
-    val cols = if (wordsFit && valuesFit) 2 else 1
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-      records.indices.chunked(cols).forEach { row ->
-        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-          row.forEach { i ->
-            val (id, record) = records[i]
-            val locked = !plus && id != today
-            GameTile(id, titles[i], record, selected = id == selected, isToday = id == today, locked = locked, onClick = { if (locked) onLocked() else onSelect(id) }, modifier = Modifier.weight(1f).fillMaxHeight())
-          }
-        }
+private fun LeagueCard(live: League.Live, estimated: Boolean, now: Long) {
+  val d = live.division
+  InfoCard("contrarreloj_league", null) {
+    Row(
+      Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = "${d.label}. ${League.YOUR_DIVISION} ${Comparison.divisionRank(d)}" }.testTag("contrarreloj_league_division_line"),
+      verticalAlignment = Alignment.Top
+    ) {
+      DivisionEmblem(d, DivisionEmblemHero, Modifier.hiddenTag("contrarreloj_league_emblem_${d.name}"))
+      Spacer(Modifier.width(12.dp))
+      Column(Modifier.weight(1f)) {
+        Text(d.label.glueNamesForLetter(), color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.semantics { heading() }.testTag("contrarreloj_league_division"))
+        Text("${League.YOUR_DIVISION} ${Comparison.divisionRank(d)}", color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 4.dp).testTag("contrarreloj_league_rank"))
+      }
+    }
+    live.percent?.let { percent ->
+      ClayDivider("contrarreloj_divider_league")
+      Text(League.WEEK_LABEL, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("contrarreloj_league_week_label"))
+      CapScale(BIG_TEXT_SCALE_CAP) {
+        Text(League.percentText(percent).glueNumbers(), color = Clay.Ink, fontSize = 40.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 46.sp, modifier = Modifier.padding(top = 2.dp).testTag("contrarreloj_league_percent"))
+      }
+      Text(League.averageSentence(percent, estimated).glueNumbers(), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 4.dp).testTag("contrarreloj_league_average"))
+      Spacer(Modifier.height(12.dp))
+      LeagueBar(percent, d)
+      Spacer(Modifier.height(12.dp))
+    } ?: Spacer(Modifier.height(12.dp))
+    Text(League.mondaySentence(live).glueNumbers().glueNamesForLetter(), color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, lineHeight = 22.sp, modifier = Modifier.testTag("contrarreloj_league_monday"))
+    Text(League.closesLine(League.daysLeft(now)).glueCloses(), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 8.dp).testTag("contrarreloj_league_closes"))
+  }
+}
+
+/**
+ * La barra de la semana, de 0 a 100: un carril gris de 16 dp, el relleno lima con el canto de tinta del kit hasta el [percent] de la persona (con 0, solo el carril) y, DEBAJO del carril, una marca fina en la línea de la división de arriba (o de la propia, en la más alta) con su nombre y su línea:
+ * «Sobre las nubes · 20 %». El rótulo se apoya en la marca hacia donde hay más sitio (a la derecha de la marca si está en la mitad de abajo, a la izquierda si está en la de arriba) y nunca se sale del carril. El lector no la lee por separado: la frase de la losa dice dónde está la semana.
+ */
+@Composable
+private fun LeagueBar(percent: Int, d: Comparison.Division) {
+  val target = d.up ?: d
+  val f = target.from / 100f
+  val label = "${target.label}: ${target.from} %"
+  BoxWithConstraints(Modifier.fillMaxWidth().testTag("contrarreloj_league_bar_box")) {
+    val barWidth = maxWidth
+    val tickX = barWidth * f
+    Column {
+      Box(Modifier.fillMaxWidth().height(16.dp).testTag("contrarreloj_league_bar").clip(RoundedCornerShape(8.dp)).background(Clay.Ink.copy(alpha = 0.12f))) {
+        if (percent > 0) Box(Modifier.fillMaxWidth((percent / 100f).coerceAtLeast(0.04f)).fillMaxHeight().clip(RoundedCornerShape(8.dp)).background(Clay.Lime).border(2.dp, Clay.Ink, RoundedCornerShape(8.dp)).hiddenTag("contrarreloj_league_bar_fill"))
+      }
+      Box(Modifier.fillMaxWidth()) {
+        Box(Modifier.offset(x = tickX - 1.dp).width(2.dp).height(8.dp).background(Clay.Ink).hiddenTag("contrarreloj_league_tick"))
+        val left = f <= 0.5f
+        Text(
+          label.glueNumbers().glueNamesForLetter(), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, textAlign = if (left) TextAlign.Start else TextAlign.End,
+          modifier = Modifier.padding(top = 10.dp).offset(x = if (left) tickX else 0.dp).width(if (left) barWidth - tickX else tickX).testTag("contrarreloj_league_tick_label")
+        )
       }
     }
   }
 }
 
+/**
+ * «Las diez divisiones» (Tarea 229; reemplaza a la escalera en aciertos de cada juego): de arriba abajo, cada fila con su emblema de 28 dp, su nombre y «desde el 80 %» (la de abajo, «desde el 0 %»); filas apagadas de 40 dp y la de la persona en lima de 52 dp con «Tú», como la escalera de la Tarea 203.
+ * Las líneas son las mismas para todos los juegos y todas las semanas: no cambian con la gente.
+ */
+@Composable
+private fun LeagueLadder(current: Comparison.Division) {
+  InfoCard("contrarreloj_league_ladder", League.LADDER_TITLE) {
+    Comparison.Division.entries.asReversed().forEachIndexed { i, div ->
+      if (i > 0) ThinLine()
+      if (div == current) LeagueYouRow(div)
+      else Column(Modifier.padding(top = 6.dp, bottom = 2.dp)) {            // con el emblema de 28 dp la fila sigue en 40 dp: 6 + 28 + 4 + 2
+        FactRow(div.label, "desde el ${div.from} %", "contrarreloj_league_row_${div.name}", muted = true, leadingWidth = DivisionEmblemLadder,
+          leading = { DivisionEmblem(div, DivisionEmblemLadder, Modifier.hiddenTag("contrarreloj_league_row_emblem_${div.name}")) })
+      }
+    }
+  }
+}
+
+/**
+ * La fila de la persona en la escalera: un recuadro PLANO lima (esquina de 12 dp, sin borde ni sombra, no tocable) con el emblema de su división (28 dp), el nombre y «Tú» a la derecha (Fredoka negrita 18); con letra grande, «Tú» baja debajo, a la derecha.
+ * El relleno vertical interior es de 8 dp para que la fila mida 52 dp con el emblema.
+ */
+@Composable
+private fun LeagueYouRow(d: Comparison.Division) {
+  val measurer = rememberTextMeasurer()
+  val density = LocalDensity.current
+  val base = androidx.compose.material3.LocalTextStyle.current
+  val name = d.label.glueNamesForLetter()
+  val you = "Tú"
+  val style = base.merge(TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily))
+  BoxWithConstraints(
+    Modifier.fillMaxWidth().padding(vertical = 4.dp).semantics(mergeDescendants = true) { contentDescription = "${d.label}, $you" }.testTag("contrarreloj_league_you")
+      .clip(RoundedCornerShape(12.dp)).background(Clay.Lime).padding(horizontal = 12.dp, vertical = 8.dp)
+  ) {
+    val emblem = @Composable { DivisionEmblem(d, DivisionEmblemLadder, Modifier.hiddenTag("contrarreloj_league_you_emblem")) }
+    val need = with(density) { (DivisionEmblemLadder + 10.dp).roundToPx() } + measurer.measure(name, style, softWrap = false, maxLines = 1).size.width + with(density) { 12.dp.roundToPx() } + measurer.measure(you, style, softWrap = false, maxLines = 1).size.width
+    if (need <= constraints.maxWidth) {
+      Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        emblem()
+        Spacer(Modifier.width(10.dp))
+        Text(name, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.weight(1f).testTag("contrarreloj_league_you_name"))
+        Spacer(Modifier.width(12.dp))
+        Text(you, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, softWrap = false, modifier = Modifier.testTag("contrarreloj_league_you_value"))
+      }
+    } else {
+      Column(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+          emblem()
+          Spacer(Modifier.width(10.dp))
+          Text(name, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.weight(1f).testTag("contrarreloj_league_you_name"))
+        }
+        Text(you, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth().padding(top = 4.dp).testTag("contrarreloj_league_you_value"))
+      }
+    }
+  }
+}
+
+/**
+ * «Tus juegos de esta semana» (Tarea 229; reemplaza al selector de los cuatro juegos): cuatro cuadros en 2 × 2, cada uno con el emblema del juego (y «Hoy» en el del día), su nombre, la mejor marca de la semana («81 aciertos») y lo que supera de la referencia («Superas al 94 %»); sin partidas, «Sin partidas esta semana»;
+ * con menos de 3 partidas en total, «Cuenta desde tu tercera partida». Tocar un cuadro elige ese juego para el resto de la página (Jugar y lo de Plus); el elegido va en lima con el visto sobre su emblema (forma y color, nunca solo color). **Sin Nubilus Plus solo se elige el de hoy**: los otros tres van en gris con candado, abren la hoja del candado
+ * al tocarlos y MUESTRAN IGUAL su marca y su %, porque la liga es gratis. Debajo, «Tu semana es el promedio de los juegos que jugaste.». Dos filas de dos, parejas; si la palabra más larga no cabe entera en media fila a la letra de la persona, UNA columna (una palabra nunca se parte). Cada cuadro se toca en 72 dp o más.
+ */
+@Composable
+private fun LeagueGames(games: List<League.GameWeek>, selected: String, today: String?, plus: Boolean, lang: AppLanguage, onSelect: (String) -> Unit, onLocked: () -> Unit) {
+  val measurer = rememberTextMeasurer()
+  val base = androidx.compose.material3.LocalTextStyle.current
+  val density = LocalDensity.current
+  val titles = games.map { g -> GameRegistry.getById(g.game)?.let { getGameTitle(it.id, lang, it.title) } ?: g.game }
+  Column(Modifier.fillMaxWidth().testTag("contrarreloj_selector"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Text(League.GAMES_TITLE, color = NubiTokens.OnNight, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.semantics { heading() }.testTag("contrarreloj_games_title"))
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+      val gapPx = with(density) { 8.dp.roundToPx() }
+      val textRoomPx = (constraints.maxWidth - gapPx) / 2 - with(density) { (TilePad * 2).roundToPx() }
+      val bold = base.merge(TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily))
+      val plain = base.merge(TextStyle(fontSize = 16.sp))
+      fun fits(text: String, style: TextStyle) = text.split(' ').all { w -> measurer.measure(w, style, softWrap = false, maxLines = 1).size.width <= textRoomPx }
+      val wordsFit = titles.all { fits(it, bold) } && games.all { g -> fits(League.tileMark(g).glueTile(), plain) && (League.tilePercent(g)?.glueTile()?.let { fits(it, plain) } ?: true) }
+      val cols = if (wordsFit) 2 else 1
+      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        games.indices.chunked(cols).forEach { row ->
+          Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            row.forEach { i ->
+              val g = games[i]
+              val locked = !plus && g.game != today
+              GameTile(g, titles[i], selected = g.game == selected, isToday = g.game == today, locked = locked, onClick = { if (locked) onLocked() else onSelect(g.game) }, modifier = Modifier.weight(1f).fillMaxHeight())
+            }
+          }
+        }
+      }
+    }
+    Text(League.GAMES_NOTE.replace("que jugaste", "que${NBSP}jugaste"), color = NubiTokens.OnNight, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().testTag("contrarreloj_games_note"))
+  }
+}
+
 private val TilePad = 10.dp
-private val TileEmblem = 36.dp
-private val TileGap = 10.dp
+private val TileEmblem = 32.dp
+
+/** «Quedan 4 días.» y «Queda 1 día.» van juntos: nunca queda «días.» solo en el segundo renglón. */
+private fun String.glueCloses(): String = glueNumbers().replace("Quedan ", "Quedan$NBSP").replace("Queda ", "Queda$NBSP")
+
+/** Lo que dice un cuadro de juego sin dejar una palabra suelta al final: «esta semana» y «tercera partida» van juntas (con letra grande, si no caben, los cuadros pasan a una columna: `LeagueGames`). */
+private fun String.glueTile(): String = glueNumbers().replace("esta semana", "esta${NBSP}semana").replace("tercera partida", "tercera${NBSP}partida")
 
 @Composable
-private fun GameTile(gameId: String, title: String, record: Int?, selected: Boolean, isToday: Boolean, locked: Boolean, onClick: () -> Unit, modifier: Modifier) {
+private fun GameTile(g: League.GameWeek, title: String, selected: Boolean, isToday: Boolean, locked: Boolean, onClick: () -> Unit, modifier: Modifier) {
+  val id = g.game
   ClaySlab(
-    color = if (selected) SlabColor.LIME else SlabColor.CREAM, size = SlabSize.SMALL, onClick = onClick, role = if (locked) Role.Button else Role.RadioButton, contentAlignment = Alignment.CenterStart, locked = locked,
+    color = if (selected) SlabColor.LIME else SlabColor.CREAM, size = SlabSize.SMALL, onClick = onClick, role = if (locked) Role.Button else Role.RadioButton, contentAlignment = Alignment.TopStart, locked = locked,
     // `selected` solo cuando el juego NO está en gris: en gris el rol es de botón y el lector diría «no seleccionado» tras «con Nubilus Plus» (Tarea 215b, Fable M2)
-    modifier = modifier.heightIn(min = 78.dp).semantics(mergeDescendants = true) { if (!locked) this.selected = selected; contentDescription = TimeTrialMarks.tileSpoken(title, record, selected, isToday, locked) }.testTag("contrarreloj_game_$gameId")
+    modifier = modifier.heightIn(min = 78.dp).semantics(mergeDescendants = true) { if (!locked) this.selected = selected; contentDescription = League.tileSpoken(title, g, isToday, selected, locked) }.testTag("contrarreloj_game_$id")
   ) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = TilePad, vertical = TilePad), verticalAlignment = Alignment.CenterVertically) {
-      GameEmblem(gameId, TileEmblem, Modifier.testTag("contrarreloj_game_emblem_$gameId"), done = selected, locked = locked)
-      Spacer(Modifier.width(TileGap))
-      Column(Modifier.weight(1f)) {
-        Text(title, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 20.sp, modifier = Modifier.testTag("contrarreloj_game_name_$gameId"))
-        Spacer(Modifier.height(4.dp))
-        Text(TimeTrialMarks.tileValue(record).glueNumbers(), color = if (selected) Clay.Ink else Clay.InkMuted, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.testTag("contrarreloj_game_value_$gameId"))
-        // «Hoy»: el juego del día, en una pastilla plana de tinta al 12 % (forma y palabra, nunca solo color)
+    Column(Modifier.fillMaxWidth().padding(TilePad)) {
+      // arriba, el emblema (con el visto si es el elegido y el candado si está en gris) y, en el del día, «Hoy» a la derecha: forma y palabra, nunca solo color
+      Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        GameEmblem(id, TileEmblem, Modifier.testTag("contrarreloj_game_emblem_$id"), done = selected, locked = locked)
+        Spacer(Modifier.weight(1f))
         if (isToday) Text(
           TimeTrialMarks.TODAY_TAG, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 20.sp,
-          modifier = Modifier.padding(top = 6.dp).clip(RoundedCornerShape(8.dp)).background(Clay.Ink.copy(alpha = 0.12f)).padding(horizontal = 8.dp, vertical = 1.dp).testTag("contrarreloj_game_today_$gameId")
+          modifier = Modifier.clip(RoundedCornerShape(8.dp)).background(Clay.Ink.copy(alpha = 0.12f)).padding(horizontal = 8.dp, vertical = 1.dp).testTag("contrarreloj_game_today_$id")
         )
       }
+      Spacer(Modifier.height(6.dp))
+      Text(title, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 20.sp, modifier = Modifier.testTag("contrarreloj_game_name_$id"))
+      Text(League.tileMark(g).glueTile(), color = if (selected) Clay.Ink else Clay.InkMuted, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.padding(top = 4.dp).testTag("contrarreloj_game_value_$id"))
+      League.tilePercent(g)?.let { Text(it.glueTile(), color = if (selected) Clay.Ink else Clay.InkMuted, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.padding(top = 2.dp).testTag("contrarreloj_game_percent_$id")) }
     }
   }
 }
@@ -317,8 +462,7 @@ private fun GameTile(gameId: String, title: String, record: Int?, selected: Bool
  * «Te faltan 7 aciertos para En la Luna.» con su barra y «La semana cierra el domingo.» (antes lo daba la puerta de Avance, y la barra y el domingo eran de la escalera). Sin comparación queda solo lo de tus marcas. El lector de pantalla lee cada grupo por separado: el botón, el récord y la semana, y la división con su lugar.
  */
 @Composable
-private fun FreeCard(page: TimeTrialMarks.Page, section: Comparison.Section?, gameTitle: String, gamesLeft: Int?, onPlay: () -> Unit) {
-  val found = (section?.place as? Comparison.Place.Found)?.ranked
+private fun FreeCard(page: TimeTrialMarks.Page, gameTitle: String, gamesLeft: Int?, onPlay: () -> Unit) {
   InfoCard("contrarreloj_free", null) {
     if (gamesLeft == 0) {
       // sin partidas hoy (Tarea 218): en lugar de «Jugar», la frase; mañana se renueva sola
@@ -335,17 +479,6 @@ private fun FreeCard(page: TimeTrialMarks.Page, section: Comparison.Section?, ga
     else Text(TimeTrialMarks.NO_MARKS_FREE.replace("este juego", "este${NBSP}juego"), color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("contrarreloj_free_record"))
     // sin marcas en el juego, UNA línea: la de la semana no se dice (Tarea 215b, Fable A4 c)
     if (page.hasMarks) Text(TimeTrialMarks.weekLine(page.thisWeek, page.recordMark).glueNumbers(), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 4.dp).testTag("contrarreloj_free_week"))
-    if (found != null) {
-      val ladder = remember(found) { Comparison.ladder(found) }
-      ClayDivider("contrarreloj_divider_free")
-      DivisionLine(found)
-      Text(Comparison.needSentence(ladder, found).glueNumbers().glueNamesForLetter(), color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.Bold, lineHeight = 22.sp, modifier = Modifier.padding(top = 12.dp).testTag("contrarreloj_ladder_need"))
-      ladder.progress?.let {
-        Spacer(Modifier.height(8.dp))
-        ProgressBar(it, "contrarreloj_ladder_bar")
-      }
-      Text(Comparison.CLOSES, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 8.dp).testTag("contrarreloj_ladder_closes"))
-    }
   }
 }
 
@@ -444,95 +577,6 @@ private fun HeroCard(r: Comparison.Ranked, s: Comparison.Section) {
       }
       Comparison.scopeLine(r)?.let { Text(it, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 8.dp).testTag("contrarreloj_hero_scope")) }
     }
-  }
-}
-
-/**
- * La división («En órbita», Fredoka negrita 18) y, debajo, su lugar entre las cinco en 16 sp `InkMuted` («La tercera de cinco divisiones.»; Tarea 209: reemplaza a «Percentil 63», que Ricardo quitó de todo texto el 1-nov), con el emblema de la división a la izquierda (Tarea 212: 52 dp, 12 dp de aire, arriba, a la altura de la primera línea).
- * El emblema no crece con la letra y los textos van en una columna a su lado, así que con letra grande los textos parten por palabras («En la / plataforma») y nunca se encima nada; el bloque mide 52 dp con letra 1,0 (antes 50: la losa crece 2 dp).
- */
-@Composable
-private fun DivisionLine(r: Comparison.Ranked) {
-  Row(Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = "${r.division.label}. ${Comparison.divisionPlaceLine(r.division)}" }.testTag("contrarreloj_hero_division_line"), verticalAlignment = Alignment.Top) {
-    DivisionEmblem(r.division, DivisionEmblemHero, Modifier.hiddenTag("contrarreloj_hero_emblem_${r.division.name}"))
-    Spacer(Modifier.width(12.dp))
-    Column(Modifier.weight(1f)) {
-      Text(r.division.label, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.testTag("contrarreloj_hero_division"))
-      Text(Comparison.divisionPlaceLine(r.division), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 4.dp).testTag("contrarreloj_hero_place"))
-    }
-  }
-}
-
-/**
- * La escalera de divisiones (D2): las cinco de arriba abajo, cada una con el primer acierto con que se llega a ella («desde 39 aciertos»), la fila de la persona en lima («En órbita · Tú · 43 aciertos»: la división dicha en palabras, no solo por el color) y, al pie, lo que sigue: «Te faltan 7 aciertos para En la Luna.» con su barra,
- * «La semana cierra el domingo.», la racha de semanas («Llevas 3 semanas seguidas En órbita o más arriba.»; sin racha no dice nada) y la clase de la escalera dicha una sola vez («Con las marcas de las 128 personas de 45 a 54 años que jugaron Tinta o Palabra esta semana.»). En la división más alta: «Estás en la división más alta de tu franja esta semana.», sin barra.
- * Los umbrales salen de la distribución de la franja esa semana ([Comparison.thresholds]) y cambian con la gente. No es una liga: no hay grupo, ni nombres, ni ascenso entre personas.
- * Desde la Tarea 212 (D3) cada fila lleva el emblema de su división (28 dp, a todo color también las apagadas: la escalera es la leyenda de las cinco, y el estado nunca depende del color) antes del nombre; las filas apagadas siguen midiendo 40 dp (relleno de 6 arriba y 2 abajo en vez de 10 y 6) y la lima 52 dp.
- */
-@Composable
-private fun LadderCard(r: Comparison.Ranked, s: Comparison.Section) {
-  val ladder = remember(r) { Comparison.ladder(r) }
-  InfoCard("contrarreloj_ladder", Comparison.LADDER_TITLE) {
-    ladder.rungs.forEachIndexed { i, rung ->
-      if (i > 0) ThinLine()
-      if (rung.division == r.division) LadderYouRow(r)
-      else Column(Modifier.padding(top = 6.dp, bottom = 2.dp)) {          // con el emblema de 28 dp la fila sigue en 40 dp: 6 + 28 + 4 + 2
-        FactRow(rung.division.label, Comparison.rungText(rung, ladder.rungs.getOrNull(i - 1)), "contrarreloj_ladder_row_$i", muted = true, leadingWidth = DivisionEmblemLadder,
-          leading = { DivisionEmblem(rung.division, DivisionEmblemLadder, Modifier.hiddenTag("contrarreloj_ladder_emblem_$i")) })
-      }
-    }
-    ClayDivider("contrarreloj_divider_ladder")
-    // (Tarea 215: «Te faltan N aciertos», su barra y «La semana cierra el domingo.» subieron a lo gratis, [FreeCard]: eran lo que daba la puerta de Avance)
-    Comparison.streakSentence(Comparison.streak(s.weeks))?.let { Text(it, color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(bottom = 8.dp).testTag("contrarreloj_ladder_streak")) }
-    Text(Comparison.ladderNote(r, s.range).glueNumbers().glueNamesForLetter(), color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.testTag("contrarreloj_ladder_note"))
-  }
-}
-
-/**
- * La fila de la persona en la escalera: un recuadro PLANO lima (esquina de 12 dp, sin borde ni sombra, no tocable) con el emblema de la división (28 dp; Tarea 212), la división a su derecha y «Tú · 43 aciertos» a la derecha (Fredoka negrita 18); con letra grande, uno bajo el otro.
- * El relleno vertical interior es de 8 dp (antes 10) para que la fila siga en 52 dp con el emblema; con el emblema, «En la plataforma» + «Tú · 46 aciertos» ya no caben en una línea a 393 dp y la fila se apila (el emblema y el nombre arriba, «Tú · 46 aciertos» abajo a la derecha), como con letra grande.
- */
-@Composable
-private fun LadderYouRow(r: Comparison.Ranked) {
-  val measurer = rememberTextMeasurer()
-  val density = LocalDensity.current
-  val base = androidx.compose.material3.LocalTextStyle.current
-  val spoken = r.division.label
-  val name = spoken.glueNamesForLetter()
-  val you = Comparison.youRow(r).glueNumbers()
-  val style = base.merge(TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily))
-  BoxWithConstraints(
-    Modifier.fillMaxWidth().padding(vertical = 4.dp).semantics(mergeDescendants = true) { contentDescription = "$spoken, ${Comparison.youRow(r)}" }.testTag("contrarreloj_ladder_you")
-      .clip(RoundedCornerShape(12.dp)).background(Clay.Lime).padding(horizontal = 12.dp, vertical = 8.dp)
-  ) {
-    val emblem = @Composable { DivisionEmblem(r.division, DivisionEmblemLadder, Modifier.hiddenTag("contrarreloj_ladder_you_emblem")) }
-    val need = with(density) { (DivisionEmblemLadder + 10.dp).roundToPx() } + measurer.measure(name, style, softWrap = false, maxLines = 1).size.width + with(density) { 12.dp.roundToPx() } + measurer.measure(you, style, softWrap = false, maxLines = 1).size.width
-    if (need <= constraints.maxWidth) {
-      Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        emblem()
-        Spacer(Modifier.width(10.dp))
-        Text(name, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.weight(1f).testTag("contrarreloj_ladder_you_name"))
-        Spacer(Modifier.width(12.dp))
-        Text(you, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, softWrap = false, modifier = Modifier.testTag("contrarreloj_ladder_you_value"))
-      }
-    } else {
-      Column(Modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-          emblem()
-          Spacer(Modifier.width(10.dp))
-          Text(name, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, modifier = Modifier.weight(1f).testTag("contrarreloj_ladder_you_name"))
-        }
-        Text(you, color = Clay.Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold, fontFamily = AppFamily, lineHeight = 24.sp, textAlign = TextAlign.End, modifier = Modifier.fillMaxWidth().padding(top = 4.dp).testTag("contrarreloj_ladder_you_value"))
-      }
-    }
-  }
-}
-
-/** La barra de lo que falta para la siguiente división: un carril gris de 16 dp y, encima, el relleno lima con el borde de tinta del kit (nunca vacío: mide al menos el 8 %). No se lee por separado: la frase de arriba dice cuántos aciertos faltan. */
-@Composable
-private fun ProgressBar(fraction: Float, tag: String) {
-  Box(Modifier.fillMaxWidth().height(16.dp).testTag(tag).clip(RoundedCornerShape(8.dp)).background(Clay.Ink.copy(alpha = 0.12f))) {
-    Box(Modifier.fillMaxWidth(fraction.coerceIn(0.08f, 1f)).fillMaxHeight().clip(RoundedCornerShape(8.dp)).background(Clay.Lime).border(2.dp, Clay.Ink, RoundedCornerShape(8.dp)).hiddenTag("${tag}_fill"))
   }
 }
 
@@ -890,13 +934,12 @@ private fun CompareHeader() {
 }
 
 /**
- * La fila «Con qué te comparas ›» (Tarea 213, decisión de Ricardo del 2-nov): DEBAJO de la losa de la cifra y antes de la escalera, abre «De dónde sale la referencia» ([onOpenSource] → `TopPanel.REFERENCIA`). Reemplaza a la frase larga y a la fila «De dónde sale la referencia ›» que desde la Tarea 211 iban al final:
- * 29 y 25 de 35 personajes de MiroFish la querían arriba, «donde está el número», y Ricardo quería ver primero sus datos; una fila de 48 dp cumple las dos cosas. Mismo molde de [SourceLinkRow] (rol de botón, tocable entera, `SunOnNight` de 16 sp sobre el noche plano; el lector dice «Con qué te comparas, botón»)
+ * La fila «Con qué te comparas ›» (Tarea 213, decisión de Ricardo del 2-nov; desde la Tarea 229 va DEBAJO de la losa de la liga): abre «De dónde sale la referencia» ([onOpenSource] → `TopPanel.REFERENCIA`). Una fila de 48 dp, el mismo molde de [SourceLinkRow] (rol de botón, tocable entera, `SunOnNight` de 16 sp sobre el noche plano; el lector dice «Con qué te comparas, botón»)
  * y la misma marca de prueba, `contrarreloj_source_link`. Solo con la referencia estimada: con los datos de muestra de depuración no hay estudios que mostrar, y con personas reales (futuro) no hace falta.
  */
 @Composable
-private fun CompareLink(s: Comparison.Section, onOpenSource: () -> Unit) {
-  if (s.estimated) SourceLinkRow(onOpenSource, NubiTokens.SunOnNight, "contrarreloj_source_link", label = Comparison.COMPARE_LINK)
+private fun CompareLink(onOpenSource: () -> Unit) {
+  SourceLinkRow(onOpenSource, NubiTokens.SunOnNight, "contrarreloj_source_link", label = Comparison.COMPARE_LINK)
 }
 
 /** Lo último de la página, SOLO en depuración con datos de muestra (Tarea 213: antes, con la referencia estimada, también iban aquí la frase larga y su fila): «Estos son datos de muestra: solo se ven en la versión de prueba.» */
@@ -1035,6 +1078,8 @@ private fun PercentileWeeksCard(points: List<Comparison.WeekPoint>, estimated: B
   InfoCard("contrarreloj_percweeks", Comparison.WEEKS_TITLE) {
     PercentileWeeksChart(points, estimated)
     Comparison.weeksSentence(points)?.let { Text(it, color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 12.dp).testTag("contrarreloj_percweeks_sentence")) }
+    // las semanas seguidas en la mitad de arriba (Tarea 229: antes en la escalera en aciertos, «…En órbita o más arriba»; el umbral sigue en 50 y ya no usa el nombre de ninguna división)
+    Comparison.streakSentence(Comparison.streak(points), estimated)?.let { Text(it, color = Clay.Ink, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 8.dp).testTag("contrarreloj_ladder_streak")) }
     if (estimated) Text(Comparison.WEEKS_ESTIMATED_NOTE, color = Clay.InkMuted, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.padding(top = 8.dp).testTag("contrarreloj_percweeks_note"))
   }
 }

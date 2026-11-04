@@ -23,11 +23,9 @@ class SampleComparisonTest {
     assertEquals(SampleComparison.BASE, d.bins)
     assertEquals(listOf(31, 39, 47), listOf(d.p25, d.p50, d.p75))
     assertEquals(63, Comparison.percentile(43, d))
-    assertEquals("En órbita", Comparison.division(63).label)
-    val r = Comparison.Ranked(43, 63, Comparison.division(63), Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), d)
+    assertEquals("el 63 % cae en la séptima división de la liga", "Entre asteroides", Comparison.division(63).label)
+    val r = Comparison.Ranked(43, 63, Comparison.Scope.OWN_WEEK, listOf(AgeRange.R45_54), d)
     assertEquals("Con 43 aciertos, superas al 63 % de las personas de tu edad que jugaron esta semana.", Comparison.heroSentence(r, AgeRange.R45_54))
-    assertEquals("la escalera de esta semana: la división de 43 es En órbita y le faltan 7 aciertos para En la Luna", "Te faltan 7 aciertos para En la Luna.", Comparison.needSentence(Comparison.ladder(r), r))
-    assertEquals("La tercera de cinco divisiones.", Comparison.divisionPlaceLine(r.division))
   }
 
   @Test

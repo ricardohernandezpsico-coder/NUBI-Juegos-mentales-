@@ -46,15 +46,22 @@ fun DivisionEmblem(division: Comparison.Division, size: Dp, modifier: Modifier =
 fun drawableFor(division: Comparison.Division): Int = when (division) {
   Comparison.Division.PLATFORM -> R.drawable.division_plataforma
   Comparison.Division.TAKEOFF -> R.drawable.division_despegando
+  Comparison.Division.CLOUDS -> R.drawable.division_nubes
   Comparison.Division.ORBIT -> R.drawable.division_orbita
   Comparison.Division.MOON -> R.drawable.division_luna
+  Comparison.Division.MARS -> R.drawable.division_marte
+  Comparison.Division.ASTEROIDS -> R.drawable.division_asteroides
+  Comparison.Division.JUPITER -> R.drawable.division_jupiter
   Comparison.Division.STARS -> R.drawable.division_estrellas
+  Comparison.Division.GALAXY -> R.drawable.division_galaxia
 }
 
-/** El emblema de la cifra (junto al nombre de la división). */
+/** El emblema de la losa de la liga (junto al nombre de la división). */
 val DivisionEmblemHero = 52.dp
-/** El emblema de cada fila de la escalera. */
+/** El emblema de cada fila de la escalera de las diez divisiones. */
 val DivisionEmblemLadder = 28.dp
+/** El emblema de la línea de Hoy y de la fila de Tú (Tarea 229): sin ventanilla propia más grande, a 24 dp. */
+val DivisionEmblemSmall = 24.dp
 
 private const val CORNER = 0.23f
 private const val OBJECT = 0.86f

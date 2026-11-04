@@ -39,6 +39,11 @@ import com.example.viewmodel.NeuroVidaViewModel
 class MainActivity : ComponentActivity() {
   private val viewModel: NeuroVidaViewModel by viewModels()
 
+  override fun onStart() {
+    super.onStart()
+    viewModel.closeLeagueWeeks()                    // la liga de la semana (Tarea 229): al abrir la app y al volver a primer plano se cierran las semanas pendientes
+  }
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     if (savedInstanceState == null) {
@@ -337,6 +342,8 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
     }
     // La guía de Nubi: encima de todo, también de la barra (el paso 3 la ilumina).
     com.example.ui.components.HoyGuideHost(viewModel = viewModel, targets = guideTargets, somethingAbove = !hoyFree)
+    // La hoja del lunes de la liga (Tarea 229): una vez por semana cerrada, con Hoy libre y sin la guía encima
+    com.example.ui.screens.LeagueSheetHost(viewModel = viewModel, somethingAbove = !hoyFree)
   }
   }
 }

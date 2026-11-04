@@ -87,7 +87,7 @@ class EstimatedReferenceTest {
   }
 
   @Test
-  fun `la cifra, la escalera y la campana de una persona de 14 a 17 son las de 18 a 29, juego por juego, con los cinco peldanos`() {
+  fun `la cifra y la campana de una persona de 14 a 17 son las de 18 a 29, juego por juego`() {
     for (game in TimeTrialDay.GAMES) {
       val shape = shapes.getValue(game)
       for (mark in listOf(0, 1, 5, 12, 20, 30, 43, 60, 75, 99)) {
@@ -96,13 +96,12 @@ class EstimatedReferenceTest {
         val ranked = (teen as? Comparison.Place.Found)?.ranked ?: continue
         val other = (young as Comparison.Place.Found).ranked
         // (la franja que se dice, `ranges`, es la de cada persona; lo demás es lo mismo)
-        assertEquals("$game con $mark: la marca, el percentil, la división y la clase", listOf(other.mark, other.percentile, other.division, other.scope), listOf(ranked.mark, ranked.percentile, ranked.division, ranked.scope))
-        assertEquals("$game con $mark: la misma escalera", Comparison.ladder(other), Comparison.ladder(ranked))
+        assertEquals("$game con $mark: la marca, el percentil y la clase", listOf(other.mark, other.percentile, other.scope), listOf(ranked.mark, ranked.percentile, ranked.scope))
         assertEquals("$game con $mark: la misma campana", other.distribution, ranked.distribution)
         assertEquals("$game: ${shape.second} tramos", shape.second, ranked.distribution.bins.size)
       }
-      val rungs = Comparison.thresholds(reference.distribution(game, listOf(AgeRange.R14_17), 0, 1))
-      assertEquals("$game: los cinco peldaños de la escalera de 14 a 17", Comparison.Division.entries.toList(), rungs.map { it.division })
+      assertEquals("$game: las nueve líneas de la liga de 14 a 17 son las de 18 a 29", (1..9).map { Comparison.firstMarkReaching(it * 10, reference.distribution(game, listOf(AgeRange.R18_29), 0, 1)) },
+        (1..9).map { Comparison.firstMarkReaching(it * 10, reference.distribution(game, listOf(AgeRange.R14_17), 0, 1)) })
     }
   }
 
@@ -188,18 +187,16 @@ class EstimatedReferenceTest {
   }
 
   @Test
-  fun `la escalera sale de los tramos del juego sin suavizar y no se contradice con la division`() {
+  fun `las nueve lineas de la liga caen en marcas distintas en los cuatro juegos y las seis franjas`() {
+    // Tarea 229 (`docs/liga-de-la-semana.md` §1; `docs/techo-dificultad.md` §8): las diez divisiones de la liga empiezan en el 0, 10, 20 … 90 % de la referencia; si dos líneas cayeran en la misma marca, subir de una a otra no costaría nada
     for (table in reference.loaded) for ((range, d) in table.ranges) {
-      val rungs = Comparison.thresholds(d)
-      assertTrue("${table.game} $range: tiene al menos dos peldaños", rungs.size >= 2)
-      assertEquals(Comparison.Division.PLATFORM, rungs.first().division)
-      assertEquals(0, rungs.first().from)
-      assertTrue("estrictamente de menor a mayor", rungs.zipWithNext().all { (a, b) -> a.from < b.from })
-      assertTrue("los peldaños caen dentro de la pista de ${table.game}", rungs.all { it.from < d.topMark })
-      for (rung in rungs) {
-        val p = Comparison.percentile(rung.from, d)
-        assertTrue("${table.game} $range: con ${rung.from} aciertos se llega a «${rung.division.label}»", Comparison.division(p).from >= rung.division.from)
-        if (rung.from > 0) assertTrue("y con uno menos todavía no", Comparison.division(Comparison.percentile(rung.from - 1, d)).from < rung.division.from)
+      val marks = (1..9).map { Comparison.firstMarkReaching(it * 10, d) }
+      assertTrue("${table.game} $range: las nueve líneas se alcanzan dentro de la pista ($marks)", marks.all { it != null })
+      assertTrue("${table.game} $range: caen en marcas estrictamente crecientes ($marks)", marks.zipWithNext().all { (a, b) -> a!! < b!! })
+      for ((i, m) in marks.withIndex()) {
+        val line = (i + 1) * 10
+        assertTrue("${table.game} $range: con $m aciertos se llega al $line %", Comparison.percentile(m!!, d) >= line)
+        assertTrue("${table.game} $range: con uno menos todavía no", Comparison.percentile(m - 1, d) < line)
       }
     }
   }
@@ -235,8 +232,6 @@ class EstimatedReferenceTest {
       assertTrue("$label: en orden", d.p25 <= d.p50 && d.p50 <= d.p75)
       assertTrue("$label: con la mitad ya se llega a 50", Comparison.percentile(d.p50, d) >= 50)
       if (d.p50 > 0) assertTrue("$label: con un acierto menos todavía no", Comparison.percentile(d.p50 - 1, d) < 50)
-      // la mitad de la campana es el peldaño de «En órbita» de la escalera: la raya y la división nunca se contradicen
-      Comparison.thresholds(d).firstOrNull { it.division == Comparison.Division.ORBIT }?.let { assertEquals("$label: la raya de la mitad es el peldaño En órbita", d.p50, it.from) }
     }
     // y nada de eso depende de lo que diga el JSON: con p25, p50, p75 y p90 en cero sale la misma tabla
     for (file in files) {

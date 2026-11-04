@@ -115,7 +115,7 @@ class PulidoFinalTextosTest {
     assertFalse("y la isla ya no", profile.contains("profile_island") || profile.contains("IslaPiezas") || profile.contains("Island("))
     assertFalse("el escudo grande ya no está (queda chico en «Tu liga»)", profile.contains("LeagueShield(tier = tier, size = 160.dp"))
     assertTrue("«Tu liga» con el escudo chico", profile.contains("SpaceSectionTitle(\"Tu liga\")") && profile.contains("ShieldImage(tier, 40.dp)"))
-    assertTrue("«etapa», no «nivel hábil» (ítem 17)", profile.contains("\"Etapa general: \${levelWord(it / 100f)}\"") && !profile.contains("nivel \${levelWord"))
+    assertTrue("«Tu división» (Tarea 229: reemplaza a «Etapa general»), nunca «nivel hábil» (ítem 17)", profile.contains("League.tuLine(league.division)") && !profile.contains("nivel \${levelWord"))
     assertTrue("«Tus medallas», no «Logros» (ítem 17)", profile.contains("SpaceSectionTitle(\"Tus medallas\"") && !profile.contains("SpaceSectionTitle(\"Logros\""))
   }
 

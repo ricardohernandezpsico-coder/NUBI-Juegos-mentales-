@@ -26,7 +26,7 @@ object PlusAccess {
 
   /** Sin Plus, lo de Plus de la pestaña va en DOS losas grises con candado, cada una con su título legible (los rótulos de sus secciones con Plus, más cortos para caber en una línea) y la frase «Con Nubilus Plus: …» en negrita. */
   const val LOCKED_PLACE_TITLE = "Comparado con tu edad"
-  const val LOCKED_PLACE = "Con Nubilus Plus: tu lugar en detalle."
+  const val LOCKED_PLACE = "Con Nubilus Plus: la campana, otras edades y semana a semana."
   const val LOCKED_MARKS_TITLE = "Tus marcas"
   const val LOCKED_MARKS = "Con Nubilus Plus: todas tus marcas."
 
@@ -38,8 +38,8 @@ object PlusAccess {
    * mañana, personas reales) habla de «personas de tu edad», y sin comparación solo de lo que de verdad hay detrás. Así la hoja nunca promete de más. Las dos primeras constantes son la forma «sin comparación» y la de «personas»; la de la referencia estimada, más abajo, nunca dice «personas».
    */
   const val SHEET_LEAD = "Gratis: el Contrarreloj de cada día, con ${TimeTrialDay.FREE_GAMES_PER_DAY} partidas, tu récord y tu semana. Con Nubilus Plus, además:"
-  /** Lo gratis primero, y después lo que agrega Plus (Tarea 209): con personas reales (futuro) y con la referencia estimada empiezan igual. */
-  const val SHEET_LEAD_COMPARED = "Gratis: el Contrarreloj de cada día, con ${TimeTrialDay.FREE_GAMES_PER_DAY} partidas, tu récord y tu división de la semana. Con Nubilus Plus, además:"
+  /** Lo gratis primero, y después lo que agrega Plus (Tarea 209): con personas reales (futuro) y con la referencia estimada empiezan igual. Desde la Tarea 229 lo gratis es tu división de la semana y tu porcentaje en cada juego, no una división por juego. */
+  const val SHEET_LEAD_COMPARED = "Gratis: el Contrarreloj de cada día, con ${TimeTrialDay.FREE_GAMES_PER_DAY} partidas, tu récord y tu división de la semana, con tu porcentaje en cada juego. Con Nubilus Plus, además:"
 
   /** La primera línea de lo que agrega Plus desde la Tarea 218 (la regla de partidas): los otros tres juegos y partidas sin tope. */
   const val SHEET_FOUR_GAMES = "Los cuatro Contrarrelojes, cualquier día, con partidas libres."
@@ -54,8 +54,8 @@ object PlusAccess {
   )
   val SHEET_ITEMS_COMPARED: List<String> = listOf(
     SHEET_FOUR_GAMES,
-    "Tu lugar entre personas de tu edad: qué porcentaje de ellas superas y en qué división estás.",
-    "La escalera de divisiones con su primer acierto, y tus semanas seguidas arriba de la mitad.",
+    "Tu lugar entre personas de tu edad en cada juego, con la campana de cómo se reparten.",
+    "Otras edades y semana a semana, con tus semanas seguidas en la mitad de arriba.",
     "Tus marcas: el récord, las últimas 10 y tu ritmo en los 2 minutos."
   )
 
@@ -65,8 +65,8 @@ object PlusAccess {
   const val SHEET_LEAD_ESTIMATED = SHEET_LEAD_COMPARED
   val SHEET_ITEMS_ESTIMATED: List<String> = listOf(
     SHEET_FOUR_GAMES,
-    "Qué porcentaje de la referencia estimada para tu edad superas, y la escalera de las cinco divisiones.",
-    "Tu lugar en otras edades y semana a semana, con tus semanas seguidas arriba de la mitad.",
+    "La campana de tu edad: dónde queda tu marca de cada juego frente a la referencia estimada.",
+    "Tu lugar en otras edades y semana a semana, con tus semanas seguidas en la mitad de arriba.",
     "Todas tus marcas: las últimas 10 en barras, tu ritmo en los 2 minutos y el récord de las pistas anteriores."
   )
 

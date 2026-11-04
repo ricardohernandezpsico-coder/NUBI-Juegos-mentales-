@@ -43,7 +43,7 @@ class PlusAccessTest {
     assertEquals("sin comparación (un juego sin tabla), solo lo que hay detrás: contigo", PlusAccess.SHEET_LEAD, PlusAccess.sheetLead(Comparison.Kind.NONE))
     assertTrue("con personas reales (el día que haya servidor) las líneas hablan de personas de tu edad", "personas de tu edad" in PlusAccess.sheetItems(Comparison.Kind.PEOPLE)[1])
     assertFalse("sin ella ninguna línea habla de otras personas", PlusAccess.sheetItems(Comparison.Kind.NONE).any { "personas" in it || "edad" in it || "división" in it || "divisiones" in it })
-    assertTrue("con personas sí: el lugar y la escalera", PlusAccess.sheetItems(Comparison.Kind.PEOPLE).let { l -> "lugar" in l[1] && "escalera" in l[2] })
+    assertTrue("con personas sí: el lugar de cada juego con su campana, y otras edades", PlusAccess.sheetItems(Comparison.Kind.PEOPLE).let { l -> "lugar" in l[1] && "Otras edades" in l[2] })
   }
 
   @Test
@@ -52,11 +52,12 @@ class PlusAccessTest {
     // Tarea 215b (Fable A1): la hoja ya no promete lo que la losa crema de la pestaña da gratis (jugar, el récord, la semana y la división)
     // Tarea 218: la primera línea es la de la regla de partidas; las tres de la 215b siguen, un lugar más abajo
     assertEquals("Los cuatro Contrarrelojes, cualquier día, con partidas libres.", items[0])
-    assertEquals("Qué porcentaje de la referencia estimada para tu edad superas, y la escalera de las cinco divisiones.", items[1])
-    assertEquals("Tu lugar en otras edades y semana a semana, con tus semanas seguidas arriba de la mitad.", items[2])
+    // Tarea 229 (Opus): la liga y el porcentaje de cada juego son GRATIS; Plus es la campana, otras edades, semana a semana y todas las marcas
+    assertEquals("La campana de tu edad: dónde queda tu marca de cada juego frente a la referencia estimada.", items[1])
+    assertEquals("Tu lugar en otras edades y semana a semana, con tus semanas seguidas en la mitad de arriba.", items[2])
     assertEquals("Todas tus marcas: las últimas 10 en barras, tu ritmo en los 2 minutos y el récord de las pistas anteriores.", items[3])
-    assertEquals("lo gratis primero (el Contrarreloj de cada día, con 3 partidas) y después lo que agrega Plus", "Gratis: el Contrarreloj de cada día, con 3 partidas, tu récord y tu división de la semana. Con Nubilus Plus, además:", PlusAccess.sheetLead(Comparison.Kind.ESTIMATED))
-    assertEquals("con personas (futuro), la misma entrada", "Gratis: el Contrarreloj de cada día, con 3 partidas, tu récord y tu división de la semana. Con Nubilus Plus, además:", PlusAccess.sheetLead(Comparison.Kind.PEOPLE))
+    assertEquals("lo gratis primero (el Contrarreloj de cada día, con 3 partidas) y después lo que agrega Plus", "Gratis: el Contrarreloj de cada día, con 3 partidas, tu récord y tu división de la semana, con tu porcentaje en cada juego. Con Nubilus Plus, además:", PlusAccess.sheetLead(Comparison.Kind.ESTIMATED))
+    assertEquals("con personas (futuro), la misma entrada", "Gratis: el Contrarreloj de cada día, con 3 partidas, tu récord y tu división de la semana, con tu porcentaje en cada juego. Con Nubilus Plus, además:", PlusAccess.sheetLead(Comparison.Kind.PEOPLE))
     assertEquals("sin comparación, lo gratis es el Contrarreloj de cada día, con 3 partidas, el récord y la semana", "Gratis: el Contrarreloj de cada día, con 3 partidas, tu récord y tu semana. Con Nubilus Plus, además:", PlusAccess.sheetLead(Comparison.Kind.NONE))
     assertEquals("el número de partidas de la hoja es el de la regla", com.example.data.TimeTrialDay.FREE_GAMES_PER_DAY, 3)
     assertEquals("y su línea de marcas ya no promete el récord ni la mejor de la semana", "Tus últimas 10 marcas en barras, con la fecha y el paso de tu récord.", PlusAccess.sheetItems(Comparison.Kind.NONE)[1])
@@ -65,7 +66,7 @@ class PlusAccessTest {
     assertEquals("la razón bajo las líneas", "La referencia no son personas: Nubilus no junta datos de nadie.", PlusAccess.SHEET_NOTE_ESTIMATED)
     // Tarea 216: la hoja no habla de edad; de 14 a 17 años es la de cualquiera (ya no existe la entrada «De 13 a 17 años se comparan solo contigo»)
     for (kind in Comparison.Kind.entries) assertFalse("la hoja de $kind no nombra ninguna edad", Regex("\\d+ a \\d+ años").containsMatchIn(PlusAccess.sheetLead(kind) + PlusAccess.sheetItems(kind).joinToString(" ")))
-    assertTrue("la escalera (con el porcentaje) y las semanas siguen", "escalera" in items[1] && "semana a semana" in items[2])
+    assertTrue("la campana de cada juego (Tarea 229: el porcentaje y la escalera de divisiones son gratis) y las semanas siguen", "campana" in items[1] && "semana a semana" in items[2])
     val all = (listOf(PlusAccess.sheetLead(Comparison.Kind.ESTIMATED)) + items).joinToString(" ").lowercase()
     for (bad in listOf("personas", "luego", "pronto", "cuando haya", "después", "más adelante", "reales", "servidor")) assertFalse("la hoja de la referencia no dice «$bad»", bad in all)
   }

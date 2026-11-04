@@ -17,6 +17,7 @@
         <include domain="sharedpref" path="constelaciones_record.xml" />
         <include domain="sharedpref" path="correo_record.xml" />
         <include domain="sharedpref" path="satelites_record.xml" />
+        <include domain="sharedpref" path="league_weeks.xml" />
         <include domain="sharedpref" path="rescate_record.xml" />
         <include domain="sharedpref" path="acoplamiento_record.xml" />
         <include domain="sharedpref" path="aterrizaje_record.xml" />
@@ -41,6 +42,7 @@
         <include domain="sharedpref" path="constelaciones_record.xml" />
         <include domain="sharedpref" path="correo_record.xml" />
         <include domain="sharedpref" path="satelites_record.xml" />
+        <include domain="sharedpref" path="league_weeks.xml" />
         <include domain="sharedpref" path="rescate_record.xml" />
         <include domain="sharedpref" path="acoplamiento_record.xml" />
         <include domain="sharedpref" path="aterrizaje_record.xml" />

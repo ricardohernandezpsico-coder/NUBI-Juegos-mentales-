@@ -33,6 +33,7 @@ fun ContrarrelojScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modif
   val compareWorld by viewModel.compareWorld.collectAsState()
   val estimatedReference by viewModel.estimatedReference.collectAsState()
   val ageRange by viewModel.ageRange.collectAsState()
+  val league by viewModel.league.collectAsState()
   val lang = LocalAppLanguage.current
   var clock by remember { mutableStateOf(System.currentTimeMillis()) }
   LaunchedEffect(Unit) {
@@ -57,7 +58,8 @@ fun ContrarrelojScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modif
       onPlay = { viewModel.startTimeTrial(selected, fromTab = true) },
       gamesLeft = gamesLeft,
       onLocked = { sheet = true },
-      tuButton = { m -> com.example.ui.components.TuHeaderButton(viewModel, m) }          // el botón «Tú» en la cabecera de la página (Tarea 225b)
+      tuButton = { m -> com.example.ui.components.TuHeaderButton(viewModel, m) },          // el botón «Tú» en la cabecera de la página (Tarea 225b)
+      league = league                                                                      // la liga de la semana (Tarea 229)
     )
   }
   // Con qué se compara ESTA persona, para la hoja (Tarea 205c): sin franja de edad no hay comparación, así que la hoja no le promete una referencia que nunca verá (`LockSheetHost`, que también usan Hoy y la ficha)

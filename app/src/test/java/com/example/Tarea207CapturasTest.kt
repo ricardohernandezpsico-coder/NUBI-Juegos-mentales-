@@ -142,8 +142,8 @@ class Tarea207CapturasTest {
     val model = NeuroVidaViewModel(app).also { viewModels.add(it) }
     TestSupport.awaitUntil(30_000) { model.gameHistory.value.size >= n }
     val today = TimeTrialDay.gameFor(model.todayKey())
-    val topRung = Comparison.thresholds(estWorld.distribution(today, listOf(AgeRange.R45_54), 0)).last()
-    val doorMark = (topRung.from - 7).coerceAtLeast(0)
+    val topFrom = Comparison.firstMarkReaching(90, estWorld.distribution(today, listOf(AgeRange.R45_54), 0)) ?: 0          // (Tarea 229: el percentil 90 que fue el peldaño de arriba)
+    val doorMark = (topFrom - 7).coerceAtLeast(0)
     runBlocking {
       for (i in 0 until count) {
         val mark = if (i == count - 1) doorMark else (doorMark - 3 - 2 * i).coerceAtLeast(0)
