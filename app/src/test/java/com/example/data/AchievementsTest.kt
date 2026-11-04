@@ -31,6 +31,20 @@ class AchievementsTest {
   }
 
   @Test
+  fun `los dias de solo Contrarreloj cuentan para la racha mas larga pero no para las partidas (Tarea 227)`() {
+    val history = listOf(game("secuencia", 0), game("secuencia", 1))
+    val trialDays = listOf(2, 3, 4).map { Streak.dayOf(base + it * day) }
+    val plain = computeAchievementStats(history, emptyMap())
+    val withTrials = computeAchievementStats(history, emptyMap(), extraDays = trialDays)
+    assertEquals("solo las partidas de siempre: 2 días seguidos", 2, plain.bestStreak)
+    assertEquals("con tres días más de Contrarreloj, 5 días seguidos, como los cuenta Hoy", 5, withTrials.bestStreak)
+    assertEquals("las partidas no cambian", plain.totalGames, withTrials.totalGames)
+    assertEquals("los juegos distintos tampoco", plain.distinctGames, withTrials.distinctGames)
+    assertEquals(plain.maxGamesInOneDay, withTrials.maxGamesInOneDay)
+    assertEquals("sin partidas de siempre, solo Contrarreloj también hace racha", 3, computeAchievementStats(emptyList(), emptyMap(), extraDays = trialDays).bestStreak)
+  }
+
+  @Test
   fun `sin partidas no hay logros`() {
     assertTrue(Achievements.unlocked(computeAchievementStats(emptyList(), emptyMap())).isEmpty())
   }

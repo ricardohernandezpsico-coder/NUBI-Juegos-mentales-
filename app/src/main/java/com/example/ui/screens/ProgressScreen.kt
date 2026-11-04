@@ -13,9 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.AreaPoints
 import com.example.data.StarMeasures
+import com.example.data.Streak
 import com.example.data.Week
 import com.example.data.leagueRow
 import com.example.model.DomainType
@@ -62,6 +66,8 @@ fun ProgressScreen(
   val baseline by viewModel.baseline.collectAsState()
   val settings by viewModel.userSettings.collectAsState()
   val streak by viewModel.currentStreak.collectAsState()
+  // Cuándo se jugó, como en Hoy (Tarea 227): las partidas de siempre Y el Contrarreloj. Con solo `history` la semana de Avance decía «0 de 4 días» mientras Hoy decía «2 de 4» si esos días solo se había jugado Contrarreloj.
+  val activity by viewModel.activityTimestamps.collectAsState()
   val currentLang = LocalAppLanguage.current
   val avanceArea by viewModel.avanceArea.collectAsState()        // la página abierta: la recuerda el ViewModel (rotar la pantalla no la cierra; cambiar de pestaña, sí)
   val listState = rememberLazyListState()                       // la posición de la lista queda aquí: al volver de la página de un área, Avance está donde estaba
@@ -70,10 +76,19 @@ fun ProgressScreen(
 
   val avg = if (gameRanks.isEmpty()) 0 else gameRanks.sumOf { it.rating } / gameRanks.size
   val tier = RankTier.fromRating(avg)
-  val now = remember(history, progressLog) { System.currentTimeMillis() }
+  // El reloj de Hoy (cada 30 s, Tarea 227): `now` se renueva al cambiar el día aunque la app siga abierta; antes quedaba el de la última partida y, pasada la medianoche (o el lunes), la semana y los puntos «de esta semana» eran los de ayer.
+  var clock by remember { mutableStateOf(System.currentTimeMillis()) }
+  LaunchedEffect(Unit) {
+    while (true) {
+      kotlinx.coroutines.delay(30_000L)
+      clock = System.currentTimeMillis()
+    }
+  }
+  val today = Streak.dayOf(clock)
+  val now = remember(history, progressLog, today) { System.currentTimeMillis() }
   val names = remember { DomainType.values().associate { it.name to it.displayName } }
   val areaPoints = remember(progressLog, now) { AreaPoints.forAreas(AREA_ORDER, progressLog, now) }
-  val lamps = remember(history, now) { Week.lampsFor(history.map { it.timestamp }, now) }
+  val lamps = remember(activity, now) { Week.lampsFor(activity, now) }
   val bestMarks = remember(measures) { StarMeasures.bestMarks(measures) }
   val lastPlayed = remember(history) { history.groupBy { it.gameId }.mapValues { (_, l) -> l.maxOf { it.timestamp } } }
 
@@ -102,7 +117,7 @@ fun ProgressScreen(
       contentPadding = PaddingValues(top = 8.dp, bottom = 28.dp),
       verticalArrangement = Arrangement.spacedBy(22.dp)
     ) {
-      item { AvanceWeekLine(lamps, settings.weeklyGoal, empty = shownHistory.isEmpty()) }
+      item { AvanceWeekLine(lamps, settings.weeklyGoal, empty = activity.isEmpty()) }          // «Tu semana empieza hoy» solo si no se jugó NADA (ni Contrarreloj): quien solo jugó Contrarreloj ya tiene semana
 
       if (shownHistory.isEmpty()) {
         // Sin ninguna partida (Tarea 147, P8): en vez de cuatro filas vacías, Nubi con UNA línea

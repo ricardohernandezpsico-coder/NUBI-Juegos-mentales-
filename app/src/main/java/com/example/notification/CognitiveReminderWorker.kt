@@ -28,7 +28,8 @@ class CognitiveReminderWorker(
 
     val now = System.currentTimeMillis()
     val today = localDay(now)
-    val days = database.gameResultDao().getAllResultsSync().map { localDay(it.timestamp) }.toSet()
+    // Las partidas de siempre Y las del Contrarreloj (Tarea 227): quien hoy solo jugó Contrarreloj ya jugó, y su racha y su semana lo cuentan (como en Hoy)
+    val days = (database.gameResultDao().getAllResultsSync().map { it.timestamp } + database.timeTrialResultDao().getAllSync().map { it.timestamp }).map { localDay(it) }.toSet()
     var streak = 0
     while ((today - 1 - streak) in days) streak++
 

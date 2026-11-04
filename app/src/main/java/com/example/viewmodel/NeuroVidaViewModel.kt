@@ -371,8 +371,9 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
 
   /** Logros conseguidos (id -> cuándo) y las cifras con que se calculan (para el avance "4/7" de los bloqueados). */
   val achievementUnlocks = repository.achievementUnlocks
-  val achievementStats: StateFlow<com.example.data.AchievementStats> = combine(gameHistory, gameRanks) { hist, ranks ->
-    com.example.data.computeAchievementStats(hist, ranks.associate { it.gameId to it.rating })
+  val achievementStats: StateFlow<com.example.data.AchievementStats> = combine(gameHistory, gameRanks, repository.timeTrialResults) { hist, ranks, tt ->
+    // los días de Contrarreloj cuentan para la racha (Tarea 227): «Tu mejor racha» de Tú y los logros de constancia dicen lo mismo que Hoy
+    com.example.data.computeAchievementStats(hist, ranks.associate { it.gameId to it.rating }, extraDays = tt.map { com.example.data.Streak.dayOf(it.timestamp) })
   }.stateIn(viewModelScope, SharingStarted.Eagerly, com.example.data.computeAchievementStats(emptyList(), emptyMap()))
 
   /** Nivel (0..1) por juego para Progreso: rating del DDA comun; en Secuencia/Parejas (motores propios) se

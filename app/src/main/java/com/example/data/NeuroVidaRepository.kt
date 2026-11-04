@@ -613,7 +613,8 @@ class NeuroVidaRepository(
     if (achievementPrefs.getBoolean("seeded", false) && achievementPrefs.getBoolean("seeded_v2", false)) return
     val stats = computeAchievementStats(
       gameResultDao.getAllResultsSync().map { it.toDomain() },
-      gameProgressDao.getAllProgressSync().associate { it.gameId to it.eloRating }
+      gameProgressDao.getAllProgressSync().associate { it.gameId to it.eloRating },
+      extraDays = timeTrialResultDao.getAllSync().map { Streak.dayOf(it.timestamp) }          // los días de Contrarreloj cuentan para la racha (Tarea 227)
     )
     val now = System.currentTimeMillis()
     val seeded = Achievements.unlocked(stats)
@@ -1123,7 +1124,7 @@ class NeuroVidaRepository(
       gameRatingAfter = saved.gameRatingAfter,
       globalBefore = saved.globalBefore,
       globalAfter = saved.globalAfter,
-      newAchievements = unlockNewAchievements(computeAchievementStats(saved.allResults, saved.ratingsAfter), result.timestamp),
+      newAchievements = unlockNewAchievements(computeAchievementStats(saved.allResults, saved.ratingsAfter, extraDays = timeTrialResults.value.map { Streak.dayOf(it.timestamp) }), result.timestamp),          // (Tarea 227: los días de Contrarreloj cuentan para la racha)
       modePassed = saved.modePassed,
       expertUnlocked = saved.expertUnlocked
     )

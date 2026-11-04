@@ -65,12 +65,16 @@ fun countReturns(days: Collection<Long>, minGapDays: Int = 4): Int {
   return n
 }
 
-fun computeAchievementStats(history: List<GamePlayResult>, ratings: Map<String, Int>): AchievementStats {
+/**
+ * [extraDays] (Tarea 227) = los días en que solo se jugó Contrarreloj: cuentan para la RACHA (como en Hoy, donde un Contrarreloj es día jugado) y por eso para `bestStreak`, que miran los logros de constancia y «Tu mejor racha» de Tú;
+ * no suman partidas, ni juegos distintos, ni puntaje (el Contrarreloj no es una partida de siempre).
+ */
+fun computeAchievementStats(history: List<GamePlayResult>, ratings: Map<String, Int>, extraDays: Collection<Long> = emptyList()): AchievementStats {
   val days = history.map { Streak.dayOf(it.timestamp) }
   val defs = history.mapNotNull { GameRegistry.getById(it.gameId) }
   return AchievementStats(
     totalGames = history.size,
-    bestStreak = longestStreak(days),
+    bestStreak = longestStreak(days + extraDays),
     maxGamesInOneDay = days.groupingBy { it }.eachCount().values.maxOrNull() ?: 0,
     distinctGames = defs.map { it.id }.toSet().size,
     distinctDomains = defs.map { it.domain }.toSet().size,
