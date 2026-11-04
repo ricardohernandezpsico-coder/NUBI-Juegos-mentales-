@@ -86,10 +86,10 @@ Con `línea(d) = d.from`:
 - Si no llega a la de la suya → **baja una**. Nunca baja de En la plataforma.
 - En la más alta, En otra galaxia, con 90 % o más → se queda.
 - **Nunca más de una división por semana**, para arriba o para abajo.
-- **Semana sin %** (no jugó, o solo jugó juegos que todavía no cuentan): **PENDIENTE DE RICARDO**.
-  - Opus recomienda que **se quede**: sin culpa, como la racha que nunca dice «perdiste».
-  - El artifact aprobado decía «bajas una».
-  - Hasta que Ricardo decida, se programa la regla en un solo lugar (`League.noWeekRule`) para cambiarla con una línea.
+- **Semana sin %** (no jugó, o solo jugó juegos que todavía no cuentan): **baja una**, como cualquier semana que no llega a su línea.
+  - Lo decidió Ricardo el 4-nov: «si no juega, queda a la cola de la semana en comparación con los demás, por lo que debería bajar».
+  - Cada semana cerrada sin % baja una. Si la persona no juega en 3 semanas, baja 3, de a una por semana.
+  - En la plataforma no se baja más.
 - **Sin histéresis por ahora.** El ruido arriba (Sonnet §8.1, punto 5: en Acoplamiento y Rescate, de 1 a 2 aciertos entre las líneas del 80 % y el 90 %) se amortigua con tres cosas:
   - la mejor marca de la semana;
   - el promedio de varios juegos;
@@ -138,11 +138,10 @@ En los textos de la liga sí se usan «subir», «quedarse» y «bajar», en fra
 | Para subir | «Si la semana terminara hoy, el lunes subirías a Sobre las nubes.» |
 | Para quedarse | «Si la semana terminara hoy, te quedarías en Despegando. Para subir a Sobre las nubes, te falta llegar al 20 %.» |
 | Para bajar | «Si la semana terminara hoy, bajarías a En la plataforma. Para quedarte, te falta llegar al 10 %.» |
-| Sin % esta semana | «Todavía no juegas esta semana. Con cualquiera de los cuatro juegos puedes subir a Sobre las nubes.» |
+| Sin % esta semana | «Todavía no juegas esta semana. Con cualquiera de los cuatro juegos puedes quedarte en Despegando o subir.» (En la plataforma: «…puedes subir a Despegando.») |
 | En la más alta | «Si la semana terminara hoy, te quedarías En otra galaxia, la división más alta.» |
 | Primera semana, sin partidas | «Tu primera semana: todos parten En la plataforma.» |
 
-  - Con la regla «bajas una», la frase sin % es otra: «…puedes quedarte en Despegando o subir.»
   - Las preposiciones van pegadas al nombre: «te quedarías en Despegando», pero «te quedarías En la Luna» (no «en En la Luna»). Hay que armarlas con una función que lo pruebe para las diez.
 - «La semana cierra el domingo. Quedan N días.» («Queda 1 día.»; el domingo: «La semana cierra hoy a medianoche.»)
 
@@ -179,7 +178,7 @@ Bajo la losa celeste del Contrarreloj (`home_timetrial_line`): emblema de 24 dp,
 | Para subir | «Despegando · vas para subir a Sobre las nubes» |
 | Para quedarse | «Despegando · vas para quedarte» |
 | Para bajar | «Despegando · juega para quedarte» |
-| Sin % | «Despegando · juega para subir» («juega para quedarte» con la regla «bajas una») |
+| Sin % | «Despegando · juega para quedarte» (En la plataforma: «En la plataforma · juega para subir») |
 | En la más alta | «En otra galaxia · vas para quedarte» |
 
 - «Te quedan N partidas» sale de Hoy y queda solo en la pestaña y en la ficha.
@@ -201,7 +200,7 @@ Aparece **una vez por semana cerrada**, la primera vez que se abre la app despu�
 
 **Si bajó:** «Esta semana estás En la plataforma», sin celebración, sin «bajaste» y con lo que necesita.
 
-**Semana sin % y regla «se queda»:** no hay hoja, porque no pasó nada.
+**Semana sin %:** es el caso «si bajó» (o «si se quedó», En la plataforma), con «Tu semana pasada: no jugaste el Contrarreloj.» en vez de la frase del %. Sin culpa: nunca «bajaste» ni «perdiste».
 
 ### 5.4 Tú
 
@@ -235,7 +234,7 @@ Aparece **una vez por semana cerrada**, la primera vez que se abre la app despu�
 - tope y piso;
 - de a una aunque el % alcance para tres;
 - cerrar 3 semanas pendientes;
-- la semana sin % con las dos reglas;
+- la semana sin % baja una, y en la plataforma se queda;
 - nunca se recalcula lo cerrado;
 - el respaldo.
 
