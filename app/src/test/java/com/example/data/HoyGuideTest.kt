@@ -16,19 +16,19 @@ class HoyGuideTest {
 
   private fun assertGlobe(text: String, origin: String) {
     assertTrue("$origin: «$text» tiene ${sentences(text)} frases (máximo 2)", sentences(text) in 1..2)
-    assertTrue("$origin: «$text» es demasiado larga para un globo (máximo ~100 letras)", text.length <= 100)
+    assertTrue("$origin: «$text» es demasiado larga para un globo (máximo ~100 letras; el paso 3 mide 101 desde la Tarea 225: lo que pidió Opus, y `HoyGuideOverlayTest` mide que el globo lo muestre entero)", text.length <= 102)
   }
 
   @Test
   fun son_tres_pasos_en_este_orden() {
-    assertEquals("Tarea 220: siguen la pantalla de arriba abajo (el Contrarreloj de Hoy → la pestaña Juegos de la barra → las tres de la derecha)", listOf(GuideStep.CONTRARRELOJ, GuideStep.JUEGOS, GuideStep.BARRA), HoyGuide.steps)
+    assertEquals("Tarea 220: siguen la pantalla de arriba abajo (el Contrarreloj de Hoy → la pestaña Juegos de la barra → las dos de la derecha, Tarea 225)", listOf(GuideStep.CONTRARRELOJ, GuideStep.JUEGOS, GuideStep.BARRA), HoyGuide.steps)
   }
 
   @Test
   fun los_textos_son_los_de_la_spec_y_cumplen_las_reglas_de_los_globos() {
     assertEquals("El Contrarreloj dura 2 minutos y su juego cambia cada día.", HoyGuide.text(GuideStep.CONTRARRELOJ))
     assertEquals("Aquí están los 17 juegos: eliges el que quieras.", HoyGuide.text(GuideStep.JUEGOS))
-    assertEquals("En Contrarreloj ves tus marcas. En Avance, tu punto de partida; en Tú, tus ajustes.", HoyGuide.text(GuideStep.BARRA))
+    assertEquals("En Contrarreloj ves tus marcas; en Avance, tu punto de partida. Arriba a la derecha, Tú: tus ajustes.", HoyGuide.text(GuideStep.BARRA))
     assertEquals("el «17» del texto es el catálogo de verdad: si cambia, el texto se revisa a propósito", 17, GameRegistry.allGames.size)
     for (step in HoyGuide.steps) {
       assertGlobe(HoyGuide.text(step), step.name)
@@ -59,7 +59,7 @@ class HoyGuideTest {
     assertEquals("lo iluminado es la columna de la pestaña Juegos de la barra, no un botón de Hoy", "Paso 2 de 3. La pestaña Juegos, en la barra de abajo. Aquí están los 17 juegos: eliges el que quieras.", HoyGuide.spoken(GuideStep.JUEGOS))
     for (step in listOf(GuideStep.JUEGOS, GuideStep.BARRA)) assertFalse("solo el primer paso presenta a Nubi", HoyGuide.spoken(step).contains("Nubi te muestra"))
     for (step in HoyGuide.steps) assertFalse("«Todos los juegos» ya no es un lugar de la app: una palabra por concepto", HoyGuide.spoken(step).contains("Todos los juegos"))
-    assertEquals("Paso 3 de 3. Las pestañas Contrarreloj, Avance y Tú, en la barra de abajo. En Contrarreloj ves tus marcas. En Avance, tu punto de partida; en Tú, tus ajustes.", HoyGuide.spoken(GuideStep.BARRA))
+    assertEquals("Paso 3 de 3. Las pestañas Contrarreloj y Avance, en la barra de abajo. En Contrarreloj ves tus marcas; en Avance, tu punto de partida. Arriba a la derecha, Tú: tus ajustes.", HoyGuide.spoken(GuideStep.BARRA))
   }
 
   @Test
@@ -86,13 +86,13 @@ class HoyGuideTest {
   /** Tarea 193b: si el vuelo terminó sin jugar ningún juego, Avance solo dice «Todavía no hay nada aquí» y la invitación: el paso 3 habla de lo que se verá, no de un punto de partida que todavía no existe. */
   @Test
   fun sin_ninguna_partida_el_paso_3_dice_como_vas_en_cada_area_y_los_pasos_1_y_2_no_cambian() {
-    assertEquals("En Contrarreloj ves tus marcas. En Avance, cada área; en Tú, tus ajustes.", HoyGuide.text(GuideStep.BARRA, startingPoint = false))
-    assertEquals("con partidas, el texto de siempre", "En Contrarreloj ves tus marcas. En Avance, tu punto de partida; en Tú, tus ajustes.", HoyGuide.text(GuideStep.BARRA, startingPoint = true))
+    assertEquals("En Contrarreloj ves tus marcas; en Avance, cada área. Arriba a la derecha, Tú: tus ajustes.", HoyGuide.text(GuideStep.BARRA, startingPoint = false))
+    assertEquals("con partidas, el texto de siempre", "En Contrarreloj ves tus marcas; en Avance, tu punto de partida. Arriba a la derecha, Tú: tus ajustes.", HoyGuide.text(GuideStep.BARRA, startingPoint = true))
     assertEquals("por omisión, el de siempre", HoyGuide.text(GuideStep.BARRA, startingPoint = true), HoyGuide.text(GuideStep.BARRA))
     for (step in listOf(GuideStep.CONTRARRELOJ, GuideStep.JUEGOS)) assertEquals(HoyGuide.text(step, startingPoint = true), HoyGuide.text(step, startingPoint = false))
     assertGlobe(HoyGuide.text(GuideStep.BARRA, startingPoint = false), "paso 3 sin partidas")
     assertEquals(
-      "Paso 3 de 3. Las pestañas Contrarreloj, Avance y Tú, en la barra de abajo. En Contrarreloj ves tus marcas. En Avance, cada área; en Tú, tus ajustes.",
+      "Paso 3 de 3. Las pestañas Contrarreloj y Avance, en la barra de abajo. En Contrarreloj ves tus marcas; en Avance, cada área. Arriba a la derecha, Tú: tus ajustes.",
       HoyGuide.spoken(GuideStep.BARRA, startingPoint = false)
     )
     assertEquals(HoyGuide.spoken(GuideStep.JUEGOS), HoyGuide.spoken(GuideStep.JUEGOS, startingPoint = false))

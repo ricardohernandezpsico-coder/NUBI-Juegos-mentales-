@@ -212,7 +212,7 @@ class AppActualScreenshotTest {
                   }
                   Scene.TU -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) {                      // «Tú»: la tercera pestaña (Tarea 158; antes el Perfil era un panel)
                     CompositionLocalProvider(LocalBarInset provides barInset) { Box(top) { TuScreen(viewModel = vm!!) } }
-                    NavBar(AppTab.TU) { barPx = it }
+                    NavBar(AppTab.PROGRESO) { barPx = it }
                   }
                   Scene.AJUSTES -> Box(top) { SettingsPanel(viewModel = vm!!, onClose = {}) }
                   Scene.LICENCIAS -> Box(top) { LicensesScreen(onClose = {}) }
@@ -220,7 +220,7 @@ class AppActualScreenshotTest {
                   Scene.BARRA_JUEGOS -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) { NavBar(AppTab.JUEGOS) }
                   Scene.BARRA_CONTRARRELOJ -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) { NavBar(AppTab.CONTRARRELOJ) }
                   Scene.BARRA_AVANCE -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) { NavBar(AppTab.PROGRESO) }
-                  Scene.BARRA_TU -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) { NavBar(AppTab.TU) }
+                  Scene.BARRA_TU -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) { NavBar(AppTab.PROGRESO) }
                   Scene.VUELO_1 -> FirstFlightScreen(FlightState(FlightMode.FULL, FlightStep.HOLA), emptyList(), FlightActions.None)
                   Scene.VUELO_JUEGO -> FirstFlightScreen(FlightState(FlightMode.FULL, FlightStep.JUEGO_1, name = "Ana"), emptyList(), FlightActions.None)
                   Scene.VUELO_EDAD -> FirstFlightScreen(

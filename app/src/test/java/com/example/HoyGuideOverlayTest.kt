@@ -203,13 +203,13 @@ class HoyGuideOverlayTest {
     assertEquals(juegos.right + pad, hole2.right, 1.5f)
     assertEquals(juegos.top - pad, hole2.top, 1.5f)
     assertTrue("abajo llega hasta donde llega la barra, no entra en la franja de gestos: ${hole2.bottom} contra ${juegos.bottom}", hole2.bottom <= juegos.bottom + 1f)
-    assertTrue("la columna Juegos va ANTES de las tres de la derecha: ${juegos.right} contra ${bar.left}", juegos.right <= bar.left + 1f)
+    assertTrue("la columna Juegos va ANTES de las dos de la derecha: ${juegos.right} contra ${bar.left}", juegos.right <= bar.left + 1f)
     assertTrue("y es solo UNA columna, no la barra entera", juegos.width < bar.width)
     assertTrue("la guía sigue la pantalla de arriba abajo: el bloque de Hoy está arriba y la columna Juegos abajo", block.bottom <= juegos.top)
   }
 
   @Test
-  fun el_hueco_del_paso_3_cubre_las_pestanas_Contrarreloj_Avance_y_Tu_y_no_Hoy_ni_Juegos() {
+  fun el_hueco_del_paso_3_cubre_las_pestanas_Contrarreloj_y_Avance_y_no_Hoy_ni_Juegos() {
     show(); start()
     composeTestRule.runOnUiThread { step = GuideStep.BARRA }; composeTestRule.waitForIdle()
     // (con la guía abierta la barra queda fuera del lector de pantalla: sus nodos solo están en el árbol sin fusionar)
@@ -218,11 +218,11 @@ class HoyGuideOverlayTest {
     val hole = bounds("guide_hole")
     val pad = 8f * composeTestRule.density.density
     // (Tarea 215: las columnas ya no son tercios; el hueco empieza donde termina la columna de Hoy, la que mide la barra)
-    val hoy = raw("nav_item_hoy"); val juegos = raw("nav_item_juegos"); val contrarreloj = raw("nav_item_contrarreloj"); val tu = raw("nav_item_tu")
+    val hoy = raw("nav_item_hoy"); val juegos = raw("nav_item_juegos"); val contrarreloj = raw("nav_item_contrarreloj"); val avance = raw("nav_item_progreso")
     assertEquals("empieza donde empieza la columna de Contrarreloj (donde termina Juegos)", contrarreloj.left - pad, hole.left, 1.5f)
     assertTrue("Hoy queda fuera del hueco: ${hoy.right} contra ${hole.left}", hoy.right <= hole.left + pad + 1f)
     assertTrue("y Juegos también (Tarea 220: tiene su propio paso, el 2): ${juegos.right} contra ${hole.left}", juegos.right <= hole.left + pad + 1f)
-    assertTrue("y llega hasta el borde de la derecha, con Tú adentro", hole.right >= bar.right - 1f && hole.right >= tu.right - 1f)
+    assertTrue("y llega hasta el borde de la derecha, con Avance adentro (Tarea 225: Tú ya no está en la barra)", hole.right >= bar.right - 1f && hole.right >= avance.right - 1f)
     assertEquals(bar.top - pad, hole.top, 1.5f)
     assertTrue("no entra en la franja de gestos (ni en los 3 botones): abajo llega hasta donde llega la barra", hole.bottom <= bar.bottom + 1f)
   }
@@ -288,7 +288,7 @@ class HoyGuideOverlayTest {
     assertFalse(seen)
     assertEquals(0, trialed)
     // un toque sobre la barra de abajo (fuera del hueco del paso 1) tampoco cambia de pestaña: la barra ni siquiera está en el árbol
-    assertFalse("la barra de abajo no está en el árbol de accesibilidad", exists("nav_item_tu"))
+    assertFalse("la barra de abajo no está en el árbol de accesibilidad", exists("nav_item_progreso"))
   }
 
   // ---------------------------------------------------------------- accesibilidad
@@ -296,7 +296,7 @@ class HoyGuideOverlayTest {
   @Test
   fun mientras_esta_abierta_Hoy_y_la_barra_quedan_fuera_del_lector_y_el_globo_dice_lo_de_la_tabla() {
     show(); start()
-    for (tag in listOf("btn_timetrial", "nav_item_juegos", "nav_item_tu", "nav_item_progreso", "home_greeting", "home_card")) assertFalse("«$tag» no debe estar en el árbol de accesibilidad con la guía abierta", exists(tag))
+    for (tag in listOf("btn_timetrial", "nav_item_juegos", "nav_item_progreso", "home_greeting", "home_card")) assertFalse("«$tag» no debe estar en el árbol de accesibilidad con la guía abierta", exists(tag))
     for (s in HoyGuide.steps) {
       composeTestRule.runOnUiThread { step = s }; composeTestRule.waitForIdle()
       assertEquals(HoyGuide.spoken(s), describe("guide_globe"))
@@ -304,7 +304,7 @@ class HoyGuideOverlayTest {
     }
     // al cerrarla, Hoy vuelve al lector
     composeTestRule.runOnUiThread { step = null }; composeTestRule.waitForIdle()
-    assertTrue(exists("btn_timetrial")); assertTrue(exists("nav_item_tu")); assertTrue(exists("nav_item_juegos"))
+    assertTrue(exists("btn_timetrial")); assertTrue(exists("nav_item_progreso")); assertTrue(exists("nav_item_juegos"))
   }
 
   private fun assertChipsAtLeast48() {

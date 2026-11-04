@@ -90,7 +90,7 @@ fun ProgressScreen(
       )
       return@Column
     }
-    Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) { OnBoardText("Avance", color = OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, modifier = Modifier.testTag("avance_title")) }
+    Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = com.example.ui.components.TU_BUTTON_RESERVE, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) { OnBoardText("Avance", color = OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, modifier = Modifier.testTag("avance_title")) }
     LazyColumn(
       state = listState,
       modifier = Modifier

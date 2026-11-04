@@ -111,14 +111,14 @@ class NubilusLogoTest {
   }
 
   @Test
-  fun mide_6_dp_de_aire_40_de_caja_y_2_hasta_el_saludo_y_baja_Hoy_20_dp() {
-    assertEquals(6f, HOY_LOGO_TOP.value, 0f); assertEquals(40f, HOY_LOGO_BOX.value, 0f); assertEquals(2f, HOY_GREETING_TOP.value, 0f)
+  fun mide_4_dp_de_aire_40_de_caja_y_4_hasta_el_saludo_y_baja_Hoy_20_dp() {
+    assertEquals(4f, HOY_LOGO_TOP.value, 0f); assertEquals(40f, HOY_LOGO_BOX.value, 0f); assertEquals(4f, HOY_GREETING_TOP.value, 0f)           // Tarea 225: antes 6 + 40 + 2; la suma sigue siendo 48
     assertEquals("Hoy baja lo que mide el logotipo menos los 28 dp de aire de antes", 20f, HOY_LOGO_SHIFT.value, 0f)
     show()
     val scrollTop = top("home_scroll")
-    assertEquals("el saludo empieza 6 + 40 + 2 = 48 dp bajo el borde de Hoy (antes 28)", 48f, top("home_greeting") - scrollTop, 0.6f)
+    assertEquals("el saludo empieza 4 + 40 + 4 = 48 dp bajo el borde de Hoy (antes 28)", 48f, top("home_greeting") - scrollTop, 0.6f)
     val logoCenter = (top("home_logo") + bottom("home_logo")) / 2f - scrollTop
-    assertEquals("el logotipo va centrado en su caja de 40 dp, que empieza a los 6 dp", 6f + 20f, logoCenter, 1f)
+    assertEquals("el logotipo va centrado en su caja de 40 dp, que empieza a los 4 dp: su centro queda a 24 dp, el del botón «Tú» de arriba a la derecha (Tarea 225)", 4f + 20f, logoCenter, 1f)
     assertEquals("a la izquierda, con el mismo margen del saludo (20 dp)", rule.onNodeWithTag("home_greeting").fetchSemanticsNode().positionInRoot.x, rule.onNodeWithTag("home_logo").fetchSemanticsNode().positionInRoot.x, 1f)
   }
 

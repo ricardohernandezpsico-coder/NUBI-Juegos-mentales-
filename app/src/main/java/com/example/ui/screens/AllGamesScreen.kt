@@ -133,7 +133,7 @@ internal fun AllGamesContent(
   val flat = remember(sections) { sections.flatMap { (place, rows) -> listOf<Any>(AllGamesHeader(place, rows.size)) + rows.map { AllGamesRow(place, it) } } }
 
   Column(modifier.fillMaxSize().padding(bottom = LocalBarInset.current)) {         // la franja de la barra de pestañas queda libre
-    Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = com.example.ui.components.TU_BUTTON_RESERVE, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {         // (a la derecha queda libre el lugar del botón «Tú», Tarea 225)
       OnBoardText(AllGamesTitle, color = NubiTokens.OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, modifier = Modifier.weight(1f).semantics { heading() }.testTag("all_games_title"))
     }
     // El buscador y los chips quedan fijos arriba; con letra muy grande (> 1,3) ocupan casi la mitad de la pantalla y se deslizan con la lista

@@ -19,6 +19,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.graphics.Color
 import com.example.bridge.NativeReceiver
@@ -149,7 +151,11 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
     com.example.ui.components.BoardBackground()
     // La barra de pestañas es una capa FIJA encima de las páginas (Tarea 123): no es el `bottomBar` de un Scaffold, así que NO se encoge cuando se abre una lámina o una ventana (que la tapan) y las páginas no saltan; tampoco hay
     // desvanecido de página (`PAGE_BOTTOM_FADE` se quitó): cada pestaña deja la franja de la barra libre con `LocalBarInset` y su contenido termina nítido sobre ella. La barra tiene su propio inset (las barras del sistema).
-    val barVisible = activeGame == null && lastResult == null && promotion == null && achievementQueue.isEmpty() && sessionSummary == null && topPanel == null
+    // Tú (Tarea 225): a pantalla completa, sin la barra, con el mismo fundido de las pestañas; los paneles que se abren desde él van ENCIMA y al cerrarse vuelven a él.
+    val tuOpen by viewModel.tuOpen.collectAsState()
+    val tuFade = com.example.ui.components.rememberTabFade()
+    val tuShown = com.example.ui.components.rememberFadeSwitch(tuOpen, tuFade)
+    val barVisible = activeGame == null && lastResult == null && promotion == null && achievementQueue.isEmpty() && sessionSummary == null && topPanel == null && !tuShown
     // La guía solo vive sobre Hoy a la vista y sin nada encima.
     val hoyFree = barVisible && currentTab == AppTab.HOY
     val guideOpen = guideStep != null && hoyFree
@@ -163,20 +169,29 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
         com.example.ui.components.LocalHapticsEnabled provides userSettings.hapticsEnabled      // «Vibración y respuesta háptica» de Ajustes: el tic del kit (KitHaptics)
       ) {
       Box(modifier = Modifier.fillMaxSize()) {
+        // Las pestañas, el botón «Tú» y Tú mismo comparten el fundido de entrada y salida de Tú (Tarea 225).
+        Box(Modifier.fillMaxSize().graphicsLayer { val s = tuFade.contentScale; alpha = tuFade.contentAlpha; scaleX = s; scaleY = s }) {
         // Content based on tab. Mientras hay un juego o un resultado encima no se compone: esas pantallas van
         // sobre el cielo transparente (se vería la pestaña detrás) y no deben dejar pasar toques a ella.
         // `KeepTabsState` (Tarea 209b): al esconder las pestañas guarda el deslizado de cada página y lo devuelve al volver (de «De dónde sale la referencia», de «En qué se basa Nubilus», de un juego...); sin él, la página volvía arriba.
         // Al volver, `TabHost` abre en la pestaña del ViewModel, sin fundido.
-        com.example.ui.components.KeepTabsState(show = activeGame == null && lastResult == null && sessionSummary == null && topPanel == null) {
+        com.example.ui.components.KeepTabsState(show = activeGame == null && lastResult == null && sessionSummary == null && topPanel == null && !tuShown) {
           com.example.ui.components.TabHost(currentTab = currentTab, modifier = Modifier.fillMaxSize(), warmUp = startupReady) { tab ->
             when (tab) {
               AppTab.HOY -> HomeScreen(viewModel = viewModel)
               AppTab.JUEGOS -> com.example.ui.screens.AllGamesScreen(viewModel = viewModel)
               AppTab.CONTRARRELOJ -> com.example.ui.screens.ContrarrelojScreen(viewModel = viewModel)
               AppTab.PROGRESO -> ProgressScreen(viewModel = viewModel)
-              AppTab.TU -> TuScreen(viewModel = viewModel)
             }
           }
+        }
+        // «Tú» (Tarea 225): el botón redondo de arriba a la derecha, UNO solo para las cuatro pestañas (siempre en el mismo lugar), y Tú a pantalla completa, sin la barra: su «‹» y Atrás vuelven a la pestaña de donde se abrió.
+        if (barVisible) com.example.ui.components.TuButton(name = userSettings.name, onClick = { viewModel.openTu() }, modifier = Modifier.align(androidx.compose.ui.Alignment.TopEnd).padding(end = com.example.ui.components.TU_BUTTON_END))
+        if (tuShown) com.example.ui.components.KeepTabsState(show = activeGame == null && lastResult == null && sessionSummary == null && topPanel == null) {
+          androidx.compose.runtime.CompositionLocalProvider(com.example.ui.components.LocalBarInset provides 0.dp) {
+            TuScreen(viewModel = viewModel, onBack = { viewModel.closeTu() })
+          }
+        }
         }
 
         // Los Ajustes, «En qué se basa Nubilus» y «Preguntas frecuentes», abiertos desde «Tú» (Tarea 158: el perfil es la pestaña «Tú» y los dos botones de arriba a la derecha se fueron; Tarea 185: «En qué se basa Nubilus»; Tarea 209: «Preguntas frecuentes»), y «De dónde sale la referencia», desde la página Contrarreloj de Avance y su hoja.
@@ -316,7 +331,7 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
       }
       // La barra: fija, encima de todo lo de las pestañas; con una lámina o ventana abierta no está (`barVisible`). Marca la pestaña del ViewModel de una vez, sin esperar al fundido.
       if (barVisible) {
-        Box(Modifier.align(androidx.compose.ui.Alignment.BottomCenter).onSizeChanged { if (it.height > 0) barHeightPx = it.height }) {
+        Box(Modifier.align(androidx.compose.ui.Alignment.BottomCenter).graphicsLayer { alpha = tuFade.contentAlpha }.onSizeChanged { if (it.height > 0) barHeightPx = it.height }) {
           com.example.ui.components.NeuroNavBar(current = currentTab, onSelect = { viewModel.setTab(it) })
         }
       }

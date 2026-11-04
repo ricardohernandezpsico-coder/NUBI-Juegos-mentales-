@@ -235,7 +235,7 @@ internal fun ContrarrelojPage(
 private fun PageHeader(compared: Boolean, modifier: Modifier = Modifier) {
   Column(modifier.fillMaxWidth().padding(start = 20.dp, end = PageMargin, top = 8.dp).testTag("contrarreloj_header")) {
     CapScale(BIG_TEXT_SCALE_CAP) {
-      OnBoardText(TimeTrialMarks.TITLE, color = NubiTokens.OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 32.sp, modifier = Modifier.fillMaxWidth().semantics { heading() }.testTag("contrarreloj_title"))
+      OnBoardText(TimeTrialMarks.TITLE, color = NubiTokens.OnNight, fontSize = 26.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = 32.sp, modifier = Modifier.fillMaxWidth().padding(end = com.example.ui.components.TU_BUTTON_TOUCH).semantics { heading() }.testTag("contrarreloj_title"))
     }
     OnBoardText(TimeTrialMarks.subtitle(compared), color = NubiTokens.OnNightDim, fontSize = 16.sp, lineHeight = 22.sp, modifier = Modifier.fillMaxWidth().padding(top = 4.dp).testTag("contrarreloj_subtitle"))
   }

@@ -181,10 +181,13 @@ internal data class HomeUi(
 
 internal enum class StopState { DONE, NEXT, LATER }
 
-/** Lo que ocupa el logotipo arriba de Hoy (Tarea 223): 6 dp de aire, 40 dp de caja del logotipo y 2 dp hasta el saludo. Antes el saludo empezaba 28 dp bajo la barra: todo Hoy baja [HOY_LOGO_SHIFT]. */
-internal val HOY_LOGO_TOP = 6.dp
+/**
+ * Lo que ocupa el logotipo arriba de Hoy (Tarea 223): 6 dp de aire, 40 dp de caja del logotipo y 2 dp hasta el saludo; desde la Tarea 225, 4 dp de aire arriba y 4 dp hasta el saludo (la caja del logotipo y el botón «Tú» de arriba a la derecha comparten la línea: el centro del
+ * logotipo queda a 24 dp, el del botón; el saludo sigue empezando 48 dp bajo la barra). Antes el saludo empezaba 28 dp bajo la barra: todo Hoy baja [HOY_LOGO_SHIFT].
+ */
+internal val HOY_LOGO_TOP = 4.dp
 internal val HOY_LOGO_BOX = 40.dp
-internal val HOY_GREETING_TOP = 2.dp
+internal val HOY_GREETING_TOP = 4.dp
 internal val HOY_LOGO_SHIFT = HOY_LOGO_TOP + HOY_LOGO_BOX + HOY_GREETING_TOP - 28.dp
 
 /** El espacio bajo la última fila cuando la tarjeta no tiene botón y solo dice una línea (Tarea 194). */

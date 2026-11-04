@@ -53,6 +53,46 @@ class TabFade internal constructor() {
 fun rememberTabFade(): TabFade = remember { TabFade() }
 
 /**
+ * El «fade through» de las pestañas (Tarea 184; Tarea 224: el de TODO cambio de pestaña), suelto para usarlo donde haya que cambiar de pantalla: la de ahora se desvanece ([NubiMotion.TAB_FADE_OUT_MS], acelera), en lo más transparente se llama a [switch] (que cambia lo que se ve),
+ * se dejan pasar dos cuadros (el cuadro pesado de componer y medir lo nuevo, con todo transparente) y entra la nueva con un fundido y una escala de [NubiMotion.TAB_FADE_MIN_SCALE] a 1 ([NubiMotion.TAB_FADE_IN_MS], frena): 300 ms en total. Con [reduce] («quitar animaciones»), de golpe.
+ */
+internal suspend fun TabFade.fadeThrough(reduce: Boolean, switch: () -> Unit) {
+  if (reduce) { alpha.snapTo(1f); scale.snapTo(1f); switch(); return }
+  scale.snapTo(1f)
+  alpha.animateTo(0f, tween(NubiMotion.TAB_FADE_OUT_MS, easing = FastOutLinearInEasing))
+  switch()
+  withFrameNanos { }; withFrameNanos { }
+  scale.snapTo(NubiMotion.TAB_FADE_MIN_SCALE)
+  coroutineScope {
+    launch { scale.animateTo(1f, tween(NubiMotion.TAB_FADE_IN_MS, easing = LinearOutSlowInEasing)) }
+    alpha.animateTo(1f, tween(NubiMotion.TAB_FADE_IN_MS, easing = LinearOutSlowInEasing))
+  }
+}
+
+/** Devuelve las páginas a su opacidad y escala normales (un fundido a medias que se cancela con un toque que vuelve a lo que todavía se ve): rápido, para que no queden a medias. */
+internal suspend fun TabFade.settle() {
+  if (alpha.value == 1f && scale.value == 1f) return
+  coroutineScope {
+    launch { scale.animateTo(1f, tween(NubiMotion.STATE_FAST_MS)) }
+    alpha.animateTo(1f, tween(NubiMotion.STATE_FAST_MS))
+  }
+}
+
+/**
+ * Una pantalla que entra y sale con el mismo fundido de las pestañas (Tarea 225: Tú se abre a pantalla completa desde el botón de arriba a la derecha): devuelve si [target] ya se VE (cambia en lo más transparente del fundido, no antes). Con «quitar animaciones», de golpe. Quien
+ * la usa pone [fade] en un `graphicsLayer` (opacidad y escala) alrededor de lo que cambia.
+ */
+@Composable
+fun rememberFadeSwitch(target: Boolean, fade: TabFade): Boolean {
+  val reduce = rememberReduceMotion()
+  var shown by remember { mutableStateOf(target) }
+  LaunchedEffect(target) {
+    if (target == shown) fade.settle() else fade.fadeThrough(reduce) { shown = target }
+  }
+  return shown
+}
+
+/**
  * Las cinco pestañas (Hoy, Juegos, Contrarreloj, Avance, Tú) en UN solo lugar, SIN pager (Tarea 224, 4-nov, idea de Ricardo: «al pasar de una pestaña a otra no se siente prolijo ni suave, como que se pega un poco»; antes, desde el 29-sep, se pasaban
  * también deslizando y las vecinas se deslizaban al tocar la barra, y a una no vecina se iba con un fundido). Ahora la pestaña cambia SOLO al tocar la barra (arrastrar hacia los costados no hace nada: lo que se desliza DENTRO de una página sigue igual) y
  * SIEMPRE con el mismo fundido, el «fade through» de Material, vecina o no (Tarea 184): la página de ahora se desvanece ([NubiMotion.TAB_FADE_OUT_MS], acelera), en lo más transparente se cambia de página de golpe y entra la nueva con un fundido y una escala de
@@ -75,29 +115,10 @@ fun TabHost(currentTab: AppTab, modifier: Modifier = Modifier, fade: TabFade = r
   var shown by remember { mutableStateOf(currentTab) }                     // la pestaña que se ve (sigue a currentTab, pero en lo más transparente del fundido)
   val visited = remember { mutableStateListOf(currentTab) }                // las que ya se compusieron: quedan compuestas
   LaunchedEffect(currentTab) {
-    if (currentTab == shown) {
-      // ya se ve (lo normal al abrir), o se tocó otra y se volvió a esta a mitad del fundido de salida: las páginas vuelven a su opacidad y escala, rápido
-      if (fade.alpha.value != 1f || fade.scale.value != 1f) coroutineScope {
-        launch { fade.scale.animateTo(1f, tween(NubiMotion.STATE_FAST_MS)) }
-        fade.alpha.animateTo(1f, tween(NubiMotion.STATE_FAST_MS))
-      }
-      return@LaunchedEffect
-    }
-    if (reduce) {
-      fade.alpha.snapTo(1f); fade.scale.snapTo(1f)
+    if (currentTab == shown) { fade.settle(); return@LaunchedEffect }                              // ya se ve (lo normal al abrir), o se tocó otra y se volvió a esta a mitad del fundido de salida
+    fade.fadeThrough(reduce) {                                                                      // sale la de ahora, se cambia en lo más transparente (nunca se ve pasar la del medio) y entra la nueva
       if (currentTab !in visited) visited.add(currentTab)
       shown = currentTab
-      return@LaunchedEffect
-    }
-    fade.scale.snapTo(1f)
-    fade.alpha.animateTo(0f, tween(NubiMotion.TAB_FADE_OUT_MS, easing = FastOutLinearInEasing))     // sale la página de ahora (acelera)…
-    if (currentTab !in visited) visited.add(currentTab)
-    shown = currentTab                                                                              // …en lo más transparente se cambia de página, de golpe: nunca se ve pasar la del medio…
-    withFrameNanos { }; withFrameNanos { }                                                          // …el cuadro pesado (componer y medir la página nueva) pasa con todo transparente…
-    fade.scale.snapTo(NubiMotion.TAB_FADE_MIN_SCALE)
-    coroutineScope {                                                                                // …y entra la nueva con un fundido y una escala mínima (frena)
-      launch { fade.scale.animateTo(1f, tween(NubiMotion.TAB_FADE_IN_MS, easing = LinearOutSlowInEasing)) }
-      fade.alpha.animateTo(1f, tween(NubiMotion.TAB_FADE_IN_MS, easing = LinearOutSlowInEasing))
     }
   }
   LaunchedEffect(warmUp) {

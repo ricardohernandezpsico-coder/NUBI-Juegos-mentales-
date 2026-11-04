@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -98,7 +99,8 @@ fun SettingsPanel(viewModel: NeuroVidaViewModel, onClose: () -> Unit, modifier: 
  * (`LocalBarInset`). Cuando las ligas vuelvan (`Features.LEAGUES`), «Tu liga» va aquí, donde ya estaba en el perfil; hoy no se ve.
  */
 @Composable
-fun TuScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) {
+fun TuScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier, onBack: (() -> Unit)? = null) {
+  if (onBack != null) BackHandler(onBack = onBack)                                  // Atrás vuelve a la pestaña de donde se abrió Tú (Tarea 225)
   val userSettings by viewModel.userSettings.collectAsState()
   val streak by viewModel.currentStreak.collectAsState()
   val history by viewModel.gameHistory.collectAsState()
@@ -122,7 +124,8 @@ fun TuScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier) {
   }
 
   Column(modifier.fillMaxSize().padding(bottom = com.example.ui.components.LocalBarInset.current)) {      // la franja de la barra de pestañas queda libre
-  Row(Modifier.fillMaxWidth().padding(start = 20.dp, end = 16.dp, top = 8.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+  Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(start = if (onBack != null) 4.dp else 20.dp, end = 16.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+    if (onBack != null) com.example.ui.components.VolverButton(onClick = onBack, modifier = Modifier.padding(end = 4.dp))          // el «‹» de 48 dp arriba a la izquierda (Tarea 225)
     com.example.ui.components.OnBoardText("Tú", color = Color(0xFFEAF0FF), fontSize = 26.sp, fontWeight = FontWeight.Bold, fontFamily = com.example.ui.theme.TitleFamily, modifier = Modifier.semantics { heading() }.testTag("tu_title"))
   }
   LazyColumn(

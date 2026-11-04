@@ -142,7 +142,7 @@ class TabHostTest {
   private val tabs = AppTab.entries
 
   @Test
-  fun entre_cualquier_par_de_pestanas_es_el_mismo_fundido_de_300_ms_vecinas_o_no() {
+  fun entre_cualquier_par_de_las_cuatro_pestanas_es_el_mismo_fundido_de_300_ms_vecinas_o_no() {
     show()
     var transitions = 0
     for (src in tabs) for (dst in tabs) {
@@ -166,7 +166,7 @@ class TabHostTest {
       assertEquals("$label: al final solo se ve la de destino", setOf(dst), fr.last().active)
       assertEquals(dst, tab)
     }
-    assertEquals("se probaron los 20 pares", 20, transitions)
+    assertEquals("se probaron los 12 pares de las cuatro pestañas", 12, transitions)
   }
 
   /** La primera visita sin tirón: con la app lista, las pestañas que faltan se componen escondidas, de a una, mientras se mira Hoy; al tocarlas ya están y no se vuelven a crear. */
@@ -177,14 +177,14 @@ class TabHostTest {
     assertEquals("antes del tiempo de espera solo está Hoy", setOf(AppTab.HOY), live)
     val seen = mutableListOf<Set<AppTab>>()
     var t = 0L
-    while (t < 5 * TAB_WARM_GAP_MS + 1500) { rule.mainClock.advanceTimeBy(16); t += 16; if (seen.isEmpty() || seen.last() != live.toSet()) seen += live.toSet() }
-    assertEquals("se compusieron las cinco, una por vez (cada paso suma UNA)", listOf(1, 2, 3, 4, 5), seen.map { it.size })
+    while (t < 4 * TAB_WARM_GAP_MS + 1500) { rule.mainClock.advanceTimeBy(16); t += 16; if (seen.isEmpty() || seen.last() != live.toSet()) seen += live.toSet() }
+    assertEquals("se compusieron las cuatro, una por vez (cada paso suma UNA)", listOf(1, 2, 3, 4), seen.map { it.size })
     assertEquals("y solo Hoy está a la vista", setOf(AppTab.HOY), snapshot(0).active)
     rule.onAllNodesWithText("página 1").assertCountEquals(0)                                           // las calentadas no se leen
     val creations = created.toMap()
-    for (to in listOf(AppTab.JUEGOS, AppTab.CONTRARRELOJ, AppTab.PROGRESO, AppTab.TU)) goTo(to)
+    for (to in listOf(AppTab.JUEGOS, AppTab.CONTRARRELOJ, AppTab.PROGRESO)) goTo(to)
     assertEquals("tocar una pestaña calentada no la crea de nuevo", creations, created.toMap())
-    assertEquals(setOf(AppTab.TU), snapshot(0).active)
+    assertEquals(setOf(AppTab.PROGRESO), snapshot(0).active)
   }
 
   @Test
@@ -197,9 +197,9 @@ class TabHostTest {
   @Test
   fun una_pestana_que_no_es_vecina_nunca_compone_las_del_medio() {
     show()
-    goTo(AppTab.TU)
-    assertEquals("de Hoy a Tú solo se compusieron esas dos", setOf(AppTab.HOY, AppTab.TU), live)
-    for (middle in listOf(AppTab.JUEGOS, AppTab.CONTRARRELOJ, AppTab.PROGRESO)) assertFalse("$middle no llegó a crearse", middle in created)
+    goTo(AppTab.PROGRESO)
+    assertEquals("de Hoy a Avance solo se compusieron esas dos", setOf(AppTab.HOY, AppTab.PROGRESO), live)
+    for (middle in listOf(AppTab.JUEGOS, AppTab.CONTRARRELOJ)) assertFalse("$middle no llegó a crearse", middle in created)
   }
 
   @Test
@@ -213,11 +213,11 @@ class TabHostTest {
   @Test
   fun con_quitar_animaciones_cambia_de_golpe_sin_fundido() {
     show(reduce = true)
-    tap(AppTab.TU)
+    tap(AppTab.PROGRESO)
     val fr = frames(160)
     for (f in fr) { assertEquals("sin fundido a los ${f.ms} ms", 1f, f.alpha, 0f); assertEquals(1f, f.scale, 0f) }
-    assertEquals("de golpe: a los 48 ms ya se ve Tú", setOf(AppTab.TU), fr.first { it.ms >= 48 }.active)
-    assertEquals(AppTab.TU, tab)
+    assertEquals("de golpe: a los 48 ms ya se ve Avance", setOf(AppTab.PROGRESO), fr.first { it.ms >= 48 }.active)
+    assertEquals(AppTab.PROGRESO, tab)
   }
 
   @Test
@@ -281,11 +281,11 @@ class TabHostTest {
     goTo(AppTab.HOY)
     goTo(AppTab.JUEGOS)
     goTo(AppTab.CONTRARRELOJ)
-    goTo(AppTab.TU); goTo(AppTab.JUEGOS)
+    goTo(AppTab.PROGRESO); goTo(AppTab.JUEGOS)
     assertEquals("Juegos recuerda lo suyo", 7, remembered.getValue(AppTab.JUEGOS).intValue)
     assertEquals("Contrarreloj recuerda lo suyo", 3, remembered.getValue(AppTab.CONTRARRELOJ).intValue)
     for ((t, n) in created) assertEquals("$t se creó UNA sola vez (volver no la recompone desde cero)", 1, n)
-    assertEquals("las visitadas siguen compuestas, escondidas", setOf(AppTab.HOY, AppTab.JUEGOS, AppTab.CONTRARRELOJ, AppTab.TU), live)
+    assertEquals("las visitadas siguen compuestas, escondidas", setOf(AppTab.HOY, AppTab.JUEGOS, AppTab.CONTRARRELOJ, AppTab.PROGRESO), live)
     assertEquals("pero solo la de ahora está a la vista", setOf(AppTab.JUEGOS), snapshot(0).active)
   }
 
@@ -323,13 +323,13 @@ class TabHostTest {
   @Test
   fun tocar_otra_pestana_y_arrepentirse_a_mitad_del_fundido_de_salida_vuelve_sin_cambiar_de_pagina_ni_dejarla_a_medias() {
     show()
-    tap(AppTab.TU)
+    tap(AppTab.PROGRESO)
     val salida = frames(48)                                                                            // la página de Hoy se está desvaneciendo y todavía no se cambió
     assertEquals(setOf(AppTab.HOY), salida.last().active)
     assertTrue("a medio fundido (${salida.last().alpha})", salida.last().alpha < 1f)
     tap(AppTab.HOY)
     val fr = frames(480)
-    assertFalse("Tú nunca llegó a crearse", AppTab.TU in created)
+    assertFalse("Avance nunca llegó a crearse", AppTab.PROGRESO in created)
     assertTrue("y siempre se vio Hoy", fr.all { it.active == setOf(AppTab.HOY) })
     assertEquals("la página vuelve a su opacidad", 1f, fr.last().alpha, 0f)
     assertEquals(1f, fr.last().scale, 0f)

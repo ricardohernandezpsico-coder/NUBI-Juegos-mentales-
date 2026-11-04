@@ -138,7 +138,7 @@ class Tarea185CapturasTest {
               when (scene) {
                 "tu" -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) {
                   CompositionLocalProvider(LocalBarInset provides 88.dp) { Box(top) { TuScreen(viewModel = vm!!) } }
-                  NeuroNavBar(current = AppTab.TU, onSelect = {}, modifier = Modifier.align(Alignment.BottomCenter))
+                  NeuroNavBar(current = AppTab.PROGRESO, onSelect = {}, modifier = Modifier.align(Alignment.BottomCenter))
                 }
                 "ajustes" -> Box(top) { SettingsPanel(viewModel = vm!!, onClose = {}) }
                 "fuentes" -> Box(top) { FuentesPanel(onClose = {}) }

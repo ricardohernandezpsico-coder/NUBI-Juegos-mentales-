@@ -635,7 +635,7 @@ class GameFlowTest {
     vm.setTab(AppTab.PROGRESO)
     assertEquals(AllGamesState(area = "LENGUAJE", query = "est", mark = null), vm.allGames.value)
     vm.setTab(AppTab.JUEGOS)
-    vm.setTab(AppTab.TU)
+    vm.openTu(); vm.closeTu()                                         // (Tú ya no es una pestaña: Tarea 225)
     vm.setTab(AppTab.HOY)
     assertEquals("ni yendo a Tú ni a Hoy", AllGamesState(area = "LENGUAJE", query = "est", mark = null), vm.allGames.value)
   }

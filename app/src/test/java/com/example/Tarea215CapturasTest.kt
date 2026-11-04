@@ -162,7 +162,7 @@ class Tarea215CapturasTest {
   @Test fun antes_360_13() = bar(360, 1.3f, false, AppTab.HOY)
   @Test fun ahora_360_13() = bar(360, 1.3f, true, AppTab.CONTRARRELOJ)
   @Test fun barra_ahora_360_hoy_10() { bar(360, 1f, true, AppTab.HOY) }
-  @Test fun barra_ahora_360_tu_13() { bar(360, 1.3f, true, AppTab.TU) }
+  @Test fun barra_ahora_360_tu_13() { bar(360, 1.3f, true, AppTab.PROGRESO) }
 
   // ---------------------------------------------------------------- la pestaña
 

@@ -26,15 +26,14 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
 /**
- * Las 5 pestañas (Tarea 220, 3-nov; antes 4, Tarea 215; antes 3, Tarea 158): Hoy (jugar: la ruta del día y el Contrarreloj de hoy), Juegos (los 17, con su buscador: «Todos los juegos» vuelve a ser pestaña por decisión de Ricardo), Contrarreloj (¿cuál es mi marca y dónde quedo?), Avance (cómo voy en las cuatro áreas)
- * y Tú (lo mío: tu nombre, tus medallas y los Ajustes). El orden es el de la barra (`ordinal`). Desde la Tarea 224 (4-nov) no hay pager: la pestaña cambia SOLO al tocar la barra y siempre con el mismo fundido de 300 ms (`TabHost`; antes las vecinas se pasaban deslizando).
+ * Las 4 pestañas desde la Tarea 225 (4-nov; «Tú» salió de la barra y pasó a un botón redondo arriba a la derecha, `viewModel.tuOpen`; antes 5, Tarea 220; antes 4, Tarea 215; antes 3, Tarea 158): Hoy (jugar: la ruta del día y el Contrarreloj de hoy), Juegos (los 17, con su buscador: «Todos los juegos» vuelve a ser pestaña por decisión de Ricardo), Contrarreloj (¿cuál es mi marca y dónde quedo?), Avance (cómo voy en las cuatro áreas)
+ * (y Tú, lo mío —tu nombre, tus medallas y los Ajustes—, ya no es una pestaña: se abre a pantalla completa desde el botón de arriba a la derecha). El orden es el de la barra (`ordinal`). Desde la Tarea 224 (4-nov) no hay pager: la pestaña cambia SOLO al tocar la barra y siempre con el mismo fundido de 300 ms (`TabHost`; antes las vecinas se pasaban deslizando).
  */
 enum class AppTab(val title: String) {
   HOY("Hoy"),
   JUEGOS("Juegos"),
   CONTRARRELOJ("Contrarreloj"),
-  PROGRESO("Avance"),
-  TU("Tú")
+  PROGRESO("Avance")
 }
 
 /** Lo que se abre encima de una pestaña como panel: los Ajustes (desde «Tú»). El Perfil ya no es un panel: es la pestaña «Tú» (Tarea 158). */
@@ -335,6 +334,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     setFlight(null)
     // También se cierra el panel de arriba (Ajustes / Perfil): si el inicio se abrió desde ahí (Debug «Repetir el inicio»), si no seguiría tapando Hoy.
     _topPanel.value = null
+    _tuOpen.value = false
     setTab(AppTab.HOY)
     // Tarea 193 (Ricardo, 30-oct): en el Primer vuelo COMPLETO se celebra SOLO «Primer paso»; «Día completo» y «Mente completa» se ganan igual (ya están guardadas) y quedan en Tú › Medallas. Si «Primer paso» no está entre las nuevas, no se celebra ninguna.
     // «Repetir la evaluación» (solo juegos) queda como estaba.
@@ -478,11 +478,22 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   fun openTopPanel(panel: TopPanel?) { _topPanel.value = panel }
 
   /**
+   * Tú abierto a pantalla completa, sin la barra (Tarea 225, 4-nov, decisión de Ricardo: «Tú» ya no es una pestaña: es un botón redondo arriba a la derecha). La pestaña de donde se abrió no cambia (`currentTab`): al cerrar se vuelve a ella en la misma posición (`KeepTabsState`).
+   * Los paneles que se abren desde Tú (Ajustes, «En qué se basa Nubilus», «Preguntas frecuentes», «De dónde sale la referencia») van ENCIMA de Tú y al cerrarse vuelven a Tú; los que se abren desde otra pestaña (la referencia del Contrarreloj) vuelven a esa pestaña.
+   */
+  private val _tuOpen = MutableStateFlow(false)
+  val tuOpen: StateFlow<Boolean> = _tuOpen.asStateFlow()
+
+  fun openTu() { _tuOpen.value = true }
+  fun closeTu() { _tuOpen.value = false }
+
+  /**
    * Cambia de pestaña (barra de abajo, deslizar, «Ver en Tú» desde Avance). Lo abierto sobre una pestaña (la página de un área en Avance) no sigue abierto al cambiar: la única forma de volver a ello es cerrar el resultado de un juego lanzado desde ahí ([closeGameOrResult], que no pasa por aquí).
    * La pestaña Juegos NO es una «ventana abierta» (Tarea 220): su búsqueda, su chip y su fila marcada se quedan donde estaban.
    */
   fun setTab(tab: AppTab) {
     clearOpenSheets()
+    _tuOpen.value = false
     _currentTab.value = tab
     _activeGame.value = null
     _lastResult.value = null
@@ -1141,6 +1152,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
       _achievementQueue.value = emptyList()
       flightAchievements = emptyList()
       _topPanel.value = null
+      _tuOpen.value = false
       setFlight(null)
       pausedGame = null
       GameSessionStore.clearAll()

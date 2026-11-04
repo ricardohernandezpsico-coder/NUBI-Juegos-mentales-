@@ -165,6 +165,5 @@ private val TABS = listOf(
   NavTab(AppTab.HOY, "Hoy", NavIcon.ISLA),
   NavTab(AppTab.JUEGOS, "Juegos", NavIcon.CASILLAS),
   NavTab(AppTab.CONTRARRELOJ, "Contrarreloj", NavIcon.CRONOMETRO),
-  NavTab(AppTab.PROGRESO, "Avance", NavIcon.BARRAS),
-  NavTab(AppTab.TU, "Tú", NavIcon.PERSONA)
+  NavTab(AppTab.PROGRESO, "Avance", NavIcon.BARRAS)
 )
