@@ -32,7 +32,6 @@ import com.example.model.UserSettings
 import com.example.ui.components.BoardBackground
 import com.example.ui.components.LocalBarInset
 import com.example.ui.components.LocalReduceMotion
-import com.example.ui.components.LocalTabSwipeLock
 import com.example.ui.components.NeuroNavBar
 import com.example.ui.screens.FirstFlightScreen
 import com.example.ui.screens.FlightActions
@@ -134,7 +133,7 @@ class Tarea185CapturasTest {
         NeuroVidaTheme {
           Box(Modifier.width(393.dp).height(frameH.dp).testTag("frame")) {
             BoardBackground()
-            CompositionLocalProvider(LocalTabSwipeLock provides remember { androidx.compose.runtime.mutableIntStateOf(0) }) {
+            run {
               val top = Modifier.padding(top = 24.dp)
               when (scene) {
                 "tu" -> Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) {

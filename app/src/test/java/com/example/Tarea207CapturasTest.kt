@@ -163,7 +163,7 @@ class Tarea207CapturasTest {
     vm.setPlus(false)
     rule.mainClock.autoAdvance = true
     rule.setContent {
-      CompositionLocalProvider(LocalReduceMotion provides true, com.example.ui.components.LocalTabSwipeLock provides remember { mutableIntStateOf(0) }) {
+      CompositionLocalProvider(LocalReduceMotion provides true) {
         NeuroVidaTheme { Box(Modifier.width(393.dp).height(873.dp)) { BoardBackground(); ProgressScreen(viewModel = vm) } }
       }
     }

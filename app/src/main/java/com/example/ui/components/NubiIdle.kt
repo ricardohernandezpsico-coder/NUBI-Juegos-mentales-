@@ -74,6 +74,7 @@ class NubiIdleState internal constructor(private val float: State<Float>, privat
 fun rememberNubiIdle(active: () -> Boolean = { true }): NubiIdleState {
   val reduce = rememberReduceMotion()
   val isActive = rememberUpdatedState(active)
+  val tabActive = rememberUpdatedState(LocalTabActive.current)         // Tarea 224: con la pestaña escondida (compuesta pero fuera de la vista) Nubi no pide cuadros por nada
   val float = remember { mutableFloatStateOf(0f) }
   val closed = remember { mutableFloatStateOf(0f) }
   LaunchedEffect(reduce) {
@@ -84,14 +85,15 @@ fun rememberNubiIdle(active: () -> Boolean = { true }): NubiIdleState {
     val random = Random(NubiIdle.seedForTests ?: System.nanoTime())
     launch {
       var weight = 0f; var last = -1L        // cuánto del vaivén se ve: 1 en reposo, 0 mientras salta o mira un lugar
-      while (true) infinite {
-        withFrameMillis { t ->
+      while (true) {
+        if (!tabActive.value) { weight = 0f; last = -1L; float.floatValue = 0f; infinite { delay(100) }; continue }       // escondida: quieta, sin cuadros; al volver el vaivén arranca suave
+        infinite { withFrameMillis { t ->
           val dt = if (last < 0L) 0L else t - last; last = t
           val target = if (isActive.value()) 1f else 0f
           val step = dt / NubiIdle.CALM_MS.toFloat()
           weight = if (weight < target) minOf(target, weight + step) else maxOf(target, weight - step)
           float.floatValue = NubiIdle.floatDp(t) * weight
-        }
+        } }
       }
     }
     suspend fun blink() {
@@ -110,7 +112,7 @@ fun rememberNubiIdle(active: () -> Boolean = { true }): NubiIdleState {
     var n = 0
     while (true) {
       infinite { delay(NubiIdle.waitMs(random)) }
-      while (!isActive.value()) infinite { delay(100) }          // nunca parpadea mientras mira un lugar o salta: espera a que termine
+      while (!isActive.value() || !tabActive.value) infinite { delay(100) }          // nunca parpadea mientras mira un lugar o salta, ni con la pestaña escondida: espera a que termine o a que vuelva
       n++
       blink()
       if (NubiIdle.isDouble(n)) { delay(NubiIdle.DOUBLE_GAP_MS); blink() }

@@ -154,7 +154,7 @@ class LigasFueraDeLaVistaTest {
     val vm = NeuroVidaViewModel(app).also { viewModels.add(it) }
     composeTestRule.setContent {
       NeuroVidaTheme {
-        CompositionLocalProvider(com.example.ui.components.LocalTabSwipeLock provides remember { mutableIntStateOf(0) }) {
+        run {
           Box(Modifier.width(393.dp).height(4000.dp)) { show(vm) }
         }
       }

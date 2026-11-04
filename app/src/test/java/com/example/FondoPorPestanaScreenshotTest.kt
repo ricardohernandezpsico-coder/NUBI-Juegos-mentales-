@@ -22,7 +22,6 @@ import com.example.model.GamePlayResult
 import com.example.model.GameRegistry
 import com.example.model.UserSettings
 import com.example.ui.components.BoardBackground
-import com.example.ui.components.LocalTabSwipeLock
 import com.example.ui.screens.TuScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.ProgressScreen
@@ -91,7 +90,7 @@ class FondoPorPestanaScreenshotTest {
       NeuroVidaTheme {
         Box(Modifier.width(393.dp).height(873.dp)) {
           BoardBackground()
-          CompositionLocalProvider(LocalTabSwipeLock provides remember { mutableIntStateOf(0) }) {
+          run {
             Box(Modifier.padding(top = 24.dp, bottom = 163.dp)) {
               when (page.intValue) {
                 0 -> HomeScreen(viewModel = vm)

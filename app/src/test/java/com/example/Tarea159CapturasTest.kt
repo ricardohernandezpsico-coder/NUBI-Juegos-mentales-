@@ -36,7 +36,6 @@ import com.example.model.GameRegistry
 import com.example.model.UserSettings
 import com.example.ui.components.BoardBackground
 import com.example.ui.components.LocalBarInset
-import com.example.ui.components.LocalTabSwipeLock
 import com.example.ui.components.NeuroNavBar
 import com.example.ui.screens.GameSheetContent
 import com.example.ui.screens.HomeScreen
@@ -138,7 +137,7 @@ class Tarea159CapturasTest {
           NeuroVidaTheme {
             Box(Modifier.width(393.dp).height(height.dp).testTag("frame")) {
               BoardBackground()
-              CompositionLocalProvider(LocalTabSwipeLock provides remember { mutableIntStateOf(0) }) {
+              run {
                 val inset = with(LocalDensity.current) { if (barPx > 0) barPx.toDp() else barDp.dp }
                 Box(Modifier.fillMaxSize().padding(bottom = 48.dp)) {
                   CompositionLocalProvider(LocalBarInset provides inset) {

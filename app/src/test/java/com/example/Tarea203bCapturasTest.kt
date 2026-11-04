@@ -189,7 +189,7 @@ class Tarea203bCapturasTest {
     rule.mainClock.autoAdvance = true
     rule.setContent {
       val base = LocalDensity.current
-      CompositionLocalProvider(LocalDensity provides Density(base.density, scale), LocalReduceMotion provides true, com.example.ui.components.LocalTabSwipeLock provides remember { mutableIntStateOf(0) }) {
+      CompositionLocalProvider(LocalDensity provides Density(base.density, scale), LocalReduceMotion provides true) {
         NeuroVidaTheme { Box(Modifier.width(393.dp).height(873.dp)) { BoardBackground(); ProgressScreen(viewModel = vm) } }
       }
     }

@@ -47,7 +47,6 @@ import com.example.ui.components.AchievementOverlay
 import com.example.ui.components.BoardBackground
 import com.example.ui.components.LocalBarInset
 import com.example.ui.components.LocalReduceMotion
-import com.example.ui.components.LocalTabSwipeLock
 import com.example.ui.components.NeuroNavBar
 import com.example.ui.screens.FirstFlightScreen
 import com.example.ui.screens.FlightActions
@@ -183,7 +182,7 @@ class AppActualScreenshotTest {
           NeuroVidaTheme {
             Box(Modifier.width(393.dp).height(frameH.dp).testTag("frame")) {
               BoardBackground()                       // un solo cielo, también en el Primer vuelo (Tarea 147, P2)
-              CompositionLocalProvider(LocalTabSwipeLock provides remember { mutableIntStateOf(0) }) {
+              run {
                 // el margen de las barras del sistema: 24 dp arriba y 48 abajo (y la barra de pestañas en las tres pantallas principales)
                 val top = Modifier.padding(top = 24.dp)
                 val barInset = with(LocalDensity.current) { if (barPx > 0) barPx.toDp() else BAR_DP.dp }

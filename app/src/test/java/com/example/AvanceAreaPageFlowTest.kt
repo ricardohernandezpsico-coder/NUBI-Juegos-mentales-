@@ -103,7 +103,7 @@ class AvanceAreaPageFlowTest {
   private fun show(vm: NeuroVidaViewModel, heightDp: Int = 873) {
     rule.setContent {
       NeuroVidaTheme {
-        CompositionLocalProvider(LocalReduceMotion provides true, com.example.ui.components.LocalTabSwipeLock provides remember { mutableIntStateOf(0) }) {
+        CompositionLocalProvider(LocalReduceMotion provides true) {
           Box(Modifier.width(393.dp).height(heightDp.dp)) { ProgressScreen(viewModel = vm) }
         }
       }

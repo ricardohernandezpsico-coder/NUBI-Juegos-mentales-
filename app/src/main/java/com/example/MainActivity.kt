@@ -25,7 +25,6 @@ import com.example.bridge.NativeReceiver
 import com.example.bridge.UnityGameLauncher
 import com.example.games.*
 import com.example.ui.components.hiddenUntil
-import com.example.ui.components.tabFade
 import com.example.ui.i18n.LocalAppLanguage
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.ProgressScreen
@@ -134,15 +133,8 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
   val sessionSummary by viewModel.sessionSummary.collectAsState()
   val topPanel by viewModel.topPanel.collectAsState()
   val lang = com.example.ui.i18n.LocalAppLanguage.current
-  // Ventanas abiertas sobre una pestaña (la de un área, un detalle): mientras haya alguna, el dedo no cambia de
-  // pestaña y la barra de abajo se esconde (la ventana tapa toda la pantalla y se cierra con su X o con Atrás).
-  val swipeLock = remember { androidx.compose.runtime.mutableIntStateOf(0) }
-  // Pestañas que se pasan deslizando con el dedo (29-sep, pedido de Ricardo), sincronizadas con la barra de abajo.
-  val tabs = AppTab.entries
-  // El pager y su sincronía con la pestaña del ViewModel viven en `rememberTabPager` (Tarea 142); la barra lee el pager EN VIVO (`PagerNavBar`), no la pestaña ya asentada del ViewModel. Entre pestañas que no son vecinas
-  // (Hoy ↔ Contrarreloj, Hoy ↔ Tú...) no desliza: hace un fundido, para no ver pasar la del medio (Tarea 184, `tabFade`).
-  val tabPager = com.example.ui.components.rememberTabPager(currentTab) { viewModel.setTab(it) }
-  val pagerState = tabPager.state
+  val startupReady = viewModel.startupStage.collectAsState().value == com.example.viewmodel.StartupStage.READY          // con la app lista, `TabHost` va componiendo las pestañas que faltan mientras se mira Hoy
+  // Las pestañas cambian SOLO al tocar la barra (Tarea 224, 4-nov: antes también se pasaban deslizando, y a las vecinas se iba deslizando) y siempre con el mismo fundido: vive en `TabHost`, y la barra marca la pestaña del ViewModel de una vez.
   // Tras la primera celebración de una partida, las siguientes (más logros) aparecen enseguida.
   var celebratedOne by remember(lastResult) { mutableStateOf(false) }
   // La guía de Nubi en la primera entrada a Hoy (Tarea 193, `HoyGuide`): dónde están los elementos que ilumina (los publican Hoy y la barra) y en qué paso va (vive en el ViewModel).
@@ -152,14 +144,14 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
 
   androidx.compose.runtime.CompositionLocalProvider(com.example.ui.components.LocalGuideTargets provides guideTargets) {
   Box(modifier = Modifier.fillMaxSize()) {
-    // El fondo de toda la app: el tablero azul marino de la isla (Tarea 82). Una sola capa detrás del pager: al deslizar entre Hoy, Avance y Tú no salta.
+    // El fondo de toda la app: el tablero azul marino de la isla (Tarea 82). Una sola capa detrás de las pestañas: al cambiar de pestaña no salta.
     // La lámina y los luceros, fijos detrás de las tres pestañas (Tarea 87: sin fundido por pestaña).
     com.example.ui.components.BoardBackground()
     // La barra de pestañas es una capa FIJA encima de las páginas (Tarea 123): no es el `bottomBar` de un Scaffold, así que NO se encoge cuando se abre una lámina o una ventana (que la tapan) y las páginas no saltan; tampoco hay
     // desvanecido de página (`PAGE_BOTTOM_FADE` se quitó): cada pestaña deja la franja de la barra libre con `LocalBarInset` y su contenido termina nítido sobre ella. La barra tiene su propio inset (las barras del sistema).
     val barVisible = activeGame == null && lastResult == null && promotion == null && achievementQueue.isEmpty() && sessionSummary == null && topPanel == null
-    // La guía solo vive sobre Hoy a la vista, sin nada encima y sin que el dedo esté pasando de pestaña (con una ventana abierta, `swipeLock` > 0).
-    val hoyFree = barVisible && swipeLock.intValue == 0 && pagerState.currentPage == AppTab.HOY.ordinal && !pagerState.isScrollInProgress
+    // La guía solo vive sobre Hoy a la vista y sin nada encima.
+    val hoyFree = barVisible && currentTab == AppTab.HOY
     val guideOpen = guideStep != null && hoyFree
     val density = androidx.compose.ui.platform.LocalDensity.current
     // Lo que mide la barra: se recuerda aunque se esconda (la página no cambia de tamaño al abrir o cerrar una ventana).
@@ -173,25 +165,16 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
       Box(modifier = Modifier.fillMaxSize()) {
         // Content based on tab. Mientras hay un juego o un resultado encima no se compone: esas pantallas van
         // sobre el cielo transparente (se vería la pestaña detrás) y no deben dejar pasar toques a ella.
-        // `KeepTabsState` (Tarea 209b): al esconder el pager guarda el deslizado de cada página y lo devuelve al volver (de «De dónde sale la referencia», de «En qué se basa Nubilus», de un juego...); sin él, la página volvía arriba.
+        // `KeepTabsState` (Tarea 209b): al esconder las pestañas guarda el deslizado de cada página y lo devuelve al volver (de «De dónde sale la referencia», de «En qué se basa Nubilus», de un juego...); sin él, la página volvía arriba.
+        // Al volver, `TabHost` abre en la pestaña del ViewModel, sin fundido.
         com.example.ui.components.KeepTabsState(show = activeGame == null && lastResult == null && sessionSummary == null && topPanel == null) {
-          // Si la pestaña cambió mientras había un juego o el resumen encima, el pager vuelve a ella sin animar.
-          LaunchedEffect(Unit) {
-            if (pagerState.currentPage != currentTab.ordinal) pagerState.scrollToPage(currentTab.ordinal)
-          }
-          androidx.compose.runtime.CompositionLocalProvider(com.example.ui.components.LocalTabSwipeLock provides swipeLock) {
-            androidx.compose.foundation.pager.HorizontalPager(
-              state = pagerState,
-              userScrollEnabled = swipeLock.intValue == 0,
-              modifier = Modifier.fillMaxSize().tabFade(tabPager)
-            ) { page ->
-              when (tabs[page]) {
-                AppTab.HOY -> HomeScreen(viewModel = viewModel)
-                AppTab.JUEGOS -> com.example.ui.screens.AllGamesScreen(viewModel = viewModel)
-                AppTab.CONTRARRELOJ -> com.example.ui.screens.ContrarrelojScreen(viewModel = viewModel)
-                AppTab.PROGRESO -> ProgressScreen(viewModel = viewModel)
-                AppTab.TU -> TuScreen(viewModel = viewModel)
-              }
+          com.example.ui.components.TabHost(currentTab = currentTab, modifier = Modifier.fillMaxSize(), warmUp = startupReady) { tab ->
+            when (tab) {
+              AppTab.HOY -> HomeScreen(viewModel = viewModel)
+              AppTab.JUEGOS -> com.example.ui.screens.AllGamesScreen(viewModel = viewModel)
+              AppTab.CONTRARRELOJ -> com.example.ui.screens.ContrarrelojScreen(viewModel = viewModel)
+              AppTab.PROGRESO -> ProgressScreen(viewModel = viewModel)
+              AppTab.TU -> TuScreen(viewModel = viewModel)
             }
           }
         }
@@ -331,16 +314,10 @@ fun NeuroVidaApp(viewModel: NeuroVidaViewModel) {
         }
       }
       }
-      // La barra: fija, encima de todo lo de las pestañas. Con una lámina o ventana abierta (swipeLock > 0) se desvanece en 150 ms sin cambiar de tamaño (con «quitar animaciones», de golpe).
+      // La barra: fija, encima de todo lo de las pestañas; con una lámina o ventana abierta no está (`barVisible`). Marca la pestaña del ViewModel de una vez, sin esperar al fundido.
       if (barVisible) {
-        val reduceBar = com.example.ui.components.rememberReduceMotion()
-        androidx.compose.animation.AnimatedVisibility(
-          visible = swipeLock.intValue == 0,
-          modifier = Modifier.align(androidx.compose.ui.Alignment.BottomCenter).onSizeChanged { if (it.height > 0) barHeightPx = it.height },
-          enter = if (reduceBar) androidx.compose.animation.EnterTransition.None else androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(com.example.ui.components.NubiMotion.STATE_FAST_MS)),
-          exit = if (reduceBar) androidx.compose.animation.ExitTransition.None else androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(com.example.ui.components.NubiMotion.STATE_FAST_MS))
-        ) {
-          com.example.ui.components.PagerNavBar(tabPager = tabPager, onSelect = { viewModel.setTab(it) })
+        Box(Modifier.align(androidx.compose.ui.Alignment.BottomCenter).onSizeChanged { if (it.height > 0) barHeightPx = it.height }) {
+          com.example.ui.components.NeuroNavBar(current = currentTab, onSelect = { viewModel.setTab(it) })
         }
       }
     }

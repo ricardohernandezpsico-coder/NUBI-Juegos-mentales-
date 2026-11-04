@@ -185,7 +185,7 @@ class RetiredBitacoraTest {
     composeTestRule.setContent {
       NeuroVidaTheme {
         Box(Modifier.width(412.dp).height(915.dp)) {
-          androidx.compose.runtime.CompositionLocalProvider(com.example.ui.components.LocalTabSwipeLock provides androidx.compose.runtime.remember { androidx.compose.runtime.mutableIntStateOf(0) }) {
+          run {
             when (screen.intValue) {
               0 -> HomeScreen(viewModel = vm)
               1 -> TuScreen(viewModel = vm)

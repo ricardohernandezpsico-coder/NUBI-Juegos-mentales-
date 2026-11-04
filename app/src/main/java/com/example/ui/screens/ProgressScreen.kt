@@ -77,7 +77,7 @@ fun ProgressScreen(
   val bestMarks = remember(measures) { StarMeasures.bestMarks(measures) }
   val lastPlayed = remember(history) { history.groupBy { it.gameId }.mapValues { (_, l) -> l.maxOf { it.timestamp } } }
 
-  if (avanceArea != null) BackHandler(onBack = viewModel::closeAvanceArea)        // Atrás cierra la página y vuelve a la lista
+  if (avanceArea != null) BackHandler(enabled = com.example.ui.components.LocalTabActive.current, onBack = viewModel::closeAvanceArea)        // Atrás cierra la página y vuelve a la lista (solo con Avance a la vista: escondida en otra pestaña no atrapa el Atrás, Tarea 224)
 
   Column(modifier.fillMaxSize().padding(bottom = com.example.ui.components.LocalBarInset.current)) {      // la franja de la barra de pestañas queda libre
     val openKey = avanceArea

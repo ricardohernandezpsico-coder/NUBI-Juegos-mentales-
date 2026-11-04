@@ -129,7 +129,7 @@ fun HomeScreen(
     baselineInvite = com.example.data.BaselinePlan.showHomeInvite(baseline != null, history.size, history.minOfOrNull { it.timestamp }, clock),
     timeTrial = timeTrialOf(timeTrialResults, viewModel.todayKey(), lang, plus),
     history = historyList,
-    startupDone = startupStage == com.example.viewmodel.StartupStage.READY
+    onScreen = startupStage == com.example.viewmodel.StartupStage.READY && com.example.ui.components.LocalTabActive.current
   )
   HomeContent(
     ui = ui,
@@ -173,8 +173,8 @@ internal data class HomeUi(
   val timeTrial: HomeTimeTrial? = null,
   /** «Tus últimas partidas» (Tarea 221): las últimas partidas, las más recientes primero (`historyRows`); vacía = Hoy no dibuja la tarjeta. */
   val history: List<com.example.data.HistoryRow> = emptyList(),
-  /** El arranque terminó (los datos de Hoy ya están al día): hasta entonces la llama de hoy no puede «destellar», porque la semana sale vacía un instante (Tarea 223, `rememberTodayGlint`). */
-  val startupDone: Boolean = true
+  /** Hoy está a la vista y el arranque terminó (los datos ya están al día): hasta entonces la llama de hoy no puede «destellar», porque la semana sale vacía un instante, ni destellar con Hoy escondida en otra pestaña (Tareas 223 y 224, `rememberTodayGlint`). */
+  val onScreen: Boolean = true
 ) {
   val completed: Int get() = stops.count { it.state == StopState.DONE }
 }
@@ -286,7 +286,7 @@ internal fun HomeContent(
         "${dateText(ui.now)} · ${Week.caption(ui.lamps.daysPlayed, ui.weeklyGoal)}",
         color = HoySoft, fontSize = 16.sp, lineHeight = 20.sp, modifier = Modifier.padding(start = 20.dp, end = 16.dp, top = 2.dp).testTag("home_date")
       )
-      com.example.ui.components.HoyWeek(ui.lamps, ui.streak, ui.streakNote, streakText = ui.streakText, glintVisible = ui.startupDone)
+      com.example.ui.components.HoyWeek(ui.lamps, ui.streak, ui.streakNote, streakText = ui.streakText, glintVisible = ui.onScreen)
       Spacer(Modifier.height(10.dp))
       if (ui.stops.isNotEmpty() || ui.pausedTitle != null) HoyCard(ui, onPlay = onPlay, onResume = onResume, modifier = Modifier.padding(horizontal = 16.dp))
       HoyBelow(ui, onTimeTrial = onTimeTrial, onLocked = onLocked, onBaseline = onBaseline)

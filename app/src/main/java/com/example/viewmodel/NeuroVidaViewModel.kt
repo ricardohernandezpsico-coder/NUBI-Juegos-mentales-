@@ -27,7 +27,7 @@ import kotlin.coroutines.resume
 
 /**
  * Las 5 pestañas (Tarea 220, 3-nov; antes 4, Tarea 215; antes 3, Tarea 158): Hoy (jugar: la ruta del día y el Contrarreloj de hoy), Juegos (los 17, con su buscador: «Todos los juegos» vuelve a ser pestaña por decisión de Ricardo), Contrarreloj (¿cuál es mi marca y dónde quedo?), Avance (cómo voy en las cuatro áreas)
- * y Tú (lo mío: tu nombre, tus medallas y los Ajustes). El orden es el de la barra y el del pager (`ordinal`): solo las vecinas (Hoy–Juegos, Juegos–Contrarreloj, Contrarreloj–Avance, Avance–Tú) se pasan deslizando; entre las demás hay un fundido, para no ver pasar la del medio (Tarea 184, `TabPager`).
+ * y Tú (lo mío: tu nombre, tus medallas y los Ajustes). El orden es el de la barra (`ordinal`). Desde la Tarea 224 (4-nov) no hay pager: la pestaña cambia SOLO al tocar la barra y siempre con el mismo fundido de 300 ms (`TabHost`; antes las vecinas se pasaban deslizando).
  */
 enum class AppTab(val title: String) {
   HOY("Hoy"),
