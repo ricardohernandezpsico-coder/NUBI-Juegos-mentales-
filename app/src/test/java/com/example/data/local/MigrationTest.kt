@@ -236,4 +236,46 @@ class MigrationTest {
     db.query("SELECT hits, errors FROM time_trial_results WHERE id = 'tt'").use { c -> assertTrue("el Contrarreloj se conserva", c.moveToFirst()); assertEquals(38, c.getInt(0)); assertEquals(4, c.getInt(1)) }
     db.close()
   }
+
+  @Test
+  fun `de la version 18 a la 19 el rating de Carga se lleva a cinco octavos, el nivel y los puntos no cambian y los demas juegos no se tocan`() {
+    helper.createDatabase("migracion19", 18).apply {
+      // alguien en el 4,6 de 5 (rating 0,92), otro en el 2 de 5 (0,4), alguien sin dato (-1), y juegos que NO se alargaron con el mismo rating
+      execSQL("INSERT INTO game_progress (gameId, currentLevel, highestScore, totalGamesPlayed, lastPlayedTimestamp, masteryStreak, eloRating, ddaRating) VALUES ('calculo', 5, 95, 21, 1700000000000, 2, 1300, 0.92)")
+      execSQL("INSERT INTO game_progress (gameId, currentLevel, highestScore, totalGamesPlayed, lastPlayedTimestamp, masteryStreak, eloRating, ddaRating) VALUES ('stroop', 5, 90, 9, 1700000000000, 1, 1100, 0.92)")
+      execSQL("INSERT INTO game_progress (gameId, currentLevel, highestScore, totalGamesPlayed, lastPlayedTimestamp, masteryStreak, eloRating, ddaRating) VALUES ('anagramas', 2, 60, 4, 1700000000000, 0, 1000, 0.4)")
+      execSQL("INSERT INTO game_progress (gameId, currentLevel, highestScore, totalGamesPlayed, lastPlayedTimestamp, masteryStreak, eloRating, ddaRating) VALUES ('radar', 1, 0, 0, 0, 0, 0, -1)")
+      execSQL("INSERT INTO game_results (id, gameId, score, correctAnswers, totalTrials, timed, level, timestamp) VALUES ('vieja', 'calculo', 80, 6, 8, 0, 4, 1700000000000)")
+      close()
+    }
+    val db = helper.runMigrationsAndValidate("migracion19", 19, true, *NeuroVidaDatabase.MIGRATIONS)
+    val rating = mutableMapOf<String, Double>()
+    db.query("SELECT gameId, ddaRating FROM game_progress").use { c -> while (c.moveToNext()) rating[c.getString(0)] = c.getDouble(1) }
+    // 4,6 de 5 queda en el 4,6 de 8 (0,575); el mismo número que calcula la app (Carga.translateOldRating) y la razón de la escalera
+    assertEquals(0.575, rating["calculo"]!!, 1e-4)
+    assertEquals(com.example.data.Carga.translateOldRating(0.92f).toDouble(), rating["calculo"]!!, 1e-4)
+    assertEquals(com.example.data.Skill.ladder("calculo").ratingScale * 0.92, rating["calculo"]!!, 1e-4)
+    assertEquals(0.92, rating["stroop"]!!, 1e-6); assertEquals(0.4, rating["anagramas"]!!, 1e-6); assertEquals(-1.0, rating["radar"]!!, 0.0)
+    // sin perder nada: los puntos (avance anclado a los 5 niveles de antes) y el nivel son los mismos que antes de la migración
+    val age = com.example.model.AgeBand.ADULT
+    val r = rating["calculo"]!!.toFloat()
+    assertEquals("sus puntos no cambian", 0.92f, com.example.data.Skill.progress("calculo", r, age), 1e-4f)
+    assertEquals("su nivel tampoco: el 5", 5, com.example.data.LevelLines.levelOf("calculo", com.example.data.Skill.ladderProgress("calculo", r, age)))
+    db.query("SELECT totalGamesPlayed, highestScore, currentLevel FROM game_progress WHERE gameId = 'calculo'").use { c ->
+      assertTrue(c.moveToFirst()); assertEquals(21, c.getInt(0)); assertEquals(95, c.getInt(1)); assertEquals(5, c.getInt(2))
+    }
+    db.query("SELECT score FROM game_results WHERE id = 'vieja'").use { c -> assertTrue("las partidas se conservan", c.moveToFirst()); assertEquals(80, c.getInt(0)) }
+    db.close()
+  }
+
+  @Test
+  fun `de la version 18 a la 19 Carga sin rating guardado sigue sin rating`() {
+    helper.createDatabase("migracion19b", 18).apply {
+      execSQL("INSERT INTO game_progress (gameId, currentLevel, highestScore, totalGamesPlayed, lastPlayedTimestamp, masteryStreak, eloRating, ddaRating) VALUES ('calculo', 1, 0, 0, 0, 0, 0, -1)")
+      close()
+    }
+    val db = helper.runMigrationsAndValidate("migracion19b", 19, true, *NeuroVidaDatabase.MIGRATIONS)
+    db.query("SELECT ddaRating FROM game_progress WHERE gameId = 'calculo'").use { c -> assertTrue(c.moveToFirst()); assertEquals(-1.0, c.getDouble(0), 0.0) }
+    db.close()
+  }
 }

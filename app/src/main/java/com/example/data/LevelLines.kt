@@ -13,7 +13,10 @@ import java.math.RoundingMode
  * La tarjeta de un juego dice el nivel en su fila «Tu nivel: ya giras piezas de 6 bloques, en giros finos.» ([inRow]); si la medida del juego repite lo mismo en la misma unidad (Rastro y Satélites), la fila de la última partida va sin «Tu mejor marca»: [overlapsMeasure].
  */
 object LevelLines {
-  /** El nivel 1..N de [gameId] donde está [progress] (0..1): `min(N, 1 + floor(N · progress))`. El épsilon evita que 0,25 caiga en el nivel 3 por el redondeo del flotante. */
+  /**
+   * El nivel 1..N de [gameId] donde está [progress] (0..1): `min(N, 1 + floor(N · progress))`. El épsilon evita que 0,25 caiga en el nivel 3 por el redondeo del flotante.
+   * [progress] es el avance sobre la escalera ENTERA ([Skill.ladderProgress], Tarea 233), no el de los puntos ([Skill.progress]): en un juego alargado el de los puntos se queda en 1,0 en el último nivel de la v1 y el nivel no se vería subir.
+   */
   fun levelOf(gameId: String, progress: Float): Int {
     val n = Skill.ladder(gameId).levels
     return (1 + Math.floor(progress.coerceIn(0f, 1f) * n + 1e-4).toInt()).coerceIn(1, n)
@@ -122,8 +125,11 @@ object LevelLines {
   // --- Acoplamiento (12): bloques de la pieza (4 a 7) y el giro máximo (90, 135, luego 180); desde el 5 los giros son finos (DockingContract.cs:67-77)
   private val ACOPLAMIENTO_GIRO = arrayOf("un cuarto de vuelta", "casi media vuelta", "media vuelta", "media vuelta")
 
-  // --- Carga exacta (5): las operaciones (CalculoContract.cs:150-157)
-  private val CARGA = arrayOf("sumas", "sumas y restas", "sumas, restas y multiplicaciones", "las cuatro operaciones", "las cuatro operaciones y más números")
+  // --- Carga exacta (8): las operaciones (CalculoContract.cs:150-157) y, desde el 6 (Tarea 233), las cinco celdas y cuentas más largas; en el 8 las cinco van siempre juntas (sin cifras internas ni probabilidades: nada de «casi siempre»)
+  private val CARGA = arrayOf(
+    "sumas", "sumas y restas", "sumas, restas y multiplicaciones", "las cuatro operaciones", "las cuatro operaciones y más números",
+    "cinco celdas y cuentas largas", "las cinco celdas, con cuentas largas", "las cinco celdas, todas juntas"
+  )
 
   // --- Engranajes (12): piezas y correas (EngranajesContract.cs:187-201)
   private val ENGRANAJES_PIEZAS = intArrayOf(1, 1, 2, 2, 2, 2, 3, 3, 2, 3, 3, 3)

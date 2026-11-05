@@ -188,6 +188,8 @@ namespace NeuroVida.Bridge.EditorTools
             foreach (var card in new[] { ("TarjetasCorreo", "correo"), ("TarjetasParejas", "parejas"), ("TarjetasBodega", "bodega"), ("TarjetasEngranajes", "engranajes") }) list.Add((card.Item1, card.Item2, 45f));
             // «Primera*» (Tarea 191): la primera partida de un juego sin historial (tutorial → tarjetas de la etapa que se pisa → «¡Ya!» → subida desde la etapa 1), con las marcas de «ya visto» en blanco
             foreach (var first in new[] { ("PrimeraCorreo", "correo"), ("PrimeraParejas", "parejas"), ("PrimeraBodega", "bodega"), ("PrimeraEngranajes", "engranajes"), ("PrimeraSatelites", "satelites") }) list.Add((first.Item1, first.Item2, 60f));
+            // Carga exacta en sus tres niveles nuevos (Tarea 233): la partida arranca con el rating de ese nivel (la escalera de 8) y se juega 9 s con todas las guardias (texto, imágenes de fábrica, botones, cinco celdas en una fila)
+            foreach (int lv in new[] { 6, 7, 8 }) list.Add(("CalculoNivel" + lv, "calculo", 9f));
             return list.ToArray();
         }
 
@@ -709,6 +711,7 @@ namespace NeuroVida.Bridge.EditorTools
             EditorPlaytestBootstrap.MailStageOverride = cards ? 10 : 0;                                                      // «Tarjetas*» (Tarea 190d): TODAS las tarjetas «NUEVO» y hojas: Correo a la etapa 10, Constelaciones a la 18, Bodega y Engranajes al nivel 5
             EditorPlaytestBootstrap.ConStageOverride = cards ? 18 : 0;
             EditorPlaytestBootstrap.LevelOverride = cards ? 5 : 0;
+            EditorPlaytestBootstrap.DdaRatingOverride = _current.Name.StartsWith("CalculoNivel") ? (int.Parse(_current.Name.Substring("CalculoNivel".Length)) - 0.5f) / NeuroVida.Games.Calculo.CalculoContract.MaxLevel : -1f;          // «CalculoNivel6…8» (Tarea 233): Carga exacta con el rating de ese nivel de 8; el resto, sin rating forzado
             if (cards) PlayerPrefs.DeleteAll();                                                                              // las tarjetas «NUEVO» salen otra vez aunque ya se hayan visto
             EditorPlaytestBootstrap.TimedOverride = _current.Name == "PilotoReto" || _current.Name == "RadarReto" || _current.Name == "AcoplamientoReto" || _current.Name == "AterrizajeReto";            // el Reto (con reloj) de Piloto; las demás corridas son Precisión
             bool timeTrial = _current.Name.StartsWith("Contrarreloj");

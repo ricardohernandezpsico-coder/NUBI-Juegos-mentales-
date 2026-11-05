@@ -426,6 +426,31 @@ class NeuroVidaRepository(
     skillPrefs.edit().putString("state", state.encode()).apply()
   }
 
+  /**
+   * Al arrancar, UNA sola vez por juego alargado (Tarea 233, `docs/alargar-dificultad.md` §B.1): lo que guarda un rating con la escalera VIEJA y Room no puede traducir (la base sí: `Migration(18, 19)`) son las medidas de `star_measures` (el campo `rating` de cada una,
+   * que se compara con la partida siguiente por «nivel parecido»). Se multiplica por [Ladder.ratingScale] y se anota la versión de escalera en la preferencia `skill` ([SkillState.ladderMarks], que ya va en el respaldo: ninguna preferencia nueva).
+   * La MARCA va primero y con `commit()`: si el proceso muriera entre las dos escrituras, a lo peor las medidas viejas quedarían sin traducir (se comparan peor con las nuevas), nunca se traducirían DOS veces. Una instalación nueva no tiene medidas y solo recibe sus marcas;
+   * «Borrar datos» deja las marcas de ahora (`resetData`), así lo que se juegue después nunca se traduce de más. Un candado (`ladderLock`) evita que dos llamadas a la vez (el arranque y una prueba) traduzcan dos veces. No toca `progress_log`: guarda avance de PUNTOS ya calculado, que no cambia.
+   */
+  suspend fun migrateLadderVersionsIfNeeded() = withContext(Dispatchers.IO) {
+    seedSkillIfNeeded()                                       // si no, escribir la marca crearía `state` y el sembrado de una app muy vieja se saltaría
+    ladderLock.withLock {
+      val state = _skill.value
+      val pending = Skill.ladders.filter { (id, l) -> l.version > state.ladderMark(id) }
+      if (pending.isEmpty()) return@withLock
+      val marked = state.copy(ladderMarks = state.ladderMarks + pending.mapValues { it.value.version })
+      _skill.value = marked
+      skillPrefs.edit().putString("state", marked.encode()).commit()
+      val rescaled = StarMeasures.rescaleRatings(_starMeasures.value, pending.mapValues { it.value.ratingScale })
+      if (rescaled != _starMeasures.value) {
+        _starMeasures.value = rescaled
+        measurePrefs.edit().putString("points", StarMeasures.encode(rescaled)).commit()
+      }
+    }
+  }
+
+  private val ladderLock = kotlinx.coroutines.sync.Mutex()
+
   // Historia del avance de cada juego (ver AreaProgress.kt): con ella Hoy muestra cuánto se movió cada área en la
   // semana. SharedPreferences: solo se agrega (se guardan ~60 días).
   private val progressPrefs = context.getSharedPreferences("progress_log", Context.MODE_PRIVATE)
@@ -568,7 +593,7 @@ class NeuroVidaRepository(
   suspend fun applyPriorIfNeeded(age: AgeBand?, education: Education?) = withContext(Dispatchers.IO) {
     if (_baseline.value != null || profilePrefs.getLong("prior_at", 0L) > 0L) return@withContext
     val prior = priorRating(age, education)
-    seedStartingPoint(GameRegistry.allGames.associate { it.id to prior }) { true }
+    seedStartingPoint(GameRegistry.allGames.associate { it.id to prior * Skill.ratingScale(it.id) }) { true }          // sobre la escalera de cada juego (Tarea 233)
     profilePrefs.edit().putLong("prior_at", System.currentTimeMillis()).apply()
     refreshTodaySession()
   }
@@ -581,7 +606,7 @@ class NeuroVidaRepository(
       val replace = overwrite(p)
       gameProgressDao.insertOrUpdate(
         p.copy(
-          currentLevel = if (replace) levelFromRating(r) else p.currentLevel,
+          currentLevel = if (replace) levelFromRating(r / Skill.ratingScale(id)) else p.currentLevel,          // `currentLevel` (1-5) sigue en la escala de los puntos (Tarea 233)
           ddaRating = if (replace || p.ddaRating < 0f) r.coerceIn(0f, 1f) else p.ddaRating
         )
       )
@@ -804,6 +829,7 @@ class NeuroVidaRepository(
       markLoaded(LOAD_SESSION)                       // el camino de hoy ya es el de la base (lo asigna `initializeDatabaseDefaults`)
       observeDailySession()
       seedAchievementsIfNeeded()
+      migrateLadderVersionsIfNeeded()                // las medidas guardadas con una escalera vieja pasan a la de ahora, una sola vez (Tarea 233)
     }
   }
 
@@ -1058,7 +1084,7 @@ class NeuroVidaRepository(
     val age = activeProfile?.ageBand?.let { n -> AgeBand.entries.firstOrNull { it.name == n } }
     val modePassed = Skill.passed(result.gameId, result.playMode, age, result.modeHits, result.modeTrials)
     val counted = result.endRating != null && Skill.counts(result.playMode, modePassed)
-    val newDdaRating = result.endRating?.let { Skill.nextRating(currentProgress.ddaRating, it, result.playMode, modePassed) }
+    val newDdaRating = result.endRating?.let { Skill.nextRating(currentProgress.ddaRating, it, result.playMode, modePassed, result.gameId) }
       ?: currentProgress.ddaRating
     val expertUnlocked = modePassed && result.playMode == PlayMode.DESAFIO && result.gameId !in _skill.value.expertOpen
     val skillNext = if (counted) {
@@ -1266,8 +1292,9 @@ class NeuroVidaRepository(
     retiredMissionPrefs.edit().clear().apply()
     unclearPrefs.edit().clear().apply()
     _unclearSentences.value = emptyList()
-    skillPrefs.edit().clear().putString("state", "").apply()
-    _skill.value = SkillState()
+    val freshSkill = SkillState(ladderMarks = Skill.currentLadderMarks())           // sin partidas ni medidas: lo que se juegue desde ahora ya va con la escalera de ahora (Tarea 233)
+    skillPrefs.edit().clear().putString("state", freshSkill.encode()).apply()
+    _skill.value = freshSkill
     progressPrefs.edit().clear().apply()
     _progressLog.value = emptyList()
     profilePrefs.edit().clear().apply()

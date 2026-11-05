@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using NUnit.Framework;
+using NeuroVida.Contracts;
 using NeuroVida.Games.Calculo;
 
 namespace NeuroVida.Games.Calculo.Tests
@@ -113,7 +114,7 @@ namespace NeuroVida.Games.Calculo.Tests
         [Test]
         public void NoRepeatedLoads_InAGame_AndNoTwoInARowWithTheSameNumber()
         {
-            for (int level = 1; level <= 5; level++)
+            for (int level = 1; level <= CalculoContract.MaxLevel; level++)
             {
                 var director = new CargaDirector(Rng(level));
                 var seen = new HashSet<string>();
@@ -139,6 +140,137 @@ namespace NeuroVida.Games.Calculo.Tests
                 Assert.GreaterOrEqual(p.Target, CalculoContract.MinTarget);
                 Assert.IsTrue(System.Array.IndexOf(p.Cells, p.Target) < 0);
             }
+        }
+
+        // ------------------------------------------------------------------ la escalera de 8 niveles (Tarea 233, docs/alargar-dificultad.md §B.2)
+
+        [Test]
+        public void TheLadderGrewFromFiveToEight_AndTheFirstFiveLevelsDidNotChange()
+        {
+            Assert.AreEqual(8, CalculoContract.MaxLevel);
+            Assert.AreEqual(5, CalculoContract.V1MaxLevel, "el largo de antes: ancla los puntos de la app (Skill.Ladder.pointsLevels) y reparte el nivel elegido de quien no tiene rating");
+            Assert.AreEqual(8, CalculoContract.Levels.Length);
+            // los cinco de la v1, tal cual: { celdas mín., máx., se juntan mín., máx., número máx., «usa todas» en %, camino más corto mín. }
+            int[][] v1 =
+            {
+                new[] { 3, 3, 2, 2, 9, 0, 1 }, new[] { 3, 4, 2, 3, 12, 0, 1 }, new[] { 4, 4, 2, 3, 9, 0, 1 }, new[] { 4, 4, 3, 3, 10, 0, 2 }, new[] { 4, 5, 4, 4, 10, 35, 2 }
+            };
+            for (int i = 0; i < 5; i++)
+            {
+                var lv = CalculoContract.Levels[i];
+                Assert.AreEqual(i + 1, lv.Level);
+                CollectionAssert.AreEqual(v1[i], new[] { lv.CellsMin, lv.CellsMax, lv.UseMin, lv.UseMax, lv.MaxNumber, (int)System.Math.Round(lv.AllChance * 100f), lv.MinShortest }, "el nivel " + (i + 1) + " no debe cambiar");
+            }
+            Assert.AreEqual(1, CalculoContract.Levels[0].Ops.Length);
+            Assert.AreEqual(2, CalculoContract.Levels[1].Ops.Length);
+            Assert.AreEqual(3, CalculoContract.Levels[2].Ops.Length);
+            Assert.AreEqual(4, CalculoContract.Levels[3].Ops.Length);
+            Assert.AreEqual(4, CalculoContract.Levels[4].Ops.Length);
+        }
+
+        [Test]
+        public void Levels6To8_AskForMoreWithTheSameFiveCells_AndEachOneAsksForAtLeastWhatThePreviousOneDid()
+        {
+            var l6 = CalculoContract.LevelSpec(6); var l7 = CalculoContract.LevelSpec(7); var l8 = CalculoContract.LevelSpec(8);
+            foreach (var lv in new[] { l6, l7, l8 })
+            {
+                Assert.AreEqual(5, lv.CellsMin, "nivel " + lv.Level + ": siempre cinco celdas");
+                Assert.AreEqual(5, lv.CellsMax, "nivel " + lv.Level);
+                Assert.AreEqual(4, lv.Ops.Length, "nivel " + lv.Level + ": las cuatro operaciones");
+            }
+            CollectionAssert.AreEqual(new[] { 4, 5, 5 }, new[] { l6.UseMin, l7.UseMin, l8.UseMin }, "se juntan 4, 5 y 5");
+            CollectionAssert.AreEqual(new[] { 4, 5, 5 }, new[] { l6.UseMax, l7.UseMax, l8.UseMax });
+            CollectionAssert.AreEqual(new[] { 12, 12, 14 }, new[] { l6.MaxNumber, l7.MaxNumber, l8.MaxNumber });
+            CollectionAssert.AreEqual(new[] { 60, 85, 100 }, new[] { (int)System.Math.Round(l6.AllChance * 100f), (int)System.Math.Round(l7.AllChance * 100f), (int)System.Math.Round(l8.AllChance * 100f) });
+            CollectionAssert.AreEqual(new[] { 3, 3, 4 }, new[] { l6.MinShortest, l7.MinShortest, l8.MinShortest });
+            // de la 5 en adelante cada nivel pide al menos lo del anterior (los cinco de antes no son monótonos: el 3 tiene números más chicos que el 2 y no se tocan)
+            for (int level = 6; level <= CalculoContract.MaxLevel; level++)
+            {
+                var prev = CalculoContract.LevelSpec(level - 1); var cur = CalculoContract.LevelSpec(level);
+                Assert.GreaterOrEqual(cur.MaxNumber, prev.MaxNumber, "nivel " + level);
+                Assert.GreaterOrEqual(cur.AllChance, prev.AllChance, "nivel " + level);
+                Assert.GreaterOrEqual(cur.MinShortest, prev.MinShortest, "nivel " + level);
+                Assert.GreaterOrEqual(cur.CellsMax, prev.CellsMax, "nivel " + level);
+            }
+        }
+
+        [Test]
+        public void Levels6To8_NeverFallBackToTheHandMadeLoad_AcrossManySeeds()
+        {
+            // La carga de respaldo es solo por si el sorteo no diera; en los niveles nuevos (camino más corto de 3 y de 4 pasos) hay que comprobar que de verdad no cae nunca: 4 semillas de 500 cargas por nivel
+            for (int level = 6; level <= 8; level++)
+                for (int seed = 1; seed <= 4; seed++)
+                {
+                    var rng = Rng(seed * 1000 + level);
+                    for (int k = 0; k < 500; k++)
+                    {
+                        var p = CargaGenerator.Generate(level, rng);
+                        Assert.IsFalse(p.Fallback, "nivel " + level + ", semilla " + seed + ": el sorteo cayó en la carga de respaldo " + p.Key);
+                        Assert.GreaterOrEqual(p.ShortestSteps, CalculoContract.LevelSpec(level).MinShortest, "nivel " + level + " " + p.Key);
+                    }
+                }
+        }
+
+        [Test]
+        public void Level6_AlwaysHasFiveCells_AndLevel8_AlwaysAsksToUseAllOfThem_WithFourSteps()
+        {
+            var rng6 = Rng(66); int all6 = 0;
+            for (int k = 0; k < PerLevel; k++)
+            {
+                var p = CargaGenerator.Generate(6, rng6);
+                Assert.AreEqual(5, p.Cells.Length, "nivel 6: siempre cinco celdas, también cuando pide usar todas");
+                if (p.RequireAll) { all6++; Assert.AreEqual(4, p.ShortestSteps, "usar todas = juntar las 5"); }
+            }
+            Assert.Greater(all6, 0, "el nivel 6 a veces pide usar todas");
+            Assert.Less(all6, PerLevel, "y a veces no");
+            var rng7 = Rng(77); int all7 = 0;
+            for (int k = 0; k < PerLevel; k++)
+            {
+                var p = CargaGenerator.Generate(7, rng7);
+                Assert.AreEqual(5, p.Cells.Length);
+                if (p.RequireAll) all7++;
+            }
+            Assert.Greater(all7, all6 / 2, "el nivel 7 pide usar todas más seguido que el 6");
+            var rng8 = Rng(88);
+            for (int k = 0; k < PerLevel; k++)
+            {
+                var p = CargaGenerator.Generate(8, rng8);
+                Assert.AreEqual(5, p.Cells.Length);
+                Assert.IsTrue(p.RequireAll, "nivel 8: siempre usa todas");
+                Assert.AreEqual(4, p.ShortestSteps, "juntar las cinco celdas son 4 pasos");
+            }
+        }
+
+        [Test]
+        public void TheFallbackLoadsOfLevels6To8_HaveFiveDistinctCellsWithinTheLevelsNumbers()
+        {
+            for (int level = 6; level <= 8; level++)
+            {
+                var spec = CalculoContract.LevelSpec(level);
+                var p = CargaGenerator.FallbackFor(spec);
+                Assert.AreEqual(5, p.Cells.Length, "nivel " + level);
+                Assert.AreEqual(5, new HashSet<int>(p.Cells).Count, "nivel " + level + ": celdas distintas");
+                foreach (int c in p.Cells) Assert.LessOrEqual(c, spec.MaxNumber, "nivel " + level);
+                Assert.AreEqual(spec.AllChance >= 1f, p.RequireAll, "nivel " + level + ": el 8 usa todas");
+                Assert.IsTrue(p.Fallback);
+            }
+        }
+
+        [Test]
+        public void StartRating_WithoutASavedRating_SpreadsTheChosenLevelOverTheFiveLevelsOfBefore_AndWithOneItContinuesFromIt()
+        {
+            // Sin rating guardado (raro: la app siembra uno) el nivel elegido 1..5 se reparte sobre los 5 niveles de antes, no sobre los 8: quien empieza de cero parte donde partía
+            var none = new SequenceConfigDetails { level = 3, base_intensity = 0, has_dda_rating = false };
+            Assert.AreEqual(3f, AdaptiveDifficulty.StartRating(none, CalculoContract.MaxLevel, CalculoContract.V1MaxLevel), 1e-4f, "el nivel 3 de 5 es el nivel 3");
+            Assert.AreEqual(4.5f, AdaptiveDifficulty.StartRating(none, CalculoContract.MaxLevel), 1e-4f, "sin el reparto, el mismo nivel 3 de 5 caería en el 4,5 de 8 (varios niveles más arriba)");
+            var five = new SequenceConfigDetails { level = 5, base_intensity = 0, has_dda_rating = false };
+            Assert.AreEqual(5f, AdaptiveDifficulty.StartRating(five, CalculoContract.MaxLevel, CalculoContract.V1MaxLevel), 1e-4f);
+            // con rating guardado (ya en la escalera de 8: la app lo tradujo) se continúa desde ahí, con o sin reparto
+            var saved = new SequenceConfigDetails { level = 1, has_dda_rating = true, dda_rating = 4.6f / 8f };
+            Assert.AreEqual(5.6f, AdaptiveDifficulty.StartRating(saved, CalculoContract.MaxLevel, CalculoContract.V1MaxLevel), 1e-3f, "el 4,6 de 5 de antes es el nivel 4,6 de 8 (rating 4,6/8) = rating de partida 5,6");
+            Assert.AreEqual(AdaptiveDifficulty.StartRating(saved, CalculoContract.MaxLevel), AdaptiveDifficulty.StartRating(saved, CalculoContract.MaxLevel, CalculoContract.V1MaxLevel));
+            // y el motor de un juego sin alargar no cambia: el parámetro nuevo vale 0
+            Assert.AreEqual(AdaptiveDifficulty.StartRating(none, 12), AdaptiveDifficulty.StartRating(none, 12, 0));
         }
 
         // ------------------------------------------------------------------ solucionador

@@ -16,7 +16,7 @@ import com.example.BuildConfig
     ClaimedWeeklyChallengeEntity::class,
     TimeTrialResultEntity::class
   ],
-  version = 18,
+  version = 19,
   exportSchema = true
 )
 abstract class NeuroVidaDatabase : RoomDatabase() {
@@ -119,6 +119,15 @@ abstract class NeuroVidaDatabase : RoomDatabase() {
         override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
           db.execSQL("ALTER TABLE game_results ADD COLUMN mode TEXT")
           db.execSQL("ALTER TABLE game_results ADD COLUMN route INTEGER NOT NULL DEFAULT 0")
+        }
+      },
+      // 18 -> 19 (4-nov): Carga exacta se alargó de 5 a 8 niveles (Tarea 233, `docs/alargar-dificultad.md` §B.1). El rating guardado (0..1) de quienes ya jugaban se lleva a cinco octavos para que el NIVEL no cambie: quien estaba en el 4,6 de 5 queda en el 4,6 de 8
+      // (la cuenta está en data/Carga.translateOldRating). Sin dato (-1) no se toca. El esquema no cambia (el 19.json es el mismo del 18 con otro número). Los puntos tampoco se mueven: `Skill.progress` está anclado a los 5 niveles de antes.
+      // MOLDE para el próximo juego que se alargue (Tarea 233): su propia Migration(19, 20) con `ddaRating * L_viejo / L_nuevo`, su `translateOldRating`, su `Ladder(..., pointsLevels = L_viejo, version = 2)` en Skill.ladders y su prueba en MigrationTest;
+      // las medidas de `star_measures` las traduce la app sola, una vez, por la marca de versión de escalera de la preferencia `skill`.
+      object : androidx.room.migration.Migration(18, 19) {
+        override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+          db.execSQL("UPDATE game_progress SET ddaRating = ddaRating * 5.0 / 8.0 WHERE gameId = 'calculo' AND ddaRating >= 0")
         }
       }
     )

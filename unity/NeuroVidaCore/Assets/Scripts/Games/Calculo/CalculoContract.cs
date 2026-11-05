@@ -96,7 +96,7 @@ namespace NeuroVida.Games.Calculo
         /// <summary>Cuántas celdas se juntan en la solución que se construye (el camino más corto que encuentra el solucionador puede ser menor).</summary>
         public int UseMin, UseMax;
         public int MaxNumber;
-        /// <summary>Probabilidad de «usa todas las celdas» (solo el nivel 5): entonces solo cuenta si queda UNA celda con la carga.</summary>
+        /// <summary>Probabilidad de «usa todas las celdas» (niveles 5 a 8; en el 8, siempre): entonces solo cuenta si queda UNA celda con la carga.</summary>
         public float AllChance;
         /// <summary>Camino más corto mínimo (para que las cargas de los niveles altos no se resuelvan con una sola cuenta).</summary>
         public int MinShortest;
@@ -129,7 +129,10 @@ namespace NeuroVida.Games.Calculo
     public static class CalculoContract
     {
         public const string GameId = "calculo";
-        public const int MaxLevel = 5;
+        /// <summary>Carga exacta se alargó de 5 a 8 niveles (Tarea 233, docs/alargar-dificultad.md §B.2): los niveles 6 a 8 piden MÁS con las mismas 5 celdas (nunca hay más de 5: con 6 la celda mediría ~48,7 dp contra los 56 que exigen las pruebas).</summary>
+        public const int MaxLevel = 8;
+        /// <summary>El largo de la escalera de la v1 (5 niveles): ancla los PUNTOS de la app (`Skill.Ladder.pointsLevels`), así que los niveles 6 a 8 no suman puntos; y reparte el nivel elegido (1 a 5) de quien no tiene rating guardado, como antes.</summary>
+        public const int V1MaxLevel = 5;
         /// <summary>Precisión = 8 cargas; Reto = 120 s (docs/diseno-carga-exacta.md §5). Nada cae ni apura dentro de una carga.</summary>
         public const int PrecisionLoads = 8;
         public const int RetoSeconds = 120;
@@ -154,6 +157,10 @@ namespace NeuroVida.Games.Calculo
             new CargaLevel { Level = 3, CellsMin = 4, CellsMax = 4, Ops = AddSubMul, UseMin = 2, UseMax = 3, MaxNumber = 9,  AllChance = 0f,   MinShortest = 1 },
             new CargaLevel { Level = 4, CellsMin = 4, CellsMax = 4, Ops = All4,      UseMin = 3, UseMax = 3, MaxNumber = 10, AllChance = 0f,   MinShortest = 2 },
             new CargaLevel { Level = 5, CellsMin = 4, CellsMax = 5, Ops = All4,      UseMin = 4, UseMax = 4, MaxNumber = 10, AllChance = 0.35f, MinShortest = 2 },
+            // Tarea 233: los niveles 6 a 8, solo parámetros (docs/alargar-dificultad.md §B.2). Siempre 5 celdas; se juntan 4 (nivel 6) o las 5 (7 y 8); «usa todas» sube de 0,35 a 0,60, 0,85 y 1,00; los números llegan a 12 y 14; el camino más corto, a 3 y a 4 pasos.
+            new CargaLevel { Level = 6, CellsMin = 5, CellsMax = 5, Ops = All4,      UseMin = 4, UseMax = 4, MaxNumber = 12, AllChance = 0.60f, MinShortest = 3 },
+            new CargaLevel { Level = 7, CellsMin = 5, CellsMax = 5, Ops = All4,      UseMin = 5, UseMax = 5, MaxNumber = 12, AllChance = 0.85f, MinShortest = 3 },
+            new CargaLevel { Level = 8, CellsMin = 5, CellsMax = 5, Ops = All4,      UseMin = 5, UseMax = 5, MaxNumber = 14, AllChance = 1.00f, MinShortest = 4 },
         };
 
         public static CargaLevel LevelSpec(int level) => Levels[Math.Max(1, Math.Min(MaxLevel, level)) - 1];
@@ -372,7 +379,7 @@ namespace NeuroVida.Games.Calculo
             for (int tries = 0; tries < 3000; tries++)
             {
                 bool all = spec.AllChance > 0f && rng.NextDouble() < spec.AllChance;
-                int n = all ? spec.UseMin : rng.Next(spec.CellsMin, spec.CellsMax + 1);
+                int n = all ? Math.Max(spec.UseMin, spec.CellsMin) : rng.Next(spec.CellsMin, spec.CellsMax + 1);      // «usa todas»: nunca menos celdas que las del nivel (Tarea 233: en el 6 son las 5; en los niveles 1 a 5 no cambia nada)
                 int use = all ? n : Math.Min(n, rng.Next(spec.UseMin, spec.UseMax + 1));
                 var nums = new int[n];
                 for (int i = 0; i < n; i++) nums[i] = 1 + rng.Next(spec.MaxNumber);
@@ -450,12 +457,18 @@ namespace NeuroVida.Games.Calculo
                 case 2: cells = new[] { 4, 9, 11 }; target = 15; break;
                 case 3: cells = new[] { 3, 4, 6, 9 }; target = 24; break;
                 case 4: cells = new[] { 2, 3, 5, 8 }; target = 22; break;
-                default: cells = new[] { 2, 3, 4, 7 }; target = 17; break;
+                case 5: cells = new[] { 2, 3, 4, 7 }; target = 17; break;
+                // Tarea 233: las cargas de respaldo de los niveles 6 a 8 (cinco celdas, con el camino más corto que pide cada nivel: 3, 3 y 4 pasos; el 8 usa todas). El sorteo no cae jamás en ellas (aceptación del 9 al 14 % por intento
+                // y 3000 intentos); `CalculoContractTests` lo vigila y comprueba que cada una cumple su nivel.
+                case 6: cells = new[] { 2, 5, 8, 10, 12 }; target = 37; break;
+                case 7: cells = new[] { 3, 7, 9, 11, 12 }; target = 35; break;
+                default: cells = new[] { 2, 6, 10, 13, 14 }; target = 37; break;
             }
+            bool all = spec.AllChance >= 1f;
             return new CargaPuzzle
             {
-                Level = spec.Level, Cells = cells, Target = target, RequireAll = false, Ops = spec.Ops,
-                Solution = CargaSolver.Shortest(cells, spec.Ops, target, false), Fallback = true
+                Level = spec.Level, Cells = cells, Target = target, RequireAll = all, Ops = spec.Ops,
+                Solution = CargaSolver.Shortest(cells, spec.Ops, target, all), Fallback = true
             };
         }
     }

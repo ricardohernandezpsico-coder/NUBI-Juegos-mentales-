@@ -16,6 +16,14 @@ object Carga {
   /** Tiempo máximo creíble por carga, en ms (fuera de eso no se muestra). */
   private const val MAX_MS = 300_000
 
+  /**
+   * Carga exacta se alargó de 5 a 8 niveles (Tarea 233, `docs/alargar-dificultad.md` §B.2). El rating guardado (0..1) de quienes ya jugaban se lleva a cinco octavos (`ddaRating × 5/8`, la migración de Room 18 → 19) para que el nivel de la persona NO cambie:
+   * quien estaba en el 4,6 de 5 queda en el 4,6 de 8, y sus puntos tampoco (`Skill.progress` está anclado a los 5 niveles de antes). Sin dato (−1) no se toca. Es la misma razón de `Skill.ladder("calculo").ratingScale` (una prueba lo comprueba).
+   */
+  fun translateOldRating(oldRating: Float): Float = if (oldRating < 0f) oldRating else (oldRating * OLD_TO_NEW_RATIO).coerceIn(0f, 1f)
+
+  const val OLD_TO_NEW_RATIO = 5f / 8f
+
   /** «Lograste 5 de 8 sin pista»; null sin cargas. */
   fun headline(alone: Int?, total: Int?): String? {
     if (alone == null || total == null || total <= 0) return null

@@ -89,6 +89,88 @@ class SkillTest {
     assertEquals(1, Skill.stage(0.2f)); assertEquals(0, Skill.stage(0.199f)); assertEquals(4, Skill.stage(1f))
   }
 
+  // ---- Escaleras alargadas (Tarea 233, `docs/alargar-dificultad.md` §B.1)
+
+  @Test
+  fun `solo Carga exacta tiene la escalera alargada y los demas juegos quedan como estaban`() {
+    val carga = Skill.ladder("calculo")
+    assertEquals(8, carga.levels); assertEquals(5, carga.pointsLevels); assertEquals("la pendiente se fija a mano: con 8 niveles la fórmula daría 1", 2f, carga.slope, 0f); assertEquals(2, carga.version)
+    assertEquals(5f / 8f, carga.ratingScale, 1e-6f)
+    assertEquals("la misma razón que la migración de Room y la traducción de lo guardado", Carga.OLD_TO_NEW_RATIO, carga.ratingScale, 1e-6f)
+    for ((id, l) in Skill.ladders) if (id != "calculo") {
+      assertEquals(id, l.levels, l.pointsLevels); assertEquals(id, 1, l.version); assertEquals(id, 1f, l.ratingScale, 0f)
+    }
+    assertEquals(mapOf("calculo" to 2), Skill.currentLadderMarks())
+    assertEquals("un juego que no existe no se escala", 1f, Skill.ratingScale("juego-que-no-existe"), 0f)
+  }
+
+  @Test
+  fun `los puntos quedan anclados a los 5 niveles de antes y los niveles nuevos no suman`() {
+    for (age in listOf(AgeBand.ADULT, AgeBand.SENIOR, AgeBand.UNDER_18)) {
+      val shift = (Skill.logit(Skill.trainingTarget("calculo", age)) - Skill.logit(Skill.READ_AT)) / 2f          // el corrimiento en niveles, con la pendiente de siempre
+      // el mismo avance que daba la escalera de 5: rating viejo r5 ↔ rating nuevo r5 × 5/8 (lo que hace la migración de Room)
+      for (r5 in listOf(0f, 0.1f, 0.3f, 0.46f, 0.6f, 0.8f, 0.92f, 1f)) {
+        val old = (r5 + shift / 5f).coerceIn(0f, 1f)
+        assertEquals("rating $r5, $age", old, Skill.progress("calculo", r5 * 5f / 8f, age), 1e-5f)
+      }
+      // justo en el último nivel de la v1 el avance llega a 1, y nada de lo que viene después lo mueve: los niveles 6 a 8 no suman puntos
+      assertEquals(1f, Skill.progress("calculo", (1f - shift / 5f) * 5f / 8f, age), 1e-5f)
+      for (r8 in listOf(0.7f, 0.8f, 0.9f, 0.999f, 1f)) assertEquals("rating $r8 ($age) ya pasó los 5 niveles de antes", 1f, Skill.progress("calculo", r8, age), 0f)
+    }
+  }
+
+  @Test
+  fun `el avance de la escalera entera llega a los niveles 6 a 8 y en los demas juegos es igual al de los puntos`() {
+    val age = AgeBand.ADULT
+    val r = 4.6f / 8f                                                  // alguien que estaba en el 4,6 de 5 y quedó en el 4,6 de 8
+    assertEquals(0.575f, Skill.ladderProgress("calculo", r, age), eps)
+    assertEquals("sus puntos: los mismos de antes", 0.92f, Skill.progress("calculo", r, age), eps)
+    assertEquals("su nivel: el mismo de antes (el 5)", 5, LevelLines.levelOf("calculo", Skill.ladderProgress("calculo", r, age)))
+    assertEquals("el rating más alto es el nivel 8", 8, LevelLines.levelOf("calculo", Skill.ladderProgress("calculo", 0.99f, age)))
+    assertEquals("y sus puntos siguen en el tope", 1f, Skill.progress("calculo", 0.99f, age), 0f)
+    // la trampa que esto evita: con el avance de los PUNTOS (anclado, con tope 1) el nivel 6,6 se leería como el 8
+    assertEquals(6, LevelLines.levelOf("calculo", Skill.ladderProgress("calculo", 0.7f, age)))
+    assertEquals(8, LevelLines.levelOf("calculo", Skill.progress("calculo", 0.7f, age)))
+    for ((id, l) in Skill.ladders) if (l.levels == l.pointsLevels) for (rating in listOf(0f, 0.3f, 0.45f, 0.8f, 1f)) for (a in AgeBand.entries)
+      assertEquals("$id $rating $a", Skill.progress(id, rating, a), Skill.ladderProgress(id, rating, a), 0f)
+  }
+
+  @Test
+  fun `el tope de bajada se mide en puntos y en Carga exacta el rating baja 5 octavos de lo que baja en un juego sin alargar`() {
+    val age = AgeBand.ADULT
+    // un mal día (la partida termina en 0): el rating no baja más de MAX_DROP × 5/8 y los PUNTOS no bajan más de MAX_DROP, como en los demás juegos
+    val next = Skill.nextRating(0.5f, 0f, PlayMode.A_TU_MEDIDA, false, "calculo")
+    assertEquals(0.5f - Skill.MAX_DROP * 5f / 8f, next, 1e-5f)
+    val dropped = Skill.progress("calculo", 0.5f, age) - Skill.progress("calculo", next, age)
+    assertTrue("los puntos bajan $dropped y el tope es ${Skill.MAX_DROP}", dropped <= Skill.MAX_DROP + 1e-4f)
+    assertEquals("sin juego, o en uno sin alargar, igual que siempre", 0.5f - Skill.MAX_DROP, Skill.nextRating(0.5f, 0f, PlayMode.A_TU_MEDIDA, false), 1e-5f)
+    assertEquals(0.5f - Skill.MAX_DROP, Skill.nextRating(0.5f, 0f, PlayMode.A_TU_MEDIDA, false, "stroop"), 1e-5f)
+  }
+
+  @Test
+  fun `los modos de Carga exacta suben el mismo numero de niveles que antes con la escalera de 8`() {
+    // modeShift ÷ pendiente = niveles que se corre el modo; antes se repartía en 5 niveles y ahora en 8, pero son los mismos niveles
+    val r5 = 0.4f; val r8 = r5 * 5f / 8f
+    val oldFloorLevels = (Skill.bounds("stroop", r5, PlayMode.DESAFIO, AgeBand.ADULT).floor!! - r5) * 5f
+    val newFloorLevels = (Skill.bounds("calculo", r8, PlayMode.DESAFIO, AgeBand.ADULT).floor!! - r8) * 8f
+    assertEquals(oldFloorLevels, newFloorLevels, 1e-4f)
+    val oldCeilLevels = (Skill.bounds("stroop", r5, PlayMode.SUAVE, AgeBand.ADULT).ceiling!! - r5) * 5f
+    val newCeilLevels = (Skill.bounds("calculo", r8, PlayMode.SUAVE, AgeBand.ADULT).ceiling!! - r8) * 8f
+    assertEquals(oldCeilLevels, newCeilLevels, 1e-4f)
+  }
+
+  @Test
+  fun `la marca de la escalera de cada juego se guarda en la preferencia skill y las preferencias viejas se leen igual`() {
+    val s = SkillState(measured = setOf("calculo"), expertOpen = setOf("stroop"), stageDates = mapOf("calculo" to mapOf(1 to 5L)), ladderMarks = mapOf("calculo" to 2))
+    val back = SkillState.decode(s.encode())
+    assertEquals(s, back)
+    assertEquals(2, back.ladderMark("calculo")); assertEquals("sin marca = la escalera de siempre", 1, back.ladderMark("stroop"))
+    val old = SkillState.decode("m|calculo\nx|stroop\ns|calculo|1|5")
+    assertEquals(emptyMap<String, Int>(), old.ladderMarks)
+    assertEquals(1, old.ladderMark("calculo"))
+    assertEquals("una línea rota se ignora", emptyMap<String, Int>(), SkillState.decode("l|calculo|dos").ladderMarks)
+  }
+
   @Test
   fun `experto se abre al superar un desafio`() {
     assertFalse(Skill.isOpen(PlayMode.EXPERTO, "radar", emptySet()))

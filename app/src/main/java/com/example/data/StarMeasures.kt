@@ -210,6 +210,15 @@ object StarMeasures {
     return d to p.value
   }
 
+  /**
+   * Lleva el rating guardado en cada medida de un juego alargado a su escalera de ahora (Tarea 233): [scaleByGame] = juego → lo que se multiplica ([Skill.ratingScale]). Solo se toca el campo `rating` (los -1, partidas sin dato, se dejan);
+   * el resto de la medida (valor, reloj, modo) queda igual. La app lo hace UNA vez, al arrancar, con la marca de [SkillState.ladderMarks].
+   */
+  fun rescaleRatings(points: List<MeasurePoint>, scaleByGame: Map<String, Float>): List<MeasurePoint> = points.map { p ->
+    val scale = def(p.key)?.gameId?.let { scaleByGame[it] }
+    if (scale == null || scale == 1f || p.rating < 0f) p else p.copy(rating = (p.rating * scale).coerceIn(0f, 1f))
+  }
+
   /** «marca|medida|valor» y, si hay datos del juego, «|rating|reloj» y, desde la Tarea 159, «|modo» (las líneas viejas sin modo se leen igual, con modo nulo). */
   fun encode(points: List<MeasurePoint>): String = points.joinToString("\n") { p ->
     "${p.timestamp}|${p.key}|${p.value}" +

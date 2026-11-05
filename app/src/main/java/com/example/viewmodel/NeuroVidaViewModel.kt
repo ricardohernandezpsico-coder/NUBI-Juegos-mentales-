@@ -399,6 +399,20 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
 
 
+  /**
+   * Lo mismo que [gameProgress] pero sobre la escalera ENTERA de cada juego (Tarea 233, [Skill.ladderProgress]): sin el ancla de los puntos, así que en un juego alargado (Carga exacta, de 5 a 8 niveles) llega a los niveles nuevos.
+   * Lo lee la frase «Tu nivel: …» de la página de un área en Avance ([LevelLines.levelOf]); los puntos siguen saliendo de [gameProgress]. En los juegos sin alargar es igual.
+   */
+  val gameLadderProgress: StateFlow<Map<String, Float>> = combine(repository.gameDdaRating, gameLevels, repository.skill, userSettings) { dda, levels, sk, settings ->
+    sk.measured.mapNotNull { id ->
+      val r = dda[id]?.takeIf { it >= 0f }
+      when {
+        r != null -> id to com.example.data.Skill.ladderProgress(id, r, settings.ageBand)
+        else -> levels[id]?.let { id to (((it - 1) / 5f) + 0.1f) }
+      }
+    }.toMap()
+  }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
   /** Avance de cada juego para Hoy, Liga y Perfil: el mismo de las cartas ([gameProgress]); null = sin medir aún. */
   val gameLevelsForProgress: StateFlow<Map<String, Float?>> = gameProgress.map { p ->
     GameRegistry.allGames.associate { g -> g.id to p[g.id] }

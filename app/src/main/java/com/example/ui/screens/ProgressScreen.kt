@@ -62,6 +62,7 @@ fun ProgressScreen(
   // Las partidas de juegos retirados (data/Models.kt, GameRegistry.retiredDomains) siguen guardadas pero no se muestran.
   val shownHistory = remember(history) { history.filter { !GameRegistry.isRetired(it.gameId) } }
   val progressLog by viewModel.progressLog.collectAsState()
+  val ladderProgress by viewModel.gameLadderProgress.collectAsState()          // el nivel de «Tu nivel: …» sale de la escalera entera, no de los puntos (Tarea 233)
   val measures by viewModel.starMeasures.collectAsState()
   val baseline by viewModel.baseline.collectAsState()
   val settings by viewModel.userSettings.collectAsState()
@@ -101,7 +102,7 @@ fun ProgressScreen(
       val weekly = remember(open.area, progressLog, now) { AreaPoints.weekly(AreaPoints.gamesOf(open.area), progressLog, now) }
       AvanceAreaPage(
         points = open, weekly = weekly, areaName = names[open.area] ?: open.area,
-        lastPlayed = lastPlayed, measures = measures, lang = currentLang, now = now, onBack = viewModel::closeAvanceArea, timedFor = viewModel::retoFor
+        lastPlayed = lastPlayed, measures = measures, lang = currentLang, now = now, onBack = viewModel::closeAvanceArea, timedFor = viewModel::retoFor, ladderProgress = ladderProgress
       )
       return@Column
     }

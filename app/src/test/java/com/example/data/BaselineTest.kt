@@ -62,6 +62,23 @@ class BaselineTest {
   }
 
   @Test
+  fun `el punto de partida se siembra sobre la escalera de cada juego y Carga exacta lleva cinco octavos (Tarea 233)`() {
+    val b = buildBaseline(mapOf("secuencia" to 0.8f, "freno" to 0.2f, "aterrizaje" to 0.5f, "meteoros" to 0.7f), timestamp = 1L)
+    val seeds = seedRatings(b)
+    assertEquals("Carga exacta está en Razonamiento (0,5 del área): 0,5 × 5/8 de su escalera de 8", 0.5f * 5f / 8f, seeds["calculo"]!!, 1e-5f)
+    assertEquals("el otro juego de Razonamiento, sin cambio", 0.5f, seeds["acoplamiento"]!!, 1e-5f)
+    // el mismo punto de la escalera de siempre: 0,45 de 5 niveles = 2,25 niveles; en la de 8, 0,45 × 5/8 = 2,25 niveles (no 3,6)
+    assertEquals(Baseline.DEFAULT_LEVEL * 5f / 8f, Baseline.defaultLevel("calculo"), 1e-6f)
+    assertEquals(Baseline.DEFAULT_LEVEL * 5f, Baseline.defaultLevel("calculo") * 8f, 1e-5f)
+    assertEquals("los demás juegos, igual", Baseline.DEFAULT_LEVEL, Baseline.defaultLevel("stroop"), 0f)
+    assertEquals(Baseline.DEFAULT_LEVEL, Baseline.defaultLevel("radar"), 0f)
+    // sin ninguna medida el área vale el rating de partida y Carga lo lleva a su escalera
+    val empty = seedRatings(buildBaseline(emptyMap(), timestamp = 1L))
+    assertEquals(Baseline.defaultLevel("calculo"), empty["calculo"]!!, 1e-6f)
+    assertEquals(Baseline.DEFAULT_LEVEL, empty["acoplamiento"]!!, 1e-6f)
+  }
+
+  @Test
   fun `cada juego de la evaluacion siembra su rating y los demas la estimacion de su area`() {
     val b = buildBaseline(mapOf("secuencia" to 0.8f, "freno" to 0.2f, "aterrizaje" to 0.5f, "meteoros" to 0.7f), timestamp = 1L)
     val seeds = seedRatings(b)

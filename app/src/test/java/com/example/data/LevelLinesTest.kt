@@ -56,9 +56,29 @@ class LevelLinesTest {
     assertEquals(1, LevelLines.levelOf("radar", 0f)); assertEquals(12, LevelLines.levelOf("radar", 1f))
     assertEquals(4, LevelLines.levelOf("radar", 0.25f)); assertEquals(4, LevelLines.levelOf("radar", 0.2499999f)); assertEquals(3, LevelLines.levelOf("radar", 0.2f))
     assertEquals(1, LevelLines.levelOf("stroop", 0.19f)); assertEquals(2, LevelLines.levelOf("stroop", 0.2f)); assertEquals(5, LevelLines.levelOf("stroop", 0.99f))
-    assertEquals("Skill.stage y el nivel de las escaleras de 5 son lo mismo", Skill.stage(0.45f) + 1, LevelLines.levelOf("calculo", 0.45f))
+    assertEquals("Skill.stage y el nivel de las escaleras de 5 son lo mismo", Skill.stage(0.45f) + 1, LevelLines.levelOf("stroop", 0.45f))
+    assertEquals("Carga exacta tiene 8 niveles (Tarea 233)", 8, LevelLines.levelOf("calculo", 1f)); assertEquals(1, LevelLines.levelOf("calculo", 0.12f)); assertEquals(2, LevelLines.levelOf("calculo", 0.125f))
     assertEquals(18, LevelLines.levelOf("parejas", 0.999f)); assertEquals(9, LevelLines.levelOf("piloto", 1f))
     assertEquals(LevelLines.lineAt("secuencia", LevelLines.levelOf("secuencia", 0.5f)), LevelLines.line("secuencia", 0.5f))
+  }
+
+  @Test
+  fun `Carga exacta tiene sus 8 niveles y los tres nuevos hablan de las cinco celdas`() {
+    // Tarea 233: los niveles 1 a 5 son los de siempre; los nuevos (6 a 8) dicen lo que se ve: cinco celdas, cuentas largas y, en el 8, todas juntas
+    assertEquals(8, Skill.ladder("calculo").levels)
+    assertEquals("Ya llegas a la carga con sumas", Skill.levelLine("calculo", 1))
+    assertEquals("Ya llegas a la carga con sumas y restas", Skill.levelLine("calculo", 2))
+    assertEquals("Ya llegas a la carga con sumas, restas y multiplicaciones", Skill.levelLine("calculo", 3))
+    assertEquals("Ya llegas a la carga con las cuatro operaciones", Skill.levelLine("calculo", 4))
+    assertEquals("Ya llegas a la carga con las cuatro operaciones y más números", Skill.levelLine("calculo", 5))
+    assertEquals("Ya llegas a la carga con cinco celdas y cuentas largas", Skill.levelLine("calculo", 6))
+    assertEquals("Ya llegas a la carga con las cinco celdas, con cuentas largas", Skill.levelLine("calculo", 7))
+    assertEquals("Ya llegas a la carga con las cinco celdas, todas juntas", Skill.levelLine("calculo", 8))
+    assertEquals("un nivel de más se acota al último", Skill.levelLine("calculo", 8), Skill.levelLine("calculo", 9))
+    // la frase de la tarjeta de Avance sale de la escalera ENTERA: el rating 0,7 es el nivel 6 y no el 8 que diría el avance de los puntos
+    assertEquals("ya llegas a la carga con cinco celdas y cuentas largas.", LevelLines.inRow("calculo", Skill.ladderProgress("calculo", 0.7f, com.example.model.AgeBand.ADULT)))
+    val words = (6..8).map { Skill.levelLine("calculo", it).trim().split(Regex("\\s+")).size }
+    assertTrue("12 palabras como máximo: $words", words.all { it <= 12 })
   }
 
   @Test

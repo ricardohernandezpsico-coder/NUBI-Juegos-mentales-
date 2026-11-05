@@ -64,7 +64,8 @@ class CargaTest {
     assertNotNull(g)
     assertEquals("Carga exacta", g!!.title)
     assertTrue(GameRegistry.allGames.none { it.title.contains("Cálculo Sereno") || it.instruction.contains("burbuja") })
-    assertEquals(5, Skill.ladder("calculo").levels)
+    assertEquals("de 5 a 8 niveles en la Tarea 233; los puntos siguen anclados a los 5 de antes", 8, Skill.ladder("calculo").levels)
+    assertEquals(5, Skill.ladder("calculo").pointsLevels)
     assertNotNull(StarMeasures.defForGame("calculo"))
     assertEquals("Carga exacta", StarMeasures.gameNames["calculo"])
   }

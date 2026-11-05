@@ -150,12 +150,14 @@ namespace NeuroVida.Games
         }
 
         /// <summary>Rating inicial de la partida: si la app guardó el rating del juego, se continúa desde ahí
-        /// (es el nivel real del usuario); si no, se reparte el nivel elegido sobre la escalera.</summary>
-        public static float StartRating(SequenceConfigDetails config, int maxLevel)
+        /// (es el nivel real del usuario); si no, se reparte el nivel elegido sobre la escalera.
+        /// <paramref name="spreadLevels"/> (Tarea 233): en un juego ALARGADO, sobre cuántos niveles se reparte el nivel elegido (1 a 5) cuando no hay rating guardado: el largo de la v1 (Carga exacta: 5 de 8),
+        /// para que quien empieza de cero parta donde partía y no varios niveles más arriba. 0 = la escalera entera (todos los demás juegos). El rating guardado no lo usa: ya viene en la escalera de ahora.</summary>
+        public static float StartRating(SequenceConfigDetails config, int maxLevel, int spreadLevels = 0)
         {
             if (config.has_dda_rating)
                 return Math.Max(1f, Math.Min(maxLevel + 0.99f, 1f + Math.Max(0f, Math.Min(1f, config.dda_rating)) * maxLevel));
-            return StartRating(config.level, maxLevel, config.base_intensity);
+            return StartRating(config.level, spreadLevels > 0 ? Math.Min(spreadLevels, maxLevel) : maxLevel, config.base_intensity);
         }
 
         /// <summary>Registra un ensayo. <paramref name="reactionMs"/> &lt; 0 = sin dato de tiempo.

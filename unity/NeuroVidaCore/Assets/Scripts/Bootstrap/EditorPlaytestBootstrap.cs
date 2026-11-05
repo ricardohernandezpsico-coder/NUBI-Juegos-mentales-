@@ -37,6 +37,9 @@ namespace NeuroVida.Bridge
         /// <summary>Solo para el smoke test headless: arranca la versión corta del inicio («Tu punto de partida», <c>assessment</c> de la config).</summary>
         public static bool AssessmentOverride;
 
+        /// <summary>Solo para el smoke y las capturas (Tarea 233): el rating guardado (0..1 de la escalera del juego) con que arranca la partida (<c>has_dda_rating</c> y <c>dda_rating</c> de la config; negativo = ninguno). Las corridas «CalculoNivel6» a «CalculoNivel8» lo usan para jugar Carga exacta en sus niveles nuevos; para sacar capturas sueltas, la variable de entorno <c>NUBI_EDITOR_RATING</c> (por ejemplo 0,6875 = nivel 6 de 8: <c>(nivel − 0,5) / 8</c>).</summary>
+        public static float DdaRatingOverride = -1f;
+
         /// <summary>Solo para las capturas (<c>--capturas</c>): la etapa (1..10) con que arranca «La estación de correo» (<c>mail_stage</c> de la config; 0 = la que corresponde).</summary>
         public static int MailStageOverride;
 
@@ -80,6 +83,8 @@ namespace NeuroVida.Bridge
 
             if (int.TryParse(System.Environment.GetEnvironmentVariable("NUBI_EDITOR_LEVEL"), out int envLevel) && envLevel >= 1) level = Mathf.Min(5, envLevel);          // diagnóstico: el nivel (1 a 5) con que arranca la partida, para ver las etapas altas de un juego
             if (LevelOverride > 0) level = Mathf.Min(5, LevelOverride);
+            float envRating = float.TryParse(System.Environment.GetEnvironmentVariable("NUBI_EDITOR_RATING"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float er) ? er : -1f;
+            float ddaOverride = envRating >= 0f ? envRating : DdaRatingOverride;
             int envStage = int.TryParse(System.Environment.GetEnvironmentVariable("NUBI_EDITOR_STAGE"), out int es) ? es : 0;          // diagnóstico: la etapa con que arrancan las escaleras con tarjetas «NUEVO» (Correo 1 a 10, Constelaciones 1 a 18, Satélites 1 a 12)
             var config = new SequenceInitConfig
             {
@@ -96,8 +101,8 @@ namespace NeuroVida.Bridge
                     show_tutorial = ShowTutorialOverride || FirstGameOverride,
                     first_game = FirstGameOverride,
                     fresh_start = FirstGameOverride,
-                    has_dda_rating = FirstGameOverride,
-                    dda_rating = FirstGameOverride ? 0.45f : 0f,
+                    has_dda_rating = FirstGameOverride || ddaOverride >= 0f,
+                    dda_rating = ddaOverride >= 0f ? ddaOverride : (FirstGameOverride ? 0.45f : 0f),
                     assessment = AssessmentOverride,
                     assessment_step = AssessmentOverride ? 1 : 0,
                     assessment_total = AssessmentOverride ? 4 : 0,

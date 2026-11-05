@@ -1,5 +1,6 @@
 package com.example.data
 
+import com.example.model.AgeBand
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -83,6 +84,27 @@ class AreaPointsTest {
     for (text in listOf(AreaPoints.pointsLine(area(470)), GamePoints("parejas", 180, 250, 0.72f, true).pointsLine, AreaPoints.pageSentence(area(470), "Memoria"))) {
       for (bad in listOf("Etapa", "etapa", "Inicio", "Aprendiz", "Hábil", "Experto", "Maestro", "Te faltan", "Te falta")) assertFalse("«$text» trae «$bad»", bad in text)
     }
+  }
+
+  @Test
+  fun `Carga exacta anclada a sus 5 niveles de antes - nadie pierde puntos y los niveles 6 a 8 no suman (Tarea 233)`() {
+    val razonamiento = AreaPoints.gamesOf("RAZONAMIENTO")
+    assertTrue("calculo" in razonamiento)
+    val max = 1000 / razonamiento.size                                  // lo que aporta cada juego del área: 250
+    val age = AgeBand.ADULT
+    fun total(progress: Float) = AreaPoints.compute("RAZONAMIENTO", razonamiento, listOf(p("calculo", now, progress)), now)
+    // la misma persona antes y después de alargar: el 4,6 de 5 (avance 0,92, el que ya estaba en `progress_log`) es el 4,6 de 8 (rating 0,575)
+    val before = total(0.92f)
+    val after = total(Skill.progress("calculo", 4.6f / 8f, age))
+    assertEquals("sus puntos no se mueven", before.total, after.total)
+    assertEquals("4,6 de 5 en un juego de 250 puntos", 230, after.total)
+    // en el tope de la v1 sigue con TODOS los puntos del juego; los niveles 6, 7 y 8 no suman
+    for (rating in listOf(5f / 8f, 6f / 8f, 7f / 8f, 0.999f)) assertEquals("rating $rating", max, total(Skill.progress("calculo", rating, age)).total)
+    assertEquals("el juego aporta hasta $max puntos y no más", max, total(Skill.progress("calculo", 0.999f, age)).perGame.first { it.gameId == "calculo" }.max)
+    // el nivel sí sube con la escalera entera (Avance lo dice así): el 5 de antes, el 6 al pasar el tope de la v1 y el 8 arriba de todo
+    assertEquals(5, LevelLines.levelOf("calculo", Skill.ladderProgress("calculo", 4.6f / 8f, age)))
+    assertEquals(6, LevelLines.levelOf("calculo", Skill.ladderProgress("calculo", 5f / 8f, age)))
+    assertEquals(8, LevelLines.levelOf("calculo", Skill.ladderProgress("calculo", 0.999f, age)))
   }
 
   @Test

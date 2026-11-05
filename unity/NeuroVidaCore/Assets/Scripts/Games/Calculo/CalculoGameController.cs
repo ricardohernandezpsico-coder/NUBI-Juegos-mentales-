@@ -174,7 +174,7 @@ namespace NeuroVida.Games.Calculo
             _rng = new System.Random();
             var age = DdaUserProfileConfig.ParseAgeBand(config.config.age_band);
             _senior = age == AgeBand.Senior;
-            float start = AdaptiveDifficulty.StartRating(config.config, CalculoContract.MaxLevel);
+            float start = AdaptiveDifficulty.StartRating(config.config, CalculoContract.MaxLevel, CalculoContract.V1MaxLevel);          // sin rating guardado, el nivel elegido se reparte sobre los 5 niveles de antes (Tarea 233)
             // 8 cargas por partida: pasos grandes (como Satélites y La estrella intrusa). Sin tiempo de reacción: pensar con calma no se penaliza.
             _dda = new AdaptiveDifficulty(CalculoContract.MaxLevel, age, start, stepUp: 0.4f, useReaction: false);
             _director = new CargaDirector(_rng);

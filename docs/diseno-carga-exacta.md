@@ -56,7 +56,7 @@ una para la pista. Reglas:
   celda.
 - **Pista:** un solucionador (búsqueda sobre los pares) da también el camino más corto.
 
-## 5. Dificultad (DDA común, 5 niveles)
+## 5. Dificultad (DDA común, 8 niveles desde la Tarea 233; antes 5)
 
 | Nivel | Celdas | Operaciones | Celdas en la solución | Números hasta |
 |---|---|---|---|---|
@@ -64,7 +64,14 @@ una para la pista. Reglas:
 | 2 | 3-4 | + − | 2-3 | 12 |
 | 3 | 4 | + − × | 2-3 | 9 |
 | 4 | 4 | + − × ÷ | 3 | 10 |
-| 5 | 4-5 | + − × ÷ | 4 (a veces «usa todas») | 10 |
+| 5 | 4-5 | + − × ÷ | 4 (a veces «usa todas»: 35 %) | 10 |
+| 6 | 5 | + − × ÷ | 4 o las 5 («usa todas»: 60 %; camino mínimo de 3 pasos) | 12 |
+| 7 | 5 | + − × ÷ | las 5 («usa todas»: 85 %; camino mínimo de 3 pasos) | 12 |
+| 8 | 5 | + − × ÷ | las 5, siempre («usa todas»: 100 %; camino de 4 pasos) | 14 |
+
+**Los niveles 6 a 8 (Tarea 233, 4-nov; `docs/alargar-dificultad.md` §B.2 y §D)** piden MÁS con las mismas 5 celdas (con 6 la celda mediría ~48,7 dp contra los 56 que exigen las pruebas): solo parámetros, sin contenido. Cada nivel pide al menos lo del anterior. Cuando el nivel pide «usa todas» el tablero lleva siempre las celdas del nivel (en el 6, las 5: antes el sorteo armaba solo las 4 que se juntan).
+El sorteo no cae en las cargas de respaldo: acepta del 9 al 14 % de los intentos y tiene 3.000 (una réplica en Python dio una probabilidad de caer en el respaldo de 1e-130), y `CalculoContractTests` lo comprueba con 4 semillas de 500 cargas por nivel; los respaldos nuevos son cinco celdas distintas con el camino más corto que pide su nivel (el del 8 usa todas).
+Los PUNTOS de la app siguen anclados a los 5 niveles de antes (`Skill.Ladder.pointsLevels`): los niveles 6 a 8 no suman puntos.
 
 - **Para el DDA:** acierto = lograda sin pista; con pista cuenta medio.
 - **Mayores:** la pista a los 20 s.

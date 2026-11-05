@@ -81,7 +81,12 @@ internal fun AvanceAreaPage(
   modifier: Modifier = Modifier,
   listState: LazyListState = androidx.compose.foundation.lazy.rememberLazyListState(),
   /** Si la persona juega ese juego con reloj (la ficha lo recuerda por juego): Freno de Emergencia solo dice su plazo CON reloj. */
-  timedFor: (String) -> Boolean = { false }
+  timedFor: (String) -> Boolean = { false },
+  /**
+   * El avance de cada juego sobre su escalera ENTERA ([com.example.data.Skill.ladderProgress], Tarea 233): de ahí sale la frase «Tu nivel: …». Los puntos, la barra y el resto de la tarjeta siguen saliendo de [points] (anclados: los niveles nuevos de un juego alargado no suman).
+   * Un juego que no está en el mapa usa el avance de sus puntos, que es igual en los juegos sin alargar.
+   */
+  ladderProgress: Map<String, Float> = emptyMap()
 ) {
   val key = points.area.lowercase()
   Column(modifier.fillMaxSize().testTag("avance_area_page_$key")) {
@@ -105,7 +110,7 @@ internal fun AvanceAreaPage(
           SpaceSectionTitle("Tus juegos de $areaName", hint = AreaPoints.gamesHint(points.maxPerGame), fontFamily = TitleFamily)
           Spacer(Modifier.height(8.dp))
           Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            points.perGame.forEach { g -> GameCard(g, lastPlayed[g.gameId], measures, lang, now, timedFor(g.gameId)) }
+            points.perGame.forEach { g -> GameCard(g, lastPlayed[g.gameId], measures, lang, now, timedFor(g.gameId), ladderProgress[g.gameId] ?: g.progress) }
           }
         }
       }
@@ -229,7 +234,7 @@ private fun WeeksChart(values: List<Int>) {
  * jugado pero sin medir («**Aún sin medir:** juega a tu medida y empieza a sumar.») y sin partidas («**Todavía sin partidas.** Este juego aporta hasta 250 puntos.», sin fila 4). Sin «Jugar» (la página mira, Hoy juega). El alto es el del contenido: nunca se corta.
  */
 @Composable
-private fun GameCard(g: GamePoints, last: Long?, measures: List<MeasurePoint>, lang: com.example.model.AppLanguage, now: Long, timed: Boolean) {
+private fun GameCard(g: GamePoints, last: Long?, measures: List<MeasurePoint>, lang: com.example.model.AppLanguage, now: Long, timed: Boolean, ladderProgress: Float) {
   val game = GameRegistry.getById(g.gameId) ?: return
   val title = getGameTitle(game.id, lang, game.title)
   val measurer = androidx.compose.ui.text.rememberTextMeasurer()
@@ -237,7 +242,7 @@ private fun GameCard(g: GamePoints, last: Long?, measures: List<MeasurePoint>, l
   val measure = if (g.measured) StarMeasures.lastMeasure(g.gameId, measures, withBest = !LevelLines.overlapsMeasure(g.gameId)) else null
   // fila 3: el nivel (o por qué no hay)
   val level: Pair<String, String?> = when {
-    g.measured -> "Tu nivel:" to LevelLines.inRow(g.gameId, g.progress, timed)
+    g.measured -> "Tu nivel:" to LevelLines.inRow(g.gameId, ladderProgress, timed)          // la escalera entera (Tarea 233), no los puntos
     last == null -> "Todavía sin partidas." to "Este juego aporta hasta ${g.max} puntos."
     else -> "Aún sin medir:" to "juega a tu medida y empieza a sumar."
   }

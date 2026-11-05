@@ -22,7 +22,22 @@ enum class PlayMode(val label: String, val what: String, val short: String) {
  * cuánto caen los aciertos por nivel (logística). La pendiente es un SUPUESTO inicial: 1 por nivel en escaleras de
  * 9 a 16 niveles y 2 en las de 5 a 7, donde cada nivel es un salto mayor; se calibra con datos.
  */
-data class Ladder(val levels: Int, val ownTarget: Float? = null, val slope: Float = if (levels <= 7) 2f else 1f)
+data class Ladder(
+  val levels: Int,
+  val ownTarget: Float? = null,
+  val slope: Float = if (levels <= 7) 2f else 1f,
+  /**
+   * Tarea 233 (`docs/alargar-dificultad.md` §B.1): el largo de la escalera de la v1, que ANCLA los puntos. Un juego alargado (hoy Carga exacta, de 5 a 8) lleva dos largos: [levels] es el de la escalera de ahora (el que lee el motor de Unity y con el
+   * que se guarda el rating) y [pointsLevels] el de antes: los puntos se leen sobre él ([Skill.progress]) y con tope 1, así que quien estaba en el tope sigue con todos los puntos del juego y los niveles nuevos NO suman. En los demás juegos es igual a [levels].
+   * La [slope] de un juego alargado se FIJA A MANO (con 8 niveles la fórmula daría 1 en vez de 2 y movería el corrimiento de los mayores).
+   */
+  val pointsLevels: Int = levels,
+  /** Qué escalera es: 1 la de siempre; 2 desde que el juego se alargó (los ratings guardados con la v1 se llevan a la de ahora: Room `Migration(18, 19)`, `star_measures` por la marca de [SkillState.ladderMarks]). */
+  val version: Int = 1
+) {
+  /** Lo que se multiplica un rating guardado con la escalera VIEJA para llevarlo a la de ahora: 5/8 en Carga exacta, 1 en los demás (el nivel de la persona no cambia). */
+  val ratingScale: Float get() = pointsLevels.toFloat() / levels
+}
 
 /** Límites de la partida sobre el rating normalizado (0..1): techo en Suave, piso en Desafío y Experto. */
 data class ModeBounds(val floor: Float? = null, val ceiling: Float? = null)
@@ -47,7 +62,8 @@ object Skill {
 
 
   val ladders: Map<String, Ladder> = mapOf(
-    "stroop" to Ladder(5), "anagramas" to Ladder(5), "calculo" to Ladder(5), "engranajes" to Ladder(12), "bodega" to Ladder(12),
+    // Carga exacta se alargó de 5 a 8 niveles (Tarea 233): puntos anclados a los 5 de antes, pendiente fija en 2 (la de las escaleras de 5 a 7)
+    "stroop" to Ladder(5), "anagramas" to Ladder(5), "calculo" to Ladder(8, slope = 2f, pointsLevels = 5, version = 2), "engranajes" to Ladder(12), "bodega" to Ladder(12),
     "piloto" to Ladder(9),
     "radar" to Ladder(12), "freno" to Ladder(12), "aterrizaje" to Ladder(12), "acoplamiento" to Ladder(12),
     "satelites" to Ladder(12), "meteoros" to Ladder(12), "disparate" to Ladder(12), "intrusa" to Ladder(12),
@@ -56,6 +72,12 @@ object Skill {
   )
 
   fun ladder(gameId: String): Ladder = ladders[gameId] ?: Ladder(10)
+
+  /** Lo que lleva un rating de la escalera VIEJA a la de ahora (5/8 en Carga exacta, 1 en los demás): para sembrar y para traducir lo guardado. */
+  fun ratingScale(gameId: String): Float = ladder(gameId).ratingScale
+
+  /** Las marcas de escalera de una instalación SIN nada guardado (nueva, o después de «Borrar datos»): lo que se juegue desde ahí ya va con la escalera de ahora, así que nada hay que traducir (solo los juegos alargados llevan marca). */
+  fun currentLadderMarks(): Map<String, Int> = ladders.filter { it.value.version > 1 }.mapValues { it.value.version }
 
   fun logit(p: Float): Float = ln(p / (1f - p))
   private fun sigmoid(x: Float): Float = (1.0 / (1.0 + exp(-x.toDouble()))).toFloat()
@@ -82,11 +104,25 @@ object Skill {
   fun expectedHits(gameId: String, mode: PlayMode, age: AgeBand?): Float =
     sigmoid(logit(trainingTarget(gameId, age)) - modeShift(mode, age))
 
-  /** Rating guardado (medido con los aciertos de entrenamiento) → avance 0..1 leído a 8 de 10. */
+  /** El corrimiento de la edad en NIVELES de la escalera: cuántos niveles se corre el punto donde se aciertan 8 de 10 respecto de lo que busca el juego al entrenar. */
+  private fun shiftLevels(gameId: String, age: AgeBand?): Float = (logit(trainingTarget(gameId, age)) - logit(READ_AT)) / ladder(gameId).slope
+
+  /**
+   * Rating guardado (medido con los aciertos de entrenamiento) → avance 0..1 leído a 8 de 10, ANCLADO al largo de la escalera de la v1 ([Ladder.pointsLevels]) y con tope 1 (Tarea 233): es lo que va a `progress_log` y a los puntos de cada área y de cada juego.
+   * En un juego sin alargar es lo de siempre; en uno alargado, quien pasa los niveles de la v1 se queda en 1,0 y los niveles nuevos no suman ([ladderProgress] es el que ve la escalera entera).
+   */
   fun progress(gameId: String, rating: Float, age: AgeBand?): Float {
     val l = ladder(gameId)
-    val shiftLevels = (logit(trainingTarget(gameId, age)) - logit(READ_AT)) / l.slope
-    return (rating + shiftLevels / l.levels).coerceIn(0f, 1f)
+    return (rating * (l.levels.toFloat() / l.pointsLevels) + shiftLevels(gameId, age) / l.pointsLevels).coerceIn(0f, 1f)
+  }
+
+  /**
+   * El avance sobre la escalera ENTERA de ahora (Tarea 233): sin el ancla de los puntos, así que en Carga exacta llega a los niveles 6 a 8. Lo leen [LevelLines.levelOf] (la frase «Tu nivel: …» de Avance) y [bounds];
+   * los puntos NO: esos son [progress]. En un juego sin alargar es igual a [progress].
+   */
+  fun ladderProgress(gameId: String, rating: Float, age: AgeBand?): Float {
+    val l = ladder(gameId)
+    return (rating + shiftLevels(gameId, age) / l.levels).coerceIn(0f, 1f)
   }
 
   /** Techo o piso de la partida en rating normalizado. A tu medida: sin límites. */
@@ -119,11 +155,13 @@ object Skill {
    * Nuevo rating guardado. Solo cambia si la partida cuenta ([counts]): se suaviza 60% partida / 40% anterior
    * ([blendDdaRating]) y no baja más de [MAX_DROP]; un Desafío superado nunca lo baja. Si no cuenta, queda igual.
    */
-  fun nextRating(previous: Float, sessionEnd: Float, mode: PlayMode, passed: Boolean): Float {
+  fun nextRating(previous: Float, sessionEnd: Float, mode: PlayMode, passed: Boolean, gameId: String? = null): Float {
     if (!counts(mode, passed)) return previous
     if (previous < 0f) return sessionEnd.coerceIn(0f, 1f)
     val blended = blendDdaRating(previous, sessionEnd)
-    return if (mode == PlayMode.A_TU_MEDIDA) blended.coerceAtLeast(previous - MAX_DROP) else maxOf(previous, blended)
+    // El tope de bajada se mide en PUNTOS (Tarea 233): en un juego alargado el rating es una fracción de una escalera más larga y 0,05 de rating pesarían más que 0,05 de avance; se escala igual que el rating.
+    val maxDrop = MAX_DROP * (gameId?.let { ratingScale(it) } ?: 1f)
+    return if (mode == PlayMode.A_TU_MEDIDA) blended.coerceAtLeast(previous - maxDrop) else maxOf(previous, blended)
   }
 
   /** Etapa 0..4 (Inicio..Maestro): quintos del avance de un juego (0..1). Los PUNTOS (de cada área y de cada juego) y lo que falta para la etapa que sigue viven en [AreaPoints]/[GamePoints] (Tarea 159: una sola escala en toda la app). */
@@ -142,8 +180,16 @@ object Skill {
 data class SkillState(
   val measured: Set<String> = emptySet(),
   val expertOpen: Set<String> = emptySet(),
-  val stageDates: Map<String, Map<Int, Long>> = emptyMap()
+  val stageDates: Map<String, Map<Int, Long>> = emptyMap(),
+  /**
+   * La escalera con que están guardados los ratings de cada juego alargado (Tarea 233; ver [Ladder.version]): sin marca = la v1. La app, al arrancar, traduce una sola vez lo que Room no puede tocar (las medidas de `star_measures`) y anota aquí la versión;
+   * vive en esta preferencia, que ya va en el respaldo, y no en una nueva (`BackupRulesTest`).
+   */
+  val ladderMarks: Map<String, Int> = emptyMap()
 ) {
+  /** La versión de escalera con que están guardadas las medidas de [gameId] (1 si nunca se tradujo). */
+  fun ladderMark(gameId: String): Int = ladderMarks[gameId] ?: 1
+
   /** Después de una partida: [counted] = contó para el avance; [progress] = el avance nuevo. */
   fun after(gameId: String, counted: Boolean, passedChallenge: Boolean, progress: Float, now: Long): SkillState {
     if (!counted) return this
@@ -160,23 +206,25 @@ data class SkillState(
     measured.forEach { add("m|$it") }
     expertOpen.forEach { add("x|$it") }
     stageDates.forEach { (g, m) -> m.forEach { (s, t) -> add("s|$g|$s|$t") } }
+    ladderMarks.forEach { (g, v) -> add("l|$g|$v") }
   }.joinToString("\n")
 
   companion object {
     fun decode(text: String?): SkillState {
-      val m = mutableSetOf<String>(); val x = mutableSetOf<String>(); val d = mutableMapOf<String, MutableMap<Int, Long>>()
+      val m = mutableSetOf<String>(); val x = mutableSetOf<String>(); val d = mutableMapOf<String, MutableMap<Int, Long>>(); val l = mutableMapOf<String, Int>()
       text.orEmpty().lines().forEach { line ->
         val p = line.split('|')
         when {
           p.size == 2 && p[0] == "m" -> m += p[1]
           p.size == 2 && p[0] == "x" -> x += p[1]
+          p.size == 3 && p[0] == "l" -> p[2].toIntOrNull()?.let { l[p[1]] = it }
           p.size == 4 && p[0] == "s" -> {
             val s = p[2].toIntOrNull(); val t = p[3].toLongOrNull()
             if (s != null && t != null) d.getOrPut(p[1]) { mutableMapOf() }[s] = t
           }
         }
       }
-      return SkillState(m, x, d)
+      return SkillState(m, x, d, l)
     }
   }
 }

@@ -66,6 +66,12 @@ data class Baseline(
   companion object {
     /** Rating 0..1 de partida cuando no hay ninguna medida (interno: es solo el punto desde donde el DDA empieza a corregir; NO se muestra ni se compara con nadie). */
     const val DEFAULT_LEVEL = 0.45f
+
+    /**
+     * El rating de partida de [gameId] sobre SU escalera de ahora (Tarea 233): `0,45 × Skill.ratingScale`. En un juego alargado (Carga exacta, de 5 a 8) 0,45 de la escalera nueva sería 1,4 niveles más arriba que antes; así una persona nueva parte donde partía.
+     * Igual a [DEFAULT_LEVEL] en todos los demás.
+     */
+    fun defaultLevel(gameId: String): Float = DEFAULT_LEVEL * Skill.ratingScale(gameId)
   }
 }
 
@@ -113,10 +119,11 @@ fun buildBaseline(measuredByGame: Map<String, Float>, timestamp: Long = System.c
 
 /**
  * Rating inicial de cada juego: el de su área en el mapa. Los 4 juegos de la evaluación toman SU propia medida (el
- * área tiene un solo juego medido) y los demás juegos de esa área, la estimación del área.
+ * área tiene un solo juego medido) y los demás juegos de esa área, la estimación del área. Desde la Tarea 233 se lleva a la escalera de ESE juego
+ * (`× Skill.ratingScale`: 5/8 en Carga exacta, que ahora tiene 8 niveles; 1 en los demás), para que sembrar no suba a nadie varios niveles.
  */
 fun seedRatings(baseline: Baseline): Map<String, Float> =
-  GameRegistry.allGames.associate { g -> g.id to (baseline.domains[g.domain] ?: Baseline.DEFAULT_LEVEL) }
+  GameRegistry.allGames.associate { g -> g.id to (baseline.domains[g.domain] ?: Baseline.DEFAULT_LEVEL) * Skill.ratingScale(g.id) }
 
 /**
  * Orden de dominios para el camino de hoy: primero las metas elegidas (la más baja primero), después el resto de
