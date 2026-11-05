@@ -125,10 +125,10 @@ object LevelLines {
   // --- Acoplamiento (12): bloques de la pieza (4 a 7) y el giro máximo (90, 135, luego 180); desde el 5 los giros son finos (DockingContract.cs:67-77)
   private val ACOPLAMIENTO_GIRO = arrayOf("un cuarto de vuelta", "casi media vuelta", "media vuelta", "media vuelta")
 
-  // --- Carga exacta (8): las operaciones (CalculoContract.cs:150-157) y, desde el 6 (Tarea 233), las cinco celdas y cuentas más largas; en el 8 las cinco van siempre juntas (sin cifras internas ni probabilidades: nada de «casi siempre»)
+  // --- Carga exacta (8): las operaciones (CalculoContract.cs:150-157) y, desde el 6 (Tarea 233b, frases de Opus): el 6 siempre trae cinco celdas y pide cuentas más largas (camino mínimo de 3); el 7 pide juntar las cinco; el 8 es lo más largo del juego (camino de 4, números hasta 14, usa todas). Sin cifras internas ni probabilidades: nada de «casi siempre»
   private val CARGA = arrayOf(
     "sumas", "sumas y restas", "sumas, restas y multiplicaciones", "las cuatro operaciones", "las cuatro operaciones y más números",
-    "cinco celdas y cuentas largas", "las cinco celdas, con cuentas largas", "las cinco celdas, todas juntas"
+    "cinco celdas y cuentas más largas", "cuentas que juntan las cinco celdas", "las cuentas más largas del juego"
   )
 
   // --- Engranajes (12): piezas y correas (EngranajesContract.cs:187-201)

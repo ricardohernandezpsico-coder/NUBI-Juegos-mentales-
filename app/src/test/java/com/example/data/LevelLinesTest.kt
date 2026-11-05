@@ -63,20 +63,20 @@ class LevelLinesTest {
   }
 
   @Test
-  fun `Carga exacta tiene sus 8 niveles y los tres nuevos hablan de las cinco celdas`() {
-    // Tarea 233: los niveles 1 a 5 son los de siempre; los nuevos (6 a 8) dicen lo que se ve: cinco celdas, cuentas largas y, en el 8, todas juntas
+  fun `Carga exacta tiene sus 8 niveles y los tres nuevos dicen lo nuevo de cada uno`() {
+    // Tarea 233: los niveles 1 a 5 son los de siempre; los nuevos (6 a 8) dicen lo que se ve: cinco celdas y cuentas más largas (6), juntar las cinco (7) y lo más largo del juego (8)
     assertEquals(8, Skill.ladder("calculo").levels)
     assertEquals("Ya llegas a la carga con sumas", Skill.levelLine("calculo", 1))
     assertEquals("Ya llegas a la carga con sumas y restas", Skill.levelLine("calculo", 2))
     assertEquals("Ya llegas a la carga con sumas, restas y multiplicaciones", Skill.levelLine("calculo", 3))
     assertEquals("Ya llegas a la carga con las cuatro operaciones", Skill.levelLine("calculo", 4))
     assertEquals("Ya llegas a la carga con las cuatro operaciones y más números", Skill.levelLine("calculo", 5))
-    assertEquals("Ya llegas a la carga con cinco celdas y cuentas largas", Skill.levelLine("calculo", 6))
-    assertEquals("Ya llegas a la carga con las cinco celdas, con cuentas largas", Skill.levelLine("calculo", 7))
-    assertEquals("Ya llegas a la carga con las cinco celdas, todas juntas", Skill.levelLine("calculo", 8))
+    assertEquals("Ya llegas a la carga con cinco celdas y cuentas más largas", Skill.levelLine("calculo", 6))
+    assertEquals("Ya llegas a la carga con cuentas que juntan las cinco celdas", Skill.levelLine("calculo", 7))
+    assertEquals("Ya llegas a la carga con las cuentas más largas del juego", Skill.levelLine("calculo", 8))
     assertEquals("un nivel de más se acota al último", Skill.levelLine("calculo", 8), Skill.levelLine("calculo", 9))
     // la frase de la tarjeta de Avance sale de la escalera ENTERA: el rating 0,7 es el nivel 6 y no el 8 que diría el avance de los puntos
-    assertEquals("ya llegas a la carga con cinco celdas y cuentas largas.", LevelLines.inRow("calculo", Skill.ladderProgress("calculo", 0.7f, com.example.model.AgeBand.ADULT)))
+    assertEquals("ya llegas a la carga con cinco celdas y cuentas más largas.", LevelLines.inRow("calculo", Skill.ladderProgress("calculo", 0.7f, com.example.model.AgeBand.ADULT)))
     val words = (6..8).map { Skill.levelLine("calculo", it).trim().split(Regex("\\s+")).size }
     assertTrue("12 palabras como máximo: $words", words.all { it <= 12 })
   }
