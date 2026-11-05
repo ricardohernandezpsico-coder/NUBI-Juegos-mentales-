@@ -113,7 +113,7 @@ iluminan una por una y queda a la vista **qué parte del cielo armaste con tu me
   - «Gemelos, parejas y tríos».
 - **Gemelos:** cuentan dentro de los grupos. Ejemplo: 1 gemelo = planeta con anillo + planeta sin anillo, es decir, 2 de
   los grupos.
-- **Grupo para la pantalla final:** 3 etapas por grupo, 6 grupos («Etapa más alta: N de 6»).
+- **Grupo para la pantalla final:** 3 etapas por grupo, 6 grupos («Nivel más alto: N de 6»; Tarea 230, antes «Etapa más alta»).
 - **Partida:** 6 cielos. Un cielo con 0-1 «se te escapó» sube una etapa; con 3 o más baja una.
   - En la app esto lo hace el **motor común** (`AdaptiveDifficulty`). Cada oportunidad de memoria es un
     ensayo: acierto = correcto, «se te escapó» = error. `MaxLevel` 18.

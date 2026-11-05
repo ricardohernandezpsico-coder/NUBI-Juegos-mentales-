@@ -58,10 +58,10 @@ private val DebugGames = listOf(
   DebugGame("meteoros", "Lluvia de meteoros: tutorial + versión corta (como el inicio)", level = 1, timed = false, tutorial = true, shortVersion = true, tag = "meteoros_inicio"),
   DebugGame("parejas", "Constelaciones (con reloj 180 s)", level = 1, timed = true),
   DebugGame("parejas", "Constelaciones con tutorial", level = 1, timed = false, tutorial = true, tag = "parejas_tutorial"),
-  DebugGame("parejas", "Constelaciones etapa 7 (gemelos)", level = 1, timed = false, tag = "parejas_etapa7", conStage = 7),
-  DebugGame("parejas", "Constelaciones etapa 10 (tríos)", level = 1, timed = false, tag = "parejas_etapa10", conStage = 10),
-  DebugGame("parejas", "Constelaciones etapa 13 (parejas y tríos)", level = 1, timed = false, tag = "parejas_etapa13", conStage = 13),
-  DebugGame("parejas", "Constelaciones etapa 16 (cielo grande)", level = 1, timed = false, tag = "parejas_etapa16", conStage = 16),
+  DebugGame("parejas", "Constelaciones nivel 7 (gemelos)", level = 1, timed = false, tag = "parejas_etapa7", conStage = 7),
+  DebugGame("parejas", "Constelaciones nivel 10 (tríos)", level = 1, timed = false, tag = "parejas_etapa10", conStage = 10),
+  DebugGame("parejas", "Constelaciones nivel 13 (parejas y tríos)", level = 1, timed = false, tag = "parejas_etapa13", conStage = 13),
+  DebugGame("parejas", "Constelaciones nivel 16 (cielo grande)", level = 1, timed = false, tag = "parejas_etapa16", conStage = 16),
   DebugGame("stroop", "Tinta o Palabra (con reloj 60 s)", level = 4, timed = true), // desde el nivel 4 la regla cambia
   DebugGame("calculo", "Carga exacta (con reloj 120 s)", level = 1, timed = true),
   DebugGame("calculo", "Carga exacta con tutorial", level = 1, timed = false, tutorial = true, tag = "calculo_tutorial"),
@@ -96,10 +96,10 @@ private val DebugGames = listOf(
   DebugGame("acoplamiento", "Acoplamiento (con reloj 120 s)", level = 1, timed = true),
   DebugGame("acoplamiento", "Acoplamiento con tutorial", level = 1, timed = false, tutorial = true, tag = "acoplamiento_tutorial"),
   DebugGame("correo", "Correo Estelar con tutorial", level = 1, timed = false, tutorial = true, tag = "correo_tutorial"),
-  DebugGame("correo", "Correo Estelar etapa 2 (la hora)", level = 1, timed = false, tag = "correo_etapa2", mailStage = 2),
-  DebugGame("correo", "Correo Estelar etapa 4 (lo que cancela la radio)", level = 1, timed = false, tag = "correo_etapa4", mailStage = 4),
-  DebugGame("correo", "Correo Estelar etapa 5 (el lazo)", level = 1, timed = false, tag = "correo_etapa5", mailStage = 5),
-  DebugGame("correo", "Correo Estelar etapa 8", level = 1, timed = false, tag = "correo_etapa8", mailStage = 8)
+  DebugGame("correo", "Correo Estelar nivel 2 (la hora)", level = 1, timed = false, tag = "correo_etapa2", mailStage = 2),
+  DebugGame("correo", "Correo Estelar nivel 4 (lo que cancela la radio)", level = 1, timed = false, tag = "correo_etapa4", mailStage = 4),
+  DebugGame("correo", "Correo Estelar nivel 5 (el lazo)", level = 1, timed = false, tag = "correo_etapa5", mailStage = 5),
+  DebugGame("correo", "Correo Estelar nivel 8", level = 1, timed = false, tag = "correo_etapa8", mailStage = 8)
 )
 
 /**

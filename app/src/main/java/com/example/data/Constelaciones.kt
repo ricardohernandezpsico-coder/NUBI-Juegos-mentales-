@@ -45,10 +45,10 @@ object Constelaciones {
   /** «Más seguidos de memoria: 5»; null sin racha. */
   fun streakLine(streak: Int?): String? = if (streak == null || streak <= 0) null else "Más seguidos de memoria: $streak"
 
-  /** «Etapa más alta: 4 de 6 (tríos)»; null si no es un grupo válido (1..6). */
+  /** «Nivel más alto: 4 de 6 (tríos)»; null si no es un grupo válido (1..6). */
   fun groupLine(group: Int?): String? {
     if (group == null || group !in 1..GROUPS) return null
-    return "Etapa más alta: $group de $GROUPS (${GROUP_NAMES[group - 1]})"
+    return "Nivel más alto: $group de $GROUPS (${GROUP_NAMES[group - 1]})"
   }
 
   /** «Más seguidos: 6»; con «¡Nuevo récord de seguidos!» solo cuando en esta partida se superó la guardada (lo dice Unity: igualarla no cuenta). null sin récord. */

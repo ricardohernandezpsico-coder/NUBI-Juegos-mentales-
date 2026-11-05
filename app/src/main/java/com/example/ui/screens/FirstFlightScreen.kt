@@ -494,17 +494,15 @@ private fun StartingPointPage(s: FlightState, hi: String, a: FlightActions) {
 
 @Composable
 private fun AreaLine(r: FirstFlight.AreaRow) {
-  val label = buildString {
-    append(r.stage)
-    if (!r.measured) append(" · calculado con lo que jugaste")
-    if (r.strong) append(" · tu fuerte hoy")
-    if (r.focus) append(" · donde más vamos a jugar")
-  }
+  // Tarea 230: sin el nombre de la etapa («Hábil»); queda lo que dice de dónde sale y qué sigue, con su primera letra en mayúscula
+  val label = listOfNotNull(
+    "calculado con lo que jugaste".takeIf { !r.measured }, "tu fuerte hoy".takeIf { r.strong }, "donde más vamos a jugar".takeIf { r.focus }
+  ).joinToString(" · ").replaceFirstChar { it.uppercase() }
   Column(Modifier.fillMaxWidth().semantics(mergeDescendants = true) { contentDescription = "${r.domain.displayName}: $label" }, verticalArrangement = Arrangement.spacedBy(4.dp)) {
     Text(r.domain.displayName, color = Color.White, fontFamily = AppFamily, fontWeight = FontWeight.SemiBold, fontSize = 18.sp)
     // La barra del kit (canal y churro), la misma de Juegos y Avance (Tarea 143, ítem 13); un área estimada (sin medir) se ve más tenue
     com.example.ui.components.KitBar(r.progress.coerceIn(0.04f, 1f), change = 0f, modifier = Modifier.alpha(if (r.measured) 1f else 0.55f), onCard = false)
-    Text(label, color = OnNightDim, fontFamily = AppFamily, fontSize = 18.sp, lineHeight = 23.sp)
+    if (label.isNotEmpty()) Text(label, color = OnNightDim, fontFamily = AppFamily, fontSize = 18.sp, lineHeight = 23.sp)
   }
 }
 

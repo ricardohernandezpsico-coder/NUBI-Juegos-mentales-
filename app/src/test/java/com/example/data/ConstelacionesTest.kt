@@ -49,9 +49,9 @@ class ConstelacionesTest {
 
   @Test
   fun `la etapa mas alta es de 6 grupos`() {
-    assertEquals("Etapa más alta: 1 de 6 (parejas)", Constelaciones.groupLine(1))
-    assertEquals("Etapa más alta: 4 de 6 (tríos)", Constelaciones.groupLine(4))
-    assertEquals("Etapa más alta: 6 de 6 (cielo grande)", Constelaciones.groupLine(6))
+    assertEquals("Nivel más alto: 1 de 6 (parejas)", Constelaciones.groupLine(1))
+    assertEquals("Nivel más alto: 4 de 6 (tríos)", Constelaciones.groupLine(4))
+    assertEquals("Nivel más alto: 6 de 6 (cielo grande)", Constelaciones.groupLine(6))
     assertNull(Constelaciones.groupLine(0))
     assertNull(Constelaciones.groupLine(7))
     assertNull(Constelaciones.groupLine(null))

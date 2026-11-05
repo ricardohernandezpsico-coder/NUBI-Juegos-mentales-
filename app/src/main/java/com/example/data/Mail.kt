@@ -68,8 +68,8 @@ object Mail {
    */
   val GROUP_NAMES = listOf("sellos y la hora", "lo diario y la radio", "el lazo", "dos horas al día", "el día completo")
 
-  /** «Etapa más alta: 3 de 5 (el lazo)»; null si no es un grupo válido (1..5). El juego muestra «Nivel N» (1..10): el nombre dice qué trae ese tramo. */
-  fun groupLine(group: Int?): String? = if (group == null || group !in 1..GROUPS) null else "Etapa más alta: $group de $GROUPS (${GROUP_NAMES[group - 1]})"
+  /** «Nivel más alto: 3 de 5 (el lazo)»; null si no es un grupo válido (1..5). El juego muestra «Nivel N» (1..10): el nombre dice qué trae ese tramo. */
+  fun groupLine(group: Int?): String? = if (group == null || group !in 1..GROUPS) null else "Nivel más alto: $group de $GROUPS (${GROUP_NAMES[group - 1]})"
 
   /** «Tu mejor día: 20 cartas»; con «¡Nuevo récord!» solo cuando en esta partida se superó el guardado (lo dice Unity: igualarlo no cuenta). null sin récord. */
   fun recordLine(best: Int?, isNew: Boolean?): String? {

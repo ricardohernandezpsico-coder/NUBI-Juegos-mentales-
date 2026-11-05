@@ -224,11 +224,10 @@ class VisibleTextsGuardTest {
   }
 
   @Test
-  fun `el modo mas dificil ya no se llama Experto, que es una etapa del avance`() {
+  fun `el modo mas dificil ya no se llama Experto`() {
     assertEquals("Al límite", com.example.data.PlayMode.EXPERTO.label)
-    assertTrue("«Experto» queda como la 4.ª etapa (Inicio · Aprendiz · Hábil · Experto · Maestro)", "Experto" in com.example.data.Skill.STAGES)
     assertEquals("al límite", com.example.data.RetoChoice.modeWords(com.example.data.PlayMode.EXPERTO))
-    assertTrue("ningún nombre de modo coincide con el de una etapa", com.example.data.PlayMode.entries.none { it.label in com.example.data.Skill.STAGES })
+    assertTrue("ningún nombre de modo es «Experto» (Tarea 230: las etapas salieron, pero «Experto» sigue siendo el nombre interno)", com.example.data.PlayMode.entries.none { it.label == "Experto" })
     assertEquals("Con reloj (2 minutos)", com.example.data.RetoChoice.timedLabel("calculo"))
   }
 
@@ -616,6 +615,23 @@ class VisibleTextsGuardTest {
     assertEquals("la lista de excepciones quedó vacía", emptySet<String>(), percentileTexts)
     assertTrue("y «percentil» sigue en la lista de lo que no se dice", "percentil" in banned)
   }
+  // ------------------------------------------------------------------ «etapa» (Tarea 230, 4-nov: Ricardo quitó las etapas de toda la app; la liga de la semana tiene «divisiones» y Avance conserva solo los puntos y la barra)
+
+  @Test
+  fun `etapa no aparece en ningun texto visible de la app`() {
+    val etapa = Regex("(?i)\\betapa")
+    val codeInTemplate = Regex("[$][{][^}]*[}]|[$][A-Za-z_][A-Za-z0-9_]*")
+    val found = mutableListOf<String>()
+    File("src/main/java").walkTopDown().filter { it.extension == "kt" }.forEach { f ->
+      f.readLines().forEachIndexed { i, raw ->
+        // lo que va dentro de una plantilla (nombre con signo de pesos, o llaves) es código, no lo que se ve: por ejemplo el número de la etapa interna de Engranajes
+        for (text in visibleLiteralsOf(raw)) if (etapa.containsMatchIn(text.replace(codeInTemplate, "")) && !Regex("[a-z0-9_]+").matches(text)) found += "${f.path.removePrefix("src/main/java/").replace('\\', '/')}:${i + 1} «$text»"
+      }
+    }
+    assertTrue("Ningún texto visible dice «etapa» (Tarea 230; ahora «nivel» solo donde un juego cuenta niveles, y «división» para la liga):\n" + found.joinToString("\n"), found.isEmpty())
+    assertTrue("la guardia atrapa «Etapa Hábil · 470 de 1000 puntos» y deja pasar «470 de 1000 puntos»", etapa.containsMatchIn("Etapa Hábil · 470 de 1000 puntos") && !etapa.containsMatchIn("470 de 1000 puntos"))
+  }
+
   // ---------------------------------------------------------------- «El nombre de la app» (Tarea 217, 2-nov: la app se llama «Nubilus»; la mascota sigue siendo «Nubi»)
 
   /** Las frases donde «Nubi» sería la APP (y debe decir «Nubilus»): ninguna puede estar en un texto visible (`auditoria-fable/nombre-app.md` §7.5). La mascota («Nubi sugiere», «Hola, soy Nubi») no está en la lista. */

@@ -27,11 +27,11 @@ class EngranajesTest {
 
   @Test
   fun `la etapa mas alta se nombra con sus cinco grupos`() {
-    assertEquals("Etapa más alta: 1 de 5 (motor y correas)", Engranajes.etapaLine(1))
-    assertEquals("Etapa más alta: 2 de 5 (ramas)", Engranajes.etapaLine(2))
-    assertEquals("Etapa más alta: 3 de 5 (carga y compuerta)", Engranajes.etapaLine(3))
-    assertEquals("Etapa más alta: 4 de 5 (tres piezas)", Engranajes.etapaLine(4))
-    assertEquals("Etapa más alta: 5 de 5 (dos llaves)", Engranajes.etapaLine(5))
+    assertEquals("Nivel más alto: 1 de 5 (motor y correas)", Engranajes.etapaLine(1))
+    assertEquals("Nivel más alto: 2 de 5 (ramas)", Engranajes.etapaLine(2))
+    assertEquals("Nivel más alto: 3 de 5 (carga y compuerta)", Engranajes.etapaLine(3))
+    assertEquals("Nivel más alto: 4 de 5 (tres piezas)", Engranajes.etapaLine(4))
+    assertEquals("Nivel más alto: 5 de 5 (dos llaves)", Engranajes.etapaLine(5))
     assertNull(Engranajes.etapaLine(0))
     assertNull(Engranajes.etapaLine(6))
     assertNull(Engranajes.etapaLine(null))

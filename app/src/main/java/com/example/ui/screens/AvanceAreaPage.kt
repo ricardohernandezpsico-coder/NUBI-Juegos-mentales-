@@ -52,7 +52,7 @@ import com.example.ui.components.GameEmblem
 import com.example.ui.components.KitBar
 import com.example.ui.components.OnBoardText
 import com.example.ui.components.SpaceSectionTitle
-import com.example.ui.components.StageScale
+import com.example.ui.components.PointsBar
 import com.example.ui.i18n.getGameTitle
 import com.example.ui.theme.TitleFamily
 import com.example.ui.theme.Clay
@@ -95,8 +95,8 @@ internal fun AvanceAreaPage(
       item { PageHeader(points, areaName) }
       item {
         Column {
-          StageScale(if (points.measured) points.fill else null, onCard = false, change = points.change, barTag = "page_bar", namesTag = "page_stages", labelSp = 16)
-          OnBoardText(AreaPoints.toNextSentence(points, areaName), color = OnNight, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 10.dp).testTag("page_to_next"))
+          PointsBar(if (points.measured) points.fill else null, onCard = false, change = points.change, barTag = "page_bar")
+          OnBoardText(AreaPoints.pageSentence(points, areaName), color = OnNight, fontSize = 16.sp, lineHeight = 21.sp, modifier = Modifier.padding(top = 10.dp).testTag("page_to_next"))
         }
       }
       item { WeeksSection(weekly, points, areaName) }
@@ -147,7 +147,7 @@ private fun BackRow(onBack: () -> Unit) {
   }
 }
 
-/** El nombre del área (con su punto de color) y «470 puntos de 1000 · Etapa Hábil» (con letra grande, en dos líneas); un área sin ninguna partida dice solo «Aún sin medir» (Tarea 174). */
+/** El nombre del área (con su punto de color) y «470 puntos de 1000» (Tarea 230: antes «… · Etapa Hábil»); un área sin ninguna partida dice solo «Aún sin medir» (Tarea 174). */
 @Composable
 private fun PageHeader(p: AreaPoints, areaName: String) {
   val measurer = androidx.compose.ui.text.rememberTextMeasurer()
@@ -163,17 +163,8 @@ private fun PageHeader(p: AreaPoints, areaName: String) {
         OnBoardText(areaName, color = OnNight, fontSize = sp.sp, fontWeight = FontWeight.Bold, fontFamily = TitleFamily, lineHeight = (sp + 4).sp, modifier = Modifier.semantics { heading() }.testTag("page_title"))
       }
     }
-    val stage = if (p.measured) "Etapa ${p.stageName}" else "Aún sin medir"
-    val total = "${p.total} puntos de ${AreaPoints.SCALE}"
-    if (!p.measured) {
-      // un área sin ninguna partida no dice «0 puntos de 1000»: dice solo «Aún sin medir», como el resto de la app (Tarea 174)
-      OnBoardText(stage, color = OnNight, fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 24.sp, modifier = Modifier.padding(top = 6.dp).testTag("page_points"))
-    } else if (LocalDensity.current.fontScale > 1.15f) {
-      OnBoardText(total, color = OnNight, fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 24.sp, modifier = Modifier.padding(top = 6.dp).testTag("page_points"))
-      OnBoardText(stage, color = OnNight, fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 24.sp, modifier = Modifier.testTag("page_stage"))
-    } else {
-      OnBoardText("$total · $stage", color = OnNight, fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 24.sp, modifier = Modifier.padding(top = 6.dp).testTag("page_points"))
-    }
+    // un área sin ninguna partida no dice «0 puntos de 1000»: dice solo «Aún sin medir», como el resto de la app (Tarea 174); con partidas, «470 puntos de 1000»
+    OnBoardText(if (p.measured) "${p.total} puntos de ${AreaPoints.SCALE}" else "Aún sin medir", color = OnNight, fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 24.sp, modifier = Modifier.padding(top = 6.dp).testTag("page_points"))
   }
 }
 

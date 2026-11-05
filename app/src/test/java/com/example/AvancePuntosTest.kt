@@ -298,9 +298,9 @@ class AvancePuntosTest {
     page(logMemoria(), measures = measures, played = mapOf("secuencia" to now, "parejas" to now - 2 * day, "bodega" to now - 3 * day))
     val p = AreaPoints.compute("MEMORIA", memoria, logMemoria(), now)
     assertEquals("Memoria", textOf("page_title"))
-    assertEquals("${p.total} puntos de 1000 · Etapa ${p.stageName}", textOf("page_points"))
+    assertEquals("${p.total} puntos de 1000", textOf("page_points"))          // Tarea 230: sin «· Etapa Hábil»
     rule.onNodeWithTag("page_bar", useUnmergedTree = true).assertExists()
-    assertEquals(AreaPoints.toNextSentence(p, "Memoria"), textOf("page_to_next"))
+    assertEquals(AreaPoints.pageSentence(p, "Memoria"), textOf("page_to_next"))
     rule.onNodeWithTag("page_chart", useUnmergedTree = true).assertExists()
     rule.onNodeWithText("Tus puntos en las últimas 8 semanas").assertExists()
     assertEquals("${AreaPoints.weekly(memoria, logMemoria(), now).last()} puntos", textOf("chart_last"))
@@ -408,7 +408,7 @@ class AvancePuntosTest {
   fun un_area_sin_partidas_dice_que_todavia_no_hay_puntos_y_que_cada_juego_suma_desde_su_primera_partida() {
     page(emptyList())
     assertEquals("un área sin medir no dice «0 puntos de 1000»: dice solo «Aún sin medir»", "Aún sin medir", textOf("page_points"))
-    assertEquals("y no lleva etapa aparte", 0, count("page_stage"))
+    assertEquals("y no lleva ninguna línea de etapa aparte (Tarea 230)", 0, count("page_stage"))
     assertEquals("Todavía sin puntos en Memoria: cada juego suma desde su primera partida a tu medida.", textOf("page_to_next"))
     assertEquals("Todavía no hay semanas en Memoria. El gráfico aparece cuando tengas 4.", textOf("page_weeks_empty"))
     for (g in memoria) assertEquals("Todavía sin partidas. Este juego aporta hasta 250 puntos.", textOf("page_game_empty_$g"))
@@ -444,8 +444,8 @@ class AvancePuntosTest {
     for ((beside, below) in inline) assertTrue("($fontScale) los puntos van al lado de la barra o debajo de ella", beside || below)
     assertEquals("($fontScale) todas las tarjetas ponen los puntos en el mismo lugar", 1, inline.map { it.first }.toSet().size)
     for (g in memoria) assertNoWordSplit("page_game_points_$g", "puntos de $g a letra $fontScale")
-    val bar = bounds("page_bar"); val names = count("page_stages")
-    assertTrue("la barra de etapas se ve", bar.height > 0f && names == 1)
+    val bar = bounds("page_bar")
+    assertTrue("la barra de puntos se ve, sin nombres de etapa debajo", bar.height > 0f && count("page_stages") == 0)
     // las dos cifras del gráfico no se pisan entre sí ni con el eje, a ninguna letra (a 2,0 una cifra de 16 sp mide ~42 dp)
     val last = bounds("chart_last"); val first = bounds("chart_first"); val axisFirst = bounds("chart_axis_first"); val axisLast = bounds("chart_axis_last")
     assertTrue("($fontScale) la cifra de arriba ($last) queda sobre la de abajo ($first)", last.bottom <= first.top + 1f)
@@ -457,10 +457,14 @@ class AvancePuntosTest {
   @Test fun la_pagina_cabe_con_letra_1_3() = assertPageFits(1.3f)
   @Test fun la_pagina_cabe_con_letra_2_0() = assertPageFits(2f)
 
-  @Test
-  fun con_letra_grande_los_nombres_de_las_etapas_pasan_a_una_frase_y_nada_se_parte() {
-    page(logMemoria(), fontScale = 1.3f)
-    rule.onNode(hasText("Etapas: Inicio · Aprendiz · Hábil · Experto · Maestro", substring = true), useUnmergedTree = true).assertExists()
-    rule.onNode(hasText("Vas en ", substring = true), useUnmergedTree = true).assertExists()                 // dice cuál es la tuya
+  private fun assertNoStageWords(fontScale: Float) {
+    // Tarea 230 (4-nov): las etapas Inicio · Aprendiz · Hábil · Experto · Maestro, «Vas en Hábil» y «Te faltan N puntos para X» salieron de la app; queda el número de puntos y la barra
+    page(logMemoria(), fontScale = fontScale)
+    for (gone in listOf("Etapa", "Etapas", "Vas en ", "Te faltan", "Te falta ", "Inicio", "Aprendiz", "Hábil", "Experto", "Maestro"))
+      rule.onNode(hasText(gone, substring = true), useUnmergedTree = true).assertDoesNotExist()
   }
+
+  @Test fun la_pagina_del_area_no_dice_etapa_con_letra_1_0() = assertNoStageWords(1f)
+  @Test fun la_pagina_del_area_no_dice_etapa_con_letra_1_3() = assertNoStageWords(1.3f)
+  @Test fun la_pagina_del_area_no_dice_etapa_con_letra_2_0() = assertNoStageWords(2f)
 }

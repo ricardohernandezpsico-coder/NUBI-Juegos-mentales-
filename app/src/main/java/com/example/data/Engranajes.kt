@@ -43,10 +43,10 @@ object Engranajes {
     return 100f * correct.coerceIn(0, total) / total
   }
 
-  /** «Etapa más alta: 3 de 5 (carga y compuerta)»; null si no es una etapa válida (1..5). */
+  /** «Nivel más alto: 3 de 5 (carga y compuerta)»; null si no es una etapa válida (1..5). */
   fun etapaLine(etapa: Int?): String? {
     if (etapa == null || etapa !in 1..ETAPAS.size) return null
-    return "Etapa más alta: $etapa de ${ETAPAS.size} (${ETAPAS[etapa - 1]})"
+    return "Nivel más alto: $etapa de ${ETAPAS.size} (${ETAPAS[etapa - 1]})"
   }
 
   /** «Faltan 4 luces: tu cohete espera en el hangar» (con 1: «Falta 1 luz»); null si no hay luces o ya despegó con todas (0). */

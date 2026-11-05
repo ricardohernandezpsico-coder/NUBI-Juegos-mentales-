@@ -45,7 +45,6 @@ object Skill {
   /** Juegos de rondas largas: "superado" pide 6 rondas en vez de 12 ensayos. */
   private val LONG_ROUNDS = setOf("satelites", "correo", "secuencia", "anagramas", "calculo", "engranajes", "bodega")
 
-  val STAGES = listOf("Inicio", "Aprendiz", "Hábil", "Experto", "Maestro")
 
   val ladders: Map<String, Ladder> = mapOf(
     "stroop" to Ladder(5), "anagramas" to Ladder(5), "calculo" to Ladder(5), "engranajes" to Ladder(12), "bodega" to Ladder(12),
@@ -130,7 +129,6 @@ object Skill {
   /** Etapa 0..4 (Inicio..Maestro): quintos del avance de un juego (0..1). Los PUNTOS (de cada área y de cada juego) y lo que falta para la etapa que sigue viven en [AreaPoints]/[GamePoints] (Tarea 159: una sola escala en toda la app). */
   fun stage(progress: Float): Int = (progress.coerceIn(0f, 1f) * 5f).toInt().coerceIn(0, 4)
 
-  fun stageName(progress: Float): String = STAGES[stage(progress)]
 
   /** El nivel de [gameId] dicho en palabras, «Ya repites 6 luces seguidas» (Tarea 159; ver [LevelLines]). [level] = 1..N de su escalera ([Ladder.levels]); [timed] = la persona juega con reloj (solo cambia Freno de Emergencia). */
   fun levelLine(gameId: String, level: Int, timed: Boolean = false): String = LevelLines.lineAt(gameId, level, timed)

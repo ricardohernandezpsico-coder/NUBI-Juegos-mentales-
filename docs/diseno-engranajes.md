@@ -233,7 +233,7 @@ En «cualquier grupo», el grupo «todas fallan», que se arregla con el motor, 
 ## 9. Pantalla final y medidas
 
 - Máquinas arregladas, de 10.
-- Etapa más alta, de 5 grupos.
+- Nivel más alto, de 5 grupos (Tarea 230: antes «Etapa más alta»).
 - Luces del cohete.
 - Cohetes en órbita.
 - Ritmo, en segundos por máquina.

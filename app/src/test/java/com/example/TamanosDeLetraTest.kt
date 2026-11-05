@@ -6,12 +6,12 @@ import org.junit.Test
 import java.io.File
 
 /**
- * La letra de la app (Tarea 153; auditoría de coherencia B7 y C6; regla de `docs/DESIGN.md` §3 y §8.7): el texto que informa va a **16 sp o más**; 14 sp SOLO en los rótulos de los gráficos (la escala de las 5 etapas, el gráfico de las 4 semanas y los de los finales).
+ * La letra de la app (Tarea 153; auditoría de coherencia B7 y C6; regla de `docs/DESIGN.md` §3 y §8.7): el texto que informa va a **16 sp o más**; 14 sp SOLO en los rótulos de los gráficos (los de los finales y los ejes del Contrarreloj; la escala de las 5 etapas salió en la Tarea 230).
  * Se mira el código: ningún `fontSize` de la app baja de 16 sp fuera de esos archivos, y los estilos de Material que usa la app tampoco.
  */
 class TamanosDeLetraTest {
-  /** Los únicos archivos con 14 sp: rótulos de gráfico (la escala de las etapas y el gráfico de las 4 semanas, en `StageScale.kt`, los de los finales y, desde la Tarea 199, los dos rótulos del eje de «Tus últimas 10 marcas» en `ContrarrelojPage.kt`). */
-  private val chartLabelFiles = setOf("ui/components/StageScale.kt", "games/GameResultScreen.kt", "ui/screens/ContrarrelojPage.kt")
+  /** Los únicos archivos con 14 sp: rótulos de gráfico (los de los finales y, desde la Tarea 199, los dos rótulos del eje de «Tus últimas 10 marcas» en `ContrarrelojPage.kt`; `StageScale.kt` salió con las etapas, Tarea 230). */
+  private val chartLabelFiles = setOf("games/GameResultScreen.kt", "ui/screens/ContrarrelojPage.kt")
   private val size = Regex("fontSize = (\\d+(?:\\.\\d+)?)\\.sp")
 
   @Test
@@ -54,8 +54,6 @@ class TamanosDeLetraTest {
       assertTrue("$name no lleva «sem.» abreviado", !src.contains("sem.\"") && !src.contains(" sem. "))
       for (m in size.findAll(src)) assertTrue("$name trae ${m.value}", m.groupValues[1].toFloat() >= 16f)
     }
-    val chart = File("src/main/java/com/example/ui/components/StageScale.kt").readText()
-    assertTrue("los rótulos de las etapas de las láminas siguen a 14 sp (rótulo de gráfico) y los de la página, a 16", chart.contains("labelSp: Int = 14") && !chart.contains("hace 3 sem."))
-    assertTrue("la página pide los nombres de las etapas a 16 sp", File("src/main/java/com/example/ui/screens/AvanceAreaPage.kt").readText().contains("labelSp = 16"))
+    assertTrue("la barra de puntos ya no tiene rótulos (Tarea 230)", !File("src/main/java/com/example/ui/components/PointsBar.kt").readText().contains("fontSize"))
   }
 }

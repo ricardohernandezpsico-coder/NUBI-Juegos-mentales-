@@ -45,6 +45,21 @@ class AchievementsTest {
   }
 
   @Test
+  fun `las partidas del Contrarreloj suman al total de partidas y a las medallas por numero de partidas (Tarea 230)`() {
+    val history = (0 until 24).map { game("secuencia", it % 3) }
+    val plain = computeAchievementStats(history, emptyMap())
+    assertEquals(24, plain.totalGames)
+    assertFalse("con 24 partidas todavía no hay «Constante» (25)", "partidas_25" in Achievements.unlocked(plain))
+    val withTrial = computeAchievementStats(history, emptyMap(), extraGames = 1)
+    assertEquals("la partida del Contrarreloj suma", 25, withTrial.totalGames)
+    assertTrue("y la 25.ª, aunque sea de Contrarreloj, gana «Constante»", "partidas_25" in Achievements.unlocked(withTrial))
+    assertEquals("los juegos distintos no cambian", plain.distinctGames, withTrial.distinctGames)
+    assertEquals("el mejor día tampoco", plain.maxGamesInOneDay, withTrial.maxGamesInOneDay)
+    assertEquals("sin partidas de siempre, solo Contrarreloj ya es «Primer paso»", 3, computeAchievementStats(emptyList(), emptyMap(), extraGames = 3).totalGames)
+    assertTrue("primer_paso" in Achievements.unlocked(computeAchievementStats(emptyList(), emptyMap(), extraGames = 1)))
+  }
+
+  @Test
   fun `sin partidas no hay logros`() {
     assertTrue(Achievements.unlocked(computeAchievementStats(emptyList(), emptyMap())).isEmpty())
   }

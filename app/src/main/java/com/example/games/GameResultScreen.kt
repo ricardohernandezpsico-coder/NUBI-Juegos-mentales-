@@ -62,7 +62,6 @@ import com.example.ui.components.ResultFrame
 import com.example.ui.components.ResultNotice
 import com.example.ui.components.ResultNotices
 import com.example.ui.components.rememberReduceMotion
-import com.example.model.LevelTier
 import com.example.ui.theme.Clay
 import com.example.ui.theme.ClayButton
 import com.example.ui.theme.AppFamily
@@ -163,7 +162,8 @@ fun GameResultScreen(
       modifier = Modifier.testTag("btn_result_replay")
     )
   }
-  val levelNotice = if (didLevelUp) ResultNotice(if (result.level >= 5) "¡Tu maestría sube!" else "¡Subiste de etapa!", lime = true, pop = levelPop) else null
+  // Tarea 230: «¡Subiste de etapa!» salió con las etapas (era una celebración); «¡Tu maestría sube!» se queda para el nivel más alto
+  val levelNotice = if (didLevelUp && result.level >= 5) ResultNotice("¡Tu maestría sube!", lime = true, pop = levelPop) else null
   val modeNotice = modeNote?.let { ResultNotice(it, lime = it.startsWith("¡")) }
   val frame = ResultFrame(
     score = com.example.ui.components.ResultScore.line(result), levelNotice = levelNotice, modeNotice = modeNotice,
@@ -190,8 +190,6 @@ fun GameResultScreen(
         Stat("${result.score}", "puntos")
         Dot()
         Stat("${result.correctAnswers}/${result.totalTrials}", "aciertos")
-        Dot()
-        Stat(LevelTier.fromLevel(result.level).tierName, "etapa")
         Dot()
         Stat(if (result.timed) "Con reloj" else "Sin reloj", "modo")
       }

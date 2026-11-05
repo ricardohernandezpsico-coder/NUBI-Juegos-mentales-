@@ -176,6 +176,17 @@ class GuardadoTodoONadaTest {
     assertEquals("un fallo dentro de la transacción no deja la fila", 2, trialRows().size)
   }
 
+  @Test
+  fun `la medalla ganada con un Contrarreloj vuelve en su resultado, una sola vez (Tarea 230)`() {
+    val r = repo()
+    val first = runBlocking { r.recordTimeTrial(trial(UUID.randomUUID().toString())) }
+    assertTrue("la primera partida, aunque sea de Contrarreloj, es el «Primer paso»: ${first.newAchievements}", "primer_paso" in first.newAchievements)
+    val second = runBlocking { r.recordTimeTrial(trial(UUID.randomUUID().toString())) }
+    assertTrue("una medalla ya ganada no se ofrece otra vez: ${second.newAchievements}", "primer_paso" !in second.newAchievements)
+    val again = runBlocking { r.recordTimeTrial(trial(first.result.id)) }
+    assertTrue("la doble entrega de la misma partida no celebra nada", again.newAchievements.isEmpty())
+  }
+
   // ---------------------------------------------------------------- el id del lanzamiento nunca se repite entre dos partidas
 
   @Test

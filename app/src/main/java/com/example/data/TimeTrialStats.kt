@@ -38,7 +38,9 @@ object TimeTrialStats {
     val weekBestIsToday: Boolean,
     val maxLevel: Int,
     /** El récord de una pista ANTERIOR del mismo juego (versión, marca con la regla de ESA pista: en la 1, solo aciertos), si la hay: queda en el detalle («tu récord de la pista 1»). */
-    val olderTrackRecord: Pair<Int, Int>? = null
+    val olderTrackRecord: Pair<Int, Int>? = null,
+    /** Las medallas que esta partida acaba de ganar (Tarea 230: una medalla de constancia o de partidas ganada con un Contrarreloj se celebra al terminar ESE Contrarreloj); vacío casi siempre. */
+    val newAchievements: List<String> = emptyList()
   )
 
   fun outcome(all: List<TimeTrialResult>, result: TimeTrialResult, now: Long = result.timestamp): Outcome {

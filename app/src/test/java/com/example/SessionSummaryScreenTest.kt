@@ -143,7 +143,7 @@ class SessionSummaryScreenTest {
     show()
     assertEquals("9 puntos en Memoria", text("summary_game_bodega"))
     assertEquals("12 puntos en Atención", text("summary_game_freno"))
-    assertEquals("un juego que no sumó puntos dice la palabra que la app ya tiene para un área que no cambió («te mantuviste»), en paralelo con «12 puntos en Atención» y diciendo en qué área fue: ya no la palabra suelta «Hecho»", "Te mantuviste en Razonamiento", text("summary_game_aterrizaje"))
+    assertEquals("un juego que no sumó puntos dice que los puntos del área no cambiaron (Tarea 230: antes «te mantuviste», que choca con «te quedas» de la liga), en paralelo con «12 puntos en Atención» y diciendo en qué área fue: ya no la palabra suelta «Hecho»", "Tus puntos de Razonamiento no cambiaron", text("summary_game_aterrizaje"))
     assertEquals("330 de ${AreaPoints.SCALE} puntos", text("summary_area_points_memoria"))
     assertEquals("410 de ${AreaPoints.SCALE} puntos", text("summary_area_points_atencion"))
     assertEquals("90 de ${AreaPoints.SCALE} puntos", text("summary_area_points_razonamiento"))
@@ -151,7 +151,7 @@ class SessionSummaryScreenTest {
     assertEquals("Trabajaste memoria, atención y razonamiento", text("summary_sentence"))
     // ya no están: la línea que repetía el número, la racha suelta y los títulos en mayúsculas
     val all = texts
-    for (gone in listOf("Hoy sumaste", "Hoy te mantuviste", "Racha:", "TUS JUEGOS", "TU AVANCE", "Etapa ", "Hecho")) assertTrue("«$gone» ya no está en el resumen", all.none { it.contains(gone) })
+    for (gone in listOf("Hoy sumaste", "Hoy te mantuviste", "te mantuviste", "Racha:", "TUS JUEGOS", "TU AVANCE", "Etapa ", "Hecho")) assertTrue("«$gone» ya no está en el resumen", all.none { it.contains(gone) })
     assertTrue("ninguna palabra de 4 letras o más va en mayúsculas sostenidas", all.none { t -> Regex("""[A-ZÁÉÍÓÚÑ]{4,}""").containsMatchIn(t) })
   }
 

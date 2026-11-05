@@ -122,7 +122,7 @@ fun SessionSummaryScreen(
               Column(Modifier.weight(1f)) {
                 Text(def?.let { getGameTitle(it.id, lang, it.title) } ?: g.gameId, color = Clay.Ink, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.testTag("summary_name_${g.gameId}"))
                 val areaName = domainOf(g.area)?.displayName ?: ""
-                // los PUNTOS DE AVANCE que sumó hoy en su área (la misma escala del resto de la app) o «Te mantuviste en Razonamiento» (Tarea 198: antes «Hecho», una palabra suelta que no decía nada del área); sin partida, el área (Tarea 159: antes «puntaje de 100» de la partida, otra escala)
+                // los PUNTOS DE AVANCE que sumó hoy en su área (la misma escala del resto de la app) o «Tus puntos de Razonamiento no cambiaron» (Tarea 198; Tarea 230, antes «Te mantuviste en Razonamiento»: antes «Hecho», una palabra suelta que no decía nada del área); sin partida, el área (Tarea 159: antes «puntaje de 100» de la partida, otra escala)
                 Text(
                   if (!g.played) areaName else AreaPoints.gameLine(g.gained, areaName),
                   color = Clay.InkMuted, fontSize = 16.sp, modifier = Modifier.testTag("summary_game_${g.gameId}")

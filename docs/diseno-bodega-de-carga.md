@@ -216,7 +216,7 @@ boceto: `spring(x, v, objetivo, dt, frecuencia, amortiguación)`, integrado cada
 - **Tu racha más larga.**
 - **Tu bodega más grande hoy:** el pedido más grande sin errores.
 - **Tu récord:** la bodega más grande de siempre, guardada entre partidas en preferencias que **van en el respaldo**.
-- **Etapa más alta**, de 5 grupos.
+- **Nivel más alto**, de 5 grupos (Tarea 230: antes «Etapa más alta»).
 - **Consejo**: Truco para la próxima, en el final con sentido (`FinalModels`; la marca «Truco: » la lee `ResultAdvice.tipOf`): «Imagina cada objeto dentro de su escotilla y dile su nombre en voz baja».
 - **Nota común:** «Medida de esta partida… No es un diagnóstico».
 - Se agrega su justificación a `docs/medidas-juegos-estrella.md`, con las referencias de la sección 2.

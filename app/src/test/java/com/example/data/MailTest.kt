@@ -45,9 +45,9 @@ class MailTest {
     assertNull(Mail.clockLine(0, 0))
     assertEquals("Cartas bien puestas: 20", Mail.cardsLine(20))
     assertNull(Mail.cardsLine(-1))
-    assertEquals("Etapa más alta: 3 de 5 (el lazo)", Mail.groupLine(3))
-    assertEquals("Etapa más alta: 1 de 5 (sellos y la hora)", Mail.groupLine(1))
-    assertEquals("Etapa más alta: 5 de 5 (el día completo)", Mail.groupLine(5))
+    assertEquals("Nivel más alto: 3 de 5 (el lazo)", Mail.groupLine(3))
+    assertEquals("Nivel más alto: 1 de 5 (sellos y la hora)", Mail.groupLine(1))
+    assertEquals("Nivel más alto: 5 de 5 (el día completo)", Mail.groupLine(5))
     assertNull(Mail.groupLine(0))
     assertNull(Mail.groupLine(6))
   }

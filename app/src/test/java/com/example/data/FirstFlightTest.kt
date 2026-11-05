@@ -292,7 +292,6 @@ class FirstFlightTest {
     val rows = FirstFlight.startingPoint(s, AgeBand.ADULT)
     assertEquals(4, rows.size)
     assertTrue(rows.all { it.measured })
-    assertTrue(rows.all { it.stage in Skill.STAGES })
     assertEquals(1, rows.count { it.strong })
     assertEquals(DomainType.MEMORIA, rows.first { it.strong }.domain)
     // Donde más vamos a jugar: la primera del camino de hoy (las metas primero).

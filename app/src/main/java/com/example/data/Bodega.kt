@@ -37,10 +37,10 @@ object Bodega {
     return 100f * firstTry.coerceIn(0, total) / total
   }
 
-  /** «Etapa más alta: 4 de 5 (la bodega gira)»; null si no es un grupo válido (1..5). */
+  /** «Nivel más alto: 4 de 5 (la bodega gira)»; null si no es un grupo válido (1..5). */
   fun groupLine(group: Int?): String? {
     if (group == null || group !in 1..GROUPS.size) return null
-    return "Etapa más alta: $group de ${GROUPS.size} (${GROUPS[group - 1]})"
+    return "Nivel más alto: $group de ${GROUPS.size} (${GROUPS[group - 1]})"
   }
 
   /** «Más seguidos: 5 al primer intento»; solo con [MIN_FOR_DETAILS] o más objetos y una racha de 2 o más. */

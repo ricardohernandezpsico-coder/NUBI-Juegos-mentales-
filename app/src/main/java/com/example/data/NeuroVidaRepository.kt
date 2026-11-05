@@ -788,6 +788,12 @@ class NeuroVidaRepository(
         beforeCommitForTest?.invoke()
         val all = timeTrialResultDao.getAllSync().map { it.toDomain() }
         TimeTrialStats.outcome(all, result)
+      }.let { outcome ->
+        // Tarea 230 (pendiente de la 227): un Contrarreloj cuenta como día jugado y como partida, así que puede ganar una medalla de constancia o de partidas; se evalúa AQUÍ, dentro del candado de los guardados (`unlockNewAchievements` solo devuelve las nuevas, una vez)
+        // y la pantalla la celebra al terminar ESE Contrarreloj, como a una partida de siempre.
+        val allTt = timeTrialResultDao.getAllSync().map { it.toDomain() }
+        val stats = computeAchievementStats(gameHistory.value, gameRanks.value, extraDays = allTt.map { Streak.dayOf(it.timestamp) }, extraGames = allTt.size)
+        outcome.copy(newAchievements = unlockNewAchievements(stats, result.timestamp))
       }
     }
   }
@@ -1154,7 +1160,7 @@ class NeuroVidaRepository(
       gameRatingAfter = saved.gameRatingAfter,
       globalBefore = saved.globalBefore,
       globalAfter = saved.globalAfter,
-      newAchievements = unlockNewAchievements(computeAchievementStats(saved.allResults, saved.ratingsAfter, extraDays = timeTrialResults.value.map { Streak.dayOf(it.timestamp) }), result.timestamp),          // (Tarea 227: los días de Contrarreloj cuentan para la racha)
+      newAchievements = unlockNewAchievements(computeAchievementStats(saved.allResults, saved.ratingsAfter, extraDays = timeTrialResults.value.map { Streak.dayOf(it.timestamp) }, extraGames = timeTrialResults.value.size), result.timestamp),          // (Tarea 227: los días de Contrarreloj cuentan para la racha)
       modePassed = saved.modePassed,
       expertUnlocked = saved.expertUnlocked
     )

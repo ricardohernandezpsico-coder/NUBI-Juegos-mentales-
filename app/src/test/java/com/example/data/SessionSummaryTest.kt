@@ -31,7 +31,7 @@ class SessionSummaryTest {
     assertEquals("Hoy sumaste 12 puntos.", AreaPoints.todayLine(s.areas[0], "Atención"))
     // Razonamiento: calculo no se movió en la sesión; Memoria sin medir.
     assertEquals(0, s.areas[1].weekDelta)
-    assertEquals("Hoy te mantuviste.", AreaPoints.todayLine(s.areas[1], "Razonamiento"))
+    assertEquals("Hoy, tus puntos de Razonamiento no cambiaron.", AreaPoints.todayLine(s.areas[1], "Razonamiento"))
     assertEquals(false, s.areas[2].measured)
   }
 }

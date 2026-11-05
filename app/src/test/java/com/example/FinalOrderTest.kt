@@ -174,16 +174,27 @@ class FinalOrderTest {
   // ------------------------------------------------------------------ los avisos
 
   @Test
-  fun los_avisos_salen_bajo_la_frase_en_este_orden_la_etapa_y_la_nota_del_modo() {
-    show(didLevelUp = true, modeNote = "¡Desafío superado! Subes a la etapa siguiente.")
+  fun los_avisos_salen_bajo_la_frase_en_este_orden_la_maestria_y_la_nota_del_modo() {
+    // Tarea 230: «¡Subiste de etapa!» salió con las etapas; el aviso de nivel que queda es «¡Tu maestría sube!», desde el nivel 5
+    show(result = punta.copy(level = 5), didLevelUp = true, modeNote = "¡Desafío superado! Tu avance subió y se abrió Al límite")
     composeTestRule.mainClock.advanceTimeBy(1500)
     assertEquals(1, countTag("result_notices"))
     assertEquals(2, countTag("result_notice"))
     assertTrue(yOfTag("progress_phrase") < yOfTag("result_notices"))
     assertTrue(yOfTag("result_notices") < yOfTag("next_trick"))
-    val subiste = composeTestRule.onNodeWithText("¡Subiste de etapa!").fetchSemanticsNode().positionInRoot
-    val modo = composeTestRule.onNodeWithText("¡Desafío superado! Subes a la etapa siguiente.").fetchSemanticsNode().positionInRoot
-    assertTrue("la etapa primero, la nota del modo después (en la misma fila o debajo)", subiste.y < modo.y || (subiste.y == modo.y && subiste.x < modo.x))
+    val subiste = composeTestRule.onNodeWithText("¡Tu maestría sube!").fetchSemanticsNode().positionInRoot
+    val modo = composeTestRule.onNodeWithText("¡Desafío superado! Tu avance subió y se abrió Al límite").fetchSemanticsNode().positionInRoot
+    assertTrue("la maestría primero, la nota del modo después (en la misma fila o debajo)", subiste.y < modo.y || (subiste.y == modo.y && subiste.x < modo.x))
+  }
+
+  @Test
+  fun subir_de_nivel_antes_del_5_ya_no_celebra_una_etapa() {
+    // Tarea 230: «¡Subiste de etapa!» era una celebración de las etapas Inicio…Maestro; con ellas fuera no se inventa otra
+    show(didLevelUp = true, modeNote = "¡Desafío superado! Tu avance subió y se abrió Al límite")
+    composeTestRule.mainClock.advanceTimeBy(1500)
+    assertEquals("solo queda la nota del modo", 1, countTag("result_notice"))
+    assertEquals(0, countText("etapa"))
+    assertEquals(0, countText("maestría"))
   }
 
   @Test

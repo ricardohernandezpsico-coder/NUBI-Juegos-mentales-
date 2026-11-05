@@ -373,7 +373,7 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
   val achievementUnlocks = repository.achievementUnlocks
   val achievementStats: StateFlow<com.example.data.AchievementStats> = combine(gameHistory, gameRanks, repository.timeTrialResults) { hist, ranks, tt ->
     // los días de Contrarreloj cuentan para la racha (Tarea 227): «Tu mejor racha» de Tú y los logros de constancia dicen lo mismo que Hoy
-    com.example.data.computeAchievementStats(hist, ranks.associate { it.gameId to it.rating }, extraDays = tt.map { com.example.data.Streak.dayOf(it.timestamp) })
+    com.example.data.computeAchievementStats(hist, ranks.associate { it.gameId to it.rating }, extraDays = tt.map { com.example.data.Streak.dayOf(it.timestamp) }, extraGames = tt.size)
   }.stateIn(viewModelScope, SharingStarted.Eagerly, com.example.data.computeAchievementStats(emptyList(), emptyMap()))
 
   /** Nivel (0..1) por juego para Progreso: rating del DDA comun; en Secuencia/Parejas (motores propios) se
@@ -674,6 +674,8 @@ class NeuroVidaViewModel(application: Application) : AndroidViewModel(applicatio
     val saved = com.example.data.TimeTrialDay.resultOf(raw, day)
     saveAndMark(launchId) {
       val outcome = repository.recordTimeTrial(saved)
+      // una medalla ganada con este Contrarreloj se celebra ahora (Tarea 230), con o sin final abierto: ya quedó anotada como ganada y no se vuelve a ofrecer
+      if (outcome.newAchievements.isNotEmpty()) _achievementQueue.value = _achievementQueue.value + outcome.newAchievements
       if (current != null) {
         _lastTimeTrial.value = outcome
         _modeNote.value = null

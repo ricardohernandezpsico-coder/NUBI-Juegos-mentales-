@@ -76,7 +76,7 @@ class EntradaSinCuentaTest {
   }
 
   @Test
-  fun `la pantalla de carga muestra el nombre y la etapa pero no explica el juego`() {
+  fun `la pantalla de carga muestra el nombre y el modo, sin etapa, y no explica el juego`() {
     val game = GameRegistry.getById("secuencia")!!
     composeTestRule.mainClock.autoAdvance = false
     composeTestRule.setContent {
@@ -86,7 +86,7 @@ class EntradaSinCuentaTest {
     }
     composeTestRule.mainClock.advanceTimeBy(500)
     composeTestRule.onNodeWithText(game.title).assertExists()
-    composeTestRule.onNode(hasText("Etapa", substring = true)).assertExists()
+    composeTestRule.onNode(hasText("Etapa", substring = true)).assertDoesNotExist()          // Tarea 230: la etapa salió de la app
     composeTestRule.onNode(hasText("Con reloj", substring = true)).assertExists()
     composeTestRule.onNodeWithText("Cómo se juega").assertDoesNotExist()
     composeTestRule.onNode(hasText(game.instruction.take(24), substring = true)).assertDoesNotExist()

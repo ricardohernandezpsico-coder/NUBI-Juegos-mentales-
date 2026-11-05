@@ -9,11 +9,4 @@ package com.example.ui.components
 /** Rating 0..1 por juego; null = todavía sin dato. */
 typealias GameLevels = Map<String, Float?>
 
-/** Índice general 0..100: promedio de los juegos con dato; null si no hay ninguno. */
-fun overallIndex(levels: GameLevels): Int? {
-  val vals = levels.values.filterNotNull()
-  return if (vals.isEmpty()) null else (vals.average() * 100).toInt().coerceIn(0, 100)
-}
-
-/** La etapa del avance (Inicio…Maestro, data/Skill.kt): los mismos nombres en toda la app. */
-fun levelWord(v: Float): String = com.example.data.Skill.stageName(v)
+// (Tarea 230: `overallIndex` y `levelWord`, el índice general y el nombre de la etapa de «Etapa general», salieron de Tú con las etapas.)

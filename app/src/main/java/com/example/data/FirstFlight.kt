@@ -285,19 +285,18 @@ object FirstFlight {
 
   // ------------------------------------------------------------------ el punto de partida
 
-  /** Una de las 4 áreas en la pantalla «Tu punto de partida». [progress] 0..1 (la misma escala de Avance), [stage] su etapa en palabras. */
+  /** Una de las 4 áreas en la pantalla «Tu punto de partida». [progress] 0..1 (la misma escala de Avance). (Tarea 230: antes llevaba también su etapa en palabras.) */
   data class AreaRow(
     val domain: DomainType,
     val gameId: String,
     val progress: Float,
-    val stage: String,
     val measured: Boolean,
     val strong: Boolean,
     val focus: Boolean
   )
 
   /**
-   * Las 4 áreas con su etapa (Inicio…Maestro, [Skill]). La medida de un juego salta de su rating a la escala de Avance con la edad;
+   * Las 4 áreas con su avance ([Skill]). La medida de un juego salta de su rating a la escala de Avance con la edad;
    * un área sin medir (dejada para después) toma el promedio de las medidas y se rotula «estimado». «Tu fuerte hoy» = el área medida
    * más alta (solo con 2 o más medidas) y «donde más vamos a jugar» = la primera del camino de hoy ([rankDomainsForSession]: tus
    * metas y lo más bajo), que no sea la fuerte.
@@ -318,7 +317,6 @@ object FirstFlight {
         domain = d,
         gameId = BaselinePlan.stepFor(d).gameId,
         progress = progress.getValue(d),
-        stage = Skill.stageName(progress.getValue(d)),
         measured = d in measured,
         strong = spread && d == strong,
         focus = d == focus

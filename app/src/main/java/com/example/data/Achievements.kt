@@ -67,13 +67,13 @@ fun countReturns(days: Collection<Long>, minGapDays: Int = 4): Int {
 
 /**
  * [extraDays] (Tarea 227) = los días en que solo se jugó Contrarreloj: cuentan para la RACHA (como en Hoy, donde un Contrarreloj es día jugado) y por eso para `bestStreak`, que miran los logros de constancia y «Tu mejor racha» de Tú;
- * no suman partidas, ni juegos distintos, ni puntaje (el Contrarreloj no es una partida de siempre).
+ * no suman juegos distintos ni puntaje (el Contrarreloj no es una partida de siempre). [extraGames] (Tarea 230) = las partidas guardadas del Contrarreloj: SÍ suman al total de partidas («41 partidas» de Tú y las medallas «Juega N partidas»).
  */
-fun computeAchievementStats(history: List<GamePlayResult>, ratings: Map<String, Int>, extraDays: Collection<Long> = emptyList()): AchievementStats {
+fun computeAchievementStats(history: List<GamePlayResult>, ratings: Map<String, Int>, extraDays: Collection<Long> = emptyList(), extraGames: Int = 0): AchievementStats {
   val days = history.map { Streak.dayOf(it.timestamp) }
   val defs = history.mapNotNull { GameRegistry.getById(it.gameId) }
   return AchievementStats(
-    totalGames = history.size,
+    totalGames = history.size + extraGames,          // Tarea 230: las partidas del Contrarreloj también suman a «N partidas» y a las medallas por número de partidas
     bestStreak = longestStreak(days + extraDays),
     maxGamesInOneDay = days.groupingBy { it }.eachCount().values.maxOrNull() ?: 0,
     distinctGames = defs.map { it.id }.toSet().size,

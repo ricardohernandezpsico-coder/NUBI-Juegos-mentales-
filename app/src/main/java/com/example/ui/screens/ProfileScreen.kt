@@ -55,8 +55,6 @@ import com.example.model.RankTier
 import com.example.ui.components.AchievementMedal
 import com.example.ui.components.medalColor
 import com.example.ui.components.SpaceSectionTitle
-import com.example.ui.components.levelWord
-import com.example.ui.components.overallIndex
 import com.example.ui.theme.Clay
 import com.example.viewmodel.NeuroVidaViewModel
 
@@ -106,7 +104,6 @@ fun TuScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier, onBac
   val streak by viewModel.currentStreak.collectAsState()
   val history by viewModel.gameHistory.collectAsState()
   val ranks by viewModel.gameRanks.collectAsState()
-  val levels by viewModel.gameLevelsForProgress.collectAsState()
   val unlocks by viewModel.achievementUnlocks.collectAsState()
   val achStats by viewModel.achievementStats.collectAsState()
   var achievementDetail by remember { mutableStateOf<AchievementDef?>(null) }
@@ -124,9 +121,12 @@ fun TuScreen(viewModel: NeuroVidaViewModel, modifier: Modifier = Modifier, onBac
     com.example.data.League.available(com.example.data.Comparison.sourceFor(com.example.BuildConfig.DEBUG, compareWorld, estimatedReference), ageRange)
   }
   val medalCount = medals.sumOf { it.level }                    // los niveles ganados en las tres familias: el mismo número de «Tus medallas» (Tarea 145; antes «Mejor», el puntaje más alto, que no dice mejor en qué con 17 juegos de escalas distintas)
-  val tiles = remember(streak, achStats, history.size, medalCount, history.minOfOrNull { it.timestamp }) {
+  // «N partidas · desde el…» cuenta también las del Contrarreloj (Tarea 230, pendiente de la 227): `achStats.totalGames` ya las suma
+  val ttResults by viewModel.timeTrialResults.collectAsState()
+  val firstPlayed = listOfNotNull(history.minOfOrNull { it.timestamp }, ttResults.minOfOrNull { it.timestamp }).minOrNull()
+  val tiles = remember(streak, achStats, achStats.totalGames, medalCount, firstPlayed) {
     com.example.data.TuStats.tiles(
-      currentStreak = streak, bestStreak = achStats.bestStreak, games = history.size, firstPlayed = history.minOfOrNull { it.timestamp }, now = System.currentTimeMillis(),
+      currentStreak = streak, bestStreak = achStats.bestStreak, games = achStats.totalGames, firstPlayed = firstPlayed, now = System.currentTimeMillis(),
       medals = medalCount, medalsTotal = medals.sumOf { it.totalLevels }, distinctGames = achStats.distinctActiveGames, totalGames = com.example.model.GameRegistry.allGames.count { !com.example.model.GameRegistry.isRetired(it.id) }
     )
   }

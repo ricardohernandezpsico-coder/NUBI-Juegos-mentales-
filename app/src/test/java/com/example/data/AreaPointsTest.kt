@@ -7,8 +7,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * Los puntos por área (Tarea 159; `auditoria-fable/avance-b-puntos.md` §2 y §7): 0 a 1000, cada juego aporta hasta 1000 ÷ N, un juego sin partidas vale 0, la suma de los juegos cuadra exacta con el total, las etapas son tramos fijos de 200,
+ * Los puntos por área (Tarea 159; `auditoria-fable/avance-b-puntos.md` §2 y §7): 0 a 1000, cada juego aporta hasta 1000 ÷ N, un juego sin partidas vale 0, la suma de los juegos cuadra exacta con el total,
  * el cambio se mide desde el lunes a las 00:00 y las 8 semanas repiten el valor en las semanas sin partidas.
+ * (Tarea 230, 4-nov: las etapas Inicio · Aprendiz · Hábil · Experto · Maestro salieron de la app; quedan los puntos y la barra.)
  */
 class AreaPointsTest {
   private val day = 86_400_000L
@@ -23,17 +24,17 @@ class AreaPointsTest {
   private fun p(id: String, time: Long, progress: Float) = ProgressPoint(id, time, progress)
 
   @Test
-  fun `un juego sin partidas vale 0 y el area vacia da 0 puntos en Inicio con 200 por ganar`() {
+  fun `un juego sin partidas vale 0 y el area vacia da 0 puntos y aun sin medir`() {
     val a = AreaPoints.compute("MEMORIA", memoria, emptyList(), now)
-    assertEquals(0, a.total); assertEquals(0, a.stage); assertEquals("Inicio", a.stageName)
-    assertEquals(200, a.toNext); assertEquals("Aprendiz", a.nextName)
+    assertEquals(0, a.total)
     assertFalse(a.measured)
+    assertEquals("Aún sin medir", AreaPoints.pointsLine(a))
     assertEquals(listOf(0, 0, 0, 0), a.perGame.map { it.points })
     assertEquals("cada juego aporta hasta 250", listOf(250, 250, 250, 250), a.perGame.map { it.max })
     assertEquals("Atención tiene 5 juegos: hasta 200 cada uno", listOf(200, 200, 200, 200, 200), AreaPoints.compute("ATENCION", atencion, emptyList(), now).perGame.map { it.max })
-    // un solo juego en lo más alto de su escalera: 250 puntos y nada más (Aprendiz), no 1000
+    // un solo juego en lo más alto de su escalera: 250 puntos y nada más, no 1000
     val one = AreaPoints.compute("MEMORIA", memoria, listOf(p("parejas", now - day, 1f)), now)
-    assertEquals(250, one.total); assertEquals("Aprendiz", one.stageName)
+    assertEquals(250, one.total); assertEquals("250 de 1000 puntos", AreaPoints.pointsLine(one))
     assertEquals(listOf(250, 0, 0, 0), one.perGame.map { it.points })
     assertEquals(listOf(true, false, false, false), one.perGame.map { it.measured })
   }
@@ -73,21 +74,15 @@ class AreaPointsTest {
   }
 
   @Test
-  fun `las etapas son tramos fijos de 200 y la juego usa los mismos cortes en proporcion`() {
-    assertEquals(0, AreaPoints.stageOf(0)); assertEquals(0, AreaPoints.stageOf(199)); assertEquals(1, AreaPoints.stageOf(200))
-    assertEquals(1, AreaPoints.stageOf(399)); assertEquals(2, AreaPoints.stageOf(400)); assertEquals(3, AreaPoints.stageOf(600))
-    assertEquals(3, AreaPoints.stageOf(799)); assertEquals(4, AreaPoints.stageOf(800)); assertEquals(4, AreaPoints.stageOf(1000))
-    fun area(total: Int): AreaPoints = AreaPoints(area = "X", total = total, perGame = emptyList(), weekDelta = 0, best = total)
-    assertEquals("Inicio", area(199).stageName); assertEquals(1, area(199).toNext)
-    assertEquals("Aprendiz", area(200).stageName); assertEquals(200, area(200).toNext)
-    assertEquals("Maestro", area(1000).stageName); assertNull(area(1000).toNext); assertNull(area(1000).nextName)
-    assertEquals(130, area(470).toNext)                                                                    // Hábil → faltan 130 para Experto (600)
-    assertEquals("Experto", area(470).nextName)
-    // el juego: cinco tramos de 50 (o de 40 en Atención)
-    val g = GamePoints("parejas", 180, 250, 0.72f, true)
-    assertEquals("Experto", g.stageName); assertEquals(20, g.toNext); assertEquals("Maestro", g.nextName)
-    assertEquals(0, GamePoints("x", 49, 250, 0f, true).stage); assertEquals(1, GamePoints("x", 50, 250, 0f, true).stage)
-    assertEquals(1, GamePoints("x", 40, 200, 0f, true).stage); assertNull(GamePoints("x", 200, 200, 1f, true).toNext)
+  fun `el area y el juego se dicen en puntos, sin etapa ni tramos`() {
+    fun area(total: Int): AreaPoints = AreaPoints(area = "X", total = total, perGame = listOf(GamePoints("parejas", total, 1000, 1f, true)), weekDelta = 0, best = total)
+    assertEquals("470 de 1000 puntos", AreaPoints.pointsLine(area(470)))
+    assertEquals("1000 de 1000 puntos", AreaPoints.pointsLine(area(1000)))
+    assertEquals("la ficha de un juego: los puntos del juego sobre su máximo", "180 de 250 puntos", GamePoints("parejas", 180, 250, 0.72f, true).pointsLine)
+    assertEquals("90 de 200 puntos", GamePoints("radar", 90, 200, 0.45f, true).pointsLine)
+    for (text in listOf(AreaPoints.pointsLine(area(470)), GamePoints("parejas", 180, 250, 0.72f, true).pointsLine, AreaPoints.pageSentence(area(470), "Memoria"))) {
+      for (bad in listOf("Etapa", "etapa", "Inicio", "Aprendiz", "Hábil", "Experto", "Maestro", "Te faltan", "Te falta")) assertFalse("«$text» trae «$bad»", bad in text)
+    }
   }
 
   @Test
@@ -100,14 +95,15 @@ class AreaPointsTest {
     assertEquals("parejas en 0,48 y bodega en 0,20: (480 + 200) ÷ 4", 170, a.total)
     assertEquals("antes del lunes: solo parejas, en 0,40 → 100", 100, a.before)
     assertEquals(70, a.weekDelta)          // lo de parejas (+20) y el estreno de bodega entero (+50)
-    // sin partidas esta semana: te mantuviste
+    // sin partidas esta semana: los puntos no cambiaron (Tarea 230: antes «te mantuviste», que se parece a «te quedas» de la liga de la semana)
     val quiet = AreaPoints.compute("MEMORIA", memoria, log.take(2), now)
     assertEquals(0, quiet.weekDelta)
-    assertEquals("Esta semana te mantuviste.", AreaPoints.weekLine(quiet, "Memoria"))
-    // el resumen de la ruta (Tarea 198): lo que sumó cada juego, o «te mantuviste» diciendo el área (nunca la palabra suelta «Hecho»)
+    assertEquals("Esta semana, tus puntos de Memoria no cambiaron.", AreaPoints.weekLine(quiet, "Memoria"))
+    // el resumen de la ruta (Tarea 198): lo que sumó cada juego, o «tus puntos no cambiaron» diciendo el área (nunca la palabra suelta «Hecho»)
     assertEquals("12 puntos en Atención", AreaPoints.gameLine(12, "Atención"))
     assertEquals("1 punto en Memoria", AreaPoints.gameLine(1, "Memoria"))
-    assertEquals("Te mantuviste en Razonamiento", AreaPoints.gameLine(0, "Razonamiento"))
+    assertEquals("Tus puntos de Razonamiento no cambiaron", AreaPoints.gameLine(0, "Razonamiento"))
+    assertFalse("«te mantuviste» chocaría con «te quedas» de la liga", "mantuviste" in AreaPoints.gameLine(0, "Razonamiento") + AreaPoints.weekLine(quiet, "Memoria"))
     // el lunes a la mañana, sin partidas todavía: sin cambio
     assertEquals(0, AreaPoints.compute("MEMORIA", memoria, log.take(2), at(2026, java.util.Calendar.OCTOBER, 19, 8)).weekDelta)
     // «desde cuándo»: el resumen de la ruta de hoy mide desde su comienzo
@@ -139,9 +135,9 @@ class AreaPointsTest {
     assertEquals(-10, a.weekDelta)
     assertEquals("la mejor marca fue la del lunes (350)", 350, a.best); assertTrue(a.belowBest)
     assertEquals("Esta semana bajaste 10 puntos. Tu mejor marca sigue en 350 puntos.", AreaPoints.weekLine(a, "Memoria"))
-    // Tarea 174: la fila de Avance ya no lleva la frase de la semana; lo que decía (con la mejor marca al lado) vive en la página del área, en la frase de «lo que falta»
-    assertTrue("«lo que falta» y, con la bajada, la mejor marca al lado: ${AreaPoints.toNextSentence(a, "Memoria")}", AreaPoints.toNextSentence(a, "Memoria").let { it.startsWith("Te faltan ") && it.endsWith(" Esta semana bajaste 10 puntos. Tu mejor marca sigue en 350 puntos.") })
-    val all = AreaPoints.weekLine(a, "Memoria") + AreaPoints.toNextSentence(a, "Memoria")
+    // Tarea 174: la fila de Avance no lleva la frase de la semana; vive en la página del área. Tarea 230: sin «Te faltan N puntos para X» delante, solo la semana, con la mejor marca al lado
+    assertEquals("la frase de la página: la de la semana", "Esta semana bajaste 10 puntos. Tu mejor marca sigue en 350 puntos.", AreaPoints.pageSentence(a, "Memoria"))
+    val all = AreaPoints.weekLine(a, "Memoria") + AreaPoints.pageSentence(a, "Memoria")
     for (bad in listOf("perdiste", "−", "▼", "↓", "↑", "+")) assertFalse("«$bad» no va", bad in all)
     assertEquals("Esta semana sumaste 1 punto.", AreaPoints.weekLine(a.copy(weekDelta = 1, best = a.total), "Memoria"))
     assertEquals("Todavía sin puntos: juega un juego de Memoria.", AreaPoints.weekLine(AreaPoints.compute("MEMORIA", memoria, emptyList(), now), "Memoria"))
@@ -155,14 +151,14 @@ class AreaPointsTest {
   }
 
   @Test
-  fun `te faltan, en Maestro y sin puntos`() {
+  fun `la frase de la pagina del area dice la semana y los puntos, sin lo que falta`() {
     val a = AreaPoints.compute("MEMORIA", memoria, listOf(p("parejas", now, 0.72f), p("secuencia", now, 0.48f), p("bodega", now, 0.44f), p("correo", now, 0.24f)), now)
-    assertEquals("Te faltan 130 puntos para Experto. Esta semana sumaste 470 puntos.", AreaPoints.toNextSentence(a, "Memoria"))
-    assertEquals("Etapa Hábil · 470 de 1000 puntos", AreaPoints.stageLine(a))
+    assertEquals("Esta semana sumaste 470 puntos.", AreaPoints.pageSentence(a, "Memoria"))
+    assertEquals("470 de 1000 puntos", AreaPoints.pointsLine(a))
     val top = AreaPoints.compute("MEMORIA", memoria, memoria.map { p(it, now - 9 * day, 1f) }, now)
-    assertEquals(1000, top.total); assertEquals("Llegaste al último tramo. Esta semana te mantuviste.", AreaPoints.toNextSentence(top, "Memoria"))
-    assertEquals("Aún sin medir", AreaPoints.stageLine(AreaPoints.compute("MEMORIA", memoria, emptyList(), now)))
-    assertEquals("Te falta 1 punto para Aprendiz.", AreaPoints.toNextSentence(a.copy(total = 199, perGame = a.perGame), "Memoria").substringBefore(" Esta"))
+    assertEquals(1000, top.total); assertEquals("Esta semana, tus puntos de Memoria no cambiaron.", AreaPoints.pageSentence(top, "Memoria"))
+    assertEquals("Aún sin medir", AreaPoints.pointsLine(AreaPoints.compute("MEMORIA", memoria, emptyList(), now)))
+    assertEquals("Todavía sin puntos en Memoria: cada juego suma desde su primera partida a tu medida.", AreaPoints.pageSentence(AreaPoints.compute("MEMORIA", memoria, emptyList(), now), "Memoria"))
   }
 
   @Test
@@ -189,7 +185,7 @@ class AreaPointsTest {
   @Test
   fun `la fila y la pagina dicen el avance con unidad y sin palabras sueltas`() {
     val a = AreaPoints.compute("MEMORIA", memoria, listOf(p("parejas", now - 8 * day, 0.40f), p("parejas", now, 0.60f)), now)
-    for (text in listOf(AreaPoints.weekLine(a, "Memoria"), AreaPoints.toNextSentence(a, "Memoria"), AreaPoints.stageLine(a), AreaPoints.gamesHint(250), AreaPoints.UPS_AND_DOWNS)) {
+    for (text in listOf(AreaPoints.weekLine(a, "Memoria"), AreaPoints.pageSentence(a, "Memoria"), AreaPoints.pointsLine(a), AreaPoints.gamesHint(250), AreaPoints.UPS_AND_DOWNS)) {
       assertFalse("«$text» tiene «de 100»", " de 100" in text && " de 1000" !in text)
       for (bad in listOf("pts", "sem.", "→", "▲", "▼", "+")) assertFalse("«$text» trae «$bad»", bad in text)
     }

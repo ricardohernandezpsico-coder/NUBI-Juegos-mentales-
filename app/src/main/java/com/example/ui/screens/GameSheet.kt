@@ -348,10 +348,10 @@ internal fun GameSheetContent(
       }
 
       Column(Modifier.fillMaxWidth().padding(horizontal = SideInset)) {
-        // Tu avance, en UNA línea con su barra (sin las 5 etiquetas de las etapas: la línea ya dice la etapa y Avance tiene la escala): «Etapa Maestro · 230 de 250 puntos» en 20 con el color de su área (Tarea 159: los puntos del juego)
+        // Tu avance, en UNA línea con su barra: «230 de 250 puntos» en 20 con el color de su área (Tarea 159: los puntos del juego; Tarea 230: antes «Etapa Maestro · 230 de 250 puntos»)
         if (data.points != null && data.points.measured) {
-          Text(data.points.stageLine, color = onCream(g.domain), fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 24.sp, modifier = Modifier.padding(top = 10.dp).testTag("sheet_stage"))
-          com.example.ui.components.StageScale(data.points.fill, onCard = true, showNames = false, modifier = Modifier.padding(top = 6.dp))
+          Text(data.points.pointsLine, color = onCream(g.domain), fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 24.sp, modifier = Modifier.padding(top = 10.dp).testTag("sheet_stage"))
+          com.example.ui.components.PointsBar(data.points.fill, onCard = true, modifier = Modifier.padding(top = 6.dp))
         } else {
           Text("Aún sin medir", color = Clay.Ink, fontSize = 20.sp, fontWeight = FontWeight.Bold, lineHeight = 24.sp, modifier = Modifier.padding(top = 10.dp).testTag("sheet_stage"))
           Text("Juega a tu medida una vez y verás dónde estás.", color = CardMuted, fontSize = Small, lineHeight = 20.sp)

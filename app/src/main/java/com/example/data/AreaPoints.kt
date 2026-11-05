@@ -3,25 +3,14 @@ package com.example.data
 /**
  * Lo que aporta un juego a los puntos de su área (Tarea 159; `auditoria-fable/avance-b-puntos.md` §2). [progress] = su último avance (0..1, el de [Skill.progress]; 0 si nunca se midió); [points] = sus puntos, ya redondeados de modo que la suma
  * de los juegos del área dé EXACTAMENTE el total del área; [max] = lo máximo que puede aportar (1000 ÷ cuántos juegos tiene el área: 250, o 200 en Atención); [measured] = ya hay una partida que contó para su avance.
- * La etapa del juego usa los mismos tramos de la escala, en proporción: cinco tramos iguales de [max].
+ * (Tarea 230, 4-nov: las etapas Inicio · Aprendiz · Hábil · Experto · Maestro salieron de la app; queda el número de puntos y la barra.)
  */
 data class GamePoints(val gameId: String, val points: Int, val max: Int, val progress: Float, val measured: Boolean) {
-  /** Etapa 0..4 (Inicio..Maestro) del juego: quintos de [max]. */
-  val stage: Int get() = if (max <= 0) 0 else (points * 5 / max).coerceIn(0, 4)
-  val stageName: String get() = Skill.STAGES[stage]
-
-  /** Cuántos puntos del juego faltan para la etapa que sigue (null en Maestro). */
-  val toNext: Int? get() = if (stage >= 4) null else (stage + 1) * max / 5 - points
-  val nextName: String? get() = if (stage >= 4) null else Skill.STAGES[stage + 1]
-
   /** Cuánto de la barra se llena, 0..1. */
   val fill: Float get() = if (max <= 0) 0f else (points.toFloat() / max).coerceIn(0f, 1f)
 
-  /** «Etapa Experto · 180 de 250 puntos»: el encabezado de la ficha del juego (la misma forma que la lámina del área: «Etapa Hábil · 470 de 1000 puntos»). */
-  val stageLine: String get() = "Etapa $stageName · $points de $max puntos"
-
-  /** «Te faltan 20 puntos para Maestro» (null en Maestro). */
-  val toNextLine: String? get() = toNext?.let { n -> if (n == 1) "Te falta 1 punto para $nextName" else "Te faltan $n puntos para $nextName" }
+  /** «180 de 250 puntos»: el encabezado de la ficha del juego (la misma forma que la lámina del área: «470 de 1000 puntos»). Tarea 230: antes «Etapa Experto · 180 de 250 puntos». */
+  val pointsLine: String get() = "$points de $max puntos"
 
   companion object {
     /**
@@ -38,7 +27,7 @@ data class GamePoints(val gameId: String, val points: Int, val max: Int, val pro
 
 /**
  * Los puntos de un área en un momento (Tarea 159; Ricardo, 22-oct: «puntos por área»). Cada área va de 0 a [SCALE] (1000) y se suma: cada juego aporta hasta 1000 ÷ N (N = los juegos del área) según el escalón de su escalera donde se aciertan 8 de 10
- * ([ProgressPoint.progress]); un juego sin partidas vale 0, así que probar uno nuevo solo puede sumar. La etapa es el tramo fijo de [STAGE_SPAN] (200) donde cae el total: Inicio 0-199 · Aprendiz 200-399 · Hábil 400-599 · Experto 600-799 · Maestro 800-1000.
+ * ([ProgressPoint.progress]); un juego sin partidas vale 0, así que probar uno nuevo solo puede sumar.
  * Nunca sale del porcentaje de aciertos ni del tiempo de juego, y no baja por dejar de jugar. [weekDelta] = el cambio desde el lunes a las 00:00 ([Week.weekStart]); [best] = el máximo del área que quedó anotado (la «mejor marca»).
  * Lógica pura con pruebas (`AreaPointsTest`); toda la app lee ESTA escala (la lámina de Hoy, Avance y la ficha de un juego).
  */
@@ -49,14 +38,6 @@ data class AreaPoints(
   val weekDelta: Int,
   val best: Int
 ) {
-  /** Etapa 0..4 (Inicio..Maestro) del área. */
-  val stage: Int get() = stageOf(total)
-  val stageName: String get() = Skill.STAGES[stage]
-
-  /** Cuántos puntos faltan para la etapa que sigue (null en Maestro) y cómo se llama. */
-  val toNext: Int? get() = if (stage >= 4) null else (stage + 1) * STAGE_SPAN - total
-  val nextName: String? get() = if (stage >= 4) null else Skill.STAGES[stage + 1]
-
   /** Cuánto de la barra se llena, 0..1. */
   val fill: Float get() = (total.toFloat() / SCALE).coerceIn(0f, 1f)
 
@@ -79,14 +60,9 @@ data class AreaPoints(
     /** El área entera vale hasta 1000 puntos. */
     const val SCALE = 1000
 
-    /** Cada etapa es un tramo de 200 puntos. */
-    const val STAGE_SPAN = 200
-
     /** Cuántas semanas muestra el gráfico del área, y cuántas hacen falta para dibujarlo. */
     const val CHART_WEEKS = 8
     const val CHART_MIN_WEEKS = 4
-
-    fun stageOf(total: Int): Int = (total / STAGE_SPAN).coerceIn(0, 4)
 
     /** Los juegos de un área (`MEMORIA`…) en el orden del registro (los retirados no están). */
     fun gamesOf(areaKey: String): List<String> = com.example.model.GameRegistry.allGames.filter { it.domain.name == areaKey }.map { it.id }
@@ -168,49 +144,41 @@ data class AreaPoints(
     fun pointsText(n: Int): String = if (n == 1) "1 punto" else "$n puntos"
 
     /**
-     * Lo que dice el resumen de la ruta de cada juego (Tarea 198): «12 puntos en Atención» si sumó, y si no sumó, «Te mantuviste en Razonamiento» (la misma palabra que usa la app para un área que no cambió: «Hoy te mantuviste.»). En paralelo, y diciendo siempre en qué área fue.
+     * Lo que dice el resumen de la ruta de cada juego (Tarea 198): «12 puntos en Atención» si sumó, y si no sumó, «Tus puntos de Razonamiento no cambiaron» (Tarea 230: antes «Te mantuviste en Razonamiento»; «te mantuviste» se parece a «te quedas» de la liga de la semana). En paralelo, y diciendo siempre en qué área fue.
      */
-    fun gameLine(gained: Int, areaName: String): String = if (gained > 0) "${pointsText(gained)} en $areaName" else "Te mantuviste en $areaName"
+    fun gameLine(gained: Int, areaName: String): String = if (gained > 0) "${pointsText(gained)} en $areaName" else "Tus puntos de $areaName no cambiaron"
 
     /**
-     * La frase de la semana de un área, para su fila de Avance: «Esta semana sumaste 12 puntos» / «Esta semana te mantuviste» / «Esta semana bajaste 8 puntos. Tu mejor marca sigue en 520 puntos.» Sin ninguna partida: invita («Todavía sin puntos: juega un juego de Memoria»).
+     * La frase de la semana de un área, para su fila de Avance: «Esta semana sumaste 12 puntos» / «Esta semana, tus puntos de Memoria no cambiaron.» / «Esta semana bajaste 8 puntos. Tu mejor marca sigue en 520 puntos.» Sin ninguna partida: invita («Todavía sin puntos: juega un juego de Memoria»).
      * Nunca «perdiste», nunca flechas ni signos de más o menos.
      */
     fun weekLine(p: AreaPoints, areaName: String, period: String = "Esta semana"): String = when {
       !p.measured -> "Todavía sin puntos: juega un juego de $areaName."
       p.weekDelta > 0 -> "$period sumaste ${pointsText(p.weekDelta)}."
       p.weekDelta < 0 -> "$period bajaste ${pointsText(-p.weekDelta)}. Tu mejor marca sigue en ${pointsText(p.best)}."
-      else -> "$period te mantuviste."
+      else -> "$period, tus puntos de $areaName no cambiaron."
     }
 
     /** Lo mismo para el resumen de la ruta de hoy, que mide desde su comienzo: «Hoy sumaste 12 puntos.» (el cambio de [AreaPoints] se calculó «desde» el comienzo de la ruta). */
     fun todayLine(p: AreaPoints, areaName: String): String = weekLine(p, areaName, period = "Hoy")
 
     /**
-     * Lo mismo en la página del área, junto a lo que falta: «Te faltan 130 puntos para Experto. Esta semana sumaste 12 puntos.»; en Maestro, «Llegaste al último tramo. …». Si bajó, con la mejor marca al lado, sin rojo ni flechas («Esta semana bajaste 8 puntos. Tu mejor marca sigue en 520 puntos.»:
-     * desde la Tarea 174 la fila de Avance ya no lleva la frase de la semana y lo que decía vive aquí). Sin puntos todavía, una invitación.
+     * La frase de la página del área, bajo la barra (Tarea 230: antes llevaba delante «Te faltan 130 puntos para Experto.», que salió con las etapas): «Esta semana sumaste 12 puntos.», «Esta semana, tus puntos de Memoria no cambiaron.» o, si bajó, con la mejor marca al lado, sin rojo ni flechas
+     * («Esta semana bajaste 8 puntos. Tu mejor marca sigue en 520 puntos.»). Sin puntos todavía, una invitación.
      */
-    fun toNextSentence(p: AreaPoints, areaName: String): String {
-      if (!p.measured) return "Todavía sin puntos en $areaName: cada juego suma desde su primera partida a tu medida."
-      val first = p.toNext?.let { if (it == 1) "Te falta 1 punto para ${p.nextName}." else "Te faltan $it puntos para ${p.nextName}." } ?: "Llegaste al último tramo."
-      val second = when {
-        p.weekDelta > 0 -> "Esta semana sumaste ${pointsText(p.weekDelta)}."
-        p.weekDelta < 0 -> "Esta semana bajaste ${pointsText(-p.weekDelta)}. Tu mejor marca sigue en ${pointsText(p.best)}."
-        else -> "Esta semana te mantuviste."
-      }
-      return "$first $second"
-    }
+    fun pageSentence(p: AreaPoints, areaName: String): String =
+      if (!p.measured) "Todavía sin puntos en $areaName: cada juego suma desde su primera partida a tu medida." else weekLine(p, areaName)
 
-    /** «Etapa Hábil · 470 de 1000 puntos» (la lámina de Hoy), o «Aún sin medir» si todavía no hay ninguna partida. */
-    fun stageLine(p: AreaPoints): String = if (p.measured) "Etapa ${p.stageName} · ${p.total} de $SCALE puntos" else "Aún sin medir"
+    /** «470 de 1000 puntos» (Tarea 230: antes «Etapa Hábil · 470 de 1000 puntos»), o «Aún sin medir» si todavía no hay ninguna partida. */
+    fun pointsLine(p: AreaPoints): String = if (p.measured) "${p.total} de $SCALE puntos" else "Aún sin medir"
 
     /** Lo que lee el lector de pantalla del CUADRO de un área en Avance (Tarea 174), que solo muestra el nombre, los puntos y la barra: «Memoria, 470 de 1000 puntos»; sin medir, «Memoria, aún sin medir». */
     fun cardSpoken(p: AreaPoints, areaName: String): String = if (p.measured) "$areaName, ${p.total} de $SCALE puntos" else "$areaName, aún sin medir"
 
-    /** «Memoria: etapa Hábil, 470 de 1000 puntos, esta semana sumaste 12 puntos»: lo que lee el lector de pantalla de una fila. */
+    /** «Memoria: 470 de 1000 puntos, esta semana sumaste 12 puntos»: lo que lee el lector de pantalla de una fila. */
     fun spoken(p: AreaPoints, areaName: String): String = when {
       !p.measured -> "$areaName: aún sin puntos"
-      else -> "$areaName: etapa ${p.stageName}, ${p.total} de $SCALE puntos. " + weekLine(p, areaName).removeSuffix(".")
+      else -> "$areaName: ${p.total} de $SCALE puntos. " + weekLine(p, areaName).removeSuffix(".")
     }
 
     /** Lo que dice el gráfico cuando todavía no hay [CHART_MIN_WEEKS] semanas de datos: «Llevas 2 semanas en Memoria. El gráfico aparece cuando tengas 4.» */
@@ -224,6 +192,6 @@ data class AreaPoints(
     fun gamesHint(maxPerGame: Int): String = "Cada juego aporta hasta $maxPerGame puntos. Suben cuando llegas a niveles más altos."
 
     /** La línea fija que acompaña a las bajadas del mes (Fable §2.4): los puntos suben y bajan un poco de una partida a otra. */
-    const val UPS_AND_DOWNS = "Los puntos suben y bajan un poco de una partida a otra. Lo que cuenta es la etapa."
+    const val UPS_AND_DOWNS = "Los puntos suben y bajan un poco de una partida a otra."
   }
 }

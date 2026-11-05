@@ -327,6 +327,23 @@ class GameFlowTest {
   }
 
   @Test
+  fun `la medalla ganada con un Contrarreloj se celebra al terminar ese Contrarreloj y Tu cuenta la partida (Tarea 230)`() {
+    val vm = newViewModel()
+    TestSupport.awaitUntil(message = "El camino de hoy no se cargó") { vm.dailySession.value.gameIds.isNotEmpty() }
+    assertTrue("sin partidas no hay medallas por celebrar", vm.achievementQueue.value.isEmpty())
+    vm.startTimeTrial()
+    val id = vm.activeGame.value!!.gameDef.id
+    vm.onUnityLaunched("LT-MEDAL")
+    vm.onUnityResult(timeTrialResult(id, hits = 38), "LT-MEDAL")
+    TestSupport.awaitUntil(message = "No se abrió el final del Contrarreloj") { vm.lastTimeTrial.value != null }
+    assertTrue("la medalla «Primer paso» queda en la cola que dibuja la celebración: ${vm.achievementQueue.value}", "primer_paso" in vm.achievementQueue.value)
+    assertTrue("y vino en el resultado del Contrarreloj", "primer_paso" in vm.lastTimeTrial.value!!.newAchievements)
+    TestSupport.awaitUntil(message = "Tú no contó la partida") { vm.achievementStats.value.totalGames == 1 }
+    assertEquals("«N partidas» de Tú suma la del Contrarreloj", 1, vm.achievementStats.value.totalGames)
+    assertEquals("pero NO es una partida de siempre", 0, savedResults())
+  }
+
+  @Test
   fun `una partida de Contrarreloj se guarda en su tabla, no mueve el avance ni la ruta, y abre su final`() {
     val vm = newViewModel()
     TestSupport.awaitUntil(message = "El camino de hoy no se cargó") { vm.dailySession.value.gameIds.isNotEmpty() }

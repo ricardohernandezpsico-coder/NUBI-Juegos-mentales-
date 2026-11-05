@@ -30,10 +30,10 @@ class BodegaTest {
 
   @Test
   fun `la etapa mas alta es de 5 grupos`() {
-    assertEquals("Etapa más alta: 1 de 5 (pocos objetos)", Bodega.groupLine(1))
-    assertEquals("Etapa más alta: 3 de 5 (cajas que se mueven)", Bodega.groupLine(3))
-    assertEquals("Etapa más alta: 4 de 5 (la bodega gira)", Bodega.groupLine(4))
-    assertEquals("Etapa más alta: 5 de 5 (todo junto)", Bodega.groupLine(5))
+    assertEquals("Nivel más alto: 1 de 5 (pocos objetos)", Bodega.groupLine(1))
+    assertEquals("Nivel más alto: 3 de 5 (cajas que se mueven)", Bodega.groupLine(3))
+    assertEquals("Nivel más alto: 4 de 5 (la bodega gira)", Bodega.groupLine(4))
+    assertEquals("Nivel más alto: 5 de 5 (todo junto)", Bodega.groupLine(5))
     assertNull(Bodega.groupLine(0))
     assertNull(Bodega.groupLine(6))
     assertNull(Bodega.groupLine(null))

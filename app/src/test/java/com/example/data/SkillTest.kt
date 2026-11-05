@@ -36,14 +36,11 @@ class SkillTest {
   }
 
   @Test
-  fun `el encabezado de etapa y lo que falta se dicen en puntos en toda la app`() {
-    // Tarea 159: UNA escala. El área, de 0 a 1000 («Etapa Hábil · 470 de 1000 puntos»); la ficha de un juego, los mismos tramos en proporción («Etapa Experto · 180 de 250 puntos»)
+  fun `el encabezado de un juego se dice en puntos en toda la app, sin etapa`() {
+    // Tarea 159: UNA escala. El área, de 0 a 1000 («470 de 1000 puntos»); la ficha de un juego, los mismos puntos en proporción («180 de 250 puntos»). Tarea 230: sin «Etapa …» delante ni «Te faltan N puntos para X»
     val g = GamePoints("parejas", 180, 250, 0.72f, true)
-    assertEquals("Etapa Experto · 180 de 250 puntos", g.stageLine)
-    assertEquals("Te faltan 20 puntos para Maestro", g.toNextLine)
-    assertEquals("Te falta 1 punto para Maestro", GamePoints("parejas", 199, 250, 0.8f, true).toNextLine)
-    assertEquals("en Maestro no hay siguiente", null, GamePoints("parejas", 240, 250, 0.96f, true).toNextLine)
-    assertEquals("Etapa Hábil · 90 de 200 puntos", GamePoints("radar", 90, 200, 0.45f, true).stageLine)
+    assertEquals("180 de 250 puntos", g.pointsLine)
+    assertEquals("90 de 200 puntos", GamePoints("radar", 90, 200, 0.45f, true).pointsLine)
     // un juego mirado a solas: avance × 1000 ÷ N (Memoria tiene 4 juegos; Atención, 5)
     assertEquals(GamePoints("parejas", 180, 250, 0.72f, true).points, GamePoints.of("parejas", 0.72f).points)
     assertEquals(100, GamePoints.of("radar", 0.5f).points); assertEquals(200, GamePoints.of("radar", 1f).max)
@@ -87,10 +84,8 @@ class SkillTest {
   }
 
   @Test
-  fun `las etapas son quintos del avance`() {
-    assertEquals("Inicio", Skill.stageName(0.05f))
-    assertEquals("Hábil", Skill.stageName(0.45f))
-    assertEquals("Maestro", Skill.stageName(1f))
+  fun `la etapa guardada sigue siendo quinto del avance aunque la app ya no la nombre`() {
+    // Tarea 230: los nombres Inicio…Maestro salieron; `Skill.stage` queda solo por lo que ya se guardó (`stageDates`)
     assertEquals(1, Skill.stage(0.2f)); assertEquals(0, Skill.stage(0.199f)); assertEquals(4, Skill.stage(1f))
   }
 
